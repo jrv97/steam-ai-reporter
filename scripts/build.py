@@ -1,6 +1,7 @@
 """Build every target into dist/ with one esbuild call each.
 
-Targets: the Chrome and Firefox extensions (dist/chrome, dist/firefox), the userscript
+Targets: the Chrome and Firefox extensions (dist/chrome, dist/firefox: the manifest, the content
+script and its stylesheet, the options page, the catalogs and the icons), the userscript
 (dist/userscript) and the dev-only injection bundle (dist/dev, never packaged). The userscript
 header goes in through `--banner:js` on the userscript call only. Bundles are never minified.
 
@@ -15,6 +16,7 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
+from gen_styles import stylesheet
 from repo import DIST, ROOT, SLUG, fail, json_object, json_string, package_version, read_json
 
 ESBUILD = ROOT / "node_modules" / "esbuild" / "bin" / "esbuild"
@@ -24,6 +26,8 @@ ICONS_DIR = ROOT / "assets" / "icons"
 ICON_SIZES = (16, 32, 48, 128)
 DEFAULT_LOCALE = "en"
 BROWSERS = ("chrome", "firefox")
+# The store page stylesheet, loaded by the manifest so the content script need not adopt it.
+CONTENT_CSS = ("TOKENS_CSS", "PAGE_CSS")
 
 USERSCRIPT_MATCH = "https://store.steampowered.com/*"
 USERSCRIPT_NAMESPACE = "https://github.com/jrv97/steam-ai-reporter"
@@ -79,6 +83,15 @@ def message(catalog: dict[str, object], key: str, where: str) -> str:
     return json_string(entry.get("message"), f"{where} {key}.message")
 
 
+def manifest_catalog(catalog: dict[str, object], locale: str) -> dict[str, object]:
+    """The catalog as `_locales` needs it: each message and its placeholders, no descriptions."""
+    result: dict[str, object] = {}
+    for key, value in catalog.items():
+        entry = json_object(value, f"{locale} {key}")
+        result[key] = {name: entry[name] for name in ("message", "placeholders") if name in entry}
+    return result
+
+
 def merge(base: dict[str, object], overlay: dict[str, object]) -> dict[str, object]:
     """Deep-merge two manifest objects; overlay values win, nested objects merge."""
     result = dict(base)
@@ -103,10 +116,13 @@ def write_extension(browser: str, version: str) -> None:
     overlay = json_object(read_json(overlay_path), overlay_path.name)
     manifest = merge(base, overlay) | {"version": version}
     write_text(out / "manifest.json", json.dumps(manifest, indent=2, ensure_ascii=False) + "\n")
-    for path in sorted(LOCALES_DIR.glob("*/messages.json")):
-        target = out / "_locales" / path.parent.name / "messages.json"
-        target.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copyfile(path, target)
+    write_text(out / "content.css", "".join(stylesheet(name) for name in CONTENT_CSS))
+    shutil.copyfile(EXTENSION_DIR / "options.html", out / "options.html")
+    for locale, catalog in load_catalogs().items():
+        write_text(
+            out / "_locales" / locale / "messages.json",
+            json.dumps(manifest_catalog(catalog, locale), indent=2, ensure_ascii=False) + "\n",
+        )
     for size in ICON_SIZES:
         target = out / "icons" / f"icon-{size}.png"
         target.parent.mkdir(parents=True, exist_ok=True)
@@ -144,8 +160,11 @@ def userscript_header(version: str, catalogs: dict[str, dict[str, object]]) -> s
 
 
 def bundles(header: str) -> list[Bundle]:
-    content = "src/platform/extension/content.ts"
-    result = [Bundle(content, DIST / browser / "content.js") for browser in BROWSERS]
+    result = [
+        Bundle(f"src/platform/extension/{entry}.ts", DIST / browser / f"{entry}.js")
+        for browser in BROWSERS
+        for entry in ("content", "options")
+    ]
     result.append(
         Bundle(
             "src/platform/userscript/main.ts",

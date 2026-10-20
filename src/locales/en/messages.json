@@ -11,6 +11,10 @@
     "message": "Labels Steam games whose developers disclose generative AI use, in their own words.",
     "description": "Manifest description and userscript @description. At most 132 characters (Chrome limit)."
   },
+  "ext_action_title": {
+    "message": "AI Reporter for Steam settings",
+    "description": "Tooltip of the extension's toolbar button, which opens the settings popup. At most 75 characters. Keep \"AI Reporter for Steam\" as is (see ext_name)."
+  },
   "error_unexpected": {
     "message": "Unexpected error.",
     "description": "Logged to the browser console when something fails without a more specific message. Short; developers read it, not players."
@@ -128,6 +132,16 @@
   "error_allow_list_save": {
     "message": "Could not update this game. Try again.",
     "description": "After \"Stop marking this game\", \"Undo\" or \"Mark again\" fails to save."
+  },
+  "options_version": {
+    "message": "Version $version$",
+    "description": "Under the product name at the top of the settings page and popup. $version$ is the release version, such as 2026.10.20; keep it as is.",
+    "placeholders": {
+      "version": {
+        "content": "$1",
+        "example": "2026.10.20"
+      }
+    }
   },
   "options_section_store": {
     "message": "On store pages",
@@ -276,5 +290,9 @@
   "options_unaffiliated_short": {
     "message": "Not affiliated with Valve. Nothing leaves your browser except lookups to Valve's store.",
     "description": "Footer of the toolbar popup."
+  },
+  "options_all_settings": {
+    "message": "All settings",
+    "description": "Link in the toolbar popup footer that opens the full settings page in a tab."
   }
 }

@@ -1,4 +1,11 @@
+import { PAGE_CSS, TOKENS_CSS } from "./styles.gen";
+
 export { BANNER_CSS, PAGE_CSS, SETTINGS_CSS, TOKENS_CSS } from "./styles.gen";
+
+/** The store page stylesheet for `AppDeps.addPageStyles`, where the platform does not load it. */
+export function adoptPageStyles(doc: Document): void {
+  adoptStyles(doc, TOKENS_CSS + PAGE_CSS);
+}
 
 /** One constructed sheet per document and CSS text, shared by every root that adopts it. */
 const sheets = new WeakMap<Document, Map<string, CSSStyleSheet>>();

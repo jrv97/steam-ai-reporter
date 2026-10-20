@@ -29,7 +29,6 @@ import { createAppPageUi } from "./ui/app-page";
 import { applyBadgeSetting, createBadgeRenderer } from "./ui/badge";
 import { createCapsuleUi } from "./ui/capsules";
 import { applyListFilter, createHostStateRenderer } from "./ui/list-filter";
-import { adoptStyles, PAGE_CSS, TOKENS_CSS } from "./ui/styles";
 
 /** What a composition root hands to core: the ports, already built for its platform. */
 export interface AppDeps {
@@ -44,6 +43,12 @@ export interface AppDeps {
   readonly browserLang?: string;
   /** Defaults to the catalogs this build ships. */
   readonly catalogs?: Catalogs;
+  /**
+   * Puts the store page stylesheet (`TOKENS_CSS` and `PAGE_CSS`) on the page: `adoptPageStyles`,
+   * or nothing where the platform loads it itself, as the extension's manifest `content.css` does.
+   * A platform hook rather than a default, so that bundle carries no copy of the CSS text.
+   */
+  readonly addPageStyles: (doc: Document) => void;
 }
 
 /** A running app on one store page. */
@@ -180,7 +185,7 @@ export async function start(deps: AppDeps): Promise<App> {
     logger.error(problem);
   }
 
-  adoptStyles(doc, TOKENS_CSS + PAGE_CSS);
+  deps.addPageStyles(doc);
   applyBadgeSetting(root, settings.badges);
   applyListFilter(root, settings.listFilter);
 
