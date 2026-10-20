@@ -1,3 +1,4 @@
+import * as v from "valibot";
 import { DEFAULT_LOCALE } from "./catalog";
 
 /**
@@ -44,6 +45,9 @@ type Row = (typeof STEAM_LANGUAGES)[number];
 export type SteamLanguage = Row[1];
 
 export const DEFAULT_STEAM_LANGUAGE: SteamLanguage = "english";
+
+/** Validates a Steam language name read from outside, for example a stored verdict. */
+export const SteamLanguageSchema = v.picklist(STEAM_LANGUAGES.map((row) => row[1]));
 
 export interface LocaleContext {
   /** The `locale` setting: `auto`, or a catalog locale code the user chose. */
