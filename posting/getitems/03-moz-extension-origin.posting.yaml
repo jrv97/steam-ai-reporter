@@ -1,0 +1,19 @@
+name: GetItems, moz-extension origin
+description: >-
+  Spike S3. The Origin a Firefox extension page or background script sends (the UUID is random
+  per install).
+method: GET
+url: https://api.steampowered.com/IStoreBrowseService/GetItems/v1
+headers:
+  - name: Origin
+    value: moz-extension://0d7c1b2e-5a4f-4c3b-9e8d-7f6a5b4c3d2e
+params:
+  - name: input_json
+    value: >-
+      {"ids": [{"appid": 5072580}, {"appid": 1808500}, {"appid": 413150}],
+      "context": {"language": "english", "country_code": "US"},
+      "data_request": {"include_extra_details": true}}
+scripts:
+  on_response: scripts/record_headers.py
+options:
+  attach_cookies: false

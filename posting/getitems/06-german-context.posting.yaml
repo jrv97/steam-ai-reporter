@@ -1,0 +1,18 @@
+name: GetItems, german context
+description: >-
+  Spike S2. Call of Duty localizes its notes; 5072580 does not.
+method: GET
+url: https://api.steampowered.com/IStoreBrowseService/GetItems/v1
+headers:
+  - name: Origin
+    value: https://store.steampowered.com
+params:
+  - name: input_json
+    value: >-
+      {"ids": [{"appid": 1938090}, {"appid": 5072580}],
+      "context": {"language": "german", "country_code": "DE"},
+      "data_request": {"include_extra_details": true}}
+scripts:
+  on_response: scripts/record_headers.py
+options:
+  attach_cookies: false

@@ -1,0 +1,18 @@
+name: GetItems, foreign origin
+description: >-
+  Spike S3. An unrelated web origin. Shows whether CORS is a wildcard or an allow-list.
+method: GET
+url: https://api.steampowered.com/IStoreBrowseService/GetItems/v1
+headers:
+  - name: Origin
+    value: https://example.com
+params:
+  - name: input_json
+    value: >-
+      {"ids": [{"appid": 5072580}, {"appid": 1808500}, {"appid": 413150}],
+      "context": {"language": "english", "country_code": "US"},
+      "data_request": {"include_extra_details": true}}
+scripts:
+  on_response: scripts/record_headers.py
+options:
+  attach_cookies: false

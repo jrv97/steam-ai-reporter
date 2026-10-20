@@ -1,0 +1,14 @@
+name: App page, english
+description: >-
+  Spike S7. A cookie-less app page fetch: check the status, content-security-policy and whether
+  any set-cookie names a language.
+method: GET
+url: https://store.steampowered.com/app/413150/
+params:
+  - name: l
+    value: english
+scripts:
+  on_response: scripts/record_headers.py
+options:
+  follow_redirects: false
+  attach_cookies: false

@@ -1,0 +1,13 @@
+name: App page, adult-only redirect
+description: >-
+  Spike S7. A cookie-less fetch of an adult-only app: record the status and the location header.
+method: GET
+url: https://store.steampowered.com/app/339800/
+params:
+  - name: l
+    value: english
+scripts:
+  on_response: scripts/record_headers.py
+options:
+  follow_redirects: false
+  attach_cookies: false
