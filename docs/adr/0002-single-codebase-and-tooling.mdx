@@ -1,0 +1,94 @@
+---
+status: accepted
+date: 2026-10-20
+decision-makers: Jorge Rodriguez de la Vega
+---
+
+# One framework-free core, thin platform adapters, and a mise-driven toolchain
+
+## Context and problem statement
+
+The product ships three artifacts: a Chrome MV3 extension, a Firefox MV3 extension and a Tampermonkey/Violentmonkey userscript. They must behave identically, be reviewable by AMO staff who rebuild from source, and follow the project rules on strict typing, formatting, efficiency and a single toolchain manager (rules 5, 10, 11, 14 and 15 in the root `AGENTS.md`).
+
+How is the code organized, and which build, check and test tools carry it? The tool choices were measured in spike S8 ([rq7-library-study](../research/steam-ai-disclosure/rq7-library-study.md)).
+
+## Decision drivers
+
+- One behavior, three targets: no logic duplicated per platform.
+- Reviewability: bundles are not minified (rule 2), and AMO reviewers rebuild them.
+- Strict static typing without escape hatches: no `any`, no assertions, `unknown` until validated (rule 10).
+- Bundle budgets: `content.js` at most 60 KB and the userscript at most 80 KB, unminified (rule 13).
+- One toolchain manager and task runner, identical on Windows and Linux, local and CI (rule 14).
+- Few moving parts, with maintained, permissively licensed dependencies (rule 12).
+
+## Considered options
+
+### Architecture
+
+1. **Framework-free core plus two thin adapters** (chosen): `src/core` depends only on ports; `src/platform/extension` and `src/platform/userscript` are the only shipped composition roots.
+2. A framework such as WXT for the extension plus a second plugin for the userscript, with logic spread across entry points.
+3. Two separate codebases.
+
+### Toolchain (each row weighed in rq7)
+
+| Concern | Chosen | Alternatives weighed |
+|---|---|---|
+| Bundling | esbuild 0.28 CLI driven by `scripts/build.py`, one call per target | WXT with vite-plugin-monkey; plain Vite with vite-plugin-monkey |
+| Type check | TypeScript 7 `tsc --noEmit` | TypeScript 6 `tsc` |
+| Lint | oxlint with type-aware rules and one own `jsPlugins` rule | typescript-eslint presets; Biome |
+| Format | dprint 0.64, seven plugins, `.mdx` association | Biome plus Prettier |
+| Validation | valibot 1.5 | zod 4 mini; hand-written guards |
+| Tests | vitest 5 with happy-dom | jsdom as default |
+| Extension types | `@types/chrome`, no polyfill | `chrome-types`; `webextension-polyfill` |
+| Userscript types | hand-written `gm.d.ts` | `@violentmonkey/types`; `@types/tampermonkey` |
+| Workflows | actionlint plus zizmor | actionlint alone |
+| Package manager | pnpm from mise, `pmOnFail: error` | none (user decision) |
+
+## Decision outcome
+
+Chosen: option 1 for the architecture, and every "Chosen" cell above for the toolchain.
+
+### Architecture
+
+- `src/core` uses only DOM and web standards and never names `chrome`, `browser` or `GM` (rule 5). `tsconfig.core.json` sets `"types": []` and never includes `gm.d.ts`, so a platform name in core fails the type check.
+- Core depends on small ports (`Http`, `KeyValueStore`, `Clock`, `Logger`, `SettingsSource`, `MessageCatalog`). Every implementation passes the shared contract tests. The extension content script and the userscript `main.ts` are the only shipped roots; `src/platform/dev/inject.ts` is a dev-only root that is never packaged.
+- New store surfaces are new placement entries and new detection sources are new detector links; the scanner and the chain are not edited for them (rule 11). See `src/core/AGENTS.md`.
+
+### Toolchain, with the reasons rq7 found
+
+- **esbuild.** One package with no JavaScript dependencies, builds several IIFE entries, byte-stable output for the same inputs and version. `--banner:js` applies to every entry of a call, so the userscript header goes on the userscript call only. WXT carries a large transitive tree that AMO reviewers would rebuild; plain Vite's library mode refuses multiple IIFE entries. Costs: a hand-written userscript header and manifest overlays (both covered by checks) and no HMR (esbuild watch with `web-ext run` reloads Firefox; Chrome is reloaded by hand).
+- **TypeScript 7.** GA since 2026-07-08 and the npm `latest`; about 2.3 times faster on the sample with identical diagnostics. It ships no programmatic API, which matters only to typescript-eslint. Because it defaults `types` to `[]`, every tsconfig lists its ambient packages explicitly. Scripts test for a non-zero exit, not for a specific code.
+- **oxlint with type-aware rules.** Covers every required rule, including `consistent-type-assertions` with `assertionStyle: "never"`, about 5 times faster, and runs on TypeScript 7 directly, whereas typescript-eslint caps `typescript` below 6.1. oxlint has no `no-restricted-syntax`, so a 12-line rule of our own in `lint/restricted-syntax.mjs` (loaded through `jsPlugins`, run at lint time, never bundled) turns ESQuery selectors into the literal-flow reports that enforce rule 9. `ban-ts-comment` is set with `"ts-expect-error": true`. Biome was rejected: it has no `no-unsafe-*` family. **Documented fallback**, if the alpha JS plugin API proves flaky: typescript-eslint with the alias pair `typescript` as `npm:@typescript/typescript6` and `@typescript/native` as `npm:typescript@7`, so the type check still runs on TypeScript 7. rq7 called this a close call; maturity is the argument for the fallback.
+- **dprint.** Biome formats no Markdown, YAML or TOML, and Prettier's MDX parser turned `2 * 3 * 4` into `2 _ 3 _ 4`. dprint skips `.mdx` silently unless `"markdown": { "associations": ["**/*.{md,mdx}"] }` is set; with it, ADRs are formatted safely with `textWrap: "maintain"`. It parses MDX as CommonMark, so JSX blocks in docs stay simple.
+- **valibot.** 10.8 KB unminified for the GetItems schema against 37.3 KB for zod mini, which alone would use 62 percent of the content-script budget. Use `v.exactOptional`, `v.readonly()` on every nested object, and validate each `store_items` entry on its own, because one malformed item rejects a whole-response schema in all three implementations tried. Hand-written guards stay the fallback if the size budget ever fails.
+- **vitest with happy-dom.** Both DOMs passed the needed APIs; happy-dom starts faster and implements `innerText`, observers, `popover` and `dialog`, which jsdom 30 lacks. jsdom is a per-file cross-check only.
+- **`@types/chrome`, no polyfill.** It keeps storage values `unknown`, where `chrome-types` uses `any`. The platform wrapper is `"browser" in globalThis ? globalThis.browser : globalThis.chrome`, because `globalThis.browser ?? globalThis.chrome` fails `no-unnecessary-condition`. The polyfill is stale and about 64 percent of the content-script budget. The type argument of `storage.local.get<T>()` is never used, since it is an unchecked assertion.
+- **Hand-written `gm.d.ts`.** Neither `@violentmonkey/types` nor `@types/tampermonkey` compiles under `skipLibCheck: false` plus `exactOptionalPropertyTypes`, and both type `GM.getValue<T>` as an unchecked assertion. Our file declares exactly the granted APIs with `unknown` returns; signatures follow the manager documentation and no declaration text is copied.
+- **actionlint plus zizmor.** zizmor audits the secret-holding release workflows (template injection, permissions, unpinned actions) and runs offline in `lint`, so `prepush` needs no GitHub token.
+- **pnpm from mise.** Without `pmOnFail: error` in `pnpm-workspace.yaml`, pnpm 12 silently downloads and runs the version named in `packageManager`, outside mise (proven in rq7). A check compares the two pins.
+- **mise is the only manager and runner** (rule 14). Hooks come from `mise generate git-pre-commit` and run `mise run precommit` and `mise run prepush`. Tasks call scripts rather than inline shell, because mise runs inline strings with `cmd /c` on Windows. Tools without a registry entry carry backend prefixes (`"npm:web-ext"`, `"pypi:mypy"`). Libraries imported from `node_modules` (esbuild, TypeScript, oxlint, valibot, vitest, happy-dom) are exact-pinned in `package.json` and the lockfile, not in `mise.toml`.
+- **Open item from rq7 row 14, settled here:** Node stays at 24.14.0 (the AMO reviewer environment), although 24.22.0 is the latest 24.x. We pin `uv` in `mise.toml`, so the `pypi` backend installs mypy the same way on CI and on a clean reviewer machine (the no-uv path was not tested). We commit `mise.lock` when the toolchain step can generate it with matching entries on Windows and Linux; if it cannot, the lock is dropped and this ADR is amended, not silently skipped.
+- **AMO build from source** reads: install mise (one documented command), then `mise install` and `mise run build`. If a reviewer objects to mise, the documented fallback is the same `build.py` run with a stock Python and pnpm.
+
+### Consequences
+
+- Good: one behavior and one test suite for three targets; the core is checked by the compiler to be platform-free.
+- Good: the strictest typing available for storage and network boundaries, with the cheapest validation library.
+- Good: a single command set locally, in hooks and in CI.
+- Bad: oxlint JS plugins are alpha, and the literal-flow rule depends on them staying compatible with ESLint's `create(context)`; the typescript-eslint alias fallback costs a larger dependency tree.
+- Bad: hand-written userscript header, manifest overlays and `gm.d.ts` are ours to keep in step with the managers; checks cover header and grants.
+- Bad: AMO reviewers must install mise; a long Windows checkout path can hit the 260-character limit that failed every install in the rq7 proof.
+- Bad: dprint does not parse MDX natively, so complex JSX in docs could be reformatted badly; `fmt-check` in `prepush` shows any change.
+
+## Pros and cons of the options
+
+### Architecture
+
+- **Core plus adapters:** good (one logic, small adapters, enforceable purity); bad (ports add indirection that tests and contracts must police).
+- **WXT plus vite-plugin-monkey:** good (HMR, manifest generation); bad (two frameworks and configs around one core, WXT conventions leak into core, large tree for AMO to rebuild).
+- **Two codebases:** bad (drift, doubled tests); rejected outright.
+
+## More information
+
+- Evidence: [rq7-library-study](../research/steam-ai-disclosure/rq7-library-study.md) (rows 1 to 14) and the plan's "Tooling decisions".
+- Related: [ADR 0001](0001-detect-disclosure-via-getitems.mdx), [ADR 0003](0003-content-script-only-runtime.mdx), [ADR 0005](0005-release-pipeline.mdx).
