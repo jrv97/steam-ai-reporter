@@ -13,7 +13,7 @@ updated: 2026-10-20
 - The allow-list is per app ID only. Developer and publisher allow-lists are on the roadmap.
 - The repo is MIT licensed. No code is copied from any prior-art project; ideas are credited in the README (see "Prior art and credits").
 - Default TTLs: disclosed 7 days, not disclosed 12 hours, unknown `gated` or `missing` 6 hours. `error` and `rate-limited` are never persisted.
-- v1 lands on a single branch, `feat/steam-ai-reporter-v1`, with one Conventional Commit per step.
+- Trunk-based: each step after step 1 lands as its own PR into `main`, from its own `<type>/<slug>` branch in its own worktree (a separate session per step where useful), squash-merged so `main` gets one Conventional Commit per step. After a merge, the step's session is archived and its worktree and branch removed; any open branch the merge left behind is rebased onto `main`.
 - steamcommunity.com is excluded. The wishlist is on the store host (`rq5-extension-constraints.md:33`), and spike S5 checks that old community wishlist URLs redirect there.
 - Formatting at 100 columns applies to every file we own. Markdown and MDX are formatted for structure only; prose lines are not wrapped. Captured fixtures, the lockfile and `LICENSE` are not ours to reformat.
 
@@ -222,7 +222,7 @@ dist/ artifacts/ (gitignored)
 - Create `assets/icons/`: from the design session (SVG source plus 16, 32, 48 and 128 px PNGs), with no Valve branding.
 
 ## Steps
-1. **Branch, rules and plan.** The repo, remote and research commit already exist.
+1. **Branch, rules and plan.** Done 2026-10-20 on `feat/steam-ai-reporter-v1`, which merges into `main` as the first PR. The repo, remote and research commit already existed.
    - From an up-to-date `main`, run `git switch -c feat/steam-ai-reporter-v1`.
    - Add `.gitignore`, extend `AGENTS.md` with the sixteen invariants, and commit both with this plan as `docs: add v1 plan and project rules`.
    - **Proof:** the branch matches `^feat/[a-z0-9-]+$` and starts at `origin/main`. `git status` is clean. `docs/TASKS.md` and `.claude/settings.local.json` stay ignored.
