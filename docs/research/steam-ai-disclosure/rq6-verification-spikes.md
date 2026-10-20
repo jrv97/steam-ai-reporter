@@ -66,7 +66,7 @@ Environment: the Claude desktop app's built-in Chromium browser, from a European
 - Dedupe IDs before building a batch.
 - A 200 response is a batch error when `x-eresult` is present and not `1`, or when `store_items` is missing although IDs were sent.
 - Normalize `\r\n` to `\n` before rendering; render with `white-space: pre-line`.
-- Detection keeps the English context, as planned. See "Proposed plan changes" for a cheaper option for localized text.
+- GetItems runs in the page's language (user decision, see "Proposed plan changes", item 5); presence is the same in every language, and the notes come back in the developer's translation where one exists.
 
 Fixtures: `getitems/mixed-states.json`, `getitems/german-context.json`, `getitems/search-roguelike-50.json`, `getitems/empty-response.json`.
 
@@ -188,10 +188,10 @@ The main session decides; each item names the plan section it touches.
 2. **Step 9, host finding:** replace "highest ancestor, at most 8 levels" with "lowest ancestor that contains an `img` or an inline `background-image`, then at most 3 more levels while every link names the same app; drop a host nested in another host of the same app". Do not skip `[data-featuretarget="store-menu-v7"]` wholesale (it hosts the search suggestions); the image test already drops navigation links.
 3. **Step 9, app link parsing:** accept `/app/<id>` followed by `/`, `?`, `#` or the end; React links have no trailing slash.
 4. **Step 13, placements:** the wishlist is virtualized, so `hideable: false`. Its rows also expose the app ID as `data-rfd-draggable-id="WishlistItem-<appid>-0"`, a second source next to the links.
-5. **Step 10, display language (open choice for the user):** S2 showed that notes are localized when the developer translated them, but that the set of disclosing apps does not change. Two options:
+5. **Step 10, display language (decided by the user on 2026-10-20):** S2 showed that notes are localized when the developer translated them, but that the set of disclosing apps does not change. Of the two options:
    - As planned: detect in English; on the app page, one extra GetItems call in the store language for the banner.
    - Query every batch in the page's language (`<html lang>` mapped back to the Steam name): no extra banner call, and badge tooltips are localized too. The cache record stores the language; the banner re-fetches only that one app if the cached language differs.
-   Recommendation: the second, since it removes a request and shows the developer's own translation everywhere.
+   The user chose the second: GetItems runs in the page's language. Step 10's "detection always uses English" line and the matching review decision ("detection stays on English") change accordingly; the HTML fallback still fetches `?l=english`, because it matches the English heading.
 6. **Step 8, locale mapping:** use the `<html lang>` table in S5 for `auto`.
 7. **Risks:** add "the adult-only app page redirects to sign-in cookie-less, but GetItems answers for it", so the old risk "adult-only apps may stay unknown" no longer holds for the API path. Mark "Firefox content-script fetch may fail CORS" as resolved (S4), and "`Retry-After` is probably unreadable" as confirmed in practice (S1: error answers carry no CORS headers).
 8. **Step 3, ADR 0003:** S3 and S4 pick the content-script-only runtime; the relay branch in step 3 ("If S3 or S4 showed ...") can be dropped. Invariant 3 stands as written.
