@@ -14,5 +14,20 @@
   "error_unexpected": {
     "message": "Unexpected error.",
     "description": "Logged to the browser console when something fails without a more specific message. Short; developers read it, not players."
+  },
+  "warn_breaker_opened": {
+    "message": "Steam refused or dropped a request; detection pauses for $seconds$ seconds ($breaker$).",
+    "description": "Logged to the browser console when the extension stops asking Steam for a while after an error answer, to avoid being rate-limited. $breaker$ is an internal storage key such as v1:breaker; keep it as is.",
+    "placeholders": {
+      "seconds": { "content": "$1", "example": "64" },
+      "breaker": { "content": "$2", "example": "v1:breaker" }
+    }
+  },
+  "notice_breaker_closed": {
+    "message": "Detection resumes after the pause ($breaker$).",
+    "description": "Logged to the browser console when the pause after an error answer from Steam is over. $breaker$ is an internal storage key such as v1:breaker; keep it as is.",
+    "placeholders": {
+      "breaker": { "content": "$1", "example": "v1:breaker" }
+    }
   }
 }
