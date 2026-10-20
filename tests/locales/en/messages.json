@@ -1,0 +1,31 @@
+{
+  "greeting": {
+    "message": "Hello, $name$!",
+    "description": "Test message with one placeholder.",
+    "placeholders": { "name": { "content": "$1", "example": "Ana" } }
+  },
+  "farewell": {
+    "message": "Goodbye.",
+    "description": "Test message without placeholders."
+  },
+  "only_english": {
+    "message": "Only in English.",
+    "description": "Test message the other test catalogs leave out, to prove the English fallback."
+  },
+  "games_one": {
+    "message": "$count$ game in $list$",
+    "description": "Test plural, singular form.",
+    "placeholders": {
+      "count": { "content": "$1", "example": "1" },
+      "list": { "content": "$2", "example": "Wishlist" }
+    }
+  },
+  "games_other": {
+    "message": "$count$ games in $list$",
+    "description": "Test plural, other form.",
+    "placeholders": {
+      "count": { "content": "$1", "example": "3" },
+      "list": { "content": "$2", "example": "Wishlist" }
+    }
+  }
+}

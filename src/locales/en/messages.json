@@ -1,0 +1,18 @@
+{
+  "ext_name": {
+    "message": "AI Reporter for Steam",
+    "description": "Manifest name, userscript @name and the settings heading. The brand: keep \"AI Reporter\" as is and translate only \"for\". At most 75 characters (Chrome limit)."
+  },
+  "ext_short_name": {
+    "message": "AI Reporter",
+    "description": "Manifest short_name, where space is tight. The brand, kept as is. At most 12 characters (Chrome recommendation)."
+  },
+  "ext_description": {
+    "message": "Labels Steam games whose developers disclose generative AI use, in their own words.",
+    "description": "Manifest description and userscript @description. At most 132 characters (Chrome limit)."
+  },
+  "error_unexpected": {
+    "message": "Unexpected error.",
+    "description": "Logged to the browser console when something fails without a more specific message. Short; developers read it, not players."
+  }
+}

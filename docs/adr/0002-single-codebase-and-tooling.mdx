@@ -31,18 +31,18 @@ How is the code organized, and which build, check and test tools carry it? The t
 
 ### Toolchain (each row weighed in rq7)
 
-| Concern | Chosen | Alternatives weighed |
-|---|---|---|
-| Bundling | esbuild 0.28 CLI driven by `scripts/build.py`, one call per target | WXT with vite-plugin-monkey; plain Vite with vite-plugin-monkey |
-| Type check | TypeScript 7 `tsc --noEmit` | TypeScript 6 `tsc` |
-| Lint | oxlint with type-aware rules and one own `jsPlugins` rule | typescript-eslint presets; Biome |
-| Format | dprint 0.64, seven plugins, `.mdx` association | Biome plus Prettier |
-| Validation | valibot 1.5 | zod 4 mini; hand-written guards |
-| Tests | vitest 5 with happy-dom | jsdom as default |
-| Extension types | `@types/chrome`, no polyfill | `chrome-types`; `webextension-polyfill` |
-| Userscript types | hand-written `gm.d.ts` | `@violentmonkey/types`; `@types/tampermonkey` |
-| Workflows | actionlint plus zizmor | actionlint alone |
-| Package manager | pnpm from mise, `pmOnFail: error` | none (user decision) |
+| Concern          | Chosen                                                             | Alternatives weighed                                            |
+| ---------------- | ------------------------------------------------------------------ | --------------------------------------------------------------- |
+| Bundling         | esbuild 0.28 CLI driven by `scripts/build.py`, one call per target | WXT with vite-plugin-monkey; plain Vite with vite-plugin-monkey |
+| Type check       | TypeScript 7 `tsc --noEmit`                                        | TypeScript 6 `tsc`                                              |
+| Lint             | oxlint with type-aware rules and one own `jsPlugins` rule          | typescript-eslint presets; Biome                                |
+| Format           | dprint 0.64, seven plugins, `.mdx` association                     | Biome plus Prettier                                             |
+| Validation       | valibot 1.5                                                        | zod 4 mini; hand-written guards                                 |
+| Tests            | vitest 5 with happy-dom                                            | jsdom as default                                                |
+| Extension types  | `@types/chrome`, no polyfill                                       | `chrome-types`; `webextension-polyfill`                         |
+| Userscript types | hand-written `gm.d.ts`                                             | `@violentmonkey/types`; `@types/tampermonkey`                   |
+| Workflows        | actionlint plus zizmor                                             | actionlint alone                                                |
+| Package manager  | pnpm from mise, `pmOnFail: error`                                  | none (user decision)                                            |
 
 ## Decision outcome
 

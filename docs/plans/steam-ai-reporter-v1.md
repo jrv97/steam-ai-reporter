@@ -8,6 +8,7 @@ updated: 2026-10-20
 # AI Reporter for Steam: MV3 extension and userscript from one core (v1)
 
 **Ambiguities and the assumptions taken**
+
 - Product name "AI Reporter for Steam" (`short_name` "AI Reporter"), slug `steam-ai-reporter`, Gecko ID `steam-ai-reporter@jdelavega.github.io`. The CSS and attribute prefix is `sar-` (internal, never shown to users). Wherever this plan writes `<slug>`, it means `steam-ai-reporter`.
 - "Unknown" renders nothing, the same as "not disclosed". The only trace is a `data-sar-state` attribute, kept for debugging.
 - The allow-list is per app ID only. Developer and publisher allow-lists are on the roadmap.
@@ -18,7 +19,9 @@ updated: 2026-10-20
 - Formatting at 100 columns applies to every file we own. Markdown and MDX are formatted for structure only; prose lines are not wrapped. Captured fixtures, the lockfile and `LICENSE` are not ours to reformat.
 
 ## Objective
+
 Build a Chrome and Firefox MV3 extension and a Tampermonkey/Violentmonkey userscript, both driven by one framework-free TypeScript core. They mark every app-ID-bearing item on `store.steampowered.com` whose developer filled in Steam's AI content disclosure:
+
 - a badge on capsules and rows
 - a non-blocking banner on the app page that quotes the developer's text verbatim
 - an opt-in dim or hide mode for lists
@@ -27,6 +30,7 @@ Build a Chrome and Firefox MV3 extension and a Tampermonkey/Violentmonkey usersc
 Detection calls `IStoreBrowseService/GetItems` with `include_extra_details`, batched and in the page's language. A `?l=english` HTML parse is the fallback. There are three states (disclosed, not disclosed, unknown) and a local cache. There is no remote code, and nothing is sent anywhere except Valve's own endpoints.
 
 ## Current state
+
 - The repo is `jrv97/steam-ai-reporter` on GitHub (renamed from `steam-fuck-slop` on 2026-10-20; GitHub redirects the old URL, and the local folder keeps the old name). `main` tracks `origin/main` and has two commits: `chore: init` (the wf docs scaffold, `AGENTS.md` and the research) and `chore: enforce lf line endings`.
   - `AGENTS.md` holds only a "working knowledge (docs/)" section: where plans, research, journal, drafts and ADRs live. ADRs are MADR in `docs/adr/`, which does not exist yet.
   - `.gitattributes` sets `* text=auto eol=lf` and `docs/journal/*.md merge=union`.
@@ -56,50 +60,54 @@ Detection calls `IStoreBrowseService/GetItems` with `include_extra_details`, bat
 - Conventions adopted from the user's other repos: a root `mise.toml` (`C:/Users/jorge/Documents/dev/smithbox-helper/mise.toml:9-20`; this repo is one package, so no `[monorepo]` section), MADR ADRs in `.mdx` (`smithbox-helper/AGENTS.md:79`), and Conventional Commits (`C:/Users/jorge/Documents/dev/mdx2steam/AGENTS.md:23-25`). Git hooks run through mise, not prek (invariant 14).
 
 ## Prior art and credits
+
 Source: `docs/research/steam-ai-disclosure/rq4-prior-art.md`, plus the GetItems check in `rq2-data-surface.md` (main-thread verification). "(unv.)" marks third-party tracker or summary figures. The comparison is factual and neutral; the README's "Prior art and thanks" section credits each project whose ideas shaped ours.
 
 ### Where v1 differs
-| | AI warning for Steam (seeeeew) | AI Content Filter (SoBloxsy) | Steam AI Games Indicator (Pierre-Demessence) | Obvious Steam AI | Augmented Steam | Ours, v1 |
-|---|---|---|---|---|---|---|
-| Detection | HTML heading; about 33 localized strings on the app page; per-app `?l=english` fetch for search | English heading only; per-app fetch, likely without `?l=english` (unv.) | `appids.json` seed (from SteamDB) plus per-app `?l=english` fetch | Page banner | None (issue 1913 open since 2024-04) | Batched GetItems `content_survey_ai_notes`, HTML fallback |
-| Requests per 50-row search page | About 50 | Up to 50, lazy by viewport | 0 to 50, serial 1 s | n/a | n/a | 1 |
-| Survives Steam retranslating the heading | No (Russian 2026-02, French 2026-09, Malay added) | English only | Yes | ? | n/a | Yes, the API field is language-independent |
-| Surfaces | App, search | All store pages, English only | App, search, wishlist, home | App | None | Every app ID surface |
-| Ships as | Extension and userscript (one file) | Extension | Userscript | Firefox extension | Extension | Extension (Chrome, Firefox) and userscript from one core |
-| App page UX | Full-page modal, no options | Red banner | Banner | Banner | None | Non-blocking banner, verbatim text, collapsible |
-| List modes | Blur or hide (search only) | Hide, highlight, text label | Badge plus hide filter | None | None | Badge, dim or hide (default off) |
-| False-flag override | No (issue 12 open) | No | No | No | None | Per-game allow-list |
-| Gated or error pages | Not documented | Not documented | `appHubAppName` guard before a negative | ? | None | Explicit unknown, never shown or cached as not disclosed |
-| Freshness | 30 d positive, 7 d negative, reset on update | 7 d | Misses late disclosures below the seed list's max ID until a manual refresh (about quarterly) | ? | None | 7 d, 12 h, 6 h |
-| Privacy and permissions | `storage` only | `storage`, service worker | Also fetches from `raw.githubusercontent.com` | Steam host access | Broad hosts plus its own server | `storage` only, Valve hosts only, cookie-less |
-| License | MIT | Apache-2.0 | MIT | MPL-2.0, no source repo | GPL-3.0 | MIT |
-| Users | About 5.5k Firefox, about 10k Chrome (unv.) | 80 Firefox, about 1k Chrome (unv.) | 2 stars | 0 | 64k Firefox | None yet |
+
+|                                          | AI warning for Steam (seeeeew)                                                                  | AI Content Filter (SoBloxsy)                                            | Steam AI Games Indicator (Pierre-Demessence)                                                  | Obvious Steam AI        | Augmented Steam                      | Ours, v1                                                  |
+| ---------------------------------------- | ----------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- | ----------------------- | ------------------------------------ | --------------------------------------------------------- |
+| Detection                                | HTML heading; about 33 localized strings on the app page; per-app `?l=english` fetch for search | English heading only; per-app fetch, likely without `?l=english` (unv.) | `appids.json` seed (from SteamDB) plus per-app `?l=english` fetch                             | Page banner             | None (issue 1913 open since 2024-04) | Batched GetItems `content_survey_ai_notes`, HTML fallback |
+| Requests per 50-row search page          | About 50                                                                                        | Up to 50, lazy by viewport                                              | 0 to 50, serial 1 s                                                                           | n/a                     | n/a                                  | 1                                                         |
+| Survives Steam retranslating the heading | No (Russian 2026-02, French 2026-09, Malay added)                                               | English only                                                            | Yes                                                                                           | ?                       | n/a                                  | Yes, the API field is language-independent                |
+| Surfaces                                 | App, search                                                                                     | All store pages, English only                                           | App, search, wishlist, home                                                                   | App                     | None                                 | Every app ID surface                                      |
+| Ships as                                 | Extension and userscript (one file)                                                             | Extension                                                               | Userscript                                                                                    | Firefox extension       | Extension                            | Extension (Chrome, Firefox) and userscript from one core  |
+| App page UX                              | Full-page modal, no options                                                                     | Red banner                                                              | Banner                                                                                        | Banner                  | None                                 | Non-blocking banner, verbatim text, collapsible           |
+| List modes                               | Blur or hide (search only)                                                                      | Hide, highlight, text label                                             | Badge plus hide filter                                                                        | None                    | None                                 | Badge, dim or hide (default off)                          |
+| False-flag override                      | No (issue 12 open)                                                                              | No                                                                      | No                                                                                            | No                      | None                                 | Per-game allow-list                                       |
+| Gated or error pages                     | Not documented                                                                                  | Not documented                                                          | `appHubAppName` guard before a negative                                                       | ?                       | None                                 | Explicit unknown, never shown or cached as not disclosed  |
+| Freshness                                | 30 d positive, 7 d negative, reset on update                                                    | 7 d                                                                     | Misses late disclosures below the seed list's max ID until a manual refresh (about quarterly) | ?                       | None                                 | 7 d, 12 h, 6 h                                            |
+| Privacy and permissions                  | `storage` only                                                                                  | `storage`, service worker                                               | Also fetches from `raw.githubusercontent.com`                                                 | Steam host access       | Broad hosts plus its own server      | `storage` only, Valve hosts only, cookie-less             |
+| License                                  | MIT                                                                                             | Apache-2.0                                                              | MIT                                                                                           | MPL-2.0, no source repo | GPL-3.0                              | MIT                                                       |
+| Users                                    | About 5.5k Firefox, about 10k Chrome (unv.)                                                     | 80 Firefox, about 1k Chrome (unv.)                                      | 2 stars                                                                                       | 0                       | 64k Firefox                          | None yet                                                  |
 
 Not covered in v1: a scope split (in-game, marketing only, dev only, live), the Steam desktop client, developer or publisher allow-lists, and undisclosed AI use (no tool sees it; only manual curators such as "No AI" do).
 
 ### What we learn from it
+
 No code is copied. Every row below is an idea we reimplement from our own design and our own observations of Steam's pages.
 
-| Credit | Idea | How it shows up in v1 | Step |
-|---|---|---|---|
-| seeeeew | Low-permission manifest (`storage`, no host permissions, Gecko `data_collection_permissions: none`) | Our manifest, enforced by `check_bundle.py` | 11 |
-| seeeeew | Positive and negative TTL split, invalidation on extension update | `CACHE_SCHEMA` bump and our TTLs | 8 |
-| seeeeew | A localized heading table | Roadmap; would be built from Steam's own translations | After v1 |
-| seeeeew, issue 4 | An automated check for heading changes | `mise run canary` | 14 |
-| Pierre-Demessence | Badging every surface, including wishlist and home capsules | Generic capsule scanner; selectors come from our own S5 survey | 2, 9, 13 |
-| Pierre-Demessence | Guard against age gates before trusting a negative | `appHubAppName` and final-URL checks in the HTML parser | 6 |
-| Pierre-Demessence | Serial requests with a delay | Throttle and circuit breaker | 7 |
-| Pierre-Demessence | Hide option in the search sidebar | Roadmap | After v1 |
-| SoBloxsy | Wishlist hide falls back to highlight | `hideable: false` falls back to dim | 9, 10 |
-| Obvious Steam AI | Top-of-page banner | Non-blocking app page banner | 10 |
-| Augmented Steam | Legacy versus React page handling, one module per feature | Architecture reference only | 4, 9 |
-| Augmented Steam issue 1913 | Users want a dismissible banner like the DRM notice | Banner design | 10 |
-| Augmented Steam VaporLens episode | AI-related defaults are contentious with this audience | List filter defaults to off | 8 |
-| AI Transparency Index | Taxonomy (dev only, marketing only, in game, live) and negation rules | Roadmap classifier; no data reuse | After v1 |
+| Credit                            | Idea                                                                                                | How it shows up in v1                                          | Step     |
+| --------------------------------- | --------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- | -------- |
+| seeeeew                           | Low-permission manifest (`storage`, no host permissions, Gecko `data_collection_permissions: none`) | Our manifest, enforced by `check_bundle.py`                    | 11       |
+| seeeeew                           | Positive and negative TTL split, invalidation on extension update                                   | `CACHE_SCHEMA` bump and our TTLs                               | 8        |
+| seeeeew                           | A localized heading table                                                                           | Roadmap; would be built from Steam's own translations          | After v1 |
+| seeeeew, issue 4                  | An automated check for heading changes                                                              | `mise run canary`                                              | 14       |
+| Pierre-Demessence                 | Badging every surface, including wishlist and home capsules                                         | Generic capsule scanner; selectors come from our own S5 survey | 2, 9, 13 |
+| Pierre-Demessence                 | Guard against age gates before trusting a negative                                                  | `appHubAppName` and final-URL checks in the HTML parser        | 6        |
+| Pierre-Demessence                 | Serial requests with a delay                                                                        | Throttle and circuit breaker                                   | 7        |
+| Pierre-Demessence                 | Hide option in the search sidebar                                                                   | Roadmap                                                        | After v1 |
+| SoBloxsy                          | Wishlist hide falls back to highlight                                                               | `hideable: false` falls back to dim                            | 9, 10    |
+| Obvious Steam AI                  | Top-of-page banner                                                                                  | Non-blocking app page banner                                   | 10       |
+| Augmented Steam                   | Legacy versus React page handling, one module per feature                                           | Architecture reference only                                    | 4, 9     |
+| Augmented Steam issue 1913        | Users want a dismissible banner like the DRM notice                                                 | Banner design                                                  | 10       |
+| Augmented Steam VaporLens episode | AI-related defaults are contentious with this audience                                              | List filter defaults to off                                    | 8        |
+| AI Transparency Index             | Taxonomy (dev only, marketing only, in game, live) and negation rules                               | Roadmap classifier; no data reuse                              | After v1 |
 
 Rejected sources: `appids.json` (derived from SteamDB) and SteamDB tag 1368160, because SteamDB's FAQ bans scraping and republishing; curator lists in v1.
 
 ## Architectural impact
+
 The repo is greenfield, so this change creates the invariants. Step 1 writes them into the root `AGENTS.md`, so every session working in the repo sees them before any code exists.
 
 1. **Privacy.** App IDs leave the browser only for Valve hosts the user is already on: `api.steampowered.com` GetItems and `store.steampowered.com` app pages. Every such request uses `credentials: "omit"`. No analytics, no third-party hosts, no seed lists.
@@ -130,6 +138,7 @@ The repo is greenfield, so this change creates the invariants. Step 1 writes the
 16. **Secrets.** `STEAM_API_KEY` is read only by development scripts (spikes, canary) and only from the environment. It is never committed, logged, written into fixtures or bundled; `check_bundle.py` fails if its value appears anywhere in `dist/` or `artifacts/`. Release secrets live in GitHub environments (step 15).
 
 ADRs are warranted for five decisions. They are written in MADR `.mdx` in step 3:
+
 - `0001` **Detection strategy**: GetItems as the primary source, queried in the page's language, a `?l=english` HTML fallback, no localized heading table, no seed lists, three states, and the TTL policy. The alternatives are real (per-app scraping, the localized DOM, SteamDB-derived lists, English-only detection with an extra banner call in the store language), and the choice rests on an undocumented endpoint.
 - `0002` **Single codebase and tooling**: a core plus two thin platform adapters, built with esbuild driven by `scripts/build.py`, and the S8 outcomes: TypeScript 7, oxlint with type-aware rules, dprint, valibot, vitest with happy-dom, `@types/chrome`, a hand-written `gm.d.ts`, and actionlint plus zizmor. It also settles whether to pin `uv` and commit `mise.lock` (rq7 row 14).
 - `0003` **Runtime topology**: content script only. S3 showed that GetItems CORS admits Valve origins only, and S4 that a content script with no permissions reads GetItems in Chrome and Firefox, so there is no background script and no `host_permissions`. The rejected alternative, a background relay for `api.steampowered.com`, would add a host permission and a background lifecycle; the record keeps it with the evidence that made it unnecessary.
@@ -139,24 +148,26 @@ ADRs are warranted for five decisions. They are written in MADR `.mdx` in step 3
 TTL numbers and placement rules are tunable constants and need no ADR. Copy changes are catalog edits.
 
 ### Tooling decisions
+
 Decided by spike S8 on 2026-10-20 (`rq7-library-study.md`); ADR 0002 records them.
 
-| Concern | Decision | Alternatives weighed in S8 |
-|---|---|---|
-| Bundling | esbuild 0.28 CLI, driven by `scripts/build.py`, one call per target; `--banner:js` only on the userscript call | WXT plus vite-plugin-monkey; plain Vite (see below) |
-| Type check | TypeScript 7 (`typescript@7.0.x`), `tsc --noEmit` on both configs; scripts test for a non-zero exit, not for a specific code; every tsconfig lists its `types`, since TypeScript 7 defaults them to `[]` | TypeScript 6 `tsc` (about 2.3x slower, same diagnostics) |
-| Lint (TypeScript) | oxlint 1.89 with type-aware rules (oxlint-tsgolint), every rule named in `.oxlintrc.json`, plus our own `jsPlugins` rule `lint/restricted-syntax.mjs` for the literal-flow selectors | typescript-eslint `strictTypeChecked` and `stylisticTypeChecked` (caps `typescript` below 6.1; the fallback, see below); Biome (has no `no-unsafe-*` family) |
-| Format | dprint 0.64 with seven plugins (`npm:@dprint/typescript`, `npm:@dprint/json`, `npm:@dprint/markdown` with `textWrap: maintain`, `npm:@dprint/toml`, `npm:dprint-plugin-malva` for CSS, `npm:dprint-plugin-markup` for HTML, `npm:dprint-plugin-yaml`), line width 100, and `"markdown": { "associations": ["**/*.{md,mdx}"] }`, without which `.mdx` is silently skipped | Biome plus Prettier (Biome formats no Markdown, YAML or TOML; Prettier's MDX parser turned `2 * 3 * 4` into `2 _ 3 _ 4`) |
-| Runtime validation | valibot 1.5: `v.exactOptional` rather than `v.optional`, `v.readonly()` on every nested object, per-item validation of `store_items` | zod 4 mini (37.3 KB unminified for the GetItems schema versus 10.8 KB); hand-written type guards (the fallback if the size budget fails) |
-| Tests | vitest 5 with happy-dom; jsdom per file only as a cross-check where a happy-dom divergence is suspected | jsdom as the default (lacks `innerText`, observers, `popover`, `dialog`) |
-| WebExtension types | `@types/chrome` 0.3.x, no polyfill | `chrome-types` (types storage values as `any`); `webextension-polyfill` (38 KB unminified, no release since 2024) |
-| Userscript types | a hand-written `src/platform/userscript/gm.d.ts` for exactly the granted APIs, with non-generic signatures and `unknown` returns | `@violentmonkey/types`, `@types/tampermonkey` (neither compiles under the flags below; both make `GM.getValue<T>` an unchecked assertion) |
-| Python scripts | stdlib only; ruff (lint and format, line length 100); mypy `--strict` | none |
-| Shell scripts | shellcheck and shfmt (`-i 2 -ci`; shfmt has no line width, so 100 columns is a review rule) | none |
-| Workflows | actionlint plus zizmor (`zizmor --offline` in `lint`, so `prepush` needs no GitHub token) | actionlint alone |
-| Package manager | pnpm 12, installed by mise; `packageManager` in `package.json` matches, `pmOnFail: error` in `pnpm-workspace.yaml`, and `check_versions.py` fails when the two pins drift | none (user decision) |
+| Concern            | Decision                                                                                                                                                                                                                                                                                                                                                                 | Alternatives weighed in S8                                                                                                                                   |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Bundling           | esbuild 0.28 CLI, driven by `scripts/build.py`, one call per target; `--banner:js` only on the userscript call                                                                                                                                                                                                                                                           | WXT plus vite-plugin-monkey; plain Vite (see below)                                                                                                          |
+| Type check         | TypeScript 7 (`typescript@7.0.x`), `tsc --noEmit` on both configs; scripts test for a non-zero exit, not for a specific code; every tsconfig lists its `types`, since TypeScript 7 defaults them to `[]`                                                                                                                                                                 | TypeScript 6 `tsc` (about 2.3x slower, same diagnostics)                                                                                                     |
+| Lint (TypeScript)  | oxlint 1.89 with type-aware rules (oxlint-tsgolint), every rule named in `.oxlintrc.json`, plus our own `jsPlugins` rule `lint/restricted-syntax.mjs` for the literal-flow selectors                                                                                                                                                                                     | typescript-eslint `strictTypeChecked` and `stylisticTypeChecked` (caps `typescript` below 6.1; the fallback, see below); Biome (has no `no-unsafe-*` family) |
+| Format             | dprint 0.64 with seven plugins (`npm:@dprint/typescript`, `npm:@dprint/json`, `npm:@dprint/markdown` with `textWrap: maintain`, `npm:@dprint/toml`, `npm:dprint-plugin-malva` for CSS, `npm:dprint-plugin-markup` for HTML, `npm:dprint-plugin-yaml`), line width 100, and `"markdown": { "associations": ["**/*.{md,mdx}"] }`, without which `.mdx` is silently skipped | Biome plus Prettier (Biome formats no Markdown, YAML or TOML; Prettier's MDX parser turned `2 * 3 * 4` into `2 _ 3 _ 4`)                                     |
+| Runtime validation | valibot 1.5: `v.exactOptional` rather than `v.optional`, `v.readonly()` on every nested object, per-item validation of `store_items`                                                                                                                                                                                                                                     | zod 4 mini (37.3 KB unminified for the GetItems schema versus 10.8 KB); hand-written type guards (the fallback if the size budget fails)                     |
+| Tests              | vitest 5 with happy-dom; jsdom per file only as a cross-check where a happy-dom divergence is suspected                                                                                                                                                                                                                                                                  | jsdom as the default (lacks `innerText`, observers, `popover`, `dialog`)                                                                                     |
+| WebExtension types | `@types/chrome` 0.3.x, no polyfill                                                                                                                                                                                                                                                                                                                                       | `chrome-types` (types storage values as `any`); `webextension-polyfill` (38 KB unminified, no release since 2024)                                            |
+| Userscript types   | a hand-written `src/platform/userscript/gm.d.ts` for exactly the granted APIs, with non-generic signatures and `unknown` returns                                                                                                                                                                                                                                         | `@violentmonkey/types`, `@types/tampermonkey` (neither compiles under the flags below; both make `GM.getValue<T>` an unchecked assertion)                    |
+| Python scripts     | stdlib only; ruff (lint and format, line length 100); mypy `--strict`                                                                                                                                                                                                                                                                                                    | none                                                                                                                                                         |
+| Shell scripts      | shellcheck and shfmt (`-i 2 -ci`; shfmt has no line width, so 100 columns is a review rule)                                                                                                                                                                                                                                                                              | none                                                                                                                                                         |
+| Workflows          | actionlint plus zizmor (`zizmor --offline` in `lint`, so `prepush` needs no GitHub token)                                                                                                                                                                                                                                                                                | actionlint alone                                                                                                                                             |
+| Package manager    | pnpm 12, installed by mise; `packageManager` in `package.json` matches, `pmOnFail: error` in `pnpm-workspace.yaml`, and `check_versions.py` fails when the two pins drift                                                                                                                                                                                                | none (user decision)                                                                                                                                         |
 
 Bundler alternatives already weighed:
+
 - **WXT plus vite-plugin-monkey.** Two frameworks and two configs around one core, and a large transitive tree (Vite, Rollup, the WXT runtime, auto-import codegen) that AMO reviewers would have to rebuild. WXT's conventions leak into the core unless switched off, and its wins (HMR, manifest generation, a sources zip) are small for three entry points.
 - **Plain Vite plus vite-plugin-monkey.** Content scripts must be IIFE, and Vite's library mode refuses multiple entries with the IIFE format, so this still needs several build configs.
 - **esbuild (default).** One package with no JavaScript dependencies beyond its platform binary. It builds several IIFE entries, gives byte-stable output for the same inputs and version, and `build.py` stays readable for reviewers. Costs: a hand-written userscript header and manifest overlays, both covered by checks, and no HMR. esbuild watch plus `web-ext run` reloads Firefox; Chrome is reloaded by hand.
@@ -164,6 +175,7 @@ Bundler alternatives already weighed:
 TypeScript compiler flags (`tsconfig.json`, shared by the core config): `strict`, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, `noImplicitOverride`, `noImplicitReturns`, `noFallthroughCasesInSwitch`, `noPropertyAccessFromIndexSignature`, `noUnusedLocals`, `noUnusedParameters`, `allowUnreachableCode: false`, `verbatimModuleSyntax`, `isolatedModules`, `skipLibCheck: false`. TypeScript 7 already defaults to `strict` and `"types": []`; the configs still set both explicitly. The extension config lists `"types": ["chrome"]`, and `gm.d.ts` is reached only from the configs that cover `src/platform/userscript/`.
 
 Lint rules at `error` in `.oxlintrc.json`. oxlint has no presets, so every rule is named, under the `typescript` scope where typescript-eslint has it (for example `typescript/no-explicit-any`) and under the `eslint` scope otherwise:
+
 - `no-explicit-any`; the `no-unsafe-*` family (`no-unsafe-assignment`, `no-unsafe-member-access`, `no-unsafe-call`, `no-unsafe-return`, `no-unsafe-argument`); `consistent-type-assertions` with `assertionStyle: "never"`; `no-non-null-assertion`; `ban-ts-comment` with `"ts-expect-error": true` as well, because its default allows a described `@ts-expect-error`.
 - `strict-boolean-expressions`, `switch-exhaustiveness-check`, `explicit-module-boundary-types`, `prefer-readonly`, `no-floating-promises`, `no-misused-promises`.
 - The oxlint equivalents of typescript-eslint's `strictTypeChecked` and `stylisticTypeChecked` rules. All exist except `no-unsafe-enum-assignment`, which our enum-free code does not need.
@@ -174,11 +186,13 @@ typescript-eslint stays the reference: where an oxlint rule behaves differently,
 AMO build-from-source instructions become: install mise (one documented command), then `mise install` and `mise run build`. mise pins Node 24.14.0 and pnpm, so no corepack step is needed. Node stays at 24.14.0, the AMO reviewer environment (`rq5-extension-constraints.md:135-136`), although 24.22.0 is the latest 24.x release (rq7 row 14).
 
 **Userscript header:**
+
 - `@match https://store.steampowered.com/*`, `@noframes`, `@run-at document-idle`
 - `@grant` for `GM.getValue`, `GM.setValue`, `GM.deleteValue`, `GM.listValues`, `GM_addStyle`, `GM.registerMenuCommand` and `GM_addValueChangeListener` (step 12 uses it for live settings)
 - No `@connect`: S6 showed that a plain `fetch` to GetItems works without it in Tampermonkey on Chrome and Firefox Nightly. Violentmonkey was not tested; the manual checklist covers it (step 12)
 
 ## File operations
+
 Nothing is deleted. `AGENTS.md` is extended (step 1); everything else is new. Layout:
 
 ```
@@ -233,6 +247,7 @@ dist/ artifacts/ (gitignored)
 - Create `assets/icons/`: from the design session (SVG source plus 16, 32, 48 and 128 px PNGs), with no Valve branding.
 
 ## Steps
+
 1. **Branch, rules and plan.** Done 2026-10-20 on `feat/steam-ai-reporter-v1`, which merges into `main` as the first PR. The repo, remote and research commit already existed.
    - From an up-to-date `main`, run `git switch -c feat/steam-ai-reporter-v1`.
    - Add `.gitignore`, extend `AGENTS.md` with the sixteen invariants, and commit both with this plan as `docs: add v1 plan and project rules`.
@@ -269,7 +284,8 @@ dist/ artifacts/ (gitignored)
      - `precommit`: formats the staged files we own and re-stages them; if a file is only partly staged, it stops and asks for the file to be staged whole, so unstaged hunks are never committed. Then `check_text.py` and `check_i18n.py` on the staged files. `precommit_format.sh` reads the staged list from `git diff --cached --name-only -z --diff-filter=ACMR`, not from the hook's `STAGED` variable, which splits paths with spaces.
      - `prepush`: `fmt-check` (rejects unformatted files), `lint`, `typecheck`, `test`, `build`, `check`, and a branch-name check.
      - `ci`: everything `prepush` runs, plus `check-reproducible` and `lint-firefox`.
-   - Commit `build: scaffold mise tasks, hooks, formatting and linting`.
+   - **Changelog fragments** (moved up from step 15, so every later PR is gated): `.changie.yaml` with kinds Added, Changed, Fixed and Removed, and `.changes/unreleased/`. Task `change-new` wraps `changie new`. `changelog_gate.py` (CI job `changelog-fragment`) fails a PR that changes `src/` without a new `.changes/unreleased/*.yaml`, unless the PR carries the `no-changelog-fragment` label; it also checks that each new fragment names a known kind and has a body.
+   - Commit `build: scaffold mise toolchain, hooks, formatting, linting, ci and changie`.
    - **i18n runtime, before any feature code:**
      - `src/locales/en/messages.json` in Chrome `messages.json` format. Keys are snake_case and grouped by prefix (`badge_`, `banner_`, `options_`, `error_`, `warn_`, `notice_`, `ext_`, `userscript_`). Every message has a `description` for translators.
      - `scripts/gen_i18n_keys.py` (run by `build` and `typecheck`) generates `src/core/i18n/keys.gen.ts`: a `MessageKey` union and per-key placeholder types, so `t("missing_key")` or a wrong placeholder fails the type check. `build.py` copies catalogs to `_locales/<lang>/messages.json` for the extension and inlines them into the userscript bundle.
@@ -277,7 +293,7 @@ dist/ artifacts/ (gitignored)
      - Errors are typed: `SarError` carries a `code` that is a `MessageKey` plus typed params, never prose. The logger takes keys, so console output is catalog text with a `[sar]` prefix.
      - `scripts/check_i18n.py`: every locale has the same keys and placeholders as English, no catalog key is unused, every message has a `description`. The literal-flow rules live in the oxlint rule `lint/restricted-syntax.mjs`, so there is one AST check, not two.
      - Commit `feat(core): add i18n catalogs, typed keys and the message runtime`.
-   - **Proof:** `mise run ci` passes with one smoke test. A deliberately unformatted file is reformatted by `precommit` and rejected by `prepush`. A test file using `any`, `as Foo`, `!` or `@ts-expect-error` fails `lint`. `mise run setup` writes both Git hooks, and a `packageManager` that differs from the mise pnpm pin fails `pnpm install` and `check`. `dist/chrome` loads unpacked with no manifest errors; `mise run lint-firefox` reports nothing. A fresh clone builds with `mise install` and `mise run build` alone. A test-only pseudo-locale `xx` proves fallback, plural and placeholder handling, and a hardcoded `textContent = "hi"` in a fixture file fails `lint`.
+   - **Proof:** `mise run ci` passes with one smoke test. A deliberately unformatted file is reformatted by `precommit` and rejected by `prepush`. A test file using `any`, `as Foo`, `!` or `@ts-expect-error` fails `lint`. `mise run setup` writes both Git hooks, and a `packageManager` that differs from the mise pnpm pin fails `pnpm install` and `check`. `dist/chrome` loads unpacked with no manifest errors; `mise run lint-firefox` reports nothing. A fresh clone builds with `mise install` and `mise run build` alone. A PR touching `src/` without a fragment fails the changelog gate and passes with the label. A test-only pseudo-locale `xx` proves fallback, plural and placeholder handling, and a hardcoded `textContent = "hi"` in a fixture file fails `lint`.
 
 5. **Core types, ports, app ID extraction and the GetItems parser.**
    - Add `types.ts`, `ports.ts`, `json.ts` (`parseJson(text): unknown`), `errors.ts`, `log.ts`, `scan/appid.ts`, `detect/getitems.schema.ts` and `detect/getitems.ts`.
@@ -297,14 +313,22 @@ dist/ artifacts/ (gitignored)
 
    ```ts
    declare const appIdBrand: unique symbol;
-   export type AppId = number & { readonly [appIdBrand]: true };
+   export type AppId = number & { readonly [appIdBrand]: true; };
 
    export type Verdict =
-     | { readonly state: "disclosed"; readonly notes: string; readonly language: string;
-         readonly service?: string; readonly name?: string; readonly source: "api" | "html" }
-     | { readonly state: "not-disclosed"; readonly source: "api" | "html" }
-     | { readonly state: "unknown";
-         readonly reason: "gated" | "missing" | "error" | "rate-limited" };
+     | {
+       readonly state: "disclosed";
+       readonly notes: string;
+       readonly language: string;
+       readonly service?: string;
+       readonly name?: string;
+       readonly source: "api" | "html";
+     }
+     | { readonly state: "not-disclosed"; readonly source: "api" | "html"; }
+     | {
+       readonly state: "unknown";
+       readonly reason: "gated" | "missing" | "error" | "rate-limited";
+     };
 
    export interface Detector {
      detect(ids: readonly AppId[]): Promise<ReadonlyMap<AppId, Verdict>>;
@@ -400,7 +424,7 @@ dist/ artifacts/ (gitignored)
     - **Proof:** the source zip, unpacked in a clean `ubuntu:24.04` container and built with mise alone, produces a `dist/firefox` identical to the local one; `mise run check-reproducible` passes in CI; `mise run canary` passes.
 
 15. **Release pipeline.** Decided 2026-10-20 (`docs/research/extension-release-pipeline.md`); recorded in ADR 0005. It follows the user's monorepo release train, adapted to the store rules. Workflows stay thin: each job sets up mise and runs one `release:*` task; the logic lives in `scripts/release/*.py`.
-    - **Fragments:** `.changie.yaml` with kinds Added, Changed, Fixed and Removed. Task `change-new` wraps `changie new`. `changelog_gate.py` (CI job `changelog-fragment`) fails a PR that changes `src/` without a new `.changes/unreleased/*.yaml`, unless the PR carries the `no-changelog-fragment` label. A `changelog-lint` step validates fragments.
+    - **Fragments:** changie and the changelog gate land in step 4; this step batches the fragments into releases.
     - **Version:** unpadded CalVer `YYYY.M.D`, with `.N` (from 1) for a same-day recut. The same string is the Git tag, the manifest `version` and the userscript `@version`. `calver.py` computes the next version from the UTC date and the existing tags. `package.json` always holds the last released version; feature PRs never touch it.
     - **Train (`release-train.yml`, task `release:train`):** runs at 00:00 UTC and on manual dispatch (with a `dry_run` input). It dispatches CI on `main` and finds the newest green commit. It skips when no commit is green, a release PR is already open, or nothing landed since the last tag. If fragments exist, the release-bot GitHub app opens a batch PR (`changie batch <version>`, `changie merge`, `package.json` version) that auto-merges once the required checks pass. There is no merge queue, because the repo is on a personal account. If branch protection requires a review, `github-actions[bot]` approves (repository setting "Allow GitHub Actions to create and approve pull requests"). No fragments means no release.
     - **Tag and dispatch:** when the batch PR merges, a job creates the tag on the merge commit as the release-bot app (a tag ruleset admits only that app; app-created events can trigger workflows, `GITHUB_TOKEN` ones cannot) and dispatches `release-nightly.yml` with the tag.
@@ -411,10 +435,11 @@ dist/ artifacts/ (gitignored)
       - Both environments require the user's approval. Secrets: `CWS_*` and `AMO_JWT_ISSUER` / `AMO_JWT_SECRET` per environment; `RELEASE_BOT_APP_ID` and `RELEASE_BOT_PRIVATE_KEY` at repo level for `actions/create-github-app-token`. The release-bot app belongs to the user's organization; it is set to installable on any account and installed on `jrv97/steam-ai-reporter`.
       - Finally it marks the GitHub release as latest. That moves `releases/latest/download/<slug>.meta.js`, so userscript users update.
     - **Userscript URLs:** `@updateURL` and `@downloadURL` point at `https://github.com/jrv97/steam-ai-reporter/releases/latest/download/<slug>.meta.js` and `.user.js`.
-    - Commits: `build(ci): gate prs on changie fragments`, `build: compute calver release versions`, `build(release): add the nightly release train`, `build(release): promote tagged releases to the stores`.
-    - **Proof:** `calver.py` tests (never zero-padded, recut increments `.N`, at most four segments, each at most 65535); a PR touching `src/` without a fragment fails and passes with the label; `release-train.yml` with `dry_run: true` reports the version it would cut and opens nothing; the first real nightly produces a prerelease with all five assets and correct notes; the first prod dispatch is watched by hand (both store submissions accepted, the release flips to latest, and a userscript installed from the previous release offers the update).
+    - Commits: `build: compute calver release versions`, `build(release): add the nightly release train`, `build(release): promote tagged releases to the stores`.
+    - **Proof:** `calver.py` tests (never zero-padded, recut increments `.N`, at most four segments, each at most 65535); `release-train.yml` with `dry_run: true` reports the version it would cut and opens nothing; the first real nightly produces a prerelease with all five assets and correct notes; the first prod dispatch is watched by hand (both store submissions accepted, the release flips to latest, and a userscript installed from the previous release offers the update).
 
 ## Testing strategy
+
 - **Unit tests** (vitest, Node or happy-dom): the parsers over captured fixtures, schema validation, app ID extraction, cache TTL and schema logic with a fixed clock, the LRU, throttle and breaker with fake timers (`vi.useFakeTimers` with `requestAnimationFrame` in `toFake`), settings and the allow-list. A file switches to jsdom (`// @vitest-environment jsdom`) only as a cross-check where a happy-dom divergence is suspected. No unit test asserts layout, since neither DOM implements it.
 - **Contract tests** (`tests/contracts/`): one suite per port, run against every implementation (memory, extension fake, GM fake, fake HTTP).
 - **Integration tests** in happy-dom: `start()` runs against the surface fixtures with a fixture-backed fake `Http`, an in-memory `KeyValueStore` and a fixed `Clock`. Mutation tests cover infinite scroll, React re-renders, carousel clones and unmounted then remounted wishlist rows.
@@ -428,12 +453,15 @@ dist/ artifacts/ (gitignored)
 - **Live:** `mise run canary` before each release, optionally also as a weekly scheduled job. It stays out of `mise run ci`, so CI never depends on Steam being up. There is no automated browser end-to-end test against live Steam in v1.
 
 ## Development and debugging loop
+
 Browsers on the development machine:
+
 - **Firefox Nightly** is the only Firefox used for testing. The user's regular Firefox is reserved for personal use: no task, script or test ever launches it, installs into it or touches its profiles.
 - **Chrome** (regular release) is used only for this project, so loading the unpacked extension into its normal profile is fine.
 - The **built-in browser** of the Claude desktop app cannot load extensions; agents use it for injection smoke tests (layer 2).
 
 Machine-specific paths live in `mise.local.toml` (gitignored), read by the tasks as environment variables:
+
 - `SAR_FIREFOX_BIN`: the Firefox Nightly executable.
 - `SAR_FIREFOX_PROFILE`: a dedicated, persistent Nightly profile for this project (outside the repo), so the Steam login survives restarts.
 - `SAR_CHROME_BIN` and `SAR_CHROME_PROFILE`: Chrome and a dedicated profile for `run-chrome`.
@@ -441,6 +469,7 @@ Machine-specific paths live in `mise.local.toml` (gitignored), read by the tasks
 `mise run setup` fails with a clear message when `SAR_FIREFOX_BIN` is missing, rather than falling back to whatever Firefox is on the `PATH`.
 
 Layers, fastest first:
+
 1. **Tests.** Most debugging happens in vitest with happy-dom against captured fixtures. A bug seen on a live page becomes a new fixture first, then a fix.
 2. **Injection smoke test in the built-in browser (agents).** `build` also emits `dist/dev/inject.js` from `src/platform/dev/inject.ts`: the core wired to an in-memory `KeyValueStore`, plain `fetch` and verbose logging. An agent pastes it into a live store page through the browser's JavaScript tool and checks badge placement on search, wishlist, sale and home pages, console output, and `performance.now()` scan timings. It does not exercise extension APIs. `dist/dev/` is never packaged; `check_bundle.py` asserts it is absent from `artifacts/`.
 3. **Real extension.**
@@ -457,12 +486,15 @@ Layers, fastest first:
 A `settings.debug` flag (off by default, toggled on the options page) turns on verbose logging through the same catalog-keyed logger, so debug output follows invariant 9 too.
 
 ## Roadmap (after v1)
+
 Release and distribution:
+
 - A signed beta channel: nightlies signed on AMO unlisted under a separate beta add-on ID, plus a separate Chrome Web Store beta listing, so testers auto-update.
 - A Greasy Fork mirror of the userscript through webhook sync (it rewrites update URLs and forbids minified code; our bundle is unminified).
 - An Edge Add-ons listing, Chrome Web Store staged or partial rollout once the extension passes 10,000 weekly users, and localized store listings.
 
 Product:
+
 - Classifying disclosure text (in-game, marketing only, dev only, live, negations), using the AI Transparency Index taxonomy as a reference.
 - A localized heading table for zero-request reads on localized app pages, built from Steam's own translations.
 - A search sidebar filter, per-surface toggles and a hidden-games counter.
@@ -474,13 +506,16 @@ Product:
 - Automated end-to-end tests against live Steam.
 
 ## Not planned
+
 - Seed lists and remote databases (SteamDB, `appids.json`, AI Transparency Index data): licensing.
 - A server-side "report a false flag" endpoint or any server of our own: it would break the privacy invariant.
 - Keyed Steam Web API calls in shipped code (`STEAM_API_KEY` stays in development scripts).
 - steamcommunity.com: S5 found that the old community wishlist URL redirects to the store wishlist, so no community match is needed.
 
 ## Risks and open questions
+
 **Risks:**
+
 - **GetItems can change or lose `include_extra_details` without notice** (`rq2-data-surface.md:107`). Mitigation: the HTML fallback, a canary before every release, and the userscript as the fast-fix channel while store reviews are pending.
 - **Rate limits are per IP** and shared with the user's own browsing. S1 saw no 429 in 30 back-to-back calls over a VPN exit IP, so where the limit lies, and whether residential IPs or other regions differ, is unknown. Mitigation: batching, spacing, the persisted breaker and a small HTML budget.
 - **GetItems error answers are unreadable cross-origin** (S1): a 429, an over-long URL and most other failures reach JavaScript as the same `TypeError`, with no status and no `Retry-After`. Mitigation: every `TypeError` opens the breaker with the fixed backoff, and the 4,000-character URL guard keeps over-long requests from happening. The cost is a 60 s pause after an ordinary network failure too.
@@ -499,6 +534,7 @@ Product:
 - **Naming:** "for Steam" is descriptive use, the pattern other listed extensions use; the repo was renamed to `steam-ai-reporter`, so listings can link to it. "Reporter" may suggest the extension files reports; the listing and options page say it does not.
 
 **Decided during review (2026-10-20):**
+
 - Scope approved as is; pnpm; MIT; changie fragments.
 - i18n from day 1 with every message in catalogs (English only in v1). The `auto` locale follows the Steam page language.
 - GetItems runs in the page's language (decided after S2): badge tooltips and the banner show the developer's own translation, with no extra banner call. This replaces the earlier choice of English detection plus a banner call in the store language. The HTML fallback stays on `?l=english`.

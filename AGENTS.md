@@ -99,3 +99,5 @@ These are hard rules. A change that breaks one needs an ADR first.
 - After a merge: archive the session, remove its worktree and branch, and rebase any open branch
   that the merge left behind onto `main`.
 - PR descriptions carry no AI attribution or trailers.
+- Main tasks: `mise run setup` once per clone, then `fmt`, `lint`, `typecheck`, `test`, `build`,
+  `check`, `ci`; `dev`, `run-firefox`, `run-chrome` to try builds; `change-new` for changelog notes.

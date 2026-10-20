@@ -1,0 +1,21 @@
+{
+  "greeting": {
+    "message": "[xx Hello, $name$! xx]",
+    "description": "Pseudo-locale: marks translated text and keeps the placeholder.",
+    "placeholders": { "name": { "content": "$1" } }
+  },
+  "farewell": {
+    "message": "[xx Goodbye. xx]",
+    "description": "Pseudo-locale."
+  },
+  "games_one": {
+    "message": "[xx $count$ game in $list$ xx]",
+    "description": "Pseudo-locale plural, singular form.",
+    "placeholders": { "count": { "content": "$1" }, "list": { "content": "$2" } }
+  },
+  "games_other": {
+    "message": "[xx $count$ games in $list$ xx]",
+    "description": "Pseudo-locale plural, other form.",
+    "placeholders": { "count": { "content": "$1" }, "list": { "content": "$2" } }
+  }
+}

@@ -1,6 +1,7 @@
 # RQ2: How does Steam's AI generated content disclosure show up on store pages and in machine-readable data?
 
 ## Answer in short
+
 - On the app page the disclosure is a server-rendered block `<div id="game_area_content_descriptors" class="game_area_description">` holding `<h2>AI Generated Content Disclosure</h2>`, a fixed lead-in `<p>`, and the developer's free text inside `<p><i>...</i></p>`. The ID is duplicated: the mature content description uses the same ID and classes, so the only discriminator is the localized h2 text (and document order: AI block came first on the one sample that had both).
 - The heading is localized and Valve has edited translations after the fact (Russian 2026-02, French 2026-09), so text matching on a localized page is fragile. Every existing tool fetches `?l=english` for detection in lists.
 - A no-scrape source exists: `IStoreBrowseService/GetItems` with `data_request.include_extra_details=true` returns `store_items[].extra_details.content_survey_ai_notes` (the same free text as the page) and, for some apps, `extra_details.ai_generation_service` (`name`, `url`). Seen working without an API key. `appdetails`, search rows, hover popups, tags and content descriptor IDs carry no AI marker.
@@ -39,6 +40,7 @@ The AI block, server HTML skeleton (text shortened, attributes exact as reported
 - Plain-text fetch of the app page also showed the section with the same heading and the developer text for 5072580 and for Call of Duty (1938090): `Our team uses generative AI tools to help develop some in game assets.` (source: https://store.steampowered.com/app/5072580/Courage_and_Faith_Into_the_Dark_Woods/ and https://store.steampowered.com/app/1938090/Call_of_Duty/)
 
 Detection strings the existing tools rely on, as a cross-check that the heading is literal server HTML:
+
 - seeeeew fetches `https://store.steampowered.com/app/${appid}?l=english` and runs `text.match('<h2>AI Generated Content Disclosure</h2>')` on the raw response. (Source: https://raw.githubusercontent.com/seeeeew/aiwarningforsteam/main/aiwarningforsteam.user.js)
 - Pierre-Demessence fetches `https://store.steampowered.com/app/{appId}/?l=english`, tests the case-insensitive pattern `AI Generated Content Disclosure` against the HTML, and only caches a negative when the page contains `id="appHubAppName"`. (Source: https://raw.githubusercontent.com/Pierre-Demessence/SteamAIGamesIndicator/main/steamAIBadge.user.js, summarized by the fetch helper)
 - SoBloxsy fetches `https://store.steampowered.com/app/${appId}/` (no `l` param) and flags if the HTML `includes("AI Generated Content Disclosure")`; it treats fetch errors as "not flagged". (Source: https://raw.githubusercontent.com/SoBloxsy/AI-Content-Hider-for-Steam/main/content.js, summarized by the fetch helper)
@@ -48,11 +50,13 @@ A bare substring match on the whole HTML would also fire if a developer wrote th
 ### 1b. Is the heading localized?
 
 Yes. Verified by microlink with the DOM selector on 5072580:
+
 - `?l=german`: `["Offenlegung von KI-generierten Inhalten", "Beschreibung nicht jugendfreier Inhalte"]` (AI heading, then mature heading). (Source: https://api.microlink.io/?url=https%3A%2F%2Fstore.steampowered.com%2Fapp%2F5072580%2F%3Fl%3Dgerman&meta=false&data.h.selectorAll=%23game_area_content_descriptors%20%3E%20h2&data.h.attr=text&data.name.selector=%23appHubAppName&data.name.attr=text)
 - `?l=spanish`: AI heading `Informaci\u00f3n sobre contenido generado por IA` (written with a \u escape to keep this note ascii), mature heading `Descripci\u00f3n del contenido para adultos`. (Source: https://api.microlink.io/?url=https%3A%2F%2Fstore.steampowered.com%2Fapp%2F5072580%2F%3Fl%3Dspanish&meta=false&data.h.selectorAll=%23game_area_content_descriptors%20%3E%20h2&data.h.attr=text&data.name.selector=%23appHubAppName&data.name.attr=text)
 - Both match the translation table shipped in seeeeew's script, which lists a heading for 30 store languages (schinese, tchinese, Japanese, koreana, thai, indonesian, Malay, bulgarian, czech, danish, German, English, Spanish, latam, greek, French, italian, hungarian, dutch, norwegian, polish, portuguese, brazilian, romanian, Russian, finnish, swedish, turkish, vietnamese, ukrainian). (Source: https://raw.githubusercontent.com/seeeeew/aiwarningforsteam/main/aiwarningforsteam.user.js)
 
 The translations are not frozen:
+
 - Russian: Steam changed the heading; detection broke; fixed 2026-02-25 (issue 1, commit "fixed detection on Russian store pages"). The new Russian string was not stated in the issue body (unverified here; the table in the current script holds it). (Sources: https://api.github.com/repos/seeeeew/aiwarningforsteam/issues/1 and https://api.github.com/repos/seeeeew/aiwarningforsteam/commits?per_page=20)
 - French: on 2026-09-24 a user reported Steam changed the title from `Divulgation de contenu g\u00e9n\u00e9r\u00e9 par IA` to `Notification de contenu g\u00e9n\u00e9r\u00e9 par IA`; fixed in commit 1422d0851c81fd85950e435d31e399dc21b0c045 (version 1.1.1, announced as 1.1.2 on 2026-09-25). (Sources: https://api.github.com/repos/seeeeew/aiwarningforsteam/issues/13/comments and https://api.github.com/repos/seeeeew/aiwarningforsteam/commits/1422d0851c81fd85950e435d31e399dc21b0c045)
 - Malay was missing until 2026-06-13 (issue 5). Issue 4 (open) proposes a script that checks whether headings changed in any language. (Source: https://api.github.com/repos/seeeeew/aiwarningforsteam/issues?state=all&per_page=30)
@@ -92,6 +96,7 @@ URL: `https://api.steampowered.com/IStoreBrowseService/GetItems/v1?input_json=<u
 Response layout: `response.store_items[]`, each with `item_type, id, success, visible, name, store_url_path, store_url_slug, appid, type, related_items, content_descriptorids, categories, is_coming_soon, extra_details` when only `include_extra_details` is set. (Source: same URL)
 
 The AI fields, in `store_items[].extra_details`:
+
 - `content_survey_ai_notes` (string): the developer's free text. For 5072580 it begins "Generative AI is used in both pre-generated and live-generated content." and continues with the artwork, music, sound effects and live narrative text description, i.e. the same text shown in the page's `<i>`. For Call of Duty (1938090) the whole value was `Our team uses generative AI tools to help develop some in game assets.` (matching the page text); for ARC Raiders (1808500) it begins "During the development process, we may use procedural- and AI-based tools to assist with content cre" (matching the page's `<i>` start). Absent for Stardew Valley (413150). (Sources: https://api.steampowered.com/IStoreBrowseService/GetItems/v1?input_json=%7B%22ids%22%3A%5B%7B%22appid%22%3A5072580%7D%2C%7B%22appid%22%3A1808500%7D%2C%7B%22appid%22%3A1938090%7D%2C%7B%22appid%22%3A413150%7D%5D%2C%22context%22%3A%7B%22language%22%3A%22english%22%2C%22country_code%22%3A%22US%22%7D%2C%22data_request%22%3A%7B%22include_extra_details%22%3Atrue%7D%7D and https://api.steampowered.com/IStoreBrowseService/GetItems/v1?input_json=%7B%22ids%22%3A%5B%7B%22appid%22%3A413150%7D%5D%2C%22context%22%3A%7B%22language%22%3A%22english%22%2C%22country_code%22%3A%22US%22%7D%2C%22data_request%22%3A%7B%22include_extra_details%22%3Atrue%7D%7D)
 - `ai_generation_service` (object with `name`, `url`): seen only on 5072580 as `{"name":"OpenAI API","url":"https://openai.com/api/"}`; absent for 1808500, 1938090 and 413150. It appears to be a live-generation service declaration; its meaning and when it is shown on the page are unverified (the sample page did not render it in the block structure i saw). (Source: the 4-app GetItems URL above, plus a separate single-app fetch of 5072580 that listed `.ai_generation_service.name` and `.ai_generation_service.url`)
 - `content_survey_notes` (string) is the mature-content free text, separate from the AI notes. (Same URLs)
@@ -101,6 +106,7 @@ The AI fields, in `store_items[].extra_details`:
 - Batching: four appids in one request worked. The maximum IDs per call is unverified.
 
 What the other flags return for 5072580 (no AI marker anywhere in them):
+
 - With `include_basic_info`, `include_tag_count`, `include_ratings`: `content_descriptorids: [5]`, `categories.supported_player_categoryids [2]`, `categories.feature_categoryids [35, 62]`, `basic_info.short_description` (the "AI-generated narration reacts to your decisions" text is just the marketing blurb), `basic_info.developers/publishers[].name`, `tags[]` as `{tagid, weight}` (20 entries when `include_tag_count` is 20; first tagids 10695, 11014, 6426, 4325, 1742), and `game_rating.content_survey_notes` (the mature text). (Source: https://api.steampowered.com/IStoreBrowseService/GetItems/v1?input_json=%7B%22ids%22%3A%5B%7B%22appid%22%3A5072580%7D%5D%2C%22context%22%3A%7B%22language%22%3A%22english%22%2C%22country_code%22%3A%22US%22%7D%2C%22data_request%22%3A%7B%22include_basic_info%22%3Atrue%2C%22include_tag_count%22%3A20%2C%22include_ratings%22%3Atrue%7D%7D)
 - With the broad flag set (assets, release, platforms, purchase options, screenshots, trailers, ratings, tags, reviews, basic info, languages, full description, links): additionally `tagids`, `reviews.summary_filtered`, `assets`, `release`, `platforms`, `screenshots`, `trailers`, `supported_languages`, `full_description_bbcode`. `game_rating` held only `content_survey_notes` there. The string `AI Generated Content Disclosure` appears nowhere in that response and `full_description_bbcode` is the "About This Game" bbcode only. (Source: the broad-flag GetItems call, input_json with all `include_*` flags true and `include_tag_count` 5, same endpoint)
 - `StoreGameRating` in the proto has `type, rating, descriptors, interactive_elements, agency, banned, esrb_online_*, survey_interactive_elements, required_age, use_age_gate, descriptor_images, content_survey_notes (13), image_url, image_target`; no AI field. (Source: proto above)
@@ -122,11 +128,13 @@ What the other flags return for 5072580 (no AI marker anywhere in them):
 - Steam has no first-party AI filter in the store search that i found; the extension author added a client-side "Narrow by AI Generated Content Disclosure" panel in 2026-06 (commit "Added search filter by AI disclosure"), implying none existed. (Sources: https://raw.githubusercontent.com/seeeeew/aiwarningforsteam/main/aiwarningforsteam.user.js and the commits API URL above; absence of a native filter in the current store is otherwise unverified)
 
 What a per-app request looks like (for the extension):
+
 1. Preferred: batch `GET https://api.steampowered.com/IStoreBrowseService/GetItems/v1?input_json={"ids":[{"appid":A},{"appid":B},...],"context":{"language":"english","country_code":"US"},"data_request":{"include_extra_details":true}}`; disclosed iff `store_items[i].extra_details.content_survey_ai_notes` is a non-empty string. One call can cover a whole search page or wishlist (batch ceiling unverified). No age gate or cookie dependence was seen in the JSON route (4 apps incl. Call of Duty returned data from the fetch tool; a cookie-less check of an age-gated app through this endpoint was not run).
 2. Fallback: `GET https://store.steampowered.com/app/<appid>/?l=english`, check the final URL and `id="appHubAppName"`, then look for `<h2>AI Generated Content Disclosure</h2>` inside `#game_area_content_descriptors`, and read the free text from the `<i>` of the second `<p>`.
 3. On the app page itself the block is already in the DOM; query `.game_page_autocollapse > #game_area_content_descriptors > h2` with all headings known, and fall back to option 1 or 2 if no heading matches but the page may still disclose.
 
 ## Main-thread verification (2026-10-20, built-in browser, no Steam login, no API key)
+
 - `GetItems` with `include_extra_details: true` for 5072580 and 413150 returned `extra_details.content_survey_ai_notes` (the full English disclosure text) and `ai_generation_service` `{"name":"OpenAI API","url":"https://openai.com/api/"}` for 5072580. Both keys were absent for Stardew Valley 413150, whose `extra_details` keys were `vetted, press_review, partner_awards_bbcode, links_and_info, points_shop_eligible, metacritic, system_requirements`.
 - From a page on `https://store.steampowered.com`, a plain `fetch()` to `api.steampowered.com/IStoreBrowseService/GetItems/v1` returned 200 with a readable body, so CORS permits the store origin. `access-control-allow-origin` cannot be read from JS, so whether it is a wildcard or echoes the origin is unknown.
 - Batch ceiling: the 50 rows of `store.steampowered.com/search/?term=roguelike` (IDs from `#search_resultsRows a[data-ds-appid]`) went out in one request (encoded `input_json` about 1.7 KB) and returned 50 items in about 1.3 s, 10 of them with `content_survey_ai_notes`. Larger batches were not tried.
@@ -134,6 +142,7 @@ What a per-app request looks like (for the extension):
 - A same-origin `fetch('/app/413150/?l=english')` from the search page returned 200, contained `appHubAppName`, and did not contain the AI heading.
 
 ## Caveats and version notes
+
 - All HTML structure came through a third-party headless fetch API plus a summarizing model; no byte-exact copy of the page source was read. Snippets above are faithful to what was returned, but whitespace, attribute order and any extra classes could differ. Re-verify with devtools before shipping selectors.
 - The JSON route result for `ai_generation_service` is based on one app. Do not depend on it for detection.
 - `content_survey_ai_notes` text is the english-context value; whether it varies with `context.language` is unverified.
@@ -145,6 +154,7 @@ What a per-app request looks like (for the extension):
 - CORS and MV3 behavior (service worker with host permissions vs content script) for `api.steampowered.com` was not tested.
 
 ## Sources
+
 - https://store.steampowered.com/app/5072580/Courage_and_Faith_Into_the_Dark_Woods/: app page of the sample that discloses; confirmed heading and free text.
 - https://store.steampowered.com/app/1938090/Call_of_Duty/: second disclosing app via plain fetch (no gate for that client).
 - https://store.steampowered.com/app/339800/HuniePop/: adult-only app, landed on login with agecheck redir.
