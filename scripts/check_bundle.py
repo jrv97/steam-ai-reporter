@@ -6,14 +6,16 @@
 - No eval( or new Function in any bundle (rule 2); no URL outside the two Valve hosts.
 - Size budgets: content.js at most 60 KB, the userscript at most 80 KB, unminified (rule 13).
 - The STEAM_API_KEY value, when set, appears nowhere in dist/ or artifacts/ (rule 16).
-- The dev injection bundle is never packaged into artifacts/.
+- The dev injection bundle is never packaged into artifacts/, and when artifacts/ exists it holds
+  exactly the five release artifacts, with a manifest at the root of each extension zip.
 """
 
 import os
 import re
+import zipfile
 from pathlib import Path
 
-from repo import ARTIFACTS, DIST, SLUG, fail, json_object, json_string, read_json
+from repo import ARTIFACTS, DIST, SLUG, fail, json_object, json_string, package_version, read_json
 
 KIB = 1024
 BUDGETS = {
@@ -101,6 +103,41 @@ def secret_problems(roots: list[Path]) -> list[str]:
     ]
 
 
+def zip_names(path: Path) -> list[str]:
+    with zipfile.ZipFile(path) as archive:
+        return archive.namelist()
+
+
+def artifact_problems() -> list[str]:
+    """The artifacts/ folder holds exactly the five release files, and no dev bundle."""
+    version = package_version()
+    extensions = [f"{SLUG}-{browser}-{version}.zip" for browser in ("chrome", "firefox")]
+    source = f"{SLUG}-source-{version}.zip"
+    expected = {*extensions, source, f"{SLUG}.user.js", f"{SLUG}.meta.js"}
+    present = {path.name for path in ARTIFACTS.iterdir()}
+    problems = [f"artifacts/{name}: missing" for name in sorted(expected - present)]
+    problems += [f"artifacts/{name}: unexpected" for name in sorted(present - expected)]
+    for name in extensions:
+        if name not in present:
+            continue
+        names = zip_names(ARTIFACTS / name)
+        if "manifest.json" not in names:
+            problems.append(f"artifacts/{name}: manifest.json is not at the zip root")
+        problems += [
+            f"artifacts/{name}: {entry} is a dev bundle file"
+            for entry in names
+            if entry.startswith("dev/") or entry.endswith("inject.js")
+        ]
+    if source in present:
+        roots = {entry.split("/", 2)[1] for entry in zip_names(ARTIFACTS / source) if "/" in entry}
+        problems += [
+            f"artifacts/{source}: contains {root}/"
+            for root in ("dist", "artifacts", "node_modules")
+            if root in roots
+        ]
+    return problems
+
+
 def main() -> None:
     if not DIST.is_dir():
         fail("dist/ is missing; run `mise run build` first")
@@ -117,9 +154,7 @@ def main() -> None:
     roots = [DIST] + ([ARTIFACTS] if ARTIFACTS.is_dir() else [])
     problems += secret_problems(roots)
     if ARTIFACTS.is_dir():
-        problems += [
-            f"{path}: the dev bundle must not be packaged" for path in ARTIFACTS.rglob("inject.js")
-        ]
+        problems += artifact_problems()
     if problems:
         print("\n".join(problems))
         fail(f"{len(problems)} bundle problem(s)")
