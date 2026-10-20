@@ -86,3 +86,13 @@ These are hard rules. A change that breaks one needs an ADR first.
   `SAR_CHROME_PROFILE`) live in the gitignored `mise.local.toml`.
 - The Claude desktop app's built-in browser cannot load extensions; agents use it to inject the
   dev bundle (`dist/dev/inject.js`) for smoke tests on live store pages.
+
+## Workflow
+
+- Trunk-based: every change reaches `main` through a PR from its own `<type>/<slug>` branch,
+  squash-merged with the PR title (a Conventional Commit header) as the commit message.
+- Sessions spawned for a piece of work run in their own Git worktree and branch, never in the
+  shared checkout. They push and open the PR; the main session reviews and merges.
+- After a merge: archive the session, remove its worktree and branch, and rebase any open branch
+  that the merge left behind onto `main`.
+- PR descriptions carry no AI attribution or trailers.
