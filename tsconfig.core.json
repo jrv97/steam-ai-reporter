@@ -6,6 +6,6 @@
     "checkJs": false,
     "types": []
   },
-  "include": ["src/core"],
+  "include": ["src/core", "tests/helpers/raw.d.ts"],
   "exclude": []
 }
