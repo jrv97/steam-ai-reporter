@@ -51,8 +51,7 @@
      page, row, panel and raised. Never on the banner wash (3.77:1 at its bright end). */
   --sar-color-text-muted: #acb2b8;
   /* Help text, versions, dates and footers on page, row, panel, raised and sunken (5.09:1 or more),
-     the summary row label, and the allow-listed note's spark. Never on the banner wash or the
-     store's row hover (3.32:1). */
+     and the summary row label. Never on the banner wash or the store's row hover (3.32:1). */
   --sar-color-text-subtle: #8f98a0;
   /* Form control edges and the off switch's edge: 3.48:1 on raised, 3.88:1 on panel, 4.23:1 on
      sunken. */
@@ -65,15 +64,14 @@
 
   /* Accent (ours) */
 
-  /* Compact badge text (12.65:1 on accent 900) and the banner spark (6.13:1 on the wash's bright
-     end). */
+  /* Compact badge text, 12.65:1 on accent 900. */
   --sar-accent-100: #e4dcff;
   /* Full badge text: on its tint 8.19:1 over a row, 7.46:1 over the page, 5.21:1 over the store's
      row hover. Links on the store's row hover. */
   --sar-accent-200: #d6caff;
-  /* Glyphs, links on dark grounds, the focus ring: 6.84:1 on page, 6.98:1 on raised, 3.69:1 against
-     the banner wash's bright end (a ring there, never text). On the store's row hover it is 4.45:1,
-     so links there use accent 200. */
+  /* Links on dark grounds and the focus ring: 6.84:1 on page, 6.98:1 on raised, 3.69:1 against the
+     banner wash's bright end (a ring there, never text). On the store's row hover it is 4.45:1, so
+     links there use accent 200. */
   --sar-accent-300: #b7a2ff;
   /* The brand fill, non-text only: icon tag, switch on track (4.29:1 on raised), compact badge edge
      (5.91:1 against black art), selected segment edge, and the full badge tint at 20%. */
@@ -100,9 +98,6 @@
 
   /* Full badge label. */
   --sar-badge-fg: var(--sar-accent-200);
-  /* Full badge spark: 5.73:1 on the tint over a row, 3.65:1 over the store's row hover. The cue
-     that tells our badge from a clickable store tag. */
-  --sar-badge-glyph-color: var(--sar-accent-300);
   /* Full badge tint: accent 400 at 20%, the store's tag-chip recipe in our hue. No border, like the
      store's chips. */
   --sar-badge-bg: rgba(143, 115, 243, 0.2);
@@ -114,8 +109,6 @@
   --sar-compact-bg: var(--sar-accent-900);
   /* Compact badge label, 12.65:1 on its surface whatever the art. */
   --sar-compact-fg: var(--sar-accent-100);
-  /* Compact badge spark, 7.62:1 on its surface. */
-  --sar-compact-glyph-color: var(--sar-accent-300);
   /* Compact badge edge: 5.91:1 against black art, 3.55:1 against white. On mid grey (1.11:1) and
      violet art the surface carries the boundary instead. */
   --sar-compact-border: var(--sar-accent-400);
@@ -134,8 +127,6 @@
   /* Show full disclosure and Undo, underlined like the store's in-bubble links (the store's own
      #c3c1c0 would be 4.49:1 here). */
   --sar-banner-link-color: var(--sar-banner-fg);
-  /* Banner spark, 6.13:1 on the bright end. */
-  --sar-banner-glyph-color: var(--sar-accent-100);
   /* Stop marking this game, as the store's white-transparent button: 8.06:1 on the bright end. */
   --sar-banner-button-fg: #ffffff;
   /* That button's edge: 3.27:1 on the bright end (the store's 0.4 would be 2.63:1). */
@@ -211,12 +202,8 @@
   --sar-space-6: 32px;
   /* Full badge inline padding, as the store's tag chips. */
   --sar-badge-pad-inline: 7px;
-  /* Between the full badge's spark and label. */
-  --sar-badge-gap: 4px;
   /* Compact badge inline padding, text tier. */
   --sar-compact-pad-inline: 5px;
-  /* Between the compact badge's spark and label. */
-  --sar-compact-gap: 4px;
   /* Banner button inline padding, as the store's white-transparent button. */
   --sar-banner-button-pad-inline: 15px;
   /* Gap after the summary row label, as the store's own summary labels. */
@@ -250,19 +237,12 @@
   --sar-badge-height: 19px;
   /* Full badge cap. English needs about 124px; past the cap the label ends in an ellipsis. */
   --sar-badge-max-inline-size: 180px;
-  /* Spark in the full badge. */
-  --sar-badge-glyph: 10px;
   /* Summary row label column: the share of the row the store gives its own labels. */
   --sar-summary-label-inline-size: 35%;
-  /* Compact badge block size, glyph and text tiers: the store's corner-flag height; also the glyph
-     tier's inline size. */
+  /* Compact badge block size, text tier: the store's corner-flag height. */
   --sar-compact-height: 19px;
-  /* Spark in the compact badge. */
-  --sar-compact-glyph: 9px;
   /* Compact badge block size, large tier. */
   --sar-compact-height-lg: 22px;
-  /* Spark in the large compact badge. */
-  --sar-compact-glyph-lg: 11px;
   /* The store's standard control height. No use yet. */
   --sar-control-height: 36px;
   /* Minimum block size of every button, segment and select we draw. */

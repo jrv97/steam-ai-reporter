@@ -19,15 +19,12 @@
 
 /* Shared */
 
-/* The reset skips SVG internals: all: unset would also reset the CSS d property and erase the
-   inlined spark path in Chromium. :where() keeps the selector as light as .sar-badge *. */
-
 .sar-badge,
-.sar-badge :where(:not(svg *)),
+.sar-badge *,
 .sar-compact,
-.sar-compact :where(:not(svg *)),
+.sar-compact *,
 .sar-summary-row,
-.sar-summary-row :where(:not(svg *)) {
+.sar-summary-row * {
   all: unset;
   box-sizing: border-box;
 }
@@ -62,7 +59,6 @@
 .sar-badge {
   display: inline-flex;
   align-items: center;
-  gap: var(--sar-badge-gap);
   block-size: var(--sar-badge-height);
   max-inline-size: var(--sar-badge-max-inline-size);
   min-inline-size: 0;
@@ -77,15 +73,6 @@
   vertical-align: middle;
   flex: none;
   cursor: default;
-}
-
-.sar-badge-glyph {
-  display: block;
-  inline-size: var(--sar-badge-glyph);
-  block-size: var(--sar-badge-glyph);
-  color: var(--sar-badge-glyph-color);
-  fill: currentColor;
-  flex: none;
 }
 
 /* The label is the part that gives way to a long translation */
@@ -114,7 +101,6 @@
   z-index: var(--sar-z-badge);
   display: inline-flex;
   align-items: center;
-  gap: var(--sar-compact-gap);
   block-size: var(--sar-compact-height);
   max-inline-size: calc(100% - var(--sar-compact-inset-inline));
   padding-inline: var(--sar-compact-pad-inline);
@@ -136,30 +122,10 @@
   cursor: pointer;
 }
 
-.sar-compact-glyph {
-  display: block;
-  inline-size: var(--sar-compact-glyph);
-  block-size: var(--sar-compact-glyph);
-  color: var(--sar-compact-glyph-color);
-  fill: currentColor;
-  flex: none;
-}
-
-.sar-compact[data-sar-size="glyph"] {
-  inline-size: var(--sar-compact-height);
-  padding: 0;
-  justify-content: center;
-}
-
 .sar-compact[data-sar-size="large"] {
   block-size: var(--sar-compact-height-lg);
   padding-inline: var(--sar-compact-pad-inline-lg);
   font: var(--sar-compact-font-lg);
-}
-
-.sar-compact[data-sar-size="large"] .sar-compact-glyph {
-  inline-size: var(--sar-compact-glyph-lg);
-  block-size: var(--sar-compact-glyph-lg);
 }
 
 /* Summary row: one label and value row in the game's summary box, under Publisher. Same
@@ -267,14 +233,6 @@ a.sar-summary-row .sar-badge {
   row-gap: var(--sar-space-1);
 }
 
-.sar-banner-glyph {
-  inline-size: 14px;
-  block-size: 14px;
-  color: var(--sar-banner-glyph-color);
-  fill: currentColor;
-  flex: none;
-}
-
 .sar-banner-title {
   margin: 0;
   padding: 0;
@@ -374,8 +332,7 @@ a.sar-summary-row .sar-badge {
 }
 
 /* Allow-listed: the store's DRM-notice geometry in neutral, no violet. One line in English; a
-   longer translation wraps inside the text box and inside the link, so the glyph never sits
-   alone on a line. */
+   longer translation wraps inside the text box and inside the link. */
 .sar-banner[data-sar-variant="ignored"] {
   display: flex;
   align-items: center;
@@ -398,10 +355,6 @@ a.sar-summary-row .sar-badge {
   max-inline-size: 50%;
 }
 
-.sar-banner[data-sar-variant="ignored"] .sar-banner-glyph {
-  color: var(--sar-color-text-subtle);
-}
-
 /* Forced colors */
 
 @media (forced-colors: active) {
@@ -410,11 +363,6 @@ a.sar-summary-row .sar-badge {
     border: 1px solid CanvasText;
     forced-color-adjust: none;
     background: Canvas;
-    color: CanvasText;
-  }
-
-  .sar-badge-glyph,
-  .sar-compact-glyph {
     color: CanvasText;
   }
 
