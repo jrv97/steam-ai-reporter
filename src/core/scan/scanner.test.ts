@@ -1,5 +1,6 @@
 // @vitest-environment-options {"url":"https://store.steampowered.com/search/?term=roguelike"}
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { countDomWork, type DomWork } from "../../../tests/helpers/dom-work";
 import {
   type RecordingRenderer,
   recordingRenderer,
@@ -392,11 +393,53 @@ describe("observing", () => {
   });
 });
 
-describe("budget", () => {
-  /** Scan-time budget for 200 capsules under happy-dom; browsers are several times faster. */
-  const BUDGET_MS = 150;
+describe("work budget", () => {
+  // Scan cost as counted DOM calls, which do not depend on the machine running the tests. Each
+  // limit is per scanned capsule, a little above what the scanner does today, so a change that
+  // makes the scan superlinear or re-reads old content fails here. The real time budget (under
+  // 4 ms per mutation batch) is the manual sale-page profile in the checklist.
 
-  it("scans a 200-capsule page within the budget", async () => {
+  const LIMITED = [
+    "querySelectorAll",
+    "queried",
+    "querySelector",
+    "closest",
+    "matches",
+    "parentSteps",
+  ] as const;
+  type Limits = Readonly<Record<(typeof LIMITED)[number], number>>;
+
+  /** Per capsule on a page scan; measured 7, 6, 0, 3, 10 and 46. */
+  const PAGE_LIMITS: Limits = {
+    querySelectorAll: 8,
+    queried: 8,
+    querySelector: 1,
+    closest: 4,
+    matches: 12,
+    parentSteps: 60,
+  };
+
+  /**
+   * Per appended row; measured 4, 0, 1, 2, 5 and 20. `queried` stays under one per new row, so
+   * the scan never lists the rows that were already there.
+   */
+  const ADDED_LIMITS: Limits = {
+    querySelectorAll: 5,
+    queried: 1,
+    querySelector: 1,
+    closest: 3,
+    matches: 6,
+    parentSteps: 30,
+  };
+
+  function expectWithin(work: DomWork, limits: Limits, count: number): void {
+    for (const name of LIMITED) {
+      expect.soft(work[name], name).toBeLessThanOrEqual(limits[name] * count);
+    }
+  }
+
+  /** A React sale grid of `count` tag hub capsules, each for its own app. */
+  function capsuleGrid(count: number): Element {
     const page = new DOMParser().parseFromString(SURFACES["tag-hub"], "text/html");
     const capsule = the(".capsule_index_0", page).parentElement;
     if (capsule === null) {
@@ -404,7 +447,7 @@ describe("budget", () => {
     }
     const grid = document.createElement("div");
     grid.className = "SaleSectionContainer";
-    for (let n = 0; n < 200; n++) {
+    for (let n = 0; n < count; n++) {
       const copy = capsule.cloneNode(true);
       if (copy instanceof Element) {
         for (const link of copy.querySelectorAll("a")) {
@@ -413,15 +456,38 @@ describe("budget", () => {
         grid.append(copy);
       }
     }
-    document.body.replaceChildren(grid);
-    renderer = recordingRenderer();
-    reports = [];
-    scanner = createScanner({ document, renderer, onReport: (report) => reports.push(report) });
-    scanner.start();
-    const start = performance.now();
-    await vi.advanceTimersByTimeAsync(FRAME_MS);
-    const elapsed = performance.now() - start;
+    return grid;
+  }
+
+  it("scans a 200-capsule page with bounded DOM work, in one frame", async () => {
+    document.body.replaceChildren(capsuleGrid(200));
+    const work = countDomWork();
+    await startScanner();
     expect(found()).toHaveLength(200);
-    expect(elapsed).toBeLessThan(BUDGET_MS);
+    expect(renderer.batches).toHaveLength(1);
+    expect(reports).toHaveLength(1);
+    const done = work();
+    expectWithin(done, PAGE_LIMITS, 200);
+    expect(done.setAttribute).toBe(200 * 2);
+    expect(done.removeAttribute).toBe(0);
+  });
+
+  it("scans 50 appended search rows with bounded DOM work", async () => {
+    loadPage(SURFACES.search);
+    await startScanner();
+    const container = the("#search_resultsRows");
+    const rows = Array.from({ length: 50 }, (_, n) => searchRow(2_000_000 + n));
+    const work = countDomWork();
+    for (const row of rows) {
+      container.append(row);
+    }
+    await settle();
+    expect(found()).toHaveLength(58);
+    expect(renderer.batches).toHaveLength(2);
+    expect(reports).toHaveLength(2);
+    const done = work();
+    expectWithin(done, ADDED_LIMITS, 50);
+    expect(done.setAttribute).toBe(50 * 2);
+    expect(done.removeAttribute).toBe(0);
   });
 });
