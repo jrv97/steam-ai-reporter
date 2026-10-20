@@ -1,0 +1,87 @@
+---
+status: accepted
+date: 2026-10-20
+decision-makers: Jorge Rodriguez de la Vega
+---
+
+# Release pipeline: changie fragments, CalVer, nightly prereleases and manual promotion to the stores
+
+## Context and problem statement
+
+The project ships to the Chrome Web Store, to addons.mozilla.org (AMO) and as a userscript hosted on GitHub releases. The author already runs a release train in another repository (changie fragments, CalVer, a bot-made tag, a nightly deploy, prod on manual dispatch of the same tag). Prior art among extensions mostly stops at a GitHub release and uploads to the stores by hand; none of the projects read uses changelog fragments or a two-stage nightly-then-prod promotion ([extension-release-pipeline](../research/extension-release-pipeline.md)).
+
+The store rules constrain what carries over: the manifest version must be unpadded dotted integers, AMO never reuses a version number across channels, and no store offers keyless publishing.
+
+How are versions chosen, releases cut, and artifacts published?
+
+## Decision drivers
+
+- A version string valid in the manifest, the Git tag and the userscript `@version` at once.
+- Promote the artifact that was tested; AMO checks that the source rebuilds to the same files.
+- A nightly must not burn a version number on the listing that prod publishes to.
+- Reviewed, auditable store credentials, with human approval before anything reaches users.
+- Low ceremony for a one-person project, and a pipeline thin enough to keep in mise tasks and short scripts (project rule 14).
+
+## Considered options
+
+1. **changie fragments, unpadded CalVer, nightly GitHub prereleases, manual prod promotion of the same artifacts** (chosen).
+2. **Manual store uploads** from a local build, with a GitHub release (what most prior art does).
+3. **Rebuild at prod time** from the tag, instead of promoting the nightly's artifacts.
+4. **A signed beta channel** (a separate AMO add-on ID and Chrome Web Store listing) fed by every nightly.
+
+## Decision outcome
+
+Chosen option 1, following the author's release train as adapted in [rq1-prior-art](../research/extension-release-pipeline/rq1-prior-art.md).
+
+- **Fragments.** `.changie.yaml` with kinds Added, Changed, Fixed and Removed. A CI gate fails a pull request that changes `src/` without a new `.changes/unreleased/*.yaml`, unless it carries the `no-changelog-fragment` label. The changelog feeds the GitHub release body and AMO's per-version release notes. No Chrome Web Store release-notes field was found.
+- **Version.** Unpadded CalVer `YYYY.M.D`, with `.N` (from 1) for a same-day recut: `2026.10.20`, `2026.10.20.1`. Chrome and AMO accept one to four dotted integers with no leading zeros, so `2026.10.05` is invalid. The same string is the Git tag, the manifest `version` and the userscript `@version`. `package.json` holds the last released version; feature changes never edit it (project rule 7).
+- **Train.** A scheduled workflow at 00:00 UTC (and manual dispatch with a `dry_run` input) finds the newest green commit on `main`, and skips when none is green, a release PR is already open, or nothing landed since the last tag. If fragments exist, the release-bot GitHub app opens a batch pull request (`changie batch`, `changie merge`, the `package.json` version) that auto-merges after the required checks. There is no merge queue, because the repository is on a personal account. No fragments means no release.
+- **Tag.** When the batch PR merges, a job creates the tag on the merge commit as the release-bot app. A tag ruleset admits only that app, and events created by an app can trigger workflows where `GITHUB_TOKEN` events cannot. The job then dispatches the nightly workflow with the tag.
+- **Nightly.** Validates that the tag is CalVer and sits on `origin/main` with green CI, builds once with the frozen lockfile, runs the reproducibility check, packages, and creates a GitHub **prerelease** with the version's changelog section and every artifact (Chrome zip, Firefox zip, `.user.js`, `.meta.js`, AMO source zip). **Nothing goes to any store.** A prerelease does not move `releases/latest`, so userscript users do not update yet.
+- **Prod.** Manual dispatch with a `tag` input, run from the tag ref. It downloads the prerelease assets and promotes the **same artifacts**, with no rebuild:
+  - GitHub environment `chrome-web-store`: upload and publish through Chrome Web Store API v2 with `chrome-webstore-upload-cli` v4 (which needs a publisher ID).
+  - GitHub environment `amo`: `web-ext sign --channel listed` with `--upload-source-code` for the source zip and the changelog section as release notes.
+  - Both environments require the author's approval. Credentials are environment secrets; the release-bot app ID and private key are repository secrets.
+  - Last, it marks the GitHub release as latest, which moves `releases/latest/download/<slug>.meta.js` and lets userscript users update.
+- **Chrome Web Store auth: OAuth refresh token or service account.** The research found no keyless option for any store. API v2 (2025-10-15) adds service accounts, which are not tied to a personal Google session; the refresh-token flow works with the CLI today and is the common pattern. Decision: start with an OAuth refresh token in the `chrome-web-store` environment, because it is the path `chrome-webstore-upload-cli` documents and the one with the most field use, and move to a service account when its use from GitHub Actions has been tried by hand (the research lists that test as unverified). Rotation is calendared.
+- **Userscript URLs.** `@updateURL` and `@downloadURL` point at `releases/latest/download/<slug>.meta.js` and `.user.js`. These URLs skip drafts and prereleases.
+
+**Sequencing.** The changie setup (`.changie.yaml`, `.changes/`) and the pull request changelog gate are being built early, in the toolchain step (plan step 4), by a parallel session, so that every pull request from then on carries a fragment. Everything else in this ADR (CalVer computation, the train, the nightly, prod promotion and the store credentials) stays in the release pipeline step (plan step 15).
+
+### Consequences
+
+- Good: the artifact users install is the artifact that was built, reproduced and tested; AMO's rebuild-from-source check sees the same files.
+- Good: nightlies cost nothing in the stores and burn no AMO version numbers, because they are GitHub prereleases only.
+- Good: a human approval gates each store, and the changelog is written at change time, not at release time.
+- Good: the userscript has a fast-fix channel that does not wait for store review.
+- Bad: long-lived store secrets that must be rotated; no store offers OIDC.
+- Bad: a recut after a store rejection needs a new version (`.N`), because AMO never reuses one, even after deletion.
+- Bad: Chrome Web Store API v2 from GitHub Actions with these credentials is untested; v1.1 support was announced to end on 2026-10-15, and `chrome-webstore-upload-cli` v3 may no longer work.
+- Bad: testers get no automatic updates between prods; they install the prerelease by hand.
+- Neutral: out of scope for v1: Edge, staged and partial rollout (needs more than 10,000 weekly users), Greasy Fork mirroring, a signed beta channel and localized store listings. All are on the roadmap.
+
+## Pros and cons of the options
+
+### 1. Fragments, CalVer, prerelease nightly, manual promotion
+
+- Good and bad: see consequences. No extension prior art uses it, but nothing in the store rules contradicts it.
+
+### 2. Manual store uploads
+
+- Good: nothing to build or secure; the common practice.
+- Bad: error-prone, unreviewed, and the version, tag and changelog drift apart. Rejected for a project that must also ship a userscript from the same tag.
+
+### 3. Rebuild at prod time
+
+- Good: simpler workflow graph.
+- Bad: the store artifact may differ from the one tested, and AMO verifies source against build output. Promoting one artifact removes that risk.
+
+### 4. A signed beta channel
+
+- Good: testers auto-update.
+- Bad: a second AMO add-on ID and Chrome listing to maintain, review and secure. Deferred to the roadmap; a GitHub prerelease is enough for now.
+
+## More information
+
+- Research: [extension-release-pipeline](../research/extension-release-pipeline.md) and [rq1-prior-art](../research/extension-release-pipeline/rq1-prior-art.md). Items it lists as unverified and that this ADR relies on: Chrome Web Store API v2 from CI with a service account, and Greasy Fork sync (not adopted).
+- Related: [ADR 0002](0002-single-codebase-and-tooling.mdx) (mise tasks, zizmor on the workflows, reproducible builds).
