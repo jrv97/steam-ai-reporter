@@ -14,7 +14,7 @@ Component specs for everything the extension and the userscript inject into stor
 - `docs/design/reference.css`: reference rules for each component below, written against the tokens only. The UI step can lift them into `src/core/ui/styles.css` as they are.
 - `docs/design/previews/`: one page per component, the same previews the design system shows, rendering the reference rules on sampled store grounds, synthetic cover art and long Spanish copy.
 - `docs/design/specimen.html`: every preview on one page. Open it from disk to review a change.
-- `assets/icons/`: the extension icon and the badge glyph (section 14).
+- `assets/icons/`: the extension icon (section 14).
 - `docs/design/decisions.mdx`: why each choice was made, and what is still open.
 
 AI Reporter for Steam labels games on the Steam store whose developers filled in Steam's AI content disclosure, and quotes what they wrote. It ships as a browser extension and a userscript. Its UI lives in two places: small pieces injected into store pages (badges, a banner, a list filter) and its own settings pages (options page, toolbar popup, userscript dialog). This system covers both.
@@ -26,7 +26,7 @@ Every class, attribute and custom property starts with `sar-`.
 1. **Label the disclosure, never judge it.** A disclosure can cover one marketing image or live generated gameplay, and some notes say AI was barely used. Attribute every fact to the developer ("discloses", "named by the developer", "in the developer's own words"). No red, no warning triangles.
 2. **Nothing for absence.** "Not disclosed" and "unknown" render nothing: no neutral badge, no check mark. Only `data-sar-state` on the host records them.
 3. **Quote verbatim.** The developer's notes are data: set with `textContent` and `white-space: pre-line`, never translated, summarized or highlighted.
-4. **Feel native.** Look and behave as close to the store's own UI as possible: its sizes, type, neutrals, surfaces and interaction patterns, so injected UI has no seam. Model each store-page component on its closest store element (the banner on the notice bubbles, the full badge on the tag chips, the compact badge on the corner flags, the summary row on the summary box's own rows). Only the violet hue and the spark mark a component as ours, so nobody mistakes it for a store feature.
+4. **Feel native.** Look and behave as close to the store's own UI as possible: its sizes, type, neutrals, surfaces and interaction patterns, so injected UI has no seam. Model each store-page component on its closest store element (the banner on the notice bubbles, the full badge on the tag chips, the compact badge on the corner flags, the summary row on the summary box's own rows). Only the violet hue marks a component as ours, so nobody mistakes it for a store feature.
 5. **Never block.** No modals over store pages, no overlays over content, no focus stealing, no layout shift after a component's first paint.
 6. **Copy lives in catalogs.** Components hold message keys, never text. Leave room for translations about 40% longer than English.
 7. **Cheap at scale.** Express state with `data-sar-*` attributes and CSS, never per-node inline styles. A setting change is one attribute write on the root element.
@@ -48,7 +48,7 @@ One dark theme. Store pages are dark, and the settings pages open from them.
 - **Neutrals are sampled.** `sar-color-bg-page`, `sar-color-bg-page-deep` and `sar-color-bg-row` are the store's own grounds: our components sit on them and never paint them. `sar-color-bg-panel`, `sar-color-bg-raised` and `sar-color-bg-sunken` are the settings pages' surfaces.
 - **Text:** on the banner wash, everything is `sar-banner-fg`, the store's own bubble text color. Elsewhere, `sar-color-text-strong` for headings, `sar-color-text` for body copy, `sar-color-text-muted` for meta lines, `sar-color-text-subtle` for help and dates. Muted and subtle never go on the banner wash, and subtle never on the store's row hover.
 - **Violet is ours.** Every other hue already means something on the store: blue is links, tags and the wishlist; green is buy, discount and owned; tan is the store's own third-party notices; red is live. Violet carries no traffic-light verdict, which matters because the badge must not judge.
-- **The accent scale:** `sar-accent-100` for compact badge text and the banner spark, `sar-accent-200` for full badge text, `sar-accent-300` for glyphs, links and the focus ring, `sar-accent-400` for non-text brand fills and edges (and the full badge tint at 20%), `sar-accent-800` and `sar-accent-600` at 80% for the banner wash, `sar-accent-600` and `sar-accent-700` for solid fills with white text, `sar-accent-900` for the compact badge's dark surface.
+- **The accent scale:** `sar-accent-100` for compact badge text, `sar-accent-200` for full badge text, `sar-accent-300` for links and the focus ring, `sar-accent-400` for non-text brand fills and edges (and the full badge tint at 20%), `sar-accent-800` and `sar-accent-600` at 80% for the banner wash, `sar-accent-600` and `sar-accent-700` for solid fills with white text, `sar-accent-900` for the compact badge's dark surface.
 - **Error** is text, always with words, never a red fill: `sar-color-error` on extension pages, `sar-banner-error` inside the banner.
 - Never set a store hue (blue, green, tan, red) to a new meaning.
 
@@ -81,12 +81,12 @@ Every text pair meets WCAG 2.2 AA on the grounds its token's note names; see the
 - Badges stay on one line and truncate past their cap; the full message stays in `title` and in the DOM text screen readers read.
 - Everything else wraps. Nothing that holds copy gets a fixed height; controls with copy have a minimum block size.
 - Use logical properties (`padding-inline`, `inset-inline-end`, `border-inline-start`, `text-align: start`). The one physical value is the switch thumb's `translateX`. Right-to-left is out of scope for v1, but nothing here assumes left or right.
-- No text in icons, the glyph or any image.
+- No text in icons or images.
 
 ## Iconography
 
 - **The mark** is a label tag pointing toward inline-end with a four-point spark on its visual center: "a label about AI", not "an AI tool". One flat `sar-accent-400` fill with a white spark; no outline, no gradient, no letters. See the Icon asset group for files and sizes.
-- **The spark** (Glyph group) is the only icon inside components: 10px in the full badge, 9px (11px large) in the compact badge, 14px in the banner. Inline it as SVG with `fill="currentColor"` and `aria-hidden="true"`; it takes its color from the component's glyph token. It never carries meaning alone, except in the compact badge's glyph tier, which keeps a visually hidden label.
+- **No icons in components.** Badges, the summary row and the banner carry no icon, like the store's own tags, corner flags and notice bubbles. The violet hue and the wording mark them as ours. The spark appears only in the extension icon.
 - No other icon set. Platform icons and flags around our badges are the store's.
 - No Valve logo, wordmark, icon, image or font file appears anywhere.
 
@@ -115,7 +115,6 @@ Settings gate each column: `badges` off removes both badges and the summary row,
 **Style isolation**
 
 - Light-DOM components (both badges and the summary row) reset with `all: unset` on themselves and their descendants, then set every property they need. Store CSS styles bare `span`, `a`, `h2` and `button` in places, and `all` leaves custom properties alone, so tokens still reach them.
-- The reset skips SVG internals (`.sar-badge :where(:not(svg *))`): `all: unset` would also reset the CSS `d` property and erase the inlined spark path in Chromium. `:where()` keeps the selector as light as `.sar-badge *`, so component rules still win.
 - The banner renders into a shadow root on a host `div.sar-banner-host`. Page CSS cannot reach it, and its CSS cannot leak. Tokens inherit into it from `:root`, and the page's "Motiva Sans" works inside it because `@font-face` is document-wide. Attach the stylesheet with `adoptedStyleSheets`; if the store's CSP or a script manager blocks that, fall back to light DOM plus the badge reset.
 - The userscript settings dialog uses the same shadow-root approach.
 
@@ -142,22 +141,20 @@ Preview: `previews/Badge.html`.
 
 ```html
 <span class="sar-badge" title="t('badge_tooltip', { label, notes })">
-  <svg class="sar-badge-glyph" viewBox="0 0 10 10" aria-hidden="true"><path d="M5 0Q5.7 4.3 10 5Q5.7 5.7 5 10Q4.3 5.7 0 5Q4.3 4.3 5 0Z"/></svg>
   <span class="sar-badge-label">t('badge_full')</span>
 </span>
 ```
 
 - The label from `badge_full` ("Discloses AI use") as real text.
 - A native `title` from `badge_tooltip`: the label, then the first 200 characters of the developer's notes, verbatim, with `...` if cut.
-- The spark inlined as SVG. Keep `components/bundle.css`'s reset, which skips SVG internals; a plain `.sar-badge *` reset erases the path in Chromium.
 
 ### Look
 
 Built like the store's own tag chips, in our hue.
 
-- `sar-badge-height` (19px) tall, `sar-badge-pad-inline` (7px), `sar-badge-gap` (4px), `sar-radius-sm`, no border.
-- Label in `sar-text-badge` (11/19 regular, the page font rather than the chips' Arial, because the badge sits in Motiva rows), `sar-badge-fg` on `sar-badge-bg`. Spark `sar-badge-glyph` (10px) in `sar-badge-glyph-color`.
-- Keep the spark: it is the one cue that tells the badge from a clickable store tag reading "AI disclosed".
+- `sar-badge-height` (19px) tall, `sar-badge-pad-inline` (7px), `sar-radius-sm`, no border.
+- Label in `sar-text-badge` (11/19 regular, the page font rather than the chips' Arial, because the badge sits in Motiva rows), `sar-badge-fg` on `sar-badge-bg`.
+- No icon. The violet hue and the wording set it apart from the store's blue tags, and it never sits in the store's tag row.
 - Capped at `sar-badge-max-inline-size` (180px). English needs about 124px; longer labels end in an ellipsis and keep the full text in the tooltip and the DOM.
 
 ### Placement
@@ -174,7 +171,7 @@ Built like the store's own tag chips, in our hue.
 
 ### Accessibility
 
-- The label is real text, read as part of the row link even when truncated. The spark is `aria-hidden`.
+- The label is real text, read as part of the row link even when truncated.
 - No `role`, no `tabindex`: the badge rides inside the store's own link.
 
 ### Don't
@@ -184,13 +181,13 @@ Built like the store's own tag chips, in our hue.
 
 ## 2. Compact badge
 
-The overlay badge for capsule images, from small row capsules up to large header capsules, on an opaque surface so it reads over any art.
+The overlay badge for capsule images, from 180px-wide capsules up to large header capsules, on an opaque surface so it reads over any art.
 
 Preview: `previews/CompactBadge.html`.
 
 ### When to use
 
-- A disclosed host whose capsule image is at least 64px wide and 32px tall. Smaller thumbnails get nothing on the image; a row-shaped host still gets the full badge.
+- A disclosed host whose capsule image is at least 180px wide and 32px tall. Smaller images get nothing on the image; a row-shaped host still gets the full badge.
 - One compact badge per host, never alongside a full badge.
 
 ### What the consumer provides
@@ -198,7 +195,6 @@ Preview: `previews/CompactBadge.html`.
 ```html
 <span class="sar-compact" data-sar-size="text" data-sar-in-link="true"
       title="t('badge_tooltip', { label, notes })">
-  <svg class="sar-compact-glyph" viewBox="0 0 10 10" aria-hidden="true"><path d="M5 0Q5.7 4.3 10 5Q5.7 5.7 5 10Q4.3 5.7 0 5Q4.3 4.3 5 0Z"/></svg>
   <span class="sar-compact-label">t('badge_compact')</span>
 </span>
 ```
@@ -211,10 +207,9 @@ Preview: `previews/CompactBadge.html`.
 
 | Tier | Image box | Renders | Height | Type | Inset |
 | --- | --- | --- | --- | --- | --- |
-| none | under 64px wide or 32px tall | nothing | | | |
-| `glyph` | 64 to 179px wide | spark; label in `.sar-vh` | `sar-compact-height` 19px | | `sar-compact-inset-block` 5px, `sar-compact-inset-inline` 0 |
-| `text` | 180 to 399px wide | spark and label | 19px | `sar-text-compact` 11/17 medium | same |
-| `large` | 400px wide and 150px tall | spark and label | `sar-compact-height-lg` 22px | `sar-text-compact-lg` 12/20 medium | same |
+| none | under 180px wide or 32px tall | nothing | | | |
+| `text` | 180 to 399px wide | label | `sar-compact-height` 19px | `sar-text-compact` 11/17 medium | `sar-compact-inset-block` 5px, `sar-compact-inset-inline` 0 |
+| `large` | 400px wide and 150px tall | label | `sar-compact-height-lg` 22px | `sar-text-compact-lg` 12/20 medium | same |
 
 Tiers depend on image size only. A longer translation truncates inside its tier and never moves the badge to another.
 
@@ -222,7 +217,7 @@ Tiers depend on image size only. A longer translation truncates inside its tier 
 
 Built as a mirror of the store's own corner flags (in library, on wishlist): solid, square, 19px tall, 5px down from the top, flush to the edge.
 
-- `sar-compact-fg` on `sar-compact-bg` (12.65:1 whatever the art), square corners, a 1px `sar-compact-border` and `sar-compact-shadow`. Spark in `sar-compact-glyph-color`.
+- `sar-compact-fg` on `sar-compact-bg` (12.65:1 whatever the art), square corners, a 1px `sar-compact-border` and `sar-compact-shadow`.
 - Unlike the store's mid-tone flags, the surface is dark (accent 900) and keeps an edge. Together they give every kind of art a boundary at 3:1 or more: the edge against black (5.91:1), the surface against white (16.63:1), mid grey (4.21:1) and violet (3.34:1).
 - Block-start, inline-end corner (top right in English), mirroring the store's flags, which sit top-left. The store also owns the bottom edge (prices).
 - `z-index: sar-z-badge`: over the art and the corner flags, under the store's hover popups.
@@ -232,7 +227,6 @@ Built as a mirror of the store's own corner flags (in library, on wishlist): sol
 
 - Inside the capsule link: `pointer-events: auto`, so hovering or clicking the badge is hovering or clicking the link, and the tooltip shows.
 - Outside a link: `pointer-events: none` and no `title`, so it never swallows a click on an overlaid link. The label stays in the DOM.
-- The glyph tier keeps its label visually hidden, so the link name still includes it.
 
 ### Don't
 
@@ -257,7 +251,6 @@ Preview: `previews/SummaryRow.html`.
 <a class="sar-summary-row" href="#sar-banner" title="t('badge_tooltip', { label, notes })">
   <span class="sar-summary-label">t('summary_label')</span>
   <span class="sar-badge">
-    <svg class="sar-badge-glyph" viewBox="0 0 10 10" aria-hidden="true">...</svg>
     <span class="sar-badge-label">t('summary_value')</span>
   </span>
 </a>
@@ -273,7 +266,7 @@ Preview: `previews/SummaryRow.html`.
 Steam's summary box is set in Arial (13/18 values, 11/18 uppercase labels), and its tag chips are 11/19 Arial. This row matches it.
 
 - Label column `sar-summary-label-inline-size` (35% of the row, like the store's labels), `sar-summary-label-pad-inline-end` (10px), `sar-text-summary-label`, uppercase, in `sar-color-text-subtle`. The store's own label color, `#798a95`, is 4.18:1 on the page, so ours is a step lighter to pass AA.
-- Value: the full badge (`sar-badge-fg` on `sar-badge-bg`, the spark in `sar-badge-glyph-color`, 19px, `sar-radius-sm`), set in `sar-text-summary-tag` like the store's tag chips. A violet chip in a box of blue links is what draws the eye.
+- Value: the full badge (`sar-badge-fg` on `sar-badge-bg`, 19px, `sar-radius-sm`), set in `sar-text-summary-tag` like the store's tag chips. A violet chip in a box of blue links is what draws the eye.
 - The chip may use the whole value column; past it the label ends in an ellipsis, and the full text stays in the tooltip.
 - Interaction: a pointer cursor and no underline, like the store's own review rows, plus the shared `sar-focus-color` ring on `:focus-visible`, which the store's rows lack.
 
@@ -283,7 +276,7 @@ Measured on a 1280 by 900 window (app 1808500): the row is 18px tall, the summar
 
 ### Accessibility
 
-- The link's name is the label plus the chip text, for example "AI use: Disclosed by the developer". The spark is hidden.
+- The link's name is the label plus the chip text, for example "AI use: Disclosed by the developer".
 - The catalog strings stay in sentence case. The uppercase is `text-transform`, which follows the page's `lang`, so locales such as Turkish case correctly.
 - The jump lands on the banner, and focus follows, so a keyboard or screen reader user arrives at the developer's words.
 
@@ -311,7 +304,6 @@ Preview: `previews/Banner.html`.
   #shadow-root
   <aside class="sar-banner" aria-labelledby="sar-banner-title">
     <div class="sar-banner-head">
-      <svg class="sar-banner-glyph" aria-hidden="true">...</svg>
       <h2 class="sar-banner-title" id="sar-banner-title">t('banner_title')</h2>
       <button class="sar-banner-action" type="button">t('banner_ignore')</button>
     </div>
@@ -342,7 +334,7 @@ Modeled on the store's per-app notice bubbles (the DLC notice sits in the same s
 - Background `sar-banner-bg`: a 135 degree wash from `sar-banner-wash-start` at 10% to `sar-banner-wash-end` at 100% (accent 800 to accent 600, both at 80%), the DLC bubble's recipe in our hue.
 - No border, no radius, no shadow.
 - Padding `sar-space-2` at block-start, `sar-space-3` at block-end, `sar-space-4` inline. `sar-space-4` below: the store's own 2px would glue the banner to the purchase box and read as part of the offer.
-- All text in `sar-banner-fg`. Title `sar-text-banner-title` (24/30 light). Source and service lines `sar-text-banner-meta` (13/19 light). Notes `sar-text-banner-quote` (14/21, italic like the notes in the store's own disclosure section). Spark 14px in `sar-banner-glyph-color`.
+- All text in `sar-banner-fg`. Title `sar-text-banner-title` (24/30 light). Source and service lines `sar-text-banner-meta` (13/19 light). Notes `sar-text-banner-quote` (14/21, italic like the notes in the store's own disclosure section).
 - "Stop marking this game" is the store's white-transparent button: `sar-text-banner-button` (15/30 light) in `sar-banner-button-fg`, `sar-banner-button-pad-inline`, a 1px `sar-banner-button-border`, `sar-radius-sm`, a `sar-banner-button-bg-hover` wash on hover.
 - "Show full disclosure" and "Undo" are the store's underlined in-bubble links, in `sar-banner-link-color`, as `button` elements with a 24px minimum target.
 - Errors in `sar-banner-error`, never `sar-color-error` (4.21:1 on the bright end).
@@ -352,7 +344,7 @@ Modeled on the store's per-app notice bubbles (the DLC notice sits in the same s
 
 - **Collapsed** (default when long): the quote clamps to `sar-banner-quote-lines` (3). Measure in the next frame; if it does not overflow, drop `data-sar-collapsed` and omit the link.
 - **Expanded:** the link reads `banner_collapse` with `aria-expanded="true"`. No animation; not remembered across pages.
-- **Allow-listed** (`data-sar-variant="ignored"`): the store's DRM-notice geometry in neutral, no violet. One line: the spark in `sar-color-text-subtle`, `banner_ignored` in `sar-text-banner-note` and `sar-color-text-muted`, and an Undo link, on `sar-banner-note-bg` with `sar-radius-xs`, `sar-space-1` by `sar-space-2` padding, labelled by `banner_region_label`.
+- **Allow-listed** (`data-sar-variant="ignored"`): the store's DRM-notice geometry in neutral, no violet. One line: `banner_ignored` in `sar-text-banner-note` and `sar-color-text-muted`, and an Undo link, on `sar-banner-note-bg` with `sar-radius-xs`, `sar-space-1` by `sar-space-2` padding, labelled by `banner_region_label`.
 - **Storage error:** the banner stays as it was and shows `error_allow_list_save` until the next successful action.
 - **Setting turned off:** remove the host. Turned on: re-render from cache, no new request.
 
@@ -364,7 +356,7 @@ Modeled on the store's per-app notice bubbles (the DLC notice sits in the same s
 
 ### Longer translations
 
-The head wraps: the title takes `flex: 1 1 12em` and wraps first (at 24px a longer translation, such as Spanish, already wraps at 616px), then the button moves to its own line at inline-end. The button and links wrap their own text. In the one-line note the text and the link wrap inside their own boxes, so the glyph never sits alone.
+The head wraps: the title takes `flex: 1 1 12em` and wraps first (at 24px a longer translation, such as Spanish, already wraps at 616px), then the button moves to its own line at inline-end. The button and links wrap their own text. In the one-line note the text and the link wrap inside their own boxes.
 
 ### Accessibility
 
@@ -717,7 +709,7 @@ The userscript's settings, opened from the script manager's menu: the one modal 
 
 Specified only. No dialog rules exist yet, so this card has no preview.
 
-## 14. Extension icon and glyph
+## 14. Extension icon
 
 Files in `assets/icons/`.
 
@@ -741,11 +733,10 @@ magick -background none -density 384 icon.svg -filter Lanczos -resize 96x96 -gra
 
 ### Glyph
 
-`glyph.svg`: the spark alone, on a `0 0 10 10` view box, path `M5 0Q5.7 4.3 10 5Q5.7 5.7 5 10Q4.3 5.7 0 5Q4.3 4.3 5 0Z`.
+`glyph.svg`: the spark from the extension icon, alone, on a `0 0 10 10` view box, path `M5 0Q5.7 4.3 10 5Q5.7 5.7 5 10Q4.3 5.7 0 5Q4.3 4.3 5 0Z`.
 
-- Single ink, `currentColor`. Shown as an image it renders black, so its tile here looks dark; in components it is inlined as SVG and takes `sar-badge-glyph-color`, `sar-compact-glyph-color` or `sar-accent-300` from its parent.
-- Sizes: 10px (full badge), 9px and 11px (compact badge), 14px (banner).
-- Always `aria-hidden="true"` next to real text.
+- Not used by any component: badges, the summary row and the banner carry no icon (decision 30). Kept as a reference for the mark.
+- Single ink, `currentColor`. Shown as an image it renders black, so its tile here looks dark.
 
 ## Message catalog
 
@@ -762,7 +753,7 @@ For every translator:
 | Key | English | Note |
 | --- | --- | --- |
 | `badge_full` | Discloses AI use | Label on search and wishlist rows. One line; truncates past about 22 characters. |
-| `badge_compact` | AI disclosed | Label over game images, also read by screen readers when only the icon shows. Keep it as short as the language allows. |
+| `badge_compact` | AI disclosed | Label over game images. Keep it as short as the language allows. |
 | `badge_tooltip` | `$label$`. In the developer's own words: `$notes$` | Hover text on a badge. `label` is the badge label; `notes` is the developer's text, up to 200 characters, untranslated. |
 
 ### `summary_`
@@ -805,55 +796,7 @@ For every translator:
 | `error_allow_list_save` | Could not update this game. Try again. | After "Stop marking", "Undo" or "Mark again" fails. |
 | `error_backup_create` | Could not create the backup. Try again. | When the backup file cannot be built. |
 | `error_backup_read` | Could not read this file. | When the chosen file cannot be opened or is not text. |
-| `error_backup_invalid` | This file is not a backup from `$name# Messages
-
-Every string the UI shows, as keys for `src/locales/en/messages.json`. Keys are snake_case, grouped by prefix. Placeholders use the Chrome form `$name$`. The note under each seeds the message's `description` for translators.
-
-For every translator:
-
-- The product reports what developers disclosed. Say "discloses" or "disclosed"; never say a game "uses" AI.
-- Badge labels show on one line and truncate past about 40% longer than English. Shorter is better.
-- The developer's notes, game names and service names are never part of a message; they are inserted as data.
-
-### `badge_`
-
-| Key | English | Note |
-| --- | --- | --- |
-| `badge_full` | Discloses AI use | Label on search and wishlist rows. One line; truncates past about 22 characters. |
-| `badge_compact` | AI disclosed | Label over game images, also read by screen readers when only the icon shows. Keep it as short as the language allows. |
-| `badge_tooltip` | `$label$`. In the developer's own words: `$notes$` | Hover text on a badge. `label` is the badge label; `notes` is the developer's text, up to 200 characters, untranslated. |
-
-### `banner_`
-
-| Key | English | Note |
-| --- | --- | --- |
-| `banner_title` | The developer discloses AI use | Heading of the notice on a game's store page. |
-| `banner_source` | In the developer's own words: | Introduces the developer's text, which follows untranslated. |
-| `banner_expand` | Show full disclosure | Expands the collapsed text. |
-| `banner_collapse` | Show less | Collapses it again. |
-| `banner_service_label` | AI service named by the developer: | Precedes a product name inserted as data. |
-| `banner_ignore` | Stop marking this game | Stops badges and this notice for one game. Avoid the word the store uses for its own ignore feature. |
-| `banner_ignored` | You stopped marking this game. | Replaces the notice after the action above. |
-| `banner_undo` | Undo | Reverses the action above. |
-| `banner_region_label` | AI use disclosure | Screen reader name for the one-line note. |
-
-### `notice_`
-
-| Key | English | Note |
-| --- | --- | --- |
-| `notice_marking_stopped` | Marking stopped for this game. | Screen reader announcement. |
-| `notice_marking_restored` | Marking restored for this game. | Screen reader announcement. |
-| `notice_settings_saved` | Saved. | Screen reader announcement after a setting changes. |
-| `notice_backup_downloaded` | Backup downloaded. | Screen reader announcement after the file is saved. |
-| `notice_backup_restored` | Backup restored. | Shown under the backup buttons and announced after a restore. |
-
-### `error_`
-
-| Key | English | Note |
-| --- | --- | --- |
-| `error_settings_save` | Could not save this change. Try again. | Under a setting whose change failed to save. |
-| `error_settings_load` | Could not load your settings. Showing the defaults. | Top of the settings page. |
-. | `name` is the product name (`ext_name`). |
+| `error_backup_invalid` | This file is not a backup from `$name$`. | `name` is the product name (`ext_name`). |
 | `error_backup_newer` | This backup comes from a newer version. Update the extension, then try again. | When the file's format version is newer than this build reads. |
 | `error_backup_restore` | Could not restore this backup. Nothing was changed. | When saving the restored data fails; nothing is half-applied. |
 
@@ -899,432 +842,12 @@ For every translator:
 | `options_backup_help` | Save your settings and game lists to a file, to restore them after reinstalling or in another browser. | Help under the heading. |
 | `options_backup_download` | Download backup | Button that saves the file. |
 | `options_backup_restore` | Restore from a backup | Button that opens the file picker. |
-| `options_backup_summary_title` | Backup from `$date# Messages
-
-Every string the UI shows, as keys for `src/locales/en/messages.json`. Keys are snake_case, grouped by prefix. Placeholders use the Chrome form `$name$`. The note under each seeds the message's `description` for translators.
-
-For every translator:
-
-- The product reports what developers disclosed. Say "discloses" or "disclosed"; never say a game "uses" AI.
-- Badge labels show on one line and truncate past about 40% longer than English. Shorter is better.
-- The developer's notes, game names and service names are never part of a message; they are inserted as data.
-
-### `badge_`
-
-| Key | English | Note |
-| --- | --- | --- |
-| `badge_full` | Discloses AI use | Label on search and wishlist rows. One line; truncates past about 22 characters. |
-| `badge_compact` | AI disclosed | Label over game images, also read by screen readers when only the icon shows. Keep it as short as the language allows. |
-| `badge_tooltip` | `$label$`. In the developer's own words: `$notes$` | Hover text on a badge. `label` is the badge label; `notes` is the developer's text, up to 200 characters, untranslated. |
-
-### `banner_`
-
-| Key | English | Note |
-| --- | --- | --- |
-| `banner_title` | The developer discloses AI use | Heading of the notice on a game's store page. |
-| `banner_source` | In the developer's own words: | Introduces the developer's text, which follows untranslated. |
-| `banner_expand` | Show full disclosure | Expands the collapsed text. |
-| `banner_collapse` | Show less | Collapses it again. |
-| `banner_service_label` | AI service named by the developer: | Precedes a product name inserted as data. |
-| `banner_ignore` | Stop marking this game | Stops badges and this notice for one game. Avoid the word the store uses for its own ignore feature. |
-| `banner_ignored` | You stopped marking this game. | Replaces the notice after the action above. |
-| `banner_undo` | Undo | Reverses the action above. |
-| `banner_region_label` | AI use disclosure | Screen reader name for the one-line note. |
-
-### `notice_`
-
-| Key | English | Note |
-| --- | --- | --- |
-| `notice_marking_stopped` | Marking stopped for this game. | Screen reader announcement. |
-| `notice_marking_restored` | Marking restored for this game. | Screen reader announcement. |
-| `notice_settings_saved` | Saved. | Screen reader announcement after a setting changes. |
-| `notice_backup_downloaded` | Backup downloaded. | Screen reader announcement after the file is saved. |
-| `notice_backup_restored` | Backup restored. | Shown under the backup buttons and announced after a restore. |
-
-### `error_`
-
-| Key | English | Note |
-| --- | --- | --- |
-| `error_settings_save` | Could not save this change. Try again. | Under a setting whose change failed to save. |
-| `error_settings_load` | Could not load your settings. Showing the defaults. | Top of the settings page. |
-| `error_allow_list_save` | Could not update this game. Try again. | After "Stop marking", "Undo" or "Mark again" fails. |
-| `error_backup_create` | Could not create the backup. Try again. | When the backup file cannot be built. |
-| `error_backup_read` | Could not read this file. | When the chosen file cannot be opened or is not text. |
-| `error_backup_invalid` | This file is not a backup from `$name# Messages
-
-Every string the UI shows, as keys for `src/locales/en/messages.json`. Keys are snake_case, grouped by prefix. Placeholders use the Chrome form `$name$`. The note under each seeds the message's `description` for translators.
-
-For every translator:
-
-- The product reports what developers disclosed. Say "discloses" or "disclosed"; never say a game "uses" AI.
-- Badge labels show on one line and truncate past about 40% longer than English. Shorter is better.
-- The developer's notes, game names and service names are never part of a message; they are inserted as data.
-
-### `badge_`
-
-| Key | English | Note |
-| --- | --- | --- |
-| `badge_full` | Discloses AI use | Label on search and wishlist rows. One line; truncates past about 22 characters. |
-| `badge_compact` | AI disclosed | Label over game images, also read by screen readers when only the icon shows. Keep it as short as the language allows. |
-| `badge_tooltip` | `$label$`. In the developer's own words: `$notes$` | Hover text on a badge. `label` is the badge label; `notes` is the developer's text, up to 200 characters, untranslated. |
-
-### `banner_`
-
-| Key | English | Note |
-| --- | --- | --- |
-| `banner_title` | The developer discloses AI use | Heading of the notice on a game's store page. |
-| `banner_source` | In the developer's own words: | Introduces the developer's text, which follows untranslated. |
-| `banner_expand` | Show full disclosure | Expands the collapsed text. |
-| `banner_collapse` | Show less | Collapses it again. |
-| `banner_service_label` | AI service named by the developer: | Precedes a product name inserted as data. |
-| `banner_ignore` | Stop marking this game | Stops badges and this notice for one game. Avoid the word the store uses for its own ignore feature. |
-| `banner_ignored` | You stopped marking this game. | Replaces the notice after the action above. |
-| `banner_undo` | Undo | Reverses the action above. |
-| `banner_region_label` | AI use disclosure | Screen reader name for the one-line note. |
-
-### `notice_`
-
-| Key | English | Note |
-| --- | --- | --- |
-| `notice_marking_stopped` | Marking stopped for this game. | Screen reader announcement. |
-| `notice_marking_restored` | Marking restored for this game. | Screen reader announcement. |
-| `notice_settings_saved` | Saved. | Screen reader announcement after a setting changes. |
-| `notice_backup_downloaded` | Backup downloaded. | Screen reader announcement after the file is saved. |
-| `notice_backup_restored` | Backup restored. | Shown under the backup buttons and announced after a restore. |
-
-### `error_`
-
-| Key | English | Note |
-| --- | --- | --- |
-| `error_settings_save` | Could not save this change. Try again. | Under a setting whose change failed to save. |
-| `error_settings_load` | Could not load your settings. Showing the defaults. | Top of the settings page. |
-. | `name` is the product name (`ext_name`). |
-| `error_backup_newer` | This backup comes from a newer version. Update the extension, then try again. | When the file's format version is newer than this build reads. |
-| `error_backup_restore` | Could not restore this backup. Nothing was changed. | When saving the restored data fails; nothing is half-applied. |
-
-`warn_` is reserved for runtime and log messages; the v1 UI has none.
-
-### `options_`
-
-| Key | English | Note |
-| --- | --- | --- |
-| `options_version` | Version `$version$` | Under the product name. |
-| `options_section_store` | On store pages | Section heading. |
-| `options_badges` | Badges on games that disclose AI use | Switch label. |
-| `options_badges_short` | Badges | The same switch in the popup. |
-| `options_badges_help` | Adds "`$full$`" to search and wishlist rows and "`$compact$`" to game images. | `full` and `compact` are the two badge labels. |
-| `options_banner` | Banner on game pages | Switch label. |
-| `options_banner_help` | Shows the developer's disclosure above the purchase box. | Help under the switch. |
-| `options_section_lists` | In lists | Section heading. |
-| `options_filter_label` | Games that disclose AI use | Label of a three-way choice. |
-| `options_filter_off` | Show | Leave these games as they are. |
-| `options_filter_dim` | Dim | Fade these games. |
-| `options_filter_hide` | Hide | Remove these games from lists. |
-| `options_filter_off_help` | Lists stay as they are, apart from badges. | Help for "Show". |
-| `options_filter_dim_help` | Fades these games in lists. Hover to see one clearly. | Help for "Dim". |
-| `options_filter_hide_help` | Removes these games from lists. Where hiding would break a list, they are dimmed instead. | Help for "Hide". |
-| `options_section_language` | Language | Section heading. |
-| `options_language_label` | Language of this extension | Label of the picker. |
-| `options_language_auto` | Automatic | First picker entry. |
-| `options_language_help` | Automatic follows the store page's language when a translation exists, and English otherwise. | Help under the picker. |
-| `options_section_allow` | Games you stopped marking | Section heading. |
-| `options_allow_since` | Since `$date$` | `date` is already formatted for the locale. |
-| `options_allow_restore` | Mark again | Button next to a game. |
-| `options_allow_restore_label` | Mark `$name$` again | Screen reader name of that button; `name` is untranslated. |
-| `options_allow_empty` | None yet. Use "`$action$`" on a game page. | `action` is the "Stop marking this game" label. |
-| `options_section_privacy` | Privacy | Section heading. |
-| `options_privacy_storage` | Settings and results stay in this browser. | Privacy bullet. |
-| `options_privacy_lookup` | To check a game, the extension asks Valve's own store servers, without your cookies or account. | Privacy bullet. |
-| `options_privacy_nothing_sent` | Nothing is sent to us or anyone else. No analytics. | Privacy bullet. |
-| `options_privacy_backup` | Backups are files on your computer. They never pass through us. | Privacy bullet. |
-| `options_unaffiliated` | Not affiliated with or endorsed by Valve Corporation. Steam is a trademark of Valve Corporation. | Legal line; keep the names as they are. |
-| `options_unaffiliated_short` | Not affiliated with Valve. Nothing leaves your browser except lookups to Valve's store. | Popup footer. |
- | Heading of the check shown before restoring. `date` is already formatted for the locale. |
+| `options_backup_summary_title` | Backup from `$date$` | Heading of the check shown before restoring. `date` is already formatted for the locale. |
 | `options_backup_summary_settings` | Settings | First item of that check. |
 | `options_backup_summary_allow_one` | 1 game you stopped marking | Plural, one. |
-| `options_backup_summary_allow_other` | `$count# Messages
-
-Every string the UI shows, as keys for `src/locales/en/messages.json`. Keys are snake_case, grouped by prefix. Placeholders use the Chrome form `$name$`. The note under each seeds the message's `description` for translators.
-
-For every translator:
-
-- The product reports what developers disclosed. Say "discloses" or "disclosed"; never say a game "uses" AI.
-- Badge labels show on one line and truncate past about 40% longer than English. Shorter is better.
-- The developer's notes, game names and service names are never part of a message; they are inserted as data.
-
-### `badge_`
-
-| Key | English | Note |
-| --- | --- | --- |
-| `badge_full` | Discloses AI use | Label on search and wishlist rows. One line; truncates past about 22 characters. |
-| `badge_compact` | AI disclosed | Label over game images, also read by screen readers when only the icon shows. Keep it as short as the language allows. |
-| `badge_tooltip` | `$label$`. In the developer's own words: `$notes$` | Hover text on a badge. `label` is the badge label; `notes` is the developer's text, up to 200 characters, untranslated. |
-
-### `banner_`
-
-| Key | English | Note |
-| --- | --- | --- |
-| `banner_title` | The developer discloses AI use | Heading of the notice on a game's store page. |
-| `banner_source` | In the developer's own words: | Introduces the developer's text, which follows untranslated. |
-| `banner_expand` | Show full disclosure | Expands the collapsed text. |
-| `banner_collapse` | Show less | Collapses it again. |
-| `banner_service_label` | AI service named by the developer: | Precedes a product name inserted as data. |
-| `banner_ignore` | Stop marking this game | Stops badges and this notice for one game. Avoid the word the store uses for its own ignore feature. |
-| `banner_ignored` | You stopped marking this game. | Replaces the notice after the action above. |
-| `banner_undo` | Undo | Reverses the action above. |
-| `banner_region_label` | AI use disclosure | Screen reader name for the one-line note. |
-
-### `notice_`
-
-| Key | English | Note |
-| --- | --- | --- |
-| `notice_marking_stopped` | Marking stopped for this game. | Screen reader announcement. |
-| `notice_marking_restored` | Marking restored for this game. | Screen reader announcement. |
-| `notice_settings_saved` | Saved. | Screen reader announcement after a setting changes. |
-| `notice_backup_downloaded` | Backup downloaded. | Screen reader announcement after the file is saved. |
-| `notice_backup_restored` | Backup restored. | Shown under the backup buttons and announced after a restore. |
-
-### `error_`
-
-| Key | English | Note |
-| --- | --- | --- |
-| `error_settings_save` | Could not save this change. Try again. | Under a setting whose change failed to save. |
-| `error_settings_load` | Could not load your settings. Showing the defaults. | Top of the settings page. |
-| `error_allow_list_save` | Could not update this game. Try again. | After "Stop marking", "Undo" or "Mark again" fails. |
-| `error_backup_create` | Could not create the backup. Try again. | When the backup file cannot be built. |
-| `error_backup_read` | Could not read this file. | When the chosen file cannot be opened or is not text. |
-| `error_backup_invalid` | This file is not a backup from `$name# Messages
-
-Every string the UI shows, as keys for `src/locales/en/messages.json`. Keys are snake_case, grouped by prefix. Placeholders use the Chrome form `$name$`. The note under each seeds the message's `description` for translators.
-
-For every translator:
-
-- The product reports what developers disclosed. Say "discloses" or "disclosed"; never say a game "uses" AI.
-- Badge labels show on one line and truncate past about 40% longer than English. Shorter is better.
-- The developer's notes, game names and service names are never part of a message; they are inserted as data.
-
-### `badge_`
-
-| Key | English | Note |
-| --- | --- | --- |
-| `badge_full` | Discloses AI use | Label on search and wishlist rows. One line; truncates past about 22 characters. |
-| `badge_compact` | AI disclosed | Label over game images, also read by screen readers when only the icon shows. Keep it as short as the language allows. |
-| `badge_tooltip` | `$label$`. In the developer's own words: `$notes$` | Hover text on a badge. `label` is the badge label; `notes` is the developer's text, up to 200 characters, untranslated. |
-
-### `banner_`
-
-| Key | English | Note |
-| --- | --- | --- |
-| `banner_title` | The developer discloses AI use | Heading of the notice on a game's store page. |
-| `banner_source` | In the developer's own words: | Introduces the developer's text, which follows untranslated. |
-| `banner_expand` | Show full disclosure | Expands the collapsed text. |
-| `banner_collapse` | Show less | Collapses it again. |
-| `banner_service_label` | AI service named by the developer: | Precedes a product name inserted as data. |
-| `banner_ignore` | Stop marking this game | Stops badges and this notice for one game. Avoid the word the store uses for its own ignore feature. |
-| `banner_ignored` | You stopped marking this game. | Replaces the notice after the action above. |
-| `banner_undo` | Undo | Reverses the action above. |
-| `banner_region_label` | AI use disclosure | Screen reader name for the one-line note. |
-
-### `notice_`
-
-| Key | English | Note |
-| --- | --- | --- |
-| `notice_marking_stopped` | Marking stopped for this game. | Screen reader announcement. |
-| `notice_marking_restored` | Marking restored for this game. | Screen reader announcement. |
-| `notice_settings_saved` | Saved. | Screen reader announcement after a setting changes. |
-| `notice_backup_downloaded` | Backup downloaded. | Screen reader announcement after the file is saved. |
-| `notice_backup_restored` | Backup restored. | Shown under the backup buttons and announced after a restore. |
-
-### `error_`
-
-| Key | English | Note |
-| --- | --- | --- |
-| `error_settings_save` | Could not save this change. Try again. | Under a setting whose change failed to save. |
-| `error_settings_load` | Could not load your settings. Showing the defaults. | Top of the settings page. |
-. | `name` is the product name (`ext_name`). |
-| `error_backup_newer` | This backup comes from a newer version. Update the extension, then try again. | When the file's format version is newer than this build reads. |
-| `error_backup_restore` | Could not restore this backup. Nothing was changed. | When saving the restored data fails; nothing is half-applied. |
-
-`warn_` is reserved for runtime and log messages; the v1 UI has none.
-
-### `options_`
-
-| Key | English | Note |
-| --- | --- | --- |
-| `options_version` | Version `$version$` | Under the product name. |
-| `options_section_store` | On store pages | Section heading. |
-| `options_badges` | Badges on games that disclose AI use | Switch label. |
-| `options_badges_short` | Badges | The same switch in the popup. |
-| `options_badges_help` | Adds "`$full$`" to search and wishlist rows and "`$compact$`" to game images. | `full` and `compact` are the two badge labels. |
-| `options_banner` | Banner on game pages | Switch label. |
-| `options_banner_help` | Shows the developer's disclosure above the purchase box. | Help under the switch. |
-| `options_section_lists` | In lists | Section heading. |
-| `options_filter_label` | Games that disclose AI use | Label of a three-way choice. |
-| `options_filter_off` | Show | Leave these games as they are. |
-| `options_filter_dim` | Dim | Fade these games. |
-| `options_filter_hide` | Hide | Remove these games from lists. |
-| `options_filter_off_help` | Lists stay as they are, apart from badges. | Help for "Show". |
-| `options_filter_dim_help` | Fades these games in lists. Hover to see one clearly. | Help for "Dim". |
-| `options_filter_hide_help` | Removes these games from lists. Where hiding would break a list, they are dimmed instead. | Help for "Hide". |
-| `options_section_language` | Language | Section heading. |
-| `options_language_label` | Language of this extension | Label of the picker. |
-| `options_language_auto` | Automatic | First picker entry. |
-| `options_language_help` | Automatic follows the store page's language when a translation exists, and English otherwise. | Help under the picker. |
-| `options_section_allow` | Games you stopped marking | Section heading. |
-| `options_allow_since` | Since `$date$` | `date` is already formatted for the locale. |
-| `options_allow_restore` | Mark again | Button next to a game. |
-| `options_allow_restore_label` | Mark `$name$` again | Screen reader name of that button; `name` is untranslated. |
-| `options_allow_empty` | None yet. Use "`$action$`" on a game page. | `action` is the "Stop marking this game" label. |
-| `options_section_privacy` | Privacy | Section heading. |
-| `options_privacy_storage` | Settings and results stay in this browser. | Privacy bullet. |
-| `options_privacy_lookup` | To check a game, the extension asks Valve's own store servers, without your cookies or account. | Privacy bullet. |
-| `options_privacy_nothing_sent` | Nothing is sent to us or anyone else. No analytics. | Privacy bullet. |
-| `options_privacy_backup` | Backups are files on your computer. They never pass through us. | Privacy bullet. |
-| `options_unaffiliated` | Not affiliated with or endorsed by Valve Corporation. Steam is a trademark of Valve Corporation. | Legal line; keep the names as they are. |
-| `options_unaffiliated_short` | Not affiliated with Valve. Nothing leaves your browser except lookups to Valve's store. | Popup footer. |
- games you stopped marking | Plural, other. |
+| `options_backup_summary_allow_other` | `$count$` games you stopped marking | Plural, other. |
 | `options_backup_summary_history_one` | 1 checked game | Plural, one: a game the extension has already looked up. |
-| `options_backup_summary_history_other` | `$count# Messages
-
-Every string the UI shows, as keys for `src/locales/en/messages.json`. Keys are snake_case, grouped by prefix. Placeholders use the Chrome form `$name$`. The note under each seeds the message's `description` for translators.
-
-For every translator:
-
-- The product reports what developers disclosed. Say "discloses" or "disclosed"; never say a game "uses" AI.
-- Badge labels show on one line and truncate past about 40% longer than English. Shorter is better.
-- The developer's notes, game names and service names are never part of a message; they are inserted as data.
-
-### `badge_`
-
-| Key | English | Note |
-| --- | --- | --- |
-| `badge_full` | Discloses AI use | Label on search and wishlist rows. One line; truncates past about 22 characters. |
-| `badge_compact` | AI disclosed | Label over game images, also read by screen readers when only the icon shows. Keep it as short as the language allows. |
-| `badge_tooltip` | `$label$`. In the developer's own words: `$notes$` | Hover text on a badge. `label` is the badge label; `notes` is the developer's text, up to 200 characters, untranslated. |
-
-### `banner_`
-
-| Key | English | Note |
-| --- | --- | --- |
-| `banner_title` | The developer discloses AI use | Heading of the notice on a game's store page. |
-| `banner_source` | In the developer's own words: | Introduces the developer's text, which follows untranslated. |
-| `banner_expand` | Show full disclosure | Expands the collapsed text. |
-| `banner_collapse` | Show less | Collapses it again. |
-| `banner_service_label` | AI service named by the developer: | Precedes a product name inserted as data. |
-| `banner_ignore` | Stop marking this game | Stops badges and this notice for one game. Avoid the word the store uses for its own ignore feature. |
-| `banner_ignored` | You stopped marking this game. | Replaces the notice after the action above. |
-| `banner_undo` | Undo | Reverses the action above. |
-| `banner_region_label` | AI use disclosure | Screen reader name for the one-line note. |
-
-### `notice_`
-
-| Key | English | Note |
-| --- | --- | --- |
-| `notice_marking_stopped` | Marking stopped for this game. | Screen reader announcement. |
-| `notice_marking_restored` | Marking restored for this game. | Screen reader announcement. |
-| `notice_settings_saved` | Saved. | Screen reader announcement after a setting changes. |
-| `notice_backup_downloaded` | Backup downloaded. | Screen reader announcement after the file is saved. |
-| `notice_backup_restored` | Backup restored. | Shown under the backup buttons and announced after a restore. |
-
-### `error_`
-
-| Key | English | Note |
-| --- | --- | --- |
-| `error_settings_save` | Could not save this change. Try again. | Under a setting whose change failed to save. |
-| `error_settings_load` | Could not load your settings. Showing the defaults. | Top of the settings page. |
-| `error_allow_list_save` | Could not update this game. Try again. | After "Stop marking", "Undo" or "Mark again" fails. |
-| `error_backup_create` | Could not create the backup. Try again. | When the backup file cannot be built. |
-| `error_backup_read` | Could not read this file. | When the chosen file cannot be opened or is not text. |
-| `error_backup_invalid` | This file is not a backup from `$name# Messages
-
-Every string the UI shows, as keys for `src/locales/en/messages.json`. Keys are snake_case, grouped by prefix. Placeholders use the Chrome form `$name$`. The note under each seeds the message's `description` for translators.
-
-For every translator:
-
-- The product reports what developers disclosed. Say "discloses" or "disclosed"; never say a game "uses" AI.
-- Badge labels show on one line and truncate past about 40% longer than English. Shorter is better.
-- The developer's notes, game names and service names are never part of a message; they are inserted as data.
-
-### `badge_`
-
-| Key | English | Note |
-| --- | --- | --- |
-| `badge_full` | Discloses AI use | Label on search and wishlist rows. One line; truncates past about 22 characters. |
-| `badge_compact` | AI disclosed | Label over game images, also read by screen readers when only the icon shows. Keep it as short as the language allows. |
-| `badge_tooltip` | `$label$`. In the developer's own words: `$notes$` | Hover text on a badge. `label` is the badge label; `notes` is the developer's text, up to 200 characters, untranslated. |
-
-### `banner_`
-
-| Key | English | Note |
-| --- | --- | --- |
-| `banner_title` | The developer discloses AI use | Heading of the notice on a game's store page. |
-| `banner_source` | In the developer's own words: | Introduces the developer's text, which follows untranslated. |
-| `banner_expand` | Show full disclosure | Expands the collapsed text. |
-| `banner_collapse` | Show less | Collapses it again. |
-| `banner_service_label` | AI service named by the developer: | Precedes a product name inserted as data. |
-| `banner_ignore` | Stop marking this game | Stops badges and this notice for one game. Avoid the word the store uses for its own ignore feature. |
-| `banner_ignored` | You stopped marking this game. | Replaces the notice after the action above. |
-| `banner_undo` | Undo | Reverses the action above. |
-| `banner_region_label` | AI use disclosure | Screen reader name for the one-line note. |
-
-### `notice_`
-
-| Key | English | Note |
-| --- | --- | --- |
-| `notice_marking_stopped` | Marking stopped for this game. | Screen reader announcement. |
-| `notice_marking_restored` | Marking restored for this game. | Screen reader announcement. |
-| `notice_settings_saved` | Saved. | Screen reader announcement after a setting changes. |
-| `notice_backup_downloaded` | Backup downloaded. | Screen reader announcement after the file is saved. |
-| `notice_backup_restored` | Backup restored. | Shown under the backup buttons and announced after a restore. |
-
-### `error_`
-
-| Key | English | Note |
-| --- | --- | --- |
-| `error_settings_save` | Could not save this change. Try again. | Under a setting whose change failed to save. |
-| `error_settings_load` | Could not load your settings. Showing the defaults. | Top of the settings page. |
-. | `name` is the product name (`ext_name`). |
-| `error_backup_newer` | This backup comes from a newer version. Update the extension, then try again. | When the file's format version is newer than this build reads. |
-| `error_backup_restore` | Could not restore this backup. Nothing was changed. | When saving the restored data fails; nothing is half-applied. |
-
-`warn_` is reserved for runtime and log messages; the v1 UI has none.
-
-### `options_`
-
-| Key | English | Note |
-| --- | --- | --- |
-| `options_version` | Version `$version$` | Under the product name. |
-| `options_section_store` | On store pages | Section heading. |
-| `options_badges` | Badges on games that disclose AI use | Switch label. |
-| `options_badges_short` | Badges | The same switch in the popup. |
-| `options_badges_help` | Adds "`$full$`" to search and wishlist rows and "`$compact$`" to game images. | `full` and `compact` are the two badge labels. |
-| `options_banner` | Banner on game pages | Switch label. |
-| `options_banner_help` | Shows the developer's disclosure above the purchase box. | Help under the switch. |
-| `options_section_lists` | In lists | Section heading. |
-| `options_filter_label` | Games that disclose AI use | Label of a three-way choice. |
-| `options_filter_off` | Show | Leave these games as they are. |
-| `options_filter_dim` | Dim | Fade these games. |
-| `options_filter_hide` | Hide | Remove these games from lists. |
-| `options_filter_off_help` | Lists stay as they are, apart from badges. | Help for "Show". |
-| `options_filter_dim_help` | Fades these games in lists. Hover to see one clearly. | Help for "Dim". |
-| `options_filter_hide_help` | Removes these games from lists. Where hiding would break a list, they are dimmed instead. | Help for "Hide". |
-| `options_section_language` | Language | Section heading. |
-| `options_language_label` | Language of this extension | Label of the picker. |
-| `options_language_auto` | Automatic | First picker entry. |
-| `options_language_help` | Automatic follows the store page's language when a translation exists, and English otherwise. | Help under the picker. |
-| `options_section_allow` | Games you stopped marking | Section heading. |
-| `options_allow_since` | Since `$date$` | `date` is already formatted for the locale. |
-| `options_allow_restore` | Mark again | Button next to a game. |
-| `options_allow_restore_label` | Mark `$name$` again | Screen reader name of that button; `name` is untranslated. |
-| `options_allow_empty` | None yet. Use "`$action$`" on a game page. | `action` is the "Stop marking this game" label. |
-| `options_section_privacy` | Privacy | Section heading. |
-| `options_privacy_storage` | Settings and results stay in this browser. | Privacy bullet. |
-| `options_privacy_lookup` | To check a game, the extension asks Valve's own store servers, without your cookies or account. | Privacy bullet. |
-| `options_privacy_nothing_sent` | Nothing is sent to us or anyone else. No analytics. | Privacy bullet. |
-| `options_privacy_backup` | Backups are files on your computer. They never pass through us. | Privacy bullet. |
-| `options_unaffiliated` | Not affiliated with or endorsed by Valve Corporation. Steam is a trademark of Valve Corporation. | Legal line; keep the names as they are. |
-| `options_unaffiliated_short` | Not affiliated with Valve. Nothing leaves your browser except lookups to Valve's store. | Popup footer. |
- checked games | Plural, other. |
+| `options_backup_summary_history_other` | `$count$` checked games | Plural, other. |
 | `options_backup_restore_note` | Restoring replaces your settings and adds these games to your lists. Nothing already here is removed. | Under the check, before the buttons. |
 | `options_backup_confirm` | Restore | Applies the backup. |
 | `options_backup_cancel` | Cancel | Closes the check without changing anything. |
@@ -1357,19 +880,15 @@ WCAG 2.2 AA: 4.5:1 for text, 3:1 for non-text. Grounds are the store's own, samp
 | Full badge text `sar-accent-200` on its tint | store row hover | 5.21 |
 | Full badge text on its tint | page | 7.46 |
 | Full badge text on its tint | search row | 8.19 |
-| Full badge glyph `sar-accent-300` on its tint | store row hover | 3.65 |
 | Summary row label `sar-color-text-subtle` | page | 5.09 |
 | Summary row chip text `sar-accent-200` on its tint | page | 7.46 |
-| Summary row spark `sar-accent-300` on its tint | page | 5.22 |
 | Compact text `sar-accent-100` on `sar-accent-900` | any art (solid) | 12.65 |
-| Compact glyph `sar-accent-300` on `sar-accent-900` | any art (solid) | 7.62 |
 | Compact edge `sar-accent-400` (surface 1.26) | black art | 5.91 |
 | Compact surface | white art | 16.63 |
 | Compact surface (edge 1.11) | mid grey art `#808080` | 4.21 |
 | Compact surface (edge blends in) | violet art `#7458e0` | 3.34 |
 | Banner text `sar-banner-fg` | bright end | 5.54 |
 | Banner text `sar-banner-fg` | dark end | 9.84 |
-| Banner spark `sar-accent-100` | bright end | 6.13 |
 | Banner button label `sar-banner-button-fg` | bright end | 8.06 |
 | Banner button label on its hover wash | bright end | 6.29 |
 | Banner button edge `sar-banner-button-border` | bright end | 3.27 |
