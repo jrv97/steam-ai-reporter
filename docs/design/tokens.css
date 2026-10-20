@@ -1,0 +1,221 @@
+/*
+ * SFS design tokens (v1)
+ *
+ * Every custom property the extension and userscript UI reads. Step 10 of
+ * docs/plans/steam-ai-reporter-v1.md imports this file ahead of
+ * src/core/ui/styles.css. Component rules reference only these tokens, never raw values.
+ *
+ * Sources: neutrals, type sizes, spacing and radii were sampled from store.steampowered.com
+ * on 2026-10-20 (app page, search, wishlist, home), so injected UI sits in the page without a
+ * seam. The violet accent is ours. It stays clear of every hue the store already uses for
+ * meaning: blue (links, tags, wishlist), green (buy, discount, owned), tan and gold
+ * (third-party notices) and red (live). See docs/design/decisions.mdx.
+ *
+ * Contrast: every text pair listed in docs/design/components.mdx meets WCAG 2.2 AA
+ * (4.5:1 for text, 3:1 for non-text) on the sampled backgrounds.
+ *
+ * Fonts: no font file is bundled. "Motiva Sans" is the page's own, already loaded font,
+ * referenced by name only.
+ *
+ * i18n: sizes leave room for translations about 40% longer than English. Spacing with a
+ * direction is named for logical sides (block, inline, inline-start, inline-end), so
+ * components use logical properties. Right-to-left is out of scope for v1, but nothing here
+ * assumes left or right.
+ */
+
+:root {
+  /* Type */
+
+  /* Injected UI on store pages: the page's font by name, then fallbacks */
+  --sfs-font-page: "Motiva Sans", "Noto Sans", Arial, Helvetica, sans-serif;
+  /* Pages we own (options, popup, userscript dialog): Motiva is not loaded there */
+  --sfs-font-ext: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", Arial, sans-serif;
+
+  --sfs-weight-light: 300;
+  --sfs-weight-regular: 400;
+  --sfs-weight-medium: 500;
+  --sfs-weight-bold: 700;
+
+  /* The store's own 11/12/13/15/18 steps. 14/21 matches the store's description text, which
+     is where disclosure notes normally sit. */
+  --sfs-size-xs: 11px;
+  --sfs-leading-xs: 14px;
+  --sfs-size-sm: 12px;
+  --sfs-leading-sm: 16px;
+  --sfs-size-md: 13px;
+  --sfs-leading-md: 18px;
+  --sfs-size-lg: 14px;
+  --sfs-leading-lg: 21px;
+  --sfs-size-xl: 15px;
+  --sfs-leading-xl: 20px;
+  --sfs-size-2xl: 18px;
+  --sfs-leading-2xl: 23px;
+
+  /* Space, radius, motion, layering */
+
+  --sfs-space-0: 2px;
+  --sfs-space-1: 4px;
+  --sfs-space-2: 8px;
+  --sfs-space-3: 12px;
+  --sfs-space-4: 16px;
+  --sfs-space-5: 24px;
+  --sfs-space-6: 32px;
+
+  --sfs-radius-sm: 2px;
+  --sfs-radius-md: 4px;
+  --sfs-radius-lg: 8px;
+  --sfs-radius-pill: 9999px;
+
+  --sfs-duration-fast: 120ms;
+  --sfs-duration-base: 180ms;
+  --sfs-ease: cubic-bezier(0.2, 0, 0, 1);
+
+  /* Above capsule art and the store's corner flags, below the store's hover popups */
+  --sfs-z-badge: 3;
+
+  /* Neutrals (sampled from the store) */
+
+  --sfs-color-bg-page: #1b2838; /* Classic store body */
+  --sfs-color-bg-page-deep: #0f1924; /* React pages (wishlist) */
+  --sfs-color-bg-row: #16202d; /* Search row: 20% black over the page */
+  --sfs-color-bg-sunken: #0e141b;
+  --sfs-color-bg-panel: #171d25; /* Options page and popup */
+  --sfs-color-bg-raised: #1f2630; /* Cards on the options page */
+  --sfs-color-bg-hover: rgb(255 255 255 / 0.06);
+
+  --sfs-color-text-strong: #ffffff; /* Headings */
+  --sfs-color-text: #c6d4df; /* Body, quoted notes */
+  --sfs-color-text-muted: #acb2b8; /* Meta lines; AA on every surface, banner included */
+  --sfs-color-text-subtle: #8f98a0; /* AA on page, row, panel and raised; never on the banner */
+
+  --sfs-color-border: #6e7a88; /* Form control edges, 3:1 on panel and raised */
+  --sfs-color-error: #ffa39e; /* Inline error text; AA on every surface */
+  --sfs-color-divider: rgb(255 255 255 / 0.08); /* Decorative only */
+
+  /* Accent (ours) */
+
+  --sfs-accent-100: #e4dcff; /* Badge text */
+  --sfs-accent-200: #d6caff; /* Actions and links on tinted surfaces */
+  --sfs-accent-300: #b7a2ff; /* Glyphs, links on dark, focus ring */
+  --sfs-accent-400: #8f73f3; /* Borders, banner rule, switch track, icon fill */
+  --sfs-accent-500: #7458e0; /* Banner wash base */
+  --sfs-accent-600: #5f42c8; /* Primary button */
+  --sfs-accent-700: #46318f; /* Selected segment */
+  --sfs-accent-800: #2c2160;
+  --sfs-accent-900: #1f1840; /* Compact badge surface, opaque */
+
+  --sfs-accent-400-rgb: 143 115 243;
+  --sfs-accent-500-rgb: 116 88 224;
+
+  /* Focus */
+
+  --sfs-focus-color: var(--sfs-accent-300);
+  --sfs-focus-width: 2px;
+  --sfs-focus-offset: 2px;
+
+  /* Full badge (search rows, wishlist rows) */
+
+  --sfs-badge-height: 20px;
+  --sfs-badge-pad-inline: 6px;
+  /* English needs about 124px. The cap leaves room for 40% longer translations; past it the
+     label ends in an ellipsis. */
+  --sfs-badge-max-inline-size: 180px;
+  --sfs-badge-gap: 4px;
+  --sfs-badge-glyph: 10px;
+  --sfs-badge-font: var(--sfs-weight-regular) var(--sfs-size-xs) / 18px var(--sfs-font-page);
+  --sfs-badge-fg: var(--sfs-accent-100);
+  --sfs-badge-glyph-color: var(--sfs-accent-300);
+  --sfs-badge-bg: rgb(var(--sfs-accent-400-rgb) / 0.22);
+  --sfs-badge-border: rgb(var(--sfs-accent-400-rgb) / 0.55);
+  --sfs-badge-radius: var(--sfs-radius-sm);
+
+  /* Compact badge (over capsule art) */
+
+  /* Opaque surface: text contrast never depends on the cover art below */
+  --sfs-compact-bg: var(--sfs-accent-900);
+  --sfs-compact-fg: var(--sfs-accent-100);
+  --sfs-compact-glyph-color: var(--sfs-accent-300);
+  --sfs-compact-border: var(--sfs-accent-400);
+  --sfs-compact-shadow: 0 0 0 1px rgb(0 0 0 / 0.45), 0 1px 3px rgb(0 0 0 / 0.5);
+  --sfs-compact-radius: var(--sfs-radius-sm);
+
+  --sfs-compact-height: 18px;
+  --sfs-compact-pad-inline: 5px;
+  --sfs-compact-gap: 4px;
+  --sfs-compact-glyph: 9px;
+  --sfs-compact-inset: 4px; /* From block-start and inline-end */
+  --sfs-compact-font: var(--sfs-weight-medium) var(--sfs-size-xs) / 16px var(--sfs-font-page);
+
+  --sfs-compact-height-lg: 22px;
+  --sfs-compact-pad-inline-lg: 7px;
+  --sfs-compact-glyph-lg: 11px;
+  --sfs-compact-inset-lg: 8px;
+  --sfs-compact-font-lg: var(--sfs-weight-medium) var(--sfs-size-sm) / 20px var(--sfs-font-page);
+
+  /* App page banner */
+
+  --sfs-banner-bg: linear-gradient(
+    135deg,
+    rgb(var(--sfs-accent-500-rgb) / 0.28) 0%,
+    rgb(var(--sfs-accent-500-rgb) / 0.12) 100%
+  );
+  --sfs-banner-rule: var(--sfs-accent-400);
+  --sfs-banner-rule-width: 3px; /* On the inline-start edge */
+  --sfs-banner-radius: var(--sfs-radius-md);
+  /* Same lift as the purchase box below it */
+  --sfs-banner-shadow: 2px 2px 15px 0 rgb(0 0 0 / 0.4);
+  --sfs-banner-pad-block: var(--sfs-space-3);
+  --sfs-banner-pad-inline: var(--sfs-space-4);
+  --sfs-banner-gap: var(--sfs-space-2);
+  --sfs-banner-margin-bottom: var(--sfs-space-4);
+  --sfs-banner-title-font: var(--sfs-weight-regular) var(--sfs-size-xl) / var(--sfs-leading-xl)
+    var(--sfs-font-page);
+  --sfs-banner-meta-font: var(--sfs-weight-regular) var(--sfs-size-sm) / var(--sfs-leading-sm)
+    var(--sfs-font-page);
+  --sfs-banner-quote-font: var(--sfs-weight-regular) var(--sfs-size-lg) / var(--sfs-leading-lg)
+    var(--sfs-font-page);
+  --sfs-banner-quote-lines: 3;
+  --sfs-banner-action-color: var(--sfs-accent-200);
+  --sfs-banner-action-bg-hover: rgb(255 255 255 / 0.1);
+
+  /* List filter */
+
+  /* Opacity only: no filter, so hundreds of dimmed capsules stay cheap to paint. The store's
+     own "ignored" state is 0.3; ours is lighter, and the badge names the reason. */
+  --sfs-dim-opacity: 0.4;
+
+  /* Options page and action popup */
+
+  --sfs-options-max-width: 640px;
+  --sfs-popup-width: 360px;
+  --sfs-control-height: 36px;
+  --sfs-control-height-sm: 28px;
+  --sfs-card-pad: var(--sfs-space-4);
+  --sfs-card-radius: var(--sfs-radius-md);
+
+  --sfs-button-primary-bg: var(--sfs-accent-600);
+  --sfs-button-primary-bg-hover: var(--sfs-accent-500);
+  --sfs-button-primary-fg: #ffffff;
+  --sfs-button-secondary-bg: rgb(255 255 255 / 0.08);
+  --sfs-button-secondary-bg-hover: rgb(255 255 255 / 0.14);
+  --sfs-button-secondary-fg: var(--sfs-color-text);
+
+  --sfs-toggle-width: 36px;
+  --sfs-toggle-height: 20px;
+  --sfs-toggle-track-off: #3d4450;
+  --sfs-toggle-track-off-border: var(--sfs-color-border);
+  --sfs-toggle-track-on: var(--sfs-accent-400);
+  --sfs-toggle-thumb: #ffffff;
+
+  --sfs-segment-bg: var(--sfs-color-bg-sunken);
+  --sfs-segment-selected-bg: var(--sfs-accent-700);
+  --sfs-segment-selected-border: var(--sfs-accent-400);
+  --sfs-segment-selected-fg: #ffffff;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --sfs-duration-fast: 0ms;
+    --sfs-duration-base: 0ms;
+  }
+}

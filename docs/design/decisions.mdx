@@ -1,0 +1,210 @@
+---
+title: SFS UI design decisions (v1)
+status: draft
+updated: 2026-10-20
+---
+
+# SFS UI design decisions (v1)
+
+The choices behind `tokens.css`, `components.mdx` and `assets/icons/`, and what is still open.
+Each entry names the alternatives that were weighed. None of these is big enough for an ADR: the
+plan treats placement rules as tunable constants and copy changes as catalog edits, and the
+i18n runtime itself is ADR 0004.
+
+## How the values were found
+
+- Sampled with computed styles from live store pages on 2026-10-20, logged out, in English, at
+  1280 px wide: the app page of 5072580, `/search/?term=ai`, a (private) wishlist URL, and the
+  home page.
+- The React pages ship their own token set on `:root`. Its spacing (4, 8, 12, 16, 24, 32),
+  radii (2, 4, 8), type sizes (11, 12, 13, 15, 18, 22) and control heights (24, 36, 48) became
+  our scale, so injected UI lines up with both classic and React pages.
+- Contrast was computed with the WCAG 2.x formula, compositing every translucent token over each
+  sampled background. Results are in the contrast table of `components.mdx`.
+- `specimen.html` was rendered in headless Chrome to check every component: the compact badge
+  over light, dark, striped, grey, sky and violet art, the list filter in both modes, and copy
+  40% to 200% longer than English at 616 px and 360 px.
+
+## Decisions
+
+**1. Match the store's look, carry no Valve branding.** Neutrals, type sizes, spacing and radii
+are sampled values; the page's "Motiva Sans" is referenced by name only. No logo, wordmark,
+icon, image or font file from Valve appears anywhere. Agreed with the user before this work.
+
+- Using the brand assets: store listings reject that, and the product would look official.
+- A fully foreign look: a visible seam on every page.
+
+**2. Violet is our accent.** Every other hue already means something on the store: blue is
+links, tags and the wishlist flag (`#67c1f5`, `#03628b`, `#4f95bd`); green is buy, discount and
+in-cart (`#beee11`, `#a3cf06`); tan is the third-party notice (`#e1c48a`), which the store now
+also uses for "Connects to 3rd-Party Service for AI Content Generation"; red is live broadcasts.
+Violet is unused on the surfaces we saw and carries no traffic-light verdict, which matters
+because the badge must not judge.
+
+- Teal: too close to the store's blue.
+- Amber or gold: collides with the store's own notice and reads as a warning.
+- Red or orange: reads as danger, which a disclosure does not support.
+
+**3. The mark is a plain label tag holding a spark.** It says "a label about AI", which is what
+the product is. The badge glyph is the spark alone. The tag has no punched hole (removed at the
+user's request): the pointed end already says "tag", and the plain shape stays clean at 16 px.
+The spark sits on the tag's visual center rather than on the flat part.
+
+- Speech bubble plus spark: reads as an AI chat tool, the opposite of the product.
+- The letters "AI": unreadable at 16 px, need translating, and tie the art to the wording.
+- An eye or a magnifier: surveillance and investigation connotations.
+
+**4. The compact badge sits in the block-start, inline-end corner (top right in English) on an
+opaque surface.** The store's own flags (in library, on wishlist, ignored, in cart) and the live
+pill sit top-left, and prices sit on the bottom edge. An opaque accent 900 surface with a border
+and an outer ring keeps text at 12.65:1 over any art.
+
+- A translucent or blurred surface (`backdrop-filter`): contrast would depend on the art, and
+  blur costs paint time on carousel-heavy pages.
+- Bottom-left: free on most capsules, but cover art usually puts the game's logo there.
+
+**5. Compact size tiers are measured in JavaScript, not with container queries.** A
+`container-type: inline-size` would change how a container sizes itself, which could break
+store layouts we do not own. The measurement happens once, in the scanner's batched read phase.
+
+**6. On search rows, the full badge goes on the line under the title.** The title line is
+`overflow: hidden; white-space: nowrap`, so a badge after a long title would be clipped. The
+platform line has room and keeps titles aligned.
+
+**7. The banner sits at the top of the left column, above the purchase box, in a shadow root.**
+That is where a buyer looks before buying.
+
+- The right column, next to the store's own AI-service notice: 326 px wide and usually below
+  the fold.
+- Under "About this game": after the buying decision.
+- A modal: the market leader's approach, which users asked to get away from.
+- Light DOM: store CSS styles bare `h2`, `p` and `button`. A shadow root isolates both ways and
+  still inherits our tokens and the page font.
+
+**8. The banner attributes every word.** The title "The developer discloses AI use", the source
+line "In the developer's own words:" and the service label "AI service named by the developer:"
+all name the developer. Nothing paraphrases or rates the notes.
+
+**9. "Stop marking this game" instead of "Ignore this game".** The store's app page has its own
+"Ignore" button for logged-in users, which hides the game from the store. The same word just
+above the buy box would suggest our button does that too. The allow-list section is "Games you
+stopped marking", with "Mark again" per item. See open question 2.
+
+**10. The list filter values read "Show", "Dim" and "Hide".** The stored value stays `off`, but
+a control labelled "Games that disclose AI use: Off" can read as "turn those games off".
+
+**11. Dim is opacity 0.4 only, restored on hover and focus.** A grayscale filter was dropped:
+every filtered capsule becomes its own effect layer, and a sale page can hold hundreds. The
+store's own ignored state is opacity 0.3; ours is lighter, and the badge on the host names the
+reason, so the two stay distinguishable. Only the hovered host fades back; a mode change has no
+transition.
+
+**12. Settings are attributes on the root element, and the list filter is pure CSS.**
+`data-sfs-filter` and `data-sfs-badges` sit on `document.documentElement` and are matched
+against the `data-sfs-state` and `data-sfs-hideable` attributes the scanner already writes on
+each host. Changing a setting is one attribute write per tab, not one write per capsule. The
+same approach removes the last inline style: an image container that needs positioning gets
+`data-sfs-anchor`, and CSS makes it `position: relative`.
+
+- Toggling `sfs-dim` and `sfs-hide` classes on each host: one write per capsule on every setting
+  change, and the classes must be re-applied when React re-renders a row.
+- Inline `style` writes: the same cost, and they fight the store's own inline styles.
+
+**13. The banner collapses at 3 lines, without animation, and forgets the expanded state.**
+Three lines (63 px) keep the purchase box near the fold. Line clamp cannot animate, and a jump
+is calmer than a fake slide.
+
+**14. Tooltips are native, and the compact badge only takes the pointer inside the capsule
+link.** The tooltip carries the badge label plus the start of the notes, so a truncated label
+never loses its message. Inside the link, hovering or clicking the badge is hovering or clicking
+the link, so the store's previews and navigation keep working. Outside a link the badge stays
+`pointer-events: none` with no tooltip, so it never swallows a click on an overlaid link. A
+custom tooltip would fight the store's own hover previews.
+
+**15. The options page and popup are dark only and use a system font stack.** They open from a
+dark store, and a light theme would need a second palette for no v1 gain. The store font is not
+available on extension pages and is not bundled.
+
+**16. The 128 px icon carries 16 px of transparent padding.** It follows the Chrome Web Store
+image guidelines (96 px artwork in a 128 px canvas). The 16, 32 and 48 px icons are full bleed,
+and the 16 px one is hand-hinted.
+
+**17. Tokens live on `:root` of the store page.** Every name starts with `--sfs-`, so nothing
+collides with the store's own custom properties, and shadow roots inherit them.
+
+**18. Every message is a catalog key, proposed in `components.mdx`.** Keys are snake_case and
+grouped by prefix (`badge_`, `banner_`, `notice_`, `error_`, `options_`, `ext_`,
+`userscript_`, with `warn_` reserved for runtime messages), each with a translator note that
+becomes its `description`. Labels that quote another label (the badge help, the empty
+allow-list) take it as a placeholder, so a translation stays consistent with itself. The service
+line is a label followed by the name as data, rather than a sentence with a placeholder, so no
+message has to carry markup.
+
+**19. Badges truncate; everything else wraps.** Badges must stay one line over art and in rows,
+so their labels end in an ellipsis past a cap (180 px for the full badge, the image width for
+the compact badge), and the full message lives in the tooltip and the DOM. The banner, the
+one-line note, the options page, the popup and the dialog wrap: the banner head moves its action
+under the title, the segmented control is full width with equal columns whose labels can take
+two lines, and stacked fields give wide controls their own row.
+
+- Shrinking the font for long translations: unreadable at 11 px and below.
+- Letting badges wrap to two lines: breaks the row rhythm and covers more art.
+
+**20. Compact tiers depend on image size only.** A longer label never changes the tier; it
+truncates within it. Tiers that switch on label width would make the same capsule look different
+per language.
+
+**21. Logical properties and logical token names.** Spacing, insets and the banner rule use
+inline and block sides, so a future right-to-left layout needs few changes. The switch thumb's
+`translateX` is the one physical value left, marked in `reference.css`. The store's own corner
+flags are positioned with a physical `left`, so in a right-to-left store our inline-end badge
+would land on them; that is accepted while right-to-left is out of scope.
+
+**22. A language picker on the full options page.** The plan's `locale` setting (default
+`auto`) needs a visible override. It lives in its own card on the full page and in the userscript
+dialog, not in the popup, and names each language in that language through
+`Intl.DisplayNames`, so language names never need translating.
+
+## Ideas credited
+
+No code, styles or assets were copied from any prior-art extension; everything here was drawn
+and written for this project. Ideas that shaped it, to be credited in the README:
+
+- A dismissible banner in the style of the store's DRM notice instead of a modal: requested by
+  commenters on Augmented Steam issue 1913, and shipped as a top-of-page banner by Obvious Steam
+  AI.
+- Dim or hide modes for lists: AI warning for Steam (blur or hide on search).
+- Falling back from hiding to highlighting where a list cannot hide: AI Generated Content Filter
+  for Steam (its wishlist mode).
+
+## Open questions
+
+1. **"Stop marking" or "Ignore".** Decision 9 departs from the plan's "ignore this game" and
+   "ignored, undo". Keep it, or go back to the plan's words and accept the clash with the
+   store's own ignore button?
+2. **Wishlist anchor.** The wishlist is React and the sampled one was private, so the badge's
+   exact anchor next to the title is unverified. Spike S5 decides it, along with the discovery
+   queue, hubs and sale pages.
+3. **Row hover color.** `#2a475e` is the store's classic hover blue, assumed rather than
+   sampled. The full badge text passes on it (5.94:1); S5 should confirm the live value.
+4. **CSP for styles.** The banner and dialog attach styles with `adoptedStyleSheets`, and the
+   badges rely on `GM_addStyle` or the extension's `content.css`. S5 records the store's CSP and
+   S6 checks the managers; the fallback is light DOM plus the badge reset.
+5. **Line clamp with `pre-line` in Firefox.** `-webkit-line-clamp` is supported, but it was not
+   checked with `white-space: pre-line` and notes that contain blank lines. Check during step 10.
+6. **Forced colors.** The `forced-colors` rules are written but not yet checked in Windows high
+   contrast mode.
+7. **Steam in the listing text.** The product name "AI Reporter for Steam" and
+   `ext_description` ("Labels Steam games whose developers disclose generative AI use, in their
+   own words.") both use the trademark descriptively. Confirm both against the store listing
+   policies when the listing is written.
+8. **Language of the quoted notes.** The API does not say which language the developer wrote
+   in, so the quote carries no `lang` attribute and screen readers read it in the page's
+   language. If S2 shows the notes follow the requested language, the banner could set `lang`
+   from the request.
+9. **Dim distinctness.** Opacity 0.4 against the store's 0.3 is a small difference. If testing
+   shows people confuse our dim with the store's ignored state, profile a cheap second cue (for
+   example a tinted outline on the host) on a sale page before adding it.
+10. **Publishing the design system.** Nothing was published as an artifact. A page for the
+    extension's own identity (tokens, icon, components, no store branding) could be published
+    if the user wants one.
