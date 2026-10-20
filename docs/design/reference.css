@@ -1,17 +1,16 @@
 /*
- * SFS reference component CSS (v1)
+ * AI Reporter for Steam reference component CSS (v1)
  *
- * Reference implementation of docs/design/components.mdx, rendered by
- * docs/design/specimen.html. Step 10 can lift these rules into src/core/ui/styles.css as they
- * are. Only tokens from tokens.css are used.
+ * Reference implementation of docs/design/components.mdx, rendered by docs/design/previews/ and
+ * by the published design system. The UI step can lift these rules into src/core/ui/styles.css
+ * as they are. Only tokens from tokens.css are used, and tokens.css loads first.
  *
- * Light-DOM components (badges, list filter) start from a reset, because store CSS styles bare
- * span, a, button and h2 in places. The banner lives in a shadow root in the real build (see
- * components.mdx), so its rules work both inside a shadow root and in the light DOM.
+ * Light-DOM components (badges, summary row, list filter) start from a reset, because store CSS
+ * styles bare span, a, button and h2 in places. The banner lives in a shadow root in the real
+ * build, so its rules work both inside a shadow root and in the light DOM.
  *
- * State lives in data-sfs-* attributes, never in inline styles. Settings are attributes on the
- * root element (data-sfs-filter, data-sfs-badges), so changing a setting is one attribute write,
- * not one write per capsule.
+ * State lives in data-sar-* attributes, never in inline styles. Settings are attributes on the
+ * root element (data-sar-filter, data-sar-badges), so changing a setting is one attribute write.
  *
  * i18n: no copy lives here (no content: strings). Labels truncate or wrap, so translations
  * about 40% longer than English fit. Directional spacing uses logical properties; the only
@@ -20,17 +19,20 @@
 
 /* Shared */
 
-/* SVG descendants are excluded: all: unset would also reset the path's CSS d property to
-   none, and an inlined glyph would disappear. */
-.sfs-badge,
-.sfs-badge :where(:not(svg *)),
-.sfs-compact,
-.sfs-compact :where(:not(svg *)) {
+/* The reset skips SVG internals: all: unset would also reset the CSS d property and erase the
+   inlined spark path in Chromium. :where() keeps the selector as light as .sar-badge *. */
+
+.sar-badge,
+.sar-badge :where(:not(svg *)),
+.sar-compact,
+.sar-compact :where(:not(svg *)),
+.sar-summary-row,
+.sar-summary-row :where(:not(svg *)) {
   all: unset;
   box-sizing: border-box;
 }
 
-.sfs-vh {
+.sar-vh {
   position: absolute !important;
   width: 1px !important;
   height: 1px !important;
@@ -44,31 +46,31 @@
 
 /* Set by placements.ts on an image container that computed to position: static, after a
    batched read. Replaces an inline style write. */
-[data-sfs-anchor] {
+[data-sar-anchor] {
   position: relative;
 }
 
 /* Badges turned off while the page is open: hide what exists without touching each node */
-[data-sfs-badges="off"] .sfs-badge,
-[data-sfs-badges="off"] .sfs-compact {
+[data-sar-badges="off"] .sar-badge,
+[data-sar-badges="off"] .sar-compact,
+[data-sar-badges="off"] .sar-summary-row {
   display: none !important;
 }
 
 /* Full badge */
 
-.sfs-badge {
+.sar-badge {
   display: inline-flex;
   align-items: center;
-  gap: var(--sfs-badge-gap);
-  block-size: var(--sfs-badge-height);
-  max-inline-size: var(--sfs-badge-max-inline-size);
+  gap: var(--sar-badge-gap);
+  block-size: var(--sar-badge-height);
+  max-inline-size: var(--sar-badge-max-inline-size);
   min-inline-size: 0;
-  padding-inline: var(--sfs-badge-pad-inline);
-  border: 1px solid var(--sfs-badge-border);
-  border-radius: var(--sfs-badge-radius);
-  background: var(--sfs-badge-bg);
-  color: var(--sfs-badge-fg);
-  font: var(--sfs-badge-font);
+  padding-inline: var(--sar-badge-pad-inline);
+  border-radius: var(--sar-badge-radius);
+  background: var(--sar-badge-bg);
+  color: var(--sar-badge-fg);
+  font: var(--sar-badge-font);
   letter-spacing: normal;
   text-transform: none;
   white-space: nowrap;
@@ -77,18 +79,18 @@
   cursor: default;
 }
 
-.sfs-badge-glyph {
+.sar-badge-glyph {
   display: block;
-  inline-size: var(--sfs-badge-glyph);
-  block-size: var(--sfs-badge-glyph);
-  color: var(--sfs-badge-glyph-color);
+  inline-size: var(--sar-badge-glyph);
+  block-size: var(--sar-badge-glyph);
+  color: var(--sar-badge-glyph-color);
   fill: currentColor;
   flex: none;
 }
 
 /* The label is the part that gives way to a long translation */
-.sfs-badge-label,
-.sfs-compact-label {
+.sar-badge-label,
+.sar-compact-label {
   display: block;
   min-inline-size: 0;
   overflow: hidden;
@@ -97,30 +99,30 @@
 }
 
 /* Search rows: first item in the platform line, under the title */
-.search_platforms > .sfs-badge {
-  margin-inline-end: var(--sfs-space-2);
+.search_platforms > .sar-badge {
+  margin-inline-end: var(--sar-space-2);
   flex-shrink: 1;
 }
 
 /* Compact badge */
 
-.sfs-compact {
+.sar-compact {
   position: absolute;
-  inset-block-start: var(--sfs-compact-inset);
-  inset-inline-end: var(--sfs-compact-inset);
-  z-index: var(--sfs-z-badge);
+  /* Mirrors the store's corner flags: 5px down, flush to the edge, square, solid */
+  inset-block-start: var(--sar-compact-inset-block);
+  inset-inline-end: var(--sar-compact-inset-inline);
+  z-index: var(--sar-z-badge);
   display: inline-flex;
   align-items: center;
-  gap: var(--sfs-compact-gap);
-  block-size: var(--sfs-compact-height);
-  max-inline-size: calc(100% - 2 * var(--sfs-compact-inset));
-  padding-inline: var(--sfs-compact-pad-inline);
-  border: 1px solid var(--sfs-compact-border);
-  border-radius: var(--sfs-compact-radius);
-  background: var(--sfs-compact-bg);
-  box-shadow: var(--sfs-compact-shadow);
-  color: var(--sfs-compact-fg);
-  font: var(--sfs-compact-font);
+  gap: var(--sar-compact-gap);
+  block-size: var(--sar-compact-height);
+  max-inline-size: calc(100% - var(--sar-compact-inset-inline));
+  padding-inline: var(--sar-compact-pad-inline);
+  border: 1px solid var(--sar-compact-border);
+  background: var(--sar-compact-bg);
+  box-shadow: var(--sar-compact-shadow);
+  color: var(--sar-compact-fg);
+  font: var(--sar-compact-font);
   letter-spacing: normal;
   text-transform: none;
   white-space: nowrap;
@@ -129,362 +131,418 @@
 
 /* Placed inside the capsule link: hovering it is hovering the link, so the title tooltip can
    show without stealing clicks or hover previews */
-.sfs-compact[data-sfs-in-link="true"] {
+.sar-compact[data-sar-in-link="true"] {
   pointer-events: auto;
   cursor: pointer;
 }
 
-.sfs-compact-glyph {
+.sar-compact-glyph {
   display: block;
-  inline-size: var(--sfs-compact-glyph);
-  block-size: var(--sfs-compact-glyph);
-  color: var(--sfs-compact-glyph-color);
+  inline-size: var(--sar-compact-glyph);
+  block-size: var(--sar-compact-glyph);
+  color: var(--sar-compact-glyph-color);
   fill: currentColor;
   flex: none;
 }
 
-.sfs-compact[data-sfs-size="glyph"] {
-  inline-size: var(--sfs-compact-height);
+.sar-compact[data-sar-size="glyph"] {
+  inline-size: var(--sar-compact-height);
   padding: 0;
   justify-content: center;
 }
 
-.sfs-compact[data-sfs-size="large"] {
-  inset-block-start: var(--sfs-compact-inset-lg);
-  inset-inline-end: var(--sfs-compact-inset-lg);
-  block-size: var(--sfs-compact-height-lg);
-  max-inline-size: calc(100% - 2 * var(--sfs-compact-inset-lg));
-  padding-inline: var(--sfs-compact-pad-inline-lg);
-  font: var(--sfs-compact-font-lg);
+.sar-compact[data-sar-size="large"] {
+  block-size: var(--sar-compact-height-lg);
+  padding-inline: var(--sar-compact-pad-inline-lg);
+  font: var(--sar-compact-font-lg);
 }
 
-.sfs-compact[data-sfs-size="large"] .sfs-compact-glyph {
-  inline-size: var(--sfs-compact-glyph-lg);
-  block-size: var(--sfs-compact-glyph-lg);
+.sar-compact[data-sar-size="large"] .sar-compact-glyph {
+  inline-size: var(--sar-compact-glyph-lg);
+  block-size: var(--sar-compact-glyph-lg);
+}
+
+/* Summary row: one label and value row in the game's summary box, under Publisher. Same
+   shape as the store's own rows, with our own classes. */
+
+.sar-summary-row {
+  display: flex;
+  align-items: center;
+  min-block-size: var(--sar-badge-height);
+  color: var(--sar-color-text);
+  font: var(--sar-summary-label-font);
+  white-space: nowrap;
+}
+
+a.sar-summary-row {
+  cursor: pointer;
+}
+
+a.sar-summary-row:focus-visible {
+  outline: var(--sar-focus-width) solid var(--sar-focus-color);
+  outline-offset: var(--sar-focus-offset);
+}
+
+.sar-summary-label {
+  display: block;
+  flex: none;
+  inline-size: var(--sar-summary-label-inline-size);
+  padding-inline-end: var(--sar-summary-label-pad-inline-end);
+  overflow: hidden;
+  color: var(--sar-color-text-subtle);
+  font: var(--sar-summary-label-font);
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+}
+
+/* The full badge, set like the store's tag chips, allowed the whole value column */
+.sar-summary-row .sar-badge {
+  flex: 0 1 auto;
+  max-inline-size: 100%;
+  font: var(--sar-summary-tag-font);
+}
+
+a.sar-summary-row .sar-badge {
+  cursor: pointer;
 }
 
 /* List filter
  *
- * The mode is one attribute on the root element (data-sfs-filter="off|dim|hide"). Hosts carry
- * data-sfs-state from the scanner and, where hiding would break a list,
- * data-sfs-hideable="false". Allow-listed hosts carry data-sfs-state="allowed", so they never
+ * The mode is one attribute on the root element (data-sar-filter="off|dim|hide"). Hosts carry
+ * data-sar-state from the scanner and, where hiding would break a list,
+ * data-sar-hideable="false". Allow-listed hosts carry data-sar-state="allowed", so they never
  * match. Opacity only, no filter, and no transition when the mode changes, so hundreds of
  * capsules flip in one style pass.
  */
 
-[data-sfs-filter="dim"] [data-sfs-state="disclosed"],
-[data-sfs-filter="hide"] [data-sfs-state="disclosed"][data-sfs-hideable="false"] {
-  opacity: var(--sfs-dim-opacity) !important;
+[data-sar-filter="dim"] [data-sar-state="disclosed"],
+[data-sar-filter="hide"] [data-sar-state="disclosed"][data-sar-hideable="false"] {
+  opacity: var(--sar-dim-opacity) !important;
 }
 
 /* The fade back runs only on the one hovered host; leaving it snaps back */
-[data-sfs-filter="dim"] [data-sfs-state="disclosed"]:is(:hover, :focus-within),
-[data-sfs-filter="hide"] [data-sfs-state="disclosed"][data-sfs-hideable="false"]:is(
+[data-sar-filter="dim"] [data-sar-state="disclosed"]:is(:hover, :focus-within),
+[data-sar-filter="hide"] [data-sar-state="disclosed"][data-sar-hideable="false"]:is(
     :hover,
     :focus-within
   ) {
   opacity: 1 !important;
-  transition: opacity var(--sfs-duration-fast) var(--sfs-ease);
+  transition: opacity var(--sar-duration-fast) var(--sar-ease);
 }
 
-[data-sfs-filter="hide"] [data-sfs-state="disclosed"]:not([data-sfs-hideable="false"]) {
+[data-sar-filter="hide"] [data-sar-state="disclosed"]:not([data-sar-hideable="false"]) {
   display: none !important;
 }
 
-/* App page banner */
+/* App page banner
+ *
+ * Modeled on the store's own per-app notice bubbles (the DLC notice): a hue-coded 135 degree
+ * wash with no border, no radius and no shadow, light Motiva type, a white-transparent button
+ * and underlined in-bubble links. Our hue marks it as ours.
+ */
 
-.sfs-banner {
+.sar-banner {
   box-sizing: border-box;
   display: block;
-  margin: 0 0 var(--sfs-banner-margin-bottom);
-  padding-block: var(--sfs-banner-pad-block);
-  padding-inline: var(--sfs-banner-pad-inline);
-  border-inline-start: var(--sfs-banner-rule-width) solid var(--sfs-banner-rule);
-  border-radius: var(--sfs-banner-radius);
-  background: var(--sfs-banner-bg);
-  box-shadow: var(--sfs-banner-shadow);
-  color: var(--sfs-color-text);
-  font: var(--sfs-banner-quote-font);
+  margin: 0 0 var(--sar-banner-margin-bottom);
+  padding-block: var(--sar-banner-pad-block-start) var(--sar-banner-pad-block-end);
+  padding-inline: var(--sar-banner-pad-inline);
+  border: 0;
+  border-radius: 0;
+  background: var(--sar-banner-bg);
+  box-shadow: none;
+  color: var(--sar-banner-fg);
+  font: var(--sar-banner-meta-font);
   text-align: start;
   overflow-wrap: break-word;
 }
 
-/* Title and action share a line in English. A longer translation wraps the title first, then
-   moves the action under it, aligned to inline-end. */
-.sfs-banner-head {
+/* Title and button share a line in English. A longer translation wraps the title first, then
+   moves the button under it, aligned to inline-end. */
+.sar-banner-head {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  column-gap: var(--sfs-banner-gap);
-  row-gap: var(--sfs-space-1);
-  min-block-size: var(--sfs-control-height-sm);
+  column-gap: var(--sar-banner-gap);
+  row-gap: var(--sar-space-1);
 }
 
-.sfs-banner-glyph {
+.sar-banner-glyph {
   inline-size: 14px;
   block-size: 14px;
-  color: var(--sfs-accent-300);
+  color: var(--sar-banner-glyph-color);
   fill: currentColor;
   flex: none;
 }
 
-.sfs-banner-title {
+.sar-banner-title {
   margin: 0;
   padding: 0;
   background: none;
-  color: var(--sfs-color-text-strong);
-  font: var(--sfs-banner-title-font);
+  color: var(--sar-banner-fg);
+  font: var(--sar-banner-title-font);
   letter-spacing: normal;
   text-transform: none;
-  flex: 1 1 16em;
+  flex: 1 1 12em;
   min-inline-size: 0;
 }
 
-.sfs-banner-head .sfs-banner-action {
-  margin-inline-start: auto;
+.sar-banner-source,
+.sar-banner-service {
+  margin: var(--sar-space-1) 0 0;
+  color: var(--sar-banner-fg);
+  font: var(--sar-banner-meta-font);
 }
 
-.sfs-banner-source,
-.sfs-banner-service {
-  margin: var(--sfs-space-1) 0 0;
-  color: var(--sfs-color-text-muted);
-  font: var(--sfs-banner-meta-font);
-}
-
-.sfs-banner-service-name {
-  color: var(--sfs-color-text);
-}
-
-.sfs-banner-quote {
-  margin: var(--sfs-space-1) 0 0;
+.sar-banner-quote {
+  margin: var(--sar-space-1) 0 0;
   padding: 0;
-  color: var(--sfs-color-text);
-  font: var(--sfs-banner-quote-font);
+  color: var(--sar-banner-fg);
+  font: var(--sar-banner-quote-font);
   white-space: pre-line;
   overflow-wrap: anywhere;
 }
 
-.sfs-banner-quote[data-sfs-collapsed="true"] {
+.sar-banner-quote[data-sar-collapsed="true"] {
   display: -webkit-box;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: var(--sfs-banner-quote-lines);
-  line-clamp: var(--sfs-banner-quote-lines);
+  -webkit-line-clamp: var(--sar-banner-quote-lines);
+  line-clamp: var(--sar-banner-quote-lines);
   overflow: hidden;
 }
 
-.sfs-banner-action,
-.sfs-banner-toggle {
+/* "Stop marking this game": the store's white-transparent button */
+.sar-banner-action {
   appearance: none;
   display: inline-flex;
   align-items: center;
-  min-block-size: var(--sfs-control-height-sm);
   max-inline-size: 100%;
   margin: 0;
-  padding-block: var(--sfs-space-1);
-  padding-inline: var(--sfs-space-2);
-  border: 0;
-  border-radius: var(--sfs-radius-sm);
+  margin-inline-start: auto;
+  padding-block: 0;
+  padding-inline: var(--sar-banner-button-pad-inline);
+  border: 1px solid var(--sar-banner-button-border);
+  border-radius: var(--sar-radius-sm);
   background: transparent;
-  color: var(--sfs-banner-action-color);
-  font: var(--sfs-banner-meta-font);
+  color: var(--sar-banner-button-fg);
+  font: var(--sar-banner-button-font);
   text-align: start;
   white-space: normal;
   cursor: pointer;
   flex: none;
-  transition: background-color var(--sfs-duration-fast) var(--sfs-ease);
+  transition: background-color var(--sar-duration-fast) var(--sar-ease);
 }
 
-.sfs-banner-toggle {
-  margin-inline-start: calc(-1 * var(--sfs-space-2));
-  margin-block-start: var(--sfs-space-0);
+.sar-banner-action:hover {
+  background: var(--sar-banner-button-bg-hover);
 }
 
-.sfs-banner-action:hover,
-.sfs-banner-toggle:hover {
-  background: var(--sfs-banner-action-bg-hover);
+/* "Show full disclosure" and "Undo": the store's underlined in-bubble links, as buttons */
+.sar-banner-link {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  min-block-size: 24px;
+  max-inline-size: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--sar-banner-link-color);
+  font: inherit;
+  text-align: start;
   text-decoration: underline;
+  white-space: normal;
+  cursor: pointer;
+  flex: none;
 }
 
-.sfs-banner-action:focus-visible,
-.sfs-banner-toggle:focus-visible {
-  outline: var(--sfs-focus-width) solid var(--sfs-focus-color);
-  outline-offset: var(--sfs-focus-offset);
+.sar-banner-quote + .sar-banner-link {
+  margin-block-start: var(--sar-space-0);
 }
 
-.sfs-banner-error {
-  margin: var(--sfs-space-1) 0 0;
-  color: var(--sfs-color-error);
-  font: var(--sfs-banner-meta-font);
+.sar-banner-action:focus-visible,
+.sar-banner-link:focus-visible {
+  outline: var(--sar-focus-width) solid var(--sar-focus-color);
+  outline-offset: var(--sar-focus-offset);
 }
 
-/* Allow-listed: one line in English. A longer translation wraps inside the text box and
-   inside the button, so the glyph never sits alone on a line. */
-.sfs-banner[data-sfs-variant="ignored"] {
+.sar-banner-error {
+  margin: var(--sar-space-1) 0 0;
+  color: var(--sar-banner-error);
+  font: var(--sar-banner-meta-font);
+}
+
+/* Allow-listed: the store's DRM-notice geometry in neutral, no violet. One line in English; a
+   longer translation wraps inside the text box and inside the link, so the glyph never sits
+   alone on a line. */
+.sar-banner[data-sar-variant="ignored"] {
   display: flex;
   align-items: center;
-  gap: var(--sfs-banner-gap);
-  padding-block: var(--sfs-space-1);
-  border-inline-start-color: var(--sfs-color-divider);
-  background: rgb(0 0 0 / 0.2);
-  box-shadow: none;
-  color: var(--sfs-color-text-muted);
-  font: var(--sfs-banner-meta-font);
+  gap: var(--sar-banner-gap);
+  padding-block: var(--sar-space-1);
+  padding-inline: var(--sar-space-2);
+  border-radius: var(--sar-radius-xs);
+  background: var(--sar-banner-note-bg);
+  color: var(--sar-color-text-muted);
+  font: var(--sar-banner-note-font);
 }
 
-.sfs-banner-ignored-text {
+.sar-banner-ignored-text {
   flex: 1 1 0;
   min-inline-size: 0;
 }
 
-.sfs-banner[data-sfs-variant="ignored"] .sfs-banner-action {
+.sar-banner[data-sar-variant="ignored"] .sar-banner-link {
   flex: 0 1 auto;
   max-inline-size: 50%;
 }
 
-.sfs-banner[data-sfs-variant="ignored"] .sfs-banner-glyph {
-  color: var(--sfs-color-text-subtle);
+.sar-banner[data-sar-variant="ignored"] .sar-banner-glyph {
+  color: var(--sar-color-text-subtle);
 }
 
 /* Forced colors */
 
 @media (forced-colors: active) {
-  .sfs-badge,
-  .sfs-compact {
-    border-color: CanvasText;
+  .sar-badge,
+  .sar-compact {
+    border: 1px solid CanvasText;
     forced-color-adjust: none;
     background: Canvas;
     color: CanvasText;
   }
 
-  .sfs-badge-glyph,
-  .sfs-compact-glyph {
+  .sar-badge-glyph,
+  .sar-compact-glyph {
     color: CanvasText;
   }
 
-  .sfs-banner {
-    border-inline-start-color: Highlight;
+  /* The wash disappears in forced colors; an edge keeps the banner a distinct region */
+  .sar-banner {
+    border: 1px solid CanvasText;
   }
 }
 
 /* Options page and popup */
 
-.sfs-options {
+.sar-options {
   box-sizing: border-box;
-  max-inline-size: var(--sfs-options-max-width);
+  max-inline-size: var(--sar-options-max-width);
   margin-inline: auto;
-  padding-block: var(--sfs-space-5);
-  padding-inline: var(--sfs-space-4);
-  background: var(--sfs-color-bg-panel);
-  color: var(--sfs-color-text);
-  font: var(--sfs-weight-regular) var(--sfs-size-md) / var(--sfs-leading-md) var(--sfs-font-ext);
+  padding-block: var(--sar-space-5);
+  padding-inline: var(--sar-space-4);
+  background: var(--sar-color-bg-panel);
+  color: var(--sar-color-text);
+  font: var(--sar-weight-regular) var(--sar-size-md) / var(--sar-leading-md) var(--sar-font-ext);
   overflow-wrap: break-word;
   color-scheme: dark;
 }
 
-.sfs-options *,
-.sfs-options *::before,
-.sfs-options *::after {
+.sar-options *,
+.sar-options *::before,
+.sar-options *::after {
   box-sizing: border-box;
 }
 
-.sfs-options[data-sfs-context="popup"] {
-  inline-size: var(--sfs-popup-width);
+.sar-options[data-sar-context="popup"] {
+  inline-size: var(--sar-popup-width);
   max-inline-size: none;
-  padding-block: var(--sfs-space-4);
-  padding-inline: var(--sfs-space-3);
+  padding-block: var(--sar-space-4);
+  padding-inline: var(--sar-space-3);
 }
 
-.sfs-options-header {
+.sar-options-header {
   display: flex;
   align-items: center;
-  gap: var(--sfs-space-3);
-  margin-block-end: var(--sfs-space-4);
+  gap: var(--sar-space-3);
+  margin-block-end: var(--sar-space-4);
 }
 
-.sfs-options-header img {
+.sar-options-header img {
   inline-size: 32px;
   block-size: 32px;
   flex: none;
 }
 
-.sfs-options-title {
+.sar-options-title {
   margin: 0;
-  color: var(--sfs-color-text-strong);
-  font: var(--sfs-weight-medium) var(--sfs-size-2xl) / var(--sfs-leading-2xl) var(--sfs-font-ext);
+  color: var(--sar-color-text-strong);
+  font: var(--sar-weight-medium) var(--sar-size-2xl) / var(--sar-leading-2xl) var(--sar-font-ext);
 }
 
-.sfs-options-version {
-  color: var(--sfs-color-text-subtle);
-  font-size: var(--sfs-size-sm);
+.sar-options-version {
+  color: var(--sar-color-text-subtle);
+  font-size: var(--sar-size-sm);
 }
 
-.sfs-card {
-  margin: 0 0 var(--sfs-space-3);
-  padding: var(--sfs-card-pad);
-  border-radius: var(--sfs-card-radius);
-  background: var(--sfs-color-bg-raised);
+.sar-card {
+  margin: 0 0 var(--sar-space-3);
+  padding: var(--sar-card-pad);
+  border-radius: var(--sar-card-radius);
+  background: var(--sar-color-bg-raised);
 }
 
-.sfs-card-title {
-  margin: 0 0 var(--sfs-space-3);
-  color: var(--sfs-color-text-strong);
-  font: var(--sfs-weight-medium) var(--sfs-size-xl) / var(--sfs-leading-xl) var(--sfs-font-ext);
+.sar-card-title {
+  margin: 0 0 var(--sar-space-3);
+  color: var(--sar-color-text-strong);
+  font: var(--sar-weight-medium) var(--sar-size-xl) / var(--sar-leading-xl) var(--sar-font-ext);
 }
 
 /* The label wraps in column 1; the switch keeps column 2 */
-.sfs-field {
+.sar-field {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  column-gap: var(--sfs-space-4);
-  padding-block: var(--sfs-space-2);
+  column-gap: var(--sar-space-4);
+  padding-block: var(--sar-space-2);
 }
 
-.sfs-field + .sfs-field {
-  border-block-start: 1px solid var(--sfs-color-divider);
+.sar-field + .sar-field {
+  border-block-start: 1px solid var(--sar-color-divider);
 }
 
-.sfs-field-label {
-  color: var(--sfs-color-text);
+.sar-field-label {
+  color: var(--sar-color-text);
 }
 
-.sfs-field-help {
+.sar-field-help {
   grid-column: 1 / -1;
-  margin-block-start: var(--sfs-space-1);
-  color: var(--sfs-color-text-subtle);
-  font-size: var(--sfs-size-sm);
-  line-height: var(--sfs-leading-sm);
+  margin-block-start: var(--sar-space-1);
+  color: var(--sar-color-text-subtle);
+  font-size: var(--sar-size-sm);
+  line-height: var(--sar-leading-sm);
 }
 
 /* Fields whose control needs the full row (segmented control, select) */
-.sfs-field[data-sfs-layout="stacked"] {
+.sar-field[data-sar-layout="stacked"] {
   grid-template-columns: minmax(0, 1fr);
-  row-gap: var(--sfs-space-2);
+  row-gap: var(--sar-space-2);
 }
 
-.sfs-field-error {
+.sar-field-error {
   grid-column: 1 / -1;
-  margin-block-start: var(--sfs-space-1);
-  color: var(--sfs-color-error);
-  font-size: var(--sfs-size-sm);
-  line-height: var(--sfs-leading-sm);
+  margin-block-start: var(--sar-space-1);
+  color: var(--sar-color-error);
+  font-size: var(--sar-size-sm);
+  line-height: var(--sar-leading-sm);
 }
 
-/* Switch: <input type="checkbox" role="switch" class="sfs-toggle"> */
-.sfs-toggle {
+/* Switch: <input type="checkbox" role="switch" class="sar-toggle"> */
+.sar-toggle {
   appearance: none;
   position: relative;
-  inline-size: var(--sfs-toggle-width);
-  block-size: var(--sfs-toggle-height);
+  inline-size: var(--sar-toggle-width);
+  block-size: var(--sar-toggle-height);
   margin: 0;
-  border: 1px solid var(--sfs-toggle-track-off-border);
-  border-radius: var(--sfs-radius-pill);
-  background: var(--sfs-toggle-track-off);
+  border: 1px solid var(--sar-toggle-track-off-border);
+  border-radius: var(--sar-radius-pill);
+  background: var(--sar-toggle-track-off);
   cursor: pointer;
-  transition: background-color var(--sfs-duration-fast) var(--sfs-ease);
+  transition: background-color var(--sar-duration-fast) var(--sar-ease);
 }
 
-.sfs-toggle::after {
+.sar-toggle::after {
   content: "";
   position: absolute;
   inset-block-start: 2px;
@@ -492,161 +550,231 @@
   inline-size: 14px;
   block-size: 14px;
   border-radius: 50%;
-  background: var(--sfs-toggle-thumb);
-  transition: transform var(--sfs-duration-fast) var(--sfs-ease);
+  background: var(--sar-toggle-thumb);
+  transition: transform var(--sar-duration-fast) var(--sar-ease);
 }
 
-.sfs-toggle:checked {
-  border-color: var(--sfs-toggle-track-on);
-  background: var(--sfs-toggle-track-on);
+.sar-toggle:checked {
+  border-color: var(--sar-toggle-track-on);
+  background: var(--sar-toggle-track-on);
 }
 
 /* Physical translate: the one spot to flip if right-to-left lands */
-.sfs-toggle:checked::after {
+.sar-toggle:checked::after {
   transform: translateX(16px);
 }
 
 /* Segmented control: a fieldset of radios, full row, equal columns. Labels may wrap to two
    lines in long translations. */
-.sfs-segment {
+.sar-segment {
   display: grid;
   grid-auto-flow: column;
   grid-auto-columns: minmax(0, 1fr);
   margin: 0;
-  padding: var(--sfs-space-0);
-  border: 1px solid var(--sfs-color-border);
-  border-radius: var(--sfs-radius-md);
-  background: var(--sfs-segment-bg);
+  padding: var(--sar-space-0);
+  border: 1px solid var(--sar-color-border);
+  border-radius: var(--sar-radius-md);
+  background: var(--sar-segment-bg);
 }
 
-.sfs-segment input {
+.sar-segment input {
   position: absolute;
   opacity: 0;
   inline-size: 1px;
   block-size: 1px;
 }
 
-.sfs-segment label {
+.sar-segment label {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-block-size: var(--sfs-control-height-sm);
-  padding-block: var(--sfs-space-1);
-  padding-inline: var(--sfs-space-2);
+  min-block-size: var(--sar-control-height-sm);
+  padding-block: var(--sar-space-1);
+  padding-inline: var(--sar-space-2);
   border: 1px solid transparent;
-  border-radius: var(--sfs-radius-sm);
-  color: var(--sfs-color-text);
+  border-radius: var(--sar-radius-sm);
+  color: var(--sar-color-text);
   text-align: center;
   cursor: pointer;
 }
 
-.sfs-segment input:checked + label {
-  border-color: var(--sfs-segment-selected-border);
-  background: var(--sfs-segment-selected-bg);
-  color: var(--sfs-segment-selected-fg);
+.sar-segment input:checked + label {
+  border-color: var(--sar-segment-selected-border);
+  background: var(--sar-segment-selected-bg);
+  color: var(--sar-segment-selected-fg);
 }
 
-.sfs-select {
-  min-block-size: var(--sfs-control-height-sm);
+.sar-select {
+  min-block-size: var(--sar-control-height-sm);
   max-inline-size: 100%;
-  padding-inline: var(--sfs-space-2);
-  border: 1px solid var(--sfs-color-border);
-  border-radius: var(--sfs-radius-sm);
-  background: var(--sfs-color-bg-sunken);
-  color: var(--sfs-color-text);
+  padding-inline: var(--sar-space-2);
+  border: 1px solid var(--sar-color-border);
+  border-radius: var(--sar-radius-sm);
+  background: var(--sar-color-bg-sunken);
+  color: var(--sar-color-text);
   font: inherit;
 }
 
-.sfs-toggle:focus-visible,
-.sfs-segment input:focus-visible + label,
-.sfs-select:focus-visible,
-.sfs-button:focus-visible,
-.sfs-options a:focus-visible {
-  outline: var(--sfs-focus-width) solid var(--sfs-focus-color);
-  outline-offset: var(--sfs-focus-offset);
+.sar-toggle:focus-visible,
+.sar-segment input:focus-visible + label,
+.sar-select:focus-visible,
+.sar-button:focus-visible,
+.sar-options a:focus-visible {
+  outline: var(--sar-focus-width) solid var(--sar-focus-color);
+  outline-offset: var(--sar-focus-offset);
 }
 
-.sfs-button {
+.sar-button {
   appearance: none;
   display: inline-flex;
   align-items: center;
-  min-block-size: var(--sfs-control-height-sm);
+  min-block-size: var(--sar-control-height-sm);
   max-inline-size: 100%;
-  padding-block: var(--sfs-space-1);
-  padding-inline: var(--sfs-space-3);
+  padding-block: var(--sar-space-1);
+  padding-inline: var(--sar-space-3);
   border: 0;
-  border-radius: var(--sfs-radius-sm);
-  background: var(--sfs-button-secondary-bg);
-  color: var(--sfs-button-secondary-fg);
+  border-radius: var(--sar-radius-sm);
+  background: var(--sar-button-secondary-bg);
+  color: var(--sar-button-secondary-fg);
   font: inherit;
   text-align: center;
   cursor: pointer;
 }
 
-.sfs-button:hover {
-  background: var(--sfs-button-secondary-bg-hover);
+.sar-button:hover {
+  background: var(--sar-button-secondary-bg-hover);
 }
 
-.sfs-options a {
-  color: var(--sfs-accent-300);
+/* The one primary action: Restore in the backup summary */
+.sar-button[data-sar-variant="primary"] {
+  background: var(--sar-button-primary-bg);
+  color: var(--sar-button-primary-fg);
 }
 
-.sfs-allow-list {
+.sar-button[data-sar-variant="primary"]:hover {
+  background: var(--sar-button-primary-bg-hover);
+}
+
+.sar-options a {
+  color: var(--sar-accent-300);
+}
+
+.sar-allow-list {
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.sfs-options[data-sfs-context="popup"] .sfs-allow-list {
+.sar-options[data-sar-context="popup"] .sar-allow-list {
   max-block-size: 240px;
   overflow-y: auto;
 }
 
 /* Name and date shrink but keep at least 40% of the row; a long button label wraps inside
    the rest */
-.sfs-allow-item {
+.sar-allow-item {
   display: grid;
   grid-template-columns: minmax(40%, 1fr) auto;
   align-items: center;
-  column-gap: var(--sfs-space-3);
-  padding-block: var(--sfs-space-2);
+  column-gap: var(--sar-space-3);
+  padding-block: var(--sar-space-2);
 }
 
-.sfs-allow-item + .sfs-allow-item {
-  border-block-start: 1px solid var(--sfs-color-divider);
+.sar-allow-item + .sar-allow-item {
+  border-block-start: 1px solid var(--sar-color-divider);
 }
 
-.sfs-allow-name {
+.sar-allow-name {
   display: block;
   overflow: hidden;
-  color: var(--sfs-color-text);
+  color: var(--sar-color-text);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.sfs-allow-meta {
+.sar-allow-meta {
   display: block;
-  color: var(--sfs-color-text-subtle);
-  font-size: var(--sfs-size-sm);
+  color: var(--sar-color-text-subtle);
+  font-size: var(--sar-size-sm);
 }
 
-.sfs-empty {
+.sar-empty {
   margin: 0;
-  color: var(--sfs-color-text-subtle);
+  color: var(--sar-color-text-subtle);
 }
 
-.sfs-privacy {
+.sar-privacy {
   margin: 0;
-  padding-inline-start: var(--sfs-space-4);
+  padding-inline-start: var(--sar-space-4);
 }
 
-.sfs-privacy li + li {
-  margin-block-start: var(--sfs-space-1);
+.sar-privacy li + li {
+  margin-block-start: var(--sar-space-1);
 }
 
-.sfs-options-footer {
-  margin-block-start: var(--sfs-space-4);
-  color: var(--sfs-color-text-subtle);
-  font-size: var(--sfs-size-sm);
-  line-height: var(--sfs-leading-sm);
+.sar-options-footer {
+  margin-block-start: var(--sar-space-4);
+  color: var(--sar-color-text-subtle);
+  font-size: var(--sar-size-sm);
+  line-height: var(--sar-leading-sm);
+}
+
+/* Backup card: download a file, restore it after a check. Full options page and userscript
+   dialog only. */
+
+.sar-backup-help {
+  margin: 0 0 var(--sar-space-3);
+  color: var(--sar-color-text-subtle);
+  font-size: var(--sar-size-sm);
+  line-height: var(--sar-leading-sm);
+}
+
+/* Buttons wrap their own labels, and drop to the next line when the row is too narrow */
+.sar-backup-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sar-space-2);
+}
+
+.sar-backup-summary {
+  margin-block-start: var(--sar-space-3);
+  padding: var(--sar-space-3);
+  border: 1px solid var(--sar-color-border);
+  border-radius: var(--sar-radius-md);
+  background: var(--sar-color-bg-sunken);
+}
+
+.sar-backup-summary-title {
+  margin: 0;
+  color: var(--sar-color-text-strong);
+  font-weight: var(--sar-weight-medium);
+}
+
+.sar-backup-summary-title:focus-visible {
+  outline: var(--sar-focus-width) solid var(--sar-focus-color);
+  outline-offset: var(--sar-focus-offset);
+}
+
+.sar-backup-contents {
+  margin: var(--sar-space-2) 0 0;
+  padding-inline-start: var(--sar-space-4);
+  color: var(--sar-color-text);
+}
+
+.sar-backup-contents li + li {
+  margin-block-start: var(--sar-space-1);
+}
+
+.sar-backup-note {
+  margin: var(--sar-space-2) 0 var(--sar-space-3);
+  color: var(--sar-color-text-subtle);
+  font-size: var(--sar-size-sm);
+  line-height: var(--sar-leading-sm);
+}
+
+.sar-backup-status {
+  margin: var(--sar-space-2) 0 0;
+  color: var(--sar-color-text);
+  font-size: var(--sar-size-sm);
+  line-height: var(--sar-leading-sm);
 }

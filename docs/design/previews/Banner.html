@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="../reference.css">
+<title>App page banner</title>
+<style>
+  body {
+    margin: 0;
+    background: var(--sar-color-bg-page);
+    color: var(--sar-color-text-subtle);
+    font: 12px/16px var(--sar-font-page);
+  }
+  .stage { padding: var(--sar-space-4); }
+  .col { inline-size: 616px; max-inline-size: 100%; }
+  /* Stand-in for the store's purchase box, so the banner's place in the stack shows */
+  .purchase {
+    block-size: 56px;
+    margin-block-end: var(--sar-space-5);
+    border-radius: var(--sar-radius-md);
+    background: var(--sar-color-bg-raised);
+    box-shadow: 2px 2px 15px rgb(0 0 0 / 0.4);
+  }
+  .cap { margin: 0 0 var(--sar-space-2); }
+</style>
+</head>
+<body>
+<div class="stage"><div class="col">
+  <p class="cap">Long notes, collapsed after 3 lines, with a named service</p>
+  <aside class="sar-banner" aria-labelledby="t1">
+    <div class="sar-banner-head">
+      <svg class="sar-banner-glyph" viewBox="0 0 10 10" aria-hidden="true">
+        <path d="M5 0Q5.7 4.3 10 5Q5.7 5.7 5 10Q4.3 5.7 0 5Q4.3 4.3 5 0Z"/></svg>
+      <h2 class="sar-banner-title" id="t1">The developer discloses AI use</h2>
+      <button class="sar-banner-action" type="button">Stop marking this game</button>
+    </div>
+    <p class="sar-banner-source">In the developer's own words:</p>
+    <blockquote class="sar-banner-quote" id="n1" data-sar-collapsed="true"></blockquote>
+    <button class="sar-banner-link" type="button" aria-expanded="false" aria-controls="n1">Show full
+      disclosure</button>
+    <p class="sar-banner-service">AI service named by the developer:
+      <span class="sar-banner-service-name">Example AI API</span></p>
+  </aside>
+  <div class="purchase"></div>
+
+  <p class="cap">Short notes: no toggle, no service line</p>
+  <aside class="sar-banner" aria-labelledby="t2">
+    <div class="sar-banner-head">
+      <svg class="sar-banner-glyph" viewBox="0 0 10 10" aria-hidden="true">
+        <path d="M5 0Q5.7 4.3 10 5Q5.7 5.7 5 10Q4.3 5.7 0 5Q4.3 4.3 5 0Z"/></svg>
+      <h2 class="sar-banner-title" id="t2">The developer discloses AI use</h2>
+      <button class="sar-banner-action" type="button">Stop marking this game</button>
+    </div>
+    <p class="sar-banner-source">In the developer's own words:</p>
+    <blockquote class="sar-banner-quote">We used an AI upscaler on some older textures.
+All other art was made by hand.</blockquote>
+    <p class="sar-banner-error" role="alert">Could not update this game. Try again.</p>
+  </aside>
+  <div class="purchase"></div>
+
+  <p class="cap">Allow-listed: one line, with undo</p>
+  <aside class="sar-banner" data-sar-variant="ignored" aria-label="AI use disclosure">
+    <svg class="sar-banner-glyph" viewBox="0 0 10 10" aria-hidden="true">
+      <path d="M5 0Q5.7 4.3 10 5Q5.7 5.7 5 10Q4.3 5.7 0 5Q4.3 4.3 5 0Z"/></svg>
+    <span class="sar-banner-ignored-text">You stopped marking this game.</span>
+    <button class="sar-banner-link" type="button">Undo</button>
+  </aside>
+  <div class="purchase"></div>
+</div></div>
+<script>
+  // Long sample notes, set here because pre-line would show source line breaks
+  document.getElementById("n1").textContent =
+    "Generative AI is used in both pre-generated and live-generated content. " +
+    "AI-assisted tools were used during development to create the game's artwork, " +
+    "music, and sound effects. The game also uses live generative AI to produce " +
+    "narrative text during gameplay in response to predefined player choices, combat " +
+    "outcomes, character conditions, and equipment selections. All pre-generated " +
+    "assets were reviewed and selected by the developer before being included.";
+</script>
+</body>
+</html>

@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="../reference.css">
+<title>Summary row</title>
+<style>
+  body {
+    margin: 0;
+    background: var(--sar-color-bg-page);
+    color: var(--sar-color-text-subtle);
+    font: 12px/16px var(--sar-font-page);
+  }
+  .stage { display: flex; flex-wrap: wrap; gap: var(--sar-space-5); padding: var(--sar-space-4); }
+  .cap { margin: 0 0 var(--sar-space-2); }
+  /* Stand-in for the store's summary box rows (Arial 13/18, 35% uppercase labels) */
+  .glance { inline-size: 324px; }
+  .glance.narrow { inline-size: 280px; }
+  .glance .r {
+    display: flex;
+    font: 13px/18px var(--sar-font-summary);
+    color: var(--sar-color-text);
+    white-space: nowrap;
+  }
+  .glance .r + .r, .glance .r + .sar-summary-row { margin-block-start: 0; }
+  .glance .l {
+    flex: none;
+    inline-size: 35%;
+    padding-inline-end: 10px;
+    box-sizing: border-box;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--sar-color-text-subtle);
+    font-size: 11px;
+    text-transform: uppercase;
+  }
+  .glance .v { color: #67c1f5; }
+  .glance .gap { block-size: var(--sar-space-2); }
+</style>
+</head>
+<body>
+<div class="stage">
+  <div>
+    <p class="cap">Banner on: the row jumps to it</p>
+    <div class="glance">
+      <div class="r"><span class="l">Release date:</span><span>30 Oct, 2025</span></div>
+      <div class="gap"></div>
+      <div class="r"><span class="l">Developer:</span><span class="v">Example Studio</span></div>
+      <div class="r"><span class="l">Publisher:</span><span class="v">Example Studio</span></div>
+      <a
+          class="sar-summary-row"
+          href="#"
+          title="Discloses AI use. In the developer's own words: We used an AI upscaler...">
+        <span class="sar-summary-label">AI use:</span>
+        <span class="sar-badge"><svg class="sar-badge-glyph" viewBox="0 0 10 10" aria-hidden="true">
+          <path d="M5 0Q5.7 4.3 10 5Q5.7 5.7 5 10Q4.3 5.7 0 5Q4.3 4.3 5 0Z"/></svg>
+          <span class="sar-badge-label">Disclosed by the developer</span></span>
+      </a>
+    </div>
+  </div>
+  <div>
+    <p class="cap">Banner off: same row, no link</p>
+    <div class="glance">
+      <div class="r"><span class="l">Developer:</span><span class="v">Example Studio</span></div>
+      <div class="r"><span class="l">Publisher:</span><span class="v">Example Studio</span></div>
+      <div
+          class="sar-summary-row"
+          title="Discloses AI use. In the developer's own words: We used an AI upscaler...">
+        <span class="sar-summary-label">AI use:</span>
+        <span class="sar-badge"><svg class="sar-badge-glyph" viewBox="0 0 10 10" aria-hidden="true">
+          <path d="M5 0Q5.7 4.3 10 5Q5.7 5.7 5 10Q4.3 5.7 0 5Q4.3 4.3 5 0Z"/></svg>
+          <span class="sar-badge-label">Disclosed by the developer</span></span>
+      </div>
+    </div>
+  </div>
+  <div lang="es">
+    <p class="cap">Spanish, in a narrow summary box</p>
+    <div class="glance narrow">
+      <div class="r"><span class="l">Desarrollador:</span><span class="v">Example Studio</span>
+        </div>
+      <div class="r"><span class="l">Editor:</span><span class="v">Example Studio</span></div>
+      <a
+          class="sar-summary-row"
+          href="#"
+          title="Declara el uso de IA. En palabras del desarrollador: ...">
+        <span class="sar-summary-label">Uso de IA:</span>
+        <span class="sar-badge"><svg class="sar-badge-glyph" viewBox="0 0 10 10" aria-hidden="true">
+          <path d="M5 0Q5.7 4.3 10 5Q5.7 5.7 5 10Q4.3 5.7 0 5Q4.3 4.3 5 0Z"/></svg>
+          <span class="sar-badge-label">Declarado por el desarrollador</span></span>
+      </a>
+    </div>
+  </div>
+</div>
+</body>
+</html>

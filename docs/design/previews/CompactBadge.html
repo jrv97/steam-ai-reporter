@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="../reference.css">
+<title>Compact badge</title>
+<style>
+  body {
+    margin: 0;
+    background: var(--sar-color-bg-page);
+    color: var(--sar-color-text-subtle);
+    font: 12px/16px var(--sar-font-page);
+  }
+  .stage {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: var(--sar-space-4);
+    padding: var(--sar-space-4);
+  }
+  figure { display: flex; flex-direction: column; gap: var(--sar-space-1); margin: 0; }
+  .art { position: relative; display: block; overflow: hidden; }
+  /* Synthetic cover art: light, dark, busy, violet, mid grey, sky */
+  .light { background: linear-gradient(120deg, #fff 0%, #f4efe2 45%, #d9e8f5 100%); }
+  .dark { background: linear-gradient(160deg, #000 0%, #121212 60%, #23180f 100%); }
+  .busy {
+    background: repeating-linear-gradient(45deg,
+       #e8c547 0 10px,
+       #c0392b 10px 20px,
+       #1abc9c 20px 30px,
+       #fff 30px 40px,
+       #2c3e50 40px 50px);
+  }
+  .violet { background: radial-gradient(circle at 80% 20%, #8f73f3 0%, #7458e0 40%, #2a1d6b 100%); }
+  .grey { background: #808080; }
+  .sky { background: linear-gradient(180deg, #8fd3ff 0%, #ffd7a8 70%, #59341f 100%); }
+  /* Stand-in for the store's own top-left corner flag, to show the two never collide */
+  .flag {
+    position: absolute;
+    inset-block-start: 5px;
+    inset-inline-start: 0;
+    inline-size: 64px;
+    block-size: 19px;
+    background: #4f95bd;
+  }
+</style>
+</head>
+<body>
+<div class="stage">
+  <figure>
+    <a class="art light" href="#" style="width:120px;height:45px">
+      <span class="sar-compact" data-sar-size="glyph" data-sar-in-link="true" title="AI disclosed">
+      <svg class="sar-compact-glyph" viewBox="0 0 10 10" aria-hidden="true">
+      <path d="M5 0Q5.7 4.3 10 5Q5.7 5.7 5 10Q4.3 5.7 0 5Q4.3 4.3 5 0Z"/></svg><span class="sar-vh">
+      AI disclosed</span></span></a>
+    <figcaption>120x45, glyph tier</figcaption>
+  </figure>
+  <figure>
+    <a class="art dark" href="#" style="width:184px;height:69px">
+      <span class="sar-compact" data-sar-size="text" data-sar-in-link="true" title="AI disclosed">
+      <svg class="sar-compact-glyph" viewBox="0 0 10 10" aria-hidden="true">
+      <path d="M5 0Q5.7 4.3 10 5Q5.7 5.7 5 10Q4.3 5.7 0 5Q4.3 4.3 5 0Z"/></svg>
+      <span class="sar-compact-label">AI disclosed</span></span></a>
+    <figcaption>184x69, dark art</figcaption>
+  </figure>
+  <figure>
+    <a class="art light" href="#" style="width:184px;height:69px"><span class="flag"></span>
+      <span class="sar-compact" data-sar-size="text" data-sar-in-link="true" title="AI disclosed">
+      <svg class="sar-compact-glyph" viewBox="0 0 10 10" aria-hidden="true">
+      <path d="M5 0Q5.7 4.3 10 5Q5.7 5.7 5 10Q4.3 5.7 0 5Q4.3 4.3 5 0Z"/></svg>
+      <span class="sar-compact-label">AI disclosed</span></span></a>
+    <figcaption>184x69, store flag top-left</figcaption>
+  </figure>
+  <figure>
+    <a class="art busy" href="#" style="width:231px;height:87px">
+      <span class="sar-compact" data-sar-size="text" data-sar-in-link="true" title="AI disclosed">
+      <svg class="sar-compact-glyph" viewBox="0 0 10 10" aria-hidden="true">
+      <path d="M5 0Q5.7 4.3 10 5Q5.7 5.7 5 10Q4.3 5.7 0 5Q4.3 4.3 5 0Z"/></svg>
+      <span class="sar-compact-label">AI disclosed</span></span></a>
+    <figcaption>231x87, busy art</figcaption>
+  </figure>
+  <figure>
+    <a class="art violet" href="#" style="width:224px;height:128px">
+      <span class="sar-compact" data-sar-size="text" data-sar-in-link="true" title="AI disclosed">
+      <svg class="sar-compact-glyph" viewBox="0 0 10 10" aria-hidden="true">
+      <path d="M5 0Q5.7 4.3 10 5Q5.7 5.7 5 10Q4.3 5.7 0 5Q4.3 4.3 5 0Z"/></svg>
+      <span class="sar-compact-label">AI disclosed</span></span></a>
+    <figcaption>224x128, violet art</figcaption>
+  </figure>
+  <figure>
+    <a class="art grey" href="#" style="width:231px;height:87px">
+      <span
+        class="sar-compact"
+        data-sar-size="text"
+        data-sar-in-link="true"
+        lang="es"
+        title="Uso de IA declarado por el desarrollador">
+      <svg class="sar-compact-glyph" viewBox="0 0 10 10" aria-hidden="true">
+      <path d="M5 0Q5.7 4.3 10 5Q5.7 5.7 5 10Q4.3 5.7 0 5Q4.3 4.3 5 0Z"/></svg>
+      <span class="sar-compact-label">Uso de IA declarado por el desarrollador</span></span></a>
+    <figcaption>231x87, grey art, long Spanish label</figcaption>
+  </figure>
+  <figure>
+    <a class="art sky" href="#" style="width:460px;height:215px">
+      <span class="sar-compact" data-sar-size="large" data-sar-in-link="true" title="AI disclosed">
+      <svg class="sar-compact-glyph" viewBox="0 0 10 10" aria-hidden="true">
+      <path d="M5 0Q5.7 4.3 10 5Q5.7 5.7 5 10Q4.3 5.7 0 5Q4.3 4.3 5 0Z"/></svg>
+      <span class="sar-compact-label">AI disclosed</span></span></a>
+    <figcaption>460x215, large tier</figcaption>
+  </figure>
+  <figure>
+    <a class="art sky" href="#" style="width:40px;height:30px"></a>
+    <figcaption>40x30: nothing</figcaption>
+  </figure>
+</div>
+</body>
+</html>
