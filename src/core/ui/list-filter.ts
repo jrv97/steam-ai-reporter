@@ -1,3 +1,4 @@
+import { HOST_HIDEABLE, HOST_STATE } from "../scan/marks";
 import type { ListFilter } from "../settings/settings";
 import { type HostRenderer, hostState } from "./host";
 
@@ -21,13 +22,13 @@ export function createHostStateRenderer(): HostRenderer {
   return {
     render({ host, verdict, allowed, hideable }) {
       const state = hostState(verdict, allowed);
-      if (host.getAttribute("data-sar-state") !== state) {
-        host.setAttribute("data-sar-state", state);
+      if (host.getAttribute(HOST_STATE) !== state) {
+        host.setAttribute(HOST_STATE, state);
       }
       if (hideable) {
-        host.removeAttribute("data-sar-hideable");
-      } else if (host.getAttribute("data-sar-hideable") !== "false") {
-        host.setAttribute("data-sar-hideable", "false");
+        host.removeAttribute(HOST_HIDEABLE);
+      } else if (host.getAttribute(HOST_HIDEABLE) !== "false") {
+        host.setAttribute(HOST_HIDEABLE, String(false));
       }
     },
   };
