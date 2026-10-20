@@ -43,7 +43,7 @@ Evidence from the step 2 spikes ([rq6-verification-spikes](../research/steam-ai-
 - Good: parsing HTML stays in the content script, where a DOM exists.
 - Bad: the result depends on browsers continuing to send content-script requests with the page origin. This is inferred from the readable `cors` answer; the request header itself was not inspected (rq6 caveat). If a browser changes this, requests would fail as a `TypeError`, which our breaker treats like a rate limit, and the live canary would not catch it because it runs outside a browser. Mitigation: the manual checklist runs on Chrome and Firefox before each release.
 - Bad: Valve could narrow the CORS allow-list. Then this ADR is revisited with option 2, accepting a new permission.
-- Bad: error answers carry no CORS headers, so a status and `Retry-After` are never readable (S1); the throttle uses a fixed backoff. A background relay would not change that for a browser-originated request, since the server's headers would still differ by `Origin`.
+- Bad: error answers carry no CORS headers, so a status and `Retry-After` are never readable (S1); the throttle uses a fixed backoff.
 - Neutral: Violentmonkey was not tested (S6); it goes on the manual checklist.
 
 ## Pros and cons of the options
