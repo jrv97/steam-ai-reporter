@@ -19,15 +19,262 @@
     "message": "Steam refused or dropped a request; detection pauses for $seconds$ seconds ($breaker$).",
     "description": "Logged to the browser console when the extension stops asking Steam for a while after an error answer, to avoid being rate-limited. $breaker$ is an internal storage key such as v1:breaker; keep it as is.",
     "placeholders": {
-      "seconds": { "content": "$1", "example": "64" },
-      "breaker": { "content": "$2", "example": "v1:breaker" }
+      "seconds": {
+        "content": "$1",
+        "example": "64"
+      },
+      "breaker": {
+        "content": "$2",
+        "example": "v1:breaker"
+      }
     }
   },
   "notice_breaker_closed": {
     "message": "Detection resumes after the pause ($breaker$).",
     "description": "Logged to the browser console when the pause after an error answer from Steam is over. $breaker$ is an internal storage key such as v1:breaker; keep it as is.",
     "placeholders": {
-      "breaker": { "content": "$1", "example": "v1:breaker" }
+      "breaker": {
+        "content": "$1",
+        "example": "v1:breaker"
+      }
     }
+  },
+  "badge_full": {
+    "message": "Discloses AI use",
+    "description": "Label on search and wishlist rows for a game whose developer disclosed generative AI use on Steam. One line; truncates past about 22 characters. Say \"discloses\"; never say the game uses AI."
+  },
+  "badge_compact": {
+    "message": "AI disclosed",
+    "description": "Label over game images, also read by screen readers. Keep it as short as the language allows. Say \"disclosed\"; never say the game uses AI."
+  },
+  "badge_tooltip": {
+    "message": "$label$. In the developer's own words: $notes$",
+    "description": "Hover text on a badge. $label$ is the badge label; $notes$ is the developer's text, up to 200 characters, untranslated.",
+    "placeholders": {
+      "label": {
+        "content": "$1",
+        "example": "Discloses AI use"
+      },
+      "notes": {
+        "content": "$2",
+        "example": "Concept art was generated."
+      }
+    }
+  },
+  "summary_label": {
+    "message": "AI use:",
+    "description": "Label of a row in the game's summary box, under Developer and Publisher. Write it in sentence case; the page shows it in capitals through CSS. Use the same punctuation as the store's own labels there."
+  },
+  "summary_value": {
+    "message": "Disclosed by the developer",
+    "description": "Value of that row, in a violet chip that jumps to the notice. The developer reported AI use on Steam's form; never say the game uses AI. One line; truncates past about 30 characters."
+  },
+  "banner_title": {
+    "message": "The developer discloses AI use",
+    "description": "Heading of the notice on a game's store page."
+  },
+  "banner_source": {
+    "message": "In the developer's own words:",
+    "description": "Introduces the developer's text, which follows untranslated."
+  },
+  "banner_expand": {
+    "message": "Show full disclosure",
+    "description": "Expands the collapsed text of the notice."
+  },
+  "banner_collapse": {
+    "message": "Show less",
+    "description": "Collapses the text of the notice again."
+  },
+  "banner_service_label": {
+    "message": "AI service named by the developer:",
+    "description": "Precedes a product name inserted as data, untranslated."
+  },
+  "banner_ignore": {
+    "message": "Stop marking this game",
+    "description": "Button that stops badges and this notice for one game. Avoid the word the store uses for its own ignore feature."
+  },
+  "banner_ignored": {
+    "message": "You stopped marking this game.",
+    "description": "Replaces the notice after \"Stop marking this game\"."
+  },
+  "banner_undo": {
+    "message": "Undo",
+    "description": "Reverses \"Stop marking this game\"."
+  },
+  "banner_region_label": {
+    "message": "AI use disclosure",
+    "description": "Screen reader name for the one-line note shown instead of the notice."
+  },
+  "notice_marking_stopped": {
+    "message": "Marking stopped for this game.",
+    "description": "Screen reader announcement after \"Stop marking this game\"."
+  },
+  "notice_marking_restored": {
+    "message": "Marking restored for this game.",
+    "description": "Screen reader announcement after \"Undo\" or \"Mark again\"."
+  },
+  "notice_settings_saved": {
+    "message": "Saved.",
+    "description": "Screen reader announcement after a setting changes."
+  },
+  "error_settings_save": {
+    "message": "Could not save this change. Try again.",
+    "description": "Under a setting whose change failed to save."
+  },
+  "error_settings_load": {
+    "message": "Could not load your settings. Showing the defaults.",
+    "description": "Top of the settings page when stored settings cannot be read."
+  },
+  "error_allow_list_save": {
+    "message": "Could not update this game. Try again.",
+    "description": "After \"Stop marking this game\", \"Undo\" or \"Mark again\" fails to save."
+  },
+  "options_section_store": {
+    "message": "On store pages",
+    "description": "Section heading in the settings."
+  },
+  "options_badges": {
+    "message": "Badges on games that disclose AI use",
+    "description": "Switch label."
+  },
+  "options_badges_short": {
+    "message": "Badges",
+    "description": "The same switch in the toolbar popup, where space is tight."
+  },
+  "options_badges_help": {
+    "message": "Adds \"$full$\" to search and wishlist rows and \"$compact$\" to game images.",
+    "description": "Help under the badges switch. $full$ and $compact$ are the two badge labels.",
+    "placeholders": {
+      "full": {
+        "content": "$1",
+        "example": "Discloses AI use"
+      },
+      "compact": {
+        "content": "$2",
+        "example": "AI disclosed"
+      }
+    }
+  },
+  "options_banner": {
+    "message": "Banner on game pages",
+    "description": "Switch label."
+  },
+  "options_banner_help": {
+    "message": "Shows the developer's disclosure above the purchase box.",
+    "description": "Help under the banner switch."
+  },
+  "options_section_lists": {
+    "message": "In lists",
+    "description": "Section heading in the settings."
+  },
+  "options_filter_label": {
+    "message": "Games that disclose AI use",
+    "description": "Label of a three-way choice: show, dim or hide these games in lists."
+  },
+  "options_filter_off": {
+    "message": "Show",
+    "description": "Leave these games as they are."
+  },
+  "options_filter_dim": {
+    "message": "Dim",
+    "description": "Fade these games."
+  },
+  "options_filter_hide": {
+    "message": "Hide",
+    "description": "Remove these games from lists."
+  },
+  "options_filter_off_help": {
+    "message": "Lists stay as they are, apart from badges.",
+    "description": "Help for \"Show\"."
+  },
+  "options_filter_dim_help": {
+    "message": "Fades these games in lists. Hover to see one clearly.",
+    "description": "Help for \"Dim\"."
+  },
+  "options_filter_hide_help": {
+    "message": "Removes these games from lists. Where hiding would break a list, they are dimmed instead.",
+    "description": "Help for \"Hide\"."
+  },
+  "options_section_language": {
+    "message": "Language",
+    "description": "Section heading in the settings."
+  },
+  "options_language_label": {
+    "message": "Language of this extension",
+    "description": "Label of the language picker."
+  },
+  "options_language_auto": {
+    "message": "Automatic",
+    "description": "First entry of the language picker."
+  },
+  "options_language_help": {
+    "message": "Automatic follows the store page's language when a translation exists, and English otherwise.",
+    "description": "Help under the language picker."
+  },
+  "options_section_allow": {
+    "message": "Games you stopped marking",
+    "description": "Section heading in the settings."
+  },
+  "options_allow_since": {
+    "message": "Since $date$",
+    "description": "Under a game you stopped marking. $date$ is already formatted for the locale.",
+    "placeholders": {
+      "date": {
+        "content": "$1",
+        "example": "Oct 20, 2026"
+      }
+    }
+  },
+  "options_allow_restore": {
+    "message": "Mark again",
+    "description": "Button next to a game you stopped marking."
+  },
+  "options_allow_restore_label": {
+    "message": "Mark $name$ again",
+    "description": "Screen reader name of the \"Mark again\" button; $name$ is the game's name, untranslated.",
+    "placeholders": {
+      "name": {
+        "content": "$1",
+        "example": "Fixture Game"
+      }
+    }
+  },
+  "options_allow_empty": {
+    "message": "None yet. Use \"$action$\" on a game page.",
+    "description": "Shown when no game is in the list. $action$ is the \"Stop marking this game\" label.",
+    "placeholders": {
+      "action": {
+        "content": "$1",
+        "example": "Stop marking this game"
+      }
+    }
+  },
+  "options_section_privacy": {
+    "message": "Privacy",
+    "description": "Section heading in the settings."
+  },
+  "options_privacy_no_reports": {
+    "message": "Sends no reports. It only reads the disclosures developers made on Steam.",
+    "description": "Privacy bullet: the product never reports games or users anywhere; it only shows what developers disclosed to Steam."
+  },
+  "options_privacy_storage": {
+    "message": "Settings and results stay in this browser.",
+    "description": "Privacy bullet."
+  },
+  "options_privacy_lookup": {
+    "message": "To check a game, it asks Valve's own store servers, without your cookies or account.",
+    "description": "Privacy bullet."
+  },
+  "options_privacy_nothing_sent": {
+    "message": "Nothing is sent to us or anyone else. No analytics.",
+    "description": "Privacy bullet."
+  },
+  "options_unaffiliated": {
+    "message": "Not affiliated with or endorsed by Valve Corporation. Steam is a trademark of Valve Corporation.",
+    "description": "Legal line at the bottom of the settings; keep the names as they are."
+  },
+  "options_unaffiliated_short": {
+    "message": "Not affiliated with Valve. Nothing leaves your browser except lookups to Valve's store.",
+    "description": "Footer of the toolbar popup."
   }
 }
