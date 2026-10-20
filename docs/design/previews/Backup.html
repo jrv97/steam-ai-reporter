@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="../reference.css">
+<title>Backup</title>
+<style>
+  body { margin: 0; background: var(--sar-color-bg-panel); }
+  .sar-options { max-inline-size: 480px; margin: 0; }
+  .cap {
+    margin: 0 0 var(--sar-space-2);
+    color: var(--sar-color-text-subtle);
+    font-size: var(--sar-size-sm);
+    line-height: var(--sar-leading-sm);
+  }
+</style>
+</head>
+<body>
+<div class="sar-options" data-sar-context="page">
+  <p class="cap">Idle, after a restore</p>
+  <section class="sar-card" aria-labelledby="b1">
+    <h2 class="sar-card-title" id="b1">Backup</h2>
+    <p class="sar-backup-help">Save your settings and game lists to a file, to restore them after
+      reinstalling or in another browser.</p>
+    <div class="sar-backup-actions">
+      <button class="sar-button" type="button">Download backup</button>
+      <button class="sar-button" type="button">Restore from a backup</button>
+    </div>
+    <p class="sar-backup-status">Backup restored.</p>
+  </section>
+
+  <p class="cap">A valid file was chosen: check, then restore</p>
+  <section class="sar-card" aria-labelledby="b2">
+    <h2 class="sar-card-title" id="b2">Backup</h2>
+    <p class="sar-backup-help">Save your settings and game lists to a file, to restore them after
+      reinstalling or in another browser.</p>
+    <div class="sar-backup-actions">
+      <button class="sar-button" type="button">Download backup</button>
+      <button class="sar-button" type="button">Restore from a backup</button>
+    </div>
+    <div class="sar-backup-summary" role="group" aria-labelledby="s2">
+      <p class="sar-backup-summary-title" id="s2" tabindex="-1">Backup from Oct 20, 2026</p>
+      <ul class="sar-backup-contents">
+        <li>Settings</li>
+        <li>12 games you stopped marking</li>
+        <li>348 checked games</li>
+      </ul>
+      <p class="sar-backup-note">Restoring replaces your settings and adds these games to your
+        lists. Nothing already here is removed.</p>
+      <div class="sar-backup-actions">
+        <button class="sar-button" data-sar-variant="primary" type="button">Restore</button>
+        <button class="sar-button" type="button">Cancel</button>
+      </div>
+    </div>
+  </section>
+
+  <p class="cap">Wrong file, in a long translation</p>
+  <section class="sar-card" aria-labelledby="b3" lang="es">
+    <h2 class="sar-card-title" id="b3">Copia de seguridad</h2>
+    <p class="sar-backup-help">Guarda tus ajustes y tus listas de juegos en un archivo para
+      restaurarlos despu&eacute;s de reinstalar o en otro navegador.</p>
+    <div class="sar-backup-actions">
+      <button class="sar-button" type="button">Descargar copia de seguridad</button>
+      <button class="sar-button" type="button">Restaurar desde una copia de seguridad</button>
+    </div>
+    <p class="sar-field-error" role="alert">Este archivo no es una copia de seguridad de AI Reporter
+      for Steam.</p>
+  </section>
+</div>
+</body>
+</html>

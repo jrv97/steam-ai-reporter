@@ -1,221 +1,395 @@
 /*
- * SFS design tokens (v1)
+ * AI Reporter for Steam design tokens (v1)
  *
- * Every custom property the extension and userscript UI reads. Step 10 of
- * docs/plans/steam-ai-reporter-v1.md imports this file ahead of
+ * Every custom property the extension and userscript UI reads, generated from the published
+ * design system (https://claude.ai/artifact/3xsXmaA5vjofhEWkL8nYsQ). The UI step of
+ * docs/plans/steam-ai-reporter-v1.md (step 10) imports this file ahead of
  * src/core/ui/styles.css. Component rules reference only these tokens, never raw values.
  *
- * Sources: neutrals, type sizes, spacing and radii were sampled from store.steampowered.com
- * on 2026-10-20 (app page, search, wishlist, home), so injected UI sits in the page without a
- * seam. The violet accent is ours. It stays clear of every hue the store already uses for
- * meaning: blue (links, tags, wishlist), green (buy, discount, owned), tan and gold
- * (third-party notices) and red (live). See docs/design/decisions.mdx.
+ * Sources: neutrals, type sizes, spacing and radii were sampled from store.steampowered.com on
+ * 2026-10-20, so injected UI sits in the page without a seam. The violet accent is ours: it
+ * stays clear of every hue the store already uses for meaning. See decisions.mdx.
  *
- * Contrast: every text pair listed in docs/design/components.mdx meets WCAG 2.2 AA
- * (4.5:1 for text, 3:1 for non-text) on the sampled backgrounds.
+ * Contrast: every text pair a token's note names meets WCAG 2.2 AA (4.5:1 for text, 3:1 for
+ * non-text) on the grounds it names. The full table is in components.mdx.
  *
- * Fonts: no font file is bundled. "Motiva Sans" is the page's own, already loaded font,
+ * Fonts: no font file is bundled. "Motiva Sans" is the store page's own, already loaded font,
  * referenced by name only.
  *
  * i18n: sizes leave room for translations about 40% longer than English. Spacing with a
- * direction is named for logical sides (block, inline, inline-start, inline-end), so
- * components use logical properties. Right-to-left is out of scope for v1, but nothing here
- * assumes left or right.
+ * direction is named for logical sides, so components use logical properties.
  */
 
 :root {
-  /* Type */
+  /* Grounds and surfaces */
 
-  /* Injected UI on store pages: the page's font by name, then fallbacks */
-  --sfs-font-page: "Motiva Sans", "Noto Sans", Arial, Helvetica, sans-serif;
-  /* Pages we own (options, popup, userscript dialog): Motiva is not loaded there */
-  --sfs-font-ext: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", Arial, sans-serif;
+  /* The store's classic page body, sampled 2026-10-20. A ground our injected UI sits on (badges,
+     banner); we never paint it on store pages. */
+  --sar-color-bg-page: #1b2838;
+  /* The store's React page body (wishlist), sampled. A ground for the full badge; never painted by
+     us. */
+  --sar-color-bg-page-deep: #0f1924;
+  /* A store search row (20% black over the page), sampled. The ground the full badge is checked on;
+     never painted by us. */
+  --sar-color-bg-row: #16202d;
+  /* Segmented control, select and the backup summary backgrounds on extension pages. */
+  --sar-color-bg-sunken: #0e141b;
+  /* Options page and action popup background. */
+  --sar-color-bg-panel: #171d25;
+  /* Cards on the options page and popup. */
+  --sar-color-bg-raised: #1f2630;
+  /* Hover wash for rows on extension pages. Defined; no reference rule uses it yet. */
+  --sar-color-bg-hover: rgba(255, 255, 255, 0.06);
 
-  --sfs-weight-light: 300;
-  --sfs-weight-regular: 400;
-  --sfs-weight-medium: 500;
-  --sfs-weight-bold: 700;
+  /* Text, edges and errors */
 
-  /* The store's own 11/12/13/15/18 steps. 14/21 matches the store's description text, which
-     is where disclosure notes normally sit. */
-  --sfs-size-xs: 11px;
-  --sfs-leading-xs: 14px;
-  --sfs-size-sm: 12px;
-  --sfs-leading-sm: 16px;
-  --sfs-size-md: 13px;
-  --sfs-leading-md: 18px;
-  --sfs-size-lg: 14px;
-  --sfs-leading-lg: 21px;
-  --sfs-size-xl: 15px;
-  --sfs-leading-xl: 20px;
-  --sfs-size-2xl: 18px;
-  --sfs-leading-2xl: 23px;
-
-  /* Space, radius, motion, layering */
-
-  --sfs-space-0: 2px;
-  --sfs-space-1: 4px;
-  --sfs-space-2: 8px;
-  --sfs-space-3: 12px;
-  --sfs-space-4: 16px;
-  --sfs-space-5: 24px;
-  --sfs-space-6: 32px;
-
-  --sfs-radius-sm: 2px;
-  --sfs-radius-md: 4px;
-  --sfs-radius-lg: 8px;
-  --sfs-radius-pill: 9999px;
-
-  --sfs-duration-fast: 120ms;
-  --sfs-duration-base: 180ms;
-  --sfs-ease: cubic-bezier(0.2, 0, 0, 1);
-
-  /* Above capsule art and the store's corner flags, below the store's hover popups */
-  --sfs-z-badge: 3;
-
-  /* Neutrals (sampled from the store) */
-
-  --sfs-color-bg-page: #1b2838; /* Classic store body */
-  --sfs-color-bg-page-deep: #0f1924; /* React pages (wishlist) */
-  --sfs-color-bg-row: #16202d; /* Search row: 20% black over the page */
-  --sfs-color-bg-sunken: #0e141b;
-  --sfs-color-bg-panel: #171d25; /* Options page and popup */
-  --sfs-color-bg-raised: #1f2630; /* Cards on the options page */
-  --sfs-color-bg-hover: rgb(255 255 255 / 0.06);
-
-  --sfs-color-text-strong: #ffffff; /* Headings */
-  --sfs-color-text: #c6d4df; /* Body, quoted notes */
-  --sfs-color-text-muted: #acb2b8; /* Meta lines; AA on every surface, banner included */
-  --sfs-color-text-subtle: #8f98a0; /* AA on page, row, panel and raised; never on the banner */
-
-  --sfs-color-border: #6e7a88; /* Form control edges, 3:1 on panel and raised */
-  --sfs-color-error: #ffa39e; /* Inline error text; AA on every surface */
-  --sfs-color-divider: rgb(255 255 255 / 0.08); /* Decorative only */
+  /* Headings on extension pages: options and card titles, on panel and raised. */
+  --sar-color-text-strong: #ffffff;
+  /* Body copy on extension pages: 10.07:1 on raised, 12.24:1 on sunken. */
+  --sar-color-text: #c6d4df;
+  /* Meta lines on solid grounds and the allow-listed note (7.68:1 on its strip); 6.97:1 or more on
+     page, row, panel and raised. Never on the banner wash (3.77:1 at its bright end). */
+  --sar-color-text-muted: #acb2b8;
+  /* Help text, versions, dates and footers on page, row, panel, raised and sunken (5.09:1 or more),
+     the summary row label, and the allow-listed note's spark. Never on the banner wash or the
+     store's row hover (3.32:1). */
+  --sar-color-text-subtle: #8f98a0;
+  /* Form control edges and the off switch's edge: 3.48:1 on raised, 3.88:1 on panel, 4.23:1 on
+     sunken. */
+  --sar-color-border: #6e7a88;
+  /* Inline error text on extension pages: 7.97:1 on raised. Inside the banner use sar-banner-error.
+     Always paired with words; never a red fill. */
+  --sar-color-error: #ffa39e;
+  /* Decorative separators between fields and allow-list items. Carries no meaning. */
+  --sar-color-divider: rgba(255, 255, 255, 0.08);
 
   /* Accent (ours) */
 
-  --sfs-accent-100: #e4dcff; /* Badge text */
-  --sfs-accent-200: #d6caff; /* Actions and links on tinted surfaces */
-  --sfs-accent-300: #b7a2ff; /* Glyphs, links on dark, focus ring */
-  --sfs-accent-400: #8f73f3; /* Borders, banner rule, switch track, icon fill */
-  --sfs-accent-500: #7458e0; /* Banner wash base */
-  --sfs-accent-600: #5f42c8; /* Primary button */
-  --sfs-accent-700: #46318f; /* Selected segment */
-  --sfs-accent-800: #2c2160;
-  --sfs-accent-900: #1f1840; /* Compact badge surface, opaque */
-
-  --sfs-accent-400-rgb: 143 115 243;
-  --sfs-accent-500-rgb: 116 88 224;
+  /* Compact badge text (12.65:1 on accent 900) and the banner spark (6.13:1 on the wash's bright
+     end). */
+  --sar-accent-100: #e4dcff;
+  /* Full badge text: on its tint 8.19:1 over a row, 7.46:1 over the page, 5.21:1 over the store's
+     row hover. Links on the store's row hover. */
+  --sar-accent-200: #d6caff;
+  /* Glyphs, links on dark grounds, the focus ring: 6.84:1 on page, 6.98:1 on raised, 3.69:1 against
+     the banner wash's bright end (a ring there, never text). On the store's row hover it is 4.45:1,
+     so links there use accent 200. */
+  --sar-accent-300: #b7a2ff;
+  /* The brand fill, non-text only: icon tag, switch on track (4.29:1 on raised), compact badge edge
+     (5.91:1 against black art), selected segment edge, and the full badge tint at 20%. */
+  --sar-accent-400: #8f73f3;
+  /* Primary button hover fill (white text 4.98:1). */
+  --sar-accent-500: #7458e0;
+  /* Primary button fill (white text 6.77:1), and the banner wash's bright stop at 80%. */
+  --sar-accent-600: #5f42c8;
+  /* Selected segment fill; white text 10.02:1. */
+  --sar-accent-700: #46318f;
+  /* The banner wash's dark stop at 80%. */
+  --sar-accent-800: #2c2160;
+  /* The compact badge's solid surface, so its text never depends on the art: 16.63:1 against white
+     art, 4.21:1 against mid grey, 3.34:1 against violet. */
+  --sar-accent-900: #1f1840;
 
   /* Focus */
 
-  --sfs-focus-color: var(--sfs-accent-300);
-  --sfs-focus-width: 2px;
-  --sfs-focus-offset: 2px;
+  /* Keyboard focus ring: a solid 2px outline at 2px offset on :focus-visible only. 3.69:1 or more
+     on every ground listed here, the banner wash included. */
+  --sar-focus-color: var(--sar-accent-300);
 
-  /* Full badge (search rows, wishlist rows) */
+  /* Full badge */
 
-  --sfs-badge-height: 20px;
-  --sfs-badge-pad-inline: 6px;
-  /* English needs about 124px. The cap leaves room for 40% longer translations; past it the
-     label ends in an ellipsis. */
-  --sfs-badge-max-inline-size: 180px;
-  --sfs-badge-gap: 4px;
-  --sfs-badge-glyph: 10px;
-  --sfs-badge-font: var(--sfs-weight-regular) var(--sfs-size-xs) / 18px var(--sfs-font-page);
-  --sfs-badge-fg: var(--sfs-accent-100);
-  --sfs-badge-glyph-color: var(--sfs-accent-300);
-  --sfs-badge-bg: rgb(var(--sfs-accent-400-rgb) / 0.22);
-  --sfs-badge-border: rgb(var(--sfs-accent-400-rgb) / 0.55);
-  --sfs-badge-radius: var(--sfs-radius-sm);
+  /* Full badge label. */
+  --sar-badge-fg: var(--sar-accent-200);
+  /* Full badge spark: 5.73:1 on the tint over a row, 3.65:1 over the store's row hover. The cue
+     that tells our badge from a clickable store tag. */
+  --sar-badge-glyph-color: var(--sar-accent-300);
+  /* Full badge tint: accent 400 at 20%, the store's tag-chip recipe in our hue. No border, like the
+     store's chips. */
+  --sar-badge-bg: rgba(143, 115, 243, 0.2);
 
-  /* Compact badge (over capsule art) */
+  /* Compact badge */
 
-  /* Opaque surface: text contrast never depends on the cover art below */
-  --sfs-compact-bg: var(--sfs-accent-900);
-  --sfs-compact-fg: var(--sfs-accent-100);
-  --sfs-compact-glyph-color: var(--sfs-accent-300);
-  --sfs-compact-border: var(--sfs-accent-400);
-  --sfs-compact-shadow: 0 0 0 1px rgb(0 0 0 / 0.45), 0 1px 3px rgb(0 0 0 / 0.5);
-  --sfs-compact-radius: var(--sfs-radius-sm);
-
-  --sfs-compact-height: 18px;
-  --sfs-compact-pad-inline: 5px;
-  --sfs-compact-gap: 4px;
-  --sfs-compact-glyph: 9px;
-  --sfs-compact-inset: 4px; /* From block-start and inline-end */
-  --sfs-compact-font: var(--sfs-weight-medium) var(--sfs-size-xs) / 16px var(--sfs-font-page);
-
-  --sfs-compact-height-lg: 22px;
-  --sfs-compact-pad-inline-lg: 7px;
-  --sfs-compact-glyph-lg: 11px;
-  --sfs-compact-inset-lg: 8px;
-  --sfs-compact-font-lg: var(--sfs-weight-medium) var(--sfs-size-sm) / 20px var(--sfs-font-page);
+  /* Compact badge surface: solid, like the store's corner flags, but dark. With the edge, every art
+     case has a boundary at 3:1 or more; against black art (1.26:1) the edge carries it. */
+  --sar-compact-bg: var(--sar-accent-900);
+  /* Compact badge label, 12.65:1 on its surface whatever the art. */
+  --sar-compact-fg: var(--sar-accent-100);
+  /* Compact badge spark, 7.62:1 on its surface. */
+  --sar-compact-glyph-color: var(--sar-accent-300);
+  /* Compact badge edge: 5.91:1 against black art, 3.55:1 against white. On mid grey (1.11:1) and
+     violet art the surface carries the boundary instead. */
+  --sar-compact-border: var(--sar-accent-400);
 
   /* App page banner */
 
-  --sfs-banner-bg: linear-gradient(
+  /* Banner wash, dark stop: accent 800 at 80%, the store's DLC-notice recipe in our hue (#292258
+     over the page). */
+  --sar-banner-wash-start: rgba(44, 33, 96, 0.8);
+  /* Banner wash, bright stop: accent 600 at 80% (#513dab over the page). Every banner text pair is
+     measured on this end. */
+  --sar-banner-wash-end: rgba(95, 66, 200, 0.8);
+  /* All banner text: title, source and service lines, notes. The store's bubble text color: 5.54:1
+     on the bright end, 9.84:1 on the dark end. */
+  --sar-banner-fg: #d5d6d8;
+  /* Show full disclosure and Undo, underlined like the store's in-bubble links (the store's own
+     #c3c1c0 would be 4.49:1 here). */
+  --sar-banner-link-color: var(--sar-banner-fg);
+  /* Banner spark, 6.13:1 on the bright end. */
+  --sar-banner-glyph-color: var(--sar-accent-100);
+  /* Stop marking this game, as the store's white-transparent button: 8.06:1 on the bright end. */
+  --sar-banner-button-fg: #ffffff;
+  /* That button's edge: 3.27:1 on the bright end (the store's 0.4 would be 2.63:1). */
+  --sar-banner-button-border: rgba(255, 255, 255, 0.5);
+  /* Hover wash behind that button (white text 6.29:1). Not sampled from the store. */
+  --sar-banner-button-bg-hover: rgba(255, 255, 255, 0.1);
+  /* Error text inside the banner: 4.97:1 on the bright end, where sar-color-error drops to 4.21:1.
+  */
+  --sar-banner-error: #ffbab6;
+  /* The allow-listed one-line note: the store's DRM-notice geometry in neutral, no violet. */
+  --sar-banner-note-bg: rgba(0, 0, 0, 0.2);
+
+  /* Buttons */
+
+  /* Primary button fill: Restore in the backup summary, the only primary action. */
+  --sar-button-primary-bg: var(--sar-accent-600);
+  /* Primary button hover fill. */
+  --sar-button-primary-bg-hover: var(--sar-accent-500);
+  /* Primary button label: 6.77:1 on the fill, 4.98:1 on hover. */
+  --sar-button-primary-fg: #ffffff;
+  /* Secondary button fill (Mark again). */
+  --sar-button-secondary-bg: rgba(255, 255, 255, 0.08);
+  /* Secondary button hover fill. */
+  --sar-button-secondary-bg-hover: rgba(255, 255, 255, 0.14);
+  /* Secondary button label: 7.89:1 at rest over raised, 6.46:1 on hover. */
+  --sar-button-secondary-fg: var(--sar-color-text);
+
+  /* Switch */
+
+  /* Switch track when off. 1.55:1 against raised, so its edge carries the 3:1. */
+  --sar-toggle-track-off: #3d4450;
+  /* Switch edge when off (3.48:1 on raised). */
+  --sar-toggle-track-off-border: var(--sar-color-border);
+  /* Switch track when on (4.29:1 on raised). */
+  --sar-toggle-track-on: var(--sar-accent-400);
+  /* Switch thumb: 3.55:1 on the on track, 9.81:1 on the off track. */
+  --sar-toggle-thumb: #ffffff;
+
+  /* Segmented control */
+
+  /* Segmented control well. */
+  --sar-segment-bg: var(--sar-color-bg-sunken);
+  /* Selected segment fill. */
+  --sar-segment-selected-bg: var(--sar-accent-700);
+  /* Selected segment edge (5.21:1 against the well). */
+  --sar-segment-selected-border: var(--sar-accent-400);
+  /* Selected segment label (10.02:1). */
+  --sar-segment-selected-fg: #ffffff;
+
+  /* Shadows */
+
+  /* Compact badge: an outer ring plus a soft drop that keeps the edge crisp over busy art. The
+     store's flags have none. */
+  --sar-compact-shadow: 0 0 0 1px rgba(0, 0, 0, 0.45), 0 1px 3px rgba(0, 0, 0, 0.5);
+
+  /* Space */
+
+  /* Segmented control inner padding; banner toggle nudge. */
+  --sar-space-0: 2px;
+  /* Gaps between a line and its meta; button block padding; the allow-listed note's block padding.
+  */
+  --sar-space-1: 4px;
+  /* Banner block-start padding and head gap; field block padding; the allow-listed note's inline
+     padding; badge gap before platform icons. */
+  --sar-space-2: 8px;
+  /* Banner block-end padding; space between cards; secondary button inline padding. */
+  --sar-space-3: 12px;
+  /* Banner inline padding and bottom margin; card padding; page inline padding. */
+  --sar-space-4: 16px;
+  /* Options page block padding. */
+  --sar-space-5: 24px;
+  /* The scale's top step, matching the store's React scale. No use yet. */
+  --sar-space-6: 32px;
+  /* Full badge inline padding, as the store's tag chips. */
+  --sar-badge-pad-inline: 7px;
+  /* Between the full badge's spark and label. */
+  --sar-badge-gap: 4px;
+  /* Compact badge inline padding, text tier. */
+  --sar-compact-pad-inline: 5px;
+  /* Between the compact badge's spark and label. */
+  --sar-compact-gap: 4px;
+  /* Banner button inline padding, as the store's white-transparent button. */
+  --sar-banner-button-pad-inline: 15px;
+  /* Gap after the summary row label, as the store's own summary labels. */
+  --sar-summary-label-pad-inline-end: 10px;
+  /* Compact badge offset from the image's block-start edge: the store's corner flags sit 5px down.
+  */
+  --sar-compact-inset-block: 5px;
+  /* Compact badge offset from the inline-end edge: flush, like the store's flags. */
+  --sar-compact-inset-inline: 0;
+  /* Compact badge inline padding, large tier. */
+  --sar-compact-pad-inline-lg: 7px;
+  /* Gap between a control and its focus ring. */
+  --sar-focus-offset: 2px;
+
+  /* Radii */
+
+  /* The allow-listed note, like the store's DRM notice. */
+  --sar-radius-xs: 1px;
+  /* Full badge, banner button, buttons, segments, selects: the store's chip radius. */
+  --sar-radius-sm: 2px;
+  /* Cards and the segmented control well on extension pages. */
+  --sar-radius-md: 4px;
+  /* The store's largest step. No use yet. */
+  --sar-radius-lg: 8px;
+  /* Switch track. */
+  --sar-radius-pill: 9999px;
+
+  /* Sizes */
+
+  /* Full badge block size: the store's tag-chip height. */
+  --sar-badge-height: 19px;
+  /* Full badge cap. English needs about 124px; past the cap the label ends in an ellipsis. */
+  --sar-badge-max-inline-size: 180px;
+  /* Spark in the full badge. */
+  --sar-badge-glyph: 10px;
+  /* Summary row label column: the share of the row the store gives its own labels. */
+  --sar-summary-label-inline-size: 35%;
+  /* Compact badge block size, glyph and text tiers: the store's corner-flag height; also the glyph
+     tier's inline size. */
+  --sar-compact-height: 19px;
+  /* Spark in the compact badge. */
+  --sar-compact-glyph: 9px;
+  /* Compact badge block size, large tier. */
+  --sar-compact-height-lg: 22px;
+  /* Spark in the large compact badge. */
+  --sar-compact-glyph-lg: 11px;
+  /* The store's standard control height. No use yet. */
+  --sar-control-height: 36px;
+  /* Minimum block size of every button, segment and select we draw. */
+  --sar-control-height-sm: 28px;
+  /* Options page column. */
+  --sar-options-max-width: 640px;
+  /* Action popup width. */
+  --sar-popup-width: 360px;
+  /* Switch track inline size. */
+  --sar-toggle-width: 36px;
+  /* Switch track block size. */
+  --sar-toggle-height: 20px;
+
+  /* Font sizes */
+
+  /* Badges. */
+  --sar-size-xs: 11px;
+  /* Help, dates, the allow-listed note, the large compact badge. */
+  --sar-size-sm: 12px;
+  /* Body copy on extension pages; banner source and service lines. */
+  --sar-size-md: 13px;
+  /* Banner notes: the store's description size. */
+  --sar-size-lg: 14px;
+  /* Card titles; the banner button. */
+  --sar-size-xl: 15px;
+  /* Options page title. */
+  --sar-size-2xl: 18px;
+  /* Banner title: the store's notice-bubble heading. */
+  --sar-size-3xl: 24px;
+
+  /* Line heights */
+
+  /* Pairs with sar-size-xs. No use yet (badges set their own 18px and 16px). */
+  --sar-leading-xs: 14px;
+  /* Pairs with sar-size-sm. */
+  --sar-leading-sm: 16px;
+  /* Pairs with sar-size-md. */
+  --sar-leading-md: 18px;
+  /* Pairs with sar-size-lg. */
+  --sar-leading-lg: 21px;
+  /* Pairs with sar-size-xl. */
+  --sar-leading-xl: 20px;
+  /* Pairs with sar-size-2xl. */
+  --sar-leading-2xl: 23px;
+
+  /* Font weights */
+
+  /* Banner title, meta lines and button: the store sets its notices light. */
+  --sar-weight-light: 300;
+  /* Everything by default. */
+  --sar-weight-regular: 400;
+  /* Compact badge label, options and card titles. */
+  --sar-weight-medium: 500;
+  /* No use yet. */
+  --sar-weight-bold: 700;
+
+  /* Line widths */
+
+  /* Focus ring width. */
+  --sar-focus-width: 2px;
+
+  /* Opacity */
+
+  /* Dimmed list hosts. Lighter than the store's own ignored state (0.3); hover and focus restore 1.
+  */
+  --sar-dim-opacity: 0.4;
+
+  /* Layering */
+
+  /* Compact badge: over capsule art and the store's corner flags, under the store's hover popups.
+  */
+  --sar-z-badge: 3;
+
+  /* Line clamp */
+
+  /* Banner notes collapse after this many lines (63px), keeping the purchase box near the fold. */
+  --sar-banner-quote-lines: 3;
+
+  /* Font families: referenced by name only, never bundled */
+
+  --sar-font-page: "Motiva Sans", "Noto Sans", Arial, Helvetica, sans-serif;
+  --sar-font-ext: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", Arial, sans-serif;
+  --sar-font-summary: Arial, Helvetica, sans-serif;
+
+  /* Aliases and composites */
+
+  --sar-duration-fast: 120ms;
+  --sar-duration-base: 180ms;
+  --sar-ease: cubic-bezier(0.2, 0, 0, 1);
+
+  --sar-badge-font: var(--sar-weight-regular) var(--sar-size-xs) / 19px var(--sar-font-page);
+  --sar-badge-radius: var(--sar-radius-sm);
+
+  --sar-compact-font: var(--sar-weight-medium) var(--sar-size-xs) / 17px var(--sar-font-page);
+  --sar-compact-font-lg: var(--sar-weight-medium) var(--sar-size-sm) / 20px var(--sar-font-page);
+
+  /* The store's DLC bubble recipe: 135 degrees, stops at 10% and 100% */
+  --sar-banner-bg: linear-gradient(
     135deg,
-    rgb(var(--sfs-accent-500-rgb) / 0.28) 0%,
-    rgb(var(--sfs-accent-500-rgb) / 0.12) 100%
+    var(--sar-banner-wash-start) 10%,
+    var(--sar-banner-wash-end) 100%
   );
-  --sfs-banner-rule: var(--sfs-accent-400);
-  --sfs-banner-rule-width: 3px; /* On the inline-start edge */
-  --sfs-banner-radius: var(--sfs-radius-md);
-  /* Same lift as the purchase box below it */
-  --sfs-banner-shadow: 2px 2px 15px 0 rgb(0 0 0 / 0.4);
-  --sfs-banner-pad-block: var(--sfs-space-3);
-  --sfs-banner-pad-inline: var(--sfs-space-4);
-  --sfs-banner-gap: var(--sfs-space-2);
-  --sfs-banner-margin-bottom: var(--sfs-space-4);
-  --sfs-banner-title-font: var(--sfs-weight-regular) var(--sfs-size-xl) / var(--sfs-leading-xl)
-    var(--sfs-font-page);
-  --sfs-banner-meta-font: var(--sfs-weight-regular) var(--sfs-size-sm) / var(--sfs-leading-sm)
-    var(--sfs-font-page);
-  --sfs-banner-quote-font: var(--sfs-weight-regular) var(--sfs-size-lg) / var(--sfs-leading-lg)
-    var(--sfs-font-page);
-  --sfs-banner-quote-lines: 3;
-  --sfs-banner-action-color: var(--sfs-accent-200);
-  --sfs-banner-action-bg-hover: rgb(255 255 255 / 0.1);
+  --sar-banner-pad-block-start: var(--sar-space-2);
+  --sar-banner-pad-block-end: var(--sar-space-3);
+  --sar-banner-pad-inline: var(--sar-space-4);
+  --sar-banner-gap: var(--sar-space-2);
+  /* Not the store bubble's 2px: that would glue the banner to the purchase box */
+  --sar-banner-margin-bottom: var(--sar-space-4);
+  --sar-banner-title-font: var(--sar-weight-light) var(--sar-size-3xl) / 30px var(--sar-font-page);
+  --sar-banner-meta-font: var(--sar-weight-light) var(--sar-size-md) / 19px var(--sar-font-page);
+  --sar-banner-quote-font: italic var(--sar-weight-regular) var(--sar-size-lg) /
+    var(--sar-leading-lg) var(--sar-font-page);
+  --sar-banner-button-font: var(--sar-weight-light) var(--sar-size-xl) / 30px var(--sar-font-page);
+  --sar-banner-note-font: var(--sar-weight-regular) var(--sar-size-sm) / 17px var(--sar-font-page);
 
-  /* List filter */
+  --sar-summary-label-font: var(--sar-weight-regular) var(--sar-size-xs) / 18px
+    var(--sar-font-summary);
+  --sar-summary-tag-font: var(--sar-weight-regular) var(--sar-size-xs) / 19px
+    var(--sar-font-summary);
 
-  /* Opacity only: no filter, so hundreds of dimmed capsules stay cheap to paint. The store's
-     own "ignored" state is 0.3; ours is lighter, and the badge names the reason. */
-  --sfs-dim-opacity: 0.4;
-
-  /* Options page and action popup */
-
-  --sfs-options-max-width: 640px;
-  --sfs-popup-width: 360px;
-  --sfs-control-height: 36px;
-  --sfs-control-height-sm: 28px;
-  --sfs-card-pad: var(--sfs-space-4);
-  --sfs-card-radius: var(--sfs-radius-md);
-
-  --sfs-button-primary-bg: var(--sfs-accent-600);
-  --sfs-button-primary-bg-hover: var(--sfs-accent-500);
-  --sfs-button-primary-fg: #ffffff;
-  --sfs-button-secondary-bg: rgb(255 255 255 / 0.08);
-  --sfs-button-secondary-bg-hover: rgb(255 255 255 / 0.14);
-  --sfs-button-secondary-fg: var(--sfs-color-text);
-
-  --sfs-toggle-width: 36px;
-  --sfs-toggle-height: 20px;
-  --sfs-toggle-track-off: #3d4450;
-  --sfs-toggle-track-off-border: var(--sfs-color-border);
-  --sfs-toggle-track-on: var(--sfs-accent-400);
-  --sfs-toggle-thumb: #ffffff;
-
-  --sfs-segment-bg: var(--sfs-color-bg-sunken);
-  --sfs-segment-selected-bg: var(--sfs-accent-700);
-  --sfs-segment-selected-border: var(--sfs-accent-400);
-  --sfs-segment-selected-fg: #ffffff;
+  --sar-card-pad: var(--sar-space-4);
+  --sar-card-radius: var(--sar-radius-md);
 }
 
 @media (prefers-reduced-motion: reduce) {
   :root {
-    --sfs-duration-fast: 0ms;
-    --sfs-duration-base: 0ms;
+    --sar-duration-fast: 0ms;
+    --sar-duration-base: 0ms;
   }
 }

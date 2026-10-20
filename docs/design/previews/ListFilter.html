@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="../reference.css">
+<title>List filter</title>
+<style>
+  body {
+    margin: 0;
+    background: var(--sar-color-bg-page);
+    color: var(--sar-color-text-subtle);
+    font: 12px/16px var(--sar-font-page);
+  }
+  .stage { padding: var(--sar-space-4); }
+  .cap { margin: 0 0 var(--sar-space-2); }
+  .cap code { color: var(--sar-color-text-muted); }
+  .list { display: grid; gap: 2px; margin-block-end: var(--sar-space-5); }
+  .host {
+    display: flex;
+    align-items: center;
+    gap: var(--sar-space-3);
+    padding: 2px var(--sar-space-1);
+    background: var(--sar-color-bg-row);
+    color: var(--sar-color-text);
+    text-decoration: none;
+  }
+  .art { inline-size: 120px; block-size: 45px; flex: none; }
+  .a {
+    background: repeating-linear-gradient(45deg,
+       #e8c547 0 10px,
+       #c0392b 10px 20px,
+       #1abc9c 20px 30px,
+       #fff 30px 40px,
+       #2c3e50 40px 50px);
+  }
+  .b { background: linear-gradient(120deg, #fff 0%, #f4efe2 45%, #d9e8f5 100%); }
+  .c { background: linear-gradient(180deg, #8fd3ff 0%, #ffd7a8 70%, #59341f 100%); }
+  .d { background: linear-gradient(160deg, #000 0%, #121212 60%, #23180f 100%); }
+  .text {
+    display: grid;
+    gap: var(--sar-space-1);
+    min-inline-size: 0;
+    font-size: 14px;
+    line-height: 18px;
+  }
+</style>
+</head>
+<body>
+<div class="stage">
+  <p class="cap">Root <code>data-sar-filter="dim"</code>: disclosed hosts fade; hover or focus
+    brings one back</p>
+  <div class="list" data-sar-filter="dim">
+    <a class="host" href="#" data-sar-state="disclosed"><span class="art a"></span>
+      <span class="text"><span>Disclosed: dimmed</span><span><span class="sar-badge">
+      <svg class="sar-badge-glyph" viewBox="0 0 10 10" aria-hidden="true">
+      <path d="M5 0Q5.7 4.3 10 5Q5.7 5.7 5 10Q4.3 5.7 0 5Q4.3 4.3 5 0Z"/></svg>
+      <span class="sar-badge-label">Discloses AI use</span></span></span></span></a>
+    <a class="host" href="#" data-sar-state="allowed"><span class="art b"></span><span class="text">
+      <span>Disclosed but allow-listed: untouched, no badge</span></span></a>
+    <a class="host" href="#" data-sar-state="not-disclosed"><span class="art c"></span>
+      <span class="text"><span>Not disclosed: untouched, nothing rendered</span></span></a>
+  </div>
+  <p class="cap">Root <code>data-sar-filter="hide"</code>: a hideable host is gone; one marked
+    <code>data-sar-hideable="false"</code> dims instead</p>
+  <div class="list" data-sar-filter="hide">
+    <a class="host" href="#" data-sar-state="disclosed"><span class="art a"></span>
+      <span class="text"><span>Disclosed: hidden</span></span></a>
+    <a class="host" href="#" data-sar-state="disclosed" data-sar-hideable="false">
+      <span class="art d"></span><span class="text"><span>Disclosed in a list that cannot hide:
+      dimmed</span><span><span class="sar-badge">
+      <svg class="sar-badge-glyph" viewBox="0 0 10 10" aria-hidden="true">
+      <path d="M5 0Q5.7 4.3 10 5Q5.7 5.7 5 10Q4.3 5.7 0 5Q4.3 4.3 5 0Z"/></svg>
+      <span class="sar-badge-label">Discloses AI use</span></span></span></span></a>
+    <a class="host" href="#" data-sar-state="not-disclosed"><span class="art c"></span>
+      <span class="text"><span>Not disclosed: untouched</span></span></a>
+  </div>
+</div>
+</body>
+</html>

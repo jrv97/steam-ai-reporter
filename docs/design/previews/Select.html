@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="../reference.css">
+<title>Select</title>
+<style>
+  body { margin: 0; background: var(--sar-color-bg-panel); }
+  .sar-options { max-inline-size: 440px; margin: 0; }
+</style>
+</head>
+<body>
+<div class="sar-options" data-sar-context="page">
+  <section class="sar-card" aria-labelledby="h">
+    <h2 class="sar-card-title" id="h">Language</h2>
+    <div class="sar-field" data-sar-layout="stacked">
+      <label class="sar-field-label" for="loc">Language of this extension</label>
+      <select class="sar-select" id="loc">
+        <option>Automatic</option>
+        <option lang="en">English</option>
+        <option lang="es">Espa&ntilde;ol</option>
+      </select>
+      <span class="sar-field-help">Automatic follows the store page's language when a translation
+        exists, and English otherwise.</span>
+    </div>
+  </section>
+</div>
+</body>
+</html>

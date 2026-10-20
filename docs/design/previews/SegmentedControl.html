@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="../reference.css">
+<title>Segmented control</title>
+<style>
+  body { margin: 0; background: var(--sar-color-bg-panel); }
+  .sar-options { max-inline-size: 440px; margin: 0; }
+</style>
+</head>
+<body>
+<div class="sar-options" data-sar-context="page">
+  <section class="sar-card" aria-labelledby="l">
+    <h2 class="sar-card-title" id="l">In lists</h2>
+    <div class="sar-field" data-sar-layout="stacked">
+      <span class="sar-field-label" id="f">Games that disclose AI use</span>
+      <fieldset class="sar-segment" aria-labelledby="f">
+        <input type="radio" name="f" id="f-off"><label for="f-off">Show</label>
+        <input type="radio" name="f" id="f-dim" checked><label for="f-dim">Dim</label>
+        <input type="radio" name="f" id="f-hide"><label for="f-hide">Hide</label>
+      </fieldset>
+      <span class="sar-field-help">Fades these games in lists. Hover to see one clearly.</span>
+    </div>
+    <div class="sar-field" data-sar-layout="stacked" lang="es">
+      <span class="sar-field-label" id="g">Juegos que declaran el uso de IA</span>
+      <fieldset class="sar-segment" aria-labelledby="g">
+        <input type="radio" name="g" id="g-off"><label for="g-off">Mostrar sin cambios</label>
+        <input type="radio" name="g" id="g-dim" checked><label for="g-dim">Atenuar en las listas
+          </label>
+        <input type="radio" name="g" id="g-hide"><label for="g-hide">Ocultar de las listas</label>
+      </fieldset>
+      <span class="sar-field-error" role="alert">No se pudo guardar este cambio. Int&eacute;ntalo de
+        nuevo.</span>
+    </div>
+  </section>
+</div>
+</body>
+</html>

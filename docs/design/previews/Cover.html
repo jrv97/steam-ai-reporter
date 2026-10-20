@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="../reference.css">
+<title>AI Reporter for Steam</title>
+<style>
+  html, body { margin: 0; height: 100%; }
+  body {
+    background: var(--sar-color-bg-page);
+    color: var(--sar-color-text-strong);
+    font-family: var(--sar-font-page);
+    overflow: hidden;
+  }
+  .cover { position: relative; height: 288px; overflow: hidden; }
+  .art { position: absolute; top: 0; left: 480px; width: 480px; height: 288px; overflow: hidden; }
+  .art svg { display: block; width: 520px; height: 288px; }
+  .brand { fill: var(--sar-accent-400); }
+  .deep { fill: var(--sar-accent-600); }
+  .light { fill: var(--sar-accent-300); }
+  .tint { fill: var(--sar-accent-100); }
+  .cut { fill: var(--sar-color-bg-page); }
+  .spark { fill: var(--sar-accent-100); }
+  .blk { rx: var(--sar-radius-md); }
+  .chip { rx: var(--sar-radius-sm); }
+  .words {
+    position: absolute;
+    left: var(--sar-space-6);
+    bottom: var(--sar-space-6);
+    max-width: 440px;
+  }
+  .name {
+    margin: 0;
+    font-size: 66px;
+    line-height: 0.95;
+    font-weight: var(--sar-weight-medium);
+    letter-spacing: -0.01em;
+    color: var(--sar-color-text-strong);
+  }
+  .tag {
+    margin: var(--sar-space-2) 0 0 2px;
+    font-size: 14px;
+    line-height: 20px;
+    color: var(--sar-color-text-muted);
+  }
+</style>
+</head>
+<body>
+<div class="cover">
+<div class="art" aria-hidden="true">
+<svg viewBox="0 0 520 288" width="520" height="288">
+<!--
+  blocks sar-accent-400 192x232 slab bled off the top (the brand fill, largest) &#xb7;
+    sar-accent-600 144x160 &#xb7; sar-accent-300 112x104 bled off the right edge &#xb7;
+    sar-accent-100 56x20, the full badge's own height (sar-badge-height), once &#xb7; about 27% of
+    960x288
+  arrangement one tall slab with satellites, bottoms on one line sar-space-6 x2 above the edge,
+    sar-space-4 gutters, like capsules in a store row
+  pattern the spark, the system's literal motif ("a label about AI"): 12px sparks on an sar-space-6
+    pitch rising in two steps toward inline-end, the way the tag points; cut from the slab in the
+    page ground, laid on accent 600 in accent 100
+  scales sides in sar-space-2 multiples; gutters sar-space-4; pitch sar-space-6; block corners
+    sar-radius-md, the badge chip sar-radius-sm
+-->
+<defs>
+  <symbol id="sp" viewBox="0 0 10 10">
+    <path d="M5 0Q5.7 4.3 10 5Q5.7 5.7 5 10Q4.3 5.7 0 5Q4.3 4.3 5 0Z"/></symbol>
+</defs>
+<rect class="brand blk" x="32" y="-8" width="192" height="232" rx="4"/>
+<rect class="deep blk" x="240" y="64" width="144" height="160" rx="4"/>
+<rect class="light blk" x="400" y="24" width="112" height="104" rx="4"/>
+<rect class="tint chip" x="400" y="204" width="56" height="20" rx="2"/>
+<use class="cut" href="#sp" x="186" y="90" width="12" height="12"/>
+<use class="cut" href="#sp" x="154" y="122" width="12" height="12"/>
+<use class="cut" href="#sp" x="186" y="122" width="12" height="12"/>
+<use class="cut" href="#sp" x="122" y="154" width="12" height="12"/>
+<use class="cut" href="#sp" x="154" y="154" width="12" height="12"/>
+<use class="cut" href="#sp" x="186" y="154" width="12" height="12"/>
+<use class="cut" href="#sp" x="90" y="186" width="12" height="12"/>
+<use class="cut" href="#sp" x="122" y="186" width="12" height="12"/>
+<use class="cut" href="#sp" x="154" y="186" width="12" height="12"/>
+<use class="cut" href="#sp" x="186" y="186" width="12" height="12"/>
+<use class="spark" href="#sp" x="346" y="90" width="12" height="12"/>
+<use class="spark" href="#sp" x="314" y="122" width="12" height="12"/>
+<use class="spark" href="#sp" x="346" y="122" width="12" height="12"/>
+<use class="spark" href="#sp" x="282" y="154" width="12" height="12"/>
+<use class="spark" href="#sp" x="314" y="154" width="12" height="12"/>
+<use class="spark" href="#sp" x="346" y="154" width="12" height="12"/>
+<use class="spark" href="#sp" x="250" y="186" width="12" height="12"/>
+<use class="spark" href="#sp" x="282" y="186" width="12" height="12"/>
+<use class="spark" href="#sp" x="314" y="186" width="12" height="12"/>
+<use class="spark" href="#sp" x="346" y="186" width="12" height="12"/>
+</svg>
+</div>
+<div class="words">
+<h1 class="name">AI Reporter<br>for Steam</h1>
+<p class="tag">Label the disclosure, never judge it.</p>
+</div>
+</div>
+</body>
+</html>
