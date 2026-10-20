@@ -1,0 +1,273 @@
+/*
+ * Settings form rules: the options page, the toolbar popup and the userscript dialog. Lifted from
+ * docs/design/reference.css (components.mdx sections 6 to 11). Tokens come from TOKENS_CSS on the
+ * options page's root, or inherit from the store page's :root in the userscript dialog.
+ */
+
+@import "./shared.css";
+
+.sar-options {
+  box-sizing: border-box;
+  max-inline-size: var(--sar-options-max-width);
+  margin-inline: auto;
+  padding-block: var(--sar-space-5);
+  padding-inline: var(--sar-space-4);
+  background: var(--sar-color-bg-panel);
+  color: var(--sar-color-text);
+  font: var(--sar-weight-regular) var(--sar-size-md) / var(--sar-leading-md) var(--sar-font-ext);
+  overflow-wrap: break-word;
+  color-scheme: dark;
+}
+
+.sar-options *,
+.sar-options *::before,
+.sar-options *::after {
+  box-sizing: border-box;
+}
+
+/* Author display rules would otherwise beat the user agent's [hidden] */
+.sar-options [hidden] {
+  display: none !important;
+}
+
+.sar-options[data-sar-context="popup"] {
+  inline-size: var(--sar-popup-width);
+  max-inline-size: none;
+  padding-block: var(--sar-space-4);
+  padding-inline: var(--sar-space-3);
+}
+
+.sar-card {
+  margin: 0 0 var(--sar-space-3);
+  padding: var(--sar-card-pad);
+  border-radius: var(--sar-card-radius);
+  background: var(--sar-color-bg-raised);
+}
+
+.sar-card-title {
+  margin: 0 0 var(--sar-space-3);
+  color: var(--sar-color-text-strong);
+  font: var(--sar-weight-medium) var(--sar-size-xl) / var(--sar-leading-xl) var(--sar-font-ext);
+}
+
+.sar-card-title:focus {
+  outline: none;
+}
+
+/* The label wraps in column 1; the switch keeps column 2 */
+.sar-field {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: var(--sar-space-4);
+  padding-block: var(--sar-space-2);
+}
+
+.sar-field + .sar-field {
+  border-block-start: 1px solid var(--sar-color-divider);
+}
+
+.sar-field-label {
+  color: var(--sar-color-text);
+}
+
+.sar-field-help {
+  grid-column: 1 / -1;
+  margin-block-start: var(--sar-space-1);
+  color: var(--sar-color-text-subtle);
+  font-size: var(--sar-size-sm);
+  line-height: var(--sar-leading-sm);
+}
+
+/* Fields whose control needs the full row (segmented control, select) */
+.sar-field[data-sar-layout="stacked"] {
+  grid-template-columns: minmax(0, 1fr);
+  row-gap: var(--sar-space-2);
+}
+
+.sar-field-error {
+  grid-column: 1 / -1;
+  margin: var(--sar-space-1) 0 0;
+  color: var(--sar-color-error);
+  font-size: var(--sar-size-sm);
+  line-height: var(--sar-leading-sm);
+}
+
+/* Switch: a checkbox with role="switch" */
+.sar-toggle {
+  appearance: none;
+  position: relative;
+  inline-size: var(--sar-toggle-width);
+  block-size: var(--sar-toggle-height);
+  margin: 0;
+  border: 1px solid var(--sar-toggle-track-off-border);
+  border-radius: var(--sar-radius-pill);
+  background: var(--sar-toggle-track-off);
+  cursor: pointer;
+  transition: background-color var(--sar-duration-fast) var(--sar-ease);
+}
+
+.sar-toggle::after {
+  content: "";
+  position: absolute;
+  inset-block-start: 2px;
+  inset-inline-start: 2px;
+  inline-size: 14px;
+  block-size: 14px;
+  border-radius: 50%;
+  background: var(--sar-toggle-thumb);
+  transition: transform var(--sar-duration-fast) var(--sar-ease);
+}
+
+.sar-toggle:checked {
+  border-color: var(--sar-toggle-track-on);
+  background: var(--sar-toggle-track-on);
+}
+
+/* Physical translate: the one spot to flip if right-to-left lands */
+.sar-toggle:checked::after {
+  transform: translateX(16px);
+}
+
+/* Segmented control: a fieldset of radios, full row, equal columns */
+.sar-segment {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  margin: 0;
+  padding: var(--sar-space-0);
+  border: 1px solid var(--sar-color-border);
+  border-radius: var(--sar-radius-md);
+  background: var(--sar-segment-bg);
+}
+
+.sar-segment input {
+  position: absolute;
+  opacity: 0;
+  inline-size: 1px;
+  block-size: 1px;
+}
+
+.sar-segment label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-block-size: var(--sar-control-height-sm);
+  padding-block: var(--sar-space-1);
+  padding-inline: var(--sar-space-2);
+  border: 1px solid transparent;
+  border-radius: var(--sar-radius-sm);
+  color: var(--sar-color-text);
+  text-align: center;
+  cursor: pointer;
+}
+
+.sar-segment input:checked + label {
+  border-color: var(--sar-segment-selected-border);
+  background: var(--sar-segment-selected-bg);
+  color: var(--sar-segment-selected-fg);
+}
+
+.sar-select {
+  min-block-size: var(--sar-control-height-sm);
+  max-inline-size: 100%;
+  padding-inline: var(--sar-space-2);
+  border: 1px solid var(--sar-color-border);
+  border-radius: var(--sar-radius-sm);
+  background: var(--sar-color-bg-sunken);
+  color: var(--sar-color-text);
+  font: inherit;
+}
+
+.sar-toggle:focus-visible,
+.sar-segment input:focus-visible + label,
+.sar-select:focus-visible,
+.sar-button:focus-visible,
+.sar-options a:focus-visible {
+  outline: var(--sar-focus-width) solid var(--sar-focus-color);
+  outline-offset: var(--sar-focus-offset);
+}
+
+.sar-button {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  min-block-size: var(--sar-control-height-sm);
+  max-inline-size: 100%;
+  padding-block: var(--sar-space-1);
+  padding-inline: var(--sar-space-3);
+  border: 0;
+  border-radius: var(--sar-radius-sm);
+  background: var(--sar-button-secondary-bg);
+  color: var(--sar-button-secondary-fg);
+  font: inherit;
+  text-align: center;
+  cursor: pointer;
+}
+
+.sar-button:hover {
+  background: var(--sar-button-secondary-bg-hover);
+}
+
+.sar-options a {
+  color: var(--sar-accent-300);
+}
+
+.sar-allow-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sar-options[data-sar-context="popup"] .sar-allow-list {
+  max-block-size: 240px;
+  overflow-y: auto;
+}
+
+/* Name and date keep at least 40% of the row; a long button label wraps inside the rest */
+.sar-allow-item {
+  display: grid;
+  grid-template-columns: minmax(40%, 1fr) auto;
+  align-items: center;
+  column-gap: var(--sar-space-3);
+  padding-block: var(--sar-space-2);
+}
+
+.sar-allow-item + .sar-allow-item {
+  border-block-start: 1px solid var(--sar-color-divider);
+}
+
+.sar-allow-name {
+  display: block;
+  overflow: hidden;
+  color: var(--sar-color-text);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sar-allow-meta {
+  display: block;
+  color: var(--sar-color-text-subtle);
+  font-size: var(--sar-size-sm);
+}
+
+.sar-empty {
+  margin: 0;
+  color: var(--sar-color-text-subtle);
+}
+
+.sar-privacy {
+  margin: 0;
+  padding-inline-start: var(--sar-space-4);
+}
+
+.sar-privacy li + li {
+  margin-block-start: var(--sar-space-1);
+}
+
+.sar-options-footer {
+  margin: var(--sar-space-4) 0 0;
+  color: var(--sar-color-text-subtle);
+  font-size: var(--sar-size-sm);
+  line-height: var(--sar-leading-sm);
+}

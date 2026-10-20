@@ -1,0 +1,180 @@
+/*
+ * App page banner rules, adopted by the banner's shadow root. Lifted from
+ * docs/design/reference.css (components.mdx section 4). Tokens inherit from the page's :root.
+ */
+
+@import "./shared.css";
+
+:host {
+  display: block;
+}
+
+/* Author display rules would otherwise beat the user agent's [hidden] */
+[hidden] {
+  display: none !important;
+}
+
+.sar-banner {
+  box-sizing: border-box;
+  display: block;
+  margin: 0 0 var(--sar-banner-margin-bottom);
+  padding-block: var(--sar-banner-pad-block-start) var(--sar-banner-pad-block-end);
+  padding-inline: var(--sar-banner-pad-inline);
+  border: 0;
+  border-radius: 0;
+  background: var(--sar-banner-bg);
+  box-shadow: none;
+  color: var(--sar-banner-fg);
+  font: var(--sar-banner-meta-font);
+  text-align: start;
+  overflow-wrap: break-word;
+}
+
+.sar-banner:focus {
+  outline: none;
+}
+
+/* Title and button share a line in English; a longer title wraps first, then the button moves
+   under it, aligned to inline-end */
+.sar-banner-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: var(--sar-banner-gap);
+  row-gap: var(--sar-space-1);
+}
+
+.sar-banner-title {
+  margin: 0;
+  padding: 0;
+  background: none;
+  color: var(--sar-banner-fg);
+  font: var(--sar-banner-title-font);
+  letter-spacing: normal;
+  text-transform: none;
+  flex: 1 1 12em;
+  min-inline-size: 0;
+}
+
+.sar-banner-source,
+.sar-banner-service {
+  margin: var(--sar-space-1) 0 0;
+  color: var(--sar-banner-fg);
+  font: var(--sar-banner-meta-font);
+}
+
+.sar-banner-quote {
+  margin: var(--sar-space-1) 0 0;
+  padding: 0;
+  color: var(--sar-banner-fg);
+  font: var(--sar-banner-quote-font);
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.sar-banner-quote[data-sar-collapsed="true"] {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: var(--sar-banner-quote-lines);
+  line-clamp: var(--sar-banner-quote-lines);
+  overflow: hidden;
+}
+
+/* "Stop marking this game": the store's white-transparent button */
+.sar-banner-action {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  max-inline-size: 100%;
+  margin: 0;
+  margin-inline-start: auto;
+  padding-block: 0;
+  padding-inline: var(--sar-banner-button-pad-inline);
+  border: 1px solid var(--sar-banner-button-border);
+  border-radius: var(--sar-radius-sm);
+  background: transparent;
+  color: var(--sar-banner-button-fg);
+  font: var(--sar-banner-button-font);
+  text-align: start;
+  white-space: normal;
+  cursor: pointer;
+  flex: none;
+  transition: background-color var(--sar-duration-fast) var(--sar-ease);
+}
+
+.sar-banner-action:hover {
+  background: var(--sar-banner-button-bg-hover);
+}
+
+/* "Show full disclosure" and "Undo": the store's underlined in-bubble links, as buttons */
+.sar-banner-link {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  min-block-size: 24px;
+  max-inline-size: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--sar-banner-link-color);
+  font: inherit;
+  text-align: start;
+  text-decoration: underline;
+  white-space: normal;
+  cursor: pointer;
+  flex: none;
+}
+
+.sar-banner-quote + .sar-banner-link {
+  margin-block-start: var(--sar-space-0);
+}
+
+.sar-banner-action:focus-visible,
+.sar-banner-link:focus-visible {
+  outline: var(--sar-focus-width) solid var(--sar-focus-color);
+  outline-offset: var(--sar-focus-offset);
+}
+
+.sar-banner-error {
+  margin: var(--sar-space-1) 0 0;
+  color: var(--sar-banner-error);
+  font: var(--sar-banner-meta-font);
+}
+
+/* Allow-listed: the store's DRM-notice geometry in neutral, no violet. The text and the link
+   wrap inside their own boxes; an error takes its own line. */
+.sar-banner[data-sar-variant="ignored"] {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sar-banner-gap);
+  padding-block: var(--sar-space-1);
+  padding-inline: var(--sar-space-2);
+  border-radius: var(--sar-radius-xs);
+  background: var(--sar-banner-note-bg);
+  color: var(--sar-color-text-muted);
+  font: var(--sar-banner-note-font);
+}
+
+.sar-banner-ignored-text {
+  flex: 1 1 0;
+  min-inline-size: 0;
+}
+
+.sar-banner[data-sar-variant="ignored"] .sar-banner-link {
+  flex: 0 1 auto;
+  max-inline-size: 50%;
+}
+
+.sar-banner[data-sar-variant="ignored"] .sar-banner-error {
+  flex: 1 0 100%;
+  margin: 0;
+}
+
+/* The wash disappears in forced colors; an edge keeps the banner a distinct region */
+@media (forced-colors: active) {
+  .sar-banner {
+    border: 1px solid CanvasText;
+  }
+}
