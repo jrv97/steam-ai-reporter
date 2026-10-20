@@ -294,5 +294,17 @@
   "options_all_settings": {
     "message": "All settings",
     "description": "Link in the toolbar popup footer that opens the full settings page in a tab."
+  },
+  "userscript_menu_settings": {
+    "message": "Settings",
+    "description": "Entry in the script manager's menu (Tampermonkey, Violentmonkey) that opens the settings dialog on a store page. One word."
+  },
+  "userscript_close": {
+    "message": "Close",
+    "description": "Button that closes the userscript settings dialog."
+  },
+  "userscript_reload_note": {
+    "message": "Changes apply on the next page load.",
+    "description": "Shown under the settings in the userscript dialog when the script manager cannot apply a change to other open store tabs at once."
   }
 }

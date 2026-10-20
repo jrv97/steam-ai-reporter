@@ -5,7 +5,8 @@ root for the banner), so every target needs the CSS as text. This writes
 src/core/ui/styles.gen.ts with one constant per source file:
 
 - `TOKENS_CSS` from docs/design/tokens.css, the design system's only source of values;
-- `PAGE_CSS`, `BANNER_CSS` and `SETTINGS_CSS` from the component rules in src/core/ui/.
+- `PAGE_CSS`, `BANNER_CSS`, `SETTINGS_CSS` and `DIALOG_CSS` from the component rules in
+  src/core/ui/.
 
 `@import "<relative path>";` lines are inlined, comments and blank lines are dropped, and the
 rest is kept line for line, so the bundles stay readable (rule 2). No value is copied by hand:
@@ -26,6 +27,7 @@ SOURCES = (
     ("PAGE_CSS", UI / "styles.css"),
     ("BANNER_CSS", UI / "banner.css"),
     ("SETTINGS_CSS", UI / "settings.css"),
+    ("DIALOG_CSS", UI / "dialog.css"),
 )
 OUTPUT = UI / "styles.gen.ts"
 IMPORT = re.compile(r'^@import\s+"([^"]+)";\s*$')
