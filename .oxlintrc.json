@@ -162,13 +162,8 @@
     "eslint/no-param-reassign": "error",
     "eslint/no-debugger": "error",
     "eslint/no-alert": "error",
-    "sar/restricted-syntax": [
-      "error",
-      {
-        "selector": "CallExpression[callee.object.name='JSON'][callee.property.name='parse']",
-        "message": "Use parseJson from src/core/json.ts (returns unknown) instead of JSON.parse."
-      }
-    ]
+    "sar/no-hardcoded-copy": "error",
+    "sar/no-json-parse": "error"
   },
   "overrides": [
     {
@@ -176,7 +171,7 @@
         "src/core/json.ts"
       ],
       "rules": {
-        "sar/restricted-syntax": "off"
+        "sar/no-json-parse": "off"
       }
     }
   ]

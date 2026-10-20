@@ -46,6 +46,13 @@ run = [
   "mise generate git-pre-commit --write --hook=pre-push --task=prepush",
 ]
 
+[tasks.gen]
+description = "Generate the typed message keys from the English catalogs"
+hide = true
+sources = ["src/locales/en/messages.json", "tests/locales/en/messages.json", "scripts/*.py"]
+outputs = ["src/core/i18n/keys.gen.ts", "tests/locales/keys.gen.ts"]
+run = "python scripts/gen_i18n_keys.py"
+
 [tasks.deps]
 description = "Install JavaScript dependencies from the lockfile"
 hide = true
@@ -75,7 +82,7 @@ run = [
 
 [tasks.lint]
 description = "Lint TypeScript, Python, shell scripts and workflows"
-depends = ["deps"]
+depends = ["deps", "gen"]
 run = [
   "oxlint --type-aware --deny-warnings",
   "ruff check",
@@ -87,20 +94,21 @@ run = [
 
 [tasks.typecheck]
 description = "Type-check the project and the core with TypeScript 7"
-depends = ["deps"]
+depends = ["deps", "gen"]
 run = ["tsc --noEmit -p tsconfig.json", "tsc --noEmit -p tsconfig.core.json"]
 
 [tasks.test]
 description = "Run the unit tests"
-depends = ["deps"]
+depends = ["deps", "gen"]
 run = "vitest run"
 
 [tasks.check]
-description = "Check text hygiene, versions and the built bundles"
+description = "Check text hygiene, versions, message catalogs and the built bundles"
 depends = ["build"]
 run = [
   "python scripts/check_text.py",
   "python scripts/check_versions.py",
+  "python scripts/check_i18n.py",
   "python scripts/check_bundle.py",
 ]
 
@@ -110,7 +118,7 @@ run = "python scripts/check_branch.py"
 
 [tasks.check-reproducible]
 description = "Build twice and compare the outputs byte for byte"
-depends = ["deps"]
+depends = ["deps", "gen"]
 run = "bash scripts/check_reproducible.sh"
 
 [tasks.changelog-gate]
@@ -121,12 +129,12 @@ run = "python scripts/changelog_gate.py"
 
 [tasks.build]
 description = "Build the Chrome and Firefox extensions, the userscript and the dev bundle"
-depends = ["deps"]
+depends = ["deps", "gen"]
 run = "python scripts/build.py"
 
 [tasks.dev]
 description = "Rebuild every target on change"
-depends = ["deps"]
+depends = ["deps", "gen"]
 run = "python scripts/build.py --watch"
 
 [tasks.lint-firefox]
@@ -154,7 +162,11 @@ run = "changie new"
 
 [tasks.precommit]
 description = "Format staged files we own, re-stage them, and check their text"
-run = ["bash scripts/precommit_format.sh", "python scripts/check_text.py --staged"]
+run = [
+  "bash scripts/precommit_format.sh",
+  "python scripts/check_text.py --staged",
+  "python scripts/check_i18n.py",
+]
 
 [tasks.prepush]
 description = "Everything a push must pass"

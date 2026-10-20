@@ -1,0 +1,21 @@
+{
+  "greeting": {
+    "message": "¡Hola, $name$!",
+    "description": "Mensaje de prueba con un marcador.",
+    "placeholders": { "name": { "content": "$1", "example": "Ana" } }
+  },
+  "farewell": {
+    "message": "Adiós.",
+    "description": "Mensaje de prueba sin marcadores."
+  },
+  "games_one": {
+    "message": "$count$ juego en $list$",
+    "description": "Plural de prueba, forma singular.",
+    "placeholders": { "count": { "content": "$1" }, "list": { "content": "$2" } }
+  },
+  "games_other": {
+    "message": "$count$ juegos en $list$",
+    "description": "Plural de prueba, forma general.",
+    "placeholders": { "count": { "content": "$1" }, "list": { "content": "$2" } }
+  }
+}

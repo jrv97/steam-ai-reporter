@@ -10,5 +10,9 @@
   "ext_description": {
     "message": "Labels Steam games whose developers disclose generative AI use, in their own words.",
     "description": "Manifest description and userscript @description. At most 132 characters (Chrome limit)."
+  },
+  "error_unexpected": {
+    "message": "Unexpected error.",
+    "description": "Logged to the browser console when something fails without a more specific message. Short; developers read it, not players."
   }
 }

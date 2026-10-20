@@ -5,3 +5,4 @@ coverage/
 .claude/settings.local.json
 __pycache__/
 mise.local.toml
+*.gen.ts
