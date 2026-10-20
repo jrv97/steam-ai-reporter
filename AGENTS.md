@@ -65,10 +65,13 @@ These are hard rules. A change that breaks one needs an ADR first.
       in-memory cache, observers disconnected on `pagehide`;
     - bundle size and scan-time budgets are enforced by checks.
 14. **mise is the only toolchain manager and task runner.** Local development, Git hooks, CI and
-    release pipelines all run `mise run <task>`. Every tool is pinned in `mise.toml`. Non-trivial
-    logic lives in `scripts/` as `.sh` (short glue) or `.py` (anything with logic), called only
-    from mise tasks. `package.json` holds dependencies and no scripts. The pre-commit hook runs
-    `mise run precommit`; the pre-push hook runs `mise run prepush`.
+    release pipelines all run `mise run <task>`. Every tool is pinned in `mise.toml`; JavaScript
+    libraries loaded from `node_modules` (esbuild, TypeScript, oxlint, valibot, vitest) are
+    exact-pinned in `package.json` and the lockfile. Non-trivial logic lives in `scripts/` as `.sh`
+    (short glue) or `.py` (anything with logic), called only from mise tasks; lint configuration
+    such as the oxlint plugin in `lint/` is not task logic. `package.json` holds dependencies and
+    no scripts. The pre-commit hook runs `mise run precommit`; the pre-push hook runs
+    `mise run prepush`.
 15. **Formatting.** Line width 100 for every file we own: TypeScript, JSON, CSS, HTML, YAML, TOML,
     Python and shell. Markdown and MDX are formatted for structure only; prose is not wrapped.
     `precommit` formats staged files and re-stages them; `prepush` and CI reject unformatted
