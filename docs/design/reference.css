@@ -20,10 +20,12 @@
 
 /* Shared */
 
+/* SVG descendants are excluded: all: unset would also reset the path's CSS d property to
+   none, and an inlined glyph would disappear. */
 .sfs-badge,
-.sfs-badge *,
+.sfs-badge :where(:not(svg *)),
 .sfs-compact,
-.sfs-compact * {
+.sfs-compact :where(:not(svg *)) {
   all: unset;
   box-sizing: border-box;
 }
