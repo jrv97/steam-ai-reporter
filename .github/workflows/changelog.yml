@@ -1,0 +1,32 @@
+# Fails a pull request that changes src/ without a changie fragment, unless it carries the
+# no-changelog-fragment label. A separate workflow, so adding or removing the label reruns only
+# this gate and not the whole CI.
+name: changelog
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+
+permissions: {}
+
+concurrency:
+  group: changelog-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  changelog-fragment:
+    name: changelog fragment
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: jdx/mise-action@fc42bcc7ddbf51124c30f95a877a0c5168a3bfde # v5.2.1
+        with:
+          version: 2026.10.15
+          install_args: python
+      - run: mise run changelog-gate

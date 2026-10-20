@@ -3,6 +3,7 @@
 Researched 2026-10-20. All counts are snapshots from that day or from the dated article cited. Most pages were read through a summarising fetch tool, so exact strings and numbers marked "unverified" should be re-checked against the primary page before they go into code or copy.
 
 ## Answer in short
+
 - Four browser/userscript tools already do what we plan, all keyed on the store-page "AI Generated Content Disclosure" heading: "AI warning for Steam" (seeeeew, MIT, the clear market leader, about 5.5k Firefox users and about 10k Chrome users), "AI Generated Content Filter for Steam" (SoBloxsy/Iren, Apache-2.0, tiny), "Steam AI Games Indicator" (Pierre-Demessence, MIT, userscripts with a seeded app ID list and capsule badges) and "Obvious Steam AI" (banner only, MPL-2.0, no users listed). Augmented Steam has no such feature; the request (issue 1913) has been open since 2024-04 with no maintainer decision.
 - None of them uses a first-party data feed. All scrape the English heading text, either from the open app page or by fetching `/app/<id>` once per search/wishlist row and caching 7 to 30 days. The only breakages on record are localisation breakages (Russian in 2026-02, French in 2026-09) plus a new language (Malay in 2026-06).
 - Bulk app-id sources are weak: SteamDB has the "AI Content Disclosed" tag (ID 1368160, 14,367 titles on 2026-09-23 per a secondary report) but its FAQ forbids scraping, dumps and republishing; aitransparencyindex.com lists about 26,041 disclosures with app IDs but states no API, export or license; the only reusable app-id file found is `appids.json` (MIT, about 26k IDs, seeded from SteamDB) in Pierre-Demessence's repo. No kaggle/huggingface dataset found.
@@ -14,6 +15,7 @@ Researched 2026-10-20. All counts are snapshots from that day or from the dated 
 ### 1. Existing browser extensions, userscripts and curators
 
 #### 1.1 AI warning for Steam (seeeeew)
+
 - Identity and links: GitHub repo https://github.com/seeeeew/aiwarningforsteam; Firefox add-on https://addons.mozilla.org/firefox/addon/ai-warning-for-steam/; Chrome Web Store ID `clegcobheppnnigaaeelfkeomjcngmnh`; the same `aiwarningforsteam.user.js` file is also the userscript, installable from the repo raw URL (source: https://raw.githubusercontent.com/seeeeew/aiwarningforsteam/main/README.md).
 - License: MIT, copyright seeeeew 2025 (source: https://raw.githubusercontent.com/seeeeew/aiwarningforsteam/main/LICENSE; confirmed by GitHub API https://api.github.com/repos/seeeeew/aiwarningforsteam).
 - Activity: repo created 2025-05-17, last push 2026-09-25, 182 stars, 1 fork, 10 open issues, 20 commits on main (source: https://api.github.com/repos/seeeeew/aiwarningforsteam and https://api.github.com/repos/seeeeew/aiwarningforsteam/commits?per_page=30). Firefox version history: 0.2.5 (2025-10-21), 1.0.0 (2025-11-30), 1.0.1 (2025-12-02), 1.0.2 (2026-02-25, fixed Russian detection after a Steam string change), 1.0.3 (2026-06-13, Malay), 1.1.0 (2026-06-19, search blur/hide), 1.1.2 (2026-09-25, fixed French detection) (source: https://addons.mozilla.org/en-US/firefox/addon/ai-warning-for-steam/versions/).
@@ -26,6 +28,7 @@ Researched 2026-10-20. All counts are snapshots from that day or from the dated 
 - A GreasyFork or OpenUserJS listing for it was not found; the author distributes the userscript from GitHub raw only (README above). A search that claimed a GreasyFork install path is unverified.
 
 #### 1.2 AI Generated Content Filter for Steam (SoBloxsy / Iren, iren.blue)
+
 - Links: GitHub https://github.com/SoBloxsy/AI-Content-Hider-for-Steam; Firefox https://addons.mozilla.org/en-US/firefox/addon/ai-content-filter-for-steam/; Chrome ID `fgkeoeoibigdcdkfdckkpodhfhppgdlo` (source: https://raw.githubusercontent.com/SoBloxsy/AI-Content-Hider-for-Steam/main/README.md).
 - License: GitHub API reports Apache-2.0 and the Firefox listing says Apache License 2.0; the README itself states no license (sources: https://api.github.com/repos/SoBloxsy/AI-Content-Hider-for-Steam, https://addons.mozilla.org/en-GB/firefox/addon/ai-content-filter-for-steam/).
 - Activity and adoption: repo created 2025-12-25, last push 2026-08-22, 2 stars, 1 open issue (GitHub API above). Firefox: 80 users, 5/5 from 2 reviews, v3.4.1 updated 2026-08-22 (Firefox listing). Chrome: about 1K installs, 3.7 from 3 ratings, one 1-star review "does not work (Brave)" (third-party tracker, unverified: https://extscope.org/extension/fgkeoeoibigdcdkfdckkpodhfhppgdlo).
@@ -34,6 +37,7 @@ Researched 2026-10-20. All counts are snapshots from that day or from the dated 
 - Contact for bugs is an email address in the README (extensions@iren.blue), no issue-driven workflow evident (README above).
 
 #### 1.3 Steam AI Games Indicator (Pierre-Demessence), userscripts
+
 - Repo https://github.com/Pierre-Demessence/SteamAIGamesIndicator: two scripts, `steamAIBanner.user.js` (banner at the top of an app page, shows the disclosure text) and `steamAIBadge.user.js` v2.1 ("Uses AI" badges on store tiles, a "Hide items with AI disclosure" option in the search "Narrow by preferences" filter) (source: https://raw.githubusercontent.com/Pierre-Demessence/SteamAIGamesIndicator/main/README.md).
 - License MIT; created 2025-12-04, last push 2026-09-20, 2 stars, 0 open issues (source: https://api.github.com/repos/Pierre-Demessence/SteamAIGamesIndicator). Commit log shows wishlist support (2025-12-06 and again 2026-09-19), a fetch cache (2026-06-22), the search filter (2026-09-20) and home-page capsule pills (2026-09-20) (source: https://api.github.com/repos/Pierre-Demessence/SteamAIGamesIndicator/commits?per_page=30).
 - Install is from GitHub raw URLs; the README lists no GreasyFork or OpenUserJS link (README above). Targets Tampermonkey, Violentmonkey and Greasemonkey.
@@ -42,15 +46,18 @@ Researched 2026-10-20. All counts are snapshots from that day or from the dated 
 - The README says Steam began requiring the disclosure "in late 2024", which conflicts with the January 2024 start reported elsewhere (see https://respawn.outlookindia.com/gaming/gaming-news/free-ai-warning-tool-flags-generative-content-on-steam-store); treat the README as imprecise.
 
 #### 1.4 Obvious Steam AI (GothicMess), Firefox only
+
 - Adds a banner at the top of store pages for games that disclose AI; v1.0, last updated 2025-12-19, no users or reviews listed, license MPL-2.0, permission is access to `store.steampowered.com`, no source repository on the listing (source: https://addons.mozilla.org/en-US/firefox/addon/obvious-steam-ai/).
 
 #### 1.5 other tools seen only in search results (unverified)
+
 - "AI Slop Filter for Steam": described by one search summary as a newer extension that scans description, tags, developer name and images for slop/asset-flip signs rather than the disclosure, Chromium first, Firefox in development. Not opened; URL from a search result summary, treat everything about it as unverified (https://helpfulinfoforyou.com/2026/07/steam-ai-filter-browse-and-hide-generative-ai-games/).
 - An itch.io port of the "AI warning" idea was mentioned in a search result (https://piefed.nullspace.lol/post/68020); not opened, unverified.
 - GreasyFork: a search restricted to GreasyFork, SleazyFork and OpenUserJS returned no script that flags AI disclosure (only unrelated "Steam AI Agent Chat" and a wishlist sidebar; source: https://greasyfork.org/en/scripts/by-site/steampowered.com). This is a negative from one search engine pass, not an exhaustive listing, so treat as "none found".
 - Chrome Web Store: two disclosure-specific extensions came up (AI warning for Steam, AI Generated Content Filter for Steam); the rest were unrelated Steam utilities (search result titles only: https://chromewebstore.google.com/detail/ai-warning-for-steam/clegcobheppnnigaaeelfkeomjcngmnh).
 
 #### 1.6 Augmented Steam (IsThereAnyDeal)
+
 - No AI-disclosure feature as of 2026-10-20. Two open feature requests: issue 1913 "Option to see warning about games with AI generated content" (opened 2024-04-25, about 10 comments, 12 thumbs-up) and issue 2362 "Allow us to filter games with generative AI content from the store" (opened 2026-08-13, 0 comments, label `augmentation`) (sources: https://api.github.com/search/issues?q=repo:IsThereAnyDeal/AugmentedSteam+AI+disclosure&per_page=20, https://api.github.com/repos/IsThereAnyDeal/AugmentedSteam/issues/2362).
 - The only maintainer-side comments in 1913 are from a collaborator in April 2024: it is tricky because other content-descriptor sections look the same so the heading text is the only discriminator, and text matching may break when Steam localises it. No decision to implement is recorded. In 2025-08 a commenter proposed using Steam's internal app key 565 (labelled `aicontenttype`, values empty/1/2) instead of text. On 2025-10-27 seeeeew offered the MIT code for reuse but said they were too busy to contribute it. On 2026-06-22 and 2026-10-19 commenters said they dislike the standalone extension's full-page modal and search blurring and want a dismissible banner like the DRM one (source: https://api.github.com/repos/IsThereAnyDeal/AugmentedSteam/issues/1913/comments, plus the issue page https://github.com/IsThereAnyDeal/AugmentedSteam/issues/1913; the comment summary was read twice and agreed).
 - Adjacent AI feature: VaporLens (LLM review summaries) was added in v4.5.0 enabled by default, drew complaints, and in v4.6.0 stayed on by default but collapsed after a GitHub poll (158 votes, 66% keep) (source: https://www.gamingonlinux.com/2026/01/augmented-steam-browser-plugin-added-ai-features-from-vaporlens/). This is a data point that AI-related defaults are contentious in this audience.
@@ -59,6 +66,7 @@ Researched 2026-10-20. All counts are snapshots from that day or from the dated 
 - The extension is GPL-3.0, so code cannot be copied into a permissively licensed project; seeeeew's MIT code and Pierre-Demessence's MIT scripts can.
 
 #### 1.7 Steam curators
+
 - "Games That Use AI Generation": https://store.steampowered.com/curator/45944619-Games-That-Use-AI-Generation/ , 1,559 followers, about 1,979 "Not Recommended" and 20 "Informational" reviews, covers 2026 releases that disclose AI; lists include "Possible Mistaken Use of AI Disclosure" (five games named), "2026 Releases That Have Removed The AI Disclosure From Their Page" and "...Removed The AI Content From Their Games"; most recent visible review 18 May (year not shown); detection is by reading disclosures, no stated verification process (same URL, page read once; counts internally inconsistent).
 - "No AI": https://store.steampowered.com/curator/45186708-No-AI/ , 1,353 followers, "Informational" reviews, one list ("Discreet AI"); evidence cited per game includes store disclosures, developer statements, devlog videos and a third-party article, so it also flags undisclosed use; entries from 2025-03-14 to at least 30 August; the page warns it contains adult-only titles; counts on the page are inconsistent.
 - Other AI-themed curators from a search result list, details unverified: "AI Generated Slop" (curator/44890611), "NO AI #HumanArtists" (curator/45131686), "No AI games" (curator/45259214), "Does This Game Use GenAI?" (curator/45663731, labels "Gen AI used", "No gen AI used", "Unsure") (source: search results; example page https://store.steampowered.com/curator/44890611-AI-Generated-Slop/). A search summary also mentioned an "AI Check" curator group; it could not be located and is unverified. A Steam community group "GENAIORNAH" keeps a list from public statements and news (https://steamcommunity.com/groups/GENAIORNAH, from a search snippet only).
@@ -67,22 +75,26 @@ Researched 2026-10-20. All counts are snapshots from that day or from the dated 
 ### 2. Bulk lists and datasets of AI-disclosed app IDs
 
 #### 2.1 SteamDB
+
 - Yes, there is a filter: the user tag "AI Content Disclosed", tag ID 1368160, page https://steamdb.info/tag/1368160 . Per the tag page text surfaced in a search result, SteamDB applies it automatically when the disclosure statement appears on the store page, and it covers disclosures about the product or its marketing, so it does not tell in-game from marketing-only (source: search result snippet for https://steamdb.info/tag/1368160 ; the page itself returns 403 to automated fetch so the snippet is unverified against the page). To exclude in a SteamDB search, append `&tagid=-1368160` (source: https://www.destructoid.com/how-to-filter-out-generative-ai-games-with-steamdb/ , 2025-02-27).
 - Size over time: more than 4,900 at launch on 2025-02-25 (https://videogameschronicle.com/news/steamdb-now-lets-players-filter-out-games-that-use-generative-ai); 12,284 on 2025-10-21 (https://www.gamingonlinux.com/2025/10/want-to-avoid-ai-gen-on-steam-this-browser-userscript-might-save-your-day); 14,367 cumulative as of a query on 2026-09-23, split 7,311 up to 2025 and 7,056 from 2026 releases (https://gameoverdrive.com.br/steamdb-filtrar-jogos-ia-generativa-steam/ , secondary).
 - Access and licence: SteamDB has no public API, offers no data access or dumps, does not allow scraping or crawling, prohibits publishing its data in its entirety and prohibits using it to train AI models; it points people to Steam's own web APIs, SteamKit or store-page parsing instead (source: https://steamdb.info/faq/ , read twice with matching quotes; also paraphrased in a search result). Conclusion: do not scrape SteamDB to seed our list. Note that `appids.json` in Pierre-Demessence's repo is documented as "sourced from SteamDB's AI-related tag" (README above), so reusing that file inherits this risk even though the repo is MIT (the MIT licence on the repo does not grant rights SteamDB never gave; legal view is ours to decide, not established here).
 - Data-quality note: a GamingOnLinux reader reported that some games with no visible AI declaration carry `aicontenttype 1` in SteamDB metadata, and that some declared games still appear when the tag is excluded (anecdotal, https://www.gamingonlinux.com/2025/02/steamdb-now-lets-you-filter-out-steam-games-with-ai-generation/).
 
 #### 2.2 Steam itself (first-party signal)
+
 - Steamworks has an internal app key reported as `common_aicontenttype` (value empty, 1 pre-generated, 2 live-generated), cited from a SteamDB search and a Steamworks announcement titled "AI Content on Steam" (https://store.steampowered.com/news/group/4145017/view/3862463747997849618). The commenter calls it key 565; the announcement page returned only navigation text to the fetch tool, so the key number and values are unverified; a second independent mention of "aicontenttype" exists in the GamingOnLinux reader comment above (same reader link).
 - Public store APIs: for the sample app 5072580, `store.steampowered.com/api/appdetails` returned `content_descriptors` with `ids: [5]` and notes text, and no AI field; the only AI mentions are in the free-text `short_description` and `pc_requirements` (source: https://store.steampowered.com/api/appdetails?appids=5072580&l=english , one fetch, summariser output). `IStoreBrowseService/GetItems/v1` with a small `data_request` returned `content_descriptorids: [5]` and no AI key (source: https://api.steampowered.com/IStoreBrowseService/GetItems/v1 , one probe with a limited `data_request`; other `data_request` flags were not tried, so this is not proof that no field exists). The store HTML for the same app does carry the heading "AI Generated Content Disclosure" in English followed by an italic paragraph, and no age gate was shown (source: https://store.steampowered.com/app/5072580/Courage_and_Faith_Into_the_Dark_Woods/?l=english). So the HTML section is the only confirmed first-party public signal. Details belong to RQ2.
 
 #### 2.3 AI Transparency Index (aitransparencyindex.com)
+
 - An independent tracker, a "Scrapeer" project run by Intuitive Systems Novesia UG (haftungsbeschraenkt); the home page on 2026-10-20 showed about 26,041 Steam disclosures (development only 1,503; store/marketing only 3,701; content in the game 18,087; live AI during play 816) and 871 new this week; mature-rated records are excluded by default (source: https://aitransparencyindex.com/ , https://aitransparencyindex.com/methodology , https://aitransparencyindex.com/about). An earlier count of more than 17,250 was reported 2026-07-13 (https://www.pcguide.com/news/more-than-17000-games-on-steam-now-come-with-an-ai-disclosure-30-use-ai-for-two-or-more-reasons/).
 - Method: monitors Steam store metadata, extracts the disclosure text and classifies it with an LLM (currently Mistral) plus deterministic rules for negations, translation-only mentions and marketing vs in-game; no human review; no accuracy figure published; confidence is the model's own estimate (methodology page above).
 - Format: a "Changelog" page lists recent items with date, game name, an app ID inside the link path `/products/steam/<id>` and a truncated excerpt (source: https://aitransparencyindex.com/changelog ; all entries were dated 2026-10-20 at fetch time).
 - Reuse: no API, CSV, bulk download or licence is described (methodology and about pages above). So it is useful as a reference taxonomy (scope categories) and as a cross-check, not as a bulk seed, unless the operator grants permission (unverified whether they would).
 
 #### 2.4 research and journalism datasets
+
 - Totally Human Media (2025-07-13): 7,818 of about 114,126 games had a disclosure, based on Steam's API; roughly 60% were visual-asset generation (secondary: https://wnhub.io/news/stores-and-publishing/item-48292 ; the primary post was not retrieved). No app ID list found.
 - "Three years of AI on Steam" (Substack, 2026): census of 53,597 games released 2023-07 to 2026-07, about 9,400 flagged, first-appearance dates from the Wayback machine; says revenue and disclosure text are available as CSV but does not say whether app IDs are included and gives no data link (https://fragwyz.substack.com/p/three-years-of-ai-on-steam). No licence stated.
 - Mendeley Data "Replication Data for The AI Disclosure Penalty in Digital Games", DOI 10.17632/zd77888mxw.1, 2026-06-25, CC BY 4.0, games released 2024-2025 with matched controls; whether app IDs and the disclosure flag columns are present is not confirmed by the page capture (files list empty in the fetch) (https://data.mendeley.com/datasets/zd77888mxw/1). Static, partial in time, so unsuitable as a live seed.
@@ -94,6 +106,7 @@ Researched 2026-10-20. All counts are snapshots from that day or from the dated 
 ### 3. What these tools do well and poorly
 
 #### 3.1 done well
+
 - Low privilege: the leader asks for `storage` only, with no `host_permissions`; install prompts therefore say little scary (manifest above). Firefox listings for the two extensions say no data collection (AMO listings above). Third-party tracker scoring flagged "medium risk" only because of `storage` (https://extscope.org/extension/clegcobheppnnigaaeelfkeomjcngmnh).
 - Fast fixes: seeeeew shipped a fix for Russian within the same day of the issue's date range (issue 1 opened 2026-02-25 and release 1.0.2 dated 2026-02-25) and for French (issue 13 opened 2026-09-24, release 1.1.2 on 2026-09-25) (issues + versions sources above). Userscript updates arrive immediately, store builds wait for review (Shane the Gamer article, above).
 - Sane cache: positive 30 days, negative 7 days, invalidation on extension update (user.js source above); the badge userscript adds a 1 s request delay and an age-gate guard (`appHubAppName`) before caching a negative.
@@ -101,6 +114,7 @@ Researched 2026-10-20. All counts are snapshots from that day or from the dated 
 - Dual packaging: one source file serves as userscript and MV3 content script (leader), which is the same pairing we plan.
 
 #### 3.2 done poorly or not at all
+
 - Blocking modal and no options: the leader opens a full-page modal that covers unrelated Steam UI and has no settings for the app page; two Augmented Steam commenters call it heavy-handed and want a banner like the DRM warning; one reports the developer has ruled out customisation (issue 1913 comments above; the "ruled out" claim is second-hand and unverified). The same commenter claims the extension was not updated since July, which conflicts with the 2026-09-25 release (AMO + commits), so that claim is wrong or refers to something else.
 - False positives by construction: tools flag the presence of the section, not the use of AI. Cases on record: a disclosure used to say no AI was used (a commenter names Crime Scene Cleaner), upscaling-only disclosures (issue 12), translation-only disclosures (reviewer reports aggregated by a tracker, unverified: https://extscope.org/extension/clegcobheppnnigaaeelfkeomjcngmnh), marketing-only disclosures counted by SteamDB, and curator lists that keep a "possible mistaken use of disclosure" list. Steam's own disclosure also separates pre-generated from live-generated content (rq1/rq2); none of the four tools surfaces that split in the badge.
 - False negatives: all tools flag only disclosed games; undisclosed use is invisible (Shane the Gamer article and tool READMEs). The "No AI" curator covers some undisclosed cases manually.
@@ -112,10 +126,12 @@ Researched 2026-10-20. All counts are snapshots from that day or from the dated 
 - Reviews: tracker-collected reviews of the leader mention false flags and one miss, and ask for a way to report false flags (unverified, aggregated by a third party). No tool has a user-report or per-game override.
 
 #### 3.3 positioning notes (inference from the above)
+
 - Unserved needs visible in public feedback: non-blocking banner or badge (not a modal), per-surface toggles, a publisher/app allow-list, a visible split of "in game", "marketing only", "dev only", "live", wishlist and home capsule coverage in the browser extension, and an automated canary for heading changes in each store language.
 - Licensing for reuse: seeeeew MIT (code and the localised heading table), Pierre-Demessence MIT, SoBloxsy Apache-2.0 per GitHub API, Augmented Steam GPL-3.0 (do not copy), SteamDB data not reusable per its FAQ.
 
 ## Caveats and version notes
+
 - Most numbers came from fetches summarised by a small model; GitHub API numbers (stars, dates, licences) and the manifest/user.js facts were each seen once or twice with consistent results. Re-verify before quoting externally.
 - Chrome Web Store pages (consent redirect) and steamdb.info (403) could not be read directly. Chrome install counts are from extscope and chromeboard, which disagree on version (1.1.2 vs 1.1.0) and are unverified against the store.
 - Counts of disclosed games differ by method and date: 4,900 (2025-02), 12,284 (2025-10), 14,367 (SteamDB cumulative, 2026-09-23), about 17,250 (aitransparencyindex, 2026-07) and about 26,041 (aitransparencyindex, 2026-10-20), 7,818 (Totally Human Media, 2025-07). The index and SteamDB may count different sets (the index counts per-product records including software and excludes mature records by default; SteamDB's reported 15,000 included "games and software" per one search summary, unverified).
@@ -125,6 +141,7 @@ Researched 2026-10-20. All counts are snapshots from that day or from the dated 
 - The existing file `docs/research/steam-ai-disclosure.md` is an empty template; this note is meant to feed its RQ4 section.
 
 ## Sources
+
 - https://github.com/seeeeew/aiwarningforsteam : repo for the leading tool; readme, manifest, user.js, license, commits, issues used for detection method, permissions and breakage history.
 - https://api.github.com/repos/seeeeew/aiwarningforsteam : stars, dates, licence.
 - https://api.github.com/repos/seeeeew/aiwarningforsteam/issues?state=all&per_page=30 : issue titles and dates (Russian, French, Malay, whitelist, Steam client).

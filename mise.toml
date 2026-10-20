@@ -1,0 +1,174 @@
+# :schema https://mise.jdx.dev/schema/mise.json
+# Toolchain and task runner for local development, Git hooks and CI (AGENTS.md rule 14).
+# Programs are pinned here; JavaScript libraries are pinned in package.json and pnpm-lock.yaml.
+# Machine-specific values (browser paths, Git Bash on Windows) go in mise.local.toml; see
+# mise.local.toml.example.
+
+min_version = "2026.10.15"
+
+[tools]
+node = "24.14.0"
+pnpm = "12.14.0"
+python = "3.14.8"
+uv = "0.13.1"
+changie = "1.26.0"
+"npm:web-ext" = "10.8.0"
+dprint = "0.64.0"
+ruff = "0.17.1"
+"pypi:mypy" = "2.4.0"
+shellcheck = "0.11.0"
+shfmt = "3.14.1"
+actionlint = "1.7.12"
+zizmor = "1.31.1"
+gh = "2.102.0"
+
+[settings]
+locked = true
+
+[env]
+_.path = ["{{config_root}}/node_modules/.bin"]
+
+# Setup
+
+[tasks.setup]
+description = "Install tools and dependencies, write the Git hooks, check the browser paths"
+run = [
+  "mise install",
+  "pnpm install --frozen-lockfile",
+  "mise run hooks",
+  "python scripts/run_browser.py firefox --check",
+]
+
+[tasks.hooks]
+description = "Write the pre-commit and pre-push Git hooks"
+run = [
+  "mise generate git-pre-commit --write --task=precommit",
+  "mise generate git-pre-commit --write --hook=pre-push --task=prepush",
+]
+
+[tasks.deps]
+description = "Install JavaScript dependencies from the lockfile"
+hide = true
+sources = ["package.json", "pnpm-lock.yaml", "pnpm-workspace.yaml"]
+outputs = ["node_modules/.modules.yaml"]
+run = "pnpm install --frozen-lockfile"
+
+# Formatting
+
+[tasks.fmt]
+description = "Format every file we own"
+run = [
+  "dprint fmt",
+  "ruff format",
+  "shfmt --indent 2 --case-indent --write scripts",
+]
+
+[tasks.fmt-check]
+description = "Fail on any unformatted file"
+run = [
+  "dprint check",
+  "ruff format --check",
+  "shfmt --indent 2 --case-indent --diff scripts",
+]
+
+# Static checks
+
+[tasks.lint]
+description = "Lint TypeScript, Python, shell scripts and workflows"
+depends = ["deps"]
+run = [
+  "oxlint --type-aware --deny-warnings",
+  "ruff check",
+  "mypy --strict scripts posting/scripts",
+  "python scripts/lint_shell.py",
+  "actionlint",
+  "zizmor --offline .github/workflows",
+]
+
+[tasks.typecheck]
+description = "Type-check the project and the core with TypeScript 7"
+depends = ["deps"]
+run = ["tsc --noEmit -p tsconfig.json", "tsc --noEmit -p tsconfig.core.json"]
+
+[tasks.test]
+description = "Run the unit tests"
+depends = ["deps"]
+run = "vitest run"
+
+[tasks.check]
+description = "Check text hygiene, versions and the built bundles"
+depends = ["build"]
+run = [
+  "python scripts/check_text.py",
+  "python scripts/check_versions.py",
+  "python scripts/check_bundle.py",
+]
+
+[tasks.check-branch]
+description = "Check that the branch name is <type>/<slug>"
+run = "python scripts/check_branch.py"
+
+[tasks.check-reproducible]
+description = "Build twice and compare the outputs byte for byte"
+depends = ["deps"]
+run = "bash scripts/check_reproducible.sh"
+
+[tasks.changelog-gate]
+description = "Fail a pull request that changes src/ without a changie fragment"
+run = "python scripts/changelog_gate.py"
+
+# Build and run
+
+[tasks.build]
+description = "Build the Chrome and Firefox extensions, the userscript and the dev bundle"
+depends = ["deps"]
+run = "python scripts/build.py"
+
+[tasks.dev]
+description = "Rebuild every target on change"
+depends = ["deps"]
+run = "python scripts/build.py --watch"
+
+[tasks.lint-firefox]
+description = "Run web-ext lint on the Firefox build"
+depends = ["build"]
+run = "web-ext lint --source-dir dist/firefox --warnings-as-errors"
+
+[tasks.run-firefox]
+description = "Run the Firefox build in Firefox Nightly ($SAR_FIREFOX_BIN) with auto-reload"
+depends = ["build"]
+run = "python scripts/run_browser.py firefox"
+
+[tasks.run-chrome]
+description = "Run the Chrome build in Chrome ($SAR_CHROME_BIN) with auto-reload"
+depends = ["build"]
+run = "python scripts/run_browser.py chrome"
+
+# Changelog
+
+[tasks.change-new]
+description = "Add a changie fragment for this change"
+run = "changie new"
+
+# Hooks and CI
+
+[tasks.precommit]
+description = "Format staged files we own, re-stage them, and check their text"
+run = ["bash scripts/precommit_format.sh", "python scripts/check_text.py --staged"]
+
+[tasks.prepush]
+description = "Everything a push must pass"
+run = [
+  { task = "check-branch" },
+  { task = "fmt-check" },
+  { tasks = ["lint", "typecheck", "test"] },
+  { task = "check" },
+]
+
+[tasks.ci]
+description = "Everything CI runs: prepush plus reproducibility and web-ext lint"
+run = [
+  { task = "prepush" },
+  { task = "check-reproducible" },
+  { task = "lint-firefox" },
+]

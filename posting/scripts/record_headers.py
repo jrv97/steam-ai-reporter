@@ -52,9 +52,8 @@ def on_response(response: _Response) -> None:
     origin = request.headers.get("origin", "no-origin")
     headers: list[tuple[str, str]] = []
     for name, value in response.headers.multi_items():
-        if name.lower() == "set-cookie":
-            value = value.split("=", 1)[0] + "=<redacted>"
-        headers.append((name.lower(), value))
+        shown = value.split("=", 1)[0] + "=<redacted>" if name.lower() == "set-cookie" else value
+        headers.append((name.lower(), shown))
     record = {
         "method": request.method,
         "path": request.url.path,

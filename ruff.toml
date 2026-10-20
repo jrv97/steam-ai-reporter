@@ -1,0 +1,12 @@
+# Python scripts: stdlib only, linted and formatted by ruff, type-checked by mypy --strict.
+line-length = 100
+target-version = "py314"
+extend-exclude = ["tests/fixtures"]
+
+[lint]
+select = ["E", "W", "F", "I", "B", "UP", "SIM", "RUF", "PL", "S", "N", "C4", "PTH", "RET", "ARG"]
+ignore = [
+  "S603", # subprocess calls with argument lists are how the scripts run tools
+  "S607", # tools come from PATH as set up by mise
+  "PLR2004", # small literal numbers read better inline in scripts
+]
