@@ -3,3 +3,4 @@ dist/
 artifacts/
 coverage/
 .claude/settings.local.json
+__pycache__/

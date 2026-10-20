@@ -1,0 +1,15 @@
+name: GetItems, no origin
+description: >-
+  Baseline without an Origin header.
+method: GET
+url: https://api.steampowered.com/IStoreBrowseService/GetItems/v1
+params:
+  - name: input_json
+    value: >-
+      {"ids": [{"appid": 5072580}, {"appid": 1808500}, {"appid": 413150}],
+      "context": {"language": "english", "country_code": "US"},
+      "data_request": {"include_extra_details": true}}
+scripts:
+  on_response: scripts/record_headers.py
+options:
+  attach_cookies: false
