@@ -1,3 +1,4 @@
+import type { HostState } from "../scan/marks";
 import type { Verdict } from "../types";
 
 /** The tier of a compact badge, from the measured image box (see `compactSize`). */
@@ -36,9 +37,7 @@ export interface HostRenderer {
   render(view: HostView): void;
 }
 
-/** A host's state as `data-sar-state` records it; `allowed` wins over the verdict. */
-export type HostState = Verdict["state"] | "allowed";
-
-export function hostState(verdict: Verdict, allowed: boolean): HostState {
+/** A host's `data-sar-state` once its verdict is known; `allowed` wins over the verdict. */
+export function hostState(verdict: Verdict, allowed: boolean): Exclude<HostState, "pending"> {
   return allowed ? "allowed" : verdict.state;
 }
