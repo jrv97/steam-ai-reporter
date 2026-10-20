@@ -52,8 +52,8 @@ These are hard rules. A change that breaks one needs an ADR first.
     entries and new detection sources are new detector links; the scanner and the chain are not
     edited for them. Every port implementation passes the shared contract tests. Ports stay small.
     Core depends only on ports; the extension content script and the userscript entry are the only
-    composition roots. Before writing new code, check whether existing code can be refactored to
-    cover the case.
+    shipped composition roots (`src/platform/dev/inject.ts` is a dev-only root, never packaged).
+    Before writing new code, check whether existing code can be refactored to cover the case.
 12. **Library check first.** Before building anything non-trivial, look for a library that does it
     and study it (size, types, maintenance, license, whether we need it at all). Record the outcome
     in the ADR or PR description.
@@ -76,3 +76,13 @@ These are hard rules. A change that breaks one needs an ADR first.
 16. **Secrets.** `STEAM_API_KEY` is read only by development scripts, only from the environment.
     It is never committed, logged, written into fixtures or bundled; a build check fails if its
     value appears in `dist/` or `artifacts/`. Release secrets live in GitHub environments.
+
+## Development browsers
+
+- Firefox testing uses Firefox Nightly only, through a dedicated profile. The user's regular
+  Firefox is personal: never launch it, install into it, or touch its profiles.
+- Chrome (regular release) is used only for this project; loading the unpacked build there is fine.
+- Machine-specific paths (`SAR_FIREFOX_BIN`, `SAR_FIREFOX_PROFILE`, `SAR_CHROME_BIN`,
+  `SAR_CHROME_PROFILE`) live in the gitignored `mise.local.toml`.
+- The Claude desktop app's built-in browser cannot load extensions; agents use it to inject the
+  dev bundle (`dist/dev/inject.js`) for smoke tests on live store pages.

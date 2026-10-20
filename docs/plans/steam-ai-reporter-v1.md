@@ -113,7 +113,7 @@ The repo is greenfield, so this change creates the invariants. Step 1 writes the
     - Open/closed: new surfaces are new `Placement` entries and new detection sources are new `Detector` links; the scanner and the chain are not edited.
     - Liskov: every port implementation passes the same shared contract test suite (memory, extension and GM stores; fake and real HTTP).
     - Interface segregation: small ports (`Http`, `KeyValueStore`, `Clock`, `Logger`, `SettingsSource`, `MessageCatalog`).
-    - Dependency inversion: core depends only on ports; `content.ts` and the userscript `main.ts` are the only composition roots.
+    - Dependency inversion: core depends only on ports; `content.ts` and the userscript `main.ts` are the only shipped composition roots (the dev-only `src/platform/dev/inject.ts` is never packaged).
     - DRY: before writing new code, check whether existing code can be refactored to cover the case. One build script for all targets, one manifest base with overlays, one catalog source, one placement engine, shared contract tests.
 12. **Library check first.** Before building anything non-trivial, look for a library that does it and study it: size, types, maintenance, license, and whether we need it at all. The outcome is recorded in the relevant ADR or PR description. Spike S8 does this for v1.
 13. **Efficiency: performance and memory.**
@@ -193,16 +193,17 @@ src/core/  AGENTS.md types.ts ports.ts settings.ts app.ts json.ts errors.ts log.
 src/locales/  en/messages.json   (authored source of truth, Chrome messages.json format)
 src/platform/extension/   content.ts options.ts options.html ext.ts manifest.{base,chrome,firefox}.json
 src/platform/userscript/  main.ts header.ts
+src/platform/dev/         inject.ts   (dev-only injection root, never packaged)
 tests/contracts/  key-value-store.contract.ts http.contract.ts
 tests/fixtures/   getitems/*.json app-page/*.html surfaces/<surface>/*.html README.md
 tests/helpers/    memory store, fake HTTP, fixed clock, GetItems builder
 dist/ artifacts/ (gitignored)
 ```
 
-- Create `.gitignore`: `node_modules`, `dist`, `artifacts`, `coverage`, `.claude/settings.local.json` (already ignored globally on this machine; listed for other clones).
+- `.gitignore` (created in step 1): add `mise.local.toml` in step 4.
 - Modify `AGENTS.md`: keep the "working knowledge (docs/)" section; add the sixteen invariants, the task list, a folder map, and commit and branch rules.
 - Create `src/core/AGENTS.md`: what core must not import, how a port is added, and the contract-test rule.
-- Create `README.md`: what it does, how to install, how AMO reviewers build from source (OS, mise, `mise install`, `mise run build`), "Prior art and thanks", and the unaffiliated-with-Valve notice.
+- Create `README.md`: what it does, how to install, a short development section (the browsers, `mise.local.toml`, the run tasks), how AMO reviewers build from source (OS, mise, `mise install`, `mise run build`), "Prior art and thanks", and the unaffiliated-with-Valve notice.
 - Create `LICENSE`: MIT.
 - Create `THIRD_PARTY_NOTICES.md`: licenses of bundled runtime dependencies (for example valibot), generated from the lockfile by `build.py`.
 - Create `PRIVACY.md`: nothing is collected; what is stored locally; which app IDs go, cookie-less, to which Valve endpoint.
@@ -248,7 +249,7 @@ dist/ artifacts/ (gitignored)
 4. **Toolchain, hooks, formatting and the i18n runtime.**
    - Create `mise.toml`, `package.json` (exact versions, no scripts), the lockfile, both tsconfigs, `eslint.config.ts`, `dprint.json`, `ruff.toml`, `vitest.config.ts` and `ci.yml`.
    - Write `scripts/build.py` (esbuild CLI for all three targets, manifest merge, userscript header banner, catalog copy, static assets), `check_text.py`, `check_bundle.py`, `check_reproducible.sh` and `precommit_format.sh`.
-   - mise tasks: `setup` (`mise install`, `pnpm install --frozen-lockfile`, and the Git hooks through `mise generate git-pre-commit`), `fmt`, `fmt-check`, `lint` (ESLint, ruff, mypy, shellcheck, actionlint), `typecheck`, `test`, `build`, `lint-firefox` (`web-ext lint` on `dist/firefox`), `run-firefox`, `check` (text, i18n, bundle), `check-reproducible`, `precommit`, `prepush`, and `ci`.
+   - mise tasks: `setup` (`mise install`, `pnpm install --frozen-lockfile`, and the Git hooks through `mise generate git-pre-commit`), `fmt`, `fmt-check`, `lint` (ESLint, ruff, mypy, shellcheck, actionlint), `typecheck`, `test`, `build`, `lint-firefox` (`web-ext lint` on `dist/firefox`), `dev`, `run-firefox` (Firefox Nightly only), `run-chrome`, `check` (text, i18n, bundle), `check-reproducible`, `precommit`, `prepush`, and `ci`.
      - `precommit`: formats the staged files we own and re-stages them; if a file is only partly staged, it stops and asks for the file to be staged whole, so unstaged hunks are never committed. Then `check_text.py` and `check_i18n.py` on the staged files.
      - `prepush`: `fmt-check` (rejects unformatted files), `lint`, `typecheck`, `test`, `build`, `check`, and a branch-name check.
      - `ci`: everything `prepush` runs, plus `check-reproducible` and `lint-firefox`.
@@ -398,6 +399,35 @@ dist/ artifacts/ (gitignored)
 - **Performance:** the scan budget test in CI; the manual sale page profile in the checklist.
 - **Manual:** `docs/testing/manual-checklist.mdx`, run before each release on Chrome, Firefox, Tampermonkey and Violentmonkey, logged in and out.
 - **Live:** `mise run canary` before each release, optionally also as a weekly scheduled job. It stays out of `mise run ci`, so CI never depends on Steam being up. There is no automated browser end-to-end test against live Steam in v1.
+
+## Development and debugging loop
+Browsers on the development machine:
+- **Firefox Nightly** is the only Firefox used for testing. The user's regular Firefox is reserved for personal use: no task, script or test ever launches it, installs into it or touches its profiles.
+- **Chrome** (regular release) is used only for this project, so loading the unpacked extension into its normal profile is fine.
+- The **built-in browser** of the Claude desktop app cannot load extensions; agents use it for injection smoke tests (layer 2).
+
+Machine-specific paths live in `mise.local.toml` (gitignored), read by the tasks as environment variables:
+- `SAR_FIREFOX_BIN`: the Firefox Nightly executable.
+- `SAR_FIREFOX_PROFILE`: a dedicated, persistent Nightly profile for this project (outside the repo), so the Steam login survives restarts.
+- `SAR_CHROME_BIN` and `SAR_CHROME_PROFILE`: Chrome and a dedicated profile for `run-chrome`.
+
+`mise run setup` fails with a clear message when `SAR_FIREFOX_BIN` is missing, rather than falling back to whatever Firefox is on the `PATH`.
+
+Layers, fastest first:
+1. **Tests.** Most debugging happens in vitest with happy-dom against captured fixtures. A bug seen on a live page becomes a new fixture first, then a fix.
+2. **Injection smoke test in the built-in browser (agents).** `build` also emits `dist/dev/inject.js` from `src/platform/dev/inject.ts`: the core wired to an in-memory `KeyValueStore`, plain `fetch` and verbose logging. An agent pastes it into a live store page through the browser's JavaScript tool and checks badge placement on search, wishlist, sale and home pages, console output, and `performance.now()` scan timings. It does not exercise extension APIs. `dist/dev/` is never packaged; `check_bundle.py` asserts it is absent from `artifacts/`.
+3. **Real extension.**
+   - `mise run dev`: esbuild watch for all targets.
+   - `mise run run-firefox`: `web-ext run` with `--firefox=$SAR_FIREFOX_BIN`, `--firefox-profile=$SAR_FIREFOX_PROFILE` and `--keep-profile-changes`, opening the store. It loads `dist/firefox` as a temporary add-on and reloads it on every rebuild.
+   - `mise run run-chrome`: `web-ext run --target chromium` with the Chrome binary and its dedicated profile, also auto-reloading.
+   - Dogfooding in the user's Chrome: `chrome://extensions`, Developer mode, "Load unpacked", pick `dist/chrome`; after a rebuild, press the extension's reload icon. With Claude in Chrome connected there, an agent can read the page and its console while the user browses.
+   - Where things show: content-script logs in the page console (in Chrome, pick the extension in the console's context menu); the options page through right-click, Inspect; Firefox add-on internals through `about:debugging`; badge state as `data-sfs-appid` and `data-sfs-state` in the Elements panel.
+   - Logged-in surfaces (wishlist, recommendations) need the user signed in to Steam in the dedicated Nightly profile and in Chrome.
+4. **Userscript.** Tampermonkey and Violentmonkey are installed in Firefox Nightly and Chrome only. During development the managers load `dist/steam-ai-reporter.user.js` from disk (Violentmonkey's local-file tracking, or a Tampermonkey `@require file://` stub; S6 confirms which works). The managers need "Allow access to file URLs" in Chrome.
+5. **Performance and memory.** On a sale page: the DevTools Performance panel for scan batches (budget: under 4 ms per batch) and a Memory heap snapshot after scrolling, checked for detached `sfs-` nodes.
+6. **Before a release.** The manual checklist (surface by target by logged in or out) and `mise run canary`.
+
+A `settings.debug` flag (off by default, toggled on the options page) turns on verbose logging through the same catalog-keyed logger, so debug output follows invariant 9 too.
 
 ## Roadmap (after v1)
 Release and distribution:
