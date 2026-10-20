@@ -347,7 +347,7 @@ dist/ artifacts/ (gitignored)
 
 7. **Throttling, circuit breaker and chain detector.**
    - GetItems runs with one call in flight and 1 s spacing. S1 saw 30 back-to-back calls succeed, so these are safety margins for the user's own browsing on the same IP, not measured limits.
-   - **Error handling:** a 429 or 5xx status, or a `TypeError` from `fetch`, backs off for 60 s plus up to 10 s of jitter. A `TypeError` counts like a 429 because Steam's error answers carry no CORS headers, so a rate limit reaches JavaScript as a `TypeError` with no status (S1). `Retry-After` is not readable cross-origin, so the backoff is always this fixed one. The backoff opens a breaker persisted as `meta:breaker`, so other tabs honor it; while it is open, verdicts are unknown `rate-limited` and nothing is sent.
+   - **Error handling:** a 429 or 5xx status, or a `TypeError` from `fetch`, backs off for 60 s plus up to 10 s of jitter. A `TypeError` counts like a 429 because Steam's error answers carry no CORS headers, so a rate limit reaches JavaScript as a `TypeError` with no status (S1). `Retry-After` is not readable cross-origin, so the backoff is always this fixed one. The backoff opens a breaker persisted as `v1:breaker` (the HTML breaker as `v1:breaker:html`), so other tabs honor it; while it is open, verdicts are unknown `rate-limited` and nothing is sent.
    - **HTML fallback:** `ChainDetector` sends IDs that GetItems left as unknown `missing` to the HTML fallback, at most 10 per page view, one at a time, 1 s apart. A separate HTML breaker trips on the first 429.
    - In-flight requests are deduplicated by app ID.
    - Commit `feat(core): throttle detection and fall back to html`.
