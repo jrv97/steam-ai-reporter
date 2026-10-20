@@ -1,613 +1,123 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>SFS specimen</title>
-    <!--
-      Local review page for docs/design. Open it from disk in any browser.
-      Backgrounds use the sampled store colors; cover art is synthetic gradients only.
-      No store imagery, logos or font files are used. Strings in the stress section are
-      layout tests, not translations.
-    -->
-    <link rel="stylesheet" href="tokens.css" />
-    <link rel="stylesheet" href="reference.css" />
-    <style>
-      body {
-        margin: 0;
-        background: var(--sfs-color-bg-page);
-        color: var(--sfs-color-text);
-        font: 13px/1.4 var(--sfs-font-page);
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Reporter for Steam specimen</title>
+<link rel="stylesheet" href="tokens.css">
+<!--
+  Local review page for docs/design. Open it from disk in any browser. Each frame is one page from
+  previews/, the same previews the published design system shows. Backgrounds use the sampled
+  store colors; cover art is synthetic gradients only. No store imagery, logos or font files.
+-->
+<style>
+  body {
+    margin: 0;
+    background: var(--sar-color-bg-page);
+    color: var(--sar-color-text);
+    font: 13px/1.4 var(--sar-font-page);
+  }
+  main { max-inline-size: 1100px; margin: 0 auto; padding: 24px 16px 64px; }
+  h1 { margin: 0 0 4px; color: #fff; font-size: 22px; font-weight: 400; }
+  h2 {
+    margin: 32px 0 12px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid var(--sar-color-divider);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 400;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .note { margin: 0 0 12px; color: var(--sar-color-text-subtle); }
+  iframe { display: block; inline-size: 100%; border: 0; }
+</style>
+</head>
+<body>
+<main>
+  <h1>AI Reporter for Steam specimen</h1>
+  <p class="note">
+    Every component, from docs/design/previews/. Fonts fall back to Noto Sans or Arial outside
+    the store.
+  </p>
+  <section>
+    <h2>Cover</h2>
+    <iframe src="previews/Cover.html" title="Cover" style="block-size: 288px"></iframe>
+  </section>
+  <section>
+    <h2>Full badge</h2>
+    <iframe src="previews/Badge.html" title="Full badge" style="block-size: 200px"></iframe>
+  </section>
+  <section>
+    <h2>Compact badge</h2>
+    <iframe src="previews/CompactBadge.html" title="Compact badge" style="block-size: 440px">
+      </iframe>
+  </section>
+  <section>
+    <h2>Summary row</h2>
+    <iframe src="previews/SummaryRow.html" title="Summary row" style="block-size: 170px"></iframe>
+  </section>
+  <section>
+    <h2>App page banner</h2>
+    <iframe src="previews/Banner.html" title="App page banner" style="block-size: 780px"></iframe>
+  </section>
+  <section>
+    <h2>Dim and hide (list filter)</h2>
+    <iframe
+        src="previews/ListFilter.html"
+        title="Dim and hide (list filter)"
+        style="block-size: 420px">
+      </iframe>
+  </section>
+  <section>
+    <h2>Options page and action popup</h2>
+    <iframe
+        src="previews/OptionsPage.html"
+        title="Options page and action popup"
+        style="block-size: 1240px">
+      </iframe>
+  </section>
+  <section>
+    <h2>Switch</h2>
+    <iframe src="previews/Switch.html" title="Switch" style="block-size: 260px"></iframe>
+  </section>
+  <section>
+    <h2>Segmented control</h2>
+    <iframe
+        src="previews/SegmentedControl.html"
+        title="Segmented control"
+        style="block-size: 360px">
+      </iframe>
+  </section>
+  <section>
+    <h2>Select</h2>
+    <iframe src="previews/Select.html" title="Select" style="block-size: 240px"></iframe>
+  </section>
+  <section>
+    <h2>Button</h2>
+    <iframe src="previews/Button.html" title="Button" style="block-size: 120px"></iframe>
+  </section>
+  <section>
+    <h2>Allow-list</h2>
+    <iframe src="previews/AllowList.html" title="Allow-list" style="block-size: 330px"></iframe>
+  </section>
+  <section>
+    <h2>Backup</h2>
+    <iframe src="previews/Backup.html" title="Backup" style="block-size: 880px"></iframe>
+  </section>
+</main>
+<script>
+  // Fit each frame to its page where the browser allows it (served over http). From disk the
+  // frames keep their preset heights.
+  for (const frame of document.querySelectorAll("iframe")) {
+    frame.addEventListener("load", () => {
+      try {
+        frame.style.blockSize = `${frame.contentDocument.documentElement.scrollHeight}px`;
+      } catch {
+        // Cross-origin from file: URLs; keep the preset height
       }
-      .wrap { max-width: 1000px; margin: 0 auto; padding: 24px 16px 64px; }
-      h1 { margin: 0 0 4px; color: #fff; font-size: 22px; font-weight: 400; }
-      .sec {
-        margin: 32px 0 12px;
-        padding-bottom: 4px;
-        border-bottom: 1px solid var(--sfs-color-divider);
-        color: #fff;
-        font-size: 14px;
-        font-weight: 400;
-        letter-spacing: 0.04em;
-        text-transform: uppercase;
-      }
-      .note { margin: 0 0 12px; color: var(--sfs-color-text-subtle); }
-
-      /* Search row mock, geometry sampled from the live search page */
-      .search_result_row {
-        display: flex;
-        gap: 10px;
-        height: 72px;
-        margin-bottom: 2px;
-        padding-left: 4px;
-        background: rgb(0 0 0 / 0.2);
-        color: #c6d4df;
-        text-decoration: none;
-      }
-      .search_result_row:hover { background: #2a475e; }
-      .search_capsule { width: 186px; height: 70px; margin-top: 1px; flex: none; }
-      .responsive_search_name_combined {
-        display: grid;
-        flex: 1;
-        grid-template-columns: 280px 200px 30px 1fr;
-        padding-top: 12px;
-      }
-      .search_name {
-        grid-column: 1 / 3;
-        overflow: hidden;
-        font-size: 16px;
-        font-weight: 300;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      }
-      .search_platforms { display: flex; grid-column: 1; align-items: center; margin-top: 9px; }
-      .platform_img {
-        width: 16px;
-        height: 16px;
-        margin-right: 4px;
-        border-radius: 2px;
-        background: #3d4450;
-      }
-      .search_released { margin-top: 10px; color: #6580a5; font-size: 12px; }
-
-      /* Synthetic cover art */
-      .art { position: relative; display: block; overflow: hidden; }
-      .art-light { background: linear-gradient(120deg, #fff 0%, #f4efe2 45%, #d9e8f5 100%); }
-      .art-dark { background: linear-gradient(160deg, #000 0%, #121212 60%, #23180f 100%); }
-      .art-busy {
-        background: repeating-linear-gradient(
-          45deg,
-          #e8c547 0 10px,
-          #c0392b 10px 20px,
-          #1abc9c 20px 30px,
-          #fff 30px 40px,
-          #2c3e50 40px 50px
-        );
-      }
-      .art-violet {
-        background: radial-gradient(circle at 80% 20%, #8f73f3 0%, #7458e0 40%, #2a1d6b 100%);
-      }
-      .art-sky { background: linear-gradient(180deg, #8fd3ff 0%, #ffd7a8 70%, #59341f 100%); }
-      .art-grey { background: #808080; }
-      .grid { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start; }
-      .cap { display: flex; flex-direction: column; gap: 4px; }
-      .cap small { color: var(--sfs-color-text-subtle); }
-      /* The store's own corner flag, for the collision check (top-left, 19px tall) */
-      .flag {
-        position: absolute;
-        top: 5px;
-        left: 0;
-        height: 19px;
-        padding: 0 6px;
-        background: #4f95bd;
-        color: #111;
-        font-size: 10px;
-        line-height: 19px;
-      }
-      .col { width: 616px; }
-      .narrow { width: 360px; }
-      .purchase-mock {
-        height: 92px;
-        margin-bottom: 24px;
-        border-radius: 4px;
-        background: linear-gradient(60deg, rgb(117 176 34 / 0.7) 5%, rgb(88 138 27 / 0.6) 95%);
-        box-shadow: 2px 2px 15px rgb(0 0 0 / 0.4);
-      }
-      .two { display: grid; grid-template-columns: 1fr 360px; gap: 24px; align-items: start; }
-      .popup-frame { border: 1px solid #3d4450; }
-    </style>
-  </head>
-  <body>
-    <svg width="0" height="0" style="position: absolute" aria-hidden="true">
-      <symbol id="sfs-glyph" viewBox="0 0 10 10">
-        <path d="M5 0Q5.7 4.3 10 5Q5.7 5.7 5 10Q4.3 5.7 0 5Q4.3 4.3 5 0Z" />
-      </symbol>
-    </svg>
-    <div class="wrap">
-      <h1>SFS specimen</h1>
-      <p class="note">
-        Reference rendering of docs/design/components.mdx. Fonts fall back to Arial outside the
-        store.
-      </p>
-
-      <h2 class="sec">Full badge, search rows</h2>
-      <div id="rows-en"></div>
-
-      <h2 class="sec">Compact badge over cover art</h2>
-      <p class="note">
-        Block-start, inline-end corner; the store's corner flags own the top-left. Sizes come
-        from the measured image box.
-      </p>
-      <div class="grid" id="caps-en"></div>
-
-      <h2 class="sec">List filter</h2>
-      <p class="note">
-        Root attribute data-sfs-filter="dim": disclosed hosts fade, hover restores them,
-        allow-listed and undisclosed hosts stay as they are.
-      </p>
-      <div data-sfs-filter="dim" id="filter-dim"></div>
-      <p class="note" style="margin-top: 16px">
-        data-sfs-filter="hide": the hideable row is gone; the host marked
-        data-sfs-hideable="false" is dimmed instead.
-      </p>
-      <div data-sfs-filter="hide" id="filter-hide"></div>
-
-      <h2 class="sec">App page banner</h2>
-      <p class="note">
-        First child of the left column, directly above the purchase box. Collapsed after 3
-        lines.
-      </p>
-      <div class="col" id="banners-en"></div>
-
-      <h2 class="sec">Options page and action popup</h2>
-      <div class="two">
-        <div class="sfs-options" data-sfs-context="page">
-          <header class="sfs-options-header">
-            <img src="../../assets/icons/icon-48.png" alt="" />
-            <div>
-              <h1 class="sfs-options-title">AI Reporter for Steam</h1>
-              <div class="sfs-options-version">Version 2026.10.20</div>
-            </div>
-          </header>
-          <section class="sfs-card" aria-labelledby="o-store">
-            <h2 class="sfs-card-title" id="o-store">On store pages</h2>
-            <label class="sfs-field">
-              <span class="sfs-field-label">Badges on games that disclose AI use</span>
-              <input class="sfs-toggle" type="checkbox" role="switch" checked />
-              <span class="sfs-field-help">
-                Adds "Discloses AI use" to search and wishlist rows and "AI disclosed" to game
-                images.
-              </span>
-            </label>
-            <label class="sfs-field">
-              <span class="sfs-field-label">Banner on game pages</span>
-              <input class="sfs-toggle" type="checkbox" role="switch" checked />
-              <span class="sfs-field-help">
-                Shows the developer's disclosure above the purchase box.
-              </span>
-            </label>
-          </section>
-          <section class="sfs-card" aria-labelledby="o-lists">
-            <h2 class="sfs-card-title" id="o-lists">In lists</h2>
-            <div class="sfs-field" data-sfs-layout="stacked">
-              <span class="sfs-field-label" id="o-filter">Games that disclose AI use</span>
-              <fieldset class="sfs-segment" aria-labelledby="o-filter">
-                <input type="radio" name="f" id="f-off" checked /><label for="f-off">Show</label>
-                <input type="radio" name="f" id="f-dim" /><label for="f-dim">Dim</label>
-                <input type="radio" name="f" id="f-hide" /><label for="f-hide">Hide</label>
-              </fieldset>
-              <span class="sfs-field-help">Lists stay as they are, apart from badges.</span>
-            </div>
-          </section>
-          <section class="sfs-card" aria-labelledby="o-lang">
-            <h2 class="sfs-card-title" id="o-lang">Language</h2>
-            <div class="sfs-field" data-sfs-layout="stacked">
-              <label class="sfs-field-label" for="o-locale">Language of this extension</label>
-              <select class="sfs-select" id="o-locale">
-                <option>Automatic</option>
-                <option>English</option>
-              </select>
-              <span class="sfs-field-help">
-                Automatic follows the store page's language when a translation exists, and
-                English otherwise.
-              </span>
-            </div>
-          </section>
-          <section class="sfs-card" aria-labelledby="o-allow">
-            <h2 class="sfs-card-title" id="o-allow">Games you stopped marking</h2>
-            <ul class="sfs-allow-list">
-              <li class="sfs-allow-item">
-                <div>
-                  <span class="sfs-allow-name">A game with an upscaling-only disclosure</span>
-                  <span class="sfs-allow-meta">Since Oct 20, 2026</span>
-                </div>
-                <button class="sfs-button" type="button">Mark again</button>
-              </li>
-              <li class="sfs-allow-item">
-                <div>
-                  <span class="sfs-allow-name">Another game</span>
-                  <span class="sfs-allow-meta">Since Sep 2, 2026</span>
-                </div>
-                <button class="sfs-button" type="button">Mark again</button>
-              </li>
-            </ul>
-          </section>
-          <section class="sfs-card" aria-labelledby="o-priv">
-            <h2 class="sfs-card-title" id="o-priv">Privacy</h2>
-            <ul class="sfs-privacy">
-              <li>Settings and results stay in this browser.</li>
-              <li>
-                To check a game, the extension asks Valve's own store servers, without your
-                cookies or account.
-              </li>
-              <li>Nothing is sent to us or anyone else. No analytics.</li>
-            </ul>
-          </section>
-          <footer class="sfs-options-footer">
-            Not affiliated with or endorsed by Valve Corporation. Steam is a trademark of Valve
-            Corporation.
-          </footer>
-        </div>
-
-        <div class="popup-frame">
-          <div class="sfs-options" data-sfs-context="popup">
-            <header class="sfs-options-header">
-              <img src="../../assets/icons/icon-32.png" alt="" />
-              <div>
-                <h1 class="sfs-options-title">AI Reporter for Steam</h1>
-                <div class="sfs-options-version">Version 2026.10.20</div>
-              </div>
-            </header>
-            <section class="sfs-card" aria-labelledby="p-store">
-              <h2 class="sfs-card-title" id="p-store">On store pages</h2>
-              <label class="sfs-field">
-                <span class="sfs-field-label">Badges</span>
-                <input class="sfs-toggle" type="checkbox" role="switch" checked />
-              </label>
-              <label class="sfs-field">
-                <span class="sfs-field-label">Banner on game pages</span>
-                <input class="sfs-toggle" type="checkbox" role="switch" />
-              </label>
-            </section>
-            <section class="sfs-card" aria-labelledby="p-lists">
-              <h2 class="sfs-card-title" id="p-lists">In lists</h2>
-              <fieldset class="sfs-segment" aria-labelledby="p-lists">
-                <input type="radio" name="p" id="p-off" /><label for="p-off">Show</label>
-                <input type="radio" name="p" id="p-dim" checked /><label for="p-dim">Dim</label>
-                <input type="radio" name="p" id="p-hide" /><label for="p-hide">Hide</label>
-              </fieldset>
-            </section>
-            <section class="sfs-card" aria-labelledby="p-allow">
-              <h2 class="sfs-card-title" id="p-allow">Games you stopped marking</h2>
-              <p class="sfs-empty">None yet. Use "Stop marking this game" on a game page.</p>
-            </section>
-            <footer class="sfs-options-footer">
-              Not affiliated with Valve. Nothing leaves your browser except lookups to Valve's
-              store. <a href="#">All settings</a>
-            </footer>
-          </div>
-        </div>
-      </div>
-
-      <h2 class="sec">Longer copy (layout stress, not a translation)</h2>
-      <p class="note">
-        German-like ASCII strings, 40% to 200% longer than English. Badges truncate with an
-        ellipsis and keep the full text in the tooltip; the banner and the options wrap.
-      </p>
-      <div id="rows-long"></div>
-      <div class="grid" id="caps-long" style="margin-top: 16px"></div>
-      <div class="col" id="banners-long" style="margin-top: 16px"></div>
-      <p class="note">The same banner at 360px, the store's narrow responsive layout.</p>
-      <div class="narrow" id="banners-narrow"></div>
-      <div class="two" style="margin-top: 16px">
-        <div></div>
-        <div class="popup-frame">
-          <div class="sfs-options" data-sfs-context="popup">
-            <section class="sfs-card" aria-labelledby="q-store">
-              <h2 class="sfs-card-title" id="q-store">Auf Shop-Seiten</h2>
-              <label class="sfs-field">
-                <span class="sfs-field-label">
-                  Abzeichen bei Spielen, die eine KI-Nutzung offenlegen
-                </span>
-                <input class="sfs-toggle" type="checkbox" role="switch" checked />
-              </label>
-              <label class="sfs-field">
-                <span class="sfs-field-label">Hinweisbanner auf den Seiten einzelner Spiele</span>
-                <input class="sfs-toggle" type="checkbox" role="switch" checked />
-              </label>
-            </section>
-            <section class="sfs-card" aria-labelledby="q-lists">
-              <h2 class="sfs-card-title" id="q-lists">In Listen</h2>
-              <div class="sfs-field" data-sfs-layout="stacked">
-                <span class="sfs-field-label" id="q-filter">
-                  Spiele, die eine KI-Nutzung offenlegen
-                </span>
-                <fieldset class="sfs-segment" aria-labelledby="q-filter">
-                  <input type="radio" name="q" id="q-off" />
-                  <label for="q-off">Anzeigen</label>
-                  <input type="radio" name="q" id="q-dim" checked />
-                  <label for="q-dim">Abgeblendet anzeigen</label>
-                  <input type="radio" name="q" id="q-hide" />
-                  <label for="q-hide">Ausblenden</label>
-                </fieldset>
-                <span class="sfs-field-error" role="alert">
-                  Diese Aenderung konnte nicht gespeichert werden. Bitte erneut versuchen.
-                </span>
-              </div>
-            </section>
-            <section class="sfs-card" aria-labelledby="q-allow">
-              <h2 class="sfs-card-title" id="q-allow">Spiele, die du nicht mehr markierst</h2>
-              <ul class="sfs-allow-list">
-                <li class="sfs-allow-item">
-                  <div>
-                    <span class="sfs-allow-name">
-                      Ein Spiel mit einem sehr langen Namen, der abgeschnitten wird
-                    </span>
-                    <span class="sfs-allow-meta">Seit 20. Okt. 2026</span>
-                  </div>
-                  <button class="sfs-button" type="button">Wieder markieren</button>
-                </li>
-              </ul>
-            </section>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <script>
-      // Builds the repetitive parts of the page. Review aid only, not product code.
-      const NOTES =
-        "Generative AI is used in both pre-generated and live-generated content. " +
-        "AI-assisted tools were used during development to create the game's artwork, " +
-        "music, and sound effects. The game also uses live generative AI to produce " +
-        "narrative text during gameplay in response to predefined player choices, combat " +
-        "outcomes, character conditions, and equipment selections. All pre-generated " +
-        "assets were reviewed and selected by the developer before being included.";
-      const SHORT_NOTES =
-        "We used an AI upscaler on some older textures.\nAll other art was made by hand.";
-
-      const el = (tag, attrs = {}, kids = []) => {
-        const node = document.createElement(tag);
-        for (const [key, value] of Object.entries(attrs)) node.setAttribute(key, value);
-        for (const kid of [kids].flat()) {
-          node.append(typeof kid === "string" ? document.createTextNode(kid) : kid);
-        }
-        return node;
-      };
-      const glyph = (cls) => {
-        const ns = "http://www.w3.org/2000/svg";
-        const svg = document.createElementNS(ns, "svg");
-        svg.setAttribute("class", cls);
-        svg.setAttribute("aria-hidden", "true");
-        const use = document.createElementNS(ns, "use");
-        use.setAttribute("href", "#sfs-glyph");
-        svg.append(use);
-        return svg;
-      };
-      const tip = (label) => `${label}. In the developer's own words: ${NOTES.slice(0, 200)}...`;
-
-      const badge = (label) =>
-        el("span", { class: "sfs-badge", title: tip(label) }, [
-          glyph("sfs-badge-glyph"),
-          el("span", { class: "sfs-badge-label" }, label),
-        ]);
-
-      const compact = (size, label) => {
-        const labelCls = size === "glyph" ? "sfs-vh" : "sfs-compact-label";
-        const attrs = { class: "sfs-compact", "data-sfs-size": size };
-        attrs["data-sfs-in-link"] = "true";
-        attrs.title = tip(label);
-        return el("span", attrs, [
-          glyph("sfs-compact-glyph"),
-          el("span", { class: labelCls }, label),
-        ]);
-      };
-
-      const row = ({ art, title, label, date, state = "disclosed", hideable }) => {
-        const attrs = { class: "search_result_row", href: "#", "data-sfs-state": state };
-        if (hideable === false) attrs["data-sfs-hideable"] = "false";
-        const platforms = el("div", { class: "search_platforms" }, [
-          ...(label ? [badge(label)] : []),
-          el("span", { class: "platform_img" }),
-          el("span", { class: "platform_img" }),
-        ]);
-        return el("a", attrs, [
-          el("div", { class: `search_capsule art art-${art}` }),
-          el("div", { class: "responsive_search_name_combined" }, [
-            el("div", { class: "search_name" }, el("span", { class: "title" }, title)),
-            platforms,
-            el("div", { class: "search_released" }, date),
-          ]),
-        ]);
-      };
-
-      const cap = ({ w, h, art, size, label = "AI disclosed", flag, caption }) => {
-        const link = el("a", { class: `art art-${art}`, href: "#" });
-        link.setAttribute("style", `width:${w}px;height:${h}px`);
-        link.setAttribute("data-sfs-state", "disclosed");
-        if (flag) link.append(el("span", { class: "flag" }, "IN LIBRARY"));
-        if (size) link.append(compact(size, label));
-        return el("div", { class: "cap" }, [link, el("small", {}, caption)]);
-      };
-
-      let bannerCount = 0;
-      const banner = (t) => {
-        bannerCount += 1;
-        const id = `notes-${bannerCount}`;
-        const quote = el("blockquote", { class: "sfs-banner-quote", id }, t.notes);
-        const kids = [
-          el("div", { class: "sfs-banner-head" }, [
-            glyph("sfs-banner-glyph"),
-            el("h2", { class: "sfs-banner-title" }, t.title),
-            el("button", { class: "sfs-banner-action", type: "button" }, t.ignore),
-          ]),
-          el("p", { class: "sfs-banner-source" }, t.source),
-          quote,
-        ];
-        if (t.collapsed) {
-          quote.setAttribute("data-sfs-collapsed", "true");
-          const toggle = el("button", { class: "sfs-banner-toggle", type: "button" }, t.expand);
-          toggle.setAttribute("aria-expanded", "false");
-          toggle.setAttribute("aria-controls", id);
-          kids.push(toggle);
-        }
-        if (t.service) {
-          kids.push(
-            el("p", { class: "sfs-banner-service" }, [
-              `${t.service} `,
-              el("span", { class: "sfs-banner-service-name" }, "OpenAI API"),
-            ]),
-          );
-        }
-        if (t.error) kids.push(el("p", { class: "sfs-banner-error", role: "alert" }, t.error));
-        return el("aside", { class: "sfs-banner" }, kids);
-      };
-
-      const ignored = (text, undo) => {
-        const attrs = { class: "sfs-banner", "data-sfs-variant": "ignored" };
-        attrs["aria-label"] = "AI use disclosure";
-        return el("aside", attrs, [
-          glyph("sfs-banner-glyph"),
-          el("span", { class: "sfs-banner-ignored-text" }, text),
-          el("button", { class: "sfs-banner-action", type: "button" }, undo),
-        ]);
-      };
-
-      const mount = (id, nodes) => document.getElementById(id).append(...nodes);
-      const purchase = () => el("div", { class: "purchase-mock" });
-
-      const EN = {
-        title: "The developer discloses AI use",
-        source: "In the developer's own words:",
-        ignore: "Stop marking this game",
-        expand: "Show full disclosure",
-        service: "AI service named by the developer:",
-      };
-      const DE = {
-        title: "Der Entwickler legt die Nutzung von KI offen",
-        source: "In den eigenen Worten des Entwicklers:",
-        ignore: "Dieses Spiel nicht mehr markieren",
-        expand: "Vollstaendige Offenlegung anzeigen",
-        service: "Vom Entwickler genannter Dienst fuer kuenstliche Intelligenz:",
-        error: "Diese Aenderung konnte nicht gespeichert werden. Bitte erneut versuchen.",
-      };
-      const LONG_TITLE =
-        "A game with a very long title that runs out of room and gets cut by the row's own " +
-        "ellipsis rule";
-
-      mount("rows-en", [
-        row({
-          art: "sky",
-          title: "A game whose developer filed a disclosure",
-          label: "Discloses AI use",
-          date: "27 Mar, 2025",
-        }),
-        row({ art: "dark", title: LONG_TITLE, label: "Discloses AI use", date: "1 Jul, 2026" }),
-        row({
-          art: "light",
-          title: "A game with no disclosure (renders nothing)",
-          date: "2 Aug, 2024",
-          state: "not-disclosed",
-        }),
-      ]);
-
-      mount("caps-en", [
-        cap({ w: 120, h: 45, art: "light", size: "glyph", caption: "120x45 glyph" }),
-        cap({ w: 184, h: 69, art: "dark", size: "text", caption: "184x69 dark" }),
-        cap({ w: 184, h: 69, art: "light", size: "text", flag: true, caption: "184x69 flag" }),
-        cap({ w: 231, h: 87, art: "busy", size: "text", caption: "231x87 busy" }),
-        cap({ w: 224, h: 128, art: "violet", size: "text", caption: "224x128 violet" }),
-        cap({ w: 231, h: 87, art: "grey", size: "text", caption: "231x87 mid grey" }),
-        cap({ w: 460, h: 215, art: "sky", size: "large", caption: "460x215 large" }),
-        cap({ w: 40, h: 30, art: "sky", caption: "40x30 none" }),
-      ]);
-
-      mount("filter-dim", [
-        row({
-          art: "busy",
-          title: "Disclosed: dimmed",
-          label: "Discloses AI use",
-          date: "19 Sep, 2026",
-        }),
-        row({
-          art: "light",
-          title: "Disclosed but allow-listed: untouched",
-          date: "2 Sep, 2026",
-          state: "allowed",
-        }),
-        row({
-          art: "sky",
-          title: "Not disclosed: untouched",
-          date: "3 Mar, 2026",
-          state: "not-disclosed",
-        }),
-      ]);
-      mount("filter-hide", [
-        row({
-          art: "busy",
-          title: "Disclosed: hidden (not rendered)",
-          label: "Discloses AI use",
-          date: "19 Sep, 2026",
-        }),
-        row({
-          art: "dark",
-          title: "Disclosed in a list that cannot hide: dimmed instead",
-          label: "Discloses AI use",
-          date: "19 Sep, 2026",
-          hideable: false,
-        }),
-      ]);
-
-      mount("banners-en", [
-        banner({ ...EN, notes: NOTES, collapsed: true }),
-        purchase(),
-        banner({ ...EN, notes: SHORT_NOTES, service: undefined }),
-        purchase(),
-        ignored("You stopped marking this game.", "Undo"),
-        purchase(),
-      ]);
-
-      mount("rows-long", [
-        row({
-          art: "sky",
-          title: "Ein Spiel mit Offenlegung (plus 200%)",
-          label: "Legt die Nutzung von kuenstlicher Intelligenz offen",
-          date: "27 Maerz 2025",
-        }),
-        row({
-          art: "dark",
-          title: "Ein Spiel mit Offenlegung (plus 30%)",
-          label: "Legt KI-Nutzung offen",
-          date: "27 Maerz 2025",
-        }),
-      ]);
-      mount("caps-long", [
-        cap({
-          w: 184,
-          h: 69,
-          art: "dark",
-          size: "text",
-          label: "KI-Nutzung vom Entwickler angegeben",
-          caption: "184x69, plus 190%",
-        }),
-        cap({
-          w: 184,
-          h: 69,
-          art: "light",
-          size: "text",
-          label: "KI-Nutzung offengelegt",
-          caption: "184x69, plus 80%",
-        }),
-      ]);
-      const LONG_IGNORED = "Du markierst dieses Spiel nicht mehr, auch nicht in Listen.";
-      mount("banners-long", [
-        banner({ ...DE, notes: NOTES, collapsed: true }),
-        ignored(LONG_IGNORED, "Rueckgaengig machen"),
-      ]);
-      mount("banners-narrow", [
-        banner({ ...DE, notes: NOTES, collapsed: true }),
-        ignored(LONG_IGNORED, "Rueckgaengig machen"),
-      ]);
-    </script>
-  </body>
+    });
+  }
+</script>
+</body>
 </html>

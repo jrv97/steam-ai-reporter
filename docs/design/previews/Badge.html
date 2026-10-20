@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="../reference.css">
+<title>Full badge</title>
+<style>
+  body {
+    margin: 0;
+    background: var(--sar-color-bg-page);
+    color: var(--sar-color-text-subtle);
+    font: 12px/16px var(--sar-font-page);
+  }
+  .stage { display: grid; gap: var(--sar-space-2); padding: var(--sar-space-4); }
+  .row {
+    display: flex;
+    align-items: center;
+    gap: var(--sar-space-3);
+    padding: var(--sar-space-2) var(--sar-space-3);
+    background: var(--sar-color-bg-row);
+  }
+  .row.hover { background: #2a475e; }
+  .row .icons { display: flex; gap: var(--sar-space-1); }
+  .row .icons i {
+    inline-size: 16px;
+    block-size: 16px;
+    border-radius: var(--sar-radius-sm);
+    background: #3d4450;
+  }
+  .row .platform { display: flex; align-items: center; min-inline-size: 0; inline-size: 278px; }
+  .row .platform .sar-badge { margin-inline-end: var(--sar-space-2); flex-shrink: 1; }
+  .cap { margin-inline-start: auto; white-space: nowrap; }
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="row">
+    <div class="platform">
+      <span
+          class="sar-badge"
+          title="Discloses AI use. In the developer's own words: We used an AI upscaler...">
+        <svg class="sar-badge-glyph" viewBox="0 0 10 10" aria-hidden="true">
+        <path d="M5 0Q5.7 4.3 10 5Q5.7 5.7 5 10Q4.3 5.7 0 5Q4.3 4.3 5 0Z"/></svg>
+        <span class="sar-badge-label">Discloses AI use</span></span>
+      <span class="icons"><i></i><i></i></span>
+    </div>
+    <span class="cap">Search row, first in the line under the title</span>
+  </div>
+  <div class="row hover">
+    <div class="platform">
+      <span class="sar-badge"><svg class="sar-badge-glyph" viewBox="0 0 10 10" aria-hidden="true">
+        <path d="M5 0Q5.7 4.3 10 5Q5.7 5.7 5 10Q4.3 5.7 0 5Q4.3 4.3 5 0Z"/></svg>
+        <span class="sar-badge-label">Discloses AI use</span></span>
+      <span class="icons"><i></i><i></i></span>
+    </div>
+    <span class="cap" style="color: var(--sar-color-text-muted)">On the store's row hover: label
+      5.21:1</span>
+  </div>
+  <div class="row">
+    <div class="platform">
+      <span
+          class="sar-badge"
+          lang="es"
+          title="El desarrollador declara el uso de inteligencia artificial">
+        <svg class="sar-badge-glyph" viewBox="0 0 10 10" aria-hidden="true">
+        <path d="M5 0Q5.7 4.3 10 5Q5.7 5.7 5 10Q4.3 5.7 0 5Q4.3 4.3 5 0Z"/></svg>
+        <span class="sar-badge-label">El desarrollador declara el uso de inteligencia artificial
+        </span></span>
+      <span class="icons"><i></i><i></i></span>
+    </div>
+    <span class="cap">Long Spanish label: ellipsis at 180px, full text in the tooltip</span>
+  </div>
+</div>
+</body>
+</html>

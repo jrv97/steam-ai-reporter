@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="../reference.css">
+<title>Options page and popup</title>
+<style>
+  body { margin: 0; background: var(--sar-color-bg-sunken); }
+  .two {
+    display: grid;
+    grid-template-columns: minmax(0, 640px) 362px;
+    gap: var(--sar-space-5);
+    align-items: start;
+    padding: var(--sar-space-4);
+  }
+  .popup-frame { border: 1px solid #3d4450; }
+</style>
+</head>
+<body>
+<div class="two">
+  <div class="sar-options" data-sar-context="page">
+    <header class="sar-options-header">
+      <img src="../../../assets/icons/icon-48.png" alt="">
+      <div>
+        <h1 class="sar-options-title">AI Reporter for Steam</h1>
+        <div class="sar-options-version">Version 2026.10.20</div>
+      </div>
+    </header>
+    <section class="sar-card" aria-labelledby="o-store">
+      <h2 class="sar-card-title" id="o-store">On store pages</h2>
+      <label class="sar-field">
+        <span class="sar-field-label">Badges on games that disclose AI use</span>
+        <input class="sar-toggle" type="checkbox" role="switch" checked>
+        <span class="sar-field-help">Adds "Discloses AI use" to search and wishlist rows and "AI
+          disclosed" to game images.</span>
+      </label>
+      <label class="sar-field">
+        <span class="sar-field-label">Banner on game pages</span>
+        <input class="sar-toggle" type="checkbox" role="switch" checked>
+        <span class="sar-field-help">Shows the developer's disclosure above the purchase box.</span>
+      </label>
+    </section>
+    <section class="sar-card" aria-labelledby="o-lists">
+      <h2 class="sar-card-title" id="o-lists">In lists</h2>
+      <div class="sar-field" data-sar-layout="stacked">
+        <span class="sar-field-label" id="o-filter">Games that disclose AI use</span>
+        <fieldset class="sar-segment" aria-labelledby="o-filter">
+          <input type="radio" name="f" id="f-off" checked><label for="f-off">Show</label>
+          <input type="radio" name="f" id="f-dim"><label for="f-dim">Dim</label>
+          <input type="radio" name="f" id="f-hide"><label for="f-hide">Hide</label>
+        </fieldset>
+        <span class="sar-field-help">Lists stay as they are, apart from badges.</span>
+      </div>
+    </section>
+    <section class="sar-card" aria-labelledby="o-lang">
+      <h2 class="sar-card-title" id="o-lang">Language</h2>
+      <div class="sar-field" data-sar-layout="stacked">
+        <label class="sar-field-label" for="o-locale">Language of this extension</label>
+        <select class="sar-select" id="o-locale"><option>Automatic</option><option>English</option>
+          </select>
+        <span class="sar-field-help">Automatic follows the store page's language when a translation
+          exists, and English otherwise.</span>
+      </div>
+    </section>
+    <section class="sar-card" aria-labelledby="o-allow">
+      <h2 class="sar-card-title" id="o-allow">Games you stopped marking</h2>
+      <ul class="sar-allow-list">
+        <li class="sar-allow-item">
+          <div><a class="sar-allow-name" href="#">A game with an upscaling-only disclosure</a>
+            <span class="sar-allow-meta">Since Oct 20, 2026</span></div>
+          <button
+              class="sar-button"
+              type="button"
+              aria-label="Mark A game with an upscaling-only disclosure again">
+            Mark again</button>
+        </li>
+        <li class="sar-allow-item">
+          <div><a class="sar-allow-name" href="#">Another game</a><span class="sar-allow-meta">Since
+            Sep 2, 2026</span></div>
+          <button class="sar-button" type="button" aria-label="Mark Another game again">Mark again
+            </button>
+        </li>
+      </ul>
+    </section>
+    <section class="sar-card" aria-labelledby="o-backup">
+      <h2 class="sar-card-title" id="o-backup">Backup</h2>
+      <p class="sar-backup-help">Save your settings and game lists to a file, to restore them after
+        reinstalling or in another browser.</p>
+      <div class="sar-backup-actions">
+        <button class="sar-button" type="button">Download backup</button>
+        <button class="sar-button" type="button">Restore from a backup</button>
+      </div>
+    </section>
+    <section class="sar-card" aria-labelledby="o-priv">
+      <h2 class="sar-card-title" id="o-priv">Privacy</h2>
+      <ul class="sar-privacy">
+        <li>Settings and results stay in this browser.</li>
+        <li>To check a game, the extension asks Valve's own store servers, without your cookies or
+          account.</li>
+        <li>Nothing is sent to us or anyone else. No analytics.</li>
+        <li>Backups are files on your computer. They never pass through us.</li>
+      </ul>
+    </section>
+    <footer class="sar-options-footer">Not affiliated with or endorsed by Valve Corporation. Steam
+      is a trademark of Valve Corporation.</footer>
+  </div>
+
+  <div class="popup-frame">
+    <div class="sar-options" data-sar-context="popup">
+      <header class="sar-options-header">
+        <img src="../../../assets/icons/icon-32.png" alt="">
+        <div>
+          <h1 class="sar-options-title">AI Reporter for Steam</h1>
+          <div class="sar-options-version">Version 2026.10.20</div>
+        </div>
+      </header>
+      <section class="sar-card" aria-labelledby="p-store">
+        <h2 class="sar-card-title" id="p-store">On store pages</h2>
+        <label class="sar-field"><span class="sar-field-label">Badges</span>
+          <input class="sar-toggle" type="checkbox" role="switch" checked></label>
+        <label class="sar-field"><span class="sar-field-label">Banner on game pages</span>
+          <input class="sar-toggle" type="checkbox" role="switch"></label>
+      </section>
+      <section class="sar-card" aria-labelledby="p-lists">
+        <h2 class="sar-card-title" id="p-lists">In lists</h2>
+        <fieldset class="sar-segment" aria-labelledby="p-lists">
+          <input type="radio" name="p" id="p-off"><label for="p-off">Show</label>
+          <input type="radio" name="p" id="p-dim" checked><label for="p-dim">Dim</label>
+          <input type="radio" name="p" id="p-hide"><label for="p-hide">Hide</label>
+        </fieldset>
+      </section>
+      <section class="sar-card" aria-labelledby="p-allow">
+        <h2 class="sar-card-title" id="p-allow">Games you stopped marking</h2>
+        <p class="sar-empty">None yet. Use "Stop marking this game" on a game page.</p>
+      </section>
+      <footer class="sar-options-footer">Not affiliated with Valve. Nothing leaves your browser
+        except lookups to Valve's store. <a href="#">All settings</a></footer>
+    </div>
+  </div>
+</div>
+</body>
+</html>
