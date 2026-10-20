@@ -1,0 +1,20 @@
+# Changelog fragments (AGENTS.md workflow; ADR 0005). `mise run change-new` adds one under
+# .changes/unreleased/. The release train batches them into CHANGELOG.md under a CalVer version.
+changesDir: .changes
+unreleasedDir: unreleased
+headerPath: header.tpl.md
+changelogPath: CHANGELOG.md
+versionExt: md
+versionFormat: '## {{.Version}} - {{.Time.Format "2006-01-02"}}'
+kindFormat: "### {{.Kind}}"
+changeFormat: "- {{.Body}}"
+kinds:
+  - label: Added
+  - label: Changed
+  - label: Fixed
+  - label: Removed
+newlines:
+  afterChangelogHeader: 1
+  beforeChangelogVersion: 1
+  endOfVersion: 1
+envPrefix: CHANGIE_

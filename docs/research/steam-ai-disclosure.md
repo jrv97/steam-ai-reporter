@@ -1,12 +1,15 @@
 # Steam AI content disclosure
 
 ## Executive summary
+
 Steam requires developers to fill in an "AI disclosure" section of the Content Survey, and their answer appears on the store page under "AI Generated Content Disclosure". The rule dates from 2024-01-10. A January 2026 rewrite narrowed it to AI content that ships to players or appears in store and marketing assets. AI used only as a dev tool is now exempt. The disclosure is self-reported and only checked at release review, so it marks a floor of AI use and says nothing for games without it. It is still a large signal: over 15,000 disclosing titles on SteamDB by February 2026, and about 31% of 2026 releases.
 
 The extension does not need to scrape. `api.steampowered.com/IStoreBrowseService/GetItems/v1` with `include_extra_details` returns the developer's disclosure text as `content_survey_ai_notes`. It is batched, keyless, and readable from a `store.steampowered.com` page. We confirmed this first-hand: one request covered a 50-row search page. At least four open-source tools already flag these games, but all of them scrape one HTML page per game. They show a blocking modal or a plain badge, miss wishlist and home capsules, and cannot express nuance. That leaves room for a faster, quieter and more honest tool. One shared core can drive both a Chrome and Firefox MV3 extension and a userscript, with the HTML scrape kept as a fallback.
 
 ## Research questions
+
 ### RQ1: What does Steam's AI disclosure policy require?
+
 Valve added an "AI disclosure" section to the Steamworks Content Survey on 2024-01-10, with two kinds: pre-generated and live-generated content. Part of what developers write there appears on the store page under "AI Generated Content Disclosure". The one documented rewrite came in January 2026. The policy now covers content that ships with the game and is consumed by players, plus store and marketing assets. AI used only as a dev tool for efficiency is "not the focus". Note: [rq1-policy.md](steam-ai-disclosure/rq1-policy.md).
 
 - The section means the developer chose to disclose. Nothing more. Enforcement is pre-release review plus self-report. The public docs name no penalty for lying, and approved games are not re-reviewed when they update. A game without the section may still use AI.
@@ -15,6 +18,7 @@ Valve added an "AI disclosure" section to the Steamworks Content Survey on 2024-
 - Unverified: the exact date of the 2026 edit (only press dates exist), the in-app survey wording (behind the Steamworks login), and the "app pulled from the store" sanction for missing guardrails, which has a single source (PCGamesN).
 
 ### RQ2: How does the disclosure show up on store pages and in data?
+
 On the app page the disclosure is a server-rendered `<div id="game_area_content_descriptors" class="game_area_description">` with `<h2>AI Generated Content Disclosure</h2>`, a fixed lead-in sentence, and the developer's free text in `<p><i>`. The same data is also available without scraping. `IStoreBrowseService/GetItems/v1` with `data_request: {"include_extra_details": true}` returns `extra_details.content_survey_ai_notes`, which holds the same text. It is batched, needs no API key, and is absent for games that do not disclose. No other public field or tag carries the signal: `appdetails`, content descriptor IDs, Steam's own tag list, search rows and hover popups were all checked. Note: [rq2-data-surface.md](steam-ai-disclosure/rq2-data-surface.md).
 
 - Verified first-hand on 2026-10-20 (see the note's verification section). A plain `fetch()` from a `store.steampowered.com` page to `GetItems` passes CORS. A whole 50-row search page resolved in one request of about 1.3 s, with 10 of 50 roguelike results disclosing. This beats the prior-art pattern of one HTML fetch per row by roughly 50x in request count, and it largely removes the rate-limit concern from RQ5.
@@ -24,6 +28,7 @@ On the app page the disclosure is a server-rendered `<div id="game_area_content_
 - Unverified: the batch ceiling above 50 IDs. Whether `GetItems` returns `extra_details` for age-gated apps without cookies. Whether the notes vary with `context.language`. Whether `IStoreBrowseService` is part of Valve's documented web API was not checked, so treat it as able to change without notice, and the HTML path has to stay as a fallback. Discovery queue and client library behaviour were not tested.
 
 ### RQ3: How complete and reliable is the signal?
+
 The disclosure is a self-reported floor that nobody audits. It is also growing fast. Counts went from about 1,000 disclosing games in April 2024 to 10,258 (about 8% of the catalog) in November 2025 (Totally Human), then past 15,000 games and software on SteamDB by February 2026. Among new releases the share rose from about 11% in 2024 to about 31% in 2026 so far (Sulka Haro). Those percentages come from secondary coverage of Haro's charts and count as approximate. Note: [rq3-reliability.md](steam-ai-disclosure/rq3-reliability.md).
 
 - The badge has to say "discloses AI use", never "uses AI" or "AI-free", and a missing disclosure must show as neutral. False negatives are documented. The Alters shipped without one. Black Ops 6 and Crime Scene Cleaner added theirs a year or more after launch. Haro found that 22% of significant-revenue AI games added the flag after release, many of them around the January 2026 rewrite.
@@ -32,6 +37,7 @@ The disclosure is a self-reported floor that nobody audits. It is also growing f
 - Unverified: one source reports a disclosure removed after assets were replaced (Jurassic World Evolution 3). Curator lists and user tags as signals were not checked. No case was found of Valve delisting a game or forcing a disclosure. Tim Sweeney's "Scarlet Letter" criticism (June 2026) got no public answer from Valve, and the requirement is still active.
 
 ### RQ4: What prior art and data sources exist?
+
 At least four open-source tools already flag disclosed games, and all of them scrape the store-page heading. The leader is "AI warning for Steam" (seeeeew, MIT): about 5.5k Firefox users, and about 10k Chrome users per third-party trackers. The others are "AI Generated Content Filter for Steam" (Apache-2.0), "Steam AI Games Indicator" (userscripts, MIT) and "Obvious Steam AI" (MPL-2.0). Augmented Steam has no AI feature; its issue 1913 has been open since April 2024. Note: [rq4-prior-art.md](steam-ai-disclosure/rq4-prior-art.md).
 
 - The leader's design is a good baseline. It is MV3 with only the `storage` permission and no host_permissions, and it matches `/app/*` and `/search*`. On app pages it reads `#game_area_content_descriptors > h2` and compares it against about 33 localized headings. For each search row it fetches `/app/<id>?l=english` and caches positives for 30 days and negatives for 7. Its only recorded breakages are localization (Russian, French, Malay in 2026). Forcing `?l=english` or keying on structure rather than text avoids that class of bug.
@@ -41,6 +47,7 @@ At least four open-source tools already flag disclosed games, and all of them sc
 - Unverified: Chrome install counts (the store page hit a consent wall). A steam-internal `aicontenttype` app key (565, values 1 and 2) seen only in a summary. The other AI curators seen only in search snippets. All exact strings and selectors came through a summarizing fetcher and need a recheck before they go into code.
 
 ### RQ5: What technical constraints shape the extension and userscript?
+
 A content script on `store.steampowered.com` can fetch other store pages from the same origin, so the core check needs no background worker and no extra host permission. The researcher assumed cross-origin calls to `api.steampowered.com` would need the background. Our RQ2 check found that `GetItems` passes CORS from the store origin, so a content script or userscript can call it directly with plain `fetch()` and needs no `GM_xmlhttpRequest` or `@connect`. Firefox content-script fetch semantics for that call were not tested. One manifest can carry both `background.service_worker` (Chrome) and `background.scripts` (Firefox), as the SteamDB extension does. Note: [rq5-extension-constraints.md](steam-ai-disclosure/rq5-extension-constraints.md).
 
 - Parse the HTML in the content script. Chrome service workers have no DOM and are killed after 30 s idle, and Augmented Steam works around that with an offscreen document. `storage.local` (10 MB in Chrome, IndexedDB-backed in Firefox) is plenty for a per-app cache with positive and negative TTLs.
@@ -50,7 +57,9 @@ A content script on `store.steampowered.com` can fetch other store pages from th
 - Unverified or open: the userscript half was only partly covered. Tampermonkey and Violentmonkey docs for `@connect`, `GM_xmlhttpRequest` and `GM_setValue` were not read, and wxt and plasmo were not researched (vite-plugin-monkey looks viable from its readme). The real CORS headers on `appdetails` were not tested (`GetItems` was, see RQ2). It is unconfirmed which surfaces (home carousels, discovery queue, tag hubs, sale pages) are react-rendered as of October 2026.
 
 ## Conclusions
+
 What we now know:
+
 - The signal is "the developer disclosed generative AI content", nothing stronger. It misses games that never disclose (The Alters), games that disclose late (Black Ops 6, Crime Scene Cleaner, Crimson Desert) and AI used only as a dev tool, which the rules exempt. It also includes developers who disclose defensively or write "we do NOT use AI art" in the box. The badge wording and the neutral state have to reflect that.
 - Detection is solved and cheap. `content_survey_ai_notes` in `GetItems` is the primary key. The `#game_area_content_descriptors` block on `?l=english` HTML is a verified fallback that needs the duplicate-id and age-gate handling. No other public field, descriptor ID or Steam tag carries the signal.
 - A content script on the store origin can do everything: same-origin HTML fetches and CORS-permitted `GetItems` calls. No host permission beyond `https://store.steampowered.com/*` is needed, and no background DOM parsing. This keeps the store review surface small on both Chrome and AMO.
@@ -58,6 +67,7 @@ What we now know:
 - The competition is real but thin in design. The leader is a modal-only MIT extension with about 15k users. No tool covers wishlist and home capsules well, separates kinds of use, offers an allow-list, or lets users report a false flag.
 
 What stays open:
+
 - The `GetItems` batch ceiling above 50 IDs, its behaviour for age-gated apps without cookies, and its long-term stability, since it may be undocumented.
 - The userscript toolchain: Tampermonkey and Violentmonkey `GM_*` and `@connect` semantics. The build tool choice (wxt, plasmo or vite-plugin-monkey) was not compared.
 - Which store surfaces besides the wishlist are react-rendered today (home carousels, discovery queue, tag hubs, sale pages), and what their capsule markup looks like.
@@ -65,7 +75,9 @@ What stays open:
 - How useful classifying disclosure text would be (in-game, live, marketing-only, dev-only, negation). Nobody has measured it.
 
 ## Recommendations
+
 Next steps:
+
 1. Build the detector around `GetItems` with `include_extra_details`, batched per page, behind a small interface. Keep the `?l=english` HTML parse as a fallback for when the API errors or omits an app. Return three states: disclosed, not disclosed, and unknown (gated, error or rate-limited).
 2. Cache per appid in `storage.local` (or `GM_setValue`) with a longer positive TTL (days) and a short negative TTL (hours), since disclosures get added after launch far more often than they get removed. Never send viewed appids to any server.
 3. Ship a non-blocking badge on capsules and search rows, and a banner on the app page that quotes the developer's text verbatim. Word it "discloses AI use" and never show anything for "no disclosure". Leave filtering and blurring as opt-in settings.
@@ -76,6 +88,7 @@ Next steps:
 8. Before publishing: an unaffiliated-with-valve notice, `data_collection_permissions: {required: ["none"]}` for AMO, and source upload with build steps.
 
 Would need another `/wf:research`:
+
 - Userscript and build tooling: Tampermonkey and Violentmonkey `GM.xmlHttpRequest`, `@connect`, storage scope, and a wxt vs plasmo vs vite-plugin-monkey comparison for one-core, two-target builds. The RQ5 note covers this only partly.
 - A store surface map: current markup for home carousels, discovery queue, tag hubs and sale pages, logged in and out.
 - A `GetItems` stress test: batch ceiling, 429 behaviour and the age-gate response. This is a hands-on spike more than a literature search.

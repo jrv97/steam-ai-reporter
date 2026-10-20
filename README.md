@@ -27,11 +27,34 @@ Nothing is collected. App IDs of the items on the page go, without cookies, only
 
 ## Development
 
-Placeholder. The toolchain section (requirements, `mise run` tasks, running in Firefox Nightly and Chrome, tests and checks) is written together with the toolchain.
+Requirements: [mise](https://mise.jdx.dev) and Git. mise installs every other tool at the pinned version (Node, pnpm, Python, dprint, ruff, mypy, shellcheck, shfmt, actionlint, zizmor, changie, web-ext), and pnpm installs the JavaScript libraries (esbuild, TypeScript, oxlint, vitest) from the lockfile. On Windows, use Git for Windows; see `mise.local.toml.example` for putting Git Bash ahead of WSL's `bash` when running tasks from PowerShell.
+
+```bash
+mise trust
+mise run setup
+```
+
+`setup` installs the tools and the JavaScript dependencies, writes the pre-commit and pre-push Git hooks, and checks the browser paths. Copy `mise.local.toml.example` to `mise.local.toml` (ignored by Git) and set `SAR_FIREFOX_BIN` and `SAR_FIREFOX_PROFILE` (Firefox Nightly and a profile dedicated to this project), plus `SAR_CHROME_BIN` and `SAR_CHROME_PROFILE`.
+
+Main tasks:
+
+- `mise run fmt`: format every file we own (width 100; Markdown is formatted for structure only).
+- `mise run lint`, `mise run typecheck`, `mise run test`: oxlint with type-aware rules, ruff, mypy, shellcheck, actionlint and zizmor; TypeScript 7; vitest with happy-dom.
+- `mise run build`: build `dist/chrome`, `dist/firefox`, `dist/userscript` and the dev-only `dist/dev`.
+- `mise run check`: text, catalog, version and bundle checks on top of the build.
+- `mise run ci`: everything CI runs. The pre-push hook runs `prepush`, which is the same without the reproducibility check and `web-ext lint`.
+- `mise run dev`: rebuild on change. In another terminal, `mise run run-firefox` (Firefox Nightly only) or `mise run run-chrome` loads the build with auto-reload. In Chrome you can also load `dist/chrome` with "Load unpacked".
+- `mise run change-new`: add a changelog fragment. A pull request that changes `src/` needs one, unless it carries the `no-changelog-fragment` label.
 
 ## Build from source
 
-Placeholder. The reproducible build steps for reviewers (operating system, installing mise, `mise install`, `mise run build`) are written together with the toolchain.
+For store reviewers and anyone who wants to reproduce a release. The build runs on Linux, macOS and Windows; releases are built on Ubuntu 24.04.
+
+1. Install mise: `curl https://mise.run | sh` (see [mise's install guide](https://mise.jdx.dev/getting-started.html) for other options).
+2. In the source folder, run `mise trust`, then `mise install`. This installs the exact tool versions pinned in `mise.toml` and `mise.lock`.
+3. Run `mise run build`. It installs the JavaScript dependencies from `pnpm-lock.yaml` and writes the unminified bundles to `dist/` (`dist/firefox` is the Firefox add-on).
+
+`mise run check-reproducible` builds twice and fails if any output byte differs.
 
 ## Prior art and thanks
 

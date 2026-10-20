@@ -6,15 +6,15 @@ Environment: the Claude desktop app's built-in Chromium browser, from a European
 
 ## Answer in short
 
-| Spike | Result | Default the code takes |
-|---|---|---|
-| S1 batch ceiling and 429 | The ceiling is the URL length: 250 IDs (6,886 characters) passed, 300 IDs (8,236 characters) failed with an unreadable answer. 30 back-to-back 50-ID calls all returned 200; no 429 was triggered. Error answers carry no CORS headers, so they surface as `TypeError` | 50 IDs per call plus a 4,000-character URL guard, one call in flight, 1 s spacing; a `TypeError` opens the breaker like a 429 |
-| S2 item states | Adult-only, delisted and age-gated apps all return `success: 1` with `extra_details` cookie-less; an invalid ID returns `success: 15` and no `extra_details`; notes are localized when the developer translated them, but the set of disclosing apps did not change with the language | Key results by `id`; missing `extra_details` or `success != 1` is unknown `missing`; dedupe IDs before the call; treat `x-eresult != 1` or a missing `store_items` as a batch error |
-| S3 CORS headers | CORS is an allow-list of Valve origins: store and community pages can read GetItems, a foreign origin (wikipedia.org) cannot; `x-eresult` is exposed. Steam sends no CORS headers to non-browser clients (posting), whatever the `Origin` | Content script calls GetItems directly where its requests carry the store origin; backoff without `Retry-After` unless S1 shows it |
-| S4 extension fetch | A content script with no permissions reads GetItems in Chrome 155 and Firefox Nightly 160 (`type: "cors"`, 200); same-origin app page fetches work; `content.fetch` does not exist in MV3 | Content script only (ADR 0003): no background, no `host_permissions` |
-| S5 surface map | Classic surfaces carry `data-ds-appid`; React surfaces (tag, category, specials, developer, wishlist, search suggestions) carry only `/app/<id>` links; the wishlist is a virtualized list | Link-based host finding with the refinements in "Proposed plan changes"; wishlist `hideable: false` |
-| S6 userscript managers | Tampermonkey 5.5 on Chrome 155 and Firefox Nightly 160: plain `fetch` to GetItems works without `@connect`; `GM.*` values, `GM_addStyle`, a plain `<style>`, `GM_addValueChangeListener` and the menu command all work. Violentmonkey could not be tested | Plain `fetch`, no `@connect`; `GM_addStyle` with a `<style>` fallback |
-| S7 HTML fallback | `?l=english` cookie-less fetch returns the full page and cannot change the store language; redirects to `/login/` and `/` confirmed; no `/agecheck/` redirect reproducible from this location; the AI block came first on every app with both blocks | Fallback as planned: final URL plus `#appHubAppName` guard, all `#game_area_content_descriptors`, heading match, notes from `p > i` |
+| Spike                    | Result                                                                                                                                                                                                                                                                                | Default the code takes                                                                                                                                                              |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| S1 batch ceiling and 429 | The ceiling is the URL length: 250 IDs (6,886 characters) passed, 300 IDs (8,236 characters) failed with an unreadable answer. 30 back-to-back 50-ID calls all returned 200; no 429 was triggered. Error answers carry no CORS headers, so they surface as `TypeError`                | 50 IDs per call plus a 4,000-character URL guard, one call in flight, 1 s spacing; a `TypeError` opens the breaker like a 429                                                       |
+| S2 item states           | Adult-only, delisted and age-gated apps all return `success: 1` with `extra_details` cookie-less; an invalid ID returns `success: 15` and no `extra_details`; notes are localized when the developer translated them, but the set of disclosing apps did not change with the language | Key results by `id`; missing `extra_details` or `success != 1` is unknown `missing`; dedupe IDs before the call; treat `x-eresult != 1` or a missing `store_items` as a batch error |
+| S3 CORS headers          | CORS is an allow-list of Valve origins: store and community pages can read GetItems, a foreign origin (wikipedia.org) cannot; `x-eresult` is exposed. Steam sends no CORS headers to non-browser clients (posting), whatever the `Origin`                                             | Content script calls GetItems directly where its requests carry the store origin; backoff without `Retry-After` unless S1 shows it                                                  |
+| S4 extension fetch       | A content script with no permissions reads GetItems in Chrome 155 and Firefox Nightly 160 (`type: "cors"`, 200); same-origin app page fetches work; `content.fetch` does not exist in MV3                                                                                             | Content script only (ADR 0003): no background, no `host_permissions`                                                                                                                |
+| S5 surface map           | Classic surfaces carry `data-ds-appid`; React surfaces (tag, category, specials, developer, wishlist, search suggestions) carry only `/app/<id>` links; the wishlist is a virtualized list                                                                                            | Link-based host finding with the refinements in "Proposed plan changes"; wishlist `hideable: false`                                                                                 |
+| S6 userscript managers   | Tampermonkey 5.5 on Chrome 155 and Firefox Nightly 160: plain `fetch` to GetItems works without `@connect`; `GM.*` values, `GM_addStyle`, a plain `<style>`, `GM_addValueChangeListener` and the menu command all work. Violentmonkey could not be tested                             | Plain `fetch`, no `@connect`; `GM_addStyle` with a `<style>` fallback                                                                                                               |
+| S7 HTML fallback         | `?l=english` cookie-less fetch returns the full page and cannot change the store language; redirects to `/login/` and `/` confirmed; no `/agecheck/` redirect reproducible from this location; the AI block came first on every app with both blocks                                  | Fallback as planned: final URL plus `#appHubAppName` guard, all `#game_area_content_descriptors`, heading match, notes from `p > i`                                                 |
 
 ## S1: batch ceiling and 429
 
@@ -22,14 +22,14 @@ Environment: the Claude desktop app's built-in Chromium browser, from a European
 
 **Result.**
 
-| IDs | Encoded URL length | Outcome | Time |
-|---|---|---|---|
-| 3 | 333 | 200, 3 items | 216 ms |
-| 100 | 2,836 | 200, 100 items | 551 ms |
-| 200 | 5,536 | 200, 200 items | 953 ms |
-| 250 | 6,886 | 200, 250 items | 1,490 ms |
-| 300 | 8,236 | `TypeError: Failed to fetch`; the `no-cors` retry got an opaque answer | 277 ms |
-| 400 | 10,936 | Same as 300 | 55 ms |
+| IDs | Encoded URL length | Outcome                                                                | Time     |
+| --- | ------------------ | ---------------------------------------------------------------------- | -------- |
+| 3   | 333                | 200, 3 items                                                           | 216 ms   |
+| 100 | 2,836              | 200, 100 items                                                         | 551 ms   |
+| 200 | 5,536              | 200, 200 items                                                         | 953 ms   |
+| 250 | 6,886              | 200, 250 items                                                         | 1,490 ms |
+| 300 | 8,236              | `TypeError: Failed to fetch`; the `no-cors` retry got an opaque answer | 277 ms   |
+| 400 | 10,936             | Same as 300                                                            | 55 ms    |
 
 - **Ceiling.** It is the URL length, not an ID count: 6,886 characters passed and 8,236 failed, which fits the common 8 KB request-line limit of the `nginx` front end (the status was not captured; 414 is the likely code). With real 7-digit app IDs each ID costs about 31 encoded characters, so the same limit falls at about 250 IDs.
 - **Error responses are unreadable.** The over-long request was answered without CORS headers, so JavaScript saw only a `TypeError`, not a status. A 429 from the same front end would very likely look the same, so `Retry-After` will not be readable in practice.
@@ -37,6 +37,7 @@ Environment: the Claude desktop app's built-in Chromium browser, from a European
 - Earlier, a 50-ID call with real IDs (the 50 rows of `/search/?term=roguelike`) returned 50 items in request order in 1.16 s; its URL was 1,741 characters and its body 99,315 bytes (`content-length: 5187`, so gzip shrinks it about 19 times). Responses carry `cache-control: private, max-age=120`.
 
 **Default the code takes.**
+
 - Batches of at most 50 IDs, as planned, with a guard that splits any batch whose encoded URL would exceed 4,000 characters (half the observed limit), so the limit is never reached even with longer IDs or a larger context.
 - One call in flight, 1 s spacing. S1 shows ample headroom, so these stay as safety margins for the user's own browsing on the same IP, not as measured limits.
 - A `TypeError` from GetItems counts like a 429: open the breaker with the fixed backoff (60 s plus up to 10 s of jitter) and treat the batch as unknown `rate-limited`. `Retry-After` is read only if it ever becomes readable.
@@ -47,12 +48,12 @@ Environment: the Claude desktop app's built-in Chromium browser, from a European
 
 **Result.**
 
-| App | `success` | `visible` | `extra_details` | Notes |
-|---|---|---|---|---|
-| 1938090 Call of Duty | 1 | true | yes, with `content_survey_ai_notes` | Not gated in the API |
-| 339800 HuniePop (adult only) | 1 | true | yes, no AI notes; mature text in `content_survey_notes` | Not gated in the API, although its page redirects to sign-in |
-| 99999999 (invalid) | 15 | false | absent | `id` echoes the request, `appid` is `0`, `name` is empty |
-| 50300, 241560 (delisted) | 1 | true | yes | Extra key `unlisted: true` |
+| App                          | `success` | `visible` | `extra_details`                                         | Notes                                                        |
+| ---------------------------- | --------- | --------- | ------------------------------------------------------- | ------------------------------------------------------------ |
+| 1938090 Call of Duty         | 1         | true      | yes, with `content_survey_ai_notes`                     | Not gated in the API                                         |
+| 339800 HuniePop (adult only) | 1         | true      | yes, no AI notes; mature text in `content_survey_notes` | Not gated in the API, although its page redirects to sign-in |
+| 99999999 (invalid)           | 15        | false     | absent                                                  | `id` echoes the request, `appid` is `0`, `name` is empty     |
+| 50300, 241560 (delisted)     | 1         | true      | yes                                                     | Extra key `unlisted: true`                                   |
 
 - **Language.** For 5072580 and 1808500 the notes were identical in all five languages. Call of Duty returned translated notes in each language (German 85 characters, Japanese 33, Simplified Chinese 29, English 70) and a localized `name`. In the 50-row batch the same 10 apps disclosed in English and German; 3 of the 10 had different German text. So presence does not depend on the language, but the text does when the developer translated it.
 - **Batch behaviour.** Items come back in request order. Duplicate IDs are not merged: `[413150, 413150]` returned two items.
@@ -61,6 +62,7 @@ Environment: the Claude desktop app's built-in Chromium browser, from a European
 - **Text shape.** Notes can contain `\r\n` line breaks, trailing spaces and zero-width spaces (`U+200B`), for example 5269270 in the roguelike batch.
 
 **Default the code takes.**
+
 - Map results by `id` (the requested ID), never by `appid`, which is `0` for invalid items.
 - Disclosed when `success === 1` and `extra_details.content_survey_ai_notes` is non-empty after trimming whitespace (including `U+200B`). Not disclosed when `success === 1` and `extra_details` is present without notes. Unknown `missing` otherwise.
 - Dedupe IDs before building a batch.
@@ -75,16 +77,18 @@ Fixtures: `getitems/mixed-states.json`, `getitems/german-context.json`, `getitem
 **Method.** The user ran the `posting/` collection (`posting/README.md`). The `on_response` hook saved every response's headers: GetItems with `Origin` set to `https://store.steampowered.com`, `https://example.com`, `moz-extension://<uuid>`, `chrome-extension://<id>` and none, plus two app page requests with redirects not followed. Because posting cannot send a browser's `Sec-Fetch-*` headers, the CORS decision was then checked in the built-in browser, which does enforce CORS: from a store page, a `help.steampowered.com` or `steamcommunity.com` HTML fetch fails. GetItems was then called from pages on three origins.
 
 **Result.**
+
 - **posting:** every GetItems response was 200 with the same headers (`server`, `content-type`, `x-eresult`, `vary: Accept-Encoding`, `content-encoding`, `content-length`, `cache-control: private, max-age=120`, `expires`, `date`, `connection`) and **no `access-control-*` header for any Origin**, the store origin included. Since a browser on the store origin does pass CORS (below), Steam must decide from request headers that a browser sends and posting does not, such as `Sec-Fetch-*` or `Referer` (inference; the exact trigger was not isolated). Posting therefore cannot show the allow-list.
 - **Browser:**
 
-| Page origin | `fetch(GetItems)` | `mode: "no-cors"` | Meaning |
-|---|---|---|---|
-| `https://store.steampowered.com` | 200, `type: "cors"`, body readable | n/a | Allowed |
-| `https://steamcommunity.com` | 200, `type: "cors"`, body readable | n/a | Allowed |
-| `https://www.wikipedia.org` | `TypeError: Failed to fetch` | 200 opaque | Blocked by CORS (the network path works) |
+| Page origin                      | `fetch(GetItems)`                  | `mode: "no-cors"` | Meaning                                  |
+| -------------------------------- | ---------------------------------- | ----------------- | ---------------------------------------- |
+| `https://store.steampowered.com` | 200, `type: "cors"`, body readable | n/a               | Allowed                                  |
+| `https://steamcommunity.com`     | 200, `type: "cors"`, body readable | n/a               | Allowed                                  |
+| `https://www.wikipedia.org`      | `TypeError: Failed to fetch`       | 200 opaque        | Blocked by CORS (the network path works) |
 
-  CORS on GetItems is an allow-list of Valve origins, not `*`. A content script whose requests carry the store page's origin can read GetItems; a request carrying a `moz-extension://` or `chrome-extension://` origin falls outside the list, so only a host permission (which lifts CORS for extension pages and background scripts) would make it readable.
+CORS on GetItems is an allow-list of Valve origins, not `*`. A content script whose requests carry the store page's origin can read GetItems; a request carrying a `moz-extension://` or `chrome-extension://` origin falls outside the list, so only a host permission (which lifts CORS for extension pages and background scripts) would make it readable.
+
 - **Exposed headers.** Readable from the store origin: `cache-control`, `content-length`, `content-type`, `expires` (all CORS-safelisted) and `x-eresult`. So `access-control-expose-headers` names `x-eresult`. Whether it names `retry-after` cannot be seen without a 429 (see S1).
 - **App page, cookie-less.** `/app/413150/?l=english` returned 200 and set only the `steamCountry` and `sessionid` cookies, no language cookie. `/app/339800/?l=english` returned 302 with `location: https://store.steampowered.com/agecheck/app/339800/?l=english`, which then leads to sign-in (S7). The `content-security-policy` header matches S5.
 
@@ -96,12 +100,12 @@ Fixtures: `getitems/mixed-states.json`, `getitems/german-context.json`, `getitem
 
 **Result.**
 
-| Probe | Chrome 155 | Firefox Nightly 160 |
-|---|---|---|
-| `fetch` GetItems | 200, `type: "cors"`, 3 items, 2 disclosed, 237 ms | 200, `type: "cors"`, 3 items, 2 disclosed, 298 ms |
-| Readable headers | safelisted plus `x-eresult` | same |
-| `content.fetch` | not available | not available (no `content` global in an MV3 content script) |
-| Same-origin `/app/413150/?l=english` | 200, `type: "basic"`, `#appHubAppName` present, 412 ms | 200, `type: "basic"`, `#appHubAppName` present, 312 ms |
+| Probe                                | Chrome 155                                             | Firefox Nightly 160                                          |
+| ------------------------------------ | ------------------------------------------------------ | ------------------------------------------------------------ |
+| `fetch` GetItems                     | 200, `type: "cors"`, 3 items, 2 disclosed, 237 ms      | 200, `type: "cors"`, 3 items, 2 disclosed, 298 ms            |
+| Readable headers                     | safelisted plus `x-eresult`                            | same                                                         |
+| `content.fetch`                      | not available                                          | not available (no `content` global in an MV3 content script) |
+| Same-origin `/app/413150/?l=english` | 200, `type: "basic"`, `#appHubAppName` present, 412 ms | 200, `type: "basic"`, `#appHubAppName` present, 312 ms       |
 
 Given S3 (CORS admits only Valve origins), a readable `cors` response means both browsers sent the content script's request with the store page's origin, not an extension origin. The request header itself was not inspected.
 
@@ -113,18 +117,18 @@ Given S3 (CORS admits only Valve origins), a readable `cors` response means both
 
 **Result.**
 
-| Surface | Rendering | IDs on capsules | Capsule element | Notes |
-|---|---|---|---|---|
-| App page `/app/<id>/` | Classic server HTML with React islands (`[data-featuretarget]`) | `data-ds-appid` on DLC rows | `a.game_area_dlc_row` | Banner anchor: `.game_description_column` starts with `#game_area_purchase` on released, coming-soon and demo pages. The right column shows a `.DRM_notice` "Connects to 3rd-Party Service for AI Content Generation" when `ai_generation_service` is set (5072580) |
-| Search `/search/` | Classic | `data-ds-appid` (single IDs only) | `a.search_result_row` in `#search_resultsRows` | Infinite scroll appends the next 50 rows to the same container |
-| Home `/` | Classic, plus React rows | `data-ds-appid`; comma lists only next to `data-ds-packageid` or `data-ds-bundleid` | `a.store_main_capsule` (CSS background image, no `img`), `a.sale_capsule`, `a.tab_row_item` | The React rows (`discounts-and-events`, `discovery-queue-home`, `personal-calendar-home`) stayed empty in the automated session, logged in or out, so they go to the manual checklist. Logged in, owned and wishlisted capsules get `ds_flagged` |
-| Tag hub `/tags/en/<tag>/` | React `sale-display`, hashed class names | Links only | `div.Panel` grid capsule; large `LibraryAssetExpandedDisplay` carousel capsule | Stable semantic classes next to the hashed ones: `CapsuleImageCtn`, `CapsuleDecorators`, `SaleSectionContainer`, `HeroCapsuleImageContainer` |
-| Category hub `/category/<name>/` and `/specials` | Same React `sale-display` template as the tag hub | Links only | Same as the tag hub | Covered by the tag hub fixture |
-| Developer `/developer/<name>` | React creator home | Links only | `StoreSaleWidgetOuterContainer` | Publisher pages use the creator home template too (not visited) |
-| Wishlist `/wishlist/` | React, virtualized | Links only; the drag row ID is `WishlistItem-<appid>-0` | `div.Panel[data-index]` | Redirects to `/wishlist/id/<vanity>/`. An inner scroll container holds an absolutely positioned list moved with `translateY`; with 602 items only 16 to 28 rows are mounted. Rows scrolled out are unmounted and new elements are mounted (no element was reused for another app) |
-| Discovery queue `/explore/` | Classic | Link only | `.discovery_queue_static` preview | The queue overlay was not opened, because stepping through it changes the account's queue |
-| Search suggestions | React, inside the header root `[data-featuretarget="store-menu-v7"]` | Links only | `a` with an `img` per result | Results come from `api.steampowered.com/IStoreQueryService/SearchSuggestions` |
-| Old `steamcommunity.com/profiles/<id>/wishlist/` | Redirect | n/a | n/a | Redirects to `store.steampowered.com/wishlist/id/<vanity>/`; no community match needed |
+| Surface                                          | Rendering                                                            | IDs on capsules                                                                     | Capsule element                                                                             | Notes                                                                                                                                                                                                                                                                             |
+| ------------------------------------------------ | -------------------------------------------------------------------- | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| App page `/app/<id>/`                            | Classic server HTML with React islands (`[data-featuretarget]`)      | `data-ds-appid` on DLC rows                                                         | `a.game_area_dlc_row`                                                                       | Banner anchor: `.game_description_column` starts with `#game_area_purchase` on released, coming-soon and demo pages. The right column shows a `.DRM_notice` "Connects to 3rd-Party Service for AI Content Generation" when `ai_generation_service` is set (5072580)               |
+| Search `/search/`                                | Classic                                                              | `data-ds-appid` (single IDs only)                                                   | `a.search_result_row` in `#search_resultsRows`                                              | Infinite scroll appends the next 50 rows to the same container                                                                                                                                                                                                                    |
+| Home `/`                                         | Classic, plus React rows                                             | `data-ds-appid`; comma lists only next to `data-ds-packageid` or `data-ds-bundleid` | `a.store_main_capsule` (CSS background image, no `img`), `a.sale_capsule`, `a.tab_row_item` | The React rows (`discounts-and-events`, `discovery-queue-home`, `personal-calendar-home`) stayed empty in the automated session, logged in or out, so they go to the manual checklist. Logged in, owned and wishlisted capsules get `ds_flagged`                                  |
+| Tag hub `/tags/en/<tag>/`                        | React `sale-display`, hashed class names                             | Links only                                                                          | `div.Panel` grid capsule; large `LibraryAssetExpandedDisplay` carousel capsule              | Stable semantic classes next to the hashed ones: `CapsuleImageCtn`, `CapsuleDecorators`, `SaleSectionContainer`, `HeroCapsuleImageContainer`                                                                                                                                      |
+| Category hub `/category/<name>/` and `/specials` | Same React `sale-display` template as the tag hub                    | Links only                                                                          | Same as the tag hub                                                                         | Covered by the tag hub fixture                                                                                                                                                                                                                                                    |
+| Developer `/developer/<name>`                    | React creator home                                                   | Links only                                                                          | `StoreSaleWidgetOuterContainer`                                                             | Publisher pages use the creator home template too (not visited)                                                                                                                                                                                                                   |
+| Wishlist `/wishlist/`                            | React, virtualized                                                   | Links only; the drag row ID is `WishlistItem-<appid>-0`                             | `div.Panel[data-index]`                                                                     | Redirects to `/wishlist/id/<vanity>/`. An inner scroll container holds an absolutely positioned list moved with `translateY`; with 602 items only 16 to 28 rows are mounted. Rows scrolled out are unmounted and new elements are mounted (no element was reused for another app) |
+| Discovery queue `/explore/`                      | Classic                                                              | Link only                                                                           | `.discovery_queue_static` preview                                                           | The queue overlay was not opened, because stepping through it changes the account's queue                                                                                                                                                                                         |
+| Search suggestions                               | React, inside the header root `[data-featuretarget="store-menu-v7"]` | Links only                                                                          | `a` with an `img` per result                                                                | Results come from `api.steampowered.com/IStoreQueryService/SearchSuggestions`                                                                                                                                                                                                     |
+| Old `steamcommunity.com/profiles/<id>/wishlist/` | Redirect                                                             | n/a                                                                                 | n/a                                                                                         | Redirects to `store.steampowered.com/wishlist/id/<vanity>/`; no community match needed                                                                                                                                                                                            |
 
 - **App link shapes.** `/app/<id>/<slug>/?snr=...` (classic), `/app/<id>/<slug>?snr=...` (React, no trailing slash), `/app/<id>?snr=...` (no slug) and `/app/<id>/?snr=...#app_reviews_hash` (review score links). Every one was absolute on `https://store.steampowered.com`.
 - **`<html lang>`** follows the Steam language: `english` en, `german` de, `french` fr, `spanish` es, `latam` es-419, `portuguese` pt, `brazilian` pt-br, `schinese` zh-cn, `tchinese` zh-tw, `japanese` ja, `koreana` ko, `russian` ru, `ukrainian` uk, `polish` pl, `turkish` tr, `thai` th, `vietnamese` vi, `indonesian` id, `arabic` ar, `czech` cs, `danish` da, `dutch` nl, `finnish` fi, `greek` el, `hungarian` hu, `italian` it, `norwegian` no, `romanian` ro, `swedish` sv, `bulgarian` bg.
@@ -132,6 +136,7 @@ Given S3 (CORS admits only Valve origins), a readable `cors` response means both
 - **Logged-in data on the page.** `#application_config[data-userinfo]` holds the Steam ID and account name. The fixture sanitizer removes that element; product code must never read it.
 
 **Host finding.** Three rules were compared on the tag hub (56 app links, 27 apps):
+
 - The plan's rule, "highest ancestor up to 8 levels whose links all name one app", gave the right capsule in most cases but climbed into a 1326 x 663 px `SaleSectionTabListContainer` when a tab section showed a single app.
 - "Lowest ancestor that contains an image" never overshot, but on carousel capsules the image link and the title block are siblings, so it produced two hosts for one capsule.
 - "Lowest image-bearing ancestor, then climb at most 3 more levels while the links still name one app, then drop hosts nested in another host of the same app" gave one host per capsule and no section-sized host. It returned the same host counts as the plan's rule (43 hosts for 27 apps; repeats are carousel clones and apps listed in several sections).
@@ -148,15 +153,15 @@ Fixtures: `surfaces/search/rows.html`, `surfaces/home/capsules.html`, `surfaces/
 
 **Result.**
 
-| Check | Chrome 155, Tampermonkey 5.5.1 | Firefox Nightly 160, Tampermonkey 5.5.0 |
-|---|---|---|
-| Plain `fetch` to GetItems, no `@connect` | 200, 2 items | 200, 2 items |
-| `GM.setValue` / `getValue` / `listValues` / `deleteValue` | all pass; objects stored as objects | same |
-| `GM_addStyle` | applies | applies |
-| Plain `<style>` element | applies | applies |
-| `GM_addValueChangeListener` | fires locally with `remote = false` | same |
-| `GM.registerMenuCommand` | the menu entry runs its callback | same |
-| Context | `sandboxMode: "raw"` (page context) | `sandboxMode: "raw"` |
+| Check                                                     | Chrome 155, Tampermonkey 5.5.1      | Firefox Nightly 160, Tampermonkey 5.5.0 |
+| --------------------------------------------------------- | ----------------------------------- | --------------------------------------- |
+| Plain `fetch` to GetItems, no `@connect`                  | 200, 2 items                        | 200, 2 items                            |
+| `GM.setValue` / `getValue` / `listValues` / `deleteValue` | all pass; objects stored as objects | same                                    |
+| `GM_addStyle`                                             | applies                             | applies                                 |
+| Plain `<style>` element                                   | applies                             | applies                                 |
+| `GM_addValueChangeListener`                               | fires locally with `remote = false` | same                                    |
+| `GM.registerMenuCommand`                                  | the menu entry runs its callback    | same                                    |
+| Context                                                   | `sandboxMode: "raw"` (page context) | `sandboxMode: "raw"`                    |
 
 Violentmonkey was not tested. Its `@inject-into` fallback therefore stays unverified; Steam's CSP allows inline scripts (`script-src 'unsafe-inline'`, S5), so Violentmonkey's default page injection should not need the fallback.
 
@@ -167,6 +172,7 @@ Violentmonkey was not tested. Its `@inject-into` fallback therefore stays unveri
 **Method.** From a store page: `fetch("/app/<id>/?l=english", {credentials: "omit"})` for 413150, 5072580, 1808500, 1938090, 339800, 99999999, 50300 and 4618750, plus six more apps with mature descriptors (271590, 1174180, 782330, 1091500, 1245620, 2050650) to look for an age check. Language stickiness: a top-level visit to `/app/1808500/?l=german`, then a visit without `l`. Block order: every app with both blocks among those sampled.
 
 **Result.**
+
 - **Full page.** 413150 returned 200, no redirect, 136 KB, `lang="en"`, `#appHubAppName` present, in about 1.4 s. Pages ran from 104 KB to 351 KB. One HTML fetch costs about as much as a 50-item GetItems call.
 - **Language.** The top-level `?l=german` visit rendered German (`lang="de"`); the next visit without `l` was English again, and no language cookie was readable. A `credentials: "omit"` fetch neither sends nor stores cookies, so it cannot change the store language, logged in or not.
 - **Redirects.** 339800 (adult only) ended at `/login/?redir=...%2Fagecheck%2Fapp%2F339800%2F%3Fl%3Denglish` with a 200 "Sign In" page. 99999999 ended at `/` (the 960 KB home page). `Response.redirected` was true for both. Delisted 50300 served a normal page with `#appHubAppName` and no block.
@@ -191,7 +197,7 @@ The main session decides; each item names the plan section it touches.
 5. **Step 10, display language (decided by the user on 2026-10-20):** S2 showed that notes are localized when the developer translated them, but that the set of disclosing apps does not change. Of the two options:
    - As planned: detect in English; on the app page, one extra GetItems call in the store language for the banner.
    - Query every batch in the page's language (`<html lang>` mapped back to the Steam name): no extra banner call, and badge tooltips are localized too. The cache record stores the language; the banner re-fetches only that one app if the cached language differs.
-   The user chose the second: GetItems runs in the page's language. Step 10's "detection always uses English" line and the matching review decision ("detection stays on English") change accordingly; the HTML fallback still fetches `?l=english`, because it matches the English heading.
+     The user chose the second: GetItems runs in the page's language. Step 10's "detection always uses English" line and the matching review decision ("detection stays on English") change accordingly; the HTML fallback still fetches `?l=english`, because it matches the English heading.
 6. **Step 8, locale mapping:** use the `<html lang>` table in S5 for `auto`.
 7. **Risks:** add "the adult-only app page redirects to sign-in cookie-less, but GetItems answers for it", so the old risk "adult-only apps may stay unknown" no longer holds for the API path. Mark "Firefox content-script fetch may fail CORS" as resolved (S4), and "`Retry-After` is probably unreadable" as confirmed in practice (S1: error answers carry no CORS headers).
 8. **Step 3, ADR 0003:** S3 and S4 pick the content-script-only runtime; the relay branch in step 3 ("If S3 or S4 showed ...") can be dropped. Invariant 3 stands as written.

@@ -3,6 +3,7 @@
 Researched 2026-10-20. All web fetches were summarised by a small model; where a page could not be fetched (403, truncated) the claim is tagged `search-summary` or `unverified`. No ian cheng analysis of Steam AI disclosure was found; the Totally Human analyses are by Ichiro Lambe (see sources).
 
 ## Answer in short
+
 - The disclosure is a self-reported, unaudited floor: it is a lower bound on AI in shipped content, and Valve's January 2026 rewrite deliberately exempts AI dev tools ("efficiency gains"), so the signal can never mean "this game used no AI".
 - Scale: about 1,000 disclosing games (Apr 2024), 7,818 (Jul 2025, ~7%), 10,258 (Nov 2025, ~8%), more than 15,000 games and software on SteamDB (Feb 2026), ~9,400 flagged in a 53,597-release census (Jul 2026); share of new releases 10.9% (2024), 19.9% (2025), 30.8% (2026 to date).
 - Concrete gaps exist and are named: The Alters (no disclosure), Crimson Desert (disclosure added after launch), Black Ops 6 (disclosure about a year after launch), retroactive flags (22% of significant-revenue AI games, per one census), vague wording; no case was found of Valve delisting an existing game for non-disclosure.
@@ -12,6 +13,7 @@ Researched 2026-10-20. All web fetches were summarised by a small model; where a
 ## Findings
 
 ### 1. How many Steam games disclose AI, and the trend 2024 to 2026
+
 Timeline of counts (each row is a different scope and method, so rows are not strictly comparable):
 
 - 2024-01-10: Valve adds an AI disclosure section to the Steamworks Content Survey, split into pre-generated and live-generated, and says it will show much of it on Steam pages (source: https://www.videogameschronicle.com/news/steam-pages-will-now-disclose-which-games-use-ai-generated-content/).
@@ -32,6 +34,7 @@ Valve statements: Valve publishes no count. What it has said is in the Steamwork
 ### 2. Known gaps, with named examples
 
 Structural gaps in the rules
+
 - January 2026 rewrite (reported 2026-01-16 to 2026-01-20): the form now covers AI content "consumed by players" (art, audio, localization, narrative, marketing, store page, community assets); AI-powered dev tools such as code helpers need no disclosure; examples given are using chatgpt to check code or an image generator to brainstorm concept art if output does not reach players (sources: https://80.lv/articles/steam-has-clarified-its-rules-on-the-use-of-ai-in-video-games, https://www.videogameschronicle.com/news/valve-has-significantly-rewritten-steams-rules-for-how-developers-much-disclose-ai-use, https://gamedeveloper.com/business/valve-tweaks-and-clarifies-ai-disclosure-rules-for-steam). 80.lv calls the change possibly "largely cosmetic" because Valve likely never enforced dev-only disclosure (source: https://80.lv/articles/steam-has-clarified-its-rules-on-the-use-of-ai-in-video-games). Gamingbible's author objects that concept art stages go undisclosed (source: https://www.gamingbible.com/news/platform/steam/steam-ai-changes-disclosure-rules-203740-20260120).
 - Free-form text, no official tag, so shoppers cannot search or filter; it is "not clear what happens" when a developer fails to disclose (source: https://stuff.co.za/2026/02/12/are-video-game-developers-using-ai-players-want-to-know-but-the-rules-are-patchy/). The Steamworks page I fetched has no AI-specific enforcement or removal language, and says survey answers changed after approval require contacting Steam support (source: https://partner.steamgames.com/doc/gettingstarted/contentsurvey).
 - The in-game overlay report that Valve announced in 2024 is for live-generated content that guardrails should have caught, not for reporting undisclosed AI (sources: https://www.videogameschronicle.com/news/steam-pages-will-now-disclose-which-games-use-ai-generated-content/, https://dashfight.com/news/steam-adds-an-option-to-report-ai-content-4901).
@@ -39,12 +42,14 @@ Structural gaps in the rules
 - A claim that Valve changed the survey wording silently in may to June 2026 (artland3d, citing Wayback snapshots of 2026-05-13 and 2026-06-17) conflicts with contemporaneous coverage dating the "efficiency gains" wording to 2026-01-16 and later; treat it as unreliable (source: https://artland3d.com/steam-ai-disclosure-rules/, versus the three January sources above).
 
 Named examples: AI used, not disclosed (at the time)
+
 - The Alters (11 bit studios): launched 2025-06-13; players found chatgpt-style text in an in-game logbook and AI-looking brazilian portuguese localization; 80.lv on 2025-06-30 said the Steam page had no AI disclaimer, which it called a violation of Steam's rules (source: https://80.lv/articles/the-alters-developer-gets-criticized-for-not-disclosing-ai-use). The studio's 2025-06-30 statement said AI assets were temporary placeholders, one shipped by accident, AI was used for last-minute translation of licensed movie subtitles (~0.3% of text), and it apologised for not telling players; it did not commit to a Steam disclosure (source: https://gameinformer.com/2025/06/30/11bit-studios-responds-to-the-alters-generative-ai-controversy). A June 2026 opinion piece says no disclosure has appeared on the page (source: https://indiecator.org/2026/06/16/steam-next-fest-has-an-ai-problem-and-players-cant-filter-it-out/; single source, unverified).
 - Crimson Desert (pearl abyss): players spotted AI-looking 2d props about a day after launch; pearl abyss admitted on 2026-03-22 that placeholder assets made with "experimental AI generative tools" were "unintentionally included in the final release" and promised an audit; the Steam page "now" carries a disclosure, i.e. it was added after launch (source: https://engadget.com/gaming/crimson-desert-developer-apologizes-and-promises-to-replace-ai-generated-art-183716439.html). Players asked for refunds citing the late disclosure; Valve refused (ixbt, 2026-03-24, no Valve statement quoted) (source: https://ixbt.games/en/news/2026/03/24/valve-otkazalas-vozvrashhat-dengi-za-crimson-desert-igroki-nedovolny-naliciem-ii-assetov-v-igre.html). A search summary of a Notebookcheck article (403 on fetch) says the stated reason was the two-hour playtime limit: unverified (https://www.notebookcheck.net/Crimson-Desert-player-denied-Steam-refund-for-post-release-date-generative-AI-disclosure.1257901.0.html).
 - Call of Duty: Black Ops 6 (activision): launched October 2024; Steam page gained a disclosure reported 2025-02-25 reading "Our team uses generative AI tools to help develop some in-game assets", without saying which (source: https://decrypt.co/307729/call-of-duty-black-ops-6-generative-ai). This is both a late disclosure and a vague one.
 - Clair obscur: expedition 33 (sandfall): the indie game awards rescinded two awards in December 2025 after sandfall confirmed genai use, which it described as placeholder textures removed within days (sources: https://www.videogameschronicle.com/news/clair-obscur-expedition-33-game-of-the-year-award-pulled-after-admitting-to-generative-ai-use, headline only; https://stevivor.com/news/clair-obscur-loses-two-indie-game-awards-due-to-ai-usage/, search summary). When fetched on 2026-10-20 the Steam store page showed no AI disclosure section (source: https://store.steampowered.com/app/1903340/Clair_Obscur_Expedition_33/; single fetch via summariser). Note this is arguably compliant under the Jan 2026 rules because the textures did not ship. An indiecator claim that the game launched with a disclosure that was removed days later is single-source: unverified.
 
 Named examples: retroactive and late disclosures, removals
+
 - Haro's Wayback analysis: ~1% of pre-2024 games carry the flag and all of it is retroactive; 22% of significant-revenue AI games added the flag after release (example Crime Scene Cleaner, +20 months); these additions "cluster tightly" around Valve's January 2026 rewrite, which Haro reads as the signature of a compliance sweep (his inference, not a Valve statement); part of the 2026 rise is relabeling of older games (source: https://fragwyz.substack.com/p/three-years-of-ai-on-steam). The 22% is for significant-revenue games only, no full-census figure is given.
 - An anecdote on the Steam forums: a user reported a game for non-disclosure and the developer added the disclosure retroactively; no game named (source: https://steamcommunity.com/discussions/forum/0/565912032657840371/).
 - Totally Human notes some disclosures belong to old games updated later; example stellaris, which predates the transformer paper (source: https://totallyhuman.io/blog/games-with-ai-disclosures-have-grossed-an-estimated-660m-on-steam).
@@ -52,16 +57,19 @@ Named examples: retroactive and late disclosures, removals
 - Messaging drift: a search summary of eurogamer's Next Fest piece describes a developer whose wording moved from "AI created background assets" to "only used as reference"; original eurogamer text not retrieved: unverified.
 
 Vague or minimizing wording
+
 - Haro's text analysis (138 successful and 400 flopped AI-flagged games): flops have shorter disclosures (median 13 words vs 22; 35% are one line of 10 words or fewer vs 13%); successful games use more minimizing language (59% vs 41%) and human-oversight reassurance (21% vs 12%), e.g. "reviewed and manually refined", "We do NOT use AI-generated art", and hedges like "Generative AI may have been used" (source: https://fragwyz.substack.com/p/three-years-of-ai-on-steam).
 - Totally Human: among $1m+ earners most disclosures describe light, peripheral use with notes such as "no gameplay impact" and "under 1% of content" (source: https://totallyhuman.io/blog/games-with-ai-disclosures-have-grossed-an-estimated-660m-on-steam).
 - GamingOnLinux (2025-10-21): wording ranges from specific to a vague "we may use it for background stuff" (source: https://www.gamingonlinux.com/2025/10/want-to-avoid-ai-gen-on-steam-this-browser-userscript-might-save-your-day/).
 
 Valve forcing a disclosure or delisting
+
 - No report was found of Valve delisting a game already on sale for undisclosed AI, and the conversation piece says Valve could pull titles hit by AI copyright claims but does not say it has (source: https://stuff.co.za/2026/02/12/are-video-game-developers-using-ai-players-want-to-know-but-the-rules-are-patchy/).
 - Before the disclosure regime, in 2023, Valve rejected submissions containing AI assets over unclear training-data rights; this is pre-2024 history and seen only through search summaries of techcrunch and nme (https://techcrunch.com/2023/07/03/valve-responds-to-claims-it-has-banned-ai-generated-games-from-steam/): `search-summary`.
 - A 2026 claim that Valve now blocks releases that skip AI metadata tagging came from one weak source (tech-insider.org) and has no corroboration: unverified.
 
 ### 3. The public debate and the state as of 2026-10-20
+
 - Tim Sweeney, on x (reported by GamingOnLinux 2025-11-27), replying to an unnamed user who wanted Steam to drop "made with AI": "It makes no sense for game stores, where AI will be involved in nearly all future production"; he said the tag is relevant to art exhibits and licensing marketplaces; no Valve response in that article (source: https://www.gamingonlinux.com/2025/11/according-to-epic-ceo-tim-sweeney-game-stores-dont-need-an-ai-label-as-it-will-be-everywhere/). Techloy repeated it on 2025-12-02, adding nexon ceo junghun lee saying it is "important to assume that every game company is using AI" (source: https://www.techloy.com/epic-ceo-tim-sweeney-says-steam-should-ditch-its-made-with-ai-labels/). The "shampoo brand" jab appears only in a search summary: unverified.
 - Sweeney in a PC Gamer interview, relayed by VGC on 2026-06-25: "I think it's really irresponsible of Valve", the disclosure is an AI "Scarlet Letter", a "hater community" tries to kill games; no Valve response included; interview date not stated (source: https://videogameschronicle.com/news/epic-games-ceo-says-its-really-irresponsible-of-steam-to-make-studios-disclose-ai-use).
 - Player side: players keep asking for a native filter; as of the June 2026 Next Fest coverage Steam offers none, and SteamDB's tag is the workaround (sources: https://indiecator.org/2026/06/16/steam-next-fest-has-an-ai-problem-and-players-cant-filter-it-out/, https://www.gamingonlinux.com/2025/02/steamdb-now-lets-you-filter-out-steam-games-with-ai-generation/). A resetera commenter predicts a filter would lead to "no dev disclosing AI use" (speculation) (source: https://www.resetera.com/threads/steam-next-fest-has-over-8-600-demos-and-almost-1700-of-them-have-ai-disclosures.1551832/).
@@ -72,6 +80,7 @@ Valve forcing a disclosure or delisting
 ### 4. Implications for the extension
 
 Expected false negatives (game uses AI, signal absent)
+
 - AI in dev tools and unshipped placeholder art is exempt by rule (sources in section 2).
 - AI shipped but not disclosed, then fixed only after exposure: The Alters, Crimson Desert, Black Ops 6 (about a year late). A point-in-time scrape misses the window before the fix.
 - Strategic omission: no incentive to disclose and a stigma ("Scarlet Letter") (Sweeney source in section 3; resetera #19 "only the ppl that are willing to disclose, in an environment with no incentive to disclose" is commenter opinion).
@@ -79,6 +88,7 @@ Expected false negatives (game uses AI, signal absent)
 - Every count above is a floor (VGC, Totally Human, techraptor all say so).
 
 Expected false positives (flag shown, "uses AI" is misleading)
+
 - Minor or peripheral use, since the flag is binary and covers anything from one asset to live generation (source: https://fragwyz.substack.com/p/three-years-of-ai-on-steam).
 - Marketing-only or store-page-only AI: the form covers marketing, so the flag can mean no in-game AI (source: https://80.lv/articles/steam-has-clarified-its-rules-on-the-use-of-ai-in-video-games).
 - Negated or reassuring text in the disclosure ("We do NOT use AI-generated art"), so a keyword match on "AI" in the text is not safe; key off the section's presence, then show the text (Haro quotes above).
@@ -87,6 +97,7 @@ Expected false positives (flag shown, "uses AI" is misleading)
 - SteamDB tag mismatches reported by a reader comment (some undeclared games tagged, some declared games not excluded) are unverified (https://www.gamingonlinux.com/2025/02/steamdb-now-lets-you-filter-out-steam-games-with-ai-generation/).
 
 Complementary signals
+
 - User reviews that mention AI: usable as a secondary hint; the arXiv study shows AI talk is common and negative, but wrongful accusations and "witch hunts" exist, so use it as a weak "community suspects" cue, not a label (sources: https://arxiv.org/abs/2608.11539, https://stuff.co.za/2026/02/12/are-video-game-developers-using-ai-players-want-to-know-but-the-rules-are-patchy/).
 - SteamDB "AI Content Disclosed" tag: a convenience mirror of the same store-page disclosure, not an independent signal (https://www.gamingonlinux.com/2025/02/steamdb-now-lets-you-filter-out-steam-games-with-ai-generation/). Historical snapshots (Wayback, as Haro used) could detect late and removed disclosures.
 - Curator lists and Steam community user tags for AI: not researched or not found in this pass; I could not confirm that such lists or tags exist or are maintained: gap.
@@ -94,6 +105,7 @@ Complementary signals
 - Design consequences: wording should be "discloses AI use" (never "uses" or "AI-free"); show the developer's own text; absence of a disclosure should render as neutral, not as clean; consider a severity hint (in-game art vs marketing vs live-generated) from the pre/live structure.
 
 ## Caveats and version notes
+
 - Policy versions: Jan 2024 original form; Jan 2026 rewrite (form reported on 2026-01-16 by game developer, 2026-01-17 by VGC, 2026-01-19 by 80.lv); the 2024 form asked about AI more broadly (gamingbible). Counts before and after the rewrite measure slightly different things.
 - Sources differ on denominators (all releases, games only, games and software, event lists) and on snapshot dates; do not chart them as one series.
 - The Steam store API `appdetails` response for app 1903340 and for the sample app 5072580 showed no dedicated AI-disclosure field in a single summariser read (the sample's short description and pc requirements mention AI narration, but not the disclosure section); the disclosure appears to live in the store page HTML. This is one read through a summariser: unverified, check directly before relying on it. The sample page (https://store.steampowered.com/app/5072580/Courage_and_Faith_Into_the_Dark_Woods/) was read as opening "Generative AI is used in both pre-generated and live-generated content." with no release date announced; developer local fire games.
@@ -102,6 +114,7 @@ Complementary signals
 - Sub-questions not fully answered: no Valve statement on counts or on Sweeney; no confirmed Valve delisting for non-disclosure; no verified curator lists or user-tag signals; no first-hand check of the Steamworks page history for post-january-2026 edits.
 
 ## Sources
+
 - https://partner.steamgames.com/doc/gettingstarted/contentsurvey: Valve Steamworks Content Survey docs, AI content section; used for Valve's exact scope, guardrails and lack of AI-specific enforcement text.
 - https://www.videogameschronicle.com/news/steam-pages-will-now-disclose-which-games-use-ai-generated-content/: VGC, 2024-01-10, Valve's original disclosure policy and overlay reporting.
 - https://dashfight.com/news/steam-adds-an-option-to-report-ai-content-4901: 2024-01-11, scope of the overlay report option.
