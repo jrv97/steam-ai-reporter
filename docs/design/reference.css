@@ -1,0 +1,650 @@
+/*
+ * SFS reference component CSS (v1)
+ *
+ * Reference implementation of docs/design/components.mdx, rendered by
+ * docs/design/specimen.html. Step 10 can lift these rules into src/core/ui/styles.css as they
+ * are. Only tokens from tokens.css are used.
+ *
+ * Light-DOM components (badges, list filter) start from a reset, because store CSS styles bare
+ * span, a, button and h2 in places. The banner lives in a shadow root in the real build (see
+ * components.mdx), so its rules work both inside a shadow root and in the light DOM.
+ *
+ * State lives in data-sfs-* attributes, never in inline styles. Settings are attributes on the
+ * root element (data-sfs-filter, data-sfs-badges), so changing a setting is one attribute write,
+ * not one write per capsule.
+ *
+ * i18n: no copy lives here (no content: strings). Labels truncate or wrap, so translations
+ * about 40% longer than English fit. Directional spacing uses logical properties; the only
+ * physical value left is the switch thumb's translate, marked below.
+ */
+
+/* Shared */
+
+.sfs-badge,
+.sfs-badge *,
+.sfs-compact,
+.sfs-compact * {
+  all: unset;
+  box-sizing: border-box;
+}
+
+.sfs-vh {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  margin: -1px !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  clip: rect(0 0 0 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+/* Set by placements.ts on an image container that computed to position: static, after a
+   batched read. Replaces an inline style write. */
+[data-sfs-anchor] {
+  position: relative;
+}
+
+/* Badges turned off while the page is open: hide what exists without touching each node */
+[data-sfs-badges="off"] .sfs-badge,
+[data-sfs-badges="off"] .sfs-compact {
+  display: none !important;
+}
+
+/* Full badge */
+
+.sfs-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sfs-badge-gap);
+  block-size: var(--sfs-badge-height);
+  max-inline-size: var(--sfs-badge-max-inline-size);
+  min-inline-size: 0;
+  padding-inline: var(--sfs-badge-pad-inline);
+  border: 1px solid var(--sfs-badge-border);
+  border-radius: var(--sfs-badge-radius);
+  background: var(--sfs-badge-bg);
+  color: var(--sfs-badge-fg);
+  font: var(--sfs-badge-font);
+  letter-spacing: normal;
+  text-transform: none;
+  white-space: nowrap;
+  vertical-align: middle;
+  flex: none;
+  cursor: default;
+}
+
+.sfs-badge-glyph {
+  display: block;
+  inline-size: var(--sfs-badge-glyph);
+  block-size: var(--sfs-badge-glyph);
+  color: var(--sfs-badge-glyph-color);
+  fill: currentColor;
+  flex: none;
+}
+
+/* The label is the part that gives way to a long translation */
+.sfs-badge-label,
+.sfs-compact-label {
+  display: block;
+  min-inline-size: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Search rows: first item in the platform line, under the title */
+.search_platforms > .sfs-badge {
+  margin-inline-end: var(--sfs-space-2);
+  flex-shrink: 1;
+}
+
+/* Compact badge */
+
+.sfs-compact {
+  position: absolute;
+  inset-block-start: var(--sfs-compact-inset);
+  inset-inline-end: var(--sfs-compact-inset);
+  z-index: var(--sfs-z-badge);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sfs-compact-gap);
+  block-size: var(--sfs-compact-height);
+  max-inline-size: calc(100% - 2 * var(--sfs-compact-inset));
+  padding-inline: var(--sfs-compact-pad-inline);
+  border: 1px solid var(--sfs-compact-border);
+  border-radius: var(--sfs-compact-radius);
+  background: var(--sfs-compact-bg);
+  box-shadow: var(--sfs-compact-shadow);
+  color: var(--sfs-compact-fg);
+  font: var(--sfs-compact-font);
+  letter-spacing: normal;
+  text-transform: none;
+  white-space: nowrap;
+  pointer-events: none; /* Default: clicks fall through to whatever is under the art */
+}
+
+/* Placed inside the capsule link: hovering it is hovering the link, so the title tooltip can
+   show without stealing clicks or hover previews */
+.sfs-compact[data-sfs-in-link="true"] {
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.sfs-compact-glyph {
+  display: block;
+  inline-size: var(--sfs-compact-glyph);
+  block-size: var(--sfs-compact-glyph);
+  color: var(--sfs-compact-glyph-color);
+  fill: currentColor;
+  flex: none;
+}
+
+.sfs-compact[data-sfs-size="glyph"] {
+  inline-size: var(--sfs-compact-height);
+  padding: 0;
+  justify-content: center;
+}
+
+.sfs-compact[data-sfs-size="large"] {
+  inset-block-start: var(--sfs-compact-inset-lg);
+  inset-inline-end: var(--sfs-compact-inset-lg);
+  block-size: var(--sfs-compact-height-lg);
+  max-inline-size: calc(100% - 2 * var(--sfs-compact-inset-lg));
+  padding-inline: var(--sfs-compact-pad-inline-lg);
+  font: var(--sfs-compact-font-lg);
+}
+
+.sfs-compact[data-sfs-size="large"] .sfs-compact-glyph {
+  inline-size: var(--sfs-compact-glyph-lg);
+  block-size: var(--sfs-compact-glyph-lg);
+}
+
+/* List filter
+ *
+ * The mode is one attribute on the root element (data-sfs-filter="off|dim|hide"). Hosts carry
+ * data-sfs-state from the scanner and, where hiding would break a list,
+ * data-sfs-hideable="false". Allow-listed hosts carry data-sfs-state="allowed", so they never
+ * match. Opacity only, no filter, and no transition when the mode changes, so hundreds of
+ * capsules flip in one style pass.
+ */
+
+[data-sfs-filter="dim"] [data-sfs-state="disclosed"],
+[data-sfs-filter="hide"] [data-sfs-state="disclosed"][data-sfs-hideable="false"] {
+  opacity: var(--sfs-dim-opacity) !important;
+}
+
+/* The fade back runs only on the one hovered host; leaving it snaps back */
+[data-sfs-filter="dim"] [data-sfs-state="disclosed"]:is(:hover, :focus-within),
+[data-sfs-filter="hide"] [data-sfs-state="disclosed"][data-sfs-hideable="false"]:is(
+    :hover,
+    :focus-within
+  ) {
+  opacity: 1 !important;
+  transition: opacity var(--sfs-duration-fast) var(--sfs-ease);
+}
+
+[data-sfs-filter="hide"] [data-sfs-state="disclosed"]:not([data-sfs-hideable="false"]) {
+  display: none !important;
+}
+
+/* App page banner */
+
+.sfs-banner {
+  box-sizing: border-box;
+  display: block;
+  margin: 0 0 var(--sfs-banner-margin-bottom);
+  padding-block: var(--sfs-banner-pad-block);
+  padding-inline: var(--sfs-banner-pad-inline);
+  border-inline-start: var(--sfs-banner-rule-width) solid var(--sfs-banner-rule);
+  border-radius: var(--sfs-banner-radius);
+  background: var(--sfs-banner-bg);
+  box-shadow: var(--sfs-banner-shadow);
+  color: var(--sfs-color-text);
+  font: var(--sfs-banner-quote-font);
+  text-align: start;
+  overflow-wrap: break-word;
+}
+
+/* Title and action share a line in English. A longer translation wraps the title first, then
+   moves the action under it, aligned to inline-end. */
+.sfs-banner-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: var(--sfs-banner-gap);
+  row-gap: var(--sfs-space-1);
+  min-block-size: var(--sfs-control-height-sm);
+}
+
+.sfs-banner-glyph {
+  inline-size: 14px;
+  block-size: 14px;
+  color: var(--sfs-accent-300);
+  fill: currentColor;
+  flex: none;
+}
+
+.sfs-banner-title {
+  margin: 0;
+  padding: 0;
+  background: none;
+  color: var(--sfs-color-text-strong);
+  font: var(--sfs-banner-title-font);
+  letter-spacing: normal;
+  text-transform: none;
+  flex: 1 1 16em;
+  min-inline-size: 0;
+}
+
+.sfs-banner-head .sfs-banner-action {
+  margin-inline-start: auto;
+}
+
+.sfs-banner-source,
+.sfs-banner-service {
+  margin: var(--sfs-space-1) 0 0;
+  color: var(--sfs-color-text-muted);
+  font: var(--sfs-banner-meta-font);
+}
+
+.sfs-banner-service-name {
+  color: var(--sfs-color-text);
+}
+
+.sfs-banner-quote {
+  margin: var(--sfs-space-1) 0 0;
+  padding: 0;
+  color: var(--sfs-color-text);
+  font: var(--sfs-banner-quote-font);
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.sfs-banner-quote[data-sfs-collapsed="true"] {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: var(--sfs-banner-quote-lines);
+  line-clamp: var(--sfs-banner-quote-lines);
+  overflow: hidden;
+}
+
+.sfs-banner-action,
+.sfs-banner-toggle {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  min-block-size: var(--sfs-control-height-sm);
+  max-inline-size: 100%;
+  margin: 0;
+  padding-block: var(--sfs-space-1);
+  padding-inline: var(--sfs-space-2);
+  border: 0;
+  border-radius: var(--sfs-radius-sm);
+  background: transparent;
+  color: var(--sfs-banner-action-color);
+  font: var(--sfs-banner-meta-font);
+  text-align: start;
+  white-space: normal;
+  cursor: pointer;
+  flex: none;
+  transition: background-color var(--sfs-duration-fast) var(--sfs-ease);
+}
+
+.sfs-banner-toggle {
+  margin-inline-start: calc(-1 * var(--sfs-space-2));
+  margin-block-start: var(--sfs-space-0);
+}
+
+.sfs-banner-action:hover,
+.sfs-banner-toggle:hover {
+  background: var(--sfs-banner-action-bg-hover);
+  text-decoration: underline;
+}
+
+.sfs-banner-action:focus-visible,
+.sfs-banner-toggle:focus-visible {
+  outline: var(--sfs-focus-width) solid var(--sfs-focus-color);
+  outline-offset: var(--sfs-focus-offset);
+}
+
+.sfs-banner-error {
+  margin: var(--sfs-space-1) 0 0;
+  color: var(--sfs-color-error);
+  font: var(--sfs-banner-meta-font);
+}
+
+/* Allow-listed: one line in English. A longer translation wraps inside the text box and
+   inside the button, so the glyph never sits alone on a line. */
+.sfs-banner[data-sfs-variant="ignored"] {
+  display: flex;
+  align-items: center;
+  gap: var(--sfs-banner-gap);
+  padding-block: var(--sfs-space-1);
+  border-inline-start-color: var(--sfs-color-divider);
+  background: rgb(0 0 0 / 0.2);
+  box-shadow: none;
+  color: var(--sfs-color-text-muted);
+  font: var(--sfs-banner-meta-font);
+}
+
+.sfs-banner-ignored-text {
+  flex: 1 1 0;
+  min-inline-size: 0;
+}
+
+.sfs-banner[data-sfs-variant="ignored"] .sfs-banner-action {
+  flex: 0 1 auto;
+  max-inline-size: 50%;
+}
+
+.sfs-banner[data-sfs-variant="ignored"] .sfs-banner-glyph {
+  color: var(--sfs-color-text-subtle);
+}
+
+/* Forced colors */
+
+@media (forced-colors: active) {
+  .sfs-badge,
+  .sfs-compact {
+    border-color: CanvasText;
+    forced-color-adjust: none;
+    background: Canvas;
+    color: CanvasText;
+  }
+
+  .sfs-badge-glyph,
+  .sfs-compact-glyph {
+    color: CanvasText;
+  }
+
+  .sfs-banner {
+    border-inline-start-color: Highlight;
+  }
+}
+
+/* Options page and popup */
+
+.sfs-options {
+  box-sizing: border-box;
+  max-inline-size: var(--sfs-options-max-width);
+  margin-inline: auto;
+  padding-block: var(--sfs-space-5);
+  padding-inline: var(--sfs-space-4);
+  background: var(--sfs-color-bg-panel);
+  color: var(--sfs-color-text);
+  font: var(--sfs-weight-regular) var(--sfs-size-md) / var(--sfs-leading-md) var(--sfs-font-ext);
+  overflow-wrap: break-word;
+  color-scheme: dark;
+}
+
+.sfs-options *,
+.sfs-options *::before,
+.sfs-options *::after {
+  box-sizing: border-box;
+}
+
+.sfs-options[data-sfs-context="popup"] {
+  inline-size: var(--sfs-popup-width);
+  max-inline-size: none;
+  padding-block: var(--sfs-space-4);
+  padding-inline: var(--sfs-space-3);
+}
+
+.sfs-options-header {
+  display: flex;
+  align-items: center;
+  gap: var(--sfs-space-3);
+  margin-block-end: var(--sfs-space-4);
+}
+
+.sfs-options-header img {
+  inline-size: 32px;
+  block-size: 32px;
+  flex: none;
+}
+
+.sfs-options-title {
+  margin: 0;
+  color: var(--sfs-color-text-strong);
+  font: var(--sfs-weight-medium) var(--sfs-size-2xl) / var(--sfs-leading-2xl) var(--sfs-font-ext);
+}
+
+.sfs-options-version {
+  color: var(--sfs-color-text-subtle);
+  font-size: var(--sfs-size-sm);
+}
+
+.sfs-card {
+  margin: 0 0 var(--sfs-space-3);
+  padding: var(--sfs-card-pad);
+  border-radius: var(--sfs-card-radius);
+  background: var(--sfs-color-bg-raised);
+}
+
+.sfs-card-title {
+  margin: 0 0 var(--sfs-space-3);
+  color: var(--sfs-color-text-strong);
+  font: var(--sfs-weight-medium) var(--sfs-size-xl) / var(--sfs-leading-xl) var(--sfs-font-ext);
+}
+
+/* The label wraps in column 1; the switch keeps column 2 */
+.sfs-field {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: var(--sfs-space-4);
+  padding-block: var(--sfs-space-2);
+}
+
+.sfs-field + .sfs-field {
+  border-block-start: 1px solid var(--sfs-color-divider);
+}
+
+.sfs-field-label {
+  color: var(--sfs-color-text);
+}
+
+.sfs-field-help {
+  grid-column: 1 / -1;
+  margin-block-start: var(--sfs-space-1);
+  color: var(--sfs-color-text-subtle);
+  font-size: var(--sfs-size-sm);
+  line-height: var(--sfs-leading-sm);
+}
+
+/* Fields whose control needs the full row (segmented control, select) */
+.sfs-field[data-sfs-layout="stacked"] {
+  grid-template-columns: minmax(0, 1fr);
+  row-gap: var(--sfs-space-2);
+}
+
+.sfs-field-error {
+  grid-column: 1 / -1;
+  margin-block-start: var(--sfs-space-1);
+  color: var(--sfs-color-error);
+  font-size: var(--sfs-size-sm);
+  line-height: var(--sfs-leading-sm);
+}
+
+/* Switch: <input type="checkbox" role="switch" class="sfs-toggle"> */
+.sfs-toggle {
+  appearance: none;
+  position: relative;
+  inline-size: var(--sfs-toggle-width);
+  block-size: var(--sfs-toggle-height);
+  margin: 0;
+  border: 1px solid var(--sfs-toggle-track-off-border);
+  border-radius: var(--sfs-radius-pill);
+  background: var(--sfs-toggle-track-off);
+  cursor: pointer;
+  transition: background-color var(--sfs-duration-fast) var(--sfs-ease);
+}
+
+.sfs-toggle::after {
+  content: "";
+  position: absolute;
+  inset-block-start: 2px;
+  inset-inline-start: 2px;
+  inline-size: 14px;
+  block-size: 14px;
+  border-radius: 50%;
+  background: var(--sfs-toggle-thumb);
+  transition: transform var(--sfs-duration-fast) var(--sfs-ease);
+}
+
+.sfs-toggle:checked {
+  border-color: var(--sfs-toggle-track-on);
+  background: var(--sfs-toggle-track-on);
+}
+
+/* Physical translate: the one spot to flip if right-to-left lands */
+.sfs-toggle:checked::after {
+  transform: translateX(16px);
+}
+
+/* Segmented control: a fieldset of radios, full row, equal columns. Labels may wrap to two
+   lines in long translations. */
+.sfs-segment {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  margin: 0;
+  padding: var(--sfs-space-0);
+  border: 1px solid var(--sfs-color-border);
+  border-radius: var(--sfs-radius-md);
+  background: var(--sfs-segment-bg);
+}
+
+.sfs-segment input {
+  position: absolute;
+  opacity: 0;
+  inline-size: 1px;
+  block-size: 1px;
+}
+
+.sfs-segment label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-block-size: var(--sfs-control-height-sm);
+  padding-block: var(--sfs-space-1);
+  padding-inline: var(--sfs-space-2);
+  border: 1px solid transparent;
+  border-radius: var(--sfs-radius-sm);
+  color: var(--sfs-color-text);
+  text-align: center;
+  cursor: pointer;
+}
+
+.sfs-segment input:checked + label {
+  border-color: var(--sfs-segment-selected-border);
+  background: var(--sfs-segment-selected-bg);
+  color: var(--sfs-segment-selected-fg);
+}
+
+.sfs-select {
+  min-block-size: var(--sfs-control-height-sm);
+  max-inline-size: 100%;
+  padding-inline: var(--sfs-space-2);
+  border: 1px solid var(--sfs-color-border);
+  border-radius: var(--sfs-radius-sm);
+  background: var(--sfs-color-bg-sunken);
+  color: var(--sfs-color-text);
+  font: inherit;
+}
+
+.sfs-toggle:focus-visible,
+.sfs-segment input:focus-visible + label,
+.sfs-select:focus-visible,
+.sfs-button:focus-visible,
+.sfs-options a:focus-visible {
+  outline: var(--sfs-focus-width) solid var(--sfs-focus-color);
+  outline-offset: var(--sfs-focus-offset);
+}
+
+.sfs-button {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  min-block-size: var(--sfs-control-height-sm);
+  max-inline-size: 100%;
+  padding-block: var(--sfs-space-1);
+  padding-inline: var(--sfs-space-3);
+  border: 0;
+  border-radius: var(--sfs-radius-sm);
+  background: var(--sfs-button-secondary-bg);
+  color: var(--sfs-button-secondary-fg);
+  font: inherit;
+  text-align: center;
+  cursor: pointer;
+}
+
+.sfs-button:hover {
+  background: var(--sfs-button-secondary-bg-hover);
+}
+
+.sfs-options a {
+  color: var(--sfs-accent-300);
+}
+
+.sfs-allow-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sfs-options[data-sfs-context="popup"] .sfs-allow-list {
+  max-block-size: 240px;
+  overflow-y: auto;
+}
+
+/* Name and date shrink but keep at least 40% of the row; a long button label wraps inside
+   the rest */
+.sfs-allow-item {
+  display: grid;
+  grid-template-columns: minmax(40%, 1fr) auto;
+  align-items: center;
+  column-gap: var(--sfs-space-3);
+  padding-block: var(--sfs-space-2);
+}
+
+.sfs-allow-item + .sfs-allow-item {
+  border-block-start: 1px solid var(--sfs-color-divider);
+}
+
+.sfs-allow-name {
+  display: block;
+  overflow: hidden;
+  color: var(--sfs-color-text);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sfs-allow-meta {
+  display: block;
+  color: var(--sfs-color-text-subtle);
+  font-size: var(--sfs-size-sm);
+}
+
+.sfs-empty {
+  margin: 0;
+  color: var(--sfs-color-text-subtle);
+}
+
+.sfs-privacy {
+  margin: 0;
+  padding-inline-start: var(--sfs-space-4);
+}
+
+.sfs-privacy li + li {
+  margin-block-start: var(--sfs-space-1);
+}
+
+.sfs-options-footer {
+  margin-block-start: var(--sfs-space-4);
+  color: var(--sfs-color-text-subtle);
+  font-size: var(--sfs-size-sm);
+  line-height: var(--sfs-leading-sm);
+}

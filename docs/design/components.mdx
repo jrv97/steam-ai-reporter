@@ -1,0 +1,782 @@
+---
+title: SFS UI components (v1)
+status: draft
+updated: 2026-10-20
+---
+
+# SFS UI components (v1)
+
+Component specs for everything the extension and the userscript inject into store pages or own
+outright. Step 10 of `docs/plans/steam-ai-reporter-v1.md` builds from this file; step 4
+authors `src/locales/en/messages.json` from the message catalog at the end.
+
+**Files**
+
+- `docs/design/tokens.css`: every `--sfs-*` custom property. The only source of colors, sizes
+  and fonts.
+- `docs/design/reference.css`: reference rules for each component below, written against the
+  tokens only. Step 10 can lift them into `src/core/ui/styles.css` as they are.
+- `docs/design/specimen.html`: a local page that renders every component on the sampled store
+  backgrounds and on synthetic cover art, plus a stress section with copy 40% to 200% longer
+  than English. Open it from disk to review a change.
+- `assets/icons/`: the extension icon and the badge glyph (section 7).
+- `docs/design/decisions.mdx`: why each choice was made, and what is still open.
+
+## Principles
+
+1. **Label the disclosure, never judge it.** The developer's form covers anything from one
+   marketing image to live generated gameplay, and some notes say AI was barely used or not
+   used at all. Every message attributes the fact to the developer ("discloses", "named by the
+   developer", "in the developer's own words"). No red, no warning triangles, and never "uses
+   AI", "AI-free" or "no AI", in any locale.
+2. **Nothing for absence.** "Not disclosed" and "unknown" render nothing at all: no neutral
+   badge, no check mark. Only `data-sfs-state` on the host records them.
+3. **Quote verbatim.** The notes are data: set with `textContent` and `white-space: pre-line`,
+   never translated, trimmed only by the parser, never summarized or highlighted.
+4. **Blend in, but be ours.** Sizes, type and neutrals come from the store, so injected UI has
+   no seam. The violet accent and the spark glyph are ours, so nobody mistakes a badge for a
+   store feature, and no store hue (blue, green, tan, red) changes meaning.
+5. **Never block.** No modals, no overlays over content, no focus stealing, no layout shift
+   after the first paint of a component.
+6. **Copy lives in catalogs.** Components hold message keys, never text (plan invariant 9).
+   Every layout leaves room for translations about 40% longer than English.
+7. **Cheap at scale.** State is expressed through `data-sfs-*` attributes and CSS selectors,
+   never per-node inline styles (plan invariant 13). A settings change is one attribute write
+   on the root element, however many capsules the page holds.
+
+## What renders for each state
+
+| Verdict                           | Full badge | Compact badge | Banner        | List filter |
+| --------------------------------- | ---------- | ------------- | ------------- | ----------- |
+| Disclosed                         | Yes        | Yes           | Full banner   | Dim or hide |
+| Disclosed, game on the allow-list | Nothing    | Nothing       | One-line note | Nothing     |
+| Not disclosed                     | Nothing    | Nothing       | Nothing       | Nothing     |
+| Unknown (any reason)              | Nothing    | Nothing       | Nothing       | Nothing     |
+
+Settings gate each column: `badges` off removes both badges, `banner` off removes the banner and
+its one-line note, and `listFilter: "off"` leaves lists alone. The allow-list wins over every
+setting.
+
+## Shared rules
+
+**DOM ownership and state**
+
+- Every injected element carries a class starting with `sfs-`; every attribute we set on store
+  nodes starts with `data-sfs-`. The scanner skips both.
+- Hosts get `data-sfs-appid` and `data-sfs-state` (`disclosed`, `not-disclosed`, `unknown`,
+  `allowed`), plus `data-sfs-hideable="false"` where the placement says hiding would break the
+  list. These are written once, when the scanner marks the host.
+- Settings live as attributes on `document.documentElement`: `data-sfs-filter` (`off`, `dim`,
+  `hide`) and `data-sfs-badges` (`on`, `off`). The list filter and the live badge switch are
+  pure CSS on top of them (sections 1 and 4).
+- Never move, wrap or restyle store nodes. The one store-node change besides the attributes
+  above is `data-sfs-anchor` on an image container that computes to `position: static`, which
+  a CSS rule turns into `position: relative` (section 2).
+- DOM reads (image sizes, computed position) are batched before writes in one
+  `requestAnimationFrame` per scan.
+
+**Style isolation**
+
+- Light-DOM components (both badges) reset with `all: unset` on themselves and their children,
+  then set every property they need. Store CSS styles bare `span`, `a`, `h2` and `button` in
+  places, and `all` leaves custom properties alone, so tokens still reach them.
+- The banner renders into a shadow root on a host `div.sfs-banner-host`. Page CSS cannot reach
+  it, and its CSS cannot leak. Tokens inherit into it from `:root`, and the page's "Motiva
+  Sans" works inside it because `@font-face` is document-wide. Attach the stylesheet with
+  `adoptedStyleSheets`; if S5 or S6 shows the CSP blocks that, fall back to light DOM plus the
+  badge reset.
+- The userscript settings dialog uses the same shadow-root approach.
+
+**i18n**
+
+- Every visible string, `title`, `aria-label` and live-region message comes from
+  `t(key, params)`. CSS carries no copy (no `content:` strings), and `options.html` carries
+  `data-i18n` keys only.
+- Data is never translated and never goes through the catalog: the developer's notes, the named
+  AI service, game names and app IDs.
+- Dates use `Intl.DateTimeFormat(locale, { dateStyle: "medium" })`. Language names in the
+  language picker use `Intl.DisplayNames`, each in its own language, not catalog entries.
+- Sizing for longer translations, checked in `specimen.html` with copy 40% to 200% longer:
+  - Badges keep one line. The label truncates with an ellipsis (`.sfs-badge-label`,
+    `.sfs-compact-label`), and the full message stays in `title` and in the DOM text that
+    screen readers read.
+  - The banner, the one-line note, the options page, the popup and the userscript dialog wrap.
+    Nothing that holds copy gets a fixed height, and nothing outside badges and the allow-list
+    game name gets `white-space: nowrap`.
+  - Controls with copy have a minimum block size, not a fixed one, so two-line labels grow the
+    control.
+- Directional spacing uses logical properties: `padding-inline`, `margin-inline-end`,
+  `inset-inline-end`, `border-inline-start`, `text-align: start`. Tokens are named for logical
+  sides too (`--sfs-badge-pad-inline`, `--sfs-banner-pad-block`). The one physical value left is
+  the switch thumb's `translateX`, marked in `reference.css`. Right-to-left is out of scope for
+  v1.
+- No text in icons, the glyph or any image.
+
+**Glyph**
+
+- The spark from `assets/icons/glyph.svg`, inlined as an `svg` with `fill="currentColor"` and
+  `aria-hidden="true"`: 10 px in the full badge, 9 px in the compact badge (11 px large), 14 px
+  in the banner. Path `M5 0Q5.7 4.3 10 5Q5.7 5.7 5 10Q4.3 5.7 0 5Q4.3 4.3 5 0Z` on a
+  `0 0 10 10` view box.
+- The glyph never carries meaning alone, except in the glyph-only compact tier, which keeps a
+  visually hidden label (section 2).
+
+**Focus, motion, forced colors**
+
+- Focus: `outline: var(--sfs-focus-width) solid var(--sfs-focus-color)` with
+  `outline-offset: var(--sfs-focus-offset)`, on `:focus-visible` only. Badges are not
+  focusable; they ride inside the store's own link.
+- Motion: only color and opacity transitions, `--sfs-duration-fast` or `--sfs-duration-base`,
+  and never on many elements at once. `prefers-reduced-motion: reduce` sets both durations to
+  `0ms` in `tokens.css`.
+- Forced colors: badges switch to `Canvas` and `CanvasText` with a visible border; the banner
+  rule uses `Highlight`. See the `@media (forced-colors: active)` block in `reference.css`.
+
+## 1. Full badge
+
+The text badge for rows that have room for words: search results and wishlist rows.
+
+**Anatomy** (copy shown as catalog keys)
+
+```html
+<span class="sfs-badge" title="t('badge_tooltip', { label, notes })">
+  <svg class="sfs-badge-glyph" aria-hidden="true">...</svg>
+  <span class="sfs-badge-label">t('badge_full')</span>
+</span>
+```
+
+**Size and type**
+
+- Height `--sfs-badge-height` (20 px), `padding-inline` 6 px, gap 4 px, radius 2 px, 1 px
+  border.
+- 11 px "Motiva Sans", regular, 18 px line height: the same geometry as the store's own tag
+  chips, so the row keeps its rhythm.
+- Maximum inline size `--sfs-badge-max-inline-size` (180 px). "Discloses AI use" needs about
+  124 px, so the cap leaves 45% headroom; past it the label ends in an ellipsis.
+- Colors: `--sfs-badge-fg` text on `--sfs-badge-bg` (accent 400 at 22%) with
+  `--sfs-badge-border` (accent 400 at 55%).
+
+**States**
+
+- Default only. It does not react to hover itself; the row's own hover shows through the tint,
+  and the text still clears AA on the store's hover blue (5.94:1, see the contrast table).
+- Truncated: same look, ellipsis at the label's inline end, full text in `title`.
+- Inside a dimmed row it dims with the row (section 4).
+- Badges switched off while the page is open: `[data-sfs-badges="off"]` on the root hides every
+  badge in one style pass; nothing is removed node by node. New scans render no badges while
+  the setting is off.
+
+**Placement**
+
+- Search rows: first child of `.search_platforms`, the line under the title, with
+  `margin-inline-end: 8px` before the platform icons, and allowed to shrink in that flex line.
+  Not after the title: `.search_name` is `overflow: hidden; white-space: nowrap`, so a long
+  title would clip the badge. Measured on 2026-10-20, the platform line has a 278 px column
+  holding only a few 16 px icons.
+- Wishlist rows: directly after the title element, on the title's line, with
+  `margin-inline-start: 8px`. The wishlist is React and could not be sampled logged out (the
+  test wishlist was private); S5 confirms the exact anchor.
+- Any other row-shaped surface that S5 finds: after the title, never before it, so titles stay
+  aligned for scanning.
+- One full badge per host. A host with a full badge gets no compact badge.
+
+**Tooltip**
+
+- Native `title` from `badge_tooltip`: the full badge label, then the first 200 characters of
+  the notes (verbatim, with `...` appended if cut). Because the label is in the tooltip, a
+  truncated label never loses its message. No custom tooltip; the store's own hover popups
+  already compete for that space.
+
+**Accessibility**
+
+- The label is real text, so a screen reader reads all of it (truncation is visual only) as
+  part of the row link. The glyph is hidden.
+- No `role`, no `tabindex`.
+
+## 2. Compact badge
+
+The overlay for capsule images, from small row capsules up to the large header capsules.
+
+**Anatomy**
+
+```html
+<span
+  class="sfs-compact"
+  data-sfs-size="text"
+  data-sfs-in-link="true"
+  title="t('badge_tooltip', { label, notes })"
+>
+  <svg class="sfs-compact-glyph" aria-hidden="true">...</svg>
+  <span class="sfs-compact-label">t('badge_compact')</span>
+</span>
+```
+
+**Size tiers**
+
+`placements.ts` measures the capsule image box once, at placement time, in the batched read
+phase (`getBoundingClientRect` of the `img`, or of its container when the image is a
+background), and sets `data-sfs-size`. No container queries: `container-type` would change how
+store containers size themselves.
+
+| Tier    | Image box                   | Renders                      | Height | Type  | Inset |
+| ------- | --------------------------- | ---------------------------- | ------ | ----- | ----- |
+| None    | Under 64 px wide or 32 tall | Nothing on the image         |        |       |       |
+| `glyph` | 64 to 179 px wide           | Glyph, label visually hidden | 18 px  |       | 4 px  |
+| `text`  | 180 to 399 px wide          | Glyph and label              | 18 px  | 11 px | 4 px  |
+| `large` | 400 px wide, 150 px tall    | Glyph and label              | 22 px  | 12 px | 8 px  |
+
+Sizes seen on 2026-10-20: search capsules 186x70, home rows 231x87, 224x128, 261x149 and
+277x159, and tiny 30x40 thumbnails. The brief's range (184x69 up to 460x215) lands in `text`
+and `large`. In the "none" tier, a row-shaped host still gets the full badge if it has a title;
+a bare tiny thumbnail gets nothing.
+
+**Longer translations**
+
+- Maximum inline size is the image width minus both insets. "AI disclosed" takes about 93 px,
+  so on the smallest `text` capsule (180 px, 172 px usable) a label 85% longer still fits;
+  anything longer ends in an ellipsis.
+- Tiers depend on image size only, never on label length, so a translation cannot make a badge
+  jump tiers.
+
+**Legibility over cover art**
+
+- The surface is opaque (`--sfs-compact-bg`, accent 900), so text contrast is fixed at 12.65:1
+  whatever the art is.
+- The edge separates from any art in two ways: a 1 px accent 400 border (5.91:1 against black
+  art), and an outer ring plus soft shadow (`--sfs-compact-shadow`) for light art. Against white
+  art the dark surface itself is 16.6:1. Against violet art, the closest hue to ours, the dark
+  surface still stands at 3.67:1 where the border blends in.
+- Checked in `specimen.html` on light, dark, busy striped, mid grey, sky gradient and violet
+  art.
+
+**Placement**
+
+- Block-start, inline-end corner of the image container (top right in English):
+  `position: absolute; inset-block-start: inset; inset-inline-end: inset`. The store owns the
+  top-left (its 19 px "in library", "on wishlist", "ignored" and "in cart" flags sit at
+  `top: 5px; left: 0`, and the live-broadcast pill sits top-left on carousels) and the bottom
+  edge (price and discount blocks).
+- If the image container computes to `position: static`, set `data-sfs-anchor` on it; the CSS
+  rule `[data-sfs-anchor] { position: relative; }` does the rest. No inline style.
+- `z-index: var(--sfs-z-badge)` (3): over the art and the corner flags, under the store's hover
+  popups.
+- One compact badge per host. Carousel clones that copy our node are removed by the scanner
+  (plan step 9).
+
+**Pointer events and tooltip**
+
+- Inside the capsule's link (`badge.closest("a")` is the host link): `data-sfs-in-link="true"`,
+  `pointer-events: auto` and a `title` from `badge_tooltip`. Hovering or clicking the badge is
+  hovering or clicking the link, so navigation and the store's hover previews behave as before,
+  and a truncated label is readable in the tooltip.
+- Not inside a link (some React capsules lay a sibling link over the art): `pointer-events:
+  none` and no `title`, so the badge never swallows a click. The full label is still in the DOM
+  for screen readers.
+
+**Accessibility**
+
+- Inside a capsule link, the label joins the link name. The `glyph` tier keeps the label in an
+  `.sfs-vh` span, so the name still includes it.
+
+## 3. App page banner
+
+A non-blocking notice on the game's own page, in the spirit of the store's own third-party
+notices (which already include "Connects to 3rd-Party Service for AI Content Generation" in the
+right column). It is not a modal and never covers content.
+
+**Placement**
+
+- First child of the left column, `.game_description_column`, directly above
+  `#game_area_purchase`. That puts it above the buy box and below the media, where a buyer looks
+  before purchasing.
+- Full column width: about 616 to 643 px on desktop, down to about 360 px in the store's
+  responsive layout.
+- Inserted once per page view; re-inserted only if a store re-render removes it.
+
+**Anatomy (default)**
+
+```html
+<div class="sfs-banner-host">
+  #shadow-root
+  <aside class="sfs-banner" aria-labelledby="sfs-banner-title">
+    <div class="sfs-banner-head">
+      <svg class="sfs-banner-glyph" aria-hidden="true">...</svg>
+      <h2 class="sfs-banner-title" id="sfs-banner-title">t('banner_title')</h2>
+      <button class="sfs-banner-action" type="button">t('banner_ignore')</button>
+    </div>
+    <p class="sfs-banner-source">t('banner_source')</p>
+    <blockquote class="sfs-banner-quote" id="sfs-banner-notes" data-sfs-collapsed="true">
+      notes, verbatim
+    </blockquote>
+    <button
+      class="sfs-banner-toggle"
+      type="button"
+      aria-expanded="false"
+      aria-controls="sfs-banner-notes"
+    >
+      t('banner_expand')
+    </button>
+    <p class="sfs-banner-service">
+      t('banner_service_label') <span class="sfs-banner-service-name">service name</span>
+    </p>
+    <p class="sfs-banner-error" role="alert" hidden>t('error_allow_list_save')</p>
+    <div class="sfs-vh" aria-live="polite"></div>
+  </aside>
+</div>
+```
+
+**Visual**
+
+- Background `--sfs-banner-bg`: a 135 degree wash of accent 500 from 28% to 12% over the page,
+  the same gesture as the store's notice gradients but in our hue.
+- A 3 px accent 400 rule on the inline-start edge, 4 px radius, and the purchase box's own
+  shadow, so the banner sits in that stack as a sibling.
+- `padding-block` 12 px, `padding-inline` 16 px, an 8 px gap in the head, 16 px below the
+  banner.
+- Title 15/20 px, white. Source line and service line 12/16 px in `--sfs-color-text-muted`.
+  Quote 14/21 px in `--sfs-color-text`, the size the store uses for the disclosure section
+  itself. Actions 12/16 px in accent 200, as text buttons with a hover wash. Errors 12/16 px in
+  `--sfs-color-error`.
+
+**Longer translations**
+
+- The head is a wrapping flex row. The title takes the free space (`flex: 1 1 16em`) and wraps
+  first; when the title and the action no longer fit on one line, the action moves to its own
+  line, aligned to inline-end.
+- Action and toggle buttons have a 28 px minimum height and wrap their own text if a label is
+  longer than the column.
+- The one-line note keeps the glyph, text and "Undo" in one row. The text wraps inside its own
+  box and the button may wrap inside half the row, so the glyph never sits alone on a line.
+- Checked in `specimen.html` at 616 px and 360 px with copy 40% to 100% longer.
+
+**States**
+
+- **Collapsed (default when long).** The quote clamps to `--sfs-banner-quote-lines` (3) lines
+  with `-webkit-line-clamp`, which Firefox also supports. After insertion, measure in the next
+  frame: if `scrollHeight` exceeds `clientHeight`, show the toggle; otherwise remove
+  `data-sfs-collapsed` and omit the toggle.
+- **Expanded.** The toggle reads `banner_collapse`, with `aria-expanded="true"`. No animation:
+  the clamp cannot animate, and a jump is calmer than a fake slide. The choice is not
+  remembered across pages.
+- **Short notes.** No toggle at all.
+- **With a named service.** The service line appears after the quote (or after the toggle).
+  Plain text, never a link, whatever the API returns.
+- **Without a named service.** The service line is omitted, not shown empty.
+- **Allow-listed.** The banner is replaced in place by one line: the glyph in
+  `--sfs-color-text-subtle`, `banner_ignored` in a `.sfs-banner-ignored-text` span, and a
+  `banner_undo` text button. No wash, no shadow, a divider-colored rule, 12/16 px muted text on
+  a 20% black strip, and an `aria-label` from `banner_region_label`. Focus moves to "Undo" after
+  "Stop marking this game" is pressed, and back to "Stop marking this game" after "Undo".
+- **Storage error.** If adding or removing the allow-list entry fails, the banner stays as it
+  was and shows `error_allow_list_save` in the error line (`role="alert"`), cleared on the next
+  successful action.
+- **Settings change while open.** `banner` turned off removes the host; turned on re-renders
+  from cache without a new request.
+
+**Behavior**
+
+- "Stop marking this game" adds the app ID (with the app name and today's date) to the
+  allow-list and swaps in the one-line note. It never calls the store's own ignore feature.
+- "Undo" removes the app ID and restores the full banner, collapsed.
+- The polite live region announces `notice_marking_stopped` or `notice_marking_restored` on
+  each swap.
+
+**Accessibility**
+
+- An `aside` landmark labelled by the title. The title is an `h2`, so it lands in the page's
+  heading outline next to the store's own section headings.
+- The quote is a `blockquote`; the source line names the speaker, so no `cite` is needed.
+- The quote keeps the notes' own language. Step 10 sets no `lang` on it, since the API does not
+  say which language the developer wrote in.
+- All controls are real `button` elements with visible text, at least 28 px tall.
+
+## 4. Dim and hide (list filter)
+
+Pure CSS on two attributes: the mode on the root element and the state on each host. Changing
+the setting writes one attribute; no capsule is touched.
+
+- `data-sfs-filter="off"`: lists unchanged, badges only.
+- `data-sfs-filter="dim"`: hosts with `data-sfs-state="disclosed"` get
+  `opacity: var(--sfs-dim-opacity)` (0.4). `:hover` and `:focus-within` restore full opacity on
+  that one host, with a 120 ms fade in and a snap back.
+- `data-sfs-filter="hide"`: those hosts get `display: none`. Hosts that also carry
+  `data-sfs-hideable="false"` (virtualized or carousel lists where hiding would break layout)
+  are dimmed instead.
+- Allow-listed hosts carry `data-sfs-state="allowed"` and never match. Not-disclosed and unknown
+  hosts never match.
+
+The selectors, from `reference.css`:
+
+```css
+[data-sfs-filter="dim"] [data-sfs-state="disclosed"],
+[data-sfs-filter="hide"] [data-sfs-state="disclosed"][data-sfs-hideable="false"] {
+  opacity: var(--sfs-dim-opacity) !important;
+}
+
+[data-sfs-filter="hide"] [data-sfs-state="disclosed"]:not([data-sfs-hideable="false"]) {
+  display: none !important;
+}
+```
+
+Cost and look:
+
+- Opacity only. A `filter` (for example grayscale) would give every dimmed capsule its own
+  effect layer, which on a sale page with hundreds of tiles costs paint time and memory, so it
+  is left out unless a profile proves it cheap. No transition runs when the mode changes, so
+  hundreds of hosts flip in one style pass.
+- The store's own "ignored" state is opacity 0.3. Ours is 0.4, and the badge on the host names
+  the reason, so the two stay distinguishable.
+- The badge dims with its host. It still identifies the reason by shape and position, and hover
+  restores full contrast. Dimmed content is exempt from contrast minimums as inactive UI, and
+  nothing in it is the only route to information.
+- `!important` is needed: store rows set `display` and sometimes `opacity` inline or with higher
+  specificity.
+- No copy, so nothing to translate.
+- Known gap (plan risk): the filter can flash in after first paint, because the content script
+  runs at `document_idle`. Accepted for v1.
+
+## 5. Options page and action popup
+
+One page, two contexts: `data-sfs-context="page"` in `options_ui` and
+`data-sfs-context="popup"` as the toolbar popup. The userscript mounts the same form in a
+dialog (section 6). `options.html` holds structure and `data-i18n` keys only.
+
+**Layout**
+
+- Page: centered, max inline size 640 px, `padding-block` 24 px, `padding-inline` 16 px,
+  `--sfs-color-bg-panel` background, `color-scheme: dark`. Dark only: it opens from a dark
+  store, and a light variant would need a second palette for no gain in v1.
+- Popup: fixed 360 px wide, 16 px by 12 px padding, short labels where a key exists for them,
+  and an allow-list that scrolls inside a 240 px box.
+- Font `--sfs-font-ext` (a system UI stack): the store's font is not loaded on extension pages,
+  and none is bundled.
+- Sections are cards (`--sfs-color-bg-raised`, 4 px radius, 16 px padding, 12 px apart) with a
+  15 px medium heading.
+
+**Longer translations**
+
+- Switch fields are a two-column grid: the label column is `minmax(0, 1fr)` and wraps; the
+  switch keeps its own column, centered on the label.
+- Fields whose control needs the row (`data-sfs-layout="stacked"`: the list filter and the
+  language picker) put label, control and help on separate lines.
+- The segmented control is always full width with three equal columns. A long option label
+  wraps to two lines inside its segment, and the segments grow together.
+- Allow-list items keep the game name and date in at least 40% of the row; the "Mark again"
+  button wraps its text in the rest.
+- Checked in `specimen.html` in the popup context with German-like labels up to twice the
+  English length.
+
+**Sections, in order**
+
+1. **Header.** A 32 px icon (48 px source), `ext_name`, then `options_version` with the version
+   from `package.json`.
+2. **Store pages** (`options_section_store`).
+   - Switch `options_badges` (popup: `options_badges_short`), default on, help
+     `options_badges_help`.
+   - Switch `options_banner`, default on, help `options_banner_help`.
+3. **Lists** (`options_section_lists`). A stacked field: label `options_filter_label`, then a
+   segmented control with `options_filter_off`, `options_filter_dim` and `options_filter_hide`
+   (values `off`, `dim`, `hide`; default `off`). "Off" is labelled "Show", so the control never
+   reads as switching the games themselves off. The help text follows the selection
+   (`options_filter_off_help`, `options_filter_dim_help`, `options_filter_hide_help`).
+4. **Language** (`options_section_language`). A stacked field: label `options_language_label`,
+   a `select` with `options_language_auto` first (value `auto`, the default) and then one entry
+   per shipped locale named by `Intl.DisplayNames` in its own language, and help
+   `options_language_help`. Full page only; the popup leaves it to the full page.
+5. **Allow-list** (`options_section_allow`), newest first. Each item: the game name (with an
+   ellipsis), `options_allow_since` with the date, and a secondary button
+   `options_allow_restore` whose `aria-label` is `options_allow_restore_label`, so a list of
+   identical buttons stays distinguishable. The name links to the game's store page. Empty
+   state: `options_allow_empty`.
+6. **Privacy** (`options_section_privacy`). Three bullets: `options_privacy_storage`,
+   `options_privacy_lookup` and `options_privacy_nothing_sent`.
+7. **Footer.** `options_unaffiliated` in 12 px subtle text. The popup replaces the privacy card
+   with `options_unaffiliated_short` in the footer and adds an `options_all_settings` link to
+   the full page.
+
+**Controls**
+
+- Switch: `input type="checkbox" role="switch"`, 36 by 20 px. Off track `#3d4450` with a
+  `--sfs-color-border` edge (3:1), on track accent 400, white thumb. The whole row is the
+  label, so the hit area is the full row.
+- Segmented control: a `fieldset` of radios, each label at least 28 px tall. The selected
+  segment is accent 700 with an accent 400 edge and white text (10.0:1). Arrow keys move
+  between options (native radio behavior).
+- Select: native `select`, sunken background, `--sfs-color-border` edge, at least 28 px tall.
+- Secondary button: an 8% white wash, 14% on hover, at least 28 px tall.
+
+**Behavior and messages**
+
+- Every change applies at once and is saved through the settings port; there is no save button.
+  A polite live region announces `notice_settings_saved` after each successful write. Open
+  store tabs re-render through `SettingsSource.subscribe`, which for the list filter and badges
+  means one root attribute write per tab.
+- A failed write reverts the control and shows `error_settings_save` under that field
+  (`.sfs-field-error`, `role="alert"`).
+- A failed read shows the defaults, with `error_settings_load` at the top of the first card.
+- A failed allow-list removal shows `error_allow_list_save` under that item.
+
+## 6. Userscript settings dialog
+
+- Opened from the manager's menu command `userscript_menu_settings` (via
+  `GM.registerMenuCommand`).
+- A native `dialog` element in a shadow root on `div.sfs-dialog-host`, shown with
+  `showModal()`. This is the one modal in the product, and only because the user asked for it.
+  `Escape` and a `userscript_close` text button close it; focus returns to the page.
+- Titled with `ext_name`. The content is the popup layout (section 5,
+  `data-sfs-context="popup"`) plus the language card, 400 px wide, with `--sfs-font-page`,
+  since the store font is available there.
+- When `GM_addValueChangeListener` is missing, `userscript_reload_note` appears under the
+  controls.
+
+## 7. Extension icon
+
+**Files** (in `assets/icons/`)
+
+- `icon.svg`: the master, on a 128 grid, full bleed. Renders the 32 and 48 px PNGs.
+- `icon-16.svg`: a hand-hinted 16 px version: the same tag and spark, snapped to the pixel
+  grid, with a fuller spark so it reads as a star, not a plus.
+- `icon-16.png`, `icon-32.png`, `icon-48.png`: toolbar and extension-management sizes, full
+  bleed.
+- `icon-128.png`: store and install-dialog size, with the artwork at 96 px centered in 128 px
+  and 16 px of transparent padding, per the Chrome Web Store image guidelines.
+- `glyph.svg`: the spark alone, for the badges and the banner.
+
+**Construction**
+
+- A label tag pointing right: the product labels games. Inside the tag, centered on its mass,
+  a four-point spark: the common shorthand for generative AI. Together they read as "a label
+  about AI", not "an AI tool". No punched hole: the tag reads as a tag from its pointed end,
+  and the plain shape stays clean at every size.
+- No letters, words or numbers anywhere in the icon or the glyph, so nothing needs translating
+  and the art does not depend on the product name.
+- Fill accent 400 (`#8f73f3`), spark white. One flat color, no gradient, no outline.
+- Toolbar contrast (3:1 non-text minimum): Chrome light `#ffffff` 3.55, Chrome light toolbar
+  `#f1f3f4` 3.19, Chrome dark `#202124` 4.53, Chrome dark toolbar `#3c3c3c` 3.11, Firefox dark
+  `#2b2a33` 3.99, Firefox light `#f9f9fb` 3.38. The spark on the fill is 3.55.
+- Drawn from scratch for this project. Nothing from Valve (no Steam logo, no store colors, no
+  wordmark) and nothing from any prior-art extension.
+
+**Regenerating the PNGs** (ImageMagick 7 with librsvg, run in `assets/icons/`)
+
+```sh
+magick -background none -density 96 icon-16.svg -strip PNG32:icon-16.png
+magick -background none -density 384 icon.svg -filter Lanczos -resize 32x32 \
+  -strip PNG32:icon-32.png
+magick -background none -density 384 icon.svg -filter Lanczos -resize 48x48 \
+  -strip PNG32:icon-48.png
+magick -background none -density 384 icon.svg -filter Lanczos -resize 96x96 \
+  -gravity center -extent 128x128 -strip PNG32:icon-128.png
+```
+
+## Message catalog
+
+Every message the UI shows, as proposed keys for `src/locales/en/messages.json`. Keys are
+snake_case and grouped by prefix. Each entry gives the key, the English message as a literal
+string, and a note that seeds the message's `description`. Placeholders use the Chrome
+`messages.json` form `$name$`. No message contains an em dash, and the copy test fails the build
+if any catalog message in any locale contains "uses AI", "AI-free" or "no AI".
+
+Guidance for every translator, worth repeating in descriptions where it applies:
+
+- The product reports what developers disclosed. Say "discloses" or "disclosed"; never say that
+  a game "uses" AI.
+- Badge labels show on one line and truncate past about 40% longer than English. Shorter is
+  better.
+- The developer's notes, game names and service names are never part of a message; they are
+  inserted as data.
+
+**`badge_`**
+
+- `badge_full`: `Discloses AI use`
+  Label on search and wishlist rows. One line; truncates past about 22 characters.
+- `badge_compact`: `AI disclosed`
+  Label over game images, also read by screen readers when only the icon shows. One line; keep
+  it as short as the language allows.
+- `badge_tooltip`: `$label$. In the developer's own words: $notes$`
+  Hover text on a badge. `label` is the badge label; `notes` is the developer's text, up to 200
+  characters, untranslated.
+
+**`banner_`**
+
+- `banner_title`: `The developer discloses AI use`
+  Heading of the notice on a game's store page.
+- `banner_source`: `In the developer's own words:`
+  Introduces the developer's text, which follows untranslated.
+- `banner_expand`: `Show full disclosure`
+  Button that expands the collapsed text.
+- `banner_collapse`: `Show less`
+  Button that collapses it again.
+- `banner_service_label`: `AI service named by the developer:`
+  Precedes a product name, such as an AI API, inserted as data.
+- `banner_ignore`: `Stop marking this game`
+  Stops badges and this notice for one game. Avoid the word the store uses for its own
+  "ignore" feature.
+- `banner_ignored`: `You stopped marking this game.`
+  Replaces the notice after the action above.
+- `banner_undo`: `Undo`
+  Reverses the action above.
+- `banner_region_label`: `AI use disclosure`
+  Screen reader name for the one-line note.
+
+**`notice_`**
+
+- `notice_marking_stopped`: `Marking stopped for this game.`
+  Screen reader announcement.
+- `notice_marking_restored`: `Marking restored for this game.`
+  Screen reader announcement.
+- `notice_settings_saved`: `Saved.`
+  Screen reader announcement after a setting changes.
+
+**`error_`**
+
+- `error_settings_save`: `Could not save this change. Try again.`
+  Under a setting whose change failed to save.
+- `error_settings_load`: `Could not load your settings. Showing the defaults.`
+  Top of the settings page.
+- `error_allow_list_save`: `Could not update this game. Try again.`
+  After "Stop marking", "Undo" or "Mark again" fails.
+
+**`warn_`**
+
+- None in the v1 UI. The prefix is reserved for runtime and log messages owned by the detection
+  and cache steps (5 to 8), such as rate-limit backoff.
+
+**`options_`**
+
+- `options_version`: `Version $version$`
+  Under the product name. `version` is, for example, 2026.10.20.
+- `options_section_store`: `On store pages`
+  Section heading.
+- `options_badges`: `Badges on games that disclose AI use`
+  Switch label.
+- `options_badges_short`: `Badges`
+  The same switch in the narrow popup.
+- `options_badges_help`:
+  `Adds "$full$" to search and wishlist rows and "$compact$" to game images.`
+  Help under the switch. `full` and `compact` are the two badge labels.
+- `options_banner`: `Banner on game pages`
+  Switch label.
+- `options_banner_help`: `Shows the developer's disclosure above the purchase box.`
+  Help under the switch.
+- `options_section_lists`: `In lists`
+  Section heading.
+- `options_filter_label`: `Games that disclose AI use`
+  Label of a three-way choice.
+- `options_filter_off`: `Show`
+  Choice: leave these games as they are.
+- `options_filter_dim`: `Dim`
+  Choice: fade these games.
+- `options_filter_hide`: `Hide`
+  Choice: remove these games from lists.
+- `options_filter_off_help`: `Lists stay as they are, apart from badges.`
+  Help for "Show".
+- `options_filter_dim_help`: `Fades these games in lists. Hover to see one clearly.`
+  Help for "Dim".
+- `options_filter_hide_help`:
+  `Removes these games from lists. Where hiding would break a list, they are dimmed instead.`
+  Help for "Hide".
+- `options_section_language`: `Language`
+  Section heading.
+- `options_language_label`: `Language of this extension`
+  Label of the language picker.
+- `options_language_auto`: `Automatic`
+  First picker entry.
+- `options_language_help`:
+  `Automatic follows the store page's language when a translation exists, and English otherwise.`
+  Help under the picker.
+- `options_section_allow`: `Games you stopped marking`
+  Section heading.
+- `options_allow_since`: `Since $date$`
+  Under a game name. `date` is already formatted for the locale.
+- `options_allow_restore`: `Mark again`
+  Button next to a game.
+- `options_allow_restore_label`: `Mark $name$ again`
+  Screen reader name of that button. `name` is the game's name, untranslated.
+- `options_allow_empty`: `None yet. Use "$action$" on a game page.`
+  Empty list. `action` is the "Stop marking this game" label.
+- `options_section_privacy`: `Privacy`
+  Section heading.
+- `options_privacy_storage`: `Settings and results stay in this browser.`
+  Privacy bullet.
+- `options_privacy_lookup`:
+  `To check a game, the extension asks Valve's own store servers, without your cookies or account.`
+  Privacy bullet.
+- `options_privacy_nothing_sent`: `Nothing is sent to us or anyone else. No analytics.`
+  Privacy bullet.
+- `options_unaffiliated`:
+  `Not affiliated with or endorsed by Valve Corporation. Steam is a trademark of Valve Corporation.`
+  Legal line; keep the company and product names as they are.
+- `options_unaffiliated_short`:
+  `Not affiliated with Valve. Nothing leaves your browser except lookups to Valve's store.`
+  Popup footer.
+- `options_all_settings`: `All settings`
+  Popup link to the full settings page.
+
+**`ext_`**
+
+- `ext_name`: `AI Reporter for Steam`
+  Manifest `name`, userscript `@name` and the settings heading. The brand: translators keep "AI
+  Reporter" as is and may translate only "for". At most 75 characters (Chrome limit).
+- `ext_short_name`: `AI Reporter`
+  Manifest `short_name`, where space is tight. The brand, kept as is. At most 12 characters
+  (Chrome recommendation).
+- `ext_description`:
+  `Labels Steam games whose developers disclose generative AI use, in their own words.`
+  Manifest `description` and userscript `@description`. At most 132 characters (Chrome limit);
+  the English is 84.
+- `ext_action_title`: `AI Reporter settings`
+  Toolbar button tooltip. Keep "AI Reporter" as is.
+
+**`userscript_`**
+
+- `userscript_menu_settings`: `Settings`
+  Entry in the userscript manager's menu.
+- `userscript_close`: `Close`
+  Closes the settings dialog.
+- `userscript_reload_note`: `Changes apply on the next page load.`
+  Shown when the manager cannot apply settings live.
+
+Plurals: no v1 message needs one. When one does, it follows the plan's `_one` and `_other`
+suffixes, resolved with `Intl.PluralRules`.
+
+## Contrast
+
+WCAG 2.2 AA: 4.5:1 for text, 3:1 for non-text. Backgrounds were sampled from the store on
+2026-10-20: page `#1b2838`, React pages `#0f1924`, search row (20% black over the page)
+`#16202d`, and right-column block (65% black over the page) `#090e14`. The row hover `#2a475e`
+is the store's classic hover blue, assumed rather than sampled. Semi-transparent tokens were
+composited over each background before measuring.
+
+| Pair                                       | Worst background      | Ratio |
+| ------------------------------------------ | --------------------- | ----- |
+| Full badge text `#e4dcff` on its tint      | Row hover             | 5.94  |
+| Full badge text on its tint                | Page                  | 8.42  |
+| Full badge glyph `#b7a2ff` on its tint     | Row hover             | 3.58  |
+| Compact text on surface `#1f1840`          | Any art (opaque)      | 12.65 |
+| Compact border `#8f73f3` against black art | Black                 | 5.91  |
+| Compact surface against white art          | White                 | 16.63 |
+| Compact surface against mid grey art       | `#808080`             | 4.21  |
+| Banner title `#ffffff`                     | Densest wash on page  | 11.30 |
+| Banner quote `#c6d4df`                     | Densest wash on page  | 7.47  |
+| Banner meta `#acb2b8`                      | Densest wash on page  | 5.28  |
+| Banner action `#d6caff` on its hover wash  | Densest wash on page  | 5.48  |
+| Banner error `#ffa39e`                     | Densest wash on page  | 5.93  |
+| Banner rule `#8f73f3`                      | Densest wash on page  | 3.18  |
+| Focus ring `#b7a2ff`                       | Row hover             | 4.45  |
+| Options body `#c6d4df`                     | Raised card `#1f2630` | 10.07 |
+| Options help `#8f98a0`                     | Raised card           | 5.20  |
+| Options error `#ffa39e`                    | Raised card           | 7.97  |
+| Options link `#b7a2ff`                     | Raised card           | 6.98  |
+| Control edge `#6e7a88`                     | Raised card           | 3.48  |
+| Switch on track `#8f73f3`                  | Raised card           | 4.29  |
+| Switch thumb on the on track               | Track                 | 3.55  |
+| Primary button text on `#5f42c8`           | Button                | 6.77  |
+| Selected segment text on `#46318f`         | Segment               | 10.02 |
+
+Usage limits that keep these numbers true:
+
+- `--sfs-color-text-subtle` (`#8f98a0`) only on page, row, panel and raised surfaces, never on
+  the banner wash.
+- `--sfs-accent-300` as link text only on page, React, row, panel and raised surfaces. On the
+  row hover blue it drops to 4.45, so links there use accent 200.
