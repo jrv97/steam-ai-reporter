@@ -5,6 +5,9 @@
   "description": "Marks Steam store items whose developers disclosed generative AI use.",
   "license": "MIT",
   "type": "module",
+  "dependencies": {
+    "valibot": "1.5.0"
+  },
   "devDependencies": {
     "@types/chrome": "0.3.5",
     "esbuild": "0.28.2",
