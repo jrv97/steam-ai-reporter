@@ -32,7 +32,17 @@ from repo import ROOT, fail
 
 SHIPPED = ROOT / "src" / "locales"
 TEST_CATALOGS = ROOT / "tests" / "locales"
-PREFIXES = ("badge_", "banner_", "options_", "error_", "warn_", "notice_", "ext_", "userscript_")
+PREFIXES = (
+    "badge_",
+    "summary_",
+    "banner_",
+    "options_",
+    "error_",
+    "warn_",
+    "notice_",
+    "ext_",
+    "userscript_",
+)
 KEY = re.compile(r"^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$")
 CONTENT = re.compile(r"^\$[1-9]$")
 FORBIDDEN = re.compile(r"\buses AI\b|\bAI-free\b|\bno AI\b", re.IGNORECASE)

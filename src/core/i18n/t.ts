@@ -5,9 +5,12 @@ import type { MessageParams, PluralParams } from "./keys.gen";
 export type ParamsSchema<S> = { readonly [K in keyof S]: Params; };
 
 /** Keys whose message takes no placeholders, so the params may be omitted. */
-type BareKey<S> =
+export type BareKey<S> =
   & { [K in keyof S]: Record<never, never> extends S[K] ? K : never; }[keyof S]
   & string;
+
+/** A shipped catalog key whose message takes no placeholders. */
+export type BareMessageKey = BareKey<MessageParams>;
 
 /**
  * Message lookup for one locale. `M` and `P` default to the types generated from the shipped

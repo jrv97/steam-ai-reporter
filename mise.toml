@@ -47,11 +47,17 @@ run = [
 ]
 
 [tasks.gen]
-description = "Generate the typed message keys from the English catalogs"
+description = "Generate the typed message keys and the UI stylesheet constants"
 hide = true
-sources = ["src/locales/en/messages.json", "tests/locales/en/messages.json", "scripts/*.py"]
-outputs = ["src/core/i18n/keys.gen.ts", "tests/locales/keys.gen.ts"]
-run = "python scripts/gen_i18n_keys.py"
+sources = [
+  "src/locales/en/messages.json",
+  "tests/locales/en/messages.json",
+  "docs/design/tokens.css",
+  "src/core/ui/*.css",
+  "scripts/*.py",
+]
+outputs = ["src/core/i18n/keys.gen.ts", "tests/locales/keys.gen.ts", "src/core/ui/styles.gen.ts"]
+run = ["python scripts/gen_i18n_keys.py", "python scripts/gen_styles.py"]
 
 [tasks.deps]
 description = "Install JavaScript dependencies from the lockfile"
