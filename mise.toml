@@ -152,6 +152,19 @@ description = "Run the Chrome build in Chrome ($SAR_CHROME_BIN) with auto-reload
 depends = ["build"]
 run = "python scripts/run_browser.py chrome"
 
+[tasks.package]
+description = "Write the store zips, the userscript and the AMO source archive to artifacts/"
+depends = ["build"]
+run = ["bash scripts/package.sh", "python scripts/check_bundle.py"]
+
+[tasks.canary]
+description = "Check live Steam still has the shape the detectors expect (two requests; not in ci)"
+run = "python scripts/canary.py"
+
+[tasks.capture-fixtures]
+description = "Refresh the public test fixtures from the live store (cookie-less)"
+run = "python scripts/capture_fixtures.py"
+
 # Changelog
 
 [tasks.change-new]

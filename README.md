@@ -44,11 +44,14 @@ Main tasks:
 - `mise run check`: text, catalog, version and bundle checks on top of the build.
 - `mise run ci`: everything CI runs. The pre-push hook runs `prepush`, which is the same without the reproducibility check and `web-ext lint`.
 - `mise run dev`: rebuild on change. In another terminal, `mise run run-firefox` (Firefox Nightly only) or `mise run run-chrome` loads the build with auto-reload. In Chrome you can also load `dist/chrome` with "Load unpacked".
+- `mise run package`: write the Chrome and Firefox zips, the userscript and its `.meta.js`, and the source archive for store reviewers to `artifacts/`, then check them.
+- `mise run canary`: before a release, check that live Steam still answers in the shape the detectors expect (two requests). It is not part of `ci`.
+- `mise run capture-fixtures`: refresh the public test fixtures from the live store.
 - `mise run change-new`: add a changelog fragment. A pull request that changes `src/` needs one, unless it carries the `no-changelog-fragment` label.
 
 ## Build from source
 
-For store reviewers and anyone who wants to reproduce a release. The build runs on Linux, macOS and Windows; releases are built on Ubuntu 24.04.
+For store reviewers and anyone who wants to reproduce a release. The build runs on Linux, macOS and Windows; releases are built on Ubuntu 24.04. The source archive in each release (`steam-ai-reporter-source-<version>.zip`) holds everything below needs, including the lockfiles.
 
 1. Install mise: `curl https://mise.run | sh` (see [mise's install guide](https://mise.jdx.dev/getting-started.html) for other options).
 2. In the source folder, run `mise trust`, then `mise install`. This installs the exact tool versions pinned in `mise.toml` and `mise.lock`.
