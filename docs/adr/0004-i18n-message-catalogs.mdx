@@ -1,0 +1,79 @@
+---
+status: accepted
+date: 2026-10-20
+decision-makers: Jorge Rodriguez de la Vega
+---
+
+# Message catalogs in Chrome messages.json with a small core runtime
+
+## Context and problem statement
+
+Project rule 9 requires every user-visible or logged message (UI copy, errors, warnings, notices, ARIA labels, tooltips, manifest and userscript names and descriptions) to live in a keyed, typed message catalog from day one. Only English ships in v1, but adding a language must be a catalog drop, not a code change. The same strings are needed in three places: the extension manifest (`__MSG_*__`), the framework-free core, and the userscript header, which has no browser i18n API at all.
+
+The target locale should follow the Steam page language on store pages, because that is the language the user is reading. The developer's disclosure text is data, shown verbatim and never translated.
+
+What format and runtime do the catalogs use?
+
+## Decision drivers
+
+- Works in the core (no browser API), in the extension and in the userscript.
+- Follows the Steam page language at runtime, not only the browser UI language.
+- Typed keys and placeholders, so a missing key or a wrong placeholder fails the type check.
+- Translation tooling: Crowdin and Weblate should read the format without conversion.
+- Small: the content script has a 60 KB unminified budget, shared with the validation library.
+- One authored source of truth.
+
+## Considered options
+
+1. **`chrome.i18n` with `_locales` only.**
+2. **i18next** (or a similar full library).
+3. **ICU MessageFormat through `@formatjs/intl-messageformat`.**
+4. **Chrome `messages.json` as the single authored format, plus a dependency-free core runtime of about 60 lines** (chosen).
+
+## Decision outcome
+
+Chosen option 4.
+
+- **Format.** `src/locales/<lang>/messages.json` in Chrome `messages.json` format is the only authored source. The extension needs it anyway for `__MSG_*__` manifest strings (name, description, action title), and Crowdin and Weblate read it natively. Keys are snake_case grouped by prefix (`badge_`, `banner_`, `options_`, `error_`, `warn_`, `notice_`, `ext_`, `userscript_`). Every message carries a `description` for translators.
+- **Runtime.** `createI18n(catalogs, locale)`, `t(key, params)` and `plural(baseKey, count, params)` live in core and use no browser API. They do `$placeholder$` substitution, plurals through `_one` and `_other` key suffixes resolved with `Intl.PluralRules`, and fall back to English for a missing key or locale.
+- **Typed keys.** A generator script turns the English catalog into `keys.gen.ts` (a `MessageKey` union and per-key placeholder types), so `t("missing_key")` or a wrong placeholder fails `tsc`. Errors carry a `code` that is a `MessageKey` plus typed params, never prose; the logger takes keys.
+- **Locale resolution.** The `locale` setting defaults to `auto`. On store pages `auto` follows `<html lang>` mapped through the table recorded in [rq6, S5](../research/steam-ai-disclosure/rq6-verification-spikes.md) (for example `en` is `english`, `es-419` is `latam`, `pt-br` is `brazilian`, `zh-cn` is `schinese`); elsewhere it follows `navigator.language`. A locale without a catalog falls back to English. The same table read in reverse gives GetItems its `context.language` ([ADR 0001](0001-detect-disclosure-via-getitems.mdx)), so one core module owns it.
+- **Build.** The build copies catalogs to `_locales/<lang>/messages.json` for the extension and inlines them into the userscript bundle. The userscript `@name` and `@description` come from the English catalog, plus `@name:<lang>` and `@description:<lang>` for every other shipped locale.
+- **Enforcement.** A check script verifies that every locale has the same keys and placeholders as English, that no catalog key is unused and that every message has a `description`. The literal-flow lint rule (string literals into `textContent`, `title`, `aria-*`, `console.*`, `new Error`) catches hardcoded copy; allowed literals are identifiers, selectors, URLs, storage keys, CSS class names and detection constants. A test also fails if any catalog message contains "uses AI", "AI-free" or "no AI" (project rule 4).
+
+### Consequences
+
+- Good: one authored format feeds the manifest, the core and the userscript header; translators use standard tooling.
+- Good: roughly 60 lines of our own code and no runtime dependency; the content-script budget stays free for logic.
+- Good: typed keys make an untranslated or misspelled key a compile error.
+- Bad: no ICU select or nested plural syntax; complex grammar (gender, nested plurals) is not expressible. Acceptable for badge, banner and options copy; revisit if a language needs it (option 3 is the upgrade path, since the catalog keys stay the same).
+- Bad: we own the plural and placeholder code and its tests, including a test-only pseudo-locale for fallback, plural and placeholder handling.
+- Bad: layouts must tolerate translations about 40 percent longer, and badge text truncates with the full message in `title`.
+- Neutral: English is the only shipped locale in v1; right-to-left layouts and a translation platform are on the roadmap.
+
+## Pros and cons of the options
+
+### 1. `chrome.i18n` with `_locales` only
+
+- Good: zero code, native to the extension.
+- Bad: unavailable in the core and the userscript, and it resolves the browser UI language, so it cannot follow the Steam page language at runtime. Rejected.
+
+### 2. i18next
+
+- Good: mature, rich features.
+- Bad: about 40 KB (the figure recorded in the plan) against a 60 KB budget, and its own key conventions, which then need a conversion step to produce the `messages.json` the manifest requires.
+
+### 3. ICU MessageFormat through `@formatjs/intl-messageformat`
+
+- Good: rich plurals and selects; a standard syntax.
+- Bad: one more dependency for needs the v1 copy does not have, and a second format to convert into `messages.json` for the manifest.
+
+### 4. `messages.json` plus a small runtime
+
+- Good and bad: see consequences.
+
+## More information
+
+- Library check (project rule 12): unlike the tooling rows, no i18n library was spiked in [rq7-library-study](../research/steam-ai-disclosure/rq7-library-study.md). The size figure for i18next comes from the plan, not from a measurement of ours. The decision was taken in review on 2026-10-20 for the format-reuse reason, which does not depend on the exact size.
+- The `<html lang>` table comes from rq6 S5. The i18n runtime lands in the toolchain step, before any feature code.
+- Related: [ADR 0001](0001-detect-disclosure-via-getitems.mdx), [ADR 0002](0002-single-codebase-and-tooling.mdx).

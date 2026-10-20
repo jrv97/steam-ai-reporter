@@ -1,0 +1,69 @@
+---
+status: accepted
+date: 2026-10-20
+decision-makers: Jorge Rodriguez de la Vega
+---
+
+# Content-script-only runtime with no background script and no host permissions
+
+## Context and problem statement
+
+Detection ([ADR 0001](0001-detect-disclosure-via-getitems.mdx)) calls `api.steampowered.com`, a different origin from the store pages the extension runs on. Extension code that makes cross-origin calls usually needs either `host_permissions` or a background script that relays the request. Both widen the store review surface (Chrome's limited-use rules, AMO's data collection declaration) and the permission prompt users see. The earlier research assumed a background relay would be needed ([rq5-extension-constraints](../research/steam-ai-disclosure/rq5-extension-constraints.md)) and left Firefox content-script behavior untested.
+
+Where does the GetItems request run, and what permissions does that require?
+
+## Decision drivers
+
+- The smallest permission set: `storage` plus content-script matches on `https://store.steampowered.com/*` (project rule 3).
+- Privacy (rule 1): requests cookie-less, only to Valve hosts the user is already on.
+- Identical behavior in Chrome and Firefox, and in the userscript.
+- No service-worker lifecycle: Chrome kills workers after 30 s idle and they have no DOM.
+- A small, quickly reviewable AMO and Chrome Web Store submission.
+
+## Considered options
+
+1. **Content script only**: the content script calls GetItems with plain `fetch`; no background script, no `host_permissions` (chosen).
+2. **Background relay** for `api.steampowered.com`: the content script messages a background script that fetches, with `host_permissions: ["https://api.steampowered.com/*"]`.
+3. **Relay for Firefox only**, content script for Chrome (the branch the first plan kept open until the spikes ran).
+
+## Decision outcome
+
+Chosen option 1. The manifest has `permissions: ["storage"]`, one content script matching `https://store.steampowered.com/*`, no `host_permissions` and no `background` key. A build check asserts all three.
+
+Evidence from the step 2 spikes ([rq6-verification-spikes](../research/steam-ai-disclosure/rq6-verification-spikes.md)):
+
+- **S3, CORS.** GetItems CORS is an allow-list of Valve origins, not `*`: store and community pages read it (200, `type: "cors"`), a foreign origin (wikipedia.org) gets a `TypeError`. `x-eresult` is exposed to JavaScript. Only a host permission would make a response readable to a request that carries an extension origin.
+- **S4, extension fetch.** A throwaway MV3 extension with no permissions and one store content script read GetItems with plain `fetch` in Chrome 155 and in Firefox Nightly 160 (`type: "cors"`, 200, `x-eresult` readable), and fetched the same-origin app page. `content.fetch` does not exist in an MV3 content script, so it is not used. Given S3, a readable `cors` answer means both browsers sent the request with the store page's origin.
+- **S6, userscripts.** Tampermonkey 5.5 on Chrome and Firefox Nightly runs the same plain `fetch` with no `@connect`, so the userscript takes the same path.
+
+### Consequences
+
+- Good: no `host_permissions` and no background script, so the install prompt, the store review and the permission justification stay minimal, and Firefox can declare `data_collection_permissions: {required: ["none"]}`.
+- Good: no worker lifecycle, no message passing, one code path for extension and userscript.
+- Good: parsing HTML stays in the content script, where a DOM exists.
+- Bad: the result depends on browsers continuing to send content-script requests with the page origin. This is inferred from the readable `cors` answer; the request header itself was not inspected (rq6 caveat). If a browser changes this, requests would fail as a `TypeError`, which our breaker treats like a rate limit, and the live canary would not catch it because it runs outside a browser. Mitigation: the manual checklist runs on Chrome and Firefox before each release.
+- Bad: Valve could narrow the CORS allow-list. Then this ADR is revisited with option 2, accepting a new permission.
+- Bad: error answers carry no CORS headers, so a status and `Retry-After` are never readable (S1); the throttle uses a fixed backoff.
+- Neutral: Violentmonkey was not tested (S6); it goes on the manual checklist.
+
+## Pros and cons of the options
+
+### 1. Content script only
+
+- Good: smallest permission set, verified in both browsers and in Tampermonkey.
+- Bad: relies on page-origin behavior (see above).
+
+### 2. Background relay
+
+- Good: independent of content-script origin behavior, because host permissions lift CORS for extension pages.
+- Bad: adds `host_permissions` for `api.steampowered.com` (a scarier prompt and more review text), a background lifecycle (service worker in Chrome, event page in Firefox), and a message hop for every batch. The userscript still needs a different path, so the two targets diverge.
+
+### 3. Firefox-only relay
+
+- Good: would cover the case where Firefox content scripts failed CORS.
+- Bad: S4 showed Firefox works without it, so the extra permission has no benefit. Dropped.
+
+## More information
+
+- Evidence: [rq6-verification-spikes](../research/steam-ai-disclosure/rq6-verification-spikes.md) (S3, S4, S6), [rq5-extension-constraints](../research/steam-ai-disclosure/rq5-extension-constraints.md).
+- Related: [ADR 0001](0001-detect-disclosure-via-getitems.mdx), [ADR 0002](0002-single-codebase-and-tooling.mdx). Changing this runtime needs a new ADR (rule 3).
