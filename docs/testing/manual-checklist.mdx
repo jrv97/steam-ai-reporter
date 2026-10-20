@@ -1,0 +1,85 @@
+# Manual test checklist
+
+Run before each release, after `mise run canary` passes. Automated tests cover the parsers, the scanner and the placements against captured fixtures; this list covers what only a real browser and a live store show.
+
+## Setup
+
+Targets, each tested logged out and logged in:
+
+| Target                    | How to load it                                                                                                                                            |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Chrome extension          | `mise run build`, then `chrome://extensions`, Developer mode, "Load unpacked", pick `dist/chrome`. Or `mise run run-chrome`.                              |
+| Firefox Nightly extension | `mise run run-firefox`, which uses `SAR_FIREFOX_BIN` and the dedicated profile in `SAR_FIREFOX_PROFILE`. Firefox Nightly only: never the regular Firefox. |
+| Tampermonkey              | Install `steam-ai-reporter.user.js` from `artifacts/` (or `dist/userscript/`) in Chrome and in Firefox Nightly.                                           |
+| Violentmonkey             | Same file, in Chrome and in Firefox Nightly.                                                                                                              |
+
+Before starting:
+
+- Sign in to Steam in the dedicated Nightly profile and in Chrome for the logged-in column; use a private window or a clean profile for the logged-out column.
+- Have one wishlist with at least 30 items, including at least one disclosing item (a disclosing app known to work on the day: 5072580 or 1808500; a non-disclosing one: 413150).
+- Open the page console on every store page and keep it open. Any error from `sar-` code fails the cell.
+- Enable the `debug` setting once to confirm the verbose log appears, then turn it off.
+
+## How to read a cell
+
+A surface cell passes when all of these hold:
+
+1. A disclosing item shows the badge "Discloses AI use"; a non-disclosing item shows nothing; no item shows an "AI-free" or "uses AI" wording.
+2. The badge sits on the capsule (not on the page section around it) and does not break the layout.
+3. Content added later (infinite scroll, carousel, React re-render, tab switch) gets badges without a reload and without duplicates.
+4. The Network tab shows no request to any host other than `api.steampowered.com` and `store.steampowered.com`, no cookies sent on them, and one GetItems call per batch of up to 50 new IDs.
+5. Reloading the page issues no new GetItems call for IDs already checked (the cache works).
+
+Mark each cell with P (pass), F (fail, with a note and an issue), or N/A.
+
+## Surface matrix
+
+Rows are the store surfaces from the surface map in `docs/research/steam-ai-disclosure/rq6-verification-spikes.md`. Copy the table into the release notes and fill it in. Columns are the four targets, each logged out (out) and logged in (in).
+
+| Surface                                                                    | What to check                                                                                                                                                                                                                                                          | Chrome out | Chrome in | Nightly out | Nightly in | TM out | TM in | VM out | VM in |
+| -------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | --------- | ----------- | ---------- | ------ | ----- | ------ | ----- |
+| App page `/app/<id>/`                                                      | Banner under the page title area quotes the disclosure verbatim (compare with the store text); DLC rows get badges; DRM notice for a named AI service (5072580) does not break the banner anchor; coming-soon and demo pages anchor correctly                          |            |           |             |            |        |       |        |       |
+| Search `/search/?term=roguelike`                                           | Badges on rows; scroll to load the next 50 rows and see badges on them; change the filter and sort                                                                                                                                                                     |            |           |             |            |        |       |        |       |
+| Home `/` main carousel                                                     | Large capsule with a CSS background image gets a badge; arrows and autoplay do not duplicate it                                                                                                                                                                        |            |           |             |            |        |       |        |       |
+| Home `/` discount, specials and tab rows                                   | `sale_capsule` and tab rows get badges; package rows with comma lists of IDs are skipped, not mis-badged                                                                                                                                                               |            |           |             |            |        |       |        |       |
+| Home React rows (discounts and events, discovery queue, personal calendar) | These stayed empty in automated sessions: check whether they render and whether their capsules get badges                                                                                                                                                              |            |           |             |            |        |       |        |       |
+| Tag hub `/tags/en/Roguelike/`                                              | One badge per capsule, none on section headers; carousel capsule has one host; tab sections with a single app do not get a section-sized badge                                                                                                                         |            |           |             |            |        |       |        |       |
+| Category hub `/category/action/`                                           | Same as the tag hub                                                                                                                                                                                                                                                    |            |           |             |            |        |       |        |       |
+| Specials `/specials`                                                       | Same as the tag hub                                                                                                                                                                                                                                                    |            |           |             |            |        |       |        |       |
+| Sale page (a current seasonal sale)                                        | Same as the tag hub; this is the page for the performance profile below                                                                                                                                                                                                |            |           |             |            |        |       |        |       |
+| Developer page `/developer/valve` and a publisher page                     | Widgets get badges; publisher pages use the same template, confirm                                                                                                                                                                                                     |            |           |             |            |        |       |        |       |
+| Wishlist `/wishlist/` (redirects to `/wishlist/id/<vanity>/`)              | Logged in only (N/A logged out). Rows get badges; scroll fast and see badges follow mounted rows; unmounted then remounted rows are badged again; list filter "hide" is not offered here                                                                               |            |           |             |            |        |       |        |       |
+| Old `steamcommunity.com/profiles/<id>/wishlist/`                           | Redirects to the store wishlist and then behaves like it                                                                                                                                                                                                               |            |           |             |            |        |       |        |       |
+| Discovery queue `/explore/`                                                | The static preview gets badges. Open the queue overlay and step through it only on a throwaway account, because stepping changes the queue                                                                                                                             |            |           |             |            |        |       |        |       |
+| Search suggestions popup                                                   | Type "roguelike" in the header search box: results get badges, the header navigation links do not                                                                                                                                                                      |            |           |             |            |        |       |        |       |
+| Adult-only app (for example 339800)                                        | Cookie-less page fetch redirects to sign-in; the item stays unknown, never shown as not disclosed; the API verdict still applies                                                                                                                                       |            |           |             |            |        |       |        |       |
+| Settings                                                                   | Options page (extension) or manager menu command (userscript) opens; toggles for badges, banner and list filter (off, dim, hide) apply live on an open store tab; language switch changes the UI copy; allow-list entry removes the badge and the banner for that game |            |           |             |            |        |       |        |       |
+
+## Extra checks
+
+| Check                                                                                                                                                    | Pass |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------- | ---- |
+| Disabling the extension or userscript removes every `sar-` node on reload                                                                                |      |
+| Settings and the allow-list survive a browser restart; clearing storage resets them                                                                      |      |
+| Offline or blocked `api.steampowered.com`: no badges, no console error storm, items stay unknown; the app page fallback fetches no more than a few pages |      |
+| Firefox Nightly: the content script's GetItems call is accepted by Steam (no CORS failure in the console)                                                |      |
+| Userscript: Violentmonkey runs it with its default injection mode; no `@inject-into` change is needed                                                    |      |
+| Userscript: the update URL serves the `.meta.js` of the latest release (after the first release only)                                                    |      |
+| The dev injection bundle (`dist/dev/inject.js`) is not in any artifact: `mise run package` passes `check_bundle.py`                                      |      |
+
+## Performance profile
+
+Run once per release, in Chrome with the extension, on a current seasonal sale page, logged out.
+
+| Check                                                                                                                                       | Budget                                                                         | Result |
+| ------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ | ------ |
+| DevTools Performance panel, record while scrolling to the bottom of the page: every scan batch (a `sar-` scan task after a mutation)        | Under 4 ms per batch                                                           |        |
+| Same recording: GetItems calls                                                                                                              | One call per batch of up to 50 new IDs, serial, about 1 s apart                |        |
+| Memory panel: take a heap snapshot after scrolling to the bottom, then a second one after a second pass; filter by "Detached" and by `sar-` | No detached `sar-` nodes; no growth between snapshots beyond the bounded cache |        |
+| Reload and scroll again                                                                                                                     | Zero GetItems calls for IDs already cached                                     |        |
+
+Record the Chrome version, the page URL, the number of capsules on the page and the date next to the results.
+
+## Failures
+
+A failing cell either becomes a fixture and gets fixed, or is listed as a known gap in the README. Use `mise run capture-fixtures` for the public pages; capture logged-in surfaces by hand and strip account data as described in `tests/fixtures/README.md`.

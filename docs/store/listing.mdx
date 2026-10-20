@@ -1,0 +1,83 @@
+# Store listing copy
+
+Source text for the Chrome Web Store and addons.mozilla.org (AMO) listings of "AI Reporter for Steam" (short name "AI Reporter"). English only for now. The userscript has no store listing; its text is the `@description` in the userscript header, which comes from the same message catalog as the manifests.
+
+Wording follows the project's semantics rule: a badge says "Discloses AI use". Nothing here says a game "uses AI" or is "AI-free", because the disclosure is self-reported by the developer.
+
+Limits to respect when pasting: the Chrome name is at most 75 characters and the manifest description at most 132 (both come from `src/locales/en/messages.json`); the Chrome Web Store summary field is the manifest description.
+
+## Name
+
+AI Reporter for Steam
+
+Short name: AI Reporter
+
+## Summary (manifest description, 132 characters at most)
+
+Labels Steam games whose developers disclose generative AI use, in their own words.
+
+## Short description for AMO (250 characters at most)
+
+Marks Steam store items whose developers disclosed generative AI use in Steam's own AI content disclosure. It only reads Steam's disclosures and sends no reports anywhere. Not affiliated with Valve.
+
+## Detailed description
+
+AI Reporter for Steam marks items on the Steam store whose developers filled in Steam's AI Generated Content Disclosure.
+
+It only reads Steam's own disclosures. It sends no reports, collects nothing and has no server of its own.
+
+What it does:
+
+- Adds a "Discloses AI use" badge to capsules and rows in search, wishlist, home, tag and category hubs, sale pages, developer pages and search suggestions.
+- On a game's page, shows a banner that quotes the developer's disclosure text word for word.
+- Optionally dims or hides disclosing items in lists. This is off by default.
+- Lets you ignore a game you consider a false flag, with a per-game allow-list.
+
+What the badge means: the developer wrote a disclosure about generative AI on Steam. It is self-reported. The badge does not say how much AI a game uses, and a game without a badge is not guaranteed to be free of AI, because developers may not have disclosed anything, and Steam may not have the information for every item.
+
+Privacy: nothing is collected. To find out which items have a disclosure, the app IDs of the items on the page you are viewing go to Valve's own hosts that your browser already uses (api.steampowered.com and store.steampowered.com), without cookies. Verdicts and your settings stay in your browser. The full policy is in PRIVACY.md in the project repository.
+
+Open source (MIT). Source and build steps: https://github.com/jrv97/steam-ai-reporter
+
+AI Reporter for Steam is an independent project. It is not affiliated with, endorsed by or sponsored by Valve Corporation. Steam and the Steam logo are trademarks of Valve Corporation.
+
+## Single-purpose statement (Chrome Web Store)
+
+AI Reporter for Steam has one purpose: to show, on Steam store pages, which items have a developer-written generative AI disclosure, by marking those items and quoting the disclosure.
+
+## Permission justifications
+
+The extension asks for one permission and no host permissions. It has no background script.
+
+- `storage`: keeps the cache of verdicts (so an app is not requested again until its entry expires), your settings, the per-game allow-list, and a small record used to back off if Steam is limiting requests. All of it stays on your device in the extension's local storage.
+- Site access (content script matches `https://store.steampowered.com/*`): the content script runs only on the Steam store, because that is where the items to mark are. Its requests to `api.steampowered.com` and `store.steampowered.com` are made from the store page's own origin, so no `host_permissions` entry is needed. Both are Valve hosts the user is already on, and every request is made with `credentials: "omit"`.
+- Remote code: none. No `eval`, no remote scripts and no remote selectors. The bundles in the package are not minified and are built from the public source.
+
+## Privacy answers
+
+These match PRIVACY.md.
+
+- Does it collect or transmit user data to the developer or any third party? No. There is no analytics, no telemetry, no account and no server of the developer.
+- Does it send any data off the device? Only app IDs of the items on the page being viewed, to Valve's own hosts `api.steampowered.com` (GetItems, in batches of up to 50) and `store.steampowered.com` (a few app pages as a fallback), without cookies. Valve sees the IP address and the app IDs, as for any store request.
+- What is stored locally? Verdicts per app ID (state, check time, the developer's disclosure text and language, the name of a named AI service if any, the game's name), the settings, the allow-list, and a back-off record. In `storage.local`.
+- Does it read the Steam account, wishlist contents, library, cookies or browsing history? No.
+- Is data sold or used for purposes unrelated to the single purpose? No.
+- Chrome Web Store data usage categories: none are collected. Certify the three limited-use statements (not sold, not used for unrelated purposes, not used for creditworthiness or lending).
+- AMO `data_collection_permissions`: `required: ["none"]`, set in the Firefox manifest.
+- Privacy policy URL: https://github.com/jrv97/steam-ai-reporter/blob/main/PRIVACY.md
+
+## AMO reviewer notes
+
+The package is built from source, unminified. Build steps are in the README under "Build from source", and the source archive is `steam-ai-reporter-source-<version>.zip`:
+
+1. Install mise (`curl https://mise.run | sh`) on Linux or macOS, or see the mise install guide for Windows.
+2. In the unpacked source folder run `mise trust`, then `mise install`, then `mise run build`.
+3. `dist/firefox` is the submitted add-on.
+
+The extension has no background script, requests no host permissions and makes no network request other than the two Valve hosts above.
+
+## Assets still needed from the design session
+
+- Store icon 128 x 128 (the build already ships `icon-128.png`).
+- Screenshots 1280 x 800: a search page with badges, the app page banner, and the settings page.
+- Chrome Web Store small promo tile 440 x 280 (optional).

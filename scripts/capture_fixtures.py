@@ -1,0 +1,306 @@
+"""Refresh the public fixtures in tests/fixtures/ from the live store (cookie-less, keyless).
+
+Captures the GetItems fixtures (`mixed-states`, `german-context`, `empty-response`) and the
+server-rendered app pages, sanitizes them the way tests/fixtures/README.md describes, and writes
+them in place. It never signs in and never captures a logged-in page. Fixtures that need a
+rendered DOM or an account (`surfaces/`, `app-page/*-live-dom.html`, `search-roguelike-50`,
+the `synthetic-*` files) are not touched; refresh those by hand.
+
+Without --out the files in tests/fixtures/ are overwritten and the capture date in
+tests/fixtures/README.md is updated; review the diff before committing. Use --out to write to
+another folder first. About a dozen requests are made, one second apart.
+"""
+
+import argparse
+import html
+import json
+import re
+import time
+import urllib.error
+import urllib.parse
+import urllib.request
+from dataclasses import dataclass
+from datetime import UTC, datetime
+from html.parser import HTMLParser
+from pathlib import Path
+
+from repo import ROOT, fail
+
+FIXTURES = ROOT / "tests" / "fixtures"
+GETITEMS_URL = "https://api.steampowered.com/IStoreBrowseService/GetItems/v1"
+USER_AGENT = "steam-ai-reporter-fixtures (+https://github.com/jrv97/steam-ai-reporter)"
+TIMEOUT_SECONDS = 30
+SPACING_SECONDS = 1.0
+
+ITEM_REMOVED = ("related_items", "best_purchase_option")
+DETAILS_REMOVED = (
+    "system_requirements",
+    "early_access",
+    "partner_awards_bbcode",
+    "links_and_info",
+    "press_review",
+    "legal_notice_bbcode",
+    "eula",
+    "section",
+)
+
+VOID_TAGS = frozenset(
+    [
+        "area",
+        "base",
+        "br",
+        "col",
+        "embed",
+        "hr",
+        "img",
+        "input",
+        "link",
+        "meta",
+        "param",
+        "source",
+        "track",
+        "wbr",
+    ]
+)
+DROPPED_TAGS = frozenset(
+    ["script", "style", "link", "noscript", "iframe", "svg", "template", "video", "object", "embed"]
+)
+# Page chrome and bulky blocks cut from app pages (ids and classes).
+DROPPED_IDS = frozenset(
+    {
+        "global_header",
+        "footer",
+        "footer_spacer",
+        "application_config",
+        "game_highlights",
+        "Reviews_summary",
+        "app_reviews_hash",
+        "review_histogram_rollup_section",
+        "recommended_block_content",
+        "ReportAppBtn",
+    }
+)
+DROPPED_CLASSES = frozenset({"sys_req", "responsive_page_menu_ctn", "home_page_content"})
+ALLOWED_DS = frozenset(
+    {"data-ds-appid", "data-ds-packageid", "data-ds-bundleid", "data-ds-itemkey"}
+)
+DROPPED_ATTRS = frozenset({"srcset", "data-props", "data-panel"})
+KEEP_WHITESPACE_ID = "game_area_content_descriptors"
+# Redirect captures keep only this many levels below <body>.
+SHALLOW_DEPTH = 3
+TAB = "&#9;"
+
+
+@dataclass(frozen=True)
+class AppPage:
+    file: str
+    appid: int
+    shallow: bool = False
+
+
+APP_PAGES = (
+    AppPage("5072580-ai-first.html", 5072580),
+    AppPage("1808500-ai-only.html", 1808500),
+    AppPage("413150-no-block.html", 413150),
+    AppPage("4618750-ai-line-breaks.html", 4618750),
+    AppPage("339800-login-redirect.html", 339800, shallow=True),
+    AppPage("99999999-home-redirect.html", 99999999, shallow=True),
+)
+
+
+def fetch(url: str) -> str:
+    """GET without cookies (the default opener has no cookie jar); returns the body."""
+    request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})  # noqa: S310
+    try:
+        with urllib.request.urlopen(request, timeout=TIMEOUT_SECONDS) as response:  # noqa: S310
+            body: str = response.read().decode("utf-8")
+            return body
+    except (urllib.error.URLError, TimeoutError) as error:
+        fail(f"{url}: {error}")
+
+
+def ascii_refs(text: str) -> str:
+    return "".join(char if ord(char) < 128 else f"&#{ord(char)};" for char in text)
+
+
+class Sanitizer(HTMLParser):
+    """Streams a page back out, dropping what tests/fixtures/README.md lists as removed."""
+
+    def __init__(self, shallow: bool) -> None:
+        super().__init__(convert_charrefs=True)
+        self.shallow = shallow
+        self.out: list[str] = []
+        self._stack: list[str] = []
+        self._skip_from: int | None = None
+        self._keep_ws_from: int | None = None
+        self._body_level: int | None = None
+
+    def _drops(self, tag: str, attrs: dict[str, str | None]) -> bool:
+        classes = (attrs.get("class") or "").split()
+        if tag in DROPPED_TAGS or attrs.get("id") in DROPPED_IDS:
+            return True
+        if any(name in DROPPED_CLASSES or "avatar" in name for name in classes):
+            return True
+        if "data-miniprofile" in attrs:
+            return True
+        if tag == "input" and attrs.get("name") == "sessionid":
+            return True
+        if self.shallow and self._body_level is not None:
+            return len(self._stack) - self._body_level >= SHALLOW_DEPTH
+        return False
+
+    def _render(self, tag: str, attrs: dict[str, str | None]) -> str:
+        parts = [tag]
+        for key, value in attrs.items():
+            if key.startswith("on") or key in DROPPED_ATTRS:
+                continue
+            if key.startswith("data-ds-") and key not in ALLOWED_DS:
+                continue
+            if value is None:
+                parts.append(key)
+            else:
+                escaped = ascii_refs(html.escape(value, quote=True)).replace("\t", TAB)
+                parts.append(f'{key}="{escaped}"')
+        return "<" + " ".join(parts) + ">"
+
+    def handle_decl(self, decl: str) -> None:
+        self.out.append(f"<!{decl}>\n")
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        mapping = dict(attrs)
+        if self._skip_from is not None:
+            if tag not in VOID_TAGS:
+                self._stack.append(tag)
+            return
+        if tag == "body":
+            self._body_level = len(self._stack) + 1
+        if self._drops(tag, mapping):
+            if tag not in VOID_TAGS:
+                self._skip_from = len(self._stack)
+                self._stack.append(tag)
+            return
+        self.out.append(self._render(tag, mapping))
+        if tag not in VOID_TAGS:
+            if mapping.get("id") == KEEP_WHITESPACE_ID:
+                self._keep_ws_from = len(self._stack)
+            self._stack.append(tag)
+
+    def handle_startendtag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        mapping = dict(attrs)
+        if self._skip_from is None and not self._drops(tag, mapping):
+            self.out.append(self._render(tag, mapping))
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag in VOID_TAGS or tag not in self._stack:
+            return
+        while self._stack:
+            popped = self._stack.pop()
+            level = len(self._stack)
+            if self._skip_from is None:
+                self.out.append(f"</{popped}>")
+            elif level <= self._skip_from:
+                self._skip_from = None
+            if self._keep_ws_from is not None and level <= self._keep_ws_from:
+                self._keep_ws_from = None
+            if popped == tag:
+                break
+
+    def handle_data(self, data: str) -> None:
+        if self._skip_from is not None:
+            return
+        if not data.strip():
+            self.out.append("\n")
+        elif self._keep_ws_from is not None:
+            self.out.append(ascii_refs(html.escape(data, quote=False)).replace("\t", TAB))
+        else:
+            collapsed = re.sub(r"[ \t]+", " ", data)
+            self.out.append(ascii_refs(html.escape(collapsed, quote=False)))
+
+    # Comments and processing instructions are dropped by not overriding their handlers.
+
+
+def sanitize_page(text: str, shallow: bool) -> str:
+    parser = Sanitizer(shallow)
+    parser.feed(text)
+    parser.close()
+    return re.sub(r"\n{2,}", "\n", "".join(parser.out)).strip() + "\n"
+
+
+def getitems_url(ids: list[int], language: str, country: str) -> str:
+    request = {
+        "ids": [{"appid": appid} for appid in ids],
+        "context": {"language": language, "country_code": country},
+        "data_request": {"include_extra_details": True},
+    }
+    return f"{GETITEMS_URL}?input_json={urllib.parse.quote(json.dumps(request), safe='')}"
+
+
+def trim_item(entry: object) -> object:
+    if not isinstance(entry, dict):
+        return entry
+    item = {key: value for key, value in entry.items() if key not in ITEM_REMOVED}
+    details = item.get("extra_details")
+    if isinstance(details, dict):
+        item["extra_details"] = {k: v for k, v in details.items() if k not in DETAILS_REMOVED}
+    return item
+
+
+def getitems_fixture(ids: list[int], language: str, country: str) -> str:
+    envelope = json.loads(fetch(getitems_url(ids, language, country)))
+    response = envelope.get("response") if isinstance(envelope, dict) else None
+    items = response.get("store_items") if isinstance(response, dict) else None
+    if not isinstance(items, list):
+        fail(f"GetItems {ids}: no response.store_items in the answer")
+    rows = ",\n".join(json.dumps(trim_item(item), separators=(",", ":")) for item in items)
+    return '{"response":{"store_items":[\n' + rows + "\n]}}\n"
+
+
+def write(path: Path, text: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text, encoding="utf-8", newline="\n")
+    print(f"wrote {path}")
+
+
+def capture_getitems(out: Path) -> None:
+    mixed = [5072580, 1808500, 1938090, 413150, 339800, 99999999, 50300]
+    write(out / "getitems" / "mixed-states.json", getitems_fixture(mixed, "english", "US"))
+    time.sleep(SPACING_SECONDS)
+    write(
+        out / "getitems" / "german-context.json",
+        getitems_fixture([1938090, 5072580], "german", "DE"),
+    )
+    time.sleep(SPACING_SECONDS)
+    write(out / "getitems" / "empty-response.json", fetch(getitems_url([], "english", "US")))
+    time.sleep(SPACING_SECONDS)
+
+
+def capture_app_pages(out: Path) -> None:
+    for page in APP_PAGES:
+        body = fetch(f"https://store.steampowered.com/app/{page.appid}/?l=english")
+        write(out / "app-page" / page.file, sanitize_page(body, page.shallow))
+        time.sleep(SPACING_SECONDS)
+
+
+def update_readme_date() -> None:
+    readme = FIXTURES / "README.md"
+    today = datetime.now(UTC).date().isoformat()
+    text = readme.read_text(encoding="utf-8")
+    updated = re.sub(r"(Captured from the live store on )\d{4}-\d{2}-\d{2}", rf"\g<1>{today}", text)
+    readme.write_text(updated, encoding="utf-8", newline="\n")
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--out", type=Path, default=FIXTURES, help="output folder")
+    parser.add_argument("--only", choices=("getitems", "app-page"), help="capture one group")
+    args = parser.parse_args()
+    if args.only != "app-page":
+        capture_getitems(args.out)
+    if args.only != "getitems":
+        capture_app_pages(args.out)
+    if args.out.resolve() == FIXTURES:
+        update_readme_date()
+
+
+if __name__ == "__main__":
+    main()
