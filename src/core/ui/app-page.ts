@@ -7,6 +7,7 @@ import {
   createBanner,
   placeBanner,
 } from "./banner";
+import type { CardTriggers } from "./hover-card";
 import { createSummaryRow, placeSummaryRow } from "./summary-row";
 
 /** What the app page shows for its own game. */
@@ -21,6 +22,11 @@ export interface AppPageView {
 export interface AppPageUi {
   /** Idempotent: an unchanged view changes nothing; a node a store re-render dropped returns. */
   render(view: AppPageView): void;
+}
+
+export interface AppPageOptions extends BannerOptions {
+  /** Opens on the summary row; without one the row shows no notes. */
+  readonly card?: CardTriggers;
 }
 
 interface Row {
@@ -38,7 +44,7 @@ export function createAppPageUi(
   doc: Document,
   i18n: MessageCatalog,
   actions: BannerActions,
-  options: BannerOptions = {},
+  options: AppPageOptions = {},
 ): AppPageUi {
   let banner: Banner | undefined;
   let row: Row | undefined;
@@ -74,7 +80,7 @@ export function createAppPageUi(
       }
       removeRow();
       const jump = bannerShown ? () => banner?.reveal() : undefined;
-      const element = createSummaryRow(doc, i18n, verdict, jump);
+      const element = createSummaryRow(doc, i18n, verdict, jump, options.card);
       if (placeSummaryRow(doc, element)) {
         row = { element, notes: verdict.notes, linked: bannerShown };
       }

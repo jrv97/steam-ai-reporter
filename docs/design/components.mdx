@@ -1,7 +1,7 @@
 ---
 title: AI Reporter for Steam UI components (v1)
 status: draft
-updated: 2026-10-20
+updated: 2026-10-21
 ---
 
 # AI Reporter for Steam UI components (v1)
@@ -66,19 +66,20 @@ Every text pair meets WCAG 2.2 AA on the grounds its token's note names; see the
 
 - Spacing is the store's React scale: `sar-space-0` to `sar-space-6` (2, 4, 8, 12, 16, 24, 32px). Badges keep their own exact paddings (`sar-badge-pad-inline`, `sar-compact-pad-inline`).
 - Radii are small or none, like the store's: none on the banner and the compact badge (like the notice bubbles and corner flags), `sar-radius-xs` (1px) on the allow-listed note, `sar-radius-sm` (2px) for the full badge, buttons and segments, `sar-radius-md` (4px) for cards on extension pages, `sar-radius-pill` only for the switch track.
-- No shadows on store pages except `sar-compact-shadow`, which keeps a compact badge's edge over mid-tone art. The banner is flat, like the store's notice bubbles. Cards on extension pages are flat.
-- `sar-z-badge` (3) sits over capsule art and the store's corner flags, under its hover popups.
+- No shadows on store pages except `sar-compact-shadow`, which keeps a compact badge's edge over mid-tone art, and the hover card's, which copies the store's own popup shadow. The banner is flat, like the store's notice bubbles. Cards on extension pages are flat.
+- `sar-z-badge` (4) sits over capsule art, the store's corner flags and its hover microtrailer video (z-index 3), under its hover popups.
+- `sar-z-hovercard` (2100) sits over the store's game hover popup (1526) and its React capsule hover layer (2000), for our hover card (section 15).
 
 ## Motion and focus
 
 - Animate only color and opacity, with `sar-duration-fast` (120ms) or `sar-duration-base` (180ms) and `sar-ease`, and never on many elements at once. `prefers-reduced-motion: reduce` sets both durations to 0ms.
 - The banner's collapse does not animate: a jump is calmer than a fake slide.
-- Focus is a solid `sar-focus-width` (2px) ring in `sar-focus-color` at `sar-focus-offset` (2px), on `:focus-visible` only. It holds 3.69:1 or more on every ground, the banner wash included. Badges are not focusable; they ride inside the store's own link.
+- Focus is a solid `sar-focus-width` (2px) ring in `sar-focus-color` at `sar-focus-offset` (2px), on `:focus-visible` only. It holds 3.69:1 or more on every ground, the banner wash included. Badges are not focusable; they ride inside the store's own link, whose focus opens the hover card (section 15).
 - Forced colors: badges switch to `Canvas` and `CanvasText` with a visible border; the banner, whose wash disappears, gets a `CanvasText` edge.
 
 ## Longer translations and direction
 
-- Badges stay on one line and truncate past their cap; the full message stays in `title` and in the DOM text screen readers read.
+- Badges stay on one line and truncate past their cap; the full label stays in the DOM text screen readers read, and the hover card shows it in full.
 - Everything else wraps. Nothing that holds copy gets a fixed height; controls with copy have a minimum block size.
 - Use logical properties (`padding-inline`, `inset-inline-end`, `border-inline-start`, `text-align: start`). The one physical value is the switch thumb's `translateX`. Right-to-left is out of scope for v1, but nothing here assumes left or right.
 - No text in icons or images.
@@ -108,13 +109,13 @@ Settings gate each column: `badges` off removes both badges and the summary row,
 - Every injected element carries a class starting with `sar-`; every attribute we set on store nodes starts with `data-sar-`. The scanner skips both.
 - Hosts get `data-sar-appid` and `data-sar-state` (`disclosed`, `not-disclosed`, `unknown`, `allowed`), plus `data-sar-hideable="false"` where the placement says hiding would break the list. These are written once, when the scanner marks the host.
 - Settings live as attributes on `document.documentElement`: `data-sar-filter` (`off`, `dim`, `hide`) and `data-sar-badges` (`on`, `off`). The list filter and the live badge switch are pure CSS on top of them (sections 1, 2, 3 and 5).
-- Never move, wrap or restyle store nodes. The one store-node change besides the attributes above is `data-sar-anchor` on an image container that computes to `position: static`, which a CSS rule turns into `position: relative` (section 2).
+- Never move, wrap or restyle store nodes. The store-node changes besides the attributes above are `data-sar-anchor` on an image container that computes to `position: static`, which a CSS rule turns into `position: relative` (section 2), and a transient `aria-describedby` on a focused store link while the hover card is open (section 15).
 - DOM reads (image sizes, computed position) are batched before writes in one `requestAnimationFrame` per scan.
-- Listeners are delegated: one per root, never one per node. The summary row's jump to the banner is one such listener (section 3).
+- Listeners are delegated: one per root, never one per node. The summary row's jump to the banner is one such listener (section 3); the hover card's are on the document (section 15).
 
 **Style isolation**
 
-- Light-DOM components (both badges and the summary row) reset with `all: unset` on themselves and their descendants, then set every property they need. Store CSS styles bare `span`, `a`, `h2` and `button` in places, and `all` leaves custom properties alone, so tokens still reach them.
+- Light-DOM components (both badges, the summary row and the hover card) reset with `all: unset` on themselves and their descendants, then set every property they need. Store CSS styles bare `span`, `a`, `h2` and `button` in places, and `all` leaves custom properties alone, so tokens still reach them.
 - The banner renders into a shadow root on a host `div.sar-banner-host`. Page CSS cannot reach it, and its CSS cannot leak. Tokens inherit into it from `:root`, and the page's "Motiva Sans" works inside it because `@font-face` is document-wide. Attach the stylesheet with `adoptedStyleSheets`; if the store's CSP or a script manager blocks that, fall back to light DOM plus the badge reset.
 - The userscript settings dialog uses the same shadow-root approach.
 
@@ -140,13 +141,13 @@ Preview: `previews/Badge.html`.
 ### What the consumer provides
 
 ```html
-<span class="sar-badge" title="t('badge_tooltip', { label, notes })">
+<span class="sar-badge">
   <span class="sar-badge-label">t('badge_full')</span>
 </span>
 ```
 
 - The label from `badge_full` ("AI use disclosed") as real text.
-- A native `title` from `badge_tooltip`: the label, then the first 200 characters of the developer's notes, verbatim, with `...` if cut.
+- The badge registers with the hover card (section 15), which shows the developer's notes on hover or focus. No `title`.
 
 ### Look
 
@@ -155,7 +156,7 @@ Built like the store's own tag chips, in our hue.
 - `sar-badge-height` (19px) tall, `sar-badge-pad-inline` (7px), `sar-radius-sm`, no border.
 - Label in `sar-text-badge` (11/19 regular, the page font rather than the chips' Arial, because the badge sits in Motiva rows), `sar-badge-fg` on `sar-badge-bg`.
 - No icon. The violet hue and the wording set it apart from the store's blue tags, and it never sits in the store's tag row.
-- Capped at `sar-badge-max-inline-size` (180px). English needs about 96px in the store font (82px of text plus padding), so a translation can run about 85% longer before it truncates; longer labels end in an ellipsis and keep the full text in the tooltip and the DOM.
+- Capped at `sar-badge-max-inline-size` (180px). English needs about 96px in the store font (82px of text plus padding), so a translation can run about 85% longer before it truncates; longer labels end in an ellipsis and keep the full text in the DOM.
 
 ### Placement
 
@@ -165,7 +166,7 @@ Built like the store's own tag chips, in our hue.
 
 ### States
 
-- Default only; it does not react to hover. The row's own hover shows through the tint and the label still clears 5.21:1.
+- Default only; its look does not change on hover. The row's own hover shows through the tint and the label still clears 5.21:1. Resting on it opens the hover card.
 - `[data-sar-badges="off"]` on the root hides every badge in one style pass.
 - Inside a dimmed host it dims with the host.
 
@@ -193,14 +194,13 @@ Preview: `previews/CompactBadge.html`.
 ### What the consumer provides
 
 ```html
-<span class="sar-compact" data-sar-size="text" data-sar-in-link="true"
-      title="t('badge_tooltip', { label, notes })">
+<span class="sar-compact" data-sar-size="text" data-sar-in-link="true">
   <span class="sar-compact-label">t('badge_compact')</span>
 </span>
 ```
 
 - `data-sar-size`, set once at placement from the measured image box (batched read, `getBoundingClientRect`). No container queries: they would change how store containers size themselves.
-- `data-sar-in-link="true"` and a `title` only when `badge.closest("a")` is the capsule link.
+- `data-sar-in-link="true"` only when `badge.closest("a")` is the capsule link. The badge registers with the hover card either way; outside a link no pointer reaches it.
 - `data-sar-anchor` on the image container if it computes to `position: static`; the stylesheet turns it into `position: relative`. Never an inline style.
 
 ### Size tiers
@@ -220,13 +220,13 @@ Built as a mirror of the store's own corner flags (in library, on wishlist): sol
 - `sar-compact-fg` on `sar-compact-bg` (12.65:1 whatever the art), square corners, a 1px `sar-compact-border` and `sar-compact-shadow`.
 - Unlike the store's mid-tone flags, the surface is dark (accent 900) and keeps an edge. Together they give every kind of art a boundary at 3:1 or more: the edge against black (5.91:1), the surface against white (16.63:1), mid grey (4.21:1) and violet (3.34:1).
 - Block-start, inline-end corner (top right in English), mirroring the store's flags, which sit top-left. The store also owns the bottom edge (prices).
-- `z-index: sar-z-badge`: over the art and the corner flags, under the store's hover popups.
+- `z-index: sar-z-badge`: over the art, the corner flags and the microtrailer video that home capsules play on hover, under the store's hover popups.
 - Maximum inline size is the image width; past it the label ends in an ellipsis. Because the badge now shares the flags' row, a long translation on a small capsule can reach a store flag; see the open questions.
 
 ### Pointer and accessibility
 
-- Inside the capsule link: `pointer-events: auto`, so hovering or clicking the badge is hovering or clicking the link, and the tooltip shows.
-- Outside a link: `pointer-events: none` and no `title`, so it never swallows a click on an overlaid link. The label stays in the DOM.
+- Inside the capsule link: `pointer-events: auto`, so hovering or clicking the badge is hovering or clicking the link, and the hover card opens. Focus on the link opens it too.
+- Outside a link: `pointer-events: none`, so it never swallows a click on an overlaid link, and no hover card opens. The label stays in the DOM.
 
 ### Don't
 
@@ -248,7 +248,7 @@ Preview: `previews/SummaryRow.html`.
 ### What the consumer provides
 
 ```html
-<a class="sar-summary-row" href="#sar-banner" title="t('badge_tooltip', { label, notes })">
+<a class="sar-summary-row" href="#sar-banner">
   <span class="sar-summary-label">t('summary_label')</span>
   <span class="sar-badge">
     <span class="sar-badge-label">t('summary_value')</span>
@@ -258,8 +258,7 @@ Preview: `previews/SummaryRow.html`.
 
 - Insert it right after the last `.dev_row` in the summary box (`.glance_ctn_responsive_left`). Steam's own rows there are label and value pairs; this row follows the same shape with its own classes, and never borrows or restyles a store node.
 - With the banner on, the row is a progressive link: `href="#sar-banner"` (the banner host's id), handled by one delegated click listener that calls `preventDefault`, scrolls the host into view with `block: "start"`, and focuses the banner's `aside` (`tabindex="-1"`) with `focus({ preventScroll: true })`. The URL never changes, so there is no history entry and no `#sar-banner` in links people copy. Without the script, the plain anchor still lands on the banner. Steam's own reviews row jumps to the reviews section the same way.
-- With the banner off, render the row as a `div` with no `href`: the chip still says what it says, and the tooltip still quotes the notes.
-- The native `title` from `badge_tooltip`, as on the other badges.
+- With the banner off, render the row as a `div` with no `href` and `tabindex="0"`: the chip still says what it says, and the hover card (section 15) quotes the notes. With the banner on, the row opens no hover card: the jump lands on the full notes.
 
 ### Look
 
@@ -267,7 +266,7 @@ Steam's summary box is set in Arial (13/18 values, 11/18 uppercase labels), and 
 
 - Label column `sar-summary-label-inline-size` (35% of the row, like the store's labels), `sar-summary-label-pad-inline-end` (10px), `sar-text-summary-label`, uppercase, in `sar-color-text-subtle`. The store's own label color, `#798a95`, is 4.18:1 on the page, so ours is a step lighter to pass AA.
 - Value: the full badge (`sar-badge-fg` on `sar-badge-bg`, 19px, `sar-radius-sm`), set in `sar-text-summary-tag` like the store's tag chips. A violet chip in a box of blue links is what draws the eye.
-- The chip may use the whole value column; past it the label ends in an ellipsis, and the full text stays in the tooltip.
+- The chip may use the whole value column; past it the label ends in an ellipsis, and the full text stays in the DOM.
 - Interaction: a pointer cursor and no underline, like the store's own review rows, plus the shared `sar-focus-color` ring on `:focus-visible`, which the store's rows lack.
 
 ### Fit
@@ -279,6 +278,7 @@ Measured on a 1280 by 900 window (app 1808500): the row is 18px tall, the summar
 - The link's name is the label plus the chip text, for example "AI use: Disclosed by the developer".
 - The catalog strings stay in sentence case. The uppercase is `text-transform`, which follows the page's `lang`, so locales such as Turkish case correctly.
 - The jump lands on the banner, and focus follows, so a keyboard or screen reader user arrives at the developer's words.
+- With the banner off, focus on the row opens the hover card, which describes the row while it is open.
 
 ### Don't
 
@@ -738,6 +738,84 @@ magick -background none -density 384 icon.svg -filter Lanczos -resize 96x96 -gra
 - Not used by any component: badges, the summary row and the banner carry no icon (decision 30). Kept as a reference for the mark.
 - Single ink, `currentColor`. Shown as an image it renders black, so its tile here looks dark.
 
+## 15. Hover card
+
+The developer's disclosure in a small dark panel that opens when a pointer rests on a badge, or when keyboard focus reaches one. It is built like the store's own game hover popup (`#global_hover`, the panel with title, release date, description, reviews and tags next to a capsule). Badges carry no `title`; the card is their only tooltip.
+
+Preview: `previews/HoverCard.html`.
+
+### When to use
+
+- On the full badge, on a compact badge inside the capsule link, and on the summary row while the banner is off. These are its triggers.
+- Not on the summary row while the banner is on: its click jumps to the full notes, and a card there would cover the tag row on the way to that click.
+- Not on a compact badge outside a link: it keeps `pointer-events: none` (section 2) and nothing opens.
+- Not on the banner, which quotes the notes in full.
+
+### What the consumer provides
+
+```html
+<div class="sar-hovercard" id="sar-hovercard" role="tooltip" popover="manual" data-sar-side="below" hidden>
+  <p class="sar-hovercard-title">t('badge_card_title')</p>
+  <p class="sar-hovercard-source">t('badge_card_source')</p>
+  <p class="sar-hovercard-notes">notes, verbatim</p>
+  <p class="sar-hovercard-service">t('badge_card_service_label') <span class="sar-hovercard-service-name">service</span></p>
+  <p class="sar-hovercard-more" hidden>t('badge_card_more')</p>
+</div>
+```
+
+- One card per page, created on first use and appended to `body`. Every trigger reuses it; opening for another game refills it.
+- Triggers register with the card when they render: a `WeakMap` from trigger element to verdict, plus whether the trigger sits on the game's own page (the summary row). Nothing is set on the trigger, and no listener is added to it.
+- Opening and closing run on delegated listeners on the document: `pointerover`, `pointerout`, `focusin`, `focusout`, `keydown` and `scroll`. Their number does not depend on how many badges the page holds.
+- The notes go in through `textContent` with `\r\n` turned into `\n`, never translated or cut in the DOM. The service line appears only when GetItems named one (`ai_generation_service`), the name inserted as data.
+- No request: the card shows the verdict the badge was drawn from.
+
+### Look
+
+Built like the store's game hover popup, sampled on the home page on 2026-10-21: a `#344352` panel, no radius, a 20px black shadow at 50%, 16px of padding, 306px wide, set in the page font.
+
+- Surface `sar-hovercard-bg` with `sar-hovercard-shadow`, padding `sar-hovercard-pad`, inline size `sar-hovercard-inline-size`, capped at the viewport width less two offsets.
+- Title in `sar-hovercard-title-font` (15/17, like the store's game name there), `sar-badge-fg`. The violet title is what marks the card as ours.
+- Source line in `sar-hovercard-meta-font` (11/16), `sar-color-text-muted`, like the store's release line.
+- Notes in `sar-hovercard-notes-font` (12/18 italic, like the store's own disclosure section), `sar-color-text`, `white-space: pre-line`, clamped to `sar-hovercard-notes-lines` (6) lines.
+- Service line in the meta font: label `sar-color-text-muted`, name `sar-color-text`.
+- The "more" line, `badge_card_more` in the meta font and `sar-color-text-muted`, shows only when the clamp hides text and the trigger is not on the game's own page. The app page carries Steam's own disclosure section and, when on, the banner; the summary row's card never shows the line. The full notes stay in the DOM for screen readers, and the game's store page carries them in Steam's own disclosure section.
+- No arrow. The store's popup has a bitmap arrow toward the capsule; ours sits right under the badge, and the short gap ties it to its trigger.
+
+### Placement
+
+- Fixed to the viewport, `sar-hovercard-offset` (8px) below the trigger. Where it would cross the bottom edge and fits above, it flips above (`data-sar-side="above"`).
+- Horizontally, the full badge and the summary row (banner off) align the card's inline-start edge with their own. A compact badge aligns the inline-end edges: the card hangs back over the capsule art, away from the side where the store's popup opens. Either way the card stays one offset inside the viewport edges.
+- `z-index: sar-z-hovercard` (2100), above the store's game hover popup (1526) and the full-viewport layer that React store pages (tag hubs, categories) mount for their capsule hover (2000). The card is also a manual popover, shown again on every open, so it enters the browser's top layer after any store popover that is open; the React hover layer is one, and no z-index reaches above it. The z-index covers engines without the Popover API. Over a capsule both open: the store's popup beside the capsule, ours under the badge. Where the store's popup flips to the same side, ours is on top, because the pointer is on our badge.
+- On React store pages (tag hubs, categories) the store's hover layer covers the capsule as soon as the pointer enters it, so the pointer cannot rest on the compact badge there. Focus on the capsule link still opens the card.
+- The card covers store content only while it is open, and only in answer to a pointer or focus on our own element. It never opens by itself.
+
+### Behavior
+
+- Pointer: opens after 150ms at rest on a trigger. A pointer crossing a grid of capsules opens nothing. Moving to another trigger while it is open switches at once.
+- The card is hoverable: leaving the trigger starts a 100ms grace, long enough for the pointer to cross onto the card, which then stays open. Leaving both, or the window, closes it. Both delays are timers in `hover-card.ts`, not tokens.
+- Keyboard: opens at once when focus lands on the summary row (banner off) or on a store link that holds a badge (a search row or a capsule link). Moving focus elsewhere closes it.
+- `Escape` closes it, and it stays closed until the pointer leaves the trigger or focus moves.
+- Any scroll outside the card closes a card the pointer opened; a fixed card would drift away from its trigger. A card focus opened follows its trigger instead, because focus scrolls a link into view: the one delegated scroll listener queues at most one move per frame, which reads only the trigger's box, and the card closes once the trigger leaves the viewport.
+- `[data-sar-badges="off"]` hides it, like every badge.
+
+### Accessibility
+
+- `role="tooltip"` on the card. While focus opened it, the focused element gets `aria-describedby="sar-hovercard"`, added to any ids already there and restored on close. On a store link this is the one store-node attribute outside `data-sar-*`, and it lasts only while the card is open.
+- The summary row is always focusable: a link with the banner on, `tabindex="0"` on the `div` without it. Keyboard users reach the notes either way.
+- Badges stay unfocusable; focus rides on the store's link around them.
+- WCAG 2.2 content on hover or focus (1.4.13): dismissible with `Escape`, hoverable, and open until the pointer or focus leaves.
+
+### Motion
+
+- Fades in over `sar-duration-fast` with `sar-ease` through `@starting-style`; closing is instant. `prefers-reduced-motion: reduce` sets the duration to 0ms and the card appears without a fade.
+- No movement: position and size never animate.
+
+### Don't
+
+- Don't add a link or button inside the card. Keyboard users never reach it, because focus stays on the trigger.
+- Don't fetch anything to fill it.
+- Don't add per-badge listeners or a card per badge.
+
 ## Message catalog
 
 Every string the UI shows, as keys for `src/locales/en/messages.json`. Keys are snake_case, grouped by prefix. Placeholders use the Chrome form `$name$`. The note under each seeds the message's `description` for translators.
@@ -754,7 +832,10 @@ For every translator:
 | --- | --- | --- |
 | `badge_full` | AI use disclosed | Label on search and wishlist rows. One line; truncates past about 22 characters. |
 | `badge_compact` | AI disclosed | Label over game images. Keep it as short as the language allows. |
-| `badge_tooltip` | `$label$`. In the developer's own words: `$notes$` | Hover text on a badge. `label` is the badge label; `notes` is the developer's text, up to 200 characters, untranslated. |
+| `badge_card_title` | AI use disclosed | Heading of the hover card on a badge. It never truncates, so the full phrase fits. Say that the use was disclosed; never say the game uses AI. |
+| `badge_card_source` | In the developer's own words: | Introduces the developer's text, which follows untranslated. |
+| `badge_card_service_label` | AI service named by the developer: | Precedes a product name inserted as data. |
+| `badge_card_more` | The full text is on the game's store page. | Shown when the panel cuts a long text short, never on the game's own page. |
 
 ### `summary_`
 
