@@ -1,4 +1,4 @@
-# Nightly release train (ADR 0005). The train job opens a batch PR as the release-bot app.
+# Nightly release train (ADR 0005). The train job opens a batch PR as the release app.
 # A dry run reports the next version, opens nothing and needs no app secrets.
 # After CI passes on a merged batch commit, the tag job tags it and dispatches the nightly.
 name: release-train
@@ -35,12 +35,12 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
-        id: bot
+        id: app
         if: ${{ !inputs.dry_run }}
         with:
-          # GitHub accepts the app ID here as the JWT issuer.
-          client-id: ${{ secrets.RELEASE_BOT_APP_ID }}
-          private-key: ${{ secrets.RELEASE_BOT_PRIVATE_KEY }}
+          # GitHub accepts the app ID as the JWT issuer.
+          client-id: ${{ secrets.RELEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
           permission-contents: write
           permission-pull-requests: write
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -57,8 +57,8 @@ jobs:
           DRY_RUN: ${{ inputs.dry_run }}
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-          RELEASE_BOT_TOKEN: ${{ steps.bot.outputs.token }}
-          RELEASE_BOT_SLUG: ${{ steps.bot.outputs.app-slug }}
+          RELEASE_APP_TOKEN: ${{ steps.app.outputs.token }}
+          RELEASE_APP_SLUG: ${{ steps.app.outputs.app-slug }}
 
   tag:
     name: mise run release:tag
@@ -77,10 +77,10 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
-        id: bot
+        id: app
         with:
-          client-id: ${{ secrets.RELEASE_BOT_APP_ID }}
-          private-key: ${{ secrets.RELEASE_BOT_PRIVATE_KEY }}
+          client-id: ${{ secrets.RELEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
           permission-contents: write
           permission-actions: write
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -98,4 +98,4 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           RELEASE_SHA: ${{ github.event.workflow_run.head_sha }}
-          RELEASE_BOT_TOKEN: ${{ steps.bot.outputs.token }}
+          RELEASE_APP_TOKEN: ${{ steps.app.outputs.token }}
