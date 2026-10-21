@@ -11,6 +11,7 @@ import type { JsonValue } from "./json";
 import { DEFAULT_SETTINGS } from "./settings/settings";
 import { createSettingsSource } from "./settings/settings-source";
 import { ALLOW_KEY } from "./storage-keys";
+import { adoptPageStyles } from "./ui/styles";
 
 const DISCLOSED = "4461450";
 const SEARCH_IDS = [4075620, 3934270, 3784030, 1045010, 3432110, 3664320, 4461450, 2624160];
@@ -33,6 +34,7 @@ async function startOnSearch(initial: ReadonlyMap<string, JsonValue> = new Map()
     settings,
     clock: fixedClock(NOW),
     console: quiet,
+    addPageStyles: adoptPageStyles,
   });
   return { http, settings };
 }

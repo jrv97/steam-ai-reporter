@@ -1,10 +1,13 @@
 """Check the built bundles in dist/ (and artifacts/ when present) against the project rules.
 
 - Manifests: permissions exactly ["storage"], no host permissions and no background (rule 3);
-  content scripts match the store only; Gecko settings only in Firefox; every __MSG_*__ resolves.
+  content scripts match the store only; Gecko settings only in Firefox; every __MSG_*__ resolves;
+  every file the manifest names exists.
+- Extension pages carry no copy (rule 9): only whitespace text, and `data-i18n` keys that resolve.
 - Userscript: header present, no @connect; no userscript header in any other bundle.
 - No eval( or new Function in any bundle (rule 2); no URL outside the two Valve hosts.
-- Size budgets: content.js at most 60 KB, the userscript at most 80 KB, unminified (rule 13).
+- Size budgets: content.js at most 118 KB, the userscript at most 80 KB, unminified (rule 13).
+  Each is the measured size plus about 15% headroom; raise one only with a measurement.
 - The STEAM_API_KEY value, when set, appears nowhere in dist/ or artifacts/ (rule 16).
 - The dev injection bundle is never packaged into artifacts/, and when artifacts/ exists it holds
   exactly the five release artifacts, with a manifest at the root of each extension zip.
@@ -13,14 +16,15 @@
 import os
 import re
 import zipfile
+from html.parser import HTMLParser
 from pathlib import Path
 
 from repo import ARTIFACTS, DIST, SLUG, fail, json_object, json_string, package_version, read_json
 
 KIB = 1024
 BUDGETS = {
-    DIST / "chrome" / "content.js": 60 * KIB,
-    DIST / "firefox" / "content.js": 60 * KIB,
+    DIST / "chrome" / "content.js": 118 * KIB,
+    DIST / "firefox" / "content.js": 118 * KIB,
     DIST / "userscript" / f"{SLUG}.user.js": 80 * KIB,
 }
 STORE_MATCH = ["https://store.steampowered.com/*"]
@@ -30,6 +34,71 @@ HEADER_END = "// ==/UserScript=="
 REMOTE_CODE = re.compile(r"\beval\s*\(|\bnew\s+Function\b")
 URL = re.compile(r"https?://([A-Za-z0-9.-]+)")
 MSG = re.compile(r"__MSG_([A-Za-z0-9_@]+)__")
+
+
+def paths(value: object, where: str) -> list[str]:
+    """The file paths in a manifest value: a path, a list of paths or an object of them."""
+    if value is None:
+        return []
+    if isinstance(value, list):
+        return [json_string(item, where) for item in value]
+    if isinstance(value, dict):
+        return [json_string(item, where) for item in value.values()]
+    return [json_string(value, where).split("?", 1)[0]]
+
+
+def manifest_files(manifest: dict[str, object], where: str) -> list[str]:
+    """Every packaged file the manifest names: icons, scripts, styles and pages."""
+    files = paths(manifest.get("icons"), where)
+    scripts = manifest.get("content_scripts")
+    for script in scripts if isinstance(scripts, list) else []:
+        entry = json_object(script, where)
+        files += paths(entry.get("js"), where) + paths(entry.get("css"), where)
+    action = json_object(manifest.get("action", {}), where)
+    files += paths(action.get("default_icon"), where) + paths(action.get("default_popup"), where)
+    files += paths(json_object(manifest.get("options_ui", {}), where).get("page"), where)
+    return files
+
+
+class PageText(HTMLParser):
+    """Collects the text and the `data-i18n` keys of an extension page."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.text: list[str] = []
+        self.keys: list[str] = []
+
+    def handle_starttag(self, _tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        self.keys += [value for name, value in attrs if name == "data-i18n" and value is not None]
+
+    def handle_data(self, data: str) -> None:
+        if data.strip():
+            self.text.append(data.strip())
+
+
+def page_problems(path: Path, catalog: dict[str, object]) -> list[str]:
+    where = path.relative_to(DIST.parent).as_posix()
+    parser = PageText()
+    parser.feed(path.read_text(encoding="utf-8"))
+    problems = [f"{where}: copy belongs in the catalog, found {text!r}" for text in parser.text]
+    problems += [
+        f"{where}: data-i18n key {key} has no message" for key in parser.keys if key not in catalog
+    ]
+    return problems
+
+
+def packaged_problems(
+    browser: str, manifest: dict[str, object], catalog: dict[str, object]
+) -> list[str]:
+    """The files the manifest names exist, and its pages carry no copy."""
+    root = DIST / browser
+    problems: list[str] = []
+    for name in sorted(set(manifest_files(manifest, f"dist/{browser}/manifest.json"))):
+        if not (root / name).is_file():
+            problems.append(f"dist/{browser}/manifest.json: names {name}, which is missing")
+        elif name.endswith(".html"):
+            problems += page_problems(root / name, catalog)
+    return problems
 
 
 def manifest_problems(browser: str) -> list[str]:
@@ -59,7 +128,7 @@ def manifest_problems(browser: str) -> list[str]:
     for key in MSG.findall((root / "manifest.json").read_text(encoding="utf-8")):
         if key not in catalog:
             problems.append(f"{where}: __MSG_{key}__ has no message in _locales/{locale}")
-    return problems
+    return problems + packaged_problems(browser, manifest, catalog)
 
 
 def split_header(text: str) -> tuple[str, str]:

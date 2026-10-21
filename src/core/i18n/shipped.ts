@@ -1,5 +1,3 @@
-import en from "../../locales/en/messages.json";
-import type { Catalogs } from "./catalog";
-
-/** The catalogs this build ships, by catalog locale. A new locale is one import and one entry. */
-export const SHIPPED_CATALOGS: Catalogs = { en };
+// The catalogs this build ships, by catalog locale: every folder under src/locales/, reduced to
+// the messages by scripts/gen_catalogs.py, so translator descriptions stay out of the bundles.
+export { SHIPPED_CATALOGS } from "./shipped.gen";

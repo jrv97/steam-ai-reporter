@@ -123,6 +123,9 @@ def main() -> None:
     if args.check:
         print(f"{args.browser}: development browser settings look right")
         return
+    # web-ext creates a missing profile directory, but not its missing parents.
+    profile_var = "SAR_FIREFOX_PROFILE" if args.browser == "firefox" else "SAR_CHROME_PROFILE"
+    env_path(profile_var).parent.mkdir(parents=True, exist_ok=True)
     web_ext = shutil.which("web-ext")
     if web_ext is None:
         fail("web-ext is not on PATH; run this through `mise run run-firefox` or `run-chrome`")

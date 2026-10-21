@@ -9,6 +9,7 @@ import { type App, start } from "./app";
 import { DEFAULT_SETTINGS } from "./settings/settings";
 import { createSettingsSource } from "./settings/settings-source";
 import { ALLOW_KEY } from "./storage-keys";
+import { adoptPageStyles } from "./ui/styles";
 
 const quiet = { error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() };
 
@@ -35,6 +36,7 @@ describe("start on an English app page", () => {
       settings,
       clock: fixedClock(0),
       console: quiet,
+      addPageStyles: adoptPageStyles,
     });
 
     expect(http.calls).toEqual([]);

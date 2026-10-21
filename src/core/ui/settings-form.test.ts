@@ -91,6 +91,36 @@ describe("mountSettingsForm", () => {
     expect(popup.root.querySelector("select")).toBeNull();
   });
 
+  it("renders the product header and the popup's link to all settings when given", async () => {
+    const root = document.createElement("main");
+    document.body.append(root);
+    await mountSettingsForm(root, {
+      i18n: englishI18n(),
+      settings: createSettingsSource(memoryStore()),
+      allowList: createAllowList(memoryStore(), fixedClock(0)),
+      context: "popup",
+      locales: ["en"],
+      header: { version: "2026.10.20", iconUrl: "icons/icon-32.png" },
+      allSettingsUrl: "options.html",
+    });
+    const header = root.firstElementChild;
+    expect(header?.matches("header.sar-options-header")).toBe(true);
+    expect(header?.querySelector("h1")?.textContent).toBe("AI Reporter for Steam");
+    expect(header?.querySelector(".sar-options-version")?.textContent).toBe("Version 2026.10.20");
+    expect(header?.querySelector("img")?.getAttribute("src")).toBe("icons/icon-32.png");
+    expect(header?.querySelector("img")?.getAttribute("alt")).toBe("");
+    const link = root.querySelector(".sar-options-footer a");
+    expect(link?.textContent).toBe("All settings");
+    expect(link?.getAttribute("href")).toBe("options.html");
+    expect(link?.getAttribute("target")).toBe("_blank");
+  });
+
+  it("renders no header or link by default", async () => {
+    const { root } = await setup("popup");
+    expect(root.querySelector(".sar-options-header")).toBeNull();
+    expect(root.querySelector(".sar-options-footer a")).toBeNull();
+  });
+
   it("names each language in itself", async () => {
     const { root } = await setup();
     const options = [...root.querySelectorAll("option")].map((option) => option.value);

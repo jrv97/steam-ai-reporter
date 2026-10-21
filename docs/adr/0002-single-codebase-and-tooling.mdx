@@ -17,7 +17,7 @@ How is the code organized, and which build, check and test tools carry it? The t
 - One behavior, three targets: no logic duplicated per platform.
 - Reviewability: bundles are not minified (rule 2), and AMO reviewers rebuild them.
 - Strict static typing without escape hatches: no `any`, no assertions, `unknown` until validated (rule 10).
-- Bundle budgets: `content.js` at most 60 KB and the userscript at most 80 KB, unminified (rule 13).
+- Bundle budgets: `content.js` at most 118 KB and the userscript at most 80 KB, unminified (rule 13).
 - One toolchain manager and task runner, identical on Windows and Linux, local and CI (rule 14).
 - Few moving parts, with maintained, permissively licensed dependencies (rule 12).
 

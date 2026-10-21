@@ -37,6 +37,30 @@
   padding-inline: var(--sar-space-3);
 }
 
+.sar-options-header {
+  display: flex;
+  align-items: center;
+  gap: var(--sar-space-3);
+  margin-block-end: var(--sar-space-4);
+}
+
+.sar-options-header img {
+  inline-size: 32px;
+  block-size: 32px;
+  flex: none;
+}
+
+.sar-options-title {
+  margin: 0;
+  color: var(--sar-color-text-strong);
+  font: var(--sar-weight-medium) var(--sar-size-2xl) / var(--sar-leading-2xl) var(--sar-font-ext);
+}
+
+.sar-options-version {
+  color: var(--sar-color-text-subtle);
+  font-size: var(--sar-size-sm);
+}
+
 .sar-card {
   margin: 0 0 var(--sar-space-3);
   padding: var(--sar-card-pad);
