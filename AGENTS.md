@@ -99,5 +99,9 @@ These are hard rules. A change that breaks one needs an ADR first.
 - After a merge: archive the session, remove its worktree and branch, and rebase any open branch
   that the merge left behind onto `main`.
 - PR descriptions carry no AI attribution or trailers.
+- On GitHub, sessions may push branches, open PRs, add labels and close superseded PRs. They
+  change repo settings only after the user approves. They post no comments, reviews or issues.
+- Plans in `docs/plans/` and research in `docs/research/` stay committed in this repo, since ADRs
+  link to the research. Code never references either.
 - Main tasks: `mise run setup` once per clone, then `fmt`, `lint`, `typecheck`, `test`, `build`,
   `check`, `ci`; `dev`, `run-firefox`, `run-chrome` to try builds; `change-new` for changelog notes.
