@@ -10,7 +10,7 @@
   box-sizing: border-box;
   max-inline-size: var(--sar-options-max-width);
   margin-inline: auto;
-  padding-block: var(--sar-space-5);
+  padding-block: var(--sar-space-4);
   padding-inline: var(--sar-space-4);
   background: var(--sar-color-bg-panel);
   color: var(--sar-color-text);
@@ -33,15 +33,61 @@
 .sar-options[data-sar-context="popup"] {
   inline-size: var(--sar-popup-width);
   max-inline-size: none;
-  padding-block: var(--sar-space-4);
+  padding-block: var(--sar-space-3);
   padding-inline: var(--sar-space-3);
+}
+
+/* Popup: flat sections split by a divider instead of cards, small uppercase captions instead of
+   card titles, tighter rows and the store's 24px control height. The full page keeps its cards. */
+.sar-options[data-sar-context="popup"] .sar-options-header {
+  margin-block-end: var(--sar-space-2);
+}
+
+.sar-options[data-sar-context="popup"] .sar-card {
+  margin: 0;
+  padding-block: var(--sar-space-2);
+  padding-inline: 0;
+  border-radius: 0;
+  background: none;
+}
+
+.sar-options[data-sar-context="popup"] .sar-card + .sar-card {
+  border-block-start: 1px solid var(--sar-color-divider);
+}
+
+.sar-options[data-sar-context="popup"] .sar-card-title {
+  margin-block-end: var(--sar-space-1);
+  color: var(--sar-color-text-subtle);
+  font: var(--sar-weight-medium) var(--sar-size-xs) / var(--sar-leading-sm) var(--sar-font-ext);
+  text-transform: uppercase;
+}
+
+.sar-options[data-sar-context="popup"] .sar-field {
+  padding-block: var(--sar-space-1);
+}
+
+.sar-options[data-sar-context="popup"] .sar-field[data-sar-layout="stacked"] {
+  row-gap: var(--sar-space-1);
+}
+
+.sar-options[data-sar-context="popup"] .sar-segment label {
+  min-block-size: var(--sar-control-height-xs);
+  padding-block: 0;
+}
+
+.sar-options[data-sar-context="popup"] .sar-allow-item {
+  padding-block: var(--sar-space-1);
+}
+
+.sar-options[data-sar-context="popup"] .sar-options-footer {
+  margin-block-start: var(--sar-space-2);
 }
 
 .sar-options-header {
   display: flex;
   align-items: center;
   gap: var(--sar-space-3);
-  margin-block-end: var(--sar-space-4);
+  margin-block-end: var(--sar-space-3);
 }
 
 .sar-options-header img {
@@ -62,14 +108,14 @@
 }
 
 .sar-card {
-  margin: 0 0 var(--sar-space-3);
+  margin: 0 0 var(--sar-space-2);
   padding: var(--sar-card-pad);
   border-radius: var(--sar-card-radius);
   background: var(--sar-color-bg-raised);
 }
 
 .sar-card-title {
-  margin: 0 0 var(--sar-space-3);
+  margin: 0 0 var(--sar-space-2);
   color: var(--sar-color-text-strong);
   font: var(--sar-weight-medium) var(--sar-size-xl) / var(--sar-leading-xl) var(--sar-font-ext);
 }
