@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { setBody } from "../../../tests/helpers/dom";
 import { englishI18n } from "../../../tests/helpers/i18n";
 import { disclosedVerdict, NOT_DISCLOSED } from "../../../tests/helpers/verdicts";
-import { UNKNOWN, type Verdict } from "../types";
+import { type DisclosedVerdict, UNKNOWN, type Verdict } from "../types";
 import { type AppPageView, createAppPageUi } from "./app-page";
 import { BANNER_ID } from "./banner";
 
@@ -16,9 +16,15 @@ const PAGE = `
 
 const actions = { stopMarking: () => Promise.resolve(), markAgain: () => Promise.resolve() };
 
+let bound = new Map<Element, DisclosedVerdict>();
+
 function setup() {
   setBody(PAGE);
-  return createAppPageUi(document, englishI18n(), actions, { frame: () => undefined });
+  bound = new Map();
+  const card = {
+    bind: (trigger: Element, verdict: DisclosedVerdict) => bound.set(trigger, verdict),
+  };
+  return createAppPageUi(document, englishI18n(), actions, { frame: () => undefined, card });
 }
 
 function view(overrides: Partial<AppPageView> = {}): AppPageView {
@@ -34,12 +40,14 @@ describe("createAppPageUi", () => {
   });
 
   it("adds the summary row under Publisher and the banner above the purchase box", () => {
-    setup().render(view());
+    const verdict = disclosedVerdict();
+    setup().render(view({ verdict }));
     const row = summaryRow();
     expect(row?.previousElementSibling?.id).toBe("publisher");
     expect(row?.textContent).toBe("AI use:Disclosed by the developer");
     expect(row?.getAttribute("href")).toBe(`#${BANNER_ID}`);
-    expect(row?.title).toContain("Disclosed by the developer. In the developer's own words:");
+    expect(row?.hasAttribute("title")).toBe(false);
+    expect(row === null ? undefined : bound.get(row)).toBe(verdict);
     expect(bannerHost()?.nextElementSibling?.id).toBe("game_area_purchase");
   });
 
@@ -81,6 +89,7 @@ describe("createAppPageUi", () => {
     expect(bannerHost()).toBeNull();
     expect(summaryRow()?.tagName).toBe("DIV");
     expect(summaryRow()?.hasAttribute("href")).toBe(false);
+    expect(summaryRow()?.tabIndex).toBe(0);
     expect(document.querySelectorAll(".sar-summary-row")).toHaveLength(1);
   });
 

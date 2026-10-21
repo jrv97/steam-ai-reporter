@@ -1,7 +1,8 @@
 import type { MessageCatalog } from "../ports";
 import type { DisclosedVerdict } from "../types";
-import { badgeTooltip, createChip } from "./badge";
+import { createChip } from "./badge";
 import { BANNER_ID } from "./banner";
+import type { CardTriggers } from "./hover-card";
 
 /** The store's own label and value rows in the summary box (Developer, Publisher). */
 const DEV_ROW_SELECTOR = ".glance_ctn_responsive_left .dev_row";
@@ -9,17 +10,19 @@ const DEV_ROW_SELECTOR = ".glance_ctn_responsive_left .dev_row";
 /**
  * The summary box row "AI use: Disclosed by the developer", in the store's own row shape. With the
  * banner on it is a link to the banner, and `jump` handles the click (scroll and focus, no history
- * entry); without the banner it is a plain row. The row is its own root, with one listener.
+ * entry); without the banner it is a focusable row. The row is its own root, with one listener.
+ * Hovering or focusing it opens the hover card when one is given.
  */
 export function createSummaryRow(
   doc: Document,
   i18n: MessageCatalog,
   verdict: DisclosedVerdict,
   jump: (() => void) | undefined,
+  card?: CardTriggers,
 ): HTMLElement {
   const row = doc.createElement(jump === undefined ? "div" : "a");
   row.className = "sar-summary-row";
-  row.title = badgeTooltip(i18n, i18n.t("summary_value"), verdict.notes);
+  card?.bind(row, verdict);
   const label = doc.createElement("span");
   label.className = "sar-summary-label";
   label.textContent = i18n.t("summary_label");
@@ -30,6 +33,8 @@ export function createSummaryRow(
       event.preventDefault();
       jump();
     });
+  } else {
+    row.tabIndex = 0;
   }
   return row;
 }
