@@ -267,7 +267,12 @@ export function createHoverCard(
     if (focused !== undefined) {
       describe(focused);
     }
-    // Read phase: trigger, card, viewport and the offset token, then one write.
+    place(target, trigger);
+    open = { trigger, via };
+  }
+
+  /** Puts the card next to its trigger: reads trigger, card, viewport and offset, then writes. */
+  function place(target: Card, trigger: Element): void {
     const box = trigger.getBoundingClientRect();
     const size = target.root.getBoundingClientRect();
     const viewport = {
@@ -283,7 +288,6 @@ export function createHoverCard(
     target.root.style.left = `${position.left}px`;
     target.root.style.top = `${position.top}px`;
     target.root.setAttribute("data-sar-side", position.side);
-    open = { trigger, via };
   }
 
   /** The registered trigger at or around an element, climbing past the summary row's chip. */
@@ -401,7 +405,13 @@ export function createHoverCard(
       return;
     }
     const element = asElement(event.target);
-    if (element === undefined || card?.root.contains(element) !== true) {
+    if (card !== undefined && element !== undefined && card.root.contains(element)) {
+      return;
+    }
+    // Focus scrolls its target into view, so a focus-opened card follows it instead of closing.
+    if (open?.via === "focus" && card !== undefined && open.trigger.isConnected) {
+      place(card, open.trigger);
+    } else {
       close();
     }
   }

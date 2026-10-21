@@ -257,6 +257,18 @@ describe("createHoverCard", () => {
     expect(shown()).not.toBeNull();
   });
 
+  it("keeps a focus-opened card through the scroll that brings its link into view", () => {
+    const { link } = page();
+    const badge = link.querySelector(".sar-badge");
+    if (badge !== null) {
+      start().bind(badge, disclosedVerdict());
+    }
+    focusIn(link);
+    document.dispatchEvent(new Event("scroll"));
+    expect(shown()).not.toBeNull();
+    expect(link.getAttribute("aria-describedby")).toBe(HOVER_CARD_ID);
+  });
+
   it("closes on a page scroll", () => {
     const { badge } = page();
     start().bind(badge, disclosedVerdict());

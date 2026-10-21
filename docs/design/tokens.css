@@ -315,11 +315,12 @@
 
   /* Layering */
 
-  /* Compact badge: over capsule art and the store's corner flags, under the store's hover popups.
-  */
-  --sar-z-badge: 3;
-  /* Hover card: over the store's game hover popup (1526), which opens beside the same capsule. */
-  --sar-z-hovercard: 1600;
+  /* Compact badge: over capsule art, the store's corner flags and its hover microtrailer video
+     (3, added after the badge), under the store's hover popups. */
+  --sar-z-badge: 4;
+  /* Hover card: over the store's game hover popup (1526) and its React capsule hover layer (2000),
+     sampled 2026-10-21. */
+  --sar-z-hovercard: 2100;
 
   /* Line clamp */
 

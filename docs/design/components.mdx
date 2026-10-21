@@ -67,8 +67,8 @@ Every text pair meets WCAG 2.2 AA on the grounds its token's note names; see the
 - Spacing is the store's React scale: `sar-space-0` to `sar-space-6` (2, 4, 8, 12, 16, 24, 32px). Badges keep their own exact paddings (`sar-badge-pad-inline`, `sar-compact-pad-inline`).
 - Radii are small or none, like the store's: none on the banner and the compact badge (like the notice bubbles and corner flags), `sar-radius-xs` (1px) on the allow-listed note, `sar-radius-sm` (2px) for the full badge, buttons and segments, `sar-radius-md` (4px) for cards on extension pages, `sar-radius-pill` only for the switch track.
 - No shadows on store pages except `sar-compact-shadow`, which keeps a compact badge's edge over mid-tone art, and the hover card's, which copies the store's own popup shadow. The banner is flat, like the store's notice bubbles. Cards on extension pages are flat.
-- `sar-z-badge` (3) sits over capsule art and the store's corner flags, under its hover popups.
-- `sar-z-hovercard` (1600) sits over the store's game hover popup (1526), for our hover card (section 15).
+- `sar-z-badge` (4) sits over capsule art, the store's corner flags and its hover microtrailer video (z-index 3), under its hover popups.
+- `sar-z-hovercard` (2100) sits over the store's game hover popup (1526) and its React capsule hover layer (2000), for our hover card (section 15).
 
 ## Motion and focus
 
@@ -220,7 +220,7 @@ Built as a mirror of the store's own corner flags (in library, on wishlist): sol
 - `sar-compact-fg` on `sar-compact-bg` (12.65:1 whatever the art), square corners, a 1px `sar-compact-border` and `sar-compact-shadow`.
 - Unlike the store's mid-tone flags, the surface is dark (accent 900) and keeps an edge. Together they give every kind of art a boundary at 3:1 or more: the edge against black (5.91:1), the surface against white (16.63:1), mid grey (4.21:1) and violet (3.34:1).
 - Block-start, inline-end corner (top right in English), mirroring the store's flags, which sit top-left. The store also owns the bottom edge (prices).
-- `z-index: sar-z-badge`: over the art and the corner flags, under the store's hover popups.
+- `z-index: sar-z-badge`: over the art, the corner flags and the microtrailer video that home capsules play on hover, under the store's hover popups.
 - Maximum inline size is the image width; past it the label ends in an ellipsis. Because the badge now shares the flags' row, a long translation on a small capsule can reach a store flag; see the open questions.
 
 ### Pointer and accessibility
@@ -785,7 +785,7 @@ Built like the store's game hover popup, sampled on the home page on 2026-10-21:
 
 - Fixed to the viewport, `sar-hovercard-offset` (8px) below the trigger. Where it would cross the bottom edge and fits above, it flips above (`data-sar-side="above"`).
 - Horizontally, the full badge and the summary row (banner off) align the card's inline-start edge with their own. A compact badge aligns the inline-end edges: the card hangs back over the capsule art, away from the side where the store's popup opens. Either way the card stays one offset inside the viewport edges.
-- `z-index: sar-z-hovercard` (1600), above the store's game hover popup (1526). Over a capsule both open: the store's popup beside the capsule, ours under the badge. Where the store's popup flips to the same side, ours is on top, because the pointer is on our badge.
+- `z-index: sar-z-hovercard` (2100), above the store's game hover popup (1526) and the full-viewport layer that React store pages (tag hubs, categories) mount for their capsule hover (2000). Over a capsule both open: the store's popup beside the capsule, ours under the badge. Where the store's popup flips to the same side, ours is on top, because the pointer is on our badge.
 - The card covers store content only while it is open, and only in answer to a pointer or focus on our own element. It never opens by itself.
 
 ### Behavior
@@ -794,7 +794,7 @@ Built like the store's game hover popup, sampled on the home page on 2026-10-21:
 - The card is hoverable: leaving the trigger starts a 100ms grace, long enough for the pointer to cross onto the card, which then stays open. Leaving both, or the window, closes it. Both delays are timers in `hover-card.ts`, not tokens.
 - Keyboard: opens at once when focus lands on the summary row (banner off) or on a store link that holds a badge (a search row or a capsule link). Moving focus elsewhere closes it.
 - `Escape` closes it, and it stays closed until the pointer leaves the trigger or focus moves.
-- Any scroll outside the card closes it. A fixed card would drift away from its trigger.
+- Any scroll outside the card closes a card the pointer opened; a fixed card would drift away from its trigger. A card focus opened follows its trigger instead, because focus scrolls a link into view.
 - `[data-sar-badges="off"]` hides it, like every badge.
 
 ### Accessibility
