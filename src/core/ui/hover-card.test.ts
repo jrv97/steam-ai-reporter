@@ -61,9 +61,31 @@ describe("createHoverCard", () => {
     }
   }
 
+  let frames: (() => void)[] = [];
+
   function start(): HoverCard {
-    card = createHoverCard(document, i18n, { delay, overflows: () => overflowing });
+    card = createHoverCard(document, i18n, {
+      delay,
+      overflows: () => overflowing,
+      frame: (callback) => frames.push(callback),
+    });
     return card;
+  }
+
+  function nextFrame(): void {
+    const due = frames;
+    frames = [];
+    for (const callback of due) {
+      callback();
+    }
+  }
+
+  /** happy-dom has no layout: give the viewport and one element a box. */
+  function layout(element: Element, top: number): void {
+    const root = document.documentElement;
+    Object.defineProperty(root, "clientWidth", { value: 1000, configurable: true });
+    Object.defineProperty(root, "clientHeight", { value: 800, configurable: true });
+    element.getBoundingClientRect = () => new DOMRect(100, top, 120, 19);
   }
 
   function page(): { link: HTMLAnchorElement; badge: HTMLElement; other: HTMLElement; } {
@@ -99,6 +121,7 @@ describe("createHoverCard", () => {
 
   beforeEach(() => {
     timers = [];
+    frames = [];
     overflowing = false;
   });
 
@@ -106,6 +129,8 @@ describe("createHoverCard", () => {
     card?.stop();
     card = undefined;
     document.documentElement.removeAttribute("data-sar-badges");
+    Reflect.deleteProperty(document.documentElement, "clientWidth");
+    Reflect.deleteProperty(document.documentElement, "clientHeight");
   });
 
   it("opens after the pointer rests on a badge and quotes the notes verbatim", () => {
@@ -257,16 +282,34 @@ describe("createHoverCard", () => {
     expect(shown()).not.toBeNull();
   });
 
-  it("keeps a focus-opened card through the scroll that brings its link into view", () => {
-    const { link } = page();
-    const badge = link.querySelector(".sar-badge");
-    if (badge !== null) {
-      start().bind(badge, disclosedVerdict());
-    }
+  it("moves a focus-opened card with its link, once per frame, through a scroll", () => {
+    const { link, badge } = page();
+    layout(badge, 300);
+    start().bind(badge, disclosedVerdict());
     focusIn(link);
+    layout(badge, 100);
+    const moved = vi.spyOn(badge, "getBoundingClientRect");
     document.dispatchEvent(new Event("scroll"));
-    expect(shown()).not.toBeNull();
+    document.dispatchEvent(new Event("scroll"));
+    document.dispatchEvent(new Event("scroll"));
+    expect(frames).toHaveLength(1);
+    nextFrame();
+    expect(moved).toHaveBeenCalledTimes(1);
+    // happy-dom resolves no tokens, so the offset is 0: the card sits at the badge's bottom.
+    expect(shown()?.style.top).toBe("119px");
     expect(link.getAttribute("aria-describedby")).toBe(HOVER_CARD_ID);
+  });
+
+  it("closes a focus-opened card once its link leaves the viewport", () => {
+    const { link, badge } = page();
+    layout(badge, 300);
+    start().bind(badge, disclosedVerdict());
+    focusIn(link);
+    layout(badge, -50);
+    document.dispatchEvent(new Event("scroll"));
+    nextFrame();
+    expect(shown()).toBeNull();
+    expect(link.hasAttribute("aria-describedby")).toBe(false);
   });
 
   it("closes on a page scroll", () => {

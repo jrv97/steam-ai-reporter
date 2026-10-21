@@ -80,6 +80,8 @@ export interface HoverCardOptions {
   readonly delay?: (callback: () => void, ms: number) => () => void;
   /** Whether the clamped notes hide text; compares scroll and client height by default. */
   readonly overflows?: (notes: HTMLElement) => boolean;
+  /** Schedules the follow after a scroll; `requestAnimationFrame` by default. */
+  readonly frame?: (callback: () => void) => void;
 }
 
 type Via = "pointer" | "focus";
@@ -93,6 +95,13 @@ interface Card {
   readonly root: HTMLElement;
   readonly notes: HTMLElement;
   readonly more: HTMLElement;
+}
+
+/** What a follow reuses from the last placement, so it reads only the trigger's box. */
+interface Placed {
+  readonly size: Size;
+  readonly offset: number;
+  readonly align: Align;
 }
 
 interface Binding {
@@ -134,6 +143,13 @@ export function createHoverCard(
     };
   });
   const overflows = options.overflows ?? defaultOverflows;
+  const frame = options.frame ?? ((callback: () => void) => {
+    if (view === null) {
+      callback();
+    } else {
+      view.requestAnimationFrame(callback);
+    }
+  });
   const bindings = new WeakMap<Element, Binding>();
 
   let card: Card | undefined;
@@ -147,6 +163,9 @@ export function createHoverCard(
   let cancel: (() => void) | undefined;
   /** Closed with Escape: stays closed until the pointer leaves it or focus moves. */
   let dismissed: Element | undefined;
+  let placed: Placed | undefined;
+  /** A follow is queued for the next frame. */
+  let following = false;
 
   function line(className: string, text: string): HTMLElement {
     const node = doc.createElement("p");
@@ -275,19 +294,51 @@ export function createHoverCard(
   function place(target: Card, trigger: Element): void {
     const box = trigger.getBoundingClientRect();
     const size = target.root.getBoundingClientRect();
-    const viewport = {
-      width: doc.documentElement.clientWidth,
-      height: doc.documentElement.clientHeight,
-    };
     const token = Number.parseFloat(
       view?.getComputedStyle(target.root).getPropertyValue(OFFSET_TOKEN) ?? "",
     );
-    const offset = Number.isFinite(token) ? token : 0;
-    const align = trigger.classList.contains("sar-compact") ? "end" : "start";
-    const position = placeCard(box, size, viewport, offset, align);
+    placed = {
+      size: { width: size.width, height: size.height },
+      offset: Number.isFinite(token) ? token : 0,
+      align: trigger.classList.contains("sar-compact") ? "end" : "start",
+    };
+    write(target, placeCard(box, placed.size, viewportSize(), placed.offset, placed.align));
+  }
+
+  function viewportSize(): Size {
+    return { width: doc.documentElement.clientWidth, height: doc.documentElement.clientHeight };
+  }
+
+  function write(target: Card, position: CardPosition): void {
     target.root.style.left = `${position.left}px`;
     target.root.style.top = `${position.top}px`;
     target.root.setAttribute("data-sar-side", position.side);
+  }
+
+  /**
+   * Moves a focus-opened card with its trigger, once per frame and with one read of the trigger's
+   * box. A trigger that left the viewport closes the card.
+   */
+  function follow(): void {
+    if (following) {
+      return;
+    }
+    following = true;
+    frame(() => {
+      following = false;
+      if (open?.via !== "focus" || card === undefined || placed === undefined) {
+        return;
+      }
+      const box = open.trigger.getBoundingClientRect();
+      const viewport = viewportSize();
+      const outside = box.bottom <= 0 || box.top >= viewport.height || box.right <= 0
+        || box.left >= viewport.width;
+      if (!open.trigger.isConnected || outside) {
+        close();
+        return;
+      }
+      write(card, placeCard(box, placed.size, viewport, placed.offset, placed.align));
+    });
   }
 
   /** The registered trigger at or around an element, climbing past the summary row's chip. */
@@ -409,8 +460,8 @@ export function createHoverCard(
       return;
     }
     // Focus scrolls its target into view, so a focus-opened card follows it instead of closing.
-    if (open?.via === "focus" && card !== undefined && open.trigger.isConnected) {
-      place(card, open.trigger);
+    if (open?.via === "focus") {
+      follow();
     } else {
       close();
     }

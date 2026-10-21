@@ -794,7 +794,7 @@ Built like the store's game hover popup, sampled on the home page on 2026-10-21:
 - The card is hoverable: leaving the trigger starts a 100ms grace, long enough for the pointer to cross onto the card, which then stays open. Leaving both, or the window, closes it. Both delays are timers in `hover-card.ts`, not tokens.
 - Keyboard: opens at once when focus lands on the summary row (banner off) or on a store link that holds a badge (a search row or a capsule link). Moving focus elsewhere closes it.
 - `Escape` closes it, and it stays closed until the pointer leaves the trigger or focus moves.
-- Any scroll outside the card closes a card the pointer opened; a fixed card would drift away from its trigger. A card focus opened follows its trigger instead, because focus scrolls a link into view.
+- Any scroll outside the card closes a card the pointer opened; a fixed card would drift away from its trigger. A card focus opened follows its trigger instead, because focus scrolls a link into view: the one delegated scroll listener queues at most one move per frame, which reads only the trigger's box, and the card closes once the trigger leaves the viewport.
 - `[data-sar-badges="off"]` hides it, like every badge.
 
 ### Accessibility
