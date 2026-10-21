@@ -1,6 +1,6 @@
 import { PAGE_CSS, TOKENS_CSS } from "./styles.gen";
 
-export { BANNER_CSS, PAGE_CSS, SETTINGS_CSS, TOKENS_CSS } from "./styles.gen";
+export { BANNER_CSS, DIALOG_CSS, PAGE_CSS, SETTINGS_CSS, TOKENS_CSS } from "./styles.gen";
 
 /** The store page stylesheet for `AppDeps.addPageStyles`, where the platform does not load it. */
 export function adoptPageStyles(doc: Document): void {
@@ -32,9 +32,10 @@ function constructed(doc: Document, css: string): CSSStyleSheet | undefined {
 }
 
 /**
- * Adds the CSS to a document or a shadow root, once. Constructed sheets come first: one parsed
- * sheet serves every root of the document. Where they are unavailable or refused (an old engine,
- * a sandboxed content script), a `style` element carries the same text.
+ * Adds the CSS to a document or a shadow root, once. A platform injector, when set, takes the
+ * document's CSS first. Otherwise constructed sheets come first: one parsed sheet serves every
+ * root of the document. Where they are unavailable or refused (an old engine, a sandboxed content
+ * script), a `style` element carries the same text.
  */
 export function adoptStyles(root: Document | ShadowRoot, css: string): void {
   const done = adopted.get(root) ?? new Set();

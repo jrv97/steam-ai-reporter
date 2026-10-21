@@ -31,6 +31,7 @@ CONTENT_CSS = ("TOKENS_CSS", "PAGE_CSS")
 
 USERSCRIPT_MATCH = "https://store.steampowered.com/*"
 USERSCRIPT_NAMESPACE = "https://github.com/jrv97/steam-ai-reporter"
+USERSCRIPT_UPDATE_BASE = f"{USERSCRIPT_NAMESPACE}/releases/latest/download"
 USERSCRIPT_GRANTS = (
     "GM.getValue",
     "GM.setValue",
@@ -150,6 +151,8 @@ def userscript_header(version: str, catalogs: dict[str, dict[str, object]]) -> s
         ("@match", USERSCRIPT_MATCH),
         ("@noframes", ""),
         ("@run-at", "document-idle"),
+        ("@updateURL", f"{USERSCRIPT_UPDATE_BASE}/{SLUG}.meta.js"),
+        ("@downloadURL", f"{USERSCRIPT_UPDATE_BASE}/{SLUG}.user.js"),
     ]
     fields += [("@grant", grant) for grant in USERSCRIPT_GRANTS]
     width = max(len(key) for key, _ in fields) + 1
