@@ -81,6 +81,16 @@ Chosen option 1, following the author's release train as adapted in [rq1-prior-a
 - Good: testers auto-update.
 - Bad: a second AMO add-on ID and Chrome listing to maintain, review and secure. Deferred to the roadmap; a GitHub prerelease is enough for now.
 
+## Amendment 2026-10-21: as built
+
+The Chrome Web Store job authenticates with an OAuth refresh token. The `chrome-web-store` environment holds `CWS_CLIENT_ID`, `CWS_CLIENT_SECRET`, `CWS_REFRESH_TOKEN`, `CWS_PUBLISHER_ID` and `CWS_EXTENSION_ID`. `chrome-webstore-upload-cli` 4.0.2, pinned in `mise.toml`, reads them and calls API v2. The CLI has no service-account input. A service account would need our own token exchange and API calls, and nobody has tried that from GitHub Actions. The maintainer rotates the refresh token on a calendar.
+
+changie accepts only SemVer, and `changie merge` drops any version file named `YYYY.M.D.N`. For a recut, `scripts/release.py` runs `changie batch YYYY.M.D+N` and renames the file and its heading. It then writes `CHANGELOG.md` from `header.tpl.md` and the version files, newest first.
+
+The tag job runs on `workflow_run` of `ci` for pushes to `main` whose commit message starts with `chore(release): `. CI has passed on the commit before the job tags it, and the nightly's CI check needs no wait loop. The job reads one commit and its parent. A comment on the trigger gives this reason for suppressing zizmor's `dangerous-triggers` finding.
+
+The first version goes to each store by hand. Chrome Web Store API v2 cannot create an item, and AMO needs listing metadata that the release job does not send. The maintainer uploads the first prerelease's assets in each developer dashboard and marks that release latest with `gh release edit <tag> --prerelease=false --latest`. Later versions go through the prod workflow.
+
 ## More information
 
 - Research: [extension-release-pipeline](../research/extension-release-pipeline.md) and [rq1-prior-art](../research/extension-release-pipeline/rq1-prior-art.md). Items it lists as unverified and that this ADR relies on: Chrome Web Store API v2 from CI with a service account, and Greasy Fork sync (not adopted).

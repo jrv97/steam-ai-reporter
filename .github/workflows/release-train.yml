@@ -1,0 +1,101 @@
+# Nightly release train (ADR 0005). The train job opens a batch PR as the release-bot app.
+# A dry run reports the next version, opens nothing and needs no app secrets.
+# After CI passes on a merged batch commit, the tag job tags it and dispatches the nightly.
+name: release-train
+
+on:
+  schedule:
+    - cron: "0 0 * * *"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Report the version that would be cut, open nothing
+        type: boolean
+        default: true
+  # The tag job reads one commit from main and runs no pull request code.
+  workflow_run: # zizmor: ignore[dangerous-triggers]
+    workflows: [ci]
+    types: [completed]
+    branches: [main]
+
+permissions: {}
+
+jobs:
+  train:
+    name: mise run release:train
+    if: github.event_name != 'workflow_run'
+    runs-on: ubuntu-24.04
+    concurrency:
+      group: release-train
+      cancel-in-progress: false
+    permissions:
+      contents: read # read main, tags and fragments
+      actions: read # find the newest green CI run on main
+      pull-requests: write # approve the batch PR as github-actions[bot] if a review is required
+    timeout-minutes: 15
+    steps:
+      - uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        id: bot
+        if: ${{ !inputs.dry_run }}
+        with:
+          # GitHub accepts the app ID here as the JWT issuer.
+          client-id: ${{ secrets.RELEASE_BOT_APP_ID }}
+          private-key: ${{ secrets.RELEASE_BOT_PRIVATE_KEY }}
+          permission-contents: write
+          permission-pull-requests: write
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: jdx/mise-action@fc42bcc7ddbf51124c30f95a877a0c5168a3bfde # v5.2.1
+        with:
+          version: 2026.10.15
+          install_args: python changie gh
+          cache: false
+      - run: mise run release:train
+        env:
+          DRY_RUN: ${{ inputs.dry_run }}
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_BOT_TOKEN: ${{ steps.bot.outputs.token }}
+          RELEASE_BOT_SLUG: ${{ steps.bot.outputs.app-slug }}
+
+  tag:
+    name: mise run release:tag
+    if: >-
+      github.event_name == 'workflow_run' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.conclusion == 'success' &&
+      startsWith(github.event.workflow_run.head_commit.message, 'chore(release): ')
+    runs-on: ubuntu-24.04
+    concurrency:
+      group: release-tag-${{ github.event.workflow_run.head_sha }}
+      cancel-in-progress: false
+    permissions:
+      contents: read # read the merged commit and its parent
+      actions: read # confirm CI passed for the commit
+    timeout-minutes: 10
+    steps:
+      - uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        id: bot
+        with:
+          client-id: ${{ secrets.RELEASE_BOT_APP_ID }}
+          private-key: ${{ secrets.RELEASE_BOT_PRIVATE_KEY }}
+          permission-contents: write
+          permission-actions: write
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: jdx/mise-action@fc42bcc7ddbf51124c30f95a877a0c5168a3bfde # v5.2.1
+        with:
+          version: 2026.10.15
+          install_args: python gh
+          cache: false
+      - run: mise run release:tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_SHA: ${{ github.event.workflow_run.head_sha }}
+          RELEASE_BOT_TOKEN: ${{ steps.bot.outputs.token }}

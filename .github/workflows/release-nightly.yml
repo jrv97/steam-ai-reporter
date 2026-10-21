@@ -1,0 +1,41 @@
+# Nightly release (ADR 0005), dispatched from a new tag. It validates the tag and builds once.
+# It checks the build reproduces, packages, and creates a GitHub prerelease with five artifacts.
+# AMO never reuses a version number, and only release-prod.yml uploads to the stores.
+name: release-nightly
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag (YYYY.M.D or YYYY.M.D.N); dispatch from the same tag
+        type: string
+        required: true
+
+permissions: {}
+
+concurrency:
+  group: release-${{ inputs.tag }}
+  cancel-in-progress: false
+
+jobs:
+  nightly:
+    name: mise run release:nightly
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write # create the prerelease and upload its assets
+      actions: read # confirm CI passed for the tagged commit
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: jdx/mise-action@fc42bcc7ddbf51124c30f95a877a0c5168a3bfde # v5.2.1
+        with:
+          version: 2026.10.15
+          cache: false
+      - run: mise run release:nightly
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ inputs.tag }}

@@ -1,0 +1,113 @@
+# Prod release (ADR 0005), dispatched from a tested tag. It promotes the prerelease assets as is.
+# Each store job waits for the maintainer's approval in its GitHub environment.
+# The last job marks the release latest, which moves the userscript update URLs.
+name: release-prod
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag (YYYY.M.D or YYYY.M.D.N); dispatch from the same tag
+        type: string
+        required: true
+
+permissions: {}
+
+concurrency:
+  group: release-${{ inputs.tag }}
+  cancel-in-progress: false
+
+env:
+  GH_REPO: ${{ github.repository }}
+  RELEASE_TAG: ${{ inputs.tag }}
+
+jobs:
+  validate:
+    name: mise run release:validate
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read # read the tag, main and the prerelease assets
+      actions: read # confirm CI passed for the tagged commit
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: jdx/mise-action@fc42bcc7ddbf51124c30f95a877a0c5168a3bfde # v5.2.1
+        with:
+          version: 2026.10.15
+          install_args: python gh
+          cache: false
+      - run: mise run release:validate
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+  chrome-web-store:
+    name: mise run release:chrome
+    needs: validate
+    runs-on: ubuntu-24.04
+    environment: chrome-web-store
+    permissions:
+      contents: read # download the prerelease assets
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: jdx/mise-action@fc42bcc7ddbf51124c30f95a877a0c5168a3bfde # v5.2.1
+        with:
+          version: 2026.10.15
+          install_args: python gh node npm:chrome-webstore-upload-cli
+          cache: false
+      - run: mise run release:chrome
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EXTENSION_ID: ${{ secrets.CWS_EXTENSION_ID }}
+          PUBLISHER_ID: ${{ secrets.CWS_PUBLISHER_ID }}
+          CLIENT_ID: ${{ secrets.CWS_CLIENT_ID }}
+          CLIENT_SECRET: ${{ secrets.CWS_CLIENT_SECRET }}
+          REFRESH_TOKEN: ${{ secrets.CWS_REFRESH_TOKEN }}
+
+  amo:
+    name: mise run release:amo
+    needs: validate
+    runs-on: ubuntu-24.04
+    environment: amo
+    permissions:
+      contents: read # download the prerelease assets and read the changelog section
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: jdx/mise-action@fc42bcc7ddbf51124c30f95a877a0c5168a3bfde # v5.2.1
+        with:
+          version: 2026.10.15
+          install_args: python gh node npm:web-ext
+          cache: false
+      - run: mise run release:amo
+        env:
+          GH_TOKEN: ${{ github.token }}
+          WEB_EXT_API_KEY: ${{ secrets.AMO_JWT_ISSUER }}
+          WEB_EXT_API_SECRET: ${{ secrets.AMO_JWT_SECRET }}
+
+  latest:
+    name: mise run release:latest
+    needs: [chrome-web-store, amo]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write # turn the prerelease into the latest release
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: jdx/mise-action@fc42bcc7ddbf51124c30f95a877a0c5168a3bfde # v5.2.1
+        with:
+          version: 2026.10.15
+          install_args: python gh
+          cache: false
+      - run: mise run release:latest
+        env:
+          GH_TOKEN: ${{ github.token }}

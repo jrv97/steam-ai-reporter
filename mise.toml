@@ -13,6 +13,7 @@ python = "3.14.8"
 uv = "0.13.1"
 changie = "1.26.0"
 "npm:web-ext" = "10.8.0"
+"npm:chrome-webstore-upload-cli" = "4.0.2"
 dprint = "0.64.0"
 ruff = "0.17.1"
 "pypi:mypy" = "2.4.0"
@@ -186,6 +187,45 @@ run = "python scripts/capture_fixtures.py"
 description = "Add a changie fragment for this change"
 run = "changie new"
 
+# Release (ADR 0005; logic in scripts/calver.py and scripts/release.py)
+
+[tasks."release:test"]
+description = "Run the unit tests of the release scripts"
+run = "python -m unittest discover --start-directory scripts --pattern test_*.py"
+
+[tasks."release:train"]
+description = "Open the release batch PR from the newest green main (DRY_RUN=true only reports)"
+run = "python scripts/release.py train"
+
+[tasks."release:tag"]
+description = "Tag a merged release batch commit ($RELEASE_SHA) and dispatch the nightly"
+run = "python scripts/release.py tag"
+
+[tasks."release:nightly"]
+description = "Validate $RELEASE_TAG, build, check, package, and create the GitHub prerelease"
+run = [
+  "python scripts/release.py validate",
+  { task = "check-reproducible" },
+  { task = "package" },
+  "python scripts/release.py publish-nightly",
+]
+
+[tasks."release:validate"]
+description = "Re-validate $RELEASE_TAG and its prerelease assets before a store promotion"
+run = "python scripts/release.py validate --release"
+
+[tasks."release:chrome"]
+description = "Promote the $RELEASE_TAG prerelease's Chrome zip to the Chrome Web Store"
+run = "python scripts/release.py chrome"
+
+[tasks."release:amo"]
+description = "Promote the $RELEASE_TAG prerelease's Firefox and source zips to AMO (listed)"
+run = "python scripts/release.py amo"
+
+[tasks."release:latest"]
+description = "Mark the $RELEASE_TAG release as latest, which updates userscript installs"
+run = "python scripts/release.py latest"
+
 # Hooks and CI
 
 [tasks.precommit]
@@ -201,7 +241,7 @@ description = "Everything a push must pass"
 run = [
   { task = "check-branch" },
   { task = "fmt-check" },
-  { tasks = ["lint", "typecheck", "test"] },
+  { tasks = ["lint", "typecheck", "test", "release:test"] },
   { task = "check" },
 ]
 
