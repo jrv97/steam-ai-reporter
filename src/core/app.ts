@@ -28,6 +28,7 @@ import { type AppId, type Detector, UNKNOWN, type Verdict } from "./types";
 import { createAppPageUi } from "./ui/app-page";
 import { applyBadgeSetting, createBadgeRenderer } from "./ui/badge";
 import { createCapsuleUi } from "./ui/capsules";
+import { type CardTriggers, createHoverCard } from "./ui/hover-card";
 import { applyListFilter, createHostStateRenderer } from "./ui/list-filter";
 
 /** What a composition root hands to core: the ports, already built for its platform. */
@@ -124,6 +125,7 @@ async function startAppPage(
     readonly allowList: ReturnType<typeof createAllowList>;
     readonly settings: () => Settings;
     readonly onAllowChange: (id: AppId) => void;
+    readonly card: CardTriggers;
   },
 ): Promise<() => void> {
   const known = await verdict;
@@ -138,7 +140,7 @@ async function startAppPage(
       context.allowed.delete(id);
       context.onAllowChange(id);
     },
-  });
+  }, { card: context.card });
   const render = (): void => {
     ui.render({
       verdict: known,
@@ -189,10 +191,11 @@ export async function start(deps: AppDeps): Promise<App> {
   applyBadgeSetting(root, settings.badges);
   applyListFilter(root, settings.listFilter);
 
+  const card = createHoverCard(doc, i18n);
   const capsules = createCapsuleUi({
     document: doc,
     detector: detectors.detector,
-    renderers: [createHostStateRenderer(), createBadgeRenderer(doc, i18n)],
+    renderers: [createHostStateRenderer(), createBadgeRenderer(doc, i18n, card)],
     isAllowed: (id) => allowed.has(id),
   });
   const scanner = createScanner({ document: doc, renderer: capsules });
@@ -214,6 +217,7 @@ export async function start(deps: AppDeps): Promise<App> {
         onAllowChange: (id) => {
           capsules.refresh(new Set([id]));
         },
+        card,
       },
     );
   }
@@ -232,6 +236,7 @@ export async function start(deps: AppDeps): Promise<App> {
   return {
     stop() {
       scanner.stop();
+      card.stop();
       unsubscribe();
     },
   };

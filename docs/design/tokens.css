@@ -40,6 +40,9 @@
   --sar-color-bg-raised: #1f2630;
   /* Hover wash for rows on extension pages. Defined; no reference rule uses it yet. */
   --sar-color-bg-hover: rgba(255, 255, 255, 0.06);
+  /* The store's game hover popup panel, sampled 2026-10-21. Hover card surface: white 10.14:1,
+     sar-color-text 6.70:1, sar-color-text-muted 4.74:1, sar-accent-200 6.64:1. Not for subtle. */
+  --sar-hovercard-bg: #344352;
 
   /* Text, edges and errors */
 
@@ -312,14 +315,19 @@
 
   /* Layering */
 
-  /* Compact badge: over capsule art and the store's corner flags, under the store's hover popups.
-  */
-  --sar-z-badge: 3;
+  /* Compact badge: over capsule art, the store's corner flags and its hover microtrailer video
+     (3, added after the badge), under the store's hover popups. */
+  --sar-z-badge: 4;
+  /* Hover card: over the store's game hover popup (1526) and its React capsule hover layer (2000),
+     sampled 2026-10-21. */
+  --sar-z-hovercard: 2100;
 
   /* Line clamp */
 
   /* Banner notes collapse after this many lines (63px), keeping the purchase box near the fold. */
   --sar-banner-quote-lines: 3;
+  /* Hover card notes clamp after this many lines (108px); a line then points to the store page. */
+  --sar-hovercard-notes-lines: 6;
 
   /* Font families: referenced by name only, never bundled */
 
@@ -365,6 +373,19 @@
 
   --sar-card-pad: var(--sar-space-4);
   --sar-card-radius: var(--sar-radius-md);
+
+  /* The store's game hover popup: 306px wide, 16px padding, a 20px black shadow at 50% */
+  --sar-hovercard-inline-size: 306px;
+  --sar-hovercard-pad: var(--sar-space-4);
+  --sar-hovercard-gap: var(--sar-space-1);
+  --sar-hovercard-offset: var(--sar-space-2);
+  --sar-hovercard-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+  --sar-hovercard-title-font: var(--sar-weight-regular) var(--sar-size-xl) / 17px
+    var(--sar-font-page);
+  --sar-hovercard-meta-font: var(--sar-weight-regular) var(--sar-size-xs) / 16px
+    var(--sar-font-page);
+  --sar-hovercard-notes-font: italic var(--sar-weight-regular) var(--sar-size-sm) / 18px
+    var(--sar-font-page);
 }
 
 @media (prefers-reduced-motion: reduce) {

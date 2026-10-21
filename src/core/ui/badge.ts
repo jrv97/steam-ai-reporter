@@ -1,7 +1,7 @@
 import type { MessageCatalog } from "../ports";
 import type { DisclosedVerdict } from "../types";
 import type { BadgeSlot, CompactSize, HostRenderer } from "./host";
-import { excerpt } from "./notes";
+import type { CardTriggers } from "./hover-card";
 
 /** Compact badge tiers by image box (components.mdx, section 2). Smaller images get none. */
 const TEXT_MIN_WIDTH = 180;
@@ -28,11 +28,6 @@ export function createChip(doc: Document, label: string): HTMLElement {
   return chip;
 }
 
-/** The badge's hover text: the label, then the first 200 characters of the notes, verbatim. */
-export function badgeTooltip(i18n: MessageCatalog, label: string, notes: string): string {
-  return i18n.t("badge_tooltip", { label, notes: excerpt(notes) });
-}
-
 /** Turns badges on or off on the whole page: one root attribute, and CSS does the rest. */
 export function applyBadgeSetting(root: Element, on: boolean): void {
   const value = on ? "on" : "off";
@@ -43,7 +38,7 @@ export function applyBadgeSetting(root: Element, on: boolean): void {
 
 interface Drawn {
   readonly badge: HTMLElement;
-  readonly notes: string;
+  readonly verdict: DisclosedVerdict;
   readonly slot: BadgeSlot;
 }
 
@@ -54,32 +49,19 @@ function sameSlot(a: BadgeSlot, b: BadgeSlot): boolean {
 
 /**
  * Draws the full or compact badge of a disclosed host in the slot its placement chose, and removes
- * it for every other state. Tooltips are built once per verdict and kept in a `WeakMap`, so a sale
- * page with the same game in many capsules formats its notes once.
+ * it for every other state. Each badge registers with the hover card, which shows the notes.
  */
-export function createBadgeRenderer(doc: Document, i18n: MessageCatalog): HostRenderer {
+export function createBadgeRenderer(
+  doc: Document,
+  i18n: MessageCatalog,
+  card: CardTriggers,
+): HostRenderer {
   const drawn = new WeakMap<Element, Drawn>();
   const labels = { full: i18n.t("badge_full"), compact: i18n.t("badge_compact") } as const;
-  const tooltips = {
-    full: new WeakMap<DisclosedVerdict, string>(),
-    compact: new WeakMap<DisclosedVerdict, string>(),
-  } as const;
 
-  function tooltip(kind: BadgeSlot["kind"], verdict: DisclosedVerdict): string {
-    const known = tooltips[kind].get(verdict);
-    if (known !== undefined) {
-      return known;
-    }
-    const text = badgeTooltip(i18n, labels[kind], verdict.notes);
-    tooltips[kind].set(verdict, text);
-    return text;
-  }
-
-  function build(slot: BadgeSlot, verdict: DisclosedVerdict): HTMLElement {
+  function build(slot: BadgeSlot): HTMLElement {
     if (slot.kind === "full") {
-      const chip = createChip(doc, labels.full);
-      chip.title = tooltip("full", verdict);
-      return chip;
+      return createChip(doc, labels.full);
     }
     const badge = doc.createElement("span");
     badge.className = "sar-compact";
@@ -91,12 +73,11 @@ export function createBadgeRenderer(doc: Document, i18n: MessageCatalog): HostRe
     return badge;
   }
 
-  /** A compact badge inside the capsule's own link takes the pointer and shows the tooltip. */
-  function linkCompact(badge: HTMLElement, host: Element, verdict: DisclosedVerdict): void {
+  /** A compact badge inside the capsule's own link takes the pointer and opens the card. */
+  function linkCompact(badge: HTMLElement, host: Element): void {
     const link = badge.parentElement?.closest("a");
     if (link !== null && link !== undefined && (host.contains(link) || link.contains(host))) {
       badge.setAttribute("data-sar-in-link", "true");
-      badge.title = tooltip("compact", verdict);
     }
   }
 
@@ -109,18 +90,22 @@ export function createBadgeRenderer(doc: Document, i18n: MessageCatalog): HostRe
         return;
       }
       if (
-        current !== undefined && current.badge.isConnected && current.notes === verdict.notes
-        && sameSlot(current.slot, slot)
+        current !== undefined && current.badge.isConnected && sameSlot(current.slot, slot)
       ) {
+        if (current.verdict !== verdict) {
+          card.bind(current.badge, verdict);
+          drawn.set(host, { ...current, verdict });
+        }
         return;
       }
       current?.badge.remove();
-      const badge = build(slot, verdict);
+      const badge = build(slot);
       slot.anchor.insertAdjacentElement(slot.position, badge);
       if (slot.kind === "compact") {
-        linkCompact(badge, host, verdict);
+        linkCompact(badge, host);
       }
-      drawn.set(host, { badge, notes: verdict.notes, slot });
+      card.bind(badge, verdict);
+      drawn.set(host, { badge, verdict, slot });
     },
   };
 }

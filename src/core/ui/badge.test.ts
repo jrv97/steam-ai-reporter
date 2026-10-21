@@ -2,11 +2,9 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { setBody } from "../../../tests/helpers/dom";
 import { englishI18n } from "../../../tests/helpers/i18n";
 import { disclosedVerdict, NOT_DISCLOSED } from "../../../tests/helpers/verdicts";
-import { UNKNOWN } from "../types";
+import { type DisclosedVerdict, UNKNOWN } from "../types";
 import { applyBadgeSetting, compactSize, createBadgeRenderer } from "./badge";
 import type { BadgeSlot, HostView } from "./host";
-
-const XSS = '<img src=x onerror="alert(1)"> art';
 
 function capsule(): {
   host: HTMLElement;
@@ -47,39 +45,35 @@ describe("compactSize", () => {
 
 describe("createBadgeRenderer", () => {
   const i18n = englishI18n();
-  let renderer = createBadgeRenderer(document, i18n);
+  let bound = new Map<Element, DisclosedVerdict>();
+  let renderer = createBadgeRenderer(document, i18n, { bind: (t, v) => bound.set(t, v) });
 
   beforeEach(() => {
-    renderer = createBadgeRenderer(document, i18n);
+    bound = new Map();
+    renderer = createBadgeRenderer(document, i18n, { bind: (t, v) => bound.set(t, v) });
   });
 
-  it("draws the full badge with the catalog label and a tooltip quoting the notes", () => {
+  it("draws the full badge with the catalog label and binds it to the hover card", () => {
     const { host, title } = capsule();
-    const notes = "n".repeat(250);
-    renderer.render(
-      view(host, { kind: "full", anchor: title, position: "afterend" }, {
-        verdict: disclosedVerdict({ notes }),
-      }),
-    );
+    const verdict = disclosedVerdict({ notes: "Concept art." });
+    renderer.render(view(host, { kind: "full", anchor: title, position: "afterend" }, { verdict }));
     const badge = host.querySelector<HTMLElement>(".sar-badge");
     expect(badge?.previousElementSibling).toBe(title);
     expect(badge?.textContent).toBe("AI use disclosed");
     expect(badge?.querySelector("svg")).toBeNull();
-    expect(badge?.title).toBe(
-      `AI use disclosed. In the developer's own words: ${"n".repeat(200)}...`,
-    );
+    expect(badge?.hasAttribute("title")).toBe(false);
+    expect(badge === null ? undefined : bound.get(badge)).toBe(verdict);
   });
 
-  it("renders notes with markup as plain text in the tooltip", () => {
+  it("binds a kept badge to a new verdict without drawing it again", () => {
     const { host, title } = capsule();
-    renderer.render(
-      view(host, { kind: "full", anchor: title, position: "afterend" }, {
-        verdict: disclosedVerdict({ notes: XSS }),
-      }),
-    );
-    const badge = host.querySelector<HTMLElement>(".sar-badge");
-    expect(badge?.title).toContain(XSS);
-    expect(host.querySelector("img")).toBeNull();
+    const slot: BadgeSlot = { kind: "full", anchor: title, position: "afterend" };
+    renderer.render(view(host, slot));
+    const badge = host.querySelector(".sar-badge");
+    const next = disclosedVerdict({ notes: "Voice lines." });
+    renderer.render(view(host, slot, { verdict: next }));
+    expect(host.querySelector(".sar-badge")).toBe(badge);
+    expect(badge === null ? undefined : bound.get(badge)).toBe(next);
   });
 
   it("draws the compact badge in its tier, linked to the capsule link", () => {
@@ -91,10 +85,11 @@ describe("createBadgeRenderer", () => {
     expect(badge?.getAttribute("data-sar-size")).toBe("large");
     expect(badge?.textContent).toBe("AI disclosed");
     expect(badge?.getAttribute("data-sar-in-link")).toBe("true");
-    expect(badge?.title).toContain("AI disclosed. In the developer's own words:");
+    expect(badge?.hasAttribute("title")).toBe(false);
+    expect(badge !== null && bound.has(badge)).toBe(true);
   });
 
-  it("gives a compact badge outside a link no tooltip and no pointer", () => {
+  it("gives a compact badge outside a link no pointer", () => {
     setBody('<div class="row"><div class="image"></div></div>');
     const host = document.querySelector(".row");
     const image = document.querySelector(".image");
@@ -106,7 +101,6 @@ describe("createBadgeRenderer", () => {
     );
     const badge = image.querySelector<HTMLElement>(".sar-compact");
     expect(badge?.hasAttribute("data-sar-in-link")).toBe(false);
-    expect(badge?.hasAttribute("title")).toBe(false);
   });
 
   it.each([

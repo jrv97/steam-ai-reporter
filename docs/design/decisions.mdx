@@ -1,7 +1,7 @@
 ---
 title: AI Reporter for Steam UI design decisions (v1)
 status: draft
-updated: 2026-10-20
+updated: 2026-10-21
 ---
 
 # AI Reporter for Steam UI design decisions (v1)
@@ -30,7 +30,7 @@ The choices behind `tokens.css`, `components.mdx` and `assets/icons/`, with the 
 11. **Dim is opacity 0.4 only.** Rejected: grayscale (an effect layer per capsule, hundreds on a sale page).
 12. **Settings are attributes on the root element; the list filter is pure CSS.** Rejected: toggling classes per host (one write per capsule, re-applied on every React re-render), inline styles (same cost, and they fight the store's).
 13. **The banner collapses at 3 lines, without animation, and forgets the expanded state.**
-14. **Tooltips are native; the compact badge takes the pointer only inside the capsule link.** A custom tooltip would fight the store's hover previews.
+14. **Replaced by decision 32.** The compact badge still takes the pointer only inside the capsule link.
 15. **Settings pages are dark only, in a system font.** A light theme would need a second palette for no v1 gain.
 16. **The 128px icon carries 16px of transparent padding** (Chrome Web Store guidance); 16, 32 and 48px are full bleed, and 16px is hand-hinted.
 17. **Tokens live on the store page's `:root`, all prefixed `sar-`.** Shadow roots inherit them.
@@ -47,6 +47,7 @@ The choices behind `tokens.css`, `components.mdx` and `assets/icons/`, with the 
 28. **Backups are a file the person keeps.** Download a JSON file; restore it after a check that shows its date and contents. Restore replaces settings and merges the game lists, so nothing on the current browser is lost. Full options page and userscript dialog only. Rejected: browser sync storage (stays within one browser family, needs a browser account, and its small quota cannot hold the lookup history); an account or server copy (the product sends nothing anywhere); a paste-in text box (clumsy for a large history); restoring the moment a file is picked (no chance to catch the wrong file).
 29. **A summary-box row under Publisher, not a chip in the tag row.** The summary box at the top right is above the fold, while the banner usually is not. Steam's own reviews row there is a link that jumps to the reviews section, so a row whose violet chip jumps to our banner is a native pattern. Sampled on 2026-10-20: rows are flex label and value pairs in Arial 13/18, labels 35% wide, 11px uppercase. Rejected: first chip in the tag row (the row never wraps and Steam's own script hides tags that do not fit, so ours would overflow or force us to hide a store tag; it would also sit under "Popular user-defined tags" and read as a player tag); a floating bubble (covers content, against "never block"). The wording "AI use: Disclosed by the developer" (`summary_label`, `summary_value`) was approved on 2026-10-20.
 30. **No icons in labels or the banner.** Badges, the summary row chip and the banner carry no spark; only the extension icon keeps it. The store's own tags, corner flags and notice bubbles carry no icons either, and the violet hue plus the wording still mark our UI. Images under 180px wide get no compact badge, since that tier showed only the spark. Rejected: keeping the spark (the user preferred labels without it, 2026-10-20); a short "AI" flag on small images (new copy, and a bare "AI" reads as a verdict rather than a disclosure); squeezing the full label onto small images (it truncates to something like "AI dis...").
+32. **The badges' tooltip is a hover card built like the store's game hover popup.** One panel per page, sampled from `#global_hover` on 2026-10-21: `#344352`, the store's 20px shadow, 16px padding, 306px wide, square. It quotes the developer's notes verbatim, clamped to 6 lines, and names the AI service. Only the violet title marks it as ours. It sits 8px under the badge at z-index 2100, above the store's popup (1526), and it opens as a manual popover so it also clears the React hover layer, which sits in the browser's top layer, and a compact badge hangs it back over the capsule, away from where the store's popup opens. The summary row opens it only while the banner is off, and on the game's own page it drops the line that points to the store page. Rejected: the native `title` (cut at 200 characters, unstyled, delayed by the browser, and invisible to keyboard users); a custom tooltip without the store's surface (a seam next to the store's own popup); the store's arrow (ours sits right under its trigger); a violet accent edge (decision 30 removed edge chrome, and the violet title already marks it).
 
 ## Ideas credited
 

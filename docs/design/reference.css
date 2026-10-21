@@ -24,7 +24,9 @@
 .sar-compact,
 .sar-compact *,
 .sar-summary-row,
-.sar-summary-row * {
+.sar-summary-row *,
+.sar-hovercard,
+.sar-hovercard * {
   all: unset;
   box-sizing: border-box;
 }
@@ -50,7 +52,8 @@
 /* Badges turned off while the page is open: hide what exists without touching each node */
 [data-sar-badges="off"] .sar-badge,
 [data-sar-badges="off"] .sar-compact,
-[data-sar-badges="off"] .sar-summary-row {
+[data-sar-badges="off"] .sar-summary-row,
+[data-sar-badges="off"] .sar-hovercard {
   display: none !important;
 }
 
@@ -115,8 +118,8 @@
   pointer-events: none; /* Default: clicks fall through to whatever is under the art */
 }
 
-/* Placed inside the capsule link: hovering it is hovering the link, so the title tooltip can
-   show without stealing clicks or hover previews */
+/* Placed inside the capsule link: hovering it is hovering the link, so the hover card can
+   open without stealing clicks or hover previews */
 .sar-compact[data-sar-in-link="true"] {
   pointer-events: auto;
   cursor: pointer;
@@ -170,6 +173,72 @@ a.sar-summary-row:focus-visible {
 
 a.sar-summary-row .sar-badge {
   cursor: pointer;
+}
+
+/* Hover card: the store's game hover popup in our type. One per page, fixed to the viewport;
+   hover-card.ts sets its top and left. */
+
+.sar-hovercard {
+  position: fixed;
+  z-index: var(--sar-z-hovercard);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sar-hovercard-gap);
+  box-sizing: border-box;
+  inline-size: var(--sar-hovercard-inline-size);
+  max-inline-size: calc(100vw - 2 * var(--sar-hovercard-offset));
+  padding: var(--sar-hovercard-pad);
+  background: var(--sar-hovercard-bg);
+  box-shadow: var(--sar-hovercard-shadow);
+  color: var(--sar-color-text);
+  font: var(--sar-hovercard-meta-font);
+  text-align: start;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  pointer-events: auto;
+  opacity: 1;
+  transition: opacity var(--sar-duration-fast) var(--sar-ease);
+}
+
+@starting-style {
+  .sar-hovercard {
+    opacity: 0;
+  }
+}
+
+/* The reset unsets the user agent's hidden rule */
+.sar-hovercard[hidden],
+.sar-hovercard [hidden] {
+  display: none !important;
+}
+
+.sar-hovercard-title {
+  display: block;
+  color: var(--sar-badge-fg);
+  font: var(--sar-hovercard-title-font);
+}
+
+.sar-hovercard-source,
+.sar-hovercard-service,
+.sar-hovercard-more {
+  display: block;
+  color: var(--sar-color-text-muted);
+  font: var(--sar-hovercard-meta-font);
+}
+
+.sar-hovercard-notes {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--sar-color-text);
+  font: var(--sar-hovercard-notes-font);
+  white-space: pre-line;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: var(--sar-hovercard-notes-lines);
+  line-clamp: var(--sar-hovercard-notes-lines);
+}
+
+.sar-hovercard-service-name {
+  color: var(--sar-color-text);
 }
 
 /* List filter
@@ -725,4 +794,11 @@ a.sar-summary-row .sar-badge {
   color: var(--sar-color-text);
   font-size: var(--sar-size-sm);
   line-height: var(--sar-leading-sm);
+}
+
+/* The card keeps system colors; only its edge needs adding once the shadow is gone */
+@media (forced-colors: active) {
+  .sar-hovercard {
+    border: 1px solid CanvasText;
+  }
 }
