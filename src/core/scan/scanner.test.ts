@@ -118,6 +118,21 @@ describe("per-surface hosts", () => {
     expect(found()[3]?.anchor).toBe(the(".HeroCapsuleImageContainer"));
   });
 
+  it("next fest: one host per feed card, badge over its hero capsule, never hidden", async () => {
+    loadPage(SURFACES["next-fest"]);
+    await startScanner();
+    const cards = [...document.querySelectorAll(".LibraryAssetExpandedDisplay")];
+    const perCard = cards.map((card) => found().filter((host) => card.contains(host.element)));
+    expect(perCard.map((hosts) => hosts.length)).toStrictEqual([1, 1, 1]);
+    expect(mapping()).toStrictEqual(
+      [5053640, 4783070, 4631870].map((id) => [id, "hub-carousel"] as const),
+    );
+    for (const host of found()) {
+      expect(host.anchor).toBe(the(".HeroCapsuleImageContainer", host.element));
+      expect(host.element.getAttribute(HOST_HIDEABLE)).toBe("false");
+    }
+  });
+
   it("developer: each sale widget", async () => {
     loadPage(SURFACES.developer);
     await startScanner();
@@ -146,6 +161,26 @@ describe("per-surface hosts", () => {
     }
   });
 
+  it("wishlist: a row mounted before its title text keeps the wishlist placement", async () => {
+    loadPage(SURFACES.wishlist);
+    const [row] = document.querySelectorAll("[data-index]");
+    if (row === undefined) {
+      throw new TypeError();
+    }
+    for (const link of row.querySelectorAll("a[href*='/app/']")) {
+      if (link.querySelector("img") === null) {
+        link.replaceChildren();
+      } else {
+        link.remove();
+      }
+    }
+    const title = the("a[href*='/app/']", row);
+    await startScanner();
+    expect(found()[0]?.placement.id).toBe("wishlist-row");
+    expect(found()[0]?.anchor).toBe(title);
+    expect(row.getAttribute(HOST_HIDEABLE)).toBe("false");
+  });
+
   it("search suggestions in the header root get hosts; its navigation links do not", async () => {
     const popup = new DOMParser().parseFromString(SURFACES["search-suggestions"], "text/html");
     setBody(
@@ -166,6 +201,23 @@ describe("per-surface hosts", () => {
     ]);
     expect(found()[0]?.anchor.textContent).toBe("Combolands: Roguelike Citybuilder");
     expect(the("nav a").hasAttribute(HOST_APPID)).toBe(false);
+  });
+
+  it("discovery queue preview: badge on the first queued capsule, never hidden", async () => {
+    history.replaceState(null, "", "/explore/");
+    setBody(
+      `<div class="page_content_ctn discovery_queue_content_ctn"><div class="page_content">`
+        + `<h2>Your queue</h2><div class="discovery_queue_static">`
+        + `<a class="discovery_queue_overlay" href="/app/2121510/x/?queue=1">`
+        + `<div class="discovery_queue_overlay_message">Begin</div></a>`
+        + `<div class="discovery_queue"><div class="dq_item dq_static_pos_2"><img></div>`
+        + `<div class="dq_item dq_static_pos_3"><img></div></div></div></div></div>`,
+    );
+    await startScanner();
+    expect(hostElements()).toStrictEqual([the(".discovery_queue_content_ctn")]);
+    expect(mapping()).toStrictEqual([[2121510, "queue-preview"]]);
+    expect(found()[0]?.anchor).toBe(the(".dq_static_pos_2"));
+    expect(the(".discovery_queue_content_ctn").getAttribute(HOST_HIDEABLE)).toBe("false");
   });
 
   it("app page: DLC rows get hosts; links to the page's own app do not", async () => {
@@ -235,6 +287,22 @@ describe("host rule", () => {
     );
     await startScanner();
     expect(mapping().filter(([id]) => id === 20)).toHaveLength(1);
+  });
+
+  it("finds a React capsule whose image arrives inside its link after the scan", async () => {
+    loadPage(SURFACES["tag-hub"]);
+    const panel = the(".SaleSectionContainer ._1omVjlZWALGX34pum8v7SF");
+    const image = the(".CapsuleImageCtn img", panel);
+    image.remove();
+    setBody("<main></main>");
+    await startScanner();
+    the("main").append(panel);
+    await settle();
+    expect(hostElements()).toStrictEqual([panel]);
+    expect(found()[0]?.anchor).toBe(the(".CapsuleImageCtn", panel));
+    the(".CapsuleImageCtn", panel).append(image);
+    await settle();
+    expect(found()).toHaveLength(1);
   });
 });
 

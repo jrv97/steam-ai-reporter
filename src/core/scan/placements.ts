@@ -53,16 +53,6 @@ function hasText(element: Element): boolean {
   return element.textContent.trim() !== "";
 }
 
-/** The host's first app link that shows text and no image: the title link of a React row. */
-export const titleLink: AnchorRule = (host) => {
-  for (const link of host.querySelectorAll(LINK_CANDIDATE)) {
-    if (firstImage(link) === undefined && hasText(link)) {
-      return link;
-    }
-  }
-  return undefined;
-};
-
 /** The host's first element without child elements that shows text: a row's title line. */
 export const firstTextLeaf: AnchorRule = (host) => {
   for (const element of host.querySelectorAll("*")) {
@@ -73,11 +63,24 @@ export const firstTextLeaf: AnchorRule = (host) => {
   return undefined;
 };
 
-/** The wishlist row's title link, only when the host is a wishlist row (its drag ID says so). */
+/** The host's first app link without an image, even before its text arrives. */
+const imagelessLink: AnchorRule = (host) => {
+  for (const link of host.querySelectorAll(LINK_CANDIDATE)) {
+    if (firstImage(link) === undefined) {
+      return link;
+    }
+  }
+  return undefined;
+};
+
+/**
+ * The wishlist row's title link, only when the host is a wishlist row (its drag ID says so). A row
+ * mounts with empty links and fills them later, so the title link may still be empty here.
+ */
 const wishlistTitle: AnchorRule = (host) =>
   host.querySelector("[data-rfd-draggable-id^='WishlistItem-']") === null
     ? undefined
-    : titleLink(host);
+    : imagelessLink(host);
 
 /** The default: a compact badge over the capsule image of any host. */
 export const GENERIC: OverlayPlacement = {
@@ -135,6 +138,16 @@ export const PLACEMENTS: readonly Placement[] = [
     badge: "compact",
     slot: "overlay",
     anchor: capsuleImage,
+  },
+  {
+    // The discovery queue preview: one overlay link names the first queued app over a stack of
+    // capsule images. The badge goes on that first capsule, and hiding would remove the queue.
+    id: "queue-preview",
+    host: ".discovery_queue_content_ctn",
+    hideable: false,
+    badge: "compact",
+    slot: "overlay",
+    anchor: inside(".dq_item"),
   },
   {
     // The large carousel capsule on React sale pages (tag, category and specials hubs).

@@ -1,6 +1,7 @@
 import dlcRows from "../fixtures/app-page/1808500-ai-only.html?raw";
 import developer from "../fixtures/surfaces/developer/widgets.html?raw";
 import home from "../fixtures/surfaces/home/capsules.html?raw";
+import nextFest from "../fixtures/surfaces/next-fest/feed.html?raw";
 import searchSuggestions from "../fixtures/surfaces/search-suggestions/popup.html?raw";
 import search from "../fixtures/surfaces/search/rows.html?raw";
 import tagHub from "../fixtures/surfaces/tag-hub/capsules.html?raw";
@@ -11,6 +12,7 @@ export const SURFACES = {
   "search": search,
   "home": home,
   "tag-hub": tagHub,
+  "next-fest": nextFest,
   "developer": developer,
   "wishlist": wishlist,
   "search-suggestions": searchSuggestions,

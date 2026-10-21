@@ -1,0 +1,3 @@
+kind: Changed
+body: Badges now appear on Next Fest and other sale pages, category hubs, developer and publisher pages, the discovery queue preview, and on home page tabs you open after the page loads. Store cards whose picture arrives a moment after the rest of the card get their badge too, and wishlist rows that load during a fast scroll keep their wishlist badge.
+time: 2026-10-21T12:00:00.0000000+02:00

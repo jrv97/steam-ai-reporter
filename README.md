@@ -8,12 +8,18 @@ The extension only reads Steam's own disclosures and sends no reports anywhere.
 
 ## What it does
 
-- Adds a badge to capsules and rows (search, wishlist, home, tag and category hubs, sale pages, search suggestions) for items where the developer filled in the AI disclosure.
+- Adds a badge to capsules and rows (search, wishlist, home, tag and category hubs, sale pages such as Next Fest, developer and publisher pages, the discovery queue, search suggestions) for items where the developer filled in the AI disclosure.
 - Shows a non-blocking banner on the app page that quotes the developer's disclosure text verbatim.
 - Optionally dims or hides disclosing items in lists. This is off by default.
 - Lets you ignore a game you consider a false flag, with a per-game allow-list.
 
 The badge says "Discloses AI use". It does not say a game uses AI, and the absence of a badge does not mean a game is AI-free: the disclosure is self-reported by the developer, so it marks what developers chose to disclose and nothing more.
+
+### Known gaps
+
+- The large carousel at the top of a category page (`/category/<name>/`) reuses one slide container as it advances. The first game's marker stays on that container, so if that game discloses AI use, its badge or dimming can show on the games that follow it in the carousel.
+- On the personal calendar, many capsules add their image inside the app link after the rest of the card. Those capsules get no badge until the page reloads.
+- In the header's search suggestions on a game's own store page, the suggestion for that same game gets no badge. The banner on the page already shows its disclosure.
 
 ## Install
 
