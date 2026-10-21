@@ -48,6 +48,8 @@ export interface Scanner {
 interface HostRecord {
   readonly appId: AppId;
   readonly placement: Placement;
+  /** The element the badge attaches to, kept while it stays in the host. */
+  readonly anchor: Element;
 }
 
 /** What the read phase decided; the write phase only applies it. */
@@ -233,8 +235,14 @@ export function createScanner(options: ScannerOptions): Scanner {
     const changed: CapsuleHost[] = [];
     for (const element of changedHosts) {
       const record = hosts.get(element);
-      const anchor = record?.placement.anchor(element);
-      if (record !== undefined && anchor !== undefined) {
+      if (record === undefined) {
+        continue;
+      }
+      // Keep the anchor while it is still in the host: a store popup added inside the host must
+      // not pull the badge into itself. Look it up again only when a re-render replaced it.
+      const kept = record.anchor.isConnected && element.contains(record.anchor);
+      const anchor = kept ? record.anchor : record.placement.anchor(element);
+      if (anchor !== undefined) {
         changed.push({ element, appId: record.appId, placement: record.placement, anchor });
       }
     }
@@ -264,7 +272,18 @@ export function createScanner(options: ScannerOptions): Scanner {
       if (!host.placement.hideable) {
         host.element.setAttribute(HOST_HIDEABLE, "false");
       }
-      hosts.set(host.element, { appId: host.appId, placement: host.placement });
+      hosts.set(host.element, {
+        appId: host.appId,
+        placement: host.placement,
+        anchor: host.anchor,
+      });
+    }
+    for (const host of plan.changed) {
+      hosts.set(host.element, {
+        appId: host.appId,
+        placement: host.placement,
+        anchor: host.anchor,
+      });
     }
     if (plan.found.length > 0 || plan.changed.length > 0) {
       renderer.render({ found: plan.found, changed: plan.changed });
