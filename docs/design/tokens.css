@@ -248,8 +248,10 @@
   --sar-compact-height-lg: 22px;
   /* The store's standard control height. No use yet. */
   --sar-control-height: 36px;
-  /* Minimum block size of every button, segment and select we draw. */
+  /* Minimum block size of buttons, selects, and segments on the full page. */
   --sar-control-height-sm: 28px;
+  /* Segments in the toolbar popup: the store's smallest control height. */
+  --sar-control-height-xs: 24px;
   /* Options page column. */
   --sar-options-max-width: 640px;
   /* Action popup width. */
@@ -371,7 +373,7 @@
   --sar-summary-tag-font: var(--sar-weight-regular) var(--sar-size-xs) / 19px
     var(--sar-font-summary);
 
-  --sar-card-pad: var(--sar-space-4);
+  --sar-card-pad: var(--sar-space-3);
   --sar-card-radius: var(--sar-radius-md);
 
   /* The store's game hover popup: 306px wide, 16px padding, a 20px black shadow at 50% */

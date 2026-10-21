@@ -187,6 +187,33 @@ describe("mountSettingsForm", () => {
     });
   });
 
+  it("leaves an empty allow-list out of the popup and moves focus above it", async () => {
+    const { root, control } = await setup("popup");
+    const section = control(".sar-allow-list").closest<HTMLElement>("section");
+    expect(section?.hidden).toBe(false);
+    control('[data-sar-restore="20"]').click();
+    await vi.waitFor(() => {
+      expect(root.querySelectorAll(".sar-allow-item")).toHaveLength(1);
+    });
+    control('[data-sar-restore="10"]').click();
+    await vi.waitFor(() => {
+      expect(section?.hidden).toBe(true);
+    });
+    expect(document.activeElement?.textContent).toBe("In lists");
+  });
+
+  it("keeps the empty state on the full page", async () => {
+    const { root, control } = await setup();
+    control('[data-sar-restore="20"]').click();
+    await vi.waitFor(() => {
+      expect(root.querySelectorAll(".sar-allow-item")).toHaveLength(1);
+    });
+    control('[data-sar-restore="10"]').click();
+    await vi.waitFor(() => {
+      expect(control(".sar-empty").closest<HTMLElement>("section")?.hidden).toBe(false);
+    });
+  });
+
   it("keeps a game and shows an error when marking it again fails", async () => {
     const { allowList, control } = await setup();
     vi.spyOn(allowList, "remove").mockRejectedValue(new Error());
