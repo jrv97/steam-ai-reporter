@@ -8,7 +8,7 @@ decision-makers: Jorge Rodriguez de la Vega
 
 ## Context and problem statement
 
-The project ships to the Chrome Web Store, to addons.mozilla.org (AMO) and as a userscript hosted on GitHub releases. Another repository already runs a release train with changie fragments, CalVer, a bot-made tag, a nightly deploy and prod on manual dispatch of the same tag. Prior art among extensions mostly stops at a GitHub release and uploads to the stores by hand; none of the projects read uses changelog fragments or a two-stage nightly-then-prod promotion ([extension-release-pipeline](../research/extension-release-pipeline.md)).
+The project ships to the Chrome Web Store, to addons.mozilla.org (AMO) and as a userscript hosted on GitHub releases. The release train this project uses combines changie fragments, CalVer, a bot-made tag, a nightly deploy and prod on manual dispatch of the same tag. Prior art among extensions mostly stops at a GitHub release and uploads to the stores by hand; none of the projects read uses changelog fragments or a two-stage nightly-then-prod promotion ([extension-release-pipeline](../research/extension-release-pipeline.md)).
 
 The store rules constrain what carries over: the manifest version must be unpadded dotted integers, AMO never reuses a version number across channels, and no store offers keyless publishing.
 
@@ -31,7 +31,7 @@ How are versions chosen, releases cut, and artifacts published?
 
 ## Decision outcome
 
-Chosen option 1, following that release train as adapted in [rq1-prior-art](../research/extension-release-pipeline/rq1-prior-art.md).
+Chosen option 1, with the release train adapted to the store rules in [rq1-prior-art](../research/extension-release-pipeline/rq1-prior-art.md).
 
 - Fragments: `.changie.yaml` with kinds Added, Changed, Fixed and Removed. A CI gate fails a pull request that changes `src/` without a new `.changes/unreleased/*.yaml`, unless it carries the `no-changelog-fragment` label. The changelog feeds the GitHub release body and AMO's per-version release notes. No Chrome Web Store release-notes field was found.
 - Version: unpadded CalVer `YYYY.M.D`, with `.N` (from 1) for a same-day recut: `2026.10.20`, `2026.10.20.1`. Chrome and AMO accept one to four dotted integers with no leading zeros, and `2026.10.05` is invalid. The same string is the Git tag, the manifest `version` and the userscript `@version`. `package.json` holds the last released version; feature changes never edit it (project rule 7, one version source).
@@ -83,7 +83,7 @@ Sequencing: the changie setup (`.changie.yaml`, `.changes/`) and the pull reques
 
 ## Amendment 2026-10-21: as built
 
-The release app is a GitHub App owned by a personal account and installed only on `jrv97/steam-ai-reporter`. An organization release bot stays with organization projects. The workflows read its ID and key from the repository secrets `RELEASE_APP_ID` and `RELEASE_APP_PRIVATE_KEY` through `actions/create-github-app-token`. The app opens the batch PR, which lets CI run on it, and the tag ruleset admits only this app.
+The release app is a GitHub App owned by a personal account and installed only on `jrv97/steam-ai-reporter`. The workflows read its ID and key from the repository secrets `RELEASE_APP_ID` and `RELEASE_APP_PRIVATE_KEY` through `actions/create-github-app-token`. The app opens the batch PR, which lets CI run on it, and the tag ruleset admits only this app.
 
 The Chrome Web Store job gets a 15-minute access token through Workload Identity Federation and a service account, and `scripts/cws.py` calls API v2 with it. [ADR 0007](0007-chrome-web-store-workload-identity.mdx) records that choice and the options it replaced.
 

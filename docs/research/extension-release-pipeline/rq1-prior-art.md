@@ -206,7 +206,7 @@ For each element of the model: does prior art support it, what do the stores cha
    - Stores: the manifest version must be unpadded (`2026.10.5`; `2026.10.05` is invalid), at most four segments (`.NN` must be one unpadded integer, with no channel segment), each integer at most 65535 for Chrome. Every upload must out-rank the previous one in the same listing and AMO burns each number permanently (even for unlisted). Nightly uploads to a store listing also trigger a review each time and CWS flags significant code changes. A nightly should therefore live on GitHub prereleases and an AMO unlisted/self-hosted channel (the uBO pattern) or a separate CWS listing (Bitwarden's `chrome-beta`), and stay off the public listing.
    - Open: tag spelling vs manifest spelling (uBO differs: `1.75.1b16` vs `1.75.1.16`); whether to use `version_name` for the human label; whether nightlies get their own add-on id/cws listing.
 
-3. Release-bot GitHub app opens the changelog batch PR via merge queue and creates the tag; ruleset admits only that app.
+3. A release GitHub App opens the changelog batch PR and creates the tag; a ruleset admits only that app.
    - Prior art: closest is Bitwarden's `repository-management.yml`, a dispatch that opens a "Bump client version(s)" PR but creates no tag. App-created tags plus a ruleset restricting tag creation are not seen in any project read.
    - Stores: no effect; the stores never see the tag. One consequence: because the version is stamped into the manifest at build time (Refined GitHub's `yq` step) the repo needs no version-bump commit, which suits a calver train; Dark Reader and uBO bump files by hand instead.
    - Open: stamp at build time (no bump commit) or keep a version file in the bump PR.
@@ -216,12 +216,12 @@ For each element of the model: does prior art support it, what do the stores cha
    - Stores: "same tag, same artifact" runs into two rules. (A) AMO version numbers are unique across channels; the exact nightly version cannot be submitted again to the listed channel after being signed unlisted (inferred from the unique-version rule; unverified for this exact case). UBO avoids it because dev builds and stable builds have different version numbers. (B) a prod build that must be reproducible from source for AMO should be built once and promoted instead of rebuilt. CWS offers a store-side second gate: `STAGED_PUBLISH` after approval (30 days to publish) and `deployInfos[].deployPercentage`, but partial rollout needs more than 10,000 weekly users, which likely rules it out for a small extension.
    - Open: promote the nightly artifact to prod (needs a separate AMO ID or a version scheme where the prod cut is a new recut, for example the next `.NN`) versus rebuilding the tag at prod time; whether prod waits for review (`--approval-timeout`) or just uploads.
 
-5. Secrets and identity: PyPI trusted publishing for semver packages.
+5. Secrets and identity: keyless publishing through OIDC trusted publishing.
    - Prior art: every project that publishes uses long-lived secrets in GitHub environments (Refined GitHub: `EXTENSION_ID`, `CLIENT_ID`, `CLIENT_SECRET`, `REFRESH_TOKEN`, `WEB_EXT_API_KEY`, `WEB_EXT_API_SECRET`).
    - Stores: no OIDC or trusted publishing for CWS, AMO or Edge was found. CWS v2 offers a service account (impersonation avoids a downloaded key but needs a human-held identity to impersonate from; whether GitHub OIDC through workload identity federation works is untested), AMO uses a JWT key pair, Edge an API key that expires. Expect to rotate secrets.
    - Open: OAuth refresh token vs service account for CWS; one GitHub environment per store with required reviewers on the prod environment; rotation calendar for the Edge key.
 
-6. Semver packages released separately.
+6. Libraries released on their own version line.
    - Prior art: no extension project here separates its extension from a library release except Return YouTube Dislike, which versions extension and userscript independently (4.1.0 vs 3.2.1).
    - Stores: not applicable to extension packages; manifest versions are the extension's own.
    - Open: whether the userscript gets its own version line or shares the train version. Greasy Fork requires an incrementing `@version`; a calver `@version` (`2026.10.20`) is numeric and dot-joined, which Violentmonkey accepts; sharing the train version is possible.
