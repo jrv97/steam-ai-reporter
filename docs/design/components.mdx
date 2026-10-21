@@ -34,7 +34,7 @@ Every class, attribute and custom property starts with `sar-`.
 ## Voice and copy
 
 - Say "discloses" or "disclosed". Never "uses AI", "AI-free" or "no AI", in any locale; the copy test fails the build on them.
-- Plain, short, sentence case: "Discloses AI use", "Stop marking this game", "Show full disclosure".
+- Plain, short, sentence case: "AI use disclosed", "Stop marking this game", "Show full disclosure".
 - Name the developer as the source: "The developer discloses AI use", "In the developer's own words:", "AI service named by the developer:".
 - "Stop marking this game", never "Ignore": the store has its own Ignore button just above.
 - Settings speak about games, not switches: the list filter reads "Show", "Dim", "Hide".
@@ -145,7 +145,7 @@ Preview: `previews/Badge.html`.
 </span>
 ```
 
-- The label from `badge_full` ("Discloses AI use") as real text.
+- The label from `badge_full` ("AI use disclosed") as real text.
 - A native `title` from `badge_tooltip`: the label, then the first 200 characters of the developer's notes, verbatim, with `...` if cut.
 
 ### Look
@@ -155,7 +155,7 @@ Built like the store's own tag chips, in our hue.
 - `sar-badge-height` (19px) tall, `sar-badge-pad-inline` (7px), `sar-radius-sm`, no border.
 - Label in `sar-text-badge` (11/19 regular, the page font rather than the chips' Arial, because the badge sits in Motiva rows), `sar-badge-fg` on `sar-badge-bg`.
 - No icon. The violet hue and the wording set it apart from the store's blue tags, and it never sits in the store's tag row.
-- Capped at `sar-badge-max-inline-size` (180px). English needs about 124px; longer labels end in an ellipsis and keep the full text in the tooltip and the DOM.
+- Capped at `sar-badge-max-inline-size` (180px). English needs about 96px in the store font (82px of text plus padding), so a translation can run about 85% longer before it truncates; longer labels end in an ellipsis and keep the full text in the tooltip and the DOM.
 
 ### Placement
 
@@ -752,7 +752,7 @@ For every translator:
 
 | Key | English | Note |
 | --- | --- | --- |
-| `badge_full` | Discloses AI use | Label on search and wishlist rows. One line; truncates past about 22 characters. |
+| `badge_full` | AI use disclosed | Label on search and wishlist rows. One line; truncates past about 22 characters. |
 | `badge_compact` | AI disclosed | Label over game images. Keep it as short as the language allows. |
 | `badge_tooltip` | `$label$`. In the developer's own words: `$notes$` | Hover text on a badge. `label` is the badge label; `notes` is the developer's text, up to 200 characters, untranslated. |
 

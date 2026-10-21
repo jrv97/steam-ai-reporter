@@ -235,7 +235,7 @@
 
   /* Full badge block size: the store's tag-chip height. */
   --sar-badge-height: 19px;
-  /* Full badge cap. English needs about 124px; past the cap the label ends in an ellipsis. */
+  /* Full badge cap. English needs about 96px; past the cap the label ends in an ellipsis. */
   --sar-badge-max-inline-size: 180px;
   /* Summary row label column: the share of the row the store gives its own labels. */
   --sar-summary-label-inline-size: 35%;

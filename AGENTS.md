@@ -26,7 +26,7 @@ These are hard rules. A change that breaks one needs an ADR first.
 3. **Permissions.** `storage` plus content-script matches on `https://store.steampowered.com/*`.
    No `host_permissions` and no background script unless an ADR says otherwise.
 4. **Semantics.** Three verdict states: disclosed, not disclosed, unknown. Unknown is never stored
-   or shown as not disclosed. The wording is "Discloses AI use", never "uses AI" or "AI-free". The
+   or shown as not disclosed. The wording is "AI use disclosed", never "uses AI" or "AI-free". The
    developer's disclosure text is rendered verbatim through `textContent`.
 5. **Core purity.** `src/core` uses only DOM and web standards and never names `chrome`, `browser`
    or `GM`. Platform code lives in `src/platform/`.
