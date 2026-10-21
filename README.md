@@ -6,6 +6,12 @@ A browser extension (Chrome and Firefox) and a userscript (Tampermonkey and Viol
 
 The extension only reads Steam's own disclosures and sends no reports anywhere.
 
+## Why
+
+Steam Next Fest is, I kid you not, one of my favorite times of the year. I don't play that much, but I still browse every corner of the fest and wishlist a bunch of games. Too often a game looks great until I find out it leans heavily on generative AI for its creative work, from gameplay design to art and music. For me personally, that is where I draw the line: creative work done with AI is a hard stop.
+
+I couldn't find an extension that covered every corner of the store and let me preview a developer's disclosure right from the list, then review it in full on the game's page. So I built one. I know this is "querer ponerle puertas al campo" (trying to put doors on an open field), but it's the best I can do, and more importantly, it's fun :)
+
 ## What it does
 
 - Adds a badge to capsules and rows (search, wishlist, home, tag and category hubs, sale pages such as Next Fest, developer and publisher pages, the discovery queue, search suggestions) for items where the developer filled in the AI disclosure.
