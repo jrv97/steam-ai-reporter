@@ -56,7 +56,7 @@ describe("start on the search page", () => {
     expect(http.calls).toHaveLength(1);
     expect(getItemsRequest(http.calls[0] ?? "").ids).toEqual(SEARCH_IDS);
     const badge = row(DISCLOSED)?.querySelector(".search_name > .title + .sar-badge");
-    expect(badge?.textContent).toBe("Discloses AI use");
+    expect(badge?.textContent).toBe("AI use disclosed");
     expect(row(DISCLOSED)?.getAttribute("data-sar-state")).toBe("disclosed");
     const states = SEARCH_IDS.map((id) => row(String(id))?.getAttribute("data-sar-state"));
     expect(states.filter((state) => state === "not-disclosed")).toHaveLength(7);

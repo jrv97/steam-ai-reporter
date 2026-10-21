@@ -13,7 +13,7 @@ The extension only reads Steam's own disclosures and sends no reports anywhere.
 - Optionally dims or hides disclosing items in lists. This is off by default.
 - Lets you ignore a game you consider a false flag, with a per-game allow-list.
 
-The badge says "Discloses AI use". It does not say a game uses AI, and the absence of a badge does not mean a game is AI-free: the disclosure is self-reported by the developer, so it marks what developers chose to disclose and nothing more.
+The badge says "AI use disclosed". It does not say a game uses AI, and the absence of a badge does not mean a game is AI-free: the disclosure is self-reported by the developer, so it marks what developers chose to disclose and nothing more.
 
 ### Known gaps
 
