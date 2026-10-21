@@ -82,8 +82,8 @@ These are hard rules. A change that breaks one needs an ADR first.
 
 ## Development browsers
 
-- Firefox testing uses Firefox Nightly only, through a dedicated profile. The user's regular
-  Firefox is personal: never launch it, install into it, or touch its profiles.
+- Firefox testing uses Firefox Nightly only, through a dedicated profile. The regular Firefox
+  install is personal: never launch it, install into it, or touch its profiles.
 - Chrome (regular release) is used only for this project; loading the unpacked build there is fine.
 - Machine-specific paths (`SAR_FIREFOX_BIN`, `SAR_FIREFOX_PROFILE`, `SAR_CHROME_BIN`,
   `SAR_CHROME_PROFILE`) live in the gitignored `mise.local.toml`.
@@ -99,5 +99,9 @@ These are hard rules. A change that breaks one needs an ADR first.
 - After a merge: archive the session, remove its worktree and branch, and rebase any open branch
   that the merge left behind onto `main`.
 - PR descriptions carry no AI attribution or trailers.
+- On GitHub, sessions may push branches, open PRs, add labels and close superseded PRs. They
+  change repo settings only after explicit approval. They post no comments, reviews or issues.
+- Plans in `docs/plans/` and research in `docs/research/` stay committed in this repo, since ADRs
+  link to the research. Code never references either.
 - Main tasks: `mise run setup` once per clone, then `fmt`, `lint`, `typecheck`, `test`, `build`,
   `check`, `ci`; `dev`, `run-firefox`, `run-chrome` to try builds; `change-new` for changelog notes.
