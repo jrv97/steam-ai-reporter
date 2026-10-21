@@ -118,6 +118,29 @@ function asElement(target: EventTarget | null): Element | undefined {
   return target instanceof Element ? target : undefined;
 }
 
+/**
+ * Shows the card in the browser's top layer, above store popovers opened before it. Hiding and
+ * showing again puts it last in the stack. Engines without the Popover API keep the z-index.
+ */
+function raise(root: HTMLElement): void {
+  try {
+    leaveTopLayer(root);
+    root.showPopover();
+  } catch {
+    // No Popover API: the card stays in the page at its z-index.
+  }
+}
+
+function leaveTopLayer(root: HTMLElement): void {
+  try {
+    if (root.matches(":popover-open")) {
+      root.hidePopover();
+    }
+  } catch {
+    // No Popover API.
+  }
+}
+
 function defaultOverflows(notes: HTMLElement): boolean {
   return notes.scrollHeight > notes.clientHeight;
 }
@@ -185,6 +208,7 @@ export function createHoverCard(
     root.className = "sar-hovercard";
     root.id = HOVER_CARD_ID;
     root.setAttribute("role", "tooltip");
+    root.setAttribute("popover", "manual");
     root.hidden = true;
     const notes = line("sar-hovercard-notes", "");
     const more = line("sar-hovercard-more", i18n.t("badge_card_more"));
@@ -266,6 +290,7 @@ export function createHoverCard(
     open = undefined;
     if (card !== undefined) {
       card.root.hidden = true;
+      leaveTopLayer(card.root);
     }
   }
 
@@ -282,6 +307,7 @@ export function createHoverCard(
     release();
     const target = ensureCard();
     target.root.hidden = false;
+    raise(target.root);
     fill(target, binding);
     if (focused !== undefined) {
       describe(focused);

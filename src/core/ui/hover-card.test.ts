@@ -150,6 +150,35 @@ describe("createHoverCard", () => {
     expect(node?.getAttribute("data-sar-side")).toBe("below");
   });
 
+  it("shows the card in the top layer on every open, above store popovers opened before it", () => {
+    const saved = Object.getOwnPropertyDescriptor(HTMLElement.prototype, "showPopover");
+    const showPopover = vi.fn();
+    Object.defineProperty(HTMLElement.prototype, "showPopover", {
+      value: showPopover,
+      configurable: true,
+    });
+    try {
+      const { badge, other } = page();
+      const second = document.createElement("span");
+      second.className = "sar-badge";
+      other.append(second);
+      const hover = start();
+      hover.bind(badge, disclosedVerdict());
+      hover.bind(second, disclosedVerdict());
+      pointerOver(badge);
+      flush();
+      pointerOver(second);
+      expect(shown()?.getAttribute("popover")).toBe("manual");
+      expect(showPopover).toHaveBeenCalledTimes(2);
+    } finally {
+      if (saved === undefined) {
+        Reflect.deleteProperty(HTMLElement.prototype, "showPopover");
+      } else {
+        Object.defineProperty(HTMLElement.prototype, "showPopover", saved);
+      }
+    }
+  });
+
   it("renders notes with markup as plain text", () => {
     const { badge } = page();
     start().bind(badge, disclosedVerdict({ notes: XSS, service: XSS }));

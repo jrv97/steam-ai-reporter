@@ -754,7 +754,7 @@ Preview: `previews/HoverCard.html`.
 ### What the consumer provides
 
 ```html
-<div class="sar-hovercard" id="sar-hovercard" role="tooltip" data-sar-side="below" hidden>
+<div class="sar-hovercard" id="sar-hovercard" role="tooltip" popover="manual" data-sar-side="below" hidden>
   <p class="sar-hovercard-title">t('badge_card_title')</p>
   <p class="sar-hovercard-source">t('badge_card_source')</p>
   <p class="sar-hovercard-notes">notes, verbatim</p>
@@ -785,7 +785,8 @@ Built like the store's game hover popup, sampled on the home page on 2026-10-21:
 
 - Fixed to the viewport, `sar-hovercard-offset` (8px) below the trigger. Where it would cross the bottom edge and fits above, it flips above (`data-sar-side="above"`).
 - Horizontally, the full badge and the summary row (banner off) align the card's inline-start edge with their own. A compact badge aligns the inline-end edges: the card hangs back over the capsule art, away from the side where the store's popup opens. Either way the card stays one offset inside the viewport edges.
-- `z-index: sar-z-hovercard` (2100), above the store's game hover popup (1526) and the full-viewport layer that React store pages (tag hubs, categories) mount for their capsule hover (2000). Over a capsule both open: the store's popup beside the capsule, ours under the badge. Where the store's popup flips to the same side, ours is on top, because the pointer is on our badge.
+- `z-index: sar-z-hovercard` (2100), above the store's game hover popup (1526) and the full-viewport layer that React store pages (tag hubs, categories) mount for their capsule hover (2000). The card is also a manual popover, shown again on every open, so it enters the browser's top layer after any store popover that is open; the React hover layer is one, and no z-index reaches above it. The z-index covers engines without the Popover API. Over a capsule both open: the store's popup beside the capsule, ours under the badge. Where the store's popup flips to the same side, ours is on top, because the pointer is on our badge.
+- On React store pages (tag hubs, categories) the store's hover layer covers the capsule as soon as the pointer enters it, so the pointer cannot rest on the compact badge there. Focus on the capsule link still opens the card.
 - The card covers store content only while it is open, and only in answer to a pointer or focus on our own element. It never opens by itself.
 
 ### Behavior
