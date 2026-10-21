@@ -165,6 +165,24 @@ describe("createHoverCard", () => {
     expect(shown()?.querySelector<HTMLElement>(".sar-hovercard-more")?.hidden).toBe(true);
   });
 
+  it("leaves out the store page pointer on the game's own page", () => {
+    const { badge, other } = page();
+    const hover = start();
+    overflowing = true;
+    const verdict = disclosedVerdict({ notes: "word ".repeat(400) });
+    hover.bind(badge, verdict, true);
+    pointerOver(badge);
+    flush();
+    expect(shown()?.querySelector<HTMLElement>(".sar-hovercard-more")?.hidden).toBe(true);
+
+    const capsule = document.createElement("span");
+    capsule.className = "sar-compact";
+    other.append(capsule);
+    hover.bind(capsule, verdict);
+    pointerOver(capsule);
+    expect(shown()?.querySelector<HTMLElement>(".sar-hovercard-more")?.hidden).toBe(false);
+  });
+
   it("adds six document listeners and none per badge, however many badges there are", () => {
     const add = vi.spyOn(Node.prototype, "addEventListener");
     setBody(Array.from({ length: 200 }, () => '<span class="sar-badge">AI</span>').join(""));

@@ -63,8 +63,11 @@ export function placeCard(
 
 /** Elements register here as they render; the card looks them up when an event reaches them. */
 export interface CardTriggers {
-  /** Makes the element open the card with this verdict. Sets nothing on it. */
-  bind(trigger: Element, verdict: DisclosedVerdict): void;
+  /**
+   * Makes the element open the card with this verdict. Sets nothing on it. `ownPage` marks a
+   * trigger on the game's own store page, where the card does not point to that page.
+   */
+  bind(trigger: Element, verdict: DisclosedVerdict, ownPage?: boolean): void;
 }
 
 export interface HoverCard extends CardTriggers {
@@ -90,6 +93,11 @@ interface Card {
   readonly root: HTMLElement;
   readonly notes: HTMLElement;
   readonly more: HTMLElement;
+}
+
+interface Binding {
+  readonly verdict: DisclosedVerdict;
+  readonly ownPage: boolean;
 }
 
 interface Described {
@@ -126,10 +134,12 @@ export function createHoverCard(
     };
   });
   const overflows = options.overflows ?? defaultOverflows;
-  const verdicts = new WeakMap<Element, DisclosedVerdict>();
+  const bindings = new WeakMap<Element, Binding>();
 
   let card: Card | undefined;
   let filled: DisclosedVerdict | undefined;
+  /** Whether the clamp hides part of the filled notes. */
+  let clamped = false;
   let open: Open | undefined;
   let described: Described | undefined;
   /** The trigger a pending open is for, so moves inside it do not restart the delay. */
@@ -166,8 +176,9 @@ export function createHoverCard(
   }
 
   /** Rebuilds the shown card for another verdict; the same verdict keeps what is there. */
-  function fill(target: Card, verdict: DisclosedVerdict): void {
+  function fill(target: Card, { verdict, ownPage }: Binding): void {
     if (filled === verdict) {
+      target.more.hidden = ownPage || !clamped;
       return;
     }
     filled = verdict;
@@ -188,7 +199,9 @@ export function createHoverCard(
     parts.push(target.more);
     target.root.replaceChildren(...parts);
     // Measured once per verdict, on the shown card: the clamp depends on the text and the width.
-    target.more.hidden = !overflows(target.notes);
+    target.more.hidden = true;
+    clamped = overflows(target.notes);
+    target.more.hidden = ownPage || !clamped;
   }
 
   function release(): void {
@@ -238,9 +251,9 @@ export function createHoverCard(
   }
 
   function show(trigger: Element, via: Via, focused?: Element): void {
-    const verdict = verdicts.get(trigger);
+    const binding = bindings.get(trigger);
     if (
-      verdict === undefined || !trigger.isConnected
+      binding === undefined || !trigger.isConnected
       || doc.documentElement.getAttribute("data-sar-badges") === "off"
     ) {
       close();
@@ -250,7 +263,7 @@ export function createHoverCard(
     release();
     const target = ensureCard();
     target.root.hidden = false;
-    fill(target, verdict);
+    fill(target, binding);
     if (focused !== undefined) {
       describe(focused);
     }
@@ -277,7 +290,7 @@ export function createHoverCard(
   function triggerAt(element: Element): Element | undefined {
     let node = element.closest(TRIGGER_SELECTOR);
     while (node !== null) {
-      if (verdicts.has(node)) {
+      if (bindings.has(node)) {
         return node;
       }
       node = node.parentElement?.closest(TRIGGER_SELECTOR) ?? null;
@@ -291,7 +304,7 @@ export function createHoverCard(
       return undefined;
     }
     for (const node of element.querySelectorAll(TRIGGER_SELECTOR)) {
-      if (verdicts.has(node)) {
+      if (bindings.has(node)) {
         return node;
       }
     }
@@ -407,8 +420,8 @@ export function createHoverCard(
   }
 
   return {
-    bind(trigger, verdict) {
-      verdicts.set(trigger, verdict);
+    bind(trigger, verdict, ownPage = false) {
+      bindings.set(trigger, { verdict, ownPage });
     },
     stop() {
       close();

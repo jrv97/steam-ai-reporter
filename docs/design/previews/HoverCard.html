@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="../reference.css">
+<title>Hover card</title>
+<style>
+  body {
+    margin: 0;
+    background: var(--sar-color-bg-page);
+    color: var(--sar-color-text-subtle);
+    font: 12px/16px var(--sar-font-page);
+  }
+  .stage {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: var(--sar-space-5);
+    padding: var(--sar-space-4);
+  }
+  .cap { margin: 0 0 var(--sar-space-2); max-inline-size: 306px; }
+  /* The card is fixed to the viewport on store pages; here it sits in the flow under its badge */
+  .stage .sar-hovercard { position: relative; margin-block-start: var(--sar-hovercard-offset); }
+</style>
+</head>
+<body>
+<div class="stage">
+  <div>
+    <p class="cap">Short notes with a named service, under a full badge</p>
+    <span class="sar-badge"><span class="sar-badge-label">Discloses AI use</span></span>
+    <div class="sar-hovercard" role="tooltip" data-sar-side="below">
+      <p class="sar-hovercard-title">Discloses AI use</p>
+      <p class="sar-hovercard-source">In the developer's own words:</p>
+      <p class="sar-hovercard-notes" id="n1"></p>
+      <p class="sar-hovercard-service">AI service named by the developer:
+        <span class="sar-hovercard-service-name">Midjourney</span></p>
+      <p class="sar-hovercard-more" hidden>The full text is on the game's store page.</p>
+    </div>
+  </div>
+  <div>
+    <p class="cap">Long notes, clamped after 6 lines, pointing to the store page</p>
+    <span class="sar-badge"><span class="sar-badge-label">Discloses AI use</span></span>
+    <div class="sar-hovercard" role="tooltip" data-sar-side="below">
+      <p class="sar-hovercard-title">Discloses AI use</p>
+      <p class="sar-hovercard-source">In the developer's own words:</p>
+      <p class="sar-hovercard-notes" id="n2"></p>
+      <p class="sar-hovercard-more">The full text is on the game's store page.</p>
+    </div>
+  </div>
+  <div lang="es">
+    <p class="cap">Spanish, with the store page line shown to check its length</p>
+    <span class="sar-badge"><span class="sar-badge-label">Declara el uso de IA</span></span>
+    <div class="sar-hovercard" role="tooltip" data-sar-side="below">
+      <p class="sar-hovercard-title">Declara el uso de IA</p>
+      <p class="sar-hovercard-source">En palabras del desarrollador:</p>
+      <p class="sar-hovercard-notes" id="n3"></p>
+      <p class="sar-hovercard-service">Servicio de IA nombrado por el desarrollador:
+        <span class="sar-hovercard-service-name">Stable Diffusion</span></p>
+      <p class="sar-hovercard-more">El texto completo est&aacute; en la p&aacute;gina de la
+        tienda del juego.</p>
+    </div>
+  </div>
+</div>
+<script>
+  // Sample notes, set here because pre-line would show source line breaks
+  document.getElementById("n1").textContent =
+    "Concept art for two loading screens was generated.\nNo AI text in the game.";
+  document.getElementById("n2").textContent =
+    "Generative AI is used in both pre-generated and live-generated content. " +
+    "AI-assisted tools were used during development to create the game's artwork, " +
+    "music, and sound effects. The game also uses live generative AI to produce " +
+    "narrative text during gameplay in response to predefined player choices, combat " +
+    "outcomes, character conditions, and equipment selections. All pre-generated " +
+    "assets were reviewed and selected by the developer before being included.";
+  document.getElementById("n3").textContent =
+    "Usamos IA generativa para crear algunas texturas del entorno.\n" +
+    "Todo el arte de personajes se hizo a mano.";
+</script>
+</body>
+</html>

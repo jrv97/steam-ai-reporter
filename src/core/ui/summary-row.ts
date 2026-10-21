@@ -10,8 +10,8 @@ const DEV_ROW_SELECTOR = ".glance_ctn_responsive_left .dev_row";
 /**
  * The summary box row "AI use: Disclosed by the developer", in the store's own row shape. With the
  * banner on it is a link to the banner, and `jump` handles the click (scroll and focus, no history
- * entry); without the banner it is a focusable row. The row is its own root, with one listener.
- * Hovering or focusing it opens the hover card when one is given.
+ * entry); without the banner it is a focusable row that opens the hover card, when one is given.
+ * The row is its own root, with one listener.
  */
 export function createSummaryRow(
   doc: Document,
@@ -22,7 +22,6 @@ export function createSummaryRow(
 ): HTMLElement {
   const row = doc.createElement(jump === undefined ? "div" : "a");
   row.className = "sar-summary-row";
-  card?.bind(row, verdict);
   const label = doc.createElement("span");
   label.className = "sar-summary-label";
   label.textContent = i18n.t("summary_label");
@@ -35,6 +34,7 @@ export function createSummaryRow(
     });
   } else {
     row.tabIndex = 0;
+    card?.bind(row, verdict, true);
   }
   return row;
 }

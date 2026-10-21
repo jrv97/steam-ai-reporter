@@ -16,13 +16,19 @@ const PAGE = `
 
 const actions = { stopMarking: () => Promise.resolve(), markAgain: () => Promise.resolve() };
 
-let bound = new Map<Element, DisclosedVerdict>();
+interface Bound {
+  readonly verdict: DisclosedVerdict;
+  readonly ownPage: boolean | undefined;
+}
+
+let bound = new Map<Element, Bound>();
 
 function setup() {
   setBody(PAGE);
   bound = new Map();
   const card = {
-    bind: (trigger: Element, verdict: DisclosedVerdict) => bound.set(trigger, verdict),
+    bind: (trigger: Element, verdict: DisclosedVerdict, ownPage?: boolean) =>
+      bound.set(trigger, { verdict, ownPage }),
   };
   return createAppPageUi(document, englishI18n(), actions, { frame: () => undefined, card });
 }
@@ -40,14 +46,14 @@ describe("createAppPageUi", () => {
   });
 
   it("adds the summary row under Publisher and the banner above the purchase box", () => {
-    const verdict = disclosedVerdict();
-    setup().render(view({ verdict }));
+    setup().render(view());
     const row = summaryRow();
     expect(row?.previousElementSibling?.id).toBe("publisher");
     expect(row?.textContent).toBe("AI use:Disclosed by the developer");
     expect(row?.getAttribute("href")).toBe(`#${BANNER_ID}`);
     expect(row?.hasAttribute("title")).toBe(false);
-    expect(row === null ? undefined : bound.get(row)).toBe(verdict);
+    // The link jumps to the full notes, so it opens no hover card.
+    expect(row === null ? undefined : bound.get(row)).toBeUndefined();
     expect(bannerHost()?.nextElementSibling?.id).toBe("game_area_purchase");
   });
 
@@ -90,6 +96,8 @@ describe("createAppPageUi", () => {
     expect(summaryRow()?.tagName).toBe("DIV");
     expect(summaryRow()?.hasAttribute("href")).toBe(false);
     expect(summaryRow()?.tabIndex).toBe(0);
+    const row = summaryRow();
+    expect(row === null ? undefined : bound.get(row)?.ownPage).toBe(true);
     expect(document.querySelectorAll(".sar-summary-row")).toHaveLength(1);
   });
 

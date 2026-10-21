@@ -1,7 +1,7 @@
 ---
 title: AI Reporter for Steam UI components (v1)
 status: draft
-updated: 2026-10-20
+updated: 2026-10-21
 ---
 
 # AI Reporter for Steam UI components (v1)
@@ -258,8 +258,7 @@ Preview: `previews/SummaryRow.html`.
 
 - Insert it right after the last `.dev_row` in the summary box (`.glance_ctn_responsive_left`). Steam's own rows there are label and value pairs; this row follows the same shape with its own classes, and never borrows or restyles a store node.
 - With the banner on, the row is a progressive link: `href="#sar-banner"` (the banner host's id), handled by one delegated click listener that calls `preventDefault`, scrolls the host into view with `block: "start"`, and focuses the banner's `aside` (`tabindex="-1"`) with `focus({ preventScroll: true })`. The URL never changes, so there is no history entry and no `#sar-banner` in links people copy. Without the script, the plain anchor still lands on the banner. Steam's own reviews row jumps to the reviews section the same way.
-- With the banner off, render the row as a `div` with no `href` and `tabindex="0"`: the chip still says what it says, and the hover card still quotes the notes.
-- The row registers with the hover card (section 15), like the badges.
+- With the banner off, render the row as a `div` with no `href` and `tabindex="0"`: the chip still says what it says, and the hover card (section 15) quotes the notes. With the banner on, the row opens no hover card: the jump lands on the full notes.
 
 ### Look
 
@@ -279,7 +278,7 @@ Measured on a 1280 by 900 window (app 1808500): the row is 18px tall, the summar
 - The link's name is the label plus the chip text, for example "AI use: Disclosed by the developer".
 - The catalog strings stay in sentence case. The uppercase is `text-transform`, which follows the page's `lang`, so locales such as Turkish case correctly.
 - The jump lands on the banner, and focus follows, so a keyboard or screen reader user arrives at the developer's words.
-- Focus on the row opens the hover card, which describes the row while it is open.
+- With the banner off, focus on the row opens the hover card, which describes the row while it is open.
 
 ### Don't
 
@@ -741,11 +740,14 @@ magick -background none -density 384 icon.svg -filter Lanczos -resize 96x96 -gra
 
 ## 15. Hover card
 
-The developer's disclosure in a small dark panel that opens when a pointer rests on a badge or the summary row, or when keyboard focus reaches one. It is built like the store's own game hover popup (`#global_hover`, the panel with title, release date, description, reviews and tags next to a capsule). Badges carry no `title`; the card is their only tooltip.
+The developer's disclosure in a small dark panel that opens when a pointer rests on a badge, or when keyboard focus reaches one. It is built like the store's own game hover popup (`#global_hover`, the panel with title, release date, description, reviews and tags next to a capsule). Badges carry no `title`; the card is their only tooltip.
+
+Preview: `previews/HoverCard.html`.
 
 ### When to use
 
-- On the full badge, on a compact badge inside the capsule link, and on the summary row. These are its triggers.
+- On the full badge, on a compact badge inside the capsule link, and on the summary row while the banner is off. These are its triggers.
+- Not on the summary row while the banner is on: its click jumps to the full notes, and a card there would cover the tag row on the way to that click.
 - Not on a compact badge outside a link: it keeps `pointer-events: none` (section 2) and nothing opens.
 - Not on the banner, which quotes the notes in full.
 
@@ -762,7 +764,7 @@ The developer's disclosure in a small dark panel that opens when a pointer rests
 ```
 
 - One card per page, created on first use and appended to `body`. Every trigger reuses it; opening for another game refills it.
-- Triggers register with the card when they render: a `WeakMap` from trigger element to verdict. Nothing is set on the trigger, and no listener is added to it.
+- Triggers register with the card when they render: a `WeakMap` from trigger element to verdict, plus whether the trigger sits on the game's own page (the summary row). Nothing is set on the trigger, and no listener is added to it.
 - Opening and closing run on delegated listeners on the document: `pointerover`, `pointerout`, `focusin`, `focusout`, `keydown` and `scroll`. Their number does not depend on how many badges the page holds.
 - The notes go in through `textContent` with `\r\n` turned into `\n`, never translated or cut in the DOM. The service line appears only when GetItems named one (`ai_generation_service`), the name inserted as data.
 - No request: the card shows the verdict the badge was drawn from.
@@ -776,13 +778,13 @@ Built like the store's game hover popup, sampled on the home page on 2026-10-21:
 - Source line in `sar-hovercard-meta-font` (11/16), `sar-color-text-muted`, like the store's release line.
 - Notes in `sar-hovercard-notes-font` (12/18 italic, like the store's own disclosure section), `sar-color-text`, `white-space: pre-line`, clamped to `sar-hovercard-notes-lines` (6) lines.
 - Service line in the meta font: label `sar-color-text-muted`, name `sar-color-text`.
-- The "more" line, `badge_card_more` in the meta font and `sar-color-text-muted`, shows only when the clamp hides text. The full notes stay in the DOM for screen readers, and the game's store page carries them in Steam's own disclosure section.
+- The "more" line, `badge_card_more` in the meta font and `sar-color-text-muted`, shows only when the clamp hides text and the trigger is not on the game's own page. The app page carries Steam's own disclosure section and, when on, the banner; the summary row's card never shows the line. The full notes stay in the DOM for screen readers, and the game's store page carries them in Steam's own disclosure section.
 - No arrow. The store's popup has a bitmap arrow toward the capsule; ours sits right under the badge, and the short gap ties it to its trigger.
 
 ### Placement
 
 - Fixed to the viewport, `sar-hovercard-offset` (8px) below the trigger. Where it would cross the bottom edge and fits above, it flips above (`data-sar-side="above"`).
-- Horizontally, the full badge and the summary row align the card's inline-start edge with their own. A compact badge aligns the inline-end edges: the card hangs back over the capsule art, away from the side where the store's popup opens. Either way the card stays one offset inside the viewport edges.
+- Horizontally, the full badge and the summary row (banner off) align the card's inline-start edge with their own. A compact badge aligns the inline-end edges: the card hangs back over the capsule art, away from the side where the store's popup opens. Either way the card stays one offset inside the viewport edges.
 - `z-index: sar-z-hovercard` (1600), above the store's game hover popup (1526). Over a capsule both open: the store's popup beside the capsule, ours under the badge. Where the store's popup flips to the same side, ours is on top, because the pointer is on our badge.
 - The card covers store content only while it is open, and only in answer to a pointer or focus on our own element. It never opens by itself.
 
@@ -790,7 +792,7 @@ Built like the store's game hover popup, sampled on the home page on 2026-10-21:
 
 - Pointer: opens after 150ms at rest on a trigger. A pointer crossing a grid of capsules opens nothing. Moving to another trigger while it is open switches at once.
 - The card is hoverable: leaving the trigger starts a 100ms grace, long enough for the pointer to cross onto the card, which then stays open. Leaving both, or the window, closes it. Both delays are timers in `hover-card.ts`, not tokens.
-- Keyboard: opens at once when focus lands on the summary row or on a store link that holds a badge (a search row or a capsule link). Moving focus elsewhere closes it.
+- Keyboard: opens at once when focus lands on the summary row (banner off) or on a store link that holds a badge (a search row or a capsule link). Moving focus elsewhere closes it.
 - `Escape` closes it, and it stays closed until the pointer leaves the trigger or focus moves.
 - Any scroll outside the card closes it. A fixed card would drift away from its trigger.
 - `[data-sar-badges="off"]` hides it, like every badge.
@@ -832,7 +834,7 @@ For every translator:
 | `badge_card_title` | Discloses AI use | Heading of the small panel that opens over a badge. Say "discloses"; never say the game uses AI. |
 | `badge_card_source` | In the developer's own words: | Introduces the developer's text, which follows untranslated. |
 | `badge_card_service_label` | AI service named by the developer: | Precedes a product name inserted as data. |
-| `badge_card_more` | The full text is on the game's store page. | Shown when the panel cuts a long text short. |
+| `badge_card_more` | The full text is on the game's store page. | Shown when the panel cuts a long text short, never on the game's own page. |
 
 ### `summary_`
 
