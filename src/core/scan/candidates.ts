@@ -45,6 +45,19 @@ export function namingOf(element: Element, base: string): Naming {
   return href === null ? undefined : appIdFromHref(href, base);
 }
 
+/** Whether `root` or an element inside it still names `appId`. */
+export function namesApp(root: Element, appId: AppId, base: string): boolean {
+  if (namingOf(root, base) === appId) {
+    return true;
+  }
+  for (const element of root.querySelectorAll(ANY_CANDIDATE)) {
+    if (namingOf(element, base) === appId) {
+      return true;
+    }
+  }
+  return false;
+}
+
 /**
  * The single app every naming element in `root` (`root` included) names, `several` when they
  * disagree, or undefined when none names an app. Stops at the first disagreement.

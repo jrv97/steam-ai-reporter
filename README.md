@@ -17,8 +17,6 @@ The badge says "Discloses AI use". It does not say a game uses AI, and the absen
 
 ### Known gaps
 
-- The large carousel at the top of a category page (`/category/<name>/`) reuses one slide container as it advances. The first game's marker stays on that container, so if that game discloses AI use, its badge or dimming can show on the games that follow it in the carousel.
-- On the personal calendar, many capsules add their image inside the app link after the rest of the card. Those capsules get no badge until the page reloads.
 - In the header's search suggestions on a game's own store page, the suggestion for that same game gets no badge. The banner on the page already shows its disclosure.
 
 ## Install

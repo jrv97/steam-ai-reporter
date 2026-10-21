@@ -417,6 +417,46 @@ describe("observing", () => {
     expect(the(".sar-badge", host).parentElement).toBe(the(".CapsuleImageCtn", host));
   });
 
+  it("resets a host reused for another app and finds the new app's host", async () => {
+    setBody(
+      `<main><div class="other"><a href="/app/99/"><img></a></div>`
+        + `<div class="slot"><div class="slide"><a href="/app/10/"><img></a>`
+        + `<a href="/app/10/">Ten</a></div></div></main>`,
+    );
+    await startScanner({ badges: true });
+    const slot = the(".slot");
+    expect(slot.getAttribute(HOST_APPID)).toBe("10");
+    the(".slide", slot).replaceWith(
+      ...nodes(
+        `<div class="slide"><a href="/app/20/"><img></a><a href="/app/20/">Twenty</a></div>`,
+      ),
+    );
+    await settle();
+    expect(renderer.batches.at(-1)?.changed).toStrictEqual([]);
+    expect(renderer.batches.at(-1)?.found.map((host) => [host.element, host.appId])).toStrictEqual([
+      [slot, 20],
+    ]);
+    expect(slot.getAttribute(HOST_APPID)).toBe("20");
+    expect(slot.querySelectorAll(`[${HOST_APPID}]`)).toHaveLength(0);
+    expect(slot.querySelectorAll(".sar-badge")).toHaveLength(1);
+  });
+
+  it("finds a capsule whose image arrives inside its link after the scan", async () => {
+    setBody(`<main><div class="other"><a href="/app/99/"><img></a></div></main>`);
+    await startScanner();
+    the("main").append(
+      ...nodes(`<div class="card"><a href="/app/30/"><div class="box"></div></a></div>`),
+    );
+    await settle();
+    expect(mapping()).toStrictEqual([[99, "generic"]]);
+    the(".box").append(document.createElement("img"));
+    await settle();
+    expect(mapping()).toStrictEqual([[99, "generic"], [30, "generic"]]);
+    expect(renderer.batches.at(-1)?.found.map((host) => host.element)).toStrictEqual([
+      the(".card"),
+    ]);
+  });
+
   it("gives a carousel clone its own host and removes the copied badge", async () => {
     loadPage(SURFACES.home);
     await startScanner({ badges: true });
