@@ -2,13 +2,13 @@
 
 The userscript is `dist/userscript/steam-ai-reporter.user.js`, written by `mise run build`. A userscript manager runs it on every `https://store.steampowered.com/*` page. Test in Chrome and in Firefox Nightly only; the regular Firefox is personal and stays untouched.
 
-Run `mise run build` first. The file lives in your clone, for example `C:\Users\you\Documents\dev\steam-fuck-slop\dist\userscript\steam-ai-reporter.user.js`.
+Run `mise run build` first. The file lives in your clone, for example `C:\path\to\steam-ai-reporter\dist\userscript\steam-ai-reporter.user.js`.
 
 ## Tampermonkey
 
 1. Install Tampermonkey in Chrome (Chrome Web Store) or in Firefox Nightly (addons.mozilla.org).
 2. Chrome only: open `chrome://extensions`, click Details on Tampermonkey, turn on "Allow access to file URLs". Also turn on "Allow User Scripts" if Chrome shows that switch.
-3. Open the built file in a tab by its `file:///` address, for example `file:///C:/Users/you/Documents/dev/steam-fuck-slop/dist/userscript/steam-ai-reporter.user.js`.
+3. Open the built file in a tab by its `file:///` address, for example `file:///C:/path/to/steam-ai-reporter/dist/userscript/steam-ai-reporter.user.js`.
 4. Tampermonkey shows an install page. Check that the name is "AI Reporter for Steam" and that the permissions list only storage access and a menu command (no network access to other sites). Click Install.
 5. To update after a rebuild, open the same `file:///` address again and click Reinstall.
 
