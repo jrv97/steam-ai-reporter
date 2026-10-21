@@ -1,5 +1,5 @@
 # Prod release (ADR 0005), dispatched from a tested tag. It promotes the prerelease assets as is.
-# Each store job waits for the maintainer's approval in its GitHub environment.
+# Each store job waits for a reviewer's approval in its GitHub environment.
 # The last job marks the release latest, which moves the userscript update URLs.
 name: release-prod
 

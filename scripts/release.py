@@ -8,7 +8,7 @@
   amo                   submit the Firefox zip and the source zip to AMO, listed channel
   latest                mark the release latest, which moves the userscript update URLs
 
-The release-bot app writes with RELEASE_BOT_TOKEN and RELEASE_BOT_SLUG.
+The release app writes with RELEASE_APP_TOKEN and RELEASE_APP_SLUG.
 GH_TOKEN reads, and github-actions[bot] uses it to approve the batch PR.
 RELEASE_TAG names the tag and RELEASE_SHA the commit to tag. DRY_RUN=true makes train report only.
 """
@@ -75,8 +75,8 @@ def env(name: str) -> str:
     return value
 
 
-def bot_token() -> str:
-    return env("RELEASE_BOT_TOKEN")
+def app_token() -> str:
+    return env("RELEASE_APP_TOKEN")
 
 
 def run_list(value: object, key: str) -> list[object]:
@@ -158,8 +158,8 @@ def set_package_version(version: str) -> None:
 
 
 def open_batch_pr(version: str, base: str) -> None:
-    token, slug = bot_token(), env("RELEASE_BOT_SLUG")
-    bot_id = run("gh", "api", f"users/{slug}[bot]", "--jq", ".id", token=token).strip()
+    token, slug = app_token(), env("RELEASE_APP_SLUG")
+    app_user_id = run("gh", "api", f"users/{slug}[bot]", "--jq", ".id", token=token).strip()
     branch, title = f"{RELEASE_BRANCH}{version}", f"chore(release): {version}"
     git("switch", "--create", branch, base)
     batch_changelog(version)
@@ -169,7 +169,7 @@ def open_batch_pr(version: str, base: str) -> None:
         "-c",
         f"user.name={slug}[bot]",
         "-c",
-        f"user.email={bot_id}+{slug}[bot]@users.noreply.github.com",
+        f"user.email={app_user_id}+{slug}[bot]@users.noreply.github.com",
         "commit",
         "--message",
         title,
@@ -237,7 +237,7 @@ def tag() -> None:
         fail(f"{version} does not come after the newest tag {newer[-1]}")
     if not ci_passed(sha):
         fail(f"CI has not passed for {sha}")
-    token = bot_token()
+    token = app_token()
     ref_api = "repos/{owner}/{repo}/git/refs"
     run("gh", "api", ref_api, "-f", f"ref=refs/tags/{version}", "-f", f"sha={sha}", token=token)
     dispatch = ["workflow", "run", NIGHTLY_WORKFLOW, "--ref", version, "-f", f"tag={version}"]
