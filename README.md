@@ -43,9 +43,9 @@ The options page turns badges and the banner on or off, sets how lists treat dis
 
 With the list filter on Dim, disclosing games fade in lists and come back on hover. Hide removes them from lists. Show, the default, leaves lists as they are.
 
-<img src="docs/store/screenshots/popup.jpg" alt="The toolbar popup with the badge and banner switches, the Show, Dim and Hide control, and a link to all settings" width="360">
+<img src="docs/store/screenshots/popup.jpg" alt="The toolbar popup with the badge and banner switches, the Show, Dim and Hide control, one game you stopped marking, and a link to all settings" width="360">
 
-The toolbar popup holds the same switches and the list filter, with a link to the full options page. The userscript opens the same settings in a dialog from the script manager's menu.
+The toolbar popup holds the same switches, the list filter and the games you stopped marking, with a link to the full options page. The userscript opens the same settings in a dialog from the script manager's menu.
 
 ### Known gaps
 
