@@ -1,3 +1,0 @@
-kind: Added
-body: Userscript for Tampermonkey and Violentmonkey, with the same badges, banner and list filter as the extension. Its settings open from the script manager's menu in a small dialog. Settings and results stay in the manager's own storage, and game lookups go to Valve's own servers without your cookies.
-time: 2026-10-21T00:01:00.0000000+02:00
