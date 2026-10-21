@@ -2,7 +2,7 @@
   "name": "steam-ai-reporter",
   "version": "2026.10.21",
   "private": true,
-  "description": "Marks Steam store items whose developers disclosed generative AI use.",
+  "description": "Marks Steam store items whose developers reported generative AI use.",
   "license": "MIT",
   "type": "module",
   "dependencies": {
