@@ -31,7 +31,7 @@ Detection calls `IStoreBrowseService/GetItems` with `include_extra_details`, bat
 
 ## Current state
 
-- The repo is `jrv97/steam-ai-reporter` on GitHub (renamed from `steam-fuck-slop` on 2026-10-20; GitHub redirects the old URL, and the local folder keeps the old name). `main` tracks `origin/main` and has two commits: `chore: init` (the wf docs scaffold, `AGENTS.md` and the research) and `chore: enforce lf line endings`.
+- The repo is `jrv97/steam-ai-reporter` on GitHub. `main` tracks `origin/main` and has two commits: `chore: init` (the wf docs scaffold, `AGENTS.md` and the research) and `chore: enforce lf line endings`.
   - `AGENTS.md` holds only a "working knowledge (docs/)" section: where plans, research, journal, drafts and ADRs live. ADRs are MADR in `docs/adr/`, which does not exist yet.
   - `.gitattributes` sets `* text=auto eol=lf` and `docs/journal/*.md merge=union`.
   - `docs/drafts/`, `docs/journal/` and `docs/plans/` exist with `.gitkeep`. `docs/TASKS.md` is untracked through `.git/info/exclude`. `.claude/settings.local.json` is ignored by the global Git ignore.
