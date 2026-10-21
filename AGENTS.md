@@ -86,7 +86,9 @@ These are hard rules. A change that breaks one needs an ADR first.
   Firefox is personal: never launch it, install into it, or touch its profiles.
 - Chrome (regular release) is used only for this project; loading the unpacked build there is fine.
 - Machine-specific paths (`SAR_FIREFOX_BIN`, `SAR_FIREFOX_PROFILE`, `SAR_CHROME_BIN`,
-  `SAR_CHROME_PROFILE`) live in the gitignored `mise.local.toml`.
+  `SAR_CHROME_PROFILE`) live in the gitignored `mise.local.toml` of the main checkout. Edit it
+  there; `.worktreeinclude` copies it into each new worktree, and an older worktree copies it by
+  hand.
 - The Claude desktop app's built-in browser cannot load extensions; agents use it to inject the
   dev bundle (`dist/dev/inject.js`) for smoke tests on live store pages.
 
