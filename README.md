@@ -15,6 +15,38 @@ The extension only reads Steam's own disclosures and sends no reports anywhere.
 
 The badge says "AI use disclosed". It does not say a game uses AI, and the absence of a badge does not mean a game is AI-free: the disclosure is self-reported by the developer, so it marks what developers chose to disclose and nothing more.
 
+### On the store
+
+![Steam search results for "roguelike", where three rows carry an "AI use disclosed" badge after the game's name](docs/store/screenshots/01-search.jpg)
+
+In search results, rows of games whose developers disclosed AI use carry the badge after the name.
+
+![A game's store page with a purple banner above the purchase box that reads "The developer discloses AI use" and quotes the disclosure; the DLC rows below are badged too](docs/store/screenshots/02-app-banner.jpg)
+
+On a game's page, a banner above the purchase box quotes the developer's disclosure in their own words. "Stop marking this game" adds it to your allow-list. Its DLC rows get badges too.
+
+![A search row's badge with a panel open beside it that quotes the developer's disclosure, next to Steam's own game hover](docs/store/screenshots/03-hover-card.jpg)
+
+Hovering or tabbing to a badge opens a panel in the style of Steam's game hover, with the disclosure text and any AI service the developer named.
+
+![Next Fest sale cards where two game images carry a small "AI disclosed" badge in their corner](docs/store/screenshots/04-next-fest.jpg)
+
+Sale pages such as Next Fest, tag and category hubs and the home page get a compact "AI disclosed" badge on the game's image.
+
+### Settings
+
+![The options page: switches for badges and the banner, a Show, Dim and Hide control for lists, a language picker, and a list of games you stopped marking](docs/store/screenshots/05-options.jpg)
+
+The options page turns badges and the banner on or off, sets how lists treat disclosing games, picks the language (automatic follows the store page), and lists the games you stopped marking, each with "Mark again".
+
+![The same search results with the list filter set to Dim, where the three disclosing rows are faded](docs/store/screenshots/list-dim.jpg)
+
+With the list filter on Dim, disclosing games fade in lists and come back on hover. Hide removes them from lists. Show, the default, leaves lists as they are.
+
+<img src="docs/store/screenshots/popup.jpg" alt="The toolbar popup with the badge and banner switches, the Show, Dim and Hide control, one game you stopped marking, and a link to all settings" width="360">
+
+The toolbar popup holds the same switches, the list filter and the games you stopped marking, with a link to the full options page. The userscript opens the same settings in a dialog from the script manager's menu.
+
 ### Known gaps
 
 - In the header's search suggestions on a game's own store page, the suggestion for that same game gets no badge. The banner on the page already shows its disclosure.
