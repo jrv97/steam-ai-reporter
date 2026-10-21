@@ -279,6 +279,20 @@ describe("host rule", () => {
     expect(hostElements()).toStrictEqual([the("div.other"), the("div.l3")]);
   });
 
+  it("does not join a tile that links to a package or an event", async () => {
+    setBody(
+      `<main><div class="other"><a href="/app/99/"><img></a></div>`
+        + `<div class="column"><div class="package"><a href="/sub/7/"><img></a></div>`
+        + `<div class="tile"><a href="/app/10/"><div class="box"><img></div></a></div>`
+        + `<div class="event"><a href="/news/app/10/view/1"><img></a></div></div></main>`,
+    );
+    await startScanner();
+    expect(mapping().filter(([id]) => id === 10)).toStrictEqual([[10, "generic"]]);
+    const host = found().find((candidate) => candidate.appId === 10);
+    expect(host?.element).toBe(the(".tile"));
+    expect(host?.anchor).toBe(the(".tile .box"));
+  });
+
   it("keeps one host when hosts of the same app nest", async () => {
     setBody(
       `<main><div class="x"><a href="/app/10/"><img></a></div>`

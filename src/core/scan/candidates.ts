@@ -11,7 +11,10 @@ const DATA_APPID = "data-ds-appid";
 export const DATA_CANDIDATE = `[${DATA_APPID}]`;
 /** Links that may lead to an app page; `appIdFromHref` decides. */
 export const LINK_CANDIDATE = "a[href*='/app/']";
-export const ANY_CANDIDATE = `${DATA_CANDIDATE}, ${LINK_CANDIDATE}`;
+/** Links to store items that are not apps: packages, bundles and events. They name `several`. */
+const OTHER_ITEM_LINK = "a[href*='/sub/'], a[href*='/bundle/'], a[href*='/news/']";
+const OTHER_ITEM_PATH = /\/(?:sub|bundle|news)\//;
+export const ANY_CANDIDATE = `${DATA_CANDIDATE}, ${LINK_CANDIDATE}, ${OTHER_ITEM_LINK}`;
 
 /**
  * Regions whose app links are never capsules: the classic and React footers, the app page
@@ -20,12 +23,13 @@ export const ANY_CANDIDATE = `${DATA_CANDIDATE}, ${LINK_CANDIDATE}`;
  */
 export const SKIPPED = `#footer, [data-featuretarget='footer'], .breadcrumbs, ${SAR_NODE}`;
 
-/** What an element says about apps: one app ID, `several` (a comma list), or nothing. */
+/** What an element names: one app ID, `several` (a comma list or another item), or nothing. */
 export type Naming = AppId | "several" | undefined;
 
 /**
  * The app an element names. A `data-ds-appid` wins over the element's own `href`; a comma list
- * names several apps; a link names its app when it leads to a store app page.
+ * names several apps; a link names its app when it leads to a store app page. A link to a package,
+ * bundle or event names `several`, so a capsule never grows to take in such a tile.
  */
 export function namingOf(element: Element, base: string): Naming {
   const data = element.getAttribute(DATA_APPID);
@@ -42,7 +46,10 @@ export function namingOf(element: Element, base: string): Naming {
     return undefined;
   }
   const href = element.getAttribute("href");
-  return href === null ? undefined : appIdFromHref(href, base);
+  if (href === null) {
+    return undefined;
+  }
+  return appIdFromHref(href, base) ?? (OTHER_ITEM_PATH.test(href) ? "several" : undefined);
 }
 
 /** Whether `root` or an element inside it still names `appId`. */
