@@ -251,7 +251,7 @@
   --sar-control-height: 36px;
   /* Minimum block size of buttons, selects, and segments on the full page. */
   --sar-control-height-sm: 28px;
-  /* Popup segments and the banner button: the store's smallest control height. */
+  /* Popup segments; the banner button's minimum, above the store's 22px for the target size. */
   --sar-control-height-xs: 24px;
   /* Options page column. */
   --sar-options-max-width: 640px;
@@ -266,11 +266,11 @@
 
   /* Font sizes */
 
-  /* Badges. */
+  /* Badges; the banner button, as the store's outlined buttons. */
   --sar-size-xs: 11px;
   /* Help, dates, the allow-listed note, the large compact badge. */
   --sar-size-sm: 12px;
-  /* Body copy on extension pages; banner source and service lines; the banner button. */
+  /* Body copy on extension pages; banner source and service lines. */
   --sar-size-md: 13px;
   /* Banner notes: the store's description size. */
   --sar-size-lg: 14px;
@@ -283,7 +283,7 @@
 
   /* Line heights */
 
-  /* Pairs with sar-size-xs. No use yet (badges set their own 18px and 16px). */
+  /* Pairs with sar-size-xs: the banner button. Badges set their own 18px and 16px. */
   --sar-leading-xs: 14px;
   /* Pairs with sar-size-sm. */
   --sar-leading-sm: 16px;
@@ -368,8 +368,8 @@
   --sar-banner-meta-font: var(--sar-weight-light) var(--sar-size-md) / 19px var(--sar-font-page);
   --sar-banner-quote-font: italic var(--sar-weight-regular) var(--sar-size-lg) /
     var(--sar-leading-lg) var(--sar-font-page);
-  --sar-banner-button-font: var(--sar-weight-regular) var(--sar-size-md) /
-    var(--sar-leading-md) var(--sar-font-page);
+  --sar-banner-button-font: var(--sar-weight-regular) var(--sar-size-xs) /
+    var(--sar-leading-xs) var(--sar-font-page);
   --sar-banner-note-font: var(--sar-weight-regular) var(--sar-size-sm) / 17px var(--sar-font-page);
 
   --sar-summary-tag-font: var(--sar-weight-regular) var(--sar-size-xs) / 19px
