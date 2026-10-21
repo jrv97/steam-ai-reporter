@@ -44,8 +44,8 @@
     }
   },
   "badge_full": {
-    "message": "Discloses AI use",
-    "description": "Label on search and wishlist rows for a game whose developer disclosed generative AI use on Steam. One line; truncates past about 22 characters. Say \"discloses\"; never say the game uses AI."
+    "message": "AI use disclosed",
+    "description": "Label on search and wishlist rows for a game whose developer disclosed generative AI use on Steam. One line; truncates past about 22 characters. Say that the use was disclosed; never say the game uses AI."
   },
   "badge_compact": {
     "message": "AI disclosed",
@@ -57,7 +57,7 @@
     "placeholders": {
       "label": {
         "content": "$1",
-        "example": "Discloses AI use"
+        "example": "AI use disclosed"
       },
       "notes": {
         "content": "$2",
@@ -161,7 +161,7 @@
     "placeholders": {
       "full": {
         "content": "$1",
-        "example": "Discloses AI use"
+        "example": "AI use disclosed"
       },
       "compact": {
         "content": "$2",

@@ -1,0 +1,53 @@
+---
+status: accepted
+date: 2026-10-21
+decision-makers: Jorge Rodriguez de la Vega
+---
+
+# The full badge reads "AI use disclosed"
+
+## Context and problem statement
+
+Project rule 4 fixed the full badge's wording as "Discloses AI use". The label has no subject, so on a search row it reads as if the game itself were disclosing something. A plainer label was wanted, and "This game uses AI" was considered among others. Which wording should the full badge carry?
+
+## Decision drivers
+
+- The badge reports a developer's self-disclosure, not a verified fact about the game (rule 4, [rq3-reliability](../research/steam-ai-disclosure/rq3-reliability.md)).
+- Disclosures range from live generated content to one upscaled texture, and some say AI was barely used or later removed. The label has to stay true for all of them.
+- The copy test rejects "uses AI", "AI-free" and "no AI" in every catalog.
+- One line at 11px, with room for longer translations.
+- A plain label on a row, close to the compact badge's "AI disclosed".
+
+## Considered options
+
+1. Keep "Discloses AI use".
+2. "This game uses AI".
+3. "AI use disclosed".
+
+## Decision outcome
+
+Chosen option 3, "AI use disclosed". It says what happened (the use was disclosed), stays attributive, passes the copy test, and pairs with "AI disclosed" on cover images. Rule 4 now names "AI use disclosed" as the wording, and "uses AI" and "AI-free" stay forbidden. The banner keeps the full sentence, "The developer discloses AI use", and the tooltip still quotes the developer.
+
+### Consequences
+
+- Good: plainer to scan on a row, and the same width in the store font (about 82px of text).
+- Neutral: "disclosed" names no agent; the banner and the tooltip name the developer.
+- The catalog key stays `badge_full`; only its message and translator note change.
+
+## Pros and cons of the options
+
+### Keep "Discloses AI use"
+
+- Good: already used across the specs, the store listing draft and the test guides.
+- Bad: no subject, so it reads as if the game discloses.
+
+### "This game uses AI"
+
+- Bad: states a self-report as fact, which is wrong for disclosures that describe little use or use that was removed.
+- Bad: breaks rule 4 and fails the copy test.
+- Bad: "This game" repeats what the row already shows.
+
+### "AI use disclosed"
+
+- Good: attributive, true for every disclosure, and short.
+- Bad: passive; the agent is implied rather than named.

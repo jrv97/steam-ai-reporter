@@ -63,10 +63,10 @@ describe("createBadgeRenderer", () => {
     );
     const badge = host.querySelector<HTMLElement>(".sar-badge");
     expect(badge?.previousElementSibling).toBe(title);
-    expect(badge?.textContent).toBe("Discloses AI use");
+    expect(badge?.textContent).toBe("AI use disclosed");
     expect(badge?.querySelector("svg")).toBeNull();
     expect(badge?.title).toBe(
-      `Discloses AI use. In the developer's own words: ${"n".repeat(200)}...`,
+      `AI use disclosed. In the developer's own words: ${"n".repeat(200)}...`,
     );
   });
 
