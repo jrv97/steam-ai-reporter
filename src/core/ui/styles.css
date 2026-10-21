@@ -61,10 +61,22 @@
   white-space: nowrap;
 }
 
-/* Search rows: first item in the platform line, under the title */
-.search_platforms > .sar-badge {
-  margin-inline-end: var(--sar-space-2);
-  flex-shrink: 1;
+/* Search rows: right after the title. On a disclosed row the one-line title box becomes a flex
+   row, so a long title ends in an ellipsis and the badge stays visible. */
+.search_result_row[data-sar-state="disclosed"] .search_name {
+  display: flex;
+  align-items: center;
+}
+
+.search_result_row[data-sar-state="disclosed"] .search_name > .title {
+  min-inline-size: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.search_name > .sar-badge {
+  margin-inline-start: var(--sar-space-2);
 }
 
 /* Compact badge: mirrors the store's corner flags, at the inline-end corner */
@@ -144,19 +156,20 @@ a.sar-summary-row .sar-badge {
   cursor: pointer;
 }
 
-/* List filter: data-sar-filter on the root element, data-sar-state on each host. Opacity only,
-   and no transition on a mode change, so every host flips in one style pass. */
+/* List filter: data-sar-filter on the root element, data-sar-state on each host. The dim is a
+   filter opacity: it multiplies with the store's own opacity, so a carousel slide the store hides
+   with opacity 0 stays hidden. No transition on a mode change, so every host flips in one pass. */
 
 [data-sar-filter="dim"] [data-sar-state="disclosed"],
 [data-sar-filter="hide"] [data-sar-state="disclosed"][data-sar-hideable="false"] {
-  opacity: var(--sar-dim-opacity) !important;
+  filter: opacity(var(--sar-dim-opacity)) !important;
 }
 
 [data-sar-filter="dim"] [data-sar-state="disclosed"]:is(:hover, :focus-within),
 [data-sar-filter="hide"]
   [data-sar-state="disclosed"][data-sar-hideable="false"]:is(:hover, :focus-within) {
-  opacity: 1 !important;
-  transition: opacity var(--sar-duration-fast) var(--sar-ease);
+  filter: none !important;
+  transition: filter var(--sar-duration-fast) var(--sar-ease);
 }
 
 [data-sar-filter="hide"] [data-sar-state="disclosed"]:not([data-sar-hideable="false"]) {

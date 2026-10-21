@@ -1,0 +1,2 @@
+# Gitignored files Claude Code copies from the main checkout into each new worktree.
+mise.local.toml
