@@ -17,6 +17,14 @@ import { adoptStyles, SETTINGS_CSS, TOKENS_CSS } from "./styles";
 /** The full options page, or the short toolbar popup (no language picker, no privacy card). */
 export type SettingsContext = "page" | "popup";
 
+/** The product heading above the cards: name, version and, where an icon file ships, the icon. */
+export interface SettingsHeader {
+  /** The release version, from `package.json` through the manifest or the userscript header. */
+  readonly version: string;
+  /** The icon shown at 32px: `icon-48.png` on the page, `icon-32.png` in the popup. */
+  readonly iconUrl?: string;
+}
+
 export interface SettingsFormDeps {
   readonly i18n: MessageCatalog;
   readonly settings: StoredSettings;
@@ -24,6 +32,10 @@ export interface SettingsFormDeps {
   readonly context: SettingsContext;
   /** The catalog locales this build ships, for the language picker. */
   readonly locales: readonly string[];
+  /** Renders the product heading; omitted where the host already titles the form. */
+  readonly header?: SettingsHeader;
+  /** The full options page, linked from the popup footer as "All settings". */
+  readonly allSettingsUrl?: string;
 }
 
 export interface SettingsForm {
@@ -37,6 +49,13 @@ export interface SettingsForm {
 const POLITE = "polite";
 
 const STORE_APP_URL = "https://store.steampowered.com/app/";
+
+/** Link target and relation tokens, not copy. */
+const NEW_TAB = "_blank";
+const NO_OPENER = "noopener";
+
+/** The header icon's rendered size in CSS pixels (components.mdx section 6). */
+const ICON_SIZE = 32;
 
 const FIELDS = ["badges", "banner", "listFilter", "locale"] as const;
 type Field = (typeof FIELDS)[number];
@@ -131,6 +150,25 @@ export async function mountSettingsForm(
     return section;
   }
 
+  function heading(info: SettingsHeader): HTMLElement {
+    const node = element("header", "sar-options-header");
+    if (info.iconUrl !== undefined) {
+      const icon = element("img", "");
+      icon.src = info.iconUrl;
+      icon.alt = "";
+      icon.width = ICON_SIZE;
+      icon.height = ICON_SIZE;
+      node.append(icon);
+    }
+    const text = element("div", "");
+    text.append(
+      element("h1", "sar-options-title", i18n.t("ext_name")),
+      element("div", "sar-options-version", i18n.t("options_version", { version: info.version })),
+    );
+    node.append(text);
+    return node;
+  }
+
   const errors = new Map<Field, HTMLElement>();
   const switches = new Map<Field, HTMLInputElement>();
   const radios = new Map<ListFilter, HTMLInputElement>();
@@ -201,7 +239,9 @@ export async function mountSettingsForm(
   filter.append(filterLabel, segment, filterHelp, filterError);
   lists.append(filter);
 
-  const cards: HTMLElement[] = [store, lists];
+  const cards: HTMLElement[] = deps.header === undefined
+    ? [store, lists]
+    : [heading(deps.header), store, lists];
 
   // Language (page only)
   let picker: HTMLSelectElement | undefined;
@@ -266,6 +306,15 @@ export async function mountSettingsForm(
       i18n.t(context === "popup" ? "options_unaffiliated_short" : "options_unaffiliated"),
     ),
   );
+  if (deps.allSettingsUrl !== undefined) {
+    const link = element("a", "", i18n.t("options_all_settings"));
+    link.href = deps.allSettingsUrl;
+    link.target = NEW_TAB;
+    link.rel = NO_OPENER;
+    const line = element("p", "");
+    line.append(link);
+    footer.append(line);
+  }
 
   const live = element("div", "sar-vh");
   live.setAttribute("aria-live", POLITE);

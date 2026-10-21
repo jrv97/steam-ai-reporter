@@ -55,6 +55,14 @@ def compact(css: str) -> str:
     return "\n".join(line for line in lines if line.strip()) + "\n"
 
 
+def stylesheet(name: str) -> str:
+    """The CSS text of one constant, exactly as styles.gen.ts holds it."""
+    source = dict(SOURCES).get(name)
+    if source is None:
+        fail(f"unknown stylesheet {name}")
+    return compact(inline(source.resolve()))
+
+
 def template_literal(text: str) -> str:
     escaped = text.replace("\\", "\\\\").replace("`", "\\`").replace("${", "\\${")
     return f"`{escaped}`"
@@ -70,7 +78,7 @@ def render() -> str:
         relative = source.relative_to(ROOT).as_posix()
         lines += [
             f"/** {relative}, without comments. */",
-            f"export const {name} = {template_literal(compact(inline(source.resolve())))};",
+            f"export const {name} = {template_literal(stylesheet(name))};",
             "",
         ]
     return "\n".join(lines)
