@@ -156,19 +156,20 @@ a.sar-summary-row .sar-badge {
   cursor: pointer;
 }
 
-/* List filter: data-sar-filter on the root element, data-sar-state on each host. Opacity only,
-   and no transition on a mode change, so every host flips in one style pass. */
+/* List filter: data-sar-filter on the root element, data-sar-state on each host. The dim is a
+   filter opacity: it multiplies with the store's own opacity, so a carousel slide the store hides
+   with opacity 0 stays hidden. No transition on a mode change, so every host flips in one pass. */
 
 [data-sar-filter="dim"] [data-sar-state="disclosed"],
 [data-sar-filter="hide"] [data-sar-state="disclosed"][data-sar-hideable="false"] {
-  opacity: var(--sar-dim-opacity) !important;
+  filter: opacity(var(--sar-dim-opacity)) !important;
 }
 
 [data-sar-filter="dim"] [data-sar-state="disclosed"]:is(:hover, :focus-within),
 [data-sar-filter="hide"]
   [data-sar-state="disclosed"][data-sar-hideable="false"]:is(:hover, :focus-within) {
-  opacity: 1 !important;
-  transition: opacity var(--sar-duration-fast) var(--sar-ease);
+  filter: none !important;
+  transition: filter var(--sar-duration-fast) var(--sar-ease);
 }
 
 [data-sar-filter="hide"] [data-sar-state="disclosed"]:not([data-sar-hideable="false"]) {

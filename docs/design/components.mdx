@@ -382,14 +382,14 @@ No classes, no inline styles, no per-node writes when the mode changes.
 ### Behavior
 
 - `off`: lists unchanged; badges only.
-- `dim`: disclosed hosts get `opacity: sar-dim-opacity` (0.4). `:hover` and `:focus-within` restore full opacity on that one host with a `sar-duration-fast` fade in and a snap back.
+- `dim`: disclosed hosts get `filter: opacity(sar-dim-opacity)` (0.4). `:hover` and `:focus-within` restore full opacity on that one host with a `sar-duration-fast` fade in and a snap back.
 - `hide`: disclosed hosts get `display: none`. Hosts marked `data-sar-hideable="false"` dim instead.
 - Allowed, not-disclosed and unknown hosts never match.
 
 ```css
 [data-sar-filter="dim"] [data-sar-state="disclosed"],
 [data-sar-filter="hide"] [data-sar-state="disclosed"][data-sar-hideable="false"] {
-  opacity: var(--sar-dim-opacity) !important;
+  filter: opacity(var(--sar-dim-opacity)) !important;
 }
 [data-sar-filter="hide"] [data-sar-state="disclosed"]:not([data-sar-hideable="false"]) {
   display: none !important;
@@ -398,9 +398,9 @@ No classes, no inline styles, no per-node writes when the mode changes.
 
 ### Rules
 
-- Opacity only. A `filter` such as grayscale gives every dimmed capsule its own effect layer; a sale page holds hundreds. Profile before adding one.
+- A filter opacity only. It multiplies with the store's own `opacity`, while the `opacity` property would replace it: the home page's main carousel hides its other slides with `opacity: 0`, and an `opacity` dim made them show through. It costs one effect per dimmed host, as `opacity` does. Other filters such as grayscale cost more; a sale page holds hundreds of capsules, so profile before adding one.
 - No transition on a mode change, so every host flips in one style pass.
-- `!important` is required: store rows set `display` and `opacity` inline or with higher specificity.
+- `!important` is required: store rows set `display` inline or with higher specificity.
 - The store's own ignored state is 0.3. Ours is 0.4, and the badge on the host names the reason.
 - Dimmed content is inactive UI: exempt from contrast minimums, never the only route to information.
 - Known gap: the filter can apply after first paint, because the content script runs at `document_idle`.
