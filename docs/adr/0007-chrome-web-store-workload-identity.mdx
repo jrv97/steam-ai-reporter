@@ -29,7 +29,7 @@ How does the Chrome job get its access token?
 
 Chosen option 1.
 
-A Google Cloud service account with no IAM roles is added under Account in the Chrome Web Store developer dashboard. A publisher can register one service account.
+A Google Cloud service account with no IAM roles is added under Settings > Service account in the Chrome Web Store developer dashboard. A publisher can register one service account.
 
 A workload identity pool has a GitHub OIDC provider that maps `google.subject` to the token's `sub`. Its attribute condition admits a token only when `repository_id` is `1426952065` (`jrv97/steam-ai-reporter`), `ref` starts with `refs/tags/`, and `environment` is `chrome-web-store`. Only the subject `repo:jrv97/steam-ai-reporter:environment:chrome-web-store` holds `roles/iam.workloadIdentityUser` on the service account.
 
