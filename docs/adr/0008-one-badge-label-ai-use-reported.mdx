@@ -1,0 +1,74 @@
+---
+status: accepted
+date: 2026-10-21
+decision-makers: Jorge Rodriguez de la Vega
+---
+
+# Use one badge label: "AI use reported"
+
+## Context and problem statement
+
+The product is called AI Reporter, but none of its labels used the verb "report". Five surfaces name the verdict, in four phrasings:
+
+| Surface                                    | Label                          |
+| ------------------------------------------ | ------------------------------ |
+| Full badge on search and wishlist rows     | AI use disclosed               |
+| Compact badge over game images             | AI disclosed                   |
+| Hover card title                           | AI use disclosed               |
+| Summary row chip, after an "AI use:" label | Disclosed by the developer     |
+| Banner heading on the game's page          | The developer discloses AI use |
+
+Each phrasing has its own catalog key and its own translation. Someone who sees the badge on a search row, the flag on a capsule and the chip on the game's page reads three labels for one fact. [ADR 0006 (the full badge reads "AI use disclosed")](0006-badge-label-ai-use-disclosed.mdx) settled the full badge only. Which single label should all five surfaces carry?
+
+## Decision drivers
+
+- Rule 4 (semantics): the label says a developer reported AI use, never that the game uses AI. "uses AI", "AI-free" and "no AI" stay forbidden, and the copy test rejects them.
+- One label and one catalog key for every surface that names the verdict.
+- It fits a full badge under its 180px cap, and a compact badge on the smallest capsule that gets one (184px wide) beside a store corner flag.
+- It reads as a label on a row, with no sentence around it.
+- It echoes the product name.
+
+## Considered options
+
+1. Keep "AI use disclosed" on rows and "AI disclosed" on images.
+2. "AI use reported" everywhere.
+3. "Developer reports AI use".
+4. "Reports AI use".
+
+## Decision outcome
+
+Chosen option 2, "AI use reported". One key, `badge_label`, feeds the full badge, the compact badge, the hover card title, the summary row chip and the banner heading, and the keys it replaces are gone. It keeps the shape ADR 0006 chose (the use, then what happened to it), passes the copy test and shares its verb with the product name.
+
+The summary row drops its "AI use:" label and shows the chip alone, lined up with the Developer and Publisher values. Rule 4 now names "AI use reported" as the wording. The rest of the English copy follows the verb: "Show full report", "Games that report AI use", and the privacy line "Sends no reports. It only reads what developers report on Steam." Code identifiers, storage keys, stored values and the backup format keep the verdict state name `disclosed`.
+
+### Consequences
+
+- Good: one label to learn, translate and test, and the compact badge says what the full badge says.
+- Good: no short form. As a compact badge, "AI use reported" measures about 87px in the Arial fallback, up from 71px, and on a 184px capsule it leaves 33px beside a 64px store flag.
+- Bad: on Steam, "report" also means flagging a game to Valve, so the chip can read as "players reported this game". The hover card and the banner open with "In the developer's own words:", which names the source, and the privacy line says the extension sends no reports.
+- Neutral: Spanish keeps "Uso de IA declarado", because "reportado" is an anglicism in Spain.
+- Neutral: the store screenshots in `docs/store/screenshots/` show the old labels and need retaking.
+
+## Pros and cons of the options
+
+### Keep "AI use disclosed" and "AI disclosed"
+
+- Good: no change to the catalog, the specs or the screenshots.
+- Bad: four phrasings on five surfaces, each with its own key and translation.
+- Bad: the labels never echo the product name.
+
+### "AI use reported"
+
+- Good: one label that fits every surface, with no short form.
+- Good: the shape of "AI use disclosed": attributive, no subject, true for every report.
+- Bad: "report" also names Steam's flagging feature (see Consequences).
+
+### "Developer reports AI use"
+
+- Good: names the source in the label itself.
+- Bad: about 135px in the badge font: a compact badge overlaps a 64px store flag on a 184px capsule. Cover images would need a short form, which breaks the one-label goal.
+
+### "Reports AI use"
+
+- Good: short, about 86px as a full badge.
+- Bad: the game becomes the subject, the shape ADR 0006 moved away from when it dropped "Discloses AI use".

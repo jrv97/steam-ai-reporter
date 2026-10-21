@@ -144,7 +144,7 @@ export function createBanner(
     aside.tabIndex = -1;
 
     const head = element("div", "sar-banner-head");
-    const title = element("h2", "sar-banner-title", i18n.t("banner_title"));
+    const title = element("h2", "sar-banner-title", i18n.t("badge_label"));
     title.id = TITLE_ID;
     head.append(title, button("sar-banner-action", "stop", i18n.t("banner_ignore")));
 

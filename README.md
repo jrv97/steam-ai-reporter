@@ -9,56 +9,56 @@
 
 # AI Reporter for Steam
 
-A browser extension (Chrome and Firefox) and a userscript (Tampermonkey and Violentmonkey) that mark items on the Steam store whose developers disclosed generative AI use in Steam's own AI content disclosure.
+A browser extension (Chrome and Firefox) and a userscript (Tampermonkey and Violentmonkey) that mark items on the Steam store whose developers reported generative AI use in Steam's own AI content disclosure.
 
 > Status: in development. Nothing is released yet, and the install links below are placeholders.
 
-The extension only reads Steam's own disclosures and sends no reports anywhere.
+The extension only reads what developers report on Steam and sends no reports anywhere.
 
 ## Why
 
 Steam Next Fest is, I kid you not, one of my favorite times of the year. I try the demos but never get to play as many as I'd like, and I still browse every corner of the fest and wishlist a bunch of games. Too often a game looks great until I find out it leans heavily on generative AI for its creative work, from gameplay design to art and music. For me personally, that is where I draw the line: creative work done with AI is a hard stop.
 
-I couldn't find an extension that covered every corner of the store and let me preview and review a developer's disclosure right from the list, without opening the game's page. So I built one. I know this is "querer ponerle puertas al campo" (trying to put doors on an open field), but it's the best I can do, and more importantly, it's fun :)
+I couldn't find an extension that covered every corner of the store and let me preview and review what a developer reported right from the list, without opening the game's page. So I built one. I know this is "querer ponerle puertas al campo" (trying to put doors on an open field), but it's the best I can do, and more importantly, it's fun :)
 
 If you browse the store the same way, I hope you find it useful too.
 
 ## What it does
 
-- Adds a badge to capsules and rows (search, wishlist, home, tag and category hubs, sale pages such as Next Fest, developer and publisher pages, the discovery queue, search suggestions) for items where the developer filled in the AI disclosure.
-- Shows a non-blocking banner on the app page that quotes the developer's disclosure text verbatim.
-- Optionally dims or hides disclosing items in lists. This is off by default.
+- Adds a badge to capsules and rows (search, wishlist, home, tag and category hubs, sale pages such as Next Fest, developer and publisher pages, the discovery queue, search suggestions) for items where the developer filled in Steam's AI content disclosure.
+- Shows a non-blocking banner on the app page that quotes the developer's report verbatim.
+- Optionally dims or hides those items in lists. This is off by default.
 - Lets you ignore a game you consider a false flag, with a per-game allow-list.
 
-The badge says "AI use disclosed". It does not say a game uses AI, and the absence of a badge does not mean a game is AI-free: the disclosure is self-reported by the developer and marks what developers chose to disclose.
+The badge says "AI use reported". It does not say a game uses AI, and the absence of a badge does not mean a game is AI-free: the report comes from the developer, and the badge marks what developers chose to report.
 
 ### On the store
 
-![Steam search results for "roguelike", where three rows carry an "AI use disclosed" badge after the game's name](docs/store/screenshots/01-search.jpg)
+![Steam search results for "roguelike", where three rows carry an "AI use reported" badge after the game's name](docs/store/screenshots/01-search.jpg)
 
-In search results, rows of games whose developers disclosed AI use carry the badge after the name.
+In search results, rows of games whose developers reported AI use carry the badge after the name.
 
-![A game's store page with a purple banner above the purchase box that reads "The developer discloses AI use" and quotes the disclosure; the DLC rows below are badged too](docs/store/screenshots/02-app-banner.jpg)
+![A game's store page with a purple banner above the purchase box that reads "AI use reported" and quotes the developer's report; the DLC rows below are badged too](docs/store/screenshots/02-app-banner.jpg)
 
-On a game's page, a banner above the purchase box quotes the developer's disclosure in their own words. "Stop marking this game" adds it to your allow-list. Its DLC rows get badges too.
+On a game's page, a banner above the purchase box quotes the developer's report in their own words. "Stop marking this game" adds it to your allow-list. Its DLC rows get badges too.
 
-![A search row's badge with a panel open beside it that quotes the developer's disclosure, next to Steam's own game hover](docs/store/screenshots/03-hover-card.jpg)
+![A search row's badge with a panel open beside it that quotes the developer's report, next to Steam's own game hover](docs/store/screenshots/03-hover-card.jpg)
 
-Hovering or tabbing to a badge opens a panel in the style of Steam's game hover, with the disclosure text and any AI service the developer named.
+Hovering or tabbing to a badge opens a panel in the style of Steam's game hover, with the developer's own text and any AI service they named.
 
-![Next Fest sale cards where two game images carry a small "AI disclosed" badge in their corner](docs/store/screenshots/04-next-fest.jpg)
+![Next Fest sale cards where two game images carry a small "AI use reported" badge in their corner](docs/store/screenshots/04-next-fest.jpg)
 
-Sale pages such as Next Fest, tag and category hubs and the home page get a compact "AI disclosed" badge on the game's image.
+Sale pages such as Next Fest, tag and category hubs and the home page get a compact "AI use reported" badge on the game's image.
 
 ### Settings
 
 ![The options page: switches for badges and the banner, a Show, Dim and Hide control for lists, a language picker, and a list of games you stopped marking](docs/store/screenshots/05-options.jpg)
 
-The options page turns badges and the banner on or off, sets how lists treat disclosing games, picks the language (automatic follows the store page), and lists the games you stopped marking, each with "Mark again".
+The options page turns badges and the banner on or off, sets how lists treat those games, picks the language (automatic follows the store page), and lists the games you stopped marking, each with "Mark again".
 
-![The same search results with the list filter set to Dim, where the three disclosing rows are faded](docs/store/screenshots/list-dim.jpg)
+![The same search results with the list filter set to Dim, where the three badged rows are faded](docs/store/screenshots/list-dim.jpg)
 
-With the list filter on Dim, disclosing games fade in lists and come back on hover. Hide removes them from lists. Show, the default, leaves lists as they are.
+With the list filter on Dim, badged games fade in lists and come back on hover. Hide removes them from lists. Show, the default, leaves lists as they are.
 
 <img src="docs/store/screenshots/popup.jpg" alt="The toolbar popup with the badge and banner switches, the Show, Dim and Hide control, one game you stopped marking, and a link to all settings" width="360">
 
@@ -66,7 +66,7 @@ The toolbar popup holds the same switches, the list filter and the games you sto
 
 ### Known gaps
 
-- In the header's search suggestions on a game's own store page, the suggestion for that same game gets no badge. The banner on the page shows its disclosure.
+- In the header's search suggestions on a game's own store page, the suggestion for that same game gets no badge. The banner on the page shows its report.
 
 ## Install
 

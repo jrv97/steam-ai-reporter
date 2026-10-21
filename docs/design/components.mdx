@@ -23,7 +23,7 @@ Every class, attribute and custom property starts with `sar-`.
 
 ## Principles
 
-1. **Label the disclosure, never judge it.** A disclosure can cover one marketing image or live generated gameplay, and some notes say AI was barely used. Attribute every fact to the developer ("discloses", "named by the developer", "in the developer's own words"). No red, no warning triangles.
+1. **Label the report, never judge it.** A report can cover one marketing image or live generated gameplay, and some notes say AI was barely used. Attribute every fact to the developer ("reported", "named by the developer", "in the developer's own words"). No red, no warning triangles.
 2. **Nothing for absence.** "Not disclosed" and "unknown" render nothing: no neutral badge, no check mark. Only `data-sar-state` on the host records them.
 3. **Quote verbatim.** The developer's notes are data: set with `textContent` and `white-space: pre-line`, never translated, summarized or highlighted.
 4. **Feel native.** Look and behave as close to the store's own UI as possible: its sizes, type, neutrals, surfaces and interaction patterns, so injected UI has no seam. Model each store-page component on its closest store element (the banner on the notice bubbles, the full badge on the tag chips, the compact badge on the corner flags, the summary row on the summary box's own rows). Only the violet hue marks a component as ours, so nobody mistakes it for a store feature.
@@ -33,9 +33,10 @@ Every class, attribute and custom property starts with `sar-`.
 
 ## Voice and copy
 
-- Say "discloses" or "disclosed". Never "uses AI", "AI-free" or "no AI", in any locale; the copy test fails the build on them.
-- Plain, short, sentence case: "AI use disclosed", "Stop marking this game", "Show full disclosure".
-- Name the developer as the source: "The developer discloses AI use", "In the developer's own words:", "AI service named by the developer:".
+- Say "report" or "reported". Never "uses AI", "AI-free" or "no AI", in any locale; the copy test fails the build on them.
+- Plain, short, sentence case: "AI use reported", "Stop marking this game", "Show full report".
+- One label names the verdict everywhere: "AI use reported" on both badges, the summary row chip, the hover card title and the banner heading.
+- Name the developer as the source: "In the developer's own words:", "AI service named by the developer:".
 - "Stop marking this game", never "Ignore": the store has its own Ignore button just above.
 - Settings speak about games, not switches: the list filter reads "Show", "Dim", "Hide".
 - No exclamation marks, no emoji, no em dashes.
@@ -142,11 +143,11 @@ Preview: `previews/Badge.html`.
 
 ```html
 <span class="sar-badge">
-  <span class="sar-badge-label">t('badge_full')</span>
+  <span class="sar-badge-label">t('badge_label')</span>
 </span>
 ```
 
-- The label from `badge_full` ("AI use disclosed") as real text.
+- The label from `badge_label` ("AI use reported") as real text.
 - The badge registers with the hover card (section 15), which shows the developer's notes on hover or focus. No `title`.
 
 ### Look
@@ -156,7 +157,7 @@ Built like the store's own tag chips, in our hue.
 - `sar-badge-height` (19px) tall, `sar-badge-pad-inline` (7px), `sar-radius-sm`, no border.
 - Label in `sar-text-badge` (11/19 regular, the page font rather than the chips' Arial, because the badge sits in Motiva rows), `sar-badge-fg` on `sar-badge-bg`.
 - No icon. The violet hue and the wording set it apart from the store's blue tags, and it never sits in the store's tag row.
-- Capped at `sar-badge-max-inline-size` (180px). English needs about 96px in the store font (82px of text plus padding), so a translation can run about 85% longer before it truncates; longer labels end in an ellipsis and keep the full text in the DOM.
+- Capped at `sar-badge-max-inline-size` (180px). English needs about 90px in the store font (about 76px of text plus padding), so a translation can run about twice as long before it truncates; longer labels end in an ellipsis and keep the full text in the DOM.
 
 ### Placement
 
@@ -195,7 +196,7 @@ Preview: `previews/CompactBadge.html`.
 
 ```html
 <span class="sar-compact" data-sar-size="text" data-sar-in-link="true">
-  <span class="sar-compact-label">t('badge_compact')</span>
+  <span class="sar-compact-label">t('badge_label')</span>
 </span>
 ```
 
@@ -221,7 +222,7 @@ Built as a mirror of the store's own corner flags (in library, on wishlist): sol
 - Unlike the store's mid-tone flags, the surface is dark (accent 900) and keeps an edge. Together they give every kind of art a boundary at 3:1 or more: the edge against black (5.91:1), the surface against white (16.63:1), mid grey (4.21:1) and violet (3.34:1).
 - Block-start, inline-end corner (top right in English), mirroring the store's flags, which sit top-left. The store also owns the bottom edge (prices).
 - `z-index: sar-z-badge`: over the art, the corner flags and the microtrailer video that home capsules play on hover, under the store's hover popups.
-- Maximum inline size is the image width; past it the label ends in an ellipsis. Because the badge now shares the flags' row, a long translation on a small capsule can reach a store flag; see the open questions.
+- Maximum inline size is the image width; past it the label ends in an ellipsis. The badge carries the same label as the full badge: in the Arial fallback, English is about 87px wide in the `text` tier and 98px in the `large` tier. On a 184px capsule beside a 64px store flag that leaves 33px between them; the Spanish label (about 111px) leaves 9px. Because the badge shares the flags' row, a longer translation on a small capsule can reach a store flag; see the open questions.
 - On home capsules, the store's options arrow (`.ds_options`, z-index 15) appears in the same corner on hover and covers about 39px of the badge's inline end; the store control stays on top on purpose, and at rest the badge is clear.
 
 ### Pointer and accessibility
@@ -237,27 +238,26 @@ Built as a mirror of the store's own corner flags (in library, on wishlist): sol
 
 ## 3. Summary row
 
-One row in a game's summary box, directly under Publisher, that says the developer disclosed AI use with a violet tag-styled chip and jumps to the banner.
+One row in a game's summary box, directly under Publisher: the badge label in a violet tag-styled chip that sits in the column of the Developer and Publisher values and jumps to the banner.
 
 Preview: `previews/SummaryRow.html`.
 
 ### When to use
 
 - On the app page of a disclosed game while the `badges` setting is on. Allow-listed, not-disclosed and unknown games get nothing.
-- Once per page, in the summary box at the top right, so the disclosure is visible above the fold. The banner, lower down by the purchase box, still carries the developer's words.
+- Once per page, in the summary box at the top right, so the label shows above the fold. The banner, lower down by the purchase box, still carries the developer's words.
 
 ### What the consumer provides
 
 ```html
 <a class="sar-summary-row" href="#sar-banner">
-  <span class="sar-summary-label">t('summary_label')</span>
   <span class="sar-badge">
-    <span class="sar-badge-label">t('summary_value')</span>
+    <span class="sar-badge-label">t('badge_label')</span>
   </span>
 </a>
 ```
 
-- Insert it right after the last `.dev_row` in the summary box (`.glance_ctn_responsive_left`). Steam's own rows there are label and value pairs; this row follows the same shape with its own classes, and never borrows or restyles a store node.
+- Insert it right after the last `.dev_row` in the summary box (`.glance_ctn_responsive_left`). Steam's own rows there are label and value pairs; this row has no label and puts its chip where their values start. It uses its own classes and never borrows or restyles a store node.
 - With the banner on, the row is a progressive link: `href="#sar-banner"` (the banner host's id), handled by one delegated click listener that calls `preventDefault`, scrolls the host into view with `block: "start"`, and focuses the banner's `aside` (`tabindex="-1"`) with `focus({ preventScroll: true })`. The URL never changes, so there is no history entry and no `#sar-banner` in links people copy. Without the script, the plain anchor still lands on the banner. Steam's own reviews row jumps to the reviews section the same way.
 - With the banner off, render the row as a `div` with no `href` and `tabindex="0"`: the chip still says what it says, and the hover card (section 15) quotes the notes. With the banner on, the row opens no hover card: the jump lands on the full notes.
 
@@ -265,19 +265,18 @@ Preview: `previews/SummaryRow.html`.
 
 Steam's summary box is set in Arial (13/18 values, 11/18 uppercase labels), and its tag chips are 11/19 Arial. This row matches it.
 
-- Label column `sar-summary-label-inline-size` (35% of the row, like the store's labels), `sar-summary-label-pad-inline-end` (10px), `sar-text-summary-label`, uppercase, in `sar-color-text-subtle`. The store's own label color, `#798a95`, is 4.18:1 on the page, so ours is a step lighter to pass AA.
-- Value: the full badge (`sar-badge-fg` on `sar-badge-bg`, 19px, `sar-radius-sm`), set in `sar-text-summary-tag` like the store's tag chips. A violet chip in a box of blue links is what draws the eye.
-- The chip may use the whole value column; past it the label ends in an ellipsis, and the full text stays in the DOM.
+- No label column. The row starts `sar-summary-chip-inset-inline` (35%, the share of the row the store gives its own labels) from the box's inline start and shrinks to fit the chip, so the chip shares the value edge of Developer and Publisher. The focus ring and the click target cover the chip only.
+- The chip: the full badge (`sar-badge-fg` on `sar-badge-bg`, 19px, `sar-radius-sm`), set in `sar-text-summary-tag` like the store's tag chips. A violet chip in a box of blue links is what draws the eye.
+- The chip may use the rest of the row (65%); past it the label ends in an ellipsis, and the full text stays in the DOM.
 - Interaction: a pointer cursor and no underline, like the store's own review rows, plus the shared `sar-focus-color` ring on `:focus-visible`, which the store's rows lack.
 
 ### Fit
 
-Measured on a 1280 by 900 window (app 1808500): the row is 18px tall, the summary box has slack, so the tag row below moves down 5px and no store tag is hidden. The worst case is a game with two review rows and a publisher name that wraps, about 36px more; the tag row would then hang past the media's bottom edge (misaligned, not clipped). If that shows up, drop the row on that page; the banner still carries the disclosure.
+Measured on a 1280 by 900 window (app 1808500): the row is 18px tall, the summary box has slack, so the tag row below moves down 5px and no store tag is hidden. The worst case is a game with two review rows and a publisher name that wraps, about 36px more; the tag row would then hang past the media's bottom edge (misaligned, not clipped). If that shows up, drop the row on that page; the banner still quotes the developer.
 
 ### Accessibility
 
-- The link's name is the label plus the chip text, for example "AI use: Disclosed by the developer".
-- The catalog strings stay in sentence case. The uppercase is `text-transform`, which follows the page's `lang`, so locales such as Turkish case correctly.
+- The link's name is the chip text, "AI use reported". It needs no row label: the banner it jumps to and the hover card both open with "In the developer's own words:".
 - The jump lands on the banner, and focus follows, so a keyboard or screen reader user arrives at the developer's words.
 - With the banner off, focus on the row opens the hover card, which describes the row while it is open.
 
@@ -285,11 +284,11 @@ Measured on a 1280 by 900 window (app 1808500): the row is 18px tall, the summar
 
 - Don't add it to Steam's tag row: that row never wraps, Steam's own script hides tags that don't fit, and a chip there would read as a player-defined tag.
 - Don't float it over the page.
-- Don't color the label or add a warning icon; the chip is the only violet.
+- Don't add a warning icon; the chip is the only violet.
 
 ## 4. App page banner
 
-A non-blocking notice on a game's own store page that quotes the developer's AI disclosure verbatim, placed above the purchase box and built like the store's own notice bubbles.
+A non-blocking notice on a game's own store page that quotes the developer's report verbatim, placed above the purchase box and built like the store's own notice bubbles.
 
 Preview: `previews/Banner.html`.
 
@@ -305,7 +304,7 @@ Preview: `previews/Banner.html`.
   #shadow-root
   <aside class="sar-banner" aria-labelledby="sar-banner-title">
     <div class="sar-banner-head">
-      <h2 class="sar-banner-title" id="sar-banner-title">t('banner_title')</h2>
+      <h2 class="sar-banner-title" id="sar-banner-title">t('badge_label')</h2>
       <button class="sar-banner-action" type="button">t('banner_ignore')</button>
     </div>
     <p class="sar-banner-source">t('banner_source')</p>
@@ -337,7 +336,7 @@ Modeled on the store's per-app notice bubbles (the DLC notice sits in the same s
 - Padding `sar-space-2` at block-start, `sar-space-3` at block-end, `sar-space-4` inline. `sar-space-4` below: the store's own 2px would glue the banner to the purchase box and read as part of the offer.
 - All text in `sar-banner-fg`. Title `sar-text-banner-title` (24/30 light). Source and service lines `sar-text-banner-meta` (13/19 light). Notes `sar-text-banner-quote` (14/21, italic like the notes in the store's own disclosure section).
 - "Stop marking this game" is the store's white-transparent button: `sar-text-banner-button` (15/30 light) in `sar-banner-button-fg`, `sar-banner-button-pad-inline`, a 1px `sar-banner-button-border`, `sar-radius-sm`, a `sar-banner-button-bg-hover` wash on hover.
-- "Show full disclosure" and "Undo" are the store's underlined in-bubble links, in `sar-banner-link-color`, as `button` elements with a 24px minimum target.
+- "Show full report" and "Undo" are the store's underlined in-bubble links, in `sar-banner-link-color`, as `button` elements with a 24px minimum target.
 - Errors in `sar-banner-error`, never `sar-color-error` (4.21:1 on the bright end).
 - Never `sar-color-text-muted` or `sar-color-text-subtle` on the wash.
 
@@ -365,7 +364,7 @@ An `aside` landmark labelled by its `h2`. The notes are a `blockquote`; the sour
 
 ### Check
 
-A game with DLC can also carry a disclosure, so this banner may stack with the store's own DLC bubble. Compare the two side by side on such a page.
+A game with DLC can also carry a report, so this banner may stack with the store's own DLC bubble. Compare the two side by side on such a page.
 
 ## 5. Dim and hide (list filter)
 
@@ -742,7 +741,7 @@ magick -background none -density 384 icon.svg -filter Lanczos -resize 96x96 -gra
 
 ## 15. Hover card
 
-The developer's disclosure in a small dark panel that opens when a pointer rests on a badge, or when keyboard focus reaches one. It is built like the store's own game hover popup (`#global_hover`, the panel with title, release date, description, reviews and tags next to a capsule). Badges carry no `title`; the card is their only tooltip.
+The developer's report in a small dark panel that opens when a pointer rests on a badge, or when keyboard focus reaches one. It is built like the store's own game hover popup (`#global_hover`, the panel with title, release date, description, reviews and tags next to a capsule). Badges carry no `title`; the card is their only tooltip.
 
 Preview: `previews/HoverCard.html`.
 
@@ -757,7 +756,7 @@ Preview: `previews/HoverCard.html`.
 
 ```html
 <div class="sar-hovercard" id="sar-hovercard" role="tooltip" popover="manual" data-sar-side="below" hidden>
-  <p class="sar-hovercard-title">t('badge_card_title')</p>
+  <p class="sar-hovercard-title">t('badge_label')</p>
   <p class="sar-hovercard-source">t('badge_card_source')</p>
   <p class="sar-hovercard-notes">notes, verbatim</p>
   <p class="sar-hovercard-service">t('badge_card_service_label') <span class="sar-hovercard-service-name">service</span></p>
@@ -824,41 +823,31 @@ Every string the UI shows, as keys for `src/locales/en/messages.json`. Keys are 
 
 For every translator:
 
-- The product reports what developers disclosed. Say "discloses" or "disclosed"; never say a game "uses" AI.
-- Badge labels show on one line and truncate past about 40% longer than English. Shorter is better.
+- The product shows what developers reported. Say "report" or "reported"; never say a game "uses" AI.
+- The badge label shows on one line on rows and images and truncates past about 40% longer than English. Shorter is better.
 - The developer's notes, game names and service names are never part of a message; they are inserted as data.
 
 ### `badge_`
 
 | Key | English | Note |
 | --- | --- | --- |
-| `badge_full` | AI use disclosed | Label on search and wishlist rows. One line; truncates past about 22 characters. |
-| `badge_compact` | AI disclosed | Label over game images. Keep it as short as the language allows. |
-| `badge_card_title` | AI use disclosed | Heading of the hover card on a badge. It never truncates, so the full phrase fits. Say that the use was disclosed; never say the game uses AI. |
+| `badge_label` | AI use reported | The one label: search and wishlist rows, game images, the summary row chip, and the hover card and banner headings. One line on rows and images; truncates past about 22 characters. Say that the use was reported; never say the game uses AI. |
 | `badge_card_source` | In the developer's own words: | Introduces the developer's text, which follows untranslated. |
 | `badge_card_service_label` | AI service named by the developer: | Precedes a product name inserted as data. |
 | `badge_card_more` | The full text is on the game's store page. | Shown when the panel cuts a long text short, never on the game's own page. |
-
-### `summary_`
-
-| Key | English | Note |
-| --- | --- | --- |
-| `summary_label` | AI use: | Label of a row in the game's summary box, under Developer and Publisher. Write it in sentence case; the page shows it in capitals through CSS. Use the same punctuation as the store's own labels there. |
-| `summary_value` | Disclosed by the developer | Value of that row, in a violet chip that jumps to the notice. The developer reported AI use on Steam's form; never say the game uses AI. One line; truncates past about 30 characters. |
 
 ### `banner_`
 
 | Key | English | Note |
 | --- | --- | --- |
-| `banner_title` | The developer discloses AI use | Heading of the notice on a game's store page. |
 | `banner_source` | In the developer's own words: | Introduces the developer's text, which follows untranslated. |
-| `banner_expand` | Show full disclosure | Expands the collapsed text. |
+| `banner_expand` | Show full report | Expands the collapsed text. |
 | `banner_collapse` | Show less | Collapses it again. |
 | `banner_service_label` | AI service named by the developer: | Precedes a product name inserted as data. |
 | `banner_ignore` | Stop marking this game | Stops badges and this notice for one game. Avoid the word the store uses for its own ignore feature. |
 | `banner_ignored` | You stopped marking this game. | Replaces the notice after the action above. |
 | `banner_undo` | Undo | Reverses the action above. |
-| `banner_region_label` | AI use disclosure | Screen reader name for the one-line note. |
+| `banner_region_label` | AI use report | Screen reader name for the one-line note. |
 
 ### `notice_`
 
@@ -891,13 +880,13 @@ For every translator:
 | --- | --- | --- |
 | `options_version` | Version `$version$` | Under the product name. |
 | `options_section_store` | On store pages | Section heading. |
-| `options_badges` | Badges on games that disclose AI use | Switch label. |
+| `options_badges` | Badges on games that report AI use | Switch label. |
 | `options_badges_short` | Badges | The same switch in the popup. |
-| `options_badges_help` | Adds "`$full$`" to search and wishlist rows and "`$compact$`" to game images. | `full` and `compact` are the two badge labels. |
+| `options_badges_help` | Adds "`$label$`" to search and wishlist rows and to game images. | `label` is the badge label. |
 | `options_banner` | Banner on game pages | Switch label. |
-| `options_banner_help` | Shows the developer's disclosure above the purchase box. | Help under the switch. |
+| `options_banner_help` | Shows the developer's report above the purchase box. | Help under the switch. |
 | `options_section_lists` | In lists | Section heading. |
-| `options_filter_label` | Games that disclose AI use | Label of a three-way choice. |
+| `options_filter_label` | Games that report AI use | Label of a three-way choice. |
 | `options_filter_off` | Show | Leave these games as they are. |
 | `options_filter_dim` | Dim | Fade these games. |
 | `options_filter_hide` | Hide | Remove these games from lists. |
@@ -941,7 +930,7 @@ For every translator:
 | --- | --- | --- |
 | `ext_name` | AI Reporter for Steam | Manifest `name`, userscript `@name`, the settings heading. The brand: keep "AI Reporter" as is and translate only "for". At most 75 characters (Chrome limit). |
 | `ext_short_name` | AI Reporter | Manifest `short_name`, where space is tight. The brand, kept as is. At most 12 characters (Chrome recommendation). |
-| `ext_description` | Labels Steam games whose developers disclose generative AI use, in their own words. | Manifest and userscript description. At most 132 characters; the English is 84. |
+| `ext_description` | Labels Steam games whose developers report generative AI use, in their own words. | Manifest and userscript description. At most 132 characters; the English is 81. |
 | `ext_action_title` | AI Reporter settings | Toolbar button tooltip. Keep "AI Reporter" as is. |
 
 ### `userscript_`
@@ -963,7 +952,6 @@ WCAG 2.2 AA: 4.5:1 for text, 3:1 for non-text. Grounds are the store's own, samp
 | Full badge text `sar-accent-200` on its tint | store row hover | 5.21 |
 | Full badge text on its tint | page | 7.46 |
 | Full badge text on its tint | search row | 8.19 |
-| Summary row label `sar-color-text-subtle` | page | 5.09 |
 | Summary row chip text `sar-accent-200` on its tint | page | 7.46 |
 | Compact text `sar-accent-100` on `sar-accent-900` | any art (solid) | 12.65 |
 | Compact edge `sar-accent-400` (surface 1.26) | black art | 5.91 |
@@ -1000,7 +988,6 @@ WCAG 2.2 AA: 4.5:1 for text, 3:1 for non-text. Grounds are the store's own, samp
 
 - On the banner wash, text is `sar-banner-fg` only. `sar-color-text-muted` is 3.77:1 at the bright end, `sar-color-error` 4.21:1, and the store's own in-bubble link color `#c3c1c0` 4.49:1.
 - The banner button's edge is white at 50%. The store's own 40% would be 2.63:1 on our bright end.
-- The store's own summary label color, `#798a95`, is 4.18:1 on the page, so the summary row label uses `sar-color-text-subtle` instead.
 - `sar-color-text-subtle` only on page, row, panel, raised and sunken. On the store's row hover it is 3.32:1.
 - `sar-accent-300` as link text only on solid grounds. On the store's row hover it is 4.45:1, so links there use `sar-accent-200`.
 - The compact badge's surface stays at accent 900. A mid-tone flag color such as accent 700 would leave mid grey art with no boundary at 3:1 (surface 2.54, edge 1.11) and violet art at 2.01.

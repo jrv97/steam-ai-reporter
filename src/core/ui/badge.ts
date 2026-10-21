@@ -57,18 +57,18 @@ export function createBadgeRenderer(
   card: CardTriggers,
 ): HostRenderer {
   const drawn = new WeakMap<Element, Drawn>();
-  const labels = { full: i18n.t("badge_full"), compact: i18n.t("badge_compact") } as const;
+  const label = i18n.t("badge_label");
 
   function build(slot: BadgeSlot): HTMLElement {
     if (slot.kind === "full") {
-      return createChip(doc, labels.full);
+      return createChip(doc, label);
     }
     const badge = doc.createElement("span");
     badge.className = "sar-compact";
     badge.setAttribute("data-sar-size", slot.size);
     const text = doc.createElement("span");
     text.className = "sar-compact-label";
-    text.textContent = labels.compact;
+    text.textContent = label;
     badge.append(text);
     return badge;
   }

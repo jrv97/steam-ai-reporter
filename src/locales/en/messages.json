@@ -8,7 +8,7 @@
     "description": "Manifest short_name, where space is tight. The brand, kept as is. At most 12 characters (Chrome recommendation)."
   },
   "ext_description": {
-    "message": "Labels Steam games whose developers disclose generative AI use, in their own words.",
+    "message": "Labels Steam games whose developers report generative AI use, in their own words.",
     "description": "Manifest description and userscript @description. At most 132 characters (Chrome limit)."
   },
   "ext_action_title": {
@@ -43,29 +43,13 @@
       }
     }
   },
-  "badge_full": {
-    "message": "AI use disclosed",
-    "description": "Label on search and wishlist rows for a game whose developer disclosed generative AI use on Steam. One line; truncates past about 22 characters. Say that the use was disclosed; never say the game uses AI."
-  },
-  "badge_compact": {
-    "message": "AI disclosed",
-    "description": "Label over game images, also read by screen readers. Keep it as short as the language allows. Say \"disclosed\"; never say the game uses AI."
-  },
-  "summary_label": {
-    "message": "AI use:",
-    "description": "Label of a row in the game's summary box, under Developer and Publisher. Write it in sentence case; the page shows it in capitals through CSS. Use the same punctuation as the store's own labels there."
-  },
-  "summary_value": {
-    "message": "Disclosed by the developer",
-    "description": "Value of that row, in a violet chip that jumps to the notice. The developer reported AI use on Steam's form; never say the game uses AI. One line; truncates past about 30 characters."
-  },
-  "badge_card_title": {
-    "message": "AI use disclosed",
-    "description": "Heading of the hover card on a badge. It never truncates, so the full phrase fits. Say that the use was disclosed; never say the game uses AI."
+  "badge_label": {
+    "message": "AI use reported",
+    "description": "The one label for a game whose developer reported generative AI use on Steam's form. It shows on search and wishlist rows, over game images, in a chip in the game's summary box, and as the heading of the hover card and of the notice on the game's page; screen readers read it too. Say that the use was reported; never say the game uses AI. On rows and images it stays on one line and truncates past about 22 characters, so keep it short."
   },
   "badge_card_source": {
     "message": "In the developer's own words:",
-    "description": "In that panel, introduces the developer's text, which follows untranslated."
+    "description": "In the hover card on a badge, introduces the developer's text, which follows untranslated."
   },
   "badge_card_service_label": {
     "message": "AI service named by the developer:",
@@ -75,16 +59,12 @@
     "message": "The full text is on the game's store page.",
     "description": "In that panel, shown when it cuts a long developer text short."
   },
-  "banner_title": {
-    "message": "The developer discloses AI use",
-    "description": "Heading of the notice on a game's store page."
-  },
   "banner_source": {
     "message": "In the developer's own words:",
-    "description": "Introduces the developer's text, which follows untranslated."
+    "description": "In the notice on a game's store page, introduces the developer's text, which follows untranslated."
   },
   "banner_expand": {
-    "message": "Show full disclosure",
+    "message": "Show full report",
     "description": "Expands the collapsed text of the notice."
   },
   "banner_collapse": {
@@ -108,7 +88,7 @@
     "description": "Reverses \"Stop marking this game\"."
   },
   "banner_region_label": {
-    "message": "AI use disclosure",
+    "message": "AI use report",
     "description": "Screen reader name for the one-line note shown instead of the notice."
   },
   "notice_marking_stopped": {
@@ -150,7 +130,7 @@
     "description": "Section heading in the settings."
   },
   "options_badges": {
-    "message": "Badges on games that disclose AI use",
+    "message": "Badges on games that report AI use",
     "description": "Switch label."
   },
   "options_badges_short": {
@@ -158,16 +138,12 @@
     "description": "The same switch in the toolbar popup, where space is tight."
   },
   "options_badges_help": {
-    "message": "Adds \"$full$\" to search and wishlist rows and \"$compact$\" to game images.",
-    "description": "Help under the badges switch. $full$ and $compact$ are the two badge labels.",
+    "message": "Adds \"$label$\" to search and wishlist rows and to game images.",
+    "description": "Help under the badges switch. $label$ is the badge label.",
     "placeholders": {
-      "full": {
+      "label": {
         "content": "$1",
-        "example": "AI use disclosed"
-      },
-      "compact": {
-        "content": "$2",
-        "example": "AI disclosed"
+        "example": "AI use reported"
       }
     }
   },
@@ -176,7 +152,7 @@
     "description": "Switch label."
   },
   "options_banner_help": {
-    "message": "Shows the developer's disclosure above the purchase box.",
+    "message": "Shows the developer's report above the purchase box.",
     "description": "Help under the banner switch."
   },
   "options_section_lists": {
@@ -184,7 +160,7 @@
     "description": "Section heading in the settings."
   },
   "options_filter_label": {
-    "message": "Games that disclose AI use",
+    "message": "Games that report AI use",
     "description": "Label of a three-way choice: show, dim or hide these games in lists."
   },
   "options_filter_off": {
@@ -270,8 +246,8 @@
     "description": "Section heading in the settings."
   },
   "options_privacy_no_reports": {
-    "message": "Sends no reports. It only reads the disclosures developers made on Steam.",
-    "description": "Privacy bullet: the product never reports games or users anywhere; it only shows what developers disclosed to Steam."
+    "message": "Sends no reports. It only reads what developers report on Steam.",
+    "description": "Privacy bullet: the product never sends reports about games or users anywhere; it only shows what developers reported to Steam."
   },
   "options_privacy_storage": {
     "message": "Settings and results stay in this browser.",

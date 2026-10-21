@@ -34,7 +34,6 @@ SHIPPED = ROOT / "src" / "locales"
 TEST_CATALOGS = ROOT / "tests" / "locales"
 PREFIXES = (
     "badge_",
-    "summary_",
     "banner_",
     "options_",
     "error_",

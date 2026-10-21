@@ -92,7 +92,7 @@ describe("createHoverCard", () => {
   function page(): { link: HTMLAnchorElement; badge: HTMLElement; other: HTMLElement; } {
     setBody(`
       <a class="row" href="/app/10/"><span class="title">Game</span>
-      <span class="sar-badge"><span class="sar-badge-label">AI use disclosed</span></span></a>
+      <span class="sar-badge"><span class="sar-badge-label">AI use reported</span></span></a>
       <a class="other" href="/app/20/">Other</a>`);
     const link = document.querySelector<HTMLAnchorElement>(".row");
     const badge = document.querySelector<HTMLElement>(".sar-badge");
@@ -142,7 +142,7 @@ describe("createHoverCard", () => {
     flush();
     const node = shown();
     expect(node?.getAttribute("role")).toBe("tooltip");
-    expect(node?.querySelector(".sar-hovercard-title")?.textContent).toBe("AI use disclosed");
+    expect(node?.querySelector(".sar-hovercard-title")?.textContent).toBe("AI use reported");
     expect(node?.querySelector(".sar-hovercard-source")?.textContent)
       .toBe("In the developer's own words:");
     expect(node?.querySelector(".sar-hovercard-notes")?.textContent).toBe("Line one\nLine two");

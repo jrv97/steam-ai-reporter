@@ -205,10 +205,7 @@ export async function mountSettingsForm(
     switchField(
       "badges",
       context === "popup" ? "options_badges_short" : "options_badges",
-      i18n.t("options_badges_help", {
-        full: i18n.t("badge_full"),
-        compact: i18n.t("badge_compact"),
-      }),
+      i18n.t("options_badges_help", { label: i18n.t("badge_label") }),
     ),
     switchField("banner", "options_banner", i18n.t("options_banner_help")),
   );

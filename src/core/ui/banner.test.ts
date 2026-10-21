@@ -72,7 +72,7 @@ describe("createBanner", () => {
   it("uses catalog copy and the developer as the source", () => {
     const { banner, root } = setup();
     banner.show(disclosedVerdict(), false);
-    expect(query(root, "h2").textContent).toBe("The developer discloses AI use");
+    expect(query(root, "h2").textContent).toBe("AI use reported");
     expect(query(root, ".sar-banner-source").textContent).toBe("In the developer's own words:");
     expect(query(root, ".sar-banner-action").textContent).toBe("Stop marking this game");
     expect(root.querySelector("svg")).toBeNull();
@@ -106,7 +106,7 @@ describe("createBanner", () => {
     expect(toggle.textContent).toBe("Show less");
     toggle.click();
     expect(quote.getAttribute("data-sar-collapsed")).toBe("true");
-    expect(toggle.textContent).toBe("Show full disclosure");
+    expect(toggle.textContent).toBe("Show full report");
   });
 
   it("drops the clamp and the toggle for short notes", () => {
@@ -122,7 +122,7 @@ describe("createBanner", () => {
     banner.show(disclosedVerdict({ notes: XSS }), true);
     const aside = query(root, "aside");
     expect(aside.getAttribute("data-sar-variant")).toBe("ignored");
-    expect(aside.getAttribute("aria-label")).toBe("AI use disclosure");
+    expect(aside.getAttribute("aria-label")).toBe("AI use report");
     expect(query(root, ".sar-banner-ignored-text").textContent).toBe(
       "You stopped marking this game.",
     );
