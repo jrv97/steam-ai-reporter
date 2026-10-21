@@ -76,8 +76,21 @@ The package is built from source, unminified. Build steps are in the README unde
 
 The extension has no background script, requests no host permissions and makes no network request other than the two Valve hosts above.
 
-## Assets still needed from the design session
+## Screenshots
 
-- Store icon 128 x 128 (the build already ships `icon-128.png`).
-- Screenshots 1280 x 800: a search page with badges, the app page banner, and the settings page.
+`docs/store/screenshots/` holds the listing screenshots, 1280 x 800 JPEG, in upload order. The Chrome Web Store takes five and AMO takes any number.
+
+1. `01-search.jpg`: search results for "roguelike" with three badged rows.
+2. `02-app-banner.jpg`: the banner on app 1808500, with its badged DLC rows.
+3. `03-hover-card.jpg`: the panel that opens on a search badge, next to Steam's own game hover.
+4. `04-next-fest.jpg`: Next Fest sale cards with the compact badge on the game image.
+5. `05-options.jpg`: the options page with the list filter on Dim and one game in the allow-list.
+
+`list-dim.jpg` (Dim mode in search) and `popup.jpg` (the toolbar popup, 360 px wide) appear in the README only.
+
+They were captured on 2026-10-21 in headless Chrome with a fresh, signed-out profile, a 1280 x 800 viewport and Steam's cookie banner hidden. The store pages run the dev bundle (`dist/dev/inject.js`) of release 2026.10.21. The options page and the popup are `dist/chrome/options.html` with `chrome.storage` stubbed in memory. Prices show in euros because of the capture location.
+
+## Assets still needed
+
 - Chrome Web Store small promo tile 440 x 280 (optional).
+- The store icon is `assets/icons/icon-128.png`, which the build also ships.
