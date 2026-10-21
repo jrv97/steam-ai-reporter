@@ -203,7 +203,7 @@ lint/               restricted-syntax.mjs   (the oxlint jsPlugins rule, never bu
 .github/workflows/  ci.yml release-train.yml release-nightly.yml release-prod.yml
 assets/icons/
 posting/            saved posting collection for GetItems and app page requests (step 2)
-docs/adr/  docs/plans/  docs/store/  docs/testing/  docs/design/ (design session)
+docs/adr/  docs/plans/  docs/store/  docs/testing/  docs/design/ (design system)
 docs/research/steam-ai-disclosure/rq6-verification-spikes.md   (step 2)
 docs/research/steam-ai-disclosure/rq7-library-study.md         (step 2)
 scripts/            build.py gen_i18n_keys.py check_i18n.py check_text.py check_bundle.py
@@ -244,7 +244,7 @@ dist/ artifacts/ (gitignored)
 - Create `.github/workflows/*.yml`: each job installs mise with `jdx/mise-action` and runs exactly one mise task.
 - Create `scripts/*`: as listed in the layout; each one is called only from a mise task.
 - Create `src/**`, `tests/**`: the modules above, with `*.test.ts` next to each module.
-- Create `assets/icons/`: from the design session (SVG source plus 16, 32, 48 and 128 px PNGs), with no Valve branding.
+- Create `assets/icons/`: from the design system (SVG source plus 16, 32, 48 and 128 px PNGs), with no Valve branding.
 
 ## Steps
 
@@ -377,7 +377,7 @@ dist/ artifacts/ (gitignored)
    - Proof: per-surface fixture tests assert the exact mapping from app ID to host; the tag hub fixture gives one host per capsule and no section-sized host; the home carousel capsule with a `background-image` gets a host; search suggestion results inside the header root get hosts and the header's navigation links do not; a rescan adds nothing; appending 50 search rows triggers one debounced scan that touches only the new rows; replacing a host's subtree restores its badge; the 200-capsule fixture scans within the test budget.
 
 10. **UI and composition root.**
-    - Visual tokens and component specs (badge, compact badge, banner, dim and hide states, options page, allow-list, icons) come from the design session (`docs/design/tokens.css`). If they are not ready, `styles.css` ships placeholder `--sar-*` custom properties; swapping them in later touches no logic. Injected UI may reference the page's own `"Motiva Sans"` font by name; no Valve logo, icon or font file is bundled.
+    - Visual tokens and component specs (badge, compact badge, banner, dim and hide states, options page, allow-list, icons) come from the design system (`docs/design/tokens.css`). If they are not ready, `styles.css` ships placeholder `--sar-*` custom properties; swapping them in later touches no logic. Injected UI may reference the page's own `"Motiva Sans"` font by name; no Valve logo, icon or font file is bundled.
     - Every string comes from the catalog: `badge_full` ("AI use disclosed"), `badge_compact` ("AI disclosed"), the banner heading, the ignore and undo labels, the unaffiliated line and the options copy. Layouts allow about 40% longer translations; badge text truncates and keeps the full message in `title`.
     - `badge.ts` sets a `title` with the first 200 characters of the notes.
     - Display language (user decision 2026-10-20, after spike 2 (item states)): GetItems runs in the page's language. Badge tooltips and the banner show the developer's own translation where one exists, with no extra banner call. Detection does not change, because the set of disclosing apps is the same in every language (spike 2, item states). The cached verdict keeps the language its notes came in; when it differs from the page's, the banner re-fetches that one app, and badge tooltips keep the cached text until the entry expires. The HTML fallback still fetches `?l=english`, because it matches the English heading; its notes stay English.

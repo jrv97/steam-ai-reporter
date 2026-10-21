@@ -188,7 +188,7 @@ Fixtures: everything under `tests/fixtures/app-page/`.
 
 ## Proposed plan changes
 
-The main session decides; each item names the plan section it touches.
+Each item names the plan section it touches.
 
 1. Step 5, parser: key results by `id`, dedupe IDs before the call, and treat `x-eresult != 1` (readable cross-origin) or a missing `store_items` as a batch error.
 2. Step 9, host finding: replace "highest ancestor, at most 8 levels" with "lowest ancestor that contains an `img` or an inline `background-image`, then at most 3 more levels while every link names the same app; drop a host nested in another host of the same app". Do not skip `[data-featuretarget="store-menu-v7"]` wholesale (it hosts the search suggestions); the image test drops navigation links.

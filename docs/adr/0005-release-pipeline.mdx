@@ -46,7 +46,7 @@ Chosen option 1, following that release train as adapted in [rq1-prior-art](../r
 - Chrome Web Store auth (OAuth refresh token or service account): replaced by [ADR 0007](0007-chrome-web-store-workload-identity.mdx). The research found no keyless option for any store. API v2 (2025-10-15) adds service accounts, which are not tied to a personal Google session; the refresh-token flow works with the CLI today and is the common pattern. Decision: start with an OAuth refresh token in the `chrome-web-store` environment, because it is the path `chrome-webstore-upload-cli` documents and the one with the most field use, and move to a service account when its use from GitHub Actions has been tried by hand (the research lists that test as unverified). Rotation is calendared.
 - Userscript URLs: `@updateURL` and `@downloadURL` point at `releases/latest/download/<slug>.meta.js` and `.user.js`. These URLs skip drafts and prereleases.
 
-Sequencing: the changie setup (`.changie.yaml`, `.changes/`) and the pull request changelog gate are being built early, in the toolchain step (plan step 4), by a parallel session, so that every pull request from then on carries a fragment. Everything else in this ADR (CalVer computation, the train, the nightly, prod promotion and the store credentials) stays in the release pipeline step (plan step 15).
+Sequencing: the changie setup (`.changie.yaml`, `.changes/`) and the pull request changelog gate are being built early, in the toolchain step (plan step 4), so that every pull request from then on carries a fragment. Everything else in this ADR (CalVer computation, the train, the nightly, prod promotion and the store credentials) stays in the release pipeline step (plan step 15).
 
 ### Consequences
 
