@@ -22,6 +22,7 @@ import tempfile
 import zipfile
 from pathlib import Path
 
+import cws
 from calver import next_version, parse, release_tags, utc_today
 from repo import (
     ARTIFACTS,
@@ -338,15 +339,16 @@ def require_env(*names: str) -> None:
 
 
 def chrome() -> None:
-    """Publish through chrome-webstore-upload-cli (API v2, OAuth refresh token).
+    """Submit the Chrome zip with a short-lived Workload Identity Federation token (ADR 0007).
 
-    The CLI reads EXTENSION_ID, PUBLISHER_ID, CLIENT_ID, CLIENT_SECRET and REFRESH_TOKEN.
+    It reads CWS_ACCESS_TOKEN, CWS_PUBLISHER_ID and CWS_EXTENSION_ID.
     """
-    require_env("EXTENSION_ID", "PUBLISHER_ID", "CLIENT_ID", "CLIENT_SECRET", "REFRESH_TOKEN")
+    require_env("CWS_ACCESS_TOKEN", "CWS_PUBLISHER_ID", "CWS_EXTENSION_ID")
     version = release_tag()
     archive = promoted_zip(version, "chrome")
-    print(run("chrome-webstore-upload", "--source", str(archive)))
-    summary(f"Uploaded and submitted {archive.name} to the Chrome Web Store.")
+    call = cws.http_call(env("CWS_ACCESS_TOKEN"))
+    state = cws.publish(call, env("CWS_PUBLISHER_ID"), env("CWS_EXTENSION_ID"), archive)
+    summary(f"Submitted {archive.name} to the Chrome Web Store for review (state {state}).")
 
 
 def amo() -> None:
