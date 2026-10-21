@@ -31,7 +31,7 @@ Chosen option 1.
 
 A Google Cloud service account with no IAM roles is added under Account in the Chrome Web Store developer dashboard. A publisher can register one service account.
 
-A workload identity pool has a GitHub OIDC provider. Its attribute condition admits a token only when `repository_id` is `1426952065` (`jrv97/steam-ai-reporter`), `ref` starts with `refs/tags/`, and `environment` is `chrome-web-store`. Principals from that provider hold `roles/iam.workloadIdentityUser` on the service account.
+A workload identity pool has a GitHub OIDC provider that maps `google.subject` to the token's `sub`. Its attribute condition admits a token only when `repository_id` is `1426952065` (`jrv97/steam-ai-reporter`), `ref` starts with `refs/tags/`, and `environment` is `chrome-web-store`. Only the subject `repo:jrv97/steam-ai-reporter:environment:chrome-web-store` holds `roles/iam.workloadIdentityUser` on the service account.
 
 The Chrome job asks for `id-token: write`. `google-github-actions/auth` 3.0.0 exchanges the GitHub OIDC token for an access token that lasts 15 minutes, with the Chrome Web Store scope, and writes no credentials file.
 
