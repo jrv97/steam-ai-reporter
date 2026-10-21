@@ -60,8 +60,8 @@
     "description": "Value of that row, in a violet chip that jumps to the notice. The developer reported AI use on Steam's form; never say the game uses AI. One line; truncates past about 30 characters."
   },
   "badge_card_title": {
-    "message": "Discloses AI use",
-    "description": "Heading of the small panel that opens over a badge and quotes the developer's text. Say \"discloses\"; never say the game uses AI."
+    "message": "AI use disclosed",
+    "description": "Heading of the small panel that opens over a badge and quotes the developer's text. Say that the use was disclosed; never say the game uses AI."
   },
   "badge_card_source": {
     "message": "In the developer's own words:",
