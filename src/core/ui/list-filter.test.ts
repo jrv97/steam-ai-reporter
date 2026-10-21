@@ -85,22 +85,32 @@ describe("applyListFilter", () => {
 
   it("dims disclosed hosts through the page CSS alone", () => {
     const { disclosed, fixed, other } = styled("dim");
-    expect(disclosed.opacity).toBe("0.4");
-    expect(fixed.opacity).toBe("0.4");
-    expect(other.opacity).not.toBe("0.4");
+    expect(disclosed.filter).toBe("opacity(0.4)");
+    expect(fixed.filter).toBe("opacity(0.4)");
+    expect(other.filter).not.toBe("opacity(0.4)");
+  });
+
+  it("keeps a host the store hides with opacity 0 hidden when dimming", () => {
+    adoptStyles(document, TOKENS_CSS + PAGE_CSS);
+    applyListFilter(document.documentElement, "dim");
+    const slide = host();
+    slide.setAttribute("style", "opacity: 0");
+    createHostStateRenderer().render(view(slide, { hideable: false }));
+    expect(getComputedStyle(slide).opacity).toBe("0");
+    expect(getComputedStyle(slide).filter).toBe("opacity(0.4)");
   });
 
   it("hides disclosed hosts, and dims those that must not be hidden", () => {
     const { disclosed, fixed, other } = styled("hide");
     expect(disclosed.display).toBe("none");
     expect(fixed.display).not.toBe("none");
-    expect(fixed.opacity).toBe("0.4");
+    expect(fixed.filter).toBe("opacity(0.4)");
     expect(other.display).not.toBe("none");
   });
 
   it("leaves hosts alone when the filter is off", () => {
     const { disclosed } = styled("off");
     expect(disclosed.display).not.toBe("none");
-    expect(disclosed.opacity).not.toBe("0.4");
+    expect(disclosed.filter).not.toBe("opacity(0.4)");
   });
 });

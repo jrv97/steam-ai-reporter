@@ -58,7 +58,7 @@ function hostElements(): readonly Element[] {
 }
 
 describe("per-surface hosts", () => {
-  it("search: each result row, badge on the line under the title", async () => {
+  it("search: each result row, badge right after the title", async () => {
     loadPage(SURFACES.search);
     await startScanner();
     const rows = [...document.querySelectorAll("a.search_result_row")];
@@ -70,7 +70,7 @@ describe("per-surface hosts", () => {
       ),
     );
     for (const host of found()) {
-      expect(host.anchor).toBe(the(".search_platforms", host.element));
+      expect(host.anchor).toBe(the(".search_name .title", host.element));
     }
   });
 
@@ -118,6 +118,21 @@ describe("per-surface hosts", () => {
     expect(found()[3]?.anchor).toBe(the(".HeroCapsuleImageContainer"));
   });
 
+  it("next fest: one host per feed card, badge over its hero capsule, never hidden", async () => {
+    loadPage(SURFACES["next-fest"]);
+    await startScanner();
+    const cards = [...document.querySelectorAll(".LibraryAssetExpandedDisplay")];
+    const perCard = cards.map((card) => found().filter((host) => card.contains(host.element)));
+    expect(perCard.map((hosts) => hosts.length)).toStrictEqual([1, 1, 1]);
+    expect(mapping()).toStrictEqual(
+      [5053640, 4783070, 4631870].map((id) => [id, "hub-carousel"] as const),
+    );
+    for (const host of found()) {
+      expect(host.anchor).toBe(the(".HeroCapsuleImageContainer", host.element));
+      expect(host.element.getAttribute(HOST_HIDEABLE)).toBe("false");
+    }
+  });
+
   it("developer: each sale widget", async () => {
     loadPage(SURFACES.developer);
     await startScanner();
@@ -146,6 +161,26 @@ describe("per-surface hosts", () => {
     }
   });
 
+  it("wishlist: a row mounted before its title text keeps the wishlist placement", async () => {
+    loadPage(SURFACES.wishlist);
+    const [row] = document.querySelectorAll("[data-index]");
+    if (row === undefined) {
+      throw new TypeError();
+    }
+    for (const link of row.querySelectorAll("a[href*='/app/']")) {
+      if (link.querySelector("img") === null) {
+        link.replaceChildren();
+      } else {
+        link.remove();
+      }
+    }
+    const title = the("a[href*='/app/']", row);
+    await startScanner();
+    expect(found()[0]?.placement.id).toBe("wishlist-row");
+    expect(found()[0]?.anchor).toBe(title);
+    expect(row.getAttribute(HOST_HIDEABLE)).toBe("false");
+  });
+
   it("search suggestions in the header root get hosts; its navigation links do not", async () => {
     const popup = new DOMParser().parseFromString(SURFACES["search-suggestions"], "text/html");
     setBody(
@@ -166,6 +201,23 @@ describe("per-surface hosts", () => {
     ]);
     expect(found()[0]?.anchor.textContent).toBe("Combolands: Roguelike Citybuilder");
     expect(the("nav a").hasAttribute(HOST_APPID)).toBe(false);
+  });
+
+  it("discovery queue preview: badge on the first queued capsule, never hidden", async () => {
+    history.replaceState(null, "", "/explore/");
+    setBody(
+      `<div class="page_content_ctn discovery_queue_content_ctn"><div class="page_content">`
+        + `<h2>Your queue</h2><div class="discovery_queue_static">`
+        + `<a class="discovery_queue_overlay" href="/app/2121510/x/?queue=1">`
+        + `<div class="discovery_queue_overlay_message">Begin</div></a>`
+        + `<div class="discovery_queue"><div class="dq_item dq_static_pos_2"><img></div>`
+        + `<div class="dq_item dq_static_pos_3"><img></div></div></div></div></div>`,
+    );
+    await startScanner();
+    expect(hostElements()).toStrictEqual([the(".discovery_queue_content_ctn")]);
+    expect(mapping()).toStrictEqual([[2121510, "queue-preview"]]);
+    expect(found()[0]?.anchor).toBe(the(".dq_static_pos_2"));
+    expect(the(".discovery_queue_content_ctn").getAttribute(HOST_HIDEABLE)).toBe("false");
   });
 
   it("app page: DLC rows get hosts; links to the page's own app do not", async () => {
@@ -227,6 +279,20 @@ describe("host rule", () => {
     expect(hostElements()).toStrictEqual([the("div.other"), the("div.l3")]);
   });
 
+  it("does not join a tile that links to a package or an event", async () => {
+    setBody(
+      `<main><div class="other"><a href="/app/99/"><img></a></div>`
+        + `<div class="column"><div class="package"><a href="/sub/7/"><img></a></div>`
+        + `<div class="tile"><a href="/app/10/"><div class="box"><img></div></a></div>`
+        + `<div class="event"><a href="/news/app/10/view/1"><img></a></div></div></main>`,
+    );
+    await startScanner();
+    expect(mapping().filter(([id]) => id === 10)).toStrictEqual([[10, "generic"]]);
+    const host = found().find((candidate) => candidate.appId === 10);
+    expect(host?.element).toBe(the(".tile"));
+    expect(host?.anchor).toBe(the(".tile .box"));
+  });
+
   it("keeps one host when hosts of the same app nest", async () => {
     setBody(
       `<main><div class="x"><a href="/app/10/"><img></a></div>`
@@ -235,6 +301,22 @@ describe("host rule", () => {
     );
     await startScanner();
     expect(mapping().filter(([id]) => id === 20)).toHaveLength(1);
+  });
+
+  it("finds a React capsule whose image arrives inside its link after the scan", async () => {
+    loadPage(SURFACES["tag-hub"]);
+    const panel = the(".SaleSectionContainer ._1omVjlZWALGX34pum8v7SF");
+    const image = the(".CapsuleImageCtn img", panel);
+    image.remove();
+    setBody("<main></main>");
+    await startScanner();
+    the("main").append(panel);
+    await settle();
+    expect(hostElements()).toStrictEqual([panel]);
+    expect(found()[0]?.anchor).toBe(the(".CapsuleImageCtn", panel));
+    the(".CapsuleImageCtn", panel).append(image);
+    await settle();
+    expect(found()).toHaveLength(1);
   });
 });
 
@@ -347,6 +429,46 @@ describe("observing", () => {
     ]);
     expect(host.querySelectorAll(".sar-badge")).toHaveLength(1);
     expect(the(".sar-badge", host).parentElement).toBe(the(".CapsuleImageCtn", host));
+  });
+
+  it("resets a host reused for another app and finds the new app's host", async () => {
+    setBody(
+      `<main><div class="other"><a href="/app/99/"><img></a></div>`
+        + `<div class="slot"><div class="slide"><a href="/app/10/"><img></a>`
+        + `<a href="/app/10/">Ten</a></div></div></main>`,
+    );
+    await startScanner({ badges: true });
+    const slot = the(".slot");
+    expect(slot.getAttribute(HOST_APPID)).toBe("10");
+    the(".slide", slot).replaceWith(
+      ...nodes(
+        `<div class="slide"><a href="/app/20/"><img></a><a href="/app/20/">Twenty</a></div>`,
+      ),
+    );
+    await settle();
+    expect(renderer.batches.at(-1)?.changed).toStrictEqual([]);
+    expect(renderer.batches.at(-1)?.found.map((host) => [host.element, host.appId])).toStrictEqual([
+      [slot, 20],
+    ]);
+    expect(slot.getAttribute(HOST_APPID)).toBe("20");
+    expect(slot.querySelectorAll(`[${HOST_APPID}]`)).toHaveLength(0);
+    expect(slot.querySelectorAll(".sar-badge")).toHaveLength(1);
+  });
+
+  it("finds a capsule whose image arrives inside its link after the scan", async () => {
+    setBody(`<main><div class="other"><a href="/app/99/"><img></a></div></main>`);
+    await startScanner();
+    the("main").append(
+      ...nodes(`<div class="card"><a href="/app/30/"><div class="box"></div></a></div>`),
+    );
+    await settle();
+    expect(mapping()).toStrictEqual([[99, "generic"]]);
+    the(".box").append(document.createElement("img"));
+    await settle();
+    expect(mapping()).toStrictEqual([[99, "generic"], [30, "generic"]]);
+    expect(renderer.batches.at(-1)?.found.map((host) => host.element)).toStrictEqual([
+      the(".card"),
+    ]);
   });
 
   it("gives a carousel clone its own host and removes the copied badge", async () => {

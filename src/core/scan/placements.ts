@@ -27,13 +27,10 @@ export interface OverlayPlacement extends PlacementBase {
   readonly slot: "overlay";
 }
 
-/**
- * A full badge in a row with room for words: `first-child` makes it the anchor's first child,
- * `after` its next sibling.
- */
+/** A full badge in a row with room for words, placed as the anchor's next sibling. */
 export interface RowPlacement extends PlacementBase {
   readonly badge: "full";
-  readonly slot: "first-child" | "after";
+  readonly slot: "after";
 }
 
 export type Placement = OverlayPlacement | RowPlacement;
@@ -53,16 +50,6 @@ function hasText(element: Element): boolean {
   return element.textContent.trim() !== "";
 }
 
-/** The host's first app link that shows text and no image: the title link of a React row. */
-export const titleLink: AnchorRule = (host) => {
-  for (const link of host.querySelectorAll(LINK_CANDIDATE)) {
-    if (firstImage(link) === undefined && hasText(link)) {
-      return link;
-    }
-  }
-  return undefined;
-};
-
 /** The host's first element without child elements that shows text: a row's title line. */
 export const firstTextLeaf: AnchorRule = (host) => {
   for (const element of host.querySelectorAll("*")) {
@@ -73,11 +60,24 @@ export const firstTextLeaf: AnchorRule = (host) => {
   return undefined;
 };
 
-/** The wishlist row's title link, only when the host is a wishlist row (its drag ID says so). */
+/** The host's first app link without an image, even before its text arrives. */
+const imagelessLink: AnchorRule = (host) => {
+  for (const link of host.querySelectorAll(LINK_CANDIDATE)) {
+    if (firstImage(link) === undefined) {
+      return link;
+    }
+  }
+  return undefined;
+};
+
+/**
+ * The wishlist row's title link, only when the host is a wishlist row (its drag ID says so). A row
+ * mounts with empty links and fills them later, so the title link may still be empty here.
+ */
 const wishlistTitle: AnchorRule = (host) =>
   host.querySelector("[data-rfd-draggable-id^='WishlistItem-']") === null
     ? undefined
-    : titleLink(host);
+    : imagelessLink(host);
 
 /** The default: a compact badge over the capsule image of any host. */
 export const GENERIC: OverlayPlacement = {
@@ -92,13 +92,14 @@ export const GENERIC: OverlayPlacement = {
 /** Every placement, most specific first; the first whose host and anchor match wins. */
 export const PLACEMENTS: readonly Placement[] = [
   {
-    // Classic search rows: first child of the line under the title, which clips its overflow.
+    // Classic search rows: right after the title. The title line clips its overflow, so CSS
+    // turns it into a flex row where the title shrinks and the badge stays whole.
     id: "search-row",
     host: "a.search_result_row",
     hideable: true,
     badge: "full",
-    slot: "first-child",
-    anchor: inside(".search_platforms"),
+    slot: "after",
+    anchor: inside(".search_name .title"),
   },
   {
     // The virtualized React wishlist mounts and unmounts rows, so hiding would make it jump.
@@ -135,6 +136,16 @@ export const PLACEMENTS: readonly Placement[] = [
     badge: "compact",
     slot: "overlay",
     anchor: capsuleImage,
+  },
+  {
+    // The discovery queue preview: one overlay link names the first queued app over a stack of
+    // capsule images. The badge goes on that first capsule, and hiding would remove the queue.
+    id: "queue-preview",
+    host: ".discovery_queue_content_ctn",
+    hideable: false,
+    badge: "compact",
+    slot: "overlay",
+    anchor: inside(".dq_item"),
   },
   {
     // The large carousel capsule on React sale pages (tag, category and specials hubs).

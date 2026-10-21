@@ -4,7 +4,7 @@ import { disclosedVerdict, NOT_DISCLOSED } from "../../../tests/helpers/verdicts
 import { GENERIC, type Placement } from "../scan/placements";
 import type { CapsuleHost } from "../scan/renderer";
 import { type AppId, type Detector, toAppId, type Verdict } from "../types";
-import { createCapsuleUi } from "./capsules";
+import { createCapsuleUi, type SizeWatch } from "./capsules";
 import type { HostView } from "./host";
 
 const ROW: Placement = {
@@ -12,7 +12,7 @@ const ROW: Placement = {
   host: "*",
   hideable: false,
   badge: "full",
-  slot: "first-child",
+  slot: "after",
   anchor: (host) => host.firstElementChild ?? undefined,
 };
 
@@ -36,12 +36,18 @@ function setup(verdicts: ReadonlyMap<AppId, Verdict>, allowed = new Set<AppId>()
   const detector: Detector = { detect };
   const views: HostView[] = [];
   const frames: (() => void)[] = [];
+  const watched = new Set<Element>();
+  let reportSized: (elements: readonly Element[]) => void = () => undefined;
   const ui = createCapsuleUi({
     document,
     detector,
     renderers: [{ render: (view) => views.push(view) }],
     isAllowed: (id) => allowed.has(id),
     frame: (callback) => frames.push(callback),
+    watchSize: (onSized): SizeWatch => {
+      reportSized = onSized;
+      return { observe: (element) => watched.add(element), unobserve: (e) => watched.delete(e) };
+    },
   });
   const flush = async () => {
     await Promise.resolve();
@@ -50,7 +56,10 @@ function setup(verdicts: ReadonlyMap<AppId, Verdict>, allowed = new Set<AppId>()
       callback();
     }
   };
-  return { ui, detect, views, flush };
+  const sized = (elements: readonly Element[]) => {
+    reportSized(elements);
+  };
+  return { ui, detect, views, flush, watched, sized };
 }
 
 function host(id: number, placement: Placement = ROW): CapsuleHost {
@@ -74,7 +83,7 @@ describe("createCapsuleUi", () => {
     await flush();
     expect(detect).toHaveBeenCalledTimes(1);
     expect(views).toHaveLength(1);
-    expect(views[0]?.slot).toEqual({ kind: "full", anchor: found.anchor, position: "afterbegin" });
+    expect(views[0]?.slot).toEqual({ kind: "full", anchor: found.anchor, position: "afterend" });
     expect(views[0]?.hideable).toBe(false);
   });
 
@@ -103,6 +112,55 @@ describe("createCapsuleUi", () => {
     ui.render({ found: [found], changed: [] });
     await flush();
     expect(views[0]?.slot).toBeUndefined();
+  });
+
+  it("watches an image box with no size until a compact badge fits, then draws it", async () => {
+    const id = appId(13);
+    const { ui, detect, views, flush, watched, sized } = setup(
+      new Map([[id, disclosedVerdict()]]),
+    );
+    const found = host(13, {
+      ...GENERIC,
+      anchor: (element) => element.querySelector(".art") ?? undefined,
+    });
+    const box = vi.spyOn(found.anchor, "getBoundingClientRect");
+    box.mockReturnValue(new DOMRect(0, 0, 0, 0));
+    ui.render({ found: [found], changed: [] });
+    await flush();
+    expect(views[0]?.slot).toBeUndefined();
+    expect([...watched]).toEqual([found.anchor]);
+    box.mockReturnValue(new DOMRect(0, 0, 1, 75));
+    sized([found.anchor]);
+    await flush();
+    expect(views[1]?.slot).toBeUndefined();
+    expect([...watched]).toEqual([found.anchor]);
+    box.mockReturnValue(new DOMRect(0, 0, 231, 87));
+    sized([found.anchor]);
+    await flush();
+    expect(views[2]?.slot).toMatchObject({ kind: "compact", size: "text" });
+    expect(watched.size).toBe(0);
+    expect(detect).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not watch a small image that has a size, nor a host without a badge", async () => {
+    const { ui, flush, watched } = setup(
+      new Map<AppId, Verdict>([[appId(14), disclosedVerdict()], [appId(15), NOT_DISCLOSED]]),
+    );
+    const small = host(14, {
+      ...GENERIC,
+      anchor: (element) => element.querySelector(".art") ?? undefined,
+    });
+    vi.spyOn(small.anchor, "getBoundingClientRect").mockReturnValue(new DOMRect(0, 0, 120, 45));
+    ui.render({ found: [small], changed: [] });
+    await flush();
+    const hidden = host(15, {
+      ...GENERIC,
+      anchor: (element) => element.querySelector(".art") ?? undefined,
+    });
+    vi.spyOn(hidden.anchor, "getBoundingClientRect").mockReturnValue(new DOMRect(0, 0, 0, 0));
+    ui.render({ found: [hidden], changed: [] });
+    await flush();
+    expect(watched.size).toBe(0);
   });
 
   it("draws a changed host again from its known verdict, without a new detection", async () => {

@@ -1,6 +1,13 @@
 import type { AppId } from "../types";
 import { appIdFromHref } from "./appid";
-import { DATA_CANDIDATE, LINK_CANDIDATE, namingOf, SKIPPED } from "./candidates";
+import {
+  ANY_CANDIDATE,
+  DATA_CANDIDATE,
+  LINK_CANDIDATE,
+  namesApp,
+  namingOf,
+  SKIPPED,
+} from "./candidates";
 import { createHostFinder } from "./hosts";
 import { HOST_APPID, HOST_HIDEABLE, HOST_STATE, isInSarNode, isSarNode, SAR_NODE } from "./marks";
 import { placeHost, type Placement, PLACEMENTS } from "./placements";
@@ -47,7 +54,7 @@ interface HostRecord {
 interface ScanPlan {
   readonly found: CapsuleHost[];
   readonly changed: CapsuleHost[];
-  /** Elements carrying our marks that we did not mark: carousel clones or a previous instance. */
+  /** Marked elements to reset: clones, old instance hosts, hosts reused for another app. */
   readonly stale: Element[];
   readonly report: ScanReport;
 }
@@ -116,10 +123,17 @@ export function createScanner(options: ScannerOptions): Scanner {
   }
 
   /** The known host that is `element` or encloses it, for `appId` or for any app. */
-  function knownHostAround(element: Element, appId?: AppId): Element | undefined {
+  function knownHostAround(
+    element: Element,
+    appId?: AppId,
+    replaced: ReadonlySet<Element> = new Set(),
+  ): Element | undefined {
     for (let node: Element | null = element; node !== null; node = node.parentElement) {
       const record = hosts.get(node);
-      if (record !== undefined && (appId === undefined || record.appId === appId)) {
+      if (
+        record !== undefined && !replaced.has(node)
+        && (appId === undefined || record.appId === appId)
+      ) {
         return node;
       }
     }
@@ -127,9 +141,9 @@ export function createScanner(options: ScannerOptions): Scanner {
   }
 
   /** Whether `host` holds a known host of the same app, which then stays the host. */
-  function holdsKnownHost(host: Element, appId: AppId): boolean {
+  function holdsKnownHost(host: Element, appId: AppId, replaced: ReadonlySet<Element>): boolean {
     for (const marked of host.querySelectorAll(`[${HOST_APPID}='${String(appId)}']`)) {
-      if (hosts.get(marked)?.appId === appId) {
+      if (hosts.get(marked)?.appId === appId && !replaced.has(marked)) {
         return true;
       }
     }
@@ -143,11 +157,15 @@ export function createScanner(options: ScannerOptions): Scanner {
     const candidates = new Set<Element>();
     const changedHosts = new Set<Element>();
     const stale: Element[] = [];
+    for (const root of roots) {
+      // A root added inside an app link (an image that arrives late) makes that link a candidate.
+      const around = root.closest(ANY_CANDIDATE);
+      if (around !== null) {
+        candidates.add(around);
+      }
+    }
     for (const selector of [DATA_CANDIDATE, LINK_CANDIDATE]) {
       for (const root of roots) {
-        if (root.matches(selector)) {
-          candidates.add(root);
-        }
         for (const element of root.querySelectorAll(selector)) {
           candidates.add(element);
         }
@@ -167,6 +185,18 @@ export function createScanner(options: ScannerOptions): Scanner {
         }
       }
     }
+    // A host that no longer names its app was reused for other content, as carousel slides are.
+    const replaced = new Set<Element>();
+    for (const element of changedHosts) {
+      const record = hosts.get(element);
+      if (record !== undefined && !namesApp(element, record.appId, base)) {
+        replaced.add(element);
+        stale.push(element);
+      }
+    }
+    for (const element of replaced) {
+      changedHosts.delete(element);
+    }
 
     const fresh = new Map<Element, AppId>();
     let checked = 0;
@@ -180,7 +210,7 @@ export function createScanner(options: ScannerOptions): Scanner {
       if (host === undefined || fresh.has(host)) {
         continue;
       }
-      const known = knownHostAround(host, appId);
+      const known = knownHostAround(host, appId, replaced);
       if (known !== undefined) {
         if (kind === "added") {
           changedHosts.add(known);
@@ -192,7 +222,7 @@ export function createScanner(options: ScannerOptions): Scanner {
 
     const found: CapsuleHost[] = [];
     for (const [element, appId] of fresh) {
-      if (enclosedByFresh(element, appId, fresh) || holdsKnownHost(element, appId)) {
+      if (enclosedByFresh(element, appId, fresh) || holdsKnownHost(element, appId, replaced)) {
         continue;
       }
       const placed = placeHost(element, placements);
@@ -220,6 +250,7 @@ export function createScanner(options: ScannerOptions): Scanner {
 
   function write(plan: ScanPlan): void {
     for (const element of plan.stale) {
+      hosts.delete(element);
       element.removeAttribute(HOST_APPID);
       element.removeAttribute(HOST_STATE);
       element.removeAttribute(HOST_HIDEABLE);
