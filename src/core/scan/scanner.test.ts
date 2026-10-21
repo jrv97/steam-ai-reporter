@@ -471,6 +471,26 @@ describe("observing", () => {
     ]);
   });
 
+  it("keeps the badge in place when the store adds a hover popup inside the host", async () => {
+    loadPage(SURFACES["tag-hub"]);
+    await startScanner({ badges: true });
+    const host = the(".capsule_index_0");
+    const box = the(".CapsuleImageCtn", host);
+    expect(box.querySelectorAll(".sar-badge")).toHaveLength(1);
+    const popup = nodes(
+      `<div class="popup" style="position: fixed"><a href="/app/632360/"><div class="art">`
+        + `<img></div></a></div>`,
+    );
+    the(".ImpressionTrackedElement", host).prepend(...popup);
+    await settle();
+    expect(renderer.batches.at(-1)?.changed.map((changed) => changed.anchor)).toStrictEqual([box]);
+    expect(box.querySelectorAll(".sar-badge")).toHaveLength(1);
+    expect(the(".popup", host).querySelectorAll(".sar-badge")).toHaveLength(0);
+    the(".popup", host).remove();
+    await settle();
+    expect(box.querySelectorAll(".sar-badge")).toHaveLength(1);
+  });
+
   it("gives a carousel clone its own host and removes the copied badge", async () => {
     loadPage(SURFACES.home);
     await startScanner({ badges: true });
