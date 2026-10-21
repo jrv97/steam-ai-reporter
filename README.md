@@ -12,6 +12,8 @@ Steam Next Fest is, I kid you not, one of my favorite times of the year. I try t
 
 I couldn't find an extension that covered every corner of the store and let me preview and review a developer's disclosure right from the list, without opening the game's page. So I built one. I know this is "querer ponerle puertas al campo" (trying to put doors on an open field), but it's the best I can do, and more importantly, it's fun :)
 
+If you browse the store the same way, I hope you find it useful too.
+
 ## What it does
 
 - Adds a badge to capsules and rows (search, wishlist, home, tag and category hubs, sale pages such as Next Fest, developer and publisher pages, the discovery queue, search suggestions) for items where the developer filled in the AI disclosure.
