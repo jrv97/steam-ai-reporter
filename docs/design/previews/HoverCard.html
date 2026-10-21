@@ -57,11 +57,16 @@
       <p class="sar-hovercard-notes" id="n3"></p>
       <p class="sar-hovercard-service">Servicio de IA nombrado por el desarrollador:
         <span class="sar-hovercard-service-name">Stable Diffusion</span></p>
-      <p class="sar-hovercard-more">El texto completo est&aacute; en la p&aacute;gina de la
+      <p class="sar-hovercard-more">El texto completo est&#225; en la p&#225;gina de la
         tienda del juego.</p>
     </div>
   </div>
 </div>
+<!-- Spanish notes, one line each, with accents as character references -->
+<template id="n3-lines">
+  <span>Usamos IA generativa para crear algunas texturas del entorno.</span>
+  <span>Todo el arte de personajes y la m&#250;sica se hicieron a mano.</span>
+</template>
 <script>
   // Sample notes, set here because pre-line would show source line breaks
   document.getElementById("n1").textContent =
@@ -73,9 +78,8 @@
     "narrative text during gameplay in response to predefined player choices, combat " +
     "outcomes, character conditions, and equipment selections. All pre-generated " +
     "assets were reviewed and selected by the developer before being included.";
-  document.getElementById("n3").textContent =
-    "Usamos IA generativa para crear algunas texturas del entorno.\n" +
-    "Todo el arte de personajes se hizo a mano.";
+  const lines = document.getElementById("n3-lines").content.children;
+  document.getElementById("n3").textContent = [...lines].map((line) => line.textContent).join("\n");
 </script>
 </body>
 </html>
