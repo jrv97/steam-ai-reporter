@@ -27,13 +27,10 @@ export interface OverlayPlacement extends PlacementBase {
   readonly slot: "overlay";
 }
 
-/**
- * A full badge in a row with room for words: `last-child` makes it the anchor's last child,
- * `after` its next sibling.
- */
+/** A full badge in a row with room for words, placed as the anchor's next sibling. */
 export interface RowPlacement extends PlacementBase {
   readonly badge: "full";
-  readonly slot: "last-child" | "after";
+  readonly slot: "after";
 }
 
 export type Placement = OverlayPlacement | RowPlacement;
@@ -95,14 +92,14 @@ export const GENERIC: OverlayPlacement = {
 /** Every placement, most specific first; the first whose host and anchor match wins. */
 export const PLACEMENTS: readonly Placement[] = [
   {
-    // Classic search rows: after the platform icons on the line under the title, which clips its
-    // overflow. The icons keep their place, so they stay aligned from row to row.
+    // Classic search rows: right after the title. The title line clips its overflow, so CSS
+    // turns it into a flex row where the title shrinks and the badge stays whole.
     id: "search-row",
     host: "a.search_result_row",
     hideable: true,
     badge: "full",
-    slot: "last-child",
-    anchor: inside(".search_platforms"),
+    slot: "after",
+    anchor: inside(".search_name .title"),
   },
   {
     // The virtualized React wishlist mounts and unmounts rows, so hiding would make it jump.

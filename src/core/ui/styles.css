@@ -61,10 +61,22 @@
   white-space: nowrap;
 }
 
-/* Search rows: last item in the platform line, after the icons */
-.search_platforms > .sar-badge {
+/* Search rows: right after the title. On a disclosed row the one-line title box becomes a flex
+   row, so a long title ends in an ellipsis and the badge stays visible. */
+.search_result_row[data-sar-state="disclosed"] .search_name {
+  display: flex;
+  align-items: center;
+}
+
+.search_result_row[data-sar-state="disclosed"] .search_name > .title {
+  min-inline-size: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.search_name > .sar-badge {
   margin-inline-start: var(--sar-space-2);
-  flex-shrink: 1;
 }
 
 /* Compact badge: mirrors the store's corner flags, at the inline-end corner */

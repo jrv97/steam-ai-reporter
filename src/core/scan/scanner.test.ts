@@ -58,7 +58,7 @@ function hostElements(): readonly Element[] {
 }
 
 describe("per-surface hosts", () => {
-  it("search: each result row, badge on the line under the title", async () => {
+  it("search: each result row, badge right after the title", async () => {
     loadPage(SURFACES.search);
     await startScanner();
     const rows = [...document.querySelectorAll("a.search_result_row")];
@@ -70,7 +70,7 @@ describe("per-surface hosts", () => {
       ),
     );
     for (const host of found()) {
-      expect(host.anchor).toBe(the(".search_platforms", host.element));
+      expect(host.anchor).toBe(the(".search_name .title", host.element));
     }
   });
 

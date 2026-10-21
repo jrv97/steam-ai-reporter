@@ -159,7 +159,7 @@ Built like the store's own tag chips, in our hue.
 
 ### Placement
 
-- Search rows: last child of the line under the title, after the platform icons, with `margin-inline-start: sar-space-2`, allowed to shrink. The icons keep their place, so they line up from row to row. Never after the title: that line clips with `overflow: hidden`.
+- Search rows: directly after the title, with `margin-inline-start: sar-space-2`, keeping its full size. The title line clips with `overflow: hidden`, so on a disclosed row it becomes a flex row: the title shrinks and ends in an ellipsis, and the badge stays visible. The platform icons below keep their place.
 - Wishlist rows: directly after the title element, `margin-inline-start: sar-space-2`. The exact anchor is unverified until the surface spike.
 - Any other row: after the title, never before it, so titles stay aligned.
 
