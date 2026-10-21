@@ -61,7 +61,7 @@
   },
   "badge_card_title": {
     "message": "AI use disclosed",
-    "description": "Heading of the small panel that opens over a badge and quotes the developer's text. Say that the use was disclosed; never say the game uses AI."
+    "description": "Heading of the hover card on a badge. It never truncates, so the full phrase fits. Say that the use was disclosed; never say the game uses AI."
   },
   "badge_card_source": {
     "message": "In the developer's own words:",
