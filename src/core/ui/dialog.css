@@ -1,0 +1,54 @@
+/*
+ * Userscript settings dialog (components.mdx section 13): a native dialog in a shadow root, 400px
+ * wide, over the settings form. Tokens inherit from the store page's :root; the form's own rules
+ * come from SETTINGS_CSS in the same shadow root.
+ */
+
+dialog {
+  box-sizing: border-box;
+  inline-size: min(400px, calc(100vw - var(--sar-space-6)));
+  max-block-size: calc(100vh - var(--sar-space-6));
+  margin: auto;
+  padding: 0;
+  border: 1px solid var(--sar-color-border);
+  border-radius: var(--sar-radius-lg);
+  background: var(--sar-color-bg-panel);
+  color: var(--sar-color-text);
+  overflow: auto;
+  color-scheme: dark;
+}
+
+dialog::backdrop {
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.sar-dialog-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sar-space-3);
+  padding-block: var(--sar-space-3);
+  padding-inline: var(--sar-space-4);
+  border-block-end: 1px solid var(--sar-color-divider);
+}
+
+.sar-dialog-title {
+  margin: 0;
+  color: var(--sar-color-text-strong);
+  font: var(--sar-weight-medium) var(--sar-size-xl) / var(--sar-leading-md) var(--sar-font-page);
+}
+
+/* The form sits flush: the dialog supplies the frame, the form the padding */
+.sar-dialog-body .sar-options[data-sar-context] {
+  inline-size: auto;
+  max-inline-size: none;
+}
+
+.sar-dialog-note {
+  margin: 0;
+  padding-block: var(--sar-space-3);
+  padding-inline: var(--sar-space-4);
+  color: var(--sar-color-text-subtle);
+  font-size: var(--sar-size-sm);
+  line-height: var(--sar-leading-sm);
+}

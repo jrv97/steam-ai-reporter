@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { adoptStyles, BANNER_CSS, PAGE_CSS, SETTINGS_CSS, TOKENS_CSS } from "./styles";
+import { adoptStyles, BANNER_CSS, DIALOG_CSS, PAGE_CSS, SETTINGS_CSS, TOKENS_CSS } from "./styles";
 
-const RULES = { PAGE_CSS, BANNER_CSS, SETTINGS_CSS };
+const RULES = { PAGE_CSS, BANNER_CSS, SETTINGS_CSS, DIALOG_CSS };
 const DEFINED = new Set(
   [...TOKENS_CSS.matchAll(/(--sar-[a-z0-9-]+)\s*:/g)].map((match) => match[1]),
 );
@@ -23,7 +23,8 @@ describe("generated stylesheets", () => {
   });
 
   it("inlines the shared rules", () => {
-    for (const css of Object.values(RULES)) {
+    // The dialog sits beside SETTINGS_CSS in its shadow root, which already carries them
+    for (const css of [PAGE_CSS, BANNER_CSS, SETTINGS_CSS]) {
       expect(css).toContain(".sar-vh {");
       expect(css).not.toContain("@import");
     }

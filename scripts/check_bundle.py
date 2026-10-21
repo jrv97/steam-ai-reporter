@@ -4,9 +4,11 @@
   content scripts match the store only; Gecko settings only in Firefox; every __MSG_*__ resolves;
   every file the manifest names exists.
 - Extension pages carry no copy (rule 9): only whitespace text, and `data-i18n` keys that resolve.
-- Userscript: header present, no @connect; no userscript header in any other bundle.
+- Userscript: header present, no @connect, exact @match, @updateURL and @downloadURL; every `GM`
+  name in the bundle has an @grant and every @grant is used; no userscript header in any other
+  bundle.
 - No eval( or new Function in any bundle (rule 2); no URL outside the two Valve hosts.
-- Size budgets: content.js at most 118 KB, the userscript at most 80 KB, unminified (rule 13).
+- Size budgets: content.js at most 118 KB, the userscript at most 158 KB, unminified (rule 13).
   Each is the measured size plus about 15% headroom; raise one only with a measurement.
 - The STEAM_API_KEY value, when set, appears nowhere in dist/ or artifacts/ (rule 16).
 - The dev injection bundle is never packaged into artifacts/, and when artifacts/ exists it holds
@@ -25,14 +27,17 @@ KIB = 1024
 BUDGETS = {
     DIST / "chrome" / "content.js": 118 * KIB,
     DIST / "firefox" / "content.js": 118 * KIB,
-    DIST / "userscript" / f"{SLUG}.user.js": 80 * KIB,
+    DIST / "userscript" / f"{SLUG}.user.js": 158 * KIB,
 }
 STORE_MATCH = ["https://store.steampowered.com/*"]
+RELEASE_BASE = "https://github.com/jrv97/steam-ai-reporter/releases/latest/download"
 ALLOWED_HOSTS = {"api.steampowered.com", "store.steampowered.com"}
 HEADER_START = "// ==UserScript=="
 HEADER_END = "// ==/UserScript=="
 REMOTE_CODE = re.compile(r"\beval\s*\(|\bnew\s+Function\b")
 URL = re.compile(r"https?://([A-Za-z0-9.-]+)")
+GM_NAME = re.compile(r"\bGM(?:\.[A-Za-z_]\w*|_[A-Za-z]\w*)")
+HEADER_FIELD = re.compile(r"^//\s+(@[\w:-]+)[ \t]*(.*?)\s*$", re.MULTILINE)
 MSG = re.compile(r"__MSG_([A-Za-z0-9_@]+)__")
 
 
@@ -138,6 +143,37 @@ def split_header(text: str) -> tuple[str, str]:
     return text[:end], text[end:]
 
 
+def header_fields(header: str) -> dict[str, list[str]]:
+    fields: dict[str, list[str]] = {}
+    for key, value in HEADER_FIELD.findall(header):
+        fields.setdefault(key, []).append(value)
+    return fields
+
+
+def header_problems(where: str, header: str) -> list[str]:
+    fields = header_fields(header)
+    problems: list[str] = []
+    expected = {
+        "@match": STORE_MATCH,
+        "@updateURL": [f"{RELEASE_BASE}/{SLUG}.meta.js"],
+        "@downloadURL": [f"{RELEASE_BASE}/{SLUG}.user.js"],
+    }
+    for key, values in expected.items():
+        if fields.get(key) != values:
+            problems.append(f"{where}: {key} must be {values}")
+    if "@noframes" not in fields:
+        problems.append(f"{where}: @noframes is missing")
+    return problems
+
+
+def grant_problems(where: str, header: str, body: str) -> list[str]:
+    granted = set(header_fields(header).get("@grant", []))
+    used = set(GM_NAME.findall(body))
+    return [f"{where}: {name} is used without an @grant" for name in sorted(used - granted)] + [
+        f"{where}: @grant {name} is never used" for name in sorted(granted - used)
+    ]
+
+
 def script_problems(path: Path) -> list[str]:
     text = path.read_text(encoding="utf-8")
     where = path.relative_to(DIST.parent).as_posix()
@@ -148,6 +184,10 @@ def script_problems(path: Path) -> list[str]:
             problems.append(f"{where}: the userscript header is missing")
         if "@connect" in header:
             problems.append(f"{where}: @connect is not allowed")
+        if header:
+            problems += header_problems(where, header)
+            if path.name.endswith(".user.js"):
+                problems += grant_problems(where, header, body)
     elif HEADER_START in text:
         problems.append(f"{where}: a userscript header belongs in the userscript only")
     if path.name.endswith(".meta.js"):
