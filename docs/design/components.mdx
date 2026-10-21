@@ -59,7 +59,7 @@ Every text pair meets WCAG 2.2 AA on the grounds its token's note names; see the
 - **Store pages:** the `page` family, which names the store's own "Motiva Sans" first. It is referenced by name only, never bundled; outside the store it falls back to Noto Sans or Arial.
 - **The summary box:** the `summary` family (Arial), like the store's own summary rows and tag chips there.
 - **Extension pages:** the `ext` family, a system UI stack. The store font is not available there.
-- Sizes follow the store's 11, 12, 13, 15, 18 and 24px steps, plus 14/21 for quoted notes, the size the store sets its own disclosure section in. The banner is set light (300), like the store's own notices, and its notes italic, like the store's disclosure section. Use the named styles: `sar-text-badge`, `sar-text-compact`, `sar-text-compact-lg`, `sar-text-banner-title`, `sar-text-banner-meta`, `sar-text-banner-quote`, `sar-text-banner-button`, `sar-text-banner-note` on store pages; `sar-text-options-title`, `sar-text-card-title`, `sar-text-body`, `sar-text-help` on extension pages.
+- Sizes follow the store's 11, 12, 13, 15, 18 and 24px steps, plus 14/21 for quoted notes, the size the store sets its own disclosure section in. The banner is set light (300), like the store's own notices, and its notes italic, like the store's disclosure section. Use the named styles: `sar-text-badge`, `sar-text-compact`, `sar-text-compact-lg`, `sar-text-banner-title`, `sar-text-banner-meta`, `sar-text-banner-quote`, `sar-text-banner-button`, `sar-text-banner-note` on store pages; `sar-text-options-title`, `sar-text-card-title`, `sar-text-popup-caption`, `sar-text-body`, `sar-text-help` on extension pages.
 - Never shrink type to fit a translation; truncate a badge or let the block wrap.
 
 ## Space, radius, layering
@@ -419,10 +419,10 @@ Preview: `previews/OptionsPage.html`.
 
 ### Layout
 
-- Page: centered, `sar-options-max-width` (640px), `sar-space-5` block and `sar-space-4` inline padding, `sar-color-bg-panel`, `color-scheme: dark`.
-- Popup: `sar-popup-width` (360px), `sar-space-4` by `sar-space-3` padding, short labels where a key exists, the allow-list scrolling inside 240px.
+- Page: centered, `sar-options-max-width` (640px), `sar-space-4` padding, `sar-color-bg-panel`, `color-scheme: dark`.
+- Popup: `sar-popup-width` (360px), `sar-space-3` padding, short labels where a key exists. Sections are flat, not cards: no fill, radius or inline padding, `sar-space-2` above and below, and a 1px `sar-color-divider` line between them. Section titles become captions in `sar-text-popup-caption` (11/16 medium, uppercase) and `sar-color-text-subtle`, like the store's own section labels. Rows take `sar-space-1` padding, the segmented control takes `sar-control-height-xs` (24px, the store's smallest control), and the allow-list scrolls inside 240px. An empty allow-list is left out of the popup; the full page keeps its empty state.
 - Font: the `ext` family (a system stack). The store font is not loaded on extension pages and none is bundled.
-- Sections are `.sar-card`: `sar-color-bg-raised`, `sar-radius-md`, `sar-space-4` padding, `sar-space-3` apart, titled in `sar-text-card-title`.
+- On the full page, sections are `.sar-card`: `sar-color-bg-raised`, `sar-radius-md`, `sar-space-3` padding, `sar-space-2` apart, titled in `sar-text-card-title` with `sar-space-2` below the title.
 - Header: the 32px icon (48px source), `ext_name` in `sar-text-options-title`, the version in `sar-color-text-subtle`.
 
 ### Sections, in order
@@ -431,7 +431,7 @@ Preview: `previews/OptionsPage.html`.
 2. On store pages: Switch `options_badges` (popup `options_badges_short`), Switch `options_banner`, each with help.
 3. In lists: a stacked SegmentedControl, Show, Dim, Hide (values `off`, `dim`, `hide`); the help follows the selection.
 4. Language (page only): a stacked Select, `Automatic` first, then each shipped locale named in its own language through `Intl.DisplayNames`.
-5. Games you stopped marking: the AllowList, newest first.
+5. Games you stopped marking: the AllowList, newest first. Left out of the popup while it is empty.
 6. Backup (page only): the Backup card, to download a file and restore from one.
 7. Privacy (page only): four bullets.
 8. Footer: `options_unaffiliated` in `sar-text-help`, subtle. The popup uses `options_unaffiliated_short` and adds an `options_all_settings` link.
@@ -601,7 +601,7 @@ Preview: `previews/AllowList.html`.
 
 - Items are a grid: name and date keep at least 40% of the row, the button wraps its text in the rest. `sar-color-divider` between items.
 - The name ends in an ellipsis; the date is `sar-text-help` in `sar-color-text-subtle`.
-- In the popup the list scrolls inside 240px.
+- In the popup the list scrolls inside 240px, rows take `sar-space-1` padding, and the whole section is left out while the list is empty. When the last game is marked again there, focus moves to the "In lists" caption.
 
 ## 12. Backup
 
@@ -683,6 +683,7 @@ One JSON file named `ai-reporter-backup-YYYY-MM-DD.json`, with a format version.
 
 - Help text in `sar-text-help` and `sar-color-text-subtle`.
 - Actions: a wrapping row of buttons, `sar-space-2` apart. Long labels wrap inside their buttons, and buttons drop to the next line when the row is too narrow.
+- The check's Restore and Cancel row sits on the right, Restore first, `sar-space-3` apart, like the store's own confirm dialogs (`.newmodal_buttons`: right-aligned, the confirm button first, 12px apart).
 - Summary: `sar-color-bg-sunken`, 1px `sar-color-border`, `sar-radius-md`, `sar-space-3` padding. Title in `sar-color-text-strong`, medium. Contents in `sar-color-text`. The note in `sar-text-help` and `sar-color-text-subtle`.
 - "Restore" is the one primary button in the product (`data-sar-variant="primary"`): it confirms the only action that overwrites settings.
 - The status line uses `sar-text-help` in `sar-color-text`. Errors use `.sar-field-error`.
@@ -980,6 +981,7 @@ WCAG 2.2 AA: 4.5:1 for text, 3:1 for non-text. Grounds are the store's own, samp
 | Focus ring `sar-accent-300` | store row hover | 4.45 |
 | Options body `sar-color-text` | raised | 10.07 |
 | Options help `sar-color-text-subtle` | raised | 5.20 |
+| Popup section caption `sar-color-text-subtle` | panel | 5.78 |
 | Options error `sar-color-error` | raised | 7.97 |
 | Options link `sar-accent-300` | raised | 6.98 |
 | Control edge `sar-color-border` | raised | 3.48 |

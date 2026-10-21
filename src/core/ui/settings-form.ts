@@ -386,6 +386,8 @@ export async function mountSettingsForm(
   }
 
   function renderAllowList(entries: ReadonlyMap<AppId, AllowEntry>): void {
+    // The popup has no room for an empty section; the full page keeps its empty state.
+    allow.hidden = context === "popup" && entries.size === 0;
     if (entries.size === 0) {
       allowBody.replaceChildren(
         element(
@@ -449,8 +451,10 @@ export async function mountSettingsForm(
       return;
     }
     await refreshAllowList();
+    // With the last game gone, the popup hides the section, so focus lands on the one above it
+    const section = allow.hidden === true ? lists : allow;
     const focus = nextId === null || nextId === undefined
-      ? allow.querySelector<HTMLElement>(".sar-card-title")
+      ? section.querySelector<HTMLElement>(".sar-card-title")
       : allowBody.querySelector<HTMLElement>(`[data-sar-restore="${nextId}"]`);
     focus?.focus();
     live.textContent = i18n.t("notice_marking_restored");
