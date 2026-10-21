@@ -162,6 +162,12 @@ url = "https://nodejs.org/dist/v24.14.0/node-v24.14.0-darwin-x64.tar.gz"
 checksum = "sha256:313fa40c0d7b18575821de8cb17483031fe07d95de5994f6f435f3b345f85c66"
 url = "https://nodejs.org/dist/v24.14.0/node-v24.14.0-win-x64.zip"
 
+[[tools."npm:chrome-webstore-upload-cli"]]
+version = "4.0.2"
+aube = { path = ".mise/locks/npm-chrome-webstore-upload-cli/4.0.2", digest = "sha256:bfd073dae7c6e4e4623687aca4d8c444dc0f41afbdaa6cfecee6391d3de875b1" }
+backend = "npm:chrome-webstore-upload-cli"
+specifiers = ["4.0.2"]
+
 [[tools."npm:web-ext"]]
 version = "10.8.0"
 aube = { path = ".mise/locks/npm-web-ext/10.8.0", digest = "sha256:7616da5ddf44ab0d6cc416aaa69c0f7affccf930dfb3748033ba51b7b7cd2cc1" }
