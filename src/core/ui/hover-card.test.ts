@@ -3,6 +3,7 @@ import { setBody } from "../../../tests/helpers/dom";
 import { englishI18n } from "../../../tests/helpers/i18n";
 import { disclosedVerdict } from "../../../tests/helpers/verdicts";
 import { createHoverCard, HOVER_CARD_ID, type HoverCard, placeCard } from "./hover-card";
+import { adoptPageStyles } from "./styles";
 
 const XSS = '<img src=x onerror="alert(1)"> art';
 /** The id of a description the store already set on a link. */
@@ -177,6 +178,21 @@ describe("createHoverCard", () => {
         Object.defineProperty(HTMLElement.prototype, "showPopover", saved);
       }
     }
+  });
+
+  it("keeps a closed card hidden through the reset, which unsets the popover's own rules", () => {
+    adoptPageStyles(document);
+    const { badge, other } = page();
+    start().bind(badge, disclosedVerdict());
+    pointerOver(badge);
+    flush();
+    const node = document.getElementById(HOVER_CARD_ID);
+    const style = node === null ? undefined : getComputedStyle(node);
+    expect([style?.display, style?.position]).toEqual(["flex", "fixed"]);
+    pointerOver(other);
+    flush();
+    expect(node?.hidden).toBe(true);
+    expect(node === null ? undefined : getComputedStyle(node).display).toBe("none");
   });
 
   it("renders notes with markup as plain text", () => {
