@@ -10,7 +10,7 @@ The extension only reads Steam's own disclosures and sends no reports anywhere.
 
 Steam Next Fest is, I kid you not, one of my favorite times of the year. I try the demos but never get to play as many as I'd like, and I still browse every corner of the fest and wishlist a bunch of games. Too often a game looks great until I find out it leans heavily on generative AI for its creative work, from gameplay design to art and music. For me personally, that is where I draw the line: creative work done with AI is a hard stop.
 
-I couldn't find an extension that covered every corner of the store and let me preview a developer's disclosure right from the list, then review it in full on the game's page. So I built one. I know this is "querer ponerle puertas al campo" (trying to put doors on an open field), but it's the best I can do, and more importantly, it's fun :)
+I couldn't find an extension that covered every corner of the store and let me preview and review a developer's disclosure right from the list, without opening the game's page. So I built one. I know this is "querer ponerle puertas al campo" (trying to put doors on an open field), but it's the best I can do, and more importantly, it's fun :)
 
 ## What it does
 
