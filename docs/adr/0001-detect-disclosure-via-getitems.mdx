@@ -8,64 +8,64 @@ decision-makers: Jorge Rodriguez de la Vega
 
 ## Context and problem statement
 
-The extension and the userscript mark Steam store items whose developers disclosed generative AI use. Each page can show dozens of items (a search page has 50 rows), and the signal must be read for every app ID on the page, in any store language, without sending anything to a server of ours. The disclosure is self-reported, so the signal means "the developer disclosed", never "uses AI" or "AI-free" (see [rq3-reliability](../research/steam-ai-disclosure/rq3-reliability.md)).
+The extension and the userscript mark Steam store items whose developers disclosed generative AI use. A page can show dozens of items (a search page has 50 rows). The signal must be read for every app ID on the page, in any store language, without sending anything to a server of the project's own. The disclosure is self-reported; the signal means "the developer disclosed", never "uses AI" or "AI-free" (see [rq3-reliability](../research/steam-ai-disclosure/rq3-reliability.md)).
 
 How should the core learn, for a set of app IDs, whether each one has a disclosure?
 
 ## Decision drivers
 
-- Request count: a 50-row page must not cost 50 requests, because rate limits are per IP and shared with the user's own browsing ([rq5-extension-constraints](../research/steam-ai-disclosure/rq5-extension-constraints.md)).
-- Resilience: Valve retranslates the disclosure heading (Russian in 2026-02, French in 2026-09), so detection must not depend on localized page text ([rq2-data-surface](../research/steam-ai-disclosure/rq2-data-surface.md)).
-- Privacy (project rule 1): app IDs may only reach Valve hosts the user is already on, always with `credentials: "omit"`. No seed lists, no analytics, no server of our own.
-- Honest semantics (rule 4): three states, and absence of evidence is never shown or stored as "not disclosed".
+- Request count: a 50-row page must cost far fewer than 50 requests, because rate limits are per IP and shared with ordinary browsing ([rq5-extension-constraints](../research/steam-ai-disclosure/rq5-extension-constraints.md)).
+- Resilience: Valve retranslates the disclosure heading (Russian in 2026-02, French in 2026-09); detection must not depend on localized page text ([rq2-data-surface](../research/steam-ai-disclosure/rq2-data-surface.md)).
+- Privacy (project rule 1): app IDs reach only the Valve hosts of the page being browsed, always with `credentials: "omit"`. No seed lists, no analytics, no server of the project's own.
+- Honest semantics (project rule 4): three states, and absence of evidence is never shown or stored as "not disclosed".
 - Coverage: every surface that carries an app ID, including pages whose app page is age-gated or adult-only.
 - Display: the developer's own words, in the page language where the developer translated them.
 
 ## Considered options
 
-1. **Batched `IStoreBrowseService/GetItems` with `include_extra_details`, plus an English HTML fallback** (chosen).
-2. **Per-app HTML scraping**, one page fetch per app with a localized heading table (the pattern of the prior-art extensions, see [rq4-prior-art](../research/steam-ai-disclosure/rq4-prior-art.md)).
-3. **A seed list** derived from SteamDB or its tag, shipped or downloaded, refreshed on a schedule.
-4. **English-only GetItems for detection, plus a second call in the store language for the banner.**
-5. **Query GetItems in English, and show English notes everywhere.**
+1. Batched `IStoreBrowseService/GetItems` with `include_extra_details`, plus an English HTML fallback (chosen).
+2. Per-app HTML scraping, one page fetch per app with a localized heading table (the pattern of the prior-art extensions, see [rq4-prior-art](../research/steam-ai-disclosure/rq4-prior-art.md)).
+3. A seed list derived from SteamDB or its tag, shipped or downloaded, refreshed on a schedule.
+4. English-only GetItems for detection, plus a second call in the store language for the banner.
+5. GetItems in English, with English notes everywhere.
 
 ## Decision outcome
 
-Chosen option 1. The core asks GetItems for batches of unseen app IDs and falls back to the app page only where the API leaves an ID unknown.
+Chosen option 1. The core asks GetItems for batches of unseen app IDs and falls back to the app page only for IDs the API leaves unknown.
 
-- **Primary source.** `GET https://api.steampowered.com/IStoreBrowseService/GetItems/v1` with `data_request.include_extra_details: true`. An app is **disclosed** when `success === 1` and `extra_details.content_survey_ai_notes` is non-empty after trimming whitespace, including `U+200B`. It is **not disclosed** when `success === 1` and `extra_details` is present without notes. Everything else is **unknown**. Results are keyed by the requested `id`, never by `appid`, which is `0` for an invalid item ([rq6, S2](../research/steam-ai-disclosure/rq6-verification-spikes.md)).
-- **Batching.** One request per batch of up to 50 unseen IDs, none for cached verdicts. IDs are deduplicated first, because the API does not merge duplicates. The practical ceiling is the URL length (250 IDs passed, 300 failed in [rq6, S1](../research/steam-ai-disclosure/rq6-verification-spikes.md)), so a batch whose encoded URL would exceed 4,000 characters is split further.
-- **Page language.** `context.language` is the page's Steam language, taken from `<html lang>` through one mapping table owned by core (the same table gives the `auto` locale in [ADR 0004](0004-i18n-message-catalogs.mdx)). A language outside the table falls back to `english`. S2 showed that the set of disclosing apps is identical in every language and that only the note text is translated, so detection does not change and the banner and tooltips show the developer's translation without a second call. The cached verdict keeps the language its notes came in; the banner re-fetches one app when that differs from the page.
-- **Fallback.** For IDs GetItems left unknown `missing`, at most 10 per page view, one at a time, 1 s apart, the core fetches `/app/<id>/?l=english` with `credentials: "omit"` and parses the English heading. Notes from this path are English. The parser reports unknown `gated` when the final URL is under `/agecheck/` or `/login/`, is not under `/app/<id>`, or the page has no `#appHubAppName` ([rq6, S7](../research/steam-ai-disclosure/rq6-verification-spikes.md)). It collects every `#game_area_content_descriptors` (the ID is duplicated by the mature content block) and matches the heading text `AI Generated Content Disclosure`, which is a detection constant and never displayed.
-- **No localized heading table, no seed lists.** The heading is matched in English only, on a page we asked for in English.
-- **Three states, neutral absence.** Not disclosed and unknown render nothing. Unknown is never persisted as not disclosed.
-- **Freshness (tunable constants, recorded here for context).** Disclosed 7 days, not disclosed 12 hours, unknown `gated` or `missing` 6 hours. `error` and `rate-limited` live in page memory only. Disclosures are added after launch far more often than removed ([rq3-reliability](../research/steam-ai-disclosure/rq3-reliability.md)), hence the long positive and short negative TTLs.
-- **Failure handling.** A 200 answer is a batch error when `x-eresult` is present and not `1`, or when `store_items` is missing although IDs were sent. A `TypeError` from `fetch` is treated like a 429, because Valve's error answers carry no CORS headers and so reach JavaScript as a bare `TypeError` (S1). One persisted circuit breaker backs off for 60 s plus up to 10 s of jitter.
+- Primary source: `GET https://api.steampowered.com/IStoreBrowseService/GetItems/v1` with `data_request.include_extra_details: true`. An app is disclosed when `success === 1` and `extra_details.content_survey_ai_notes` is non-empty after trimming whitespace, including `U+200B`. It is not disclosed when `success === 1` and `extra_details` is present without notes. Everything else is unknown. Results are keyed by the requested `id`, never by `appid`, which is `0` for an invalid item ([rq6, spike 2 (S2)](../research/steam-ai-disclosure/rq6-verification-spikes.md)).
+- Batching: one request per batch of up to 50 unseen IDs, none for cached verdicts. IDs are deduplicated first, because the API does not merge duplicates. The practical ceiling is the URL length (250 IDs passed and 300 failed in [rq6, spike 1 (S1)](../research/steam-ai-disclosure/rq6-verification-spikes.md)). A batch whose encoded URL would exceeds 4,000 characters is split further.
+- Page language: `context.language` is the page's Steam language, taken from `<html lang>` through one mapping table owned by core (the same table gives the `auto` locale in [ADR 0004 (i18n message catalogs)](0004-i18n-message-catalogs.mdx)). A language outside the table falls back to `english`. Spike 2 showed that the set of disclosing apps is identical in every language and that only the note text is translated. Detection stays the same, and the banner and tooltips show the developer's translation without a second call. The cached verdict keeps the language its notes came in; the banner re-fetches one app when that differs from the page.
+- Fallback: for IDs GetItems left unknown `missing`, at most 10 per page view, one at a time and 1 s apart, the core fetches `/app/<id>/?l=english` with `credentials: "omit"` and parses the English heading. Notes from this path are English. The parser reports unknown `gated` when the final URL is under `/agecheck/` or `/login/`, is not under `/app/<id>`, or the page has no `#appHubAppName` ([rq6, spike 7 (S7)](../research/steam-ai-disclosure/rq6-verification-spikes.md)). It collects every `#game_area_content_descriptors` (the ID is duplicated by the mature content block) and matches the heading text `AI Generated Content Disclosure`, a detection constant that is never displayed.
+- No localized heading table and no seed lists: the heading is matched in English only, on a page requested in English.
+- Three states with neutral absence: not disclosed and unknown render nothing. Unknown is never persisted as not disclosed.
+- Freshness (tunable constants, recorded here for context): disclosed 7 days, not disclosed 12 hours, unknown `gated` or `missing` 6 hours. `error` and `rate-limited` live in page memory only. Disclosures are added after launch far more often than removed ([rq3-reliability](../research/steam-ai-disclosure/rq3-reliability.md)), which explains the long positive and short negative TTLs.
+- Failure handling: a 200 answer is a batch error when `x-eresult` is present and not `1`, or when `store_items` is missing although IDs were sent. A `TypeError` from `fetch` is treated like a 429, because Valve's error answers carry no CORS headers and reach JavaScript as a bare `TypeError` (spike 1). One persisted circuit breaker backs off for 60 s plus up to 10 s of jitter.
 
 ### Consequences
 
 - Good: a 50-row search page costs one request of about 1 to 1.5 s, where per-app scraping costs about 50.
-- Good: detection survives Steam retranslating the heading, because it keys on an API field, not on localized text.
-- Good: the API answers for adult-only, delisted and age-gated apps cookie-less (S2), so the HTML fallback is rarely needed and gated pages are not a blind spot.
-- Good: the privacy surface is exactly two Valve hosts, cookie-less, and nothing else.
-- Bad: GetItems is not part of Valve's documented web API, so it may change without notice (`rq2-data-surface.md`). Mitigation: the HTML fallback, a live canary before every release, and the userscript as a fast-fix channel while store reviews are pending.
-- Bad: where the real rate limit lies is unknown (S1 never reached a 429), and a bare `TypeError` also opens the breaker after an ordinary network failure, costing a 60 s pause.
-- Bad: with the cache keeping notes in the language they were fetched in, a badge tooltip can show the previous language until the entry expires. The banner re-fetches; tooltips do not.
+- Good: detection survives Steam retranslating the heading, because it keys on an API field and ignores localized text.
+- Good: the API answers for adult-only, delisted and age-gated apps cookie-less (spike 2). The HTML fallback is rarely needed and gated pages are no blind spot.
+- Good: the privacy surface is two Valve hosts, cookie-less, and nothing else.
+- Bad: GetItems is not part of Valve's documented web API and may change without notice (`rq2-data-surface.md`). Mitigation: the HTML fallback, a live canary before every release, and the userscript as a fast-fix channel while store reviews are pending.
+- Bad: the real rate limit is unknown (spike 1 never reached a 429), and a bare `TypeError` also opens the breaker after an ordinary network failure, costing a 60 s pause.
+- Bad: the cache keeps notes in the language they were fetched in, so a badge tooltip can show the previous language until the entry expires. The banner re-fetches; tooltips do not.
 - Neutral: fallback notes are English even on a localized page.
 
 ## Pros and cons of the options
 
 ### 1. Batched GetItems with an English HTML fallback
 
-- Good: about one request per page; language-independent; verified first-hand (CORS from the store origin, 50 IDs in one call, duplicates confirmed, same-origin page fetch works).
-- Good: the fallback reuses the one thing the API cannot give us, the visible page, and needs no localized table.
+- Good: about one request per page and independent of language; verified first-hand (CORS from the store origin, 50 IDs in one call, duplicates confirmed, same-origin page fetch works).
+- Good: the fallback reuses the one thing the API cannot give, the visible page, and needs no localized table.
 - Bad: an undocumented endpoint (see consequences).
 
 ### 2. Per-app HTML scraping with a localized heading table
 
-- Good: reads exactly what users see; documented behavior of existing tools.
+- Good: reads exactly what users see; existing tools document the behavior.
 - Bad: about 50 requests per search page; the leading extension ships about 33 localized headings and broke when Steam retranslated them (Russian, French and Malay in 2026).
-- Bad: age-gated and adult-only pages redirect cookie-less, so every such app is a blind spot until a fallback exists anyway.
+- Bad: age-gated and adult-only pages redirect cookie-less, leaving every such app a blind spot until a fallback exists anyway.
 
 ### 3. A seed list
 
@@ -75,16 +75,16 @@ Chosen option 1. The core asks GetItems for batches of unseen app IDs and falls 
 
 ### 4. English GetItems plus a second call for the banner
 
-- Good: cached notes are always English, so one language in the cache.
-- Bad: an extra request on every app page, and tooltips stay English. S2 removed the reason for it: presence does not depend on the language.
+- Good: cached notes are always English, giving the cache one language.
+- Bad: an extra request on every app page, and tooltips stay English. Spike 2 removed the reason for it: presence does not depend on the language.
 
 ### 5. English everywhere
 
 - Good: simplest cache.
-- Bad: shows the developer's text in a language the developer may not have written, when a translation exists. Rejected for the same reason as option 4.
+- Bad: shows English text where the developer wrote a translation. Rejected for the same reason as option 4.
 
 ## More information
 
-- Evidence: [rq2-data-surface](../research/steam-ai-disclosure/rq2-data-surface.md), [rq6-verification-spikes](../research/steam-ai-disclosure/rq6-verification-spikes.md) (S1, S2, S7), [steam-ai-disclosure](../research/steam-ai-disclosure.md).
-- Related: [ADR 0003](0003-content-script-only-runtime.mdx) (where the request runs), [ADR 0004](0004-i18n-message-catalogs.mdx) (the language mapping).
+- Evidence: [rq2-data-surface](../research/steam-ai-disclosure/rq2-data-surface.md), [rq6-verification-spikes](../research/steam-ai-disclosure/rq6-verification-spikes.md) (spikes 1, 2 and 7), [steam-ai-disclosure](../research/steam-ai-disclosure.md).
+- Related: [ADR 0003 (content-script-only runtime)](0003-content-script-only-runtime.mdx) covers where the request runs; [ADR 0004 (i18n message catalogs)](0004-i18n-message-catalogs.mdx) covers the language mapping.
 - Revisit when the canary shows GetItems dropping `include_extra_details`, or when an actual 429 is observed and the real limit is known.

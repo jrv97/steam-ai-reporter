@@ -1,6 +1,6 @@
 # RQ7: Library and tooling study for v1
 
-Spike S8, 2026-10-20. Scope: one decision per row of the tooling table in `docs/plans/steam-ai-reporter-v1.md` ("Tooling decisions"), plus the mise backend for every pinned tool. All proofs ran on Windows 11 (16 cores, Node 24.20.0, Git for Windows 2.55.0, mise 2026.10.15) in a scratch folder outside the repo; versions are those on npm and in mise on 2026-10-20.
+Spike 8 (S8), 2026-10-20. Scope: one decision per row of the tooling table in `docs/plans/steam-ai-reporter-v1.md` ("Tooling decisions"), plus the mise backend for every pinned tool. All proofs ran on Windows 11 (16 cores, Node 24.20.0, Git for Windows 2.55.0, mise 2026.10.15) in a scratch folder outside the repo; versions are those on npm and in mise on 2026-10-20.
 
 ## Answer in short
 
@@ -23,13 +23,13 @@ Spike S8, 2026-10-20. Scope: one decision per row of the tooling table in `docs/
 
 ## 1. Bundling
 
-Options: esbuild CLI driven by `scripts/build.py` (default); WXT plus vite-plugin-monkey; plain Vite plus vite-plugin-monkey. The plan already weighs the framework options, so this section only confirms the default.
+Options: esbuild CLI driven by `scripts/build.py` (default); WXT plus vite-plugin-monkey; plain Vite plus vite-plugin-monkey. The plan weighs the framework options; this section confirms the default.
 
 Evidence:
 
 - esbuild 0.28.2 (published 2026-08-08, MIT) is the current release on npm [npm-esbuild]. The npm package is a 147 KB wrapper plus one platform binary package (`@esbuild/win32-x64` is 11.7 MB unpacked) and has no JavaScript dependencies. WXT 0.21.4 (2026-08-11) is still pre-1.0; Vite 8.3.4 and vite-plugin-monkey 8.1.1 are current [npm registry, queried 2026-10-20].
 - Proof (scratch `s8/val`): one CLI invocation `esbuild src/a.ts src/b.ts --bundle --format=iife --outdir=out1 --banner:js=<header> --target=es2022` emitted `a.js` and `b.js`, each an unminified IIFE that starts with the three-line `// ==UserScript==` banner. Build time 15 ms.
-- Two findings for `build.py`. First, `--banner` applies to every entry of an invocation, so the userscript (which needs the header) and the extension entries (which must not carry it) are two invocations, or one JavaScript API call per target. Second, an entry file with no `import` or `export` is wrapped in esbuild's `__commonJS` helper (the proof's `a.ts` grew to 480 bytes); composition roots always import, so this only bites trivial entries.
+- Two findings for `build.py`. First, `--banner` applies to every entry of an invocation; the userscript (which needs the header) and the extension entries (which must not carry it) therefore take two invocations, or one JavaScript API call per target. Second, an entry file with no `import` or `export` is wrapped in esbuild's `__commonJS` helper (the proof's `a.ts` grew to 480 bytes); composition roots always import, which limits this to trivial entries.
 - npm 11.19 (observed in the scratch installs) and pnpm 10+ block dependency install scripts by default. esbuild still works without its postinstall step because the wrapper resolves the platform package (proof: the scratch install skipped the postinstall and the CLI ran).
 
 Decision: keep esbuild 0.28.x, driven by `scripts/build.py`, as an npm devDependency pinned in `package.json` (the build invokes `node_modules/.bin/esbuild`).
@@ -44,13 +44,13 @@ Evidence:
 
 - TypeScript 7.0 (the Go port) is generally available: 7.0.2 was published 2026-07-08 and is the npm `latest` tag; 7.1 nightlies ship under `next` [npm-typescript] [ts7-blog]. The old `@typescript/native-preview` package stopped at `7.0.0-dev.20260707.2`, the day before GA [npm registry].
 - TypeScript 7.0 ships no programmatic API; a new API is planned for 7.1. Tools that import `typescript` (typescript-eslint, editor plugins for embedded languages) must keep using 6.0. Microsoft ships `@typescript/typescript6` (6.0.2, binary `tsc6`) and documents an alias layout: `"typescript": "npm:@typescript/typescript6@^6.0.2"` plus `"@typescript/native": "npm:typescript@^7.0.2"` [ts7-blog].
-- The announcement describes `--build` (with `--builders`), a rebuilt `--watch` and parallel project-reference builds, and lists no declaration-emit gap; v1 needs none of these because both configs run with `noEmit`. TypeScript 7 turns options deprecated in 6.0 into errors (`target: es5`, `baseUrl`, `moduleResolution: node`, AMD/UMD modules) and changes defaults: `strict: true`, `module: esnext`, `types: []`, `rootDir: ./`, `noUncheckedSideEffectImports: true` [ts7-blog]. None of the plan's flags is removed; the plan already sets `"types": []` on the core config.
-- typescript-eslint 8.72.0 (2026-10-19) declares the peer range `typescript >=4.8.4 <6.1.0` [npm registry, `npm view typescript-eslint peerDependencies`], so a project that runs typescript-eslint must have TypeScript 6.0 resolvable as `typescript`.
-- Proof (scratch `s8/lint`, 81 files with the plan's strict flags and `skipLibCheck: false`, 16 cores, Windows 11): `tsc` 6.0.3 took 838 to 856 ms; `tsc` 7.0.2 took 369 to 380 ms (three runs each). Both reported the same 120 errors. Exit codes differ when there are errors (6.0 exits 2, 7.0 exits 1), so scripts must test for non-zero, not for a specific code.
+- The announcement describes `--build` (with `--builders`), a rebuilt `--watch` and parallel project-reference builds, and lists no declaration-emit gap; v1 needs none of these because both configs run with `noEmit`. TypeScript 7 turns options deprecated in 6.0 into errors (`target: es5`, `baseUrl`, `moduleResolution: node`, AMD/UMD modules) and changes defaults: `strict: true`, `module: esnext`, `types: []`, `rootDir: ./`, `noUncheckedSideEffectImports: true` [ts7-blog]. None of the plan's flags is removed; the plan sets `"types": []` on the core config.
+- typescript-eslint 8.72.0 (2026-10-19) declares the peer range `typescript >=4.8.4 <6.1.0` [npm registry, `npm view typescript-eslint peerDependencies`]; a project that runs typescript-eslint must have TypeScript 6.0 resolvable as `typescript`.
+- Proof (scratch `s8/lint`, 81 files with the plan's strict flags and `skipLibCheck: false`, 16 cores, Windows 11): `tsc` 6.0.3 took 838 to 856 ms; `tsc` 7.0.2 took 369 to 380 ms (three runs each). Both reported the same 120 errors. Exit codes differ when there are errors (6.0 exits 2, 7.0 exits 1); scripts must test for any non-zero code.
 
-Decision: type-check with TypeScript 7 (`tsc --noEmit -p tsconfig.json` and `-p tsconfig.core.json`). Which package provides `typescript` depends on row 3: with oxlint (recommended) the repo needs only `typescript@7.0.x`; if typescript-eslint is kept, use the documented alias pair so `typescript` is 6.0 for the linter and `@typescript/native` provides the TS 7 `tsc`.
+Decision: type-check with TypeScript 7 (`tsc --noEmit -p tsconfig.json` and `-p tsconfig.core.json`). Which package provides `typescript` depends on row 3 (lint): with oxlint (recommended) the repo needs only `typescript@7.0.x`; if typescript-eslint is kept, use the documented alias pair, which makes `typescript` 6.0 for the linter and lets `@typescript/native` provide the TS 7 `tsc`.
 
-Consequences for the plan: the "Type check" row changes from "`tsc --noEmit`, `tsgo` as an alternative" to "TypeScript 7 `tsc --noEmit`". At v1 size the speed gain is small in absolute terms (under half a second), so the real reason is that TS 7 is now the supported line and the oxlint type-aware engine is built on it. Because TS 7 defaults `types` to `[]`, the extension, userscript and test configs must list their ambient packages explicitly (`"types": ["chrome"]` and so on); the core config already does.
+Consequences for the plan: the "Type check" row changes from "`tsc --noEmit`, `tsgo` as an alternative" to "TypeScript 7 `tsc --noEmit`". At v1 size the speed gain is small in absolute terms (under half a second); the real reason is that TS 7 is now the supported line and the oxlint type-aware engine is built on it. Because TS 7 defaults `types` to `[]`, the extension, userscript and test configs must list their ambient packages explicitly (`"types": ["chrome"]` and similar entries); the core config does.
 
 ## 3. Lint (TypeScript)
 
@@ -58,10 +58,10 @@ Options: typescript-eslint `strictTypeChecked` plus `stylisticTypeChecked` on ES
 
 Evidence (versions queried on npm 2026-10-20):
 
-- typescript-eslint 8.72.0 (2026-10-19) on ESLint 10.13.0 (2026-10-16), MIT. Requires TypeScript `<6.1.0` (row 2).
+- typescript-eslint 8.72.0 (2026-10-19) on ESLint 10.13.0 (2026-10-16), MIT. Requires TypeScript `<6.1.0` (row 2, type check).
 - oxlint 1.89.0 (2026-10-19) with oxlint-tsgolint 7.0.2004 (2026-10-10), MIT. Type-aware linting is powered by typescript-go, requires TypeScript 7 semantics (legacy options such as `baseUrl` unsupported), and covers 59 of 61 typescript-eslint type-aware rules; rules take the same options as their typescript-eslint equivalents [oxc-type-aware]. Binaries ship for win32-x64, win32-arm64, linux-x64, linux-arm64, darwin [npm registry].
 - oxlint JS plugins (ESLint v9+ compatible API, `jsPlugins` key, selectors supported) are alpha, and JS plugin rules cannot use type information [oxc-js-plugins].
-- Biome 2.5.15 (2026-09-30, MIT or Apache-2.0): `biome explain` shows no `no-unsafe-*` family, no `noRestrictedSyntax` and no assertion-style rule; `useExhaustiveSwitchCases`, `noFloatingPromises`, `noMisusedPromises`, `useStrictBooleanExpressions` and `useExplicitType` are nursery rules backed by Biome's own inference, not the TypeScript checker. Biome fails the critical requirement.
+- Biome 2.5.15 (2026-09-30, MIT or Apache-2.0): `biome explain` shows no `no-unsafe-*` family, no `noRestrictedSyntax` and no assertion-style rule; `useExhaustiveSwitchCases`, `noFloatingPromises`, `noMisusedPromises`, `useStrictBooleanExpressions` and `useExplicitType` are nursery rules backed by Biome's own inference instead of the TypeScript checker. Biome fails the critical requirement.
 
 Rule coverage for the plan's list (checked with `oxlint --rules -f json` and by running each tool):
 
@@ -78,21 +78,21 @@ Rule coverage for the plan's list (checked with `oxlint --rules -f json` and by 
 | `prefer-readonly`                                                         | yes                                         | yes (type-aware)                                                                                                                                                                                                                                              |
 | `no-floating-promises`, `no-misused-promises`                             | yes                                         | yes (type-aware)                                                                                                                                                                                                                                              |
 | `no-restricted-syntax` (ESQuery)                                          | yes (ESLint core)                           | no native rule; works through a JS plugin (alpha)                                                                                                                                                                                                             |
-| presets                                                                   | `strictTypeChecked`, `stylisticTypeChecked` | no presets; 65 of the 70 `@typescript-eslint` rules in `strictTypeChecked` and 20 of the 21 in `stylisticTypeChecked` exist under the `typescript` scope; the others exist under the `eslint` scope except `no-unsafe-enum-assignment` (no enums in our code) |
+| presets                                                                   | `strictTypeChecked`, `stylisticTypeChecked` | no presets; 65 of the 70 `@typescript-eslint` rules in `strictTypeChecked` and 20 of the 21 in `stylisticTypeChecked` exist under the `typescript` scope; the others exist under the `eslint` scope except `no-unsafe-enum-assignment` (no enums in the code) |
 
 Proof (scratch `s8/lint`, Windows 11, 16 cores, Node 24.20.0):
 
 - Sample: `ports.ts`, `good.ts`, and `bad.ts` with one violation per rule. typescript-eslint reported 22 errors including the 6 `no-restricted-syntax` hits (`textContent`/`title` literals, `console.log` literal, `aria-label` literal, `JSON.parse`, `new Error` literal). oxlint `--type-aware` with all plan rules at `error` reported the same 14 non-syntax findings (it does not enable `restrict-plus-operands` unless asked).
 - `no-restricted-syntax` under oxlint, two ways, both loaded through `jsPlugins` with the same five ESQuery selectors as the ESLint config:
   - a 5-line plugin that re-exports ESLint's own rule (`builtinRules.get("no-restricted-syntax")` from `eslint/use-at-your-own-risk`): all 6 hits, but it keeps `eslint` as a dependency;
-  - a 12-line plugin of our own (`own-plugin.mjs`): `create(context)` turns each `{ selector, message }` option into a visitor key whose handler calls `context.report`. oxlint's selector engine did the matching; all 6 hits, 20 problems in total, no `eslint` dependency. This is the variant to adopt.
-- Wall clock, three runs each, `src/` (3 files): typescript-eslint 1,464 to 1,496 ms; oxlint type-aware 300 to 324 ms; oxlint type-aware plus our JS plugin 362 to 381 ms. Scaled sample (81 files): typescript-eslint 1,900 to 2,007 ms; oxlint 335 to 355 ms. Most of the ESLint time is Node startup and building the TypeScript program, so the ratio (about 5x) holds at v1 size; neither tool is slow enough to hurt a pre-commit hook.
+  - a 12-line plugin written for the repo (`own-plugin.mjs`): `create(context)` turns each `{ selector, message }` option into a visitor key whose handler calls `context.report`. oxlint's selector engine did the matching; all 6 hits, 20 problems in total, no `eslint` dependency. This is the variant to adopt.
+- Wall clock, three runs each, `src/` (3 files): typescript-eslint 1,464 to 1,496 ms; oxlint type-aware 300 to 324 ms; oxlint type-aware plus the JS plugin 362 to 381 ms. Scaled sample (81 files): typescript-eslint 1,900 to 2,007 ms; oxlint 335 to 355 ms. Most of the ESLint time is Node startup and building the TypeScript program; the ratio (about 5x) holds at v1 size, and neither tool is slow enough to hurt a pre-commit hook.
 
-Decision: oxlint 1.89 with oxlint-tsgolint, all plan rules at `error`, plus a local `jsPlugins` rule (our own, about 12 lines, run by Node at lint time and never bundled) that replaces `no-restricted-syntax`. Fallback, if the JS plugin path proves flaky: typescript-eslint plus the row 2 alias pair (its parser needs the `typescript` 6.0 package even without type information, so a "syntax rules only" ESLint run does not avoid the alias). typescript-eslint stays the reference: when a rule behaves differently, its documentation is the spec.
+Decision: oxlint 1.89 with oxlint-tsgolint, all plan rules at `error`, plus a local `jsPlugins` rule (about 12 lines, run by Node at lint time and never bundled) that replaces `no-restricted-syntax`. Fallback, if the JS plugin path proves flaky: typescript-eslint plus the row 2 (type check) alias pair (its parser needs the `typescript` 6.0 package even without type information; a "syntax rules only" ESLint run therefore does not avoid the alias). typescript-eslint stays the reference: when a rule behaves differently, its documentation is the spec.
 
-Why not keep typescript-eslint: it works today and is the most mature option, but its `typescript <6.1` peer range pins the repo to the 6.0 line (or the alias pair in row 2) while TypeScript 7 is the supported release; oxlint runs on TS 7 directly, is about 5x faster, and covers every required rule. The cost is enumerating rules instead of extending presets, and the alpha JS plugin for one rule. This is a close call; if the main session prefers maturity over alignment with TS 7, typescript-eslint plus the row 2 alias pair is a sound alternative.
+Why not keep typescript-eslint: it works today and is the most mature option, but its `typescript <6.1` peer range pins the repo to the 6.0 line (or the alias pair in row 2 (type check)) while TypeScript 7 is the supported release; oxlint runs on TS 7 directly, is about 5x faster, and covers every required rule. The cost is enumerating rules instead of extending presets, and the alpha JS plugin for one rule. This is a close call; if the main session prefers maturity over alignment with TS 7, typescript-eslint plus the row 2 (type check) alias pair is a sound alternative.
 
-Consequences for the plan: the lint row changes default (see "Proposed plan changes"). `ban-ts-comment` should be configured with `"ts-expect-error": true` too, because its default allows `@ts-expect-error` with a description and the plan bans directive comments outright. The rule list in step 4 becomes an `.oxlintrc.json` that names each rule, `eslint.config.ts` in the file layout becomes `.oxlintrc.json` plus the plugin file, kept outside `scripts/` because rule 14 reserves that folder for `.sh` and `.py` (for example `lint/restricted-syntax.mjs`), and ESLint, typescript-eslint and the TS 6 alias leave the dependency list.
+Consequences for the plan: the lint row changes default (see "Proposed plan changes"). `ban-ts-comment` should be configured with `"ts-expect-error": true` too, because its default allows `@ts-expect-error` with a description and the plan bans directive comments outright. The rule list in step 4 becomes an `.oxlintrc.json` that names each rule, `eslint.config.ts` in the file layout becomes `.oxlintrc.json` plus the plugin file, kept outside `scripts/` because rule 14 (mise as the only toolchain manager) reserves that folder for `.sh` and `.py` (for example `lint/restricted-syntax.mjs`), and ESLint, typescript-eslint and the TS 6 alias leave the dependency list.
 
 ## 4. Format
 
@@ -101,7 +101,7 @@ Options: dprint with plugins (default); Biome plus Prettier. MDX support decides
 Evidence:
 
 - dprint 0.64.0 (2026-10-18, MIT) now resolves plugins from npm with `npm:` specifiers; `dprint config add` wrote these current versions: `@dprint/typescript@0.96.1`, `@dprint/json@0.25.2`, `@dprint/markdown@0.26.0`, `@dprint/toml@0.9.0`, `dprint-plugin-malva@0.16.0` (CSS, 2026-05-30), `dprint-plugin-markup@0.27.6` (HTML, 2026-10-17), `dprint-plugin-yaml@0.6.0` (pretty_yaml, 2026-01-09) [npm registry]. The g-plane plugins (malva, markup_fmt, pretty_yaml) are listed in dprint's own plugin registry and are all MIT.
-- Biome 2.5.15 formats none of `.md`, `.mdx`, `.toml`, `.yaml` (proof: "No files were processed" for all four). So "Biome plus Prettier" means Prettier for Markdown, MDX and YAML and nothing for TOML.
+- Biome 2.5.15 formats none of `.md`, `.mdx`, `.toml`, `.yaml` (proof: "No files were processed" for all four). "Biome plus Prettier" therefore means Prettier for Markdown, MDX and YAML and nothing for TOML.
 - Prettier 3.9.10 (2026-10-10) has an MDX parser.
 
 Proof (scratch `s8/fmt`), on an ADR-like `.mdx` with YAML frontmatter, `import`/`export` lines, a JSX block, an MDX comment, a JSX self-closing tag with an expression prop, a table, a long prose line, and a second file with `{props.count}`, `2 * 3 * 4`, nested JSX with Markdown inside and an `export default` function:
@@ -112,7 +112,7 @@ Proof (scratch `s8/fmt`), on an ADR-like `.mdx` with YAML frontmatter, `import`/
 
 Decision: keep dprint with the seven plugins above, `lineWidth: 100`, `markdown.textWrap: "maintain"`, and the `markdown.associations` entry for `.mdx`.
 
-Consequences for the plan: add the `associations` line to `dprint.json` (without it, ADRs and design docs are silently unformatted). The Markdown plugin parses MDX as CommonMark, so ESM and JSX are treated as paragraphs or HTML blocks; keep JSX blocks simple in docs, and the `prepush` format check will catch any regression. Python stays on ruff (dprint has a `dprint-plugin-ruff` wrapper, but mise pins ruff directly; see row 9). Shell stays on shfmt.
+Consequences for the plan: add the `associations` line to `dprint.json` (without it, ADRs and design docs are silently unformatted). The Markdown plugin parses MDX as CommonMark and treats ESM and JSX as paragraphs or HTML blocks; keep JSX blocks simple in docs, and the `prepush` format check will catch any regression. Python stays on ruff (dprint has a `dprint-plugin-ruff` wrapper, but mise pins ruff directly; see row 9 (Python scripts)). Shell stays on shfmt.
 
 ## 5. Runtime validation
 
@@ -136,7 +136,7 @@ Proof (scratch `s8/val`): the GetItems schema from the brief, written three ways
 
 Decision: keep valibot. It is the only schema library whose cost fits the content-script budget (about 10.8 KB of the 60 KB unminified budget for this schema; each further schema adds little because the action functions are shared), and a declarative schema is easier to review than predicates. zod mini alone would use 62 percent of the budget. Hand-written guards stay the fallback if the bundle check ever fails on size.
 
-Consequences for the plan: wrap every nested `v.object` in `v.pipe(..., v.readonly())` (or define the output types by hand and check the schema with `satisfies v.GenericSchema<unknown, Output>`) so verdict data is deep readonly; use `v.exactOptional` rather than `v.optional`. Validate per item (`v.array` of a lenient item schema, or `safeParse` per item) so one malformed store item does not discard the whole batch; the proof shows that a single bad item rejects the full response in all three implementations. Add valibot's MIT notice to `THIRD_PARTY_NOTICES.md`.
+Consequences for the plan: wrap every nested `v.object` in `v.pipe(..., v.readonly())` (or define the output types by hand and check the schema with `satisfies v.GenericSchema<unknown, Output>`) to make verdict data deep readonly; use `v.exactOptional` instead of `v.optional`. Validate per item (`v.array` of a lenient item schema, or `safeParse` per item) to keep one malformed store item from discarding the whole batch; the proof shows that a single bad item rejects the full response in all three implementations. Add valibot's MIT notice to `THIRD_PARTY_NOTICES.md`.
 
 ## 6. Tests
 
@@ -150,7 +150,7 @@ Proof (scratch `s8/dom`, vitest 5.0.5 on Node 24.20.0, Windows 11), one feature 
 - API probe: happy-dom implements `innerText`, `IntersectionObserver`, `ResizeObserver`, `checkVisibility`, `document.adoptedStyleSheets`, the `popover` attribute and `HTMLDialogElement.showModal`; jsdom 30 implements none of these. Neither implements `requestIdleCallback` or layout (`getBoundingClientRect` returns zeros in both).
 - Speed is mixed. Feature suite: vitest reported 568 ms with happy-dom versus 973 ms with jsdom (90 and 88 percent environment setup). A heavy synthetic scan (20 rounds of parsing a 200-capsule page, replacing `body.innerHTML`, querying and setting attributes) took 366 to 372 ms in happy-dom and 219 to 246 ms in jsdom. For v1's suite of many small tests, setup cost dominates and happy-dom wins; jsdom parses large documents faster.
 
-Decision: keep vitest with happy-dom as the default environment, using `vi.useFakeTimers` with `requestAnimationFrame` in `toFake` for the scheduler tests. Use jsdom per file (`// @vitest-environment jsdom`) only where a happy-dom divergence is suspected, as a cross-check, not as a second full run.
+Decision: keep vitest with happy-dom as the default environment, using `vi.useFakeTimers` with `requestAnimationFrame` in `toFake` for the scheduler tests. Use jsdom per file (`// @vitest-environment jsdom`) only where a happy-dom divergence is suspected, as a cross-check; the full suite runs once, on happy-dom.
 
 Consequences for the plan: the scan-time budget test must compare against a budget calibrated on happy-dom (the slower parser of the two), and real performance is still measured in Chrome DevTools as the plan says. No layout-dependent assertions in unit tests. If the options page uses `popover` or `<dialog>`, only happy-dom can test it.
 
@@ -162,12 +162,12 @@ Evidence:
 
 - Versions [npm registry]: `@types/chrome` 0.3.5 (2026-10-09, MIT, DefinitelyTyped, `typeScriptVersion: 5.6`, depends on `@types/filesystem` and `@types/har-format`); `chrome-types` 0.1.457 (2026-10-16, Apache-2.0, regenerated from Chromium); `webextension-polyfill` 0.12.0 (2024-05-14, MPL-2.0, no release in 29 months); `@types/webextension-polyfill` 0.12.6 (2026-09-01).
 - Namespaces: MDN lists `browser` as the namespace in Firefox and Safari and, from Chrome 148, in Chrome, Edge and Opera; Firefox and Safari implement promises for the whole API, and Chrome reached full promise coverage in Chrome 152 [mdn-differences] [mdn-chrome-incompat]. MDN describes the polyfill only as a way to target "older Chrome browser versions" [mdn-chrome-incompat]. MDN does not state whether Firefox's `chrome.*` alias returns promises under MV3; the wrapper below never relies on it, because it prefers `browser` whenever it exists.
-- `@types/chrome` 0.3.5 already declares `declare var browser: typeof chrome` ("Cross-browser alias of chrome, since Chrome 148") and types `storage.local.get` as returning `Promise<{ [key: string]: unknown }>` and `StorageChange.newValue` as `unknown`. `chrome-types` types the same calls with `any` (`Promise<{[name: string]: any}>`, `newValue?: any`); it has 86 `: any` annotations versus 28 in `@types/chrome`.
+- `@types/chrome` 0.3.5 declares `declare var browser: typeof chrome` ("Cross-browser alias of chrome, since Chrome 148") and types `storage.local.get` as returning `Promise<{ [key: string]: unknown }>` and `StorageChange.newValue` as `unknown`. `chrome-types` types the same calls with `any` (`Promise<{[name: string]: any}>`, `newValue?: any`); it has 86 `: any` annotations versus 28 in `@types/chrome`.
 
 Proof (scratch `s8/types` and `s8/lint/ext`, plan flags, `skipLibCheck: false`):
 
 - A storage and i18n wrapper compiled cleanly against both packages with TypeScript 6.0.3 and 7.0.2.
-- Adding `const n: number = items[key]` after `storage.local.get`: with `@types/chrome` the compiler rejects it (`Type 'unknown' is not assignable to type 'number'`); with `chrome-types` it compiles and only oxlint `no-unsafe-assignment` catches it. `@types/chrome` keeps untrusted storage data `unknown`, which is what invariant 10 asks for.
+- Adding `const n: number = items[key]` after `storage.local.get`: with `@types/chrome` the compiler rejects it (`Type 'unknown' is not assignable to type 'number'`); with `chrome-types` it compiles and only oxlint `no-unsafe-assignment` catches it. `@types/chrome` keeps untrusted storage data `unknown`, which is what invariant 10 (strict static typing) asks for.
 - With `@types/chrome`, `globalThis.browser ?? globalThis.chrome` fails `no-unnecessary-condition` (part of `strictTypeChecked`; oxlint has it too) because `browser` is declared non-optional. `"browser" in globalThis ? globalThis.browser : globalThis.chrome` passes `tsc` and both linters. Redeclaring `var browser: typeof chrome | undefined` in a `declare global` block fails with TS2403.
 
 Decision: `@types/chrome` 0.3.x, no polyfill. The platform wrapper picks `browser` when present and falls back to `chrome`, both MV3 promise APIs, and never passes the generic type argument of `storage.local.get<T>()` (that argument is an unchecked assertion; the result stays `unknown` until valibot parses it).
@@ -185,21 +185,21 @@ Evidence:
 
 Proof (scratch `s8/types`, a `store.ts` adapter using every API above, plan flags, `skipLibCheck: false`, TypeScript 6.0.3 and 7.0.2 gave identical results):
 
-- `@violentmonkey/types` fails: its `index.d.ts` starts with `/// <reference types="@types/firefox-webext-browser" />` and `/// <reference types="chrome-types" />`, but both are only devDependencies of the package, so a consumer gets TS2688 and a cascade of `Cannot find namespace 'browser'`. It compiles once `@types/firefox-webext-browser` (143.0.1) and `chrome-types` are installed and `user-agent-data-types` is added to `types`, which drags two full WebExtension global namespaces into the userscript program.
+- `@violentmonkey/types` fails: its `index.d.ts` starts with `/// <reference types="@types/firefox-webext-browser" />` and `/// <reference types="chrome-types" />`, but both are only devDependencies of the package; a consumer gets TS2688 and a cascade of `Cannot find namespace 'browser'`. It compiles once `@types/firefox-webext-browser` (143.0.1) and `chrome-types` are installed and `user-agent-data-types` is added to `types`, which drags two full WebExtension global namespaces into the userscript program.
 - `@types/tampermonkey` fails under `exactOptionalPropertyTypes`: TS2430 at `index.d.ts(303,15)`, `HighlightNotification` declares `text?: undefined` while extending `Notification` with `text: string`. With that flag off it compiles (rc 0), but the flag is part of the plan.
-- In both, `const n: number = await GM.getValue("x")` compiles without error: `T` is inferred from the assignment target, so the generic return is an unchecked type assertion that neither `tsc` nor the `no-unsafe-*` rules can see.
+- In both, `const n: number = await GM.getValue("x")` compiles without error: `T` is inferred from the assignment target; the generic return is an unchecked type assertion that neither `tsc` nor the `no-unsafe-*` rules can see.
 
-Decision: replace the default with a hand-written ambient file, `src/platform/userscript/gm.d.ts` (about 20 lines), that declares exactly the APIs the header grants, with non-generic signatures: `GM.getValue(name: string): Promise<unknown>`, `GM.setValue(name: string, value: JsonValue): Promise<void>` (our own recursive JSON type), `GM.deleteValue`, `GM.listValues(): Promise<readonly string[]>`, `GM_addStyle(css: string): HTMLStyleElement`, `GM.registerMenuCommand(caption: string, onClick: () => void): Promise<unknown>`, and `GM_addValueChangeListener` only if a step adopts it. No dependency, compiles under every plan flag, and storage reads stay `unknown` until valibot parses them. Signatures follow the Tampermonkey and Violentmonkey documentation (credited in the README like any other source); no declaration text is copied.
+Decision: replace the default with a hand-written ambient file, `src/platform/userscript/gm.d.ts` (about 20 lines), that declares exactly the APIs the header grants, with non-generic signatures: `GM.getValue(name: string): Promise<unknown>`, `GM.setValue(name: string, value: JsonValue): Promise<void>` (a recursive JSON type defined in the repo), `GM.deleteValue`, `GM.listValues(): Promise<readonly string[]>`, `GM_addStyle(css: string): HTMLStyleElement`, `GM.registerMenuCommand(caption: string, onClick: () => void): Promise<unknown>`, and `GM_addValueChangeListener` only if a step adopts it. No dependency, compiles under every plan flag, and storage reads stay `unknown` until valibot parses them. Signatures follow the Tampermonkey and Violentmonkey documentation (credited in the README like any other source); no declaration text is copied.
 
-Consequences for the plan: the userscript type row changes (see "Proposed plan changes"). The userscript tsconfig sets `"types": []` and includes `gm.d.ts` through `files`, which also guarantees that core cannot see `GM` (invariant 5). If a later feature needs many more GM APIs, revisit `@violentmonkey/types` together with its two missing type packages.
+Consequences for the plan: the userscript type row changes (see "Proposed plan changes"). The userscript tsconfig sets `"types": []` and includes `gm.d.ts` through `files`, which also guarantees that core cannot see `GM` (invariant 5, core purity). If a later feature needs many more GM APIs, revisit `@violentmonkey/types` together with its two missing type packages.
 
 ## 9. Python scripts
 
 Options: stdlib only, ruff for lint and format (line length 100), mypy `--strict`. No alternatives.
 
-Evidence and proof: `mise latest` reports ruff 0.17.1 and mypy 2.4.0; both installed on Windows into an isolated mise data directory (`ruff 0.17.1` from `ruff-x86_64-pc-windows-msvc.zip` through `aqua:astral-sh/ruff`; `mypy 2.4.0 (compiled: yes)` through `pypi:mypy` in 2.2 s). mypy is not in the mise registry under a short name, so it must be written `"pypi:mypy"` in `mise.toml`. In mise 2026.10 the `pipx` backend's settings live under `pypi` (`mise settings get pypi.uvx` is recognized, `pipx.uvx` maps to it); `pipx:mypy` still resolves. Python itself is `core:python` (latest 3.15.0; 3.12.14 already installed on this machine through mise).
+Evidence and proof: `mise latest` reports ruff 0.17.1 and mypy 2.4.0; both installed on Windows into an isolated mise data directory (`ruff 0.17.1` from `ruff-x86_64-pc-windows-msvc.zip` through `aqua:astral-sh/ruff`; `mypy 2.4.0 (compiled: yes)` through `pypi:mypy` in 2.2 s). mypy is not in the mise registry under a short name; it must be written `"pypi:mypy"` in `mise.toml`. In mise 2026.10 the `pipx` backend's settings live under `pypi` (`mise settings get pypi.uvx` is recognized, `pipx.uvx` maps to it); `pipx:mypy` still resolves. Python itself is `core:python` (latest 3.15.0; 3.12.14 installed on this machine through mise).
 
-Decision: confirmed. Pin `ruff = "0.17.1"` and `"pypi:mypy" = "2.4.0"`; set `line-length = 100` in `ruff.toml` (already in the plan's layout) and pass `--strict` to mypy from the mise task (mypy does not read `ruff.toml`, so no extra config file is needed). The `pypi` backend installs each package into its own virtual environment and can use uv when uv is on PATH (this machine has uv 0.12.9, and the install took 2.2 s); pinning `uv` in `mise.toml` as well makes CI runners use the same installer. This uv behavior was not tested on a machine without uv.
+Decision: confirmed. Pin `ruff = "0.17.1"` and `"pypi:mypy" = "2.4.0"`; set `line-length = 100` in `ruff.toml` (in the plan's layout) and pass `--strict` to mypy from the mise task (mypy does not read `ruff.toml` and needs no extra config file). The `pypi` backend installs each package into its own virtual environment and can use uv when uv is on PATH (this machine has uv 0.12.9, and the install took 2.2 s); pinning `uv` in `mise.toml` as well makes CI runners use the same installer. This uv behavior was not tested on a machine without uv.
 
 ## 10. Shell scripts
 
@@ -207,7 +207,7 @@ Options: shellcheck and shfmt. No alternatives.
 
 Evidence and proof: shellcheck 0.11.0 (`aqua:koalaman/shellcheck`, `shellcheck-v0.11.0.zip`) and shfmt 3.14.1 (`aqua:mvdan/sh`, `shfmt_v3.14.1_windows_amd64.exe`) installed and ran `--version` on Windows through mise. Both projects publish Linux binaries for the same releases, which aqua selects on Linux runners.
 
-Decision: confirmed. shfmt has no line-width option; it formats structure (use `-i 2 -ci` or an `.editorconfig`), so the 100-column rule for shell is a review rule plus an optional length check in `check_text.py`, not a formatter setting.
+Decision: confirmed. shfmt has no line-width option; it formats structure (use `-i 2 -ci` or an `.editorconfig`), and the 100-column rule for shell is a review rule plus an optional length check in `check_text.py`.
 
 ## 11. Workflows
 
@@ -215,22 +215,22 @@ Options: actionlint alone (default); actionlint plus zizmor.
 
 Evidence and proof: actionlint 1.7.12 (`aqua:rhysd/actionlint`, verified by sha256 checksum and GitHub attestations) and zizmor 1.31.1 (`aqua:zizmorcore/zizmor`, GitHub attestations, `zizmor-x86_64-pc-windows-msvc.zip`) installed and ran on Windows through mise. actionlint checks workflow syntax, expressions and embedded shell (it calls shellcheck when present); zizmor is a security auditor for workflows (template injection, excessive `permissions`, unpinned actions, credential persistence), which matters for a pipeline that holds store-publishing secrets.
 
-Decision: actionlint plus zizmor. zizmor is a single native binary with no extra runtime, and the release pipeline (ADR 0005) holds Chrome Web Store and AMO credentials. Run zizmor offline by default (`zizmor --offline .github/workflows`) so `prepush` does not need a GitHub token.
+Decision: actionlint plus zizmor. zizmor is a single native binary with no extra runtime, and the release pipeline (ADR 0005, release pipeline) holds Chrome Web Store and AMO credentials. Run zizmor offline by default (`zizmor --offline .github/workflows`) to spare `prepush` a GitHub token.
 
 ## 12. Package manager
 
-Options: pnpm (user decision).
+Options: pnpm (decided beforehand).
 
 Evidence and proof:
 
 - pnpm 12.14.0 (2026-10-15) is current on npm and in mise (`aqua:pnpm/pnpm`, GitHub attestations). It installed and ran on Windows through mise in 2.1 s.
 - pnpm reads `packageManager` and, since v11, applies the `pmOnFail` setting to it: `download` (default) downloads and runs the declared version, `error` fails, `warn` continues, `ignore` skips; it is set in `pnpm-workspace.yaml` as `pmOnFail: error`, by `--pm-on-fail`, or by `pnpm_config_pm_on_fail`. It replaces the removed `managePackageManagerVersions`, `packageManagerStrict` and `packageManagerStrictVersion` [pnpm-cli-settings].
 - Proof (scratch `s8/pm-*`): with mise's pnpm 12.14.0 and `"packageManager": "pnpm@12.5.1"`, pnpm silently downloaded and ran 12.5.1 from its own store (`pnpm --version` printed `12.5.1`), outside mise. `managePackageManagerVersions: false` is ignored with a warning in pnpm 12. With `pmOnFail: error`, the mismatch fails `pnpm install` (rc 1); with matching versions it reports `Done in 42ms using pnpm v12.14.0`.
-- npm 11.19 and pnpm block dependency lifecycle scripts by default; esbuild and dprint ran without them in the proofs (row 1), so `pnpm-workspace.yaml` needs no build allowlist for them.
+- npm 11.19 and pnpm block dependency lifecycle scripts by default; esbuild and dprint ran without them in the proofs (row 1, bundling); `pnpm-workspace.yaml` needs no build allowlist for them.
 
-Decision: pnpm 12.14.0 from mise; `"packageManager": "pnpm@12.14.0"` in `package.json`; `pmOnFail: error` in `pnpm-workspace.yaml`, so a drift between `mise.toml` and `package.json` fails loudly instead of running a second pnpm. No corepack.
+Decision: pnpm 12.14.0 from mise; `"packageManager": "pnpm@12.14.0"` in `package.json`; `pmOnFail: error` in `pnpm-workspace.yaml`, which makes a drift between `mise.toml` and `package.json` fail instead of running a second pnpm. No corepack.
 
-Consequences for the plan: add `pnpm-workspace.yaml` with `pmOnFail: error` to the file operations, and have a check script (for example `check_text.py`, or a small new `check_versions.py`) compare the `mise.toml` pnpm pin with `packageManager` so the two cannot drift.
+Consequences for the plan: add `pnpm-workspace.yaml` with `pmOnFail: error` to the file operations, and have a check script (for example `check_text.py`, or a small new `check_versions.py`) compare the `mise.toml` pnpm pin with `packageManager` to keep the two from drifting.
 
 ## 13. Git hooks
 
@@ -240,10 +240,10 @@ Proof (throwaway repo `s8/hooks`, mise 2026.10.15, Git for Windows 2.55.0):
 
 - Flags: `-t, --task <TASK>` (default `pre-commit`), `-w, --write` (write into `.git/hooks`, or `core.hooksPath` when set, mark executable, and move an existing hook to `<HOOK>.old`), `--hook <HOOK>` (default `pre-commit`), and `-- <MISE_ARG>...` for flags inserted between `mise` and `run` (for example `-- -C subdir`). Without `--write` it prints the hook. Alias: `mise generate pre-commit`.
 - Commands used: `mise generate git-pre-commit --write --task=precommit` wrote `.git/hooks/pre-commit`; `mise generate git-pre-commit --write --hook=pre-push --task=prepush` wrote `.git/hooks/pre-push`. Both files are 4 lines of `#!/bin/sh`: `STAGED="$(git diff-index --cached --name-only -z HEAD | xargs -0)"`, `export STAGED`, `export MISE_PRE_COMMIT=1`, `exec mise run <task>`.
-- Under Git for Windows both hooks ran from Git Bash and from PowerShell (`git commit`, `git push` to a local bare remote), and a task that exits 3 blocked the commit (`[precommit] ERROR task failed`, commit rc 1). Hooks live in `.git/hooks`, so every clone runs the two generate commands once (a `mise run hooks` task, documented in the README).
+- Under Git for Windows both hooks ran from Git Bash and from PowerShell (`git commit`, `git push` to a local bare remote), and a task that exits 3 blocked the commit (`[precommit] ERROR task failed`, commit rc 1). Hooks live in `.git/hooks`; every clone runs the two generate commands once (a `mise run hooks` task, documented in the README).
 - Quirks found:
   - On the first commit (no `HEAD`) `git diff-index` prints `fatal: ambiguous argument 'HEAD'` and `STAGED` is empty; the hook still runs the task.
-  - `STAGED` is space-separated (`xargs -0` joins with spaces), so paths with spaces split; `scripts/precommit_format.sh` should ask git itself (`git diff --cached --name-only -z --diff-filter=ACMR`, read NUL-separated) rather than parse `STAGED`.
+  - `STAGED` is space-separated (`xargs -0` joins with spaces) and paths with spaces split; `scripts/precommit_format.sh` should ask git itself (`git diff --cached --name-only -z --diff-filter=ACMR`, read NUL-separated) instead of parsing `STAGED`.
   - The pre-push hook also computes `STAGED` and sets `MISE_PRE_COMMIT=1`; harmless, but `prepush` must not rely on either.
   - On Windows, mise runs inline task `run` strings with `cmd /c` (`windows_default_inline_shell_args = cmd /c`; Unix default `sh -o errexit -c`). The proof task `echo "...$STAGED"` printed the literal string under cmd and expanded correctly after adding `shell = "bash -c"` to the task.
 
@@ -255,7 +255,7 @@ Proof: `mise registry <tool>` for the backend, `mise latest <tool>` for the curr
 
 | Tool          | mise backend                                                  | Version checked                                             | Windows (proof)                                | Linux |
 | ------------- | ------------------------------------------------------------- | ----------------------------------------------------------- | ---------------------------------------------- | ----- |
-| Node          | `core:node`                                                   | plan pins 24.14.0; latest 24.x is 24.22.0 (26.12.0 overall) | yes (24.21.0 already installed by mise)        | yes   |
+| Node          | `core:node`                                                   | plan pins 24.14.0; latest 24.x is 24.22.0 (26.12.0 overall) | yes (24.21.0 installed by mise)                | yes   |
 | pnpm          | `aqua:pnpm/pnpm` (also `npm:pnpm`)                            | 12.14.0                                                     | yes, installed and ran                         | yes   |
 | Python        | `core:python`                                                 | latest 3.15.0                                               | yes (3.12.14 installed by mise)                | yes   |
 | changie       | `aqua:miniscruff/changie`                                     | 1.26.0                                                      | yes (`changie_1.26.0_windows_amd64.zip`)       | yes   |
@@ -269,31 +269,31 @@ Proof: `mise registry <tool>` for the backend, `mise latest <tool>` for the curr
 | gh            | `aqua:cli/cli`                                                | 2.102.0                                                     | yes                                            | yes   |
 | zizmor        | `aqua:zizmorcore/zizmor` (also `cargo:`)                      | 1.31.1                                                      | yes                                            | yes   |
 | esbuild       | none in the registry (`npm:esbuild` works, 0.28.2)            | 0.28.2                                                      | not installed through mise                     | n/a   |
-| uv (optional) | `aqua:astral-sh/uv`                                           | already 0.12.9 on this machine                              | yes                                            | yes   |
+| uv (optional) | `aqua:astral-sh/uv`                                           | 0.12.9 on this machine                                      | yes                                            | yes   |
 
-Decision: every pinned tool installs on Windows through mise; all binaries except web-ext and mypy come from aqua, which verifies checksums or GitHub attestations for most of them (`mise tool <name>` shows a "Security" line: attestations for pnpm, zizmor, actionlint; none listed for shellcheck and mypy). esbuild, TypeScript, oxlint, valibot, vitest and happy-dom stay npm devDependencies managed by pnpm, not mise tools, because the build and tests import them from `node_modules` and the lockfile pins them; `mise.toml` pins the programs, `pnpm-lock.yaml` pins the libraries.
+Decision: every pinned tool installs on Windows through mise; all binaries except web-ext and mypy come from aqua, which verifies checksums or GitHub attestations for most of them (`mise tool <name>` shows a "Security" line: attestations for pnpm, zizmor, actionlint; none listed for shellcheck and mypy). esbuild, TypeScript, oxlint, valibot, vitest and happy-dom stay npm devDependencies managed by pnpm because the build and tests import them from `node_modules` and the lockfile pins them; `mise.toml` pins the programs, `pnpm-lock.yaml` pins the libraries.
 
-Consequences for the plan: write `"npm:web-ext"`, `"pypi:mypy"` with explicit backend prefixes in `mise.toml`. Consider committing `mise.lock` (mise's `--locked` mode refuses installs without pre-resolved URLs) so CI and AMO reviewers fetch exactly the same artifacts.
+Consequences for the plan: write `"npm:web-ext"`, `"pypi:mypy"` with explicit backend prefixes in `mise.toml`. Consider committing `mise.lock` (mise's `--locked` mode refuses installs without pre-resolved URLs) to give CI and AMO reviewers exactly the same artifacts.
 
 ## Proposed plan changes
 
 The main session decides; each item names the plan section it touches.
 
-1. **Type check row** ("Tooling decisions"): TypeScript 7 (`typescript@7.0.x`, `tsc --noEmit` on both configs) instead of TS 5/6 `tsc` with `tsgo` as an alternative. Scripts test for a non-zero exit, not for exit code 2. Every tsconfig lists its `types` explicitly, since TS 7 defaults them to `[]`.
-2. **Lint row** ("Tooling decisions", step 4, file layout): oxlint plus oxlint-tsgolint with every rule from the plan's list named in `.oxlintrc.json`, and a local `jsPlugins` rule of our own for the restricted-syntax selectors, instead of typescript-eslint presets. Configure `ban-ts-comment` with `"ts-expect-error": true`. Replace `eslint.config.ts` with `.oxlintrc.json` plus the plugin file. If the main session prefers typescript-eslint's maturity, keep it but add the documented alias pair (`typescript` as `npm:@typescript/typescript6`, `@typescript/native` as `npm:typescript@7`) so the type check still runs on TS 7.
-3. **Format row**: add `"markdown": { "associations": ["**/*.{md,mdx}"] }` to `dprint.json`; list the seven plugin specifiers (`npm:@dprint/typescript`, `npm:@dprint/json`, `npm:@dprint/markdown`, `npm:@dprint/toml`, `npm:dprint-plugin-malva`, `npm:dprint-plugin-markup`, `npm:dprint-plugin-yaml`).
-4. **Runtime validation row**: keep valibot, and note in step 4 or the parser step: `v.exactOptional` everywhere, `v.readonly()` on every nested object, per-item validation of `store_items`.
-5. **WebExtension wrapper** (platform step): `"browser" in globalThis ? globalThis.browser : globalThis.chrome`, because `globalThis.browser ?? globalThis.chrome` fails `no-unnecessary-condition` with `@types/chrome` 0.3.x. Alternatively set `minimum_chrome_version: "148"` and use `browser` only. Never pass the type argument of `storage.local.get<T>()`.
-6. **Userscript types row**: replace `@violentmonkey/types` with a hand-written `src/platform/userscript/gm.d.ts` (non-generic, `unknown` returns) for exactly the granted APIs.
-7. **Workflows row**: actionlint plus zizmor (`--offline` in `prepush`), both pinned in `mise.toml`.
-8. **Package manager row**: add `pnpm-workspace.yaml` with `pmOnFail: error` and a check that the `mise.toml` pnpm pin equals `packageManager`.
-9. **mise.toml**: explicit backend prefixes `"npm:web-ext"` and `"pypi:mypy"`; consider pinning `uv` and committing `mise.lock`. The Node pin 24.14.0 is eight minor releases behind the latest 24.x release (24.22.0); keep it only if there is a reason.
-10. **mise tasks** (invariant 14): no inline shell in tasks on Windows without `shell = "bash -c"`; prefer `run = "python scripts/..."` or `run = "bash scripts/..."`. Add a `hooks` task that runs the two `mise generate git-pre-commit --write` commands, since `.git/hooks` is not versioned.
+1. Type check row ("Tooling decisions"): TypeScript 7 (`typescript@7.0.x`, `tsc --noEmit` on both configs) instead of TS 5/6 `tsc` with `tsgo` as an alternative. Scripts test for a non-zero exit instead of exit code 2. Every tsconfig lists its `types` explicitly, since TS 7 defaults them to `[]`.
+2. Lint row ("Tooling decisions", step 4, file layout): oxlint plus oxlint-tsgolint with every rule from the plan's list named in `.oxlintrc.json`, and a local `jsPlugins` rule for the restricted-syntax selectors, instead of typescript-eslint presets. Configure `ban-ts-comment` with `"ts-expect-error": true`. Replace `eslint.config.ts` with `.oxlintrc.json` plus the plugin file. If the main session prefers typescript-eslint's maturity, keep it but add the documented alias pair (`typescript` as `npm:@typescript/typescript6`, `@typescript/native` as `npm:typescript@7`) to keep the type check on TS 7.
+3. Format row: add `"markdown": { "associations": ["**/*.{md,mdx}"] }` to `dprint.json`; list the seven plugin specifiers (`npm:@dprint/typescript`, `npm:@dprint/json`, `npm:@dprint/markdown`, `npm:@dprint/toml`, `npm:dprint-plugin-malva`, `npm:dprint-plugin-markup`, `npm:dprint-plugin-yaml`).
+4. Runtime validation row: keep valibot, and note in step 4 or the parser step: `v.exactOptional` everywhere, `v.readonly()` on every nested object, per-item validation of `store_items`.
+5. WebExtension wrapper (platform step): `"browser" in globalThis ? globalThis.browser : globalThis.chrome`, because `globalThis.browser ?? globalThis.chrome` fails `no-unnecessary-condition` with `@types/chrome` 0.3.x. Alternatively set `minimum_chrome_version: "148"` and use `browser` only. Never pass the type argument of `storage.local.get<T>()`.
+6. Userscript types row: replace `@violentmonkey/types` with a hand-written `src/platform/userscript/gm.d.ts` (non-generic, `unknown` returns) for exactly the granted APIs.
+7. Workflows row: actionlint plus zizmor (`--offline` in `prepush`), both pinned in `mise.toml`.
+8. Package manager row: add `pnpm-workspace.yaml` with `pmOnFail: error` and a check that the `mise.toml` pnpm pin equals `packageManager`.
+9. mise.toml: explicit backend prefixes `"npm:web-ext"` and `"pypi:mypy"`; consider pinning `uv` and committing `mise.lock`. The Node pin 24.14.0 is eight minor releases behind the latest 24.x release (24.22.0); keep it only if there is a reason.
+10. mise tasks (invariant 14, mise-only): no inline shell in tasks on Windows without `shell = "bash -c"`; prefer `run = "python scripts/..."` or `run = "bash scripts/..."`. Add a `hooks` task that runs the two `mise generate git-pre-commit --write` commands, since `.git/hooks` is not versioned.
 
 ## Caveats
 
-- Proofs ran on Windows only. Linux support rests on published Linux binaries for every aqua tool and on npm platform packages (`@esbuild/linux-x64`, `@oxlint-tsgolint/linux-x64`, `@typescript/typescript-linux-x64`), not on a Linux run.
-- Lint and type-check timings come from small synthetic samples (3 and 81 files) and are dominated by startup; they show the ratio, not the absolute cost on the real codebase.
+- Proofs ran on Windows only. Linux support rests on published Linux binaries for every aqua tool and on npm platform packages (`@esbuild/linux-x64`, `@oxlint-tsgolint/linux-x64`, `@typescript/typescript-linux-x64`), with no Linux run behind it.
+- Lint and type-check timings come from small synthetic samples (3 and 81 files) and are dominated by startup; they show the ratio and say nothing about the absolute cost on the real codebase.
 - oxlint JS plugins are alpha [oxc-js-plugins]; the restricted-syntax rule depends on that API staying compatible with ESLint's `create(context)` and selector keys. oxlint type-aware rules claim the same options as typescript-eslint, but only the rules in the proof were exercised.
 - dprint's Markdown plugin does not parse MDX; the association works because ADR-style MDX is mostly CommonMark plus simple JSX blocks. Complex JSX (multi-paragraph children, expressions with Markdown-like characters) was only lightly tested.
 - MDN does not say whether Firefox's `chrome.*` alias returns promises under MV3. The recommended wrapper avoids the question by preferring `browser`, which MDN documents as promise-based in Firefox and in Chrome 148+ [mdn-differences].

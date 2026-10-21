@@ -1,6 +1,6 @@
 # src/core
 
-The platform-free heart of AI Reporter for Steam: detection, cache, scanning, placement, rendering and i18n. The root `AGENTS.md` rules apply here; this file adds what is specific to core. The reasons are in [ADR 0002](../../docs/adr/0002-single-codebase-and-tooling.mdx).
+The platform-free heart of AI Reporter for Steam: detection, cache, scanning, placement, rendering and i18n. The root `AGENTS.md` rules apply here; this file adds what is specific to core. The reasons are in [ADR 0002 (single codebase and tooling)](../../docs/adr/0002-single-codebase-and-tooling.mdx).
 
 ## What core must not import
 
@@ -8,9 +8,9 @@ The platform-free heart of AI Reporter for Steam: detection, cache, scanning, pl
 - Nothing from `src/platform/`. Dependencies point inward: platform imports core, never the reverse.
 - Only DOM and web standards are available: `fetch`, `DOMParser`, `MutationObserver`, `Intl`, `WeakMap`, `URL`. Anything else comes in through a port.
 - No `eval`, `new Function` or dynamic remote code. No direct `JSON.parse`: use `parseJson(text): unknown` from `json.ts`.
-- No user-visible or logged string literals. Code holds `MessageKey`s; copy lives in `src/locales/` (rule 9). Allowed literals: identifiers, selectors, URLs, storage keys, CSS class names, detection constants such as the heading `AI Generated Content Disclosure`.
-- No `any`, no type assertions other than `as const`, no non-null assertions, no `@ts-ignore`, `@ts-expect-error` or `@ts-nocheck` (rule 10). Untrusted input is `unknown` until a valibot schema turns it into a typed value.
-- Valve hosts only, always `credentials: "omit"` (rule 1). Core never builds a request to another host.
+- No user-visible or logged string literals. Code holds `MessageKey`s; copy lives in `src/locales/` (rule 9, i18n from day 1). Allowed literals: identifiers, selectors, URLs, storage keys, CSS class names, detection constants such as the heading `AI Generated Content Disclosure`.
+- No `any`, no type assertions other than `as const`, no non-null assertions, no `@ts-ignore`, `@ts-expect-error` or `@ts-nocheck` (rule 10, strict static typing). Untrusted input is `unknown` until a valibot schema turns it into a typed value.
+- Valve hosts only, always `credentials: "omit"` (rule 1, privacy). Core never builds a request to another host.
 
 ## Ports
 
@@ -20,7 +20,7 @@ The only shipped composition roots are the extension content script and the user
 
 ### Adding a port
 
-1. Check first whether an existing port or a small extension of one covers the need (rule 11). A new port is the last resort.
+1. Check first whether an existing port or a small extension of one covers the need (rule 11, SOLID and DRY). A new port is the last resort.
 2. Define the interface in `ports.ts`: methods take and return plain, `readonly` data, and return `unknown` for anything read from outside. No platform types in signatures.
 3. Write the contract test in `tests/contracts/<port>.contract.ts`: a suite that takes a factory and asserts the behavior every implementation must have, including edge cases and failure modes.
 4. Provide the test double in `tests/helpers/` (memory store, fake HTTP, fixed clock) and run the contract suite against it.
@@ -42,5 +42,5 @@ Every implementation of a port passes the same shared contract suite, with no pe
 - One module, one reason to change.
 - `readonly` by default; discriminated unions with exhaustive `never` checks for states such as `Verdict`; branded types for domain IDs (`AppId`).
 - CSS classes and data attributes use the prefix `sar-` and `data-sar-*`; errors are `SarError` with a catalog-key `code`.
-- Efficiency is a requirement (rule 13): scan only added subtrees, batch DOM reads before writes, no per-node closures or listeners, `WeakSet` and `WeakMap` keyed by elements, bounded caches, no polling.
+- Efficiency is a requirement (rule 13, efficiency): scan only added subtrees, batch DOM reads before writes, no per-node closures or listeners, `WeakSet` and `WeakMap` keyed by elements, bounded caches, no polling.
 - Tests sit next to the module as `*.test.ts` and use the builders in `tests/helpers/`.
