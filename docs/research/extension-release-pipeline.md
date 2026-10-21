@@ -4,7 +4,7 @@
 
 Most large open-source extensions stop at a GitHub release and upload to the stores by hand. uBlock Origin, Dark Reader, Augmented Steam, SteamDB and Return YouTube Dislike all do. Refined GitHub is the one project read that publishes from CI. It cuts a daily calver tag, stamps the version into the manifest at build time, then runs per-store jobs in GitHub environments (`chrome-webstore-upload-cli`, `web-ext sign --channel listed`). No project uses changelog fragments, and none runs a two-stage nightly-then-prod promotion.
 
-The monorepo release train (changie fragments, calver, a bot-made tag, nightly deploy, prod on manual dispatch of the same tag) mostly carries over. The store rules change three things:
+The planned release train (changie fragments, calver, a bot-made tag, nightly deploy, prod on manual dispatch of the same tag) needs three changes for the store rules:
 
 - The manifest version must be unpadded calver.
 - A nightly must not go to a store listing that prod later reuses, because AMO burns every version number across channels.
@@ -36,7 +36,7 @@ Established:
 What stays open:
 
 - Whether testers get a signed, auto-updating beta channel (a second add-on ID and listing) or a GitHub prerelease is enough.
-- Whether to reuse the monorepo's release-bot GitHub app and tag ruleset, or use a lighter `GITHUB_TOKEN` flow.
+- Whether to use a release GitHub App with a tag ruleset, or a lighter `GITHUB_TOKEN` flow.
 - Whether to mirror the userscript on Greasy Fork.
 
 ## Recommendations

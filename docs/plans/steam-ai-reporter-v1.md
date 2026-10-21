@@ -57,7 +57,7 @@ Detection calls `IStoreBrowseService/GetItems` with `include_extra_details`, bat
   - Libraries and tooling: rq7 (spike 8, library study), summarized in "Tooling decisions" below.
 - Release research: `docs/research/extension-release-pipeline.md`.
 - Wording: show the developer's text, never say "uses AI" or "AI-free", and treat absence as neutral (`rq3-reliability.md:84`, `:94`). The January 2026 rewrite narrowed the scope (`rq1-policy.md:7`).
-- Conventions adopted from other local repos: a root `mise.toml` (`C:/Users/jorge/Documents/dev/smithbox-helper/mise.toml:9-20`; this repo is one package and needs no `[monorepo]` section), MADR ADRs in `.mdx` (`smithbox-helper/AGENTS.md:79`), and Conventional Commits (`C:/Users/jorge/Documents/dev/mdx2steam/AGENTS.md:23-25`). Git hooks run through mise, not prek (invariant 14).
+- Conventions adopted: a root `mise.toml` (this repo is one package), MADR ADRs in `.mdx`, and Conventional Commits. Git hooks run through mise, not prek (invariant 14).
 
 ## Prior art and credits
 
@@ -423,7 +423,7 @@ dist/ artifacts/ (gitignored)
     - Commit `build: package store zips, the userscript and the amo source archive`.
     - Proof: the source zip, unpacked in a clean `ubuntu:24.04` container and built with mise alone, produces a `dist/firefox` identical to the local one; `mise run check-reproducible` passes in CI; `mise run canary` passes.
 
-15. **Release pipeline.** Decided 2026-10-20 (`docs/research/extension-release-pipeline.md`); recorded in ADR 0005. It follows the monorepo release train used in other local repos, adapted to the store rules. Workflows stay thin: each job sets up mise and runs one `release:*` task; the logic lives in `scripts/calver.py` and `scripts/release.py`.
+15. **Release pipeline.** Decided 2026-10-20 (`docs/research/extension-release-pipeline.md`); recorded in ADR 0005. It is a nightly release train adapted to the store rules. Workflows stay thin: each job sets up mise and runs one `release:*` task; the logic lives in `scripts/calver.py` and `scripts/release.py`.
     - Fragments: changie and the changelog gate land in step 4; this step batches the fragments into releases.
     - Version: unpadded CalVer `YYYY.M.D`, with `.N` (from 1) for a same-day recut. The same string is the Git tag, the manifest `version` and the userscript `@version`. `calver.py` computes the next version from the UTC date and the existing tags. `package.json` always holds the last released version; feature PRs never touch it.
     - Train (`release-train.yml`, task `release:train`): runs at 00:00 UTC and on manual dispatch (with a `dry_run` input). It dispatches CI on `main` and finds the newest green commit. It skips when no commit is green, a release PR is open, or nothing landed since the last tag. If fragments exist, the release GitHub App opens a batch PR (`changie batch <version>`, `changie merge`, `package.json` version) that auto-merges once the required checks pass. There is no merge queue, because the repo is on a personal account. If branch protection requires a review, `github-actions[bot]` approves (repository setting "Allow GitHub Actions to create and approve pull requests"). No fragments means no release.
