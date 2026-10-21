@@ -61,9 +61,9 @@
   white-space: nowrap;
 }
 
-/* Search rows: first item in the platform line, under the title */
+/* Search rows: last item in the platform line, after the icons */
 .search_platforms > .sar-badge {
-  margin-inline-end: var(--sar-space-2);
+  margin-inline-start: var(--sar-space-2);
   flex-shrink: 1;
 }
 

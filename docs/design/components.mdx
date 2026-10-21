@@ -159,7 +159,7 @@ Built like the store's own tag chips, in our hue.
 
 ### Placement
 
-- Search rows: first child of the line under the title, with `margin-inline-end: sar-space-2`, allowed to shrink. Never after the title: that line clips with `overflow: hidden`.
+- Search rows: last child of the line under the title, after the platform icons, with `margin-inline-start: sar-space-2`, allowed to shrink. The icons keep their place, so they line up from row to row. Never after the title: that line clips with `overflow: hidden`.
 - Wishlist rows: directly after the title element, `margin-inline-start: sar-space-2`. The exact anchor is unverified until the surface spike.
 - Any other row: after the title, never before it, so titles stay aligned.
 

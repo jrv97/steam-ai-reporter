@@ -104,7 +104,7 @@ export function createCapsuleUi(options: CapsuleUiOptions): CapsuleUi {
   function slotOf(host: CapsuleHost): SlotRead {
     const { placement, anchor } = host;
     if (placement.badge === "full") {
-      const position = placement.slot === "first-child" ? "afterbegin" : "afterend";
+      const position = placement.slot === "last-child" ? "beforeend" : "afterend";
       return { slot: { kind: "full", anchor, position }, markAnchor: false, unsized: false };
     }
     const box = anchor.getBoundingClientRect();

@@ -28,12 +28,12 @@ export interface OverlayPlacement extends PlacementBase {
 }
 
 /**
- * A full badge in a row with room for words: `first-child` makes it the anchor's first child,
+ * A full badge in a row with room for words: `last-child` makes it the anchor's last child,
  * `after` its next sibling.
  */
 export interface RowPlacement extends PlacementBase {
   readonly badge: "full";
-  readonly slot: "first-child" | "after";
+  readonly slot: "last-child" | "after";
 }
 
 export type Placement = OverlayPlacement | RowPlacement;
@@ -95,12 +95,13 @@ export const GENERIC: OverlayPlacement = {
 /** Every placement, most specific first; the first whose host and anchor match wins. */
 export const PLACEMENTS: readonly Placement[] = [
   {
-    // Classic search rows: first child of the line under the title, which clips its overflow.
+    // Classic search rows: after the platform icons on the line under the title, which clips its
+    // overflow. The icons keep their place, so they stay aligned from row to row.
     id: "search-row",
     host: "a.search_result_row",
     hideable: true,
     badge: "full",
-    slot: "first-child",
+    slot: "last-child",
     anchor: inside(".search_platforms"),
   },
   {

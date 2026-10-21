@@ -12,7 +12,7 @@ const ROW: Placement = {
   host: "*",
   hideable: false,
   badge: "full",
-  slot: "first-child",
+  slot: "last-child",
   anchor: (host) => host.firstElementChild ?? undefined,
 };
 
@@ -83,7 +83,7 @@ describe("createCapsuleUi", () => {
     await flush();
     expect(detect).toHaveBeenCalledTimes(1);
     expect(views).toHaveLength(1);
-    expect(views[0]?.slot).toEqual({ kind: "full", anchor: found.anchor, position: "afterbegin" });
+    expect(views[0]?.slot).toEqual({ kind: "full", anchor: found.anchor, position: "beforeend" });
     expect(views[0]?.hideable).toBe(false);
   });
 
