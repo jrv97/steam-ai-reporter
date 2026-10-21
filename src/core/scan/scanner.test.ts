@@ -220,7 +220,7 @@ describe("per-surface hosts", () => {
     expect(the(".discovery_queue_content_ctn").getAttribute(HOST_HIDEABLE)).toBe("false");
   });
 
-  it("app page: DLC rows get hosts; links to the page's own app do not", async () => {
+  it("app page: DLC rows get hosts, badge at the end of the name; own links do not", async () => {
     loadPage(SURFACES["dlc-rows"]);
     history.replaceState(null, "", "/app/1808500/ARC_Raiders/");
     const own = document.createElement("a");
@@ -232,6 +232,10 @@ describe("per-surface hosts", () => {
     expect(mapping()).toStrictEqual(
       [5201760, 3948510, 4920260, 4210150, 4424920, 4741040].map((id) => [id, "dlc-row"] as const),
     );
+    for (const host of found()) {
+      expect(host.anchor).toBe(the(".game_area_dlc_name", host.element));
+      expect(host.placement).toMatchObject({ badge: "full", slot: "end" });
+    }
     expect(own.hasAttribute(HOST_APPID)).toBe(false);
   });
 });

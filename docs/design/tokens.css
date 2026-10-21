@@ -130,10 +130,10 @@
   /* Show full report and Undo, underlined like the store's in-bubble links (the store's own
      #c3c1c0 would be 4.49:1 here). */
   --sar-banner-link-color: var(--sar-banner-fg);
-  /* Stop marking this game, as the store's white-transparent button: 8.06:1 on the bright end. */
+  /* Stop marking this game, as the store's outlined buttons: 8.06:1 on the bright end. */
   --sar-banner-button-fg: #ffffff;
-  /* That button's edge: 3.27:1 on the bright end (the store's 0.4 would be 2.63:1). */
-  --sar-banner-button-border: rgba(255, 255, 255, 0.5);
+  /* That button's edge, the store's own: 2.63:1 on the bright end. The label identifies it. */
+  --sar-banner-button-border: rgba(255, 255, 255, 0.4);
   /* Hover wash behind that button (white text 6.29:1). Not sampled from the store. */
   --sar-banner-button-bg-hover: rgba(255, 255, 255, 0.1);
   /* Error text inside the banner: 4.97:1 on the bright end, where sar-color-error drops to 4.21:1.
@@ -207,8 +207,10 @@
   --sar-badge-pad-inline: 7px;
   /* Compact badge inline padding, text tier. */
   --sar-compact-pad-inline: 5px;
-  /* Banner button inline padding, as the store's white-transparent button. */
+  /* Banner button inline padding, as the store's outlined buttons. */
   --sar-banner-button-pad-inline: 15px;
+  /* Banner button block padding, as the store's outlined buttons. */
+  --sar-banner-button-pad-block: var(--sar-space-0);
   /* Compact badge offset from the image's block-start edge: the store's corner flags sit 5px down.
   */
   --sar-compact-inset-block: 5px;
@@ -249,7 +251,7 @@
   --sar-control-height: 36px;
   /* Minimum block size of buttons, selects, and segments on the full page. */
   --sar-control-height-sm: 28px;
-  /* Segments in the toolbar popup: the store's smallest control height. */
+  /* Popup segments and the banner button: the store's smallest control height. */
   --sar-control-height-xs: 24px;
   /* Options page column. */
   --sar-options-max-width: 640px;
@@ -259,6 +261,8 @@
   --sar-toggle-width: 36px;
   /* Switch track block size. */
   --sar-toggle-height: 20px;
+  /* Segment minimum inline size on the full options page. */
+  --sar-segment-min-inline-size: 72px;
 
   /* Font sizes */
 
@@ -266,11 +270,11 @@
   --sar-size-xs: 11px;
   /* Help, dates, the allow-listed note, the large compact badge. */
   --sar-size-sm: 12px;
-  /* Body copy on extension pages; banner source and service lines. */
+  /* Body copy on extension pages; banner source and service lines; the banner button. */
   --sar-size-md: 13px;
   /* Banner notes: the store's description size. */
   --sar-size-lg: 14px;
-  /* Card titles; the banner button. */
+  /* Card titles. */
   --sar-size-xl: 15px;
   /* Options page title. */
   --sar-size-2xl: 18px;
@@ -294,7 +298,7 @@
 
   /* Font weights */
 
-  /* Banner title, meta lines and button: the store sets its notices light. */
+  /* Banner title and meta lines: the store sets its notices light. */
   --sar-weight-light: 300;
   /* Everything by default. */
   --sar-weight-regular: 400;
@@ -364,7 +368,8 @@
   --sar-banner-meta-font: var(--sar-weight-light) var(--sar-size-md) / 19px var(--sar-font-page);
   --sar-banner-quote-font: italic var(--sar-weight-regular) var(--sar-size-lg) /
     var(--sar-leading-lg) var(--sar-font-page);
-  --sar-banner-button-font: var(--sar-weight-light) var(--sar-size-xl) / 30px var(--sar-font-page);
+  --sar-banner-button-font: var(--sar-weight-regular) var(--sar-size-md) /
+    var(--sar-leading-md) var(--sar-font-page);
   --sar-banner-note-font: var(--sar-weight-regular) var(--sar-size-sm) / 17px var(--sar-font-page);
 
   --sar-summary-tag-font: var(--sar-weight-regular) var(--sar-size-xs) / 19px

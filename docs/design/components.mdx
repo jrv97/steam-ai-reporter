@@ -60,7 +60,7 @@ Every text pair meets WCAG 2.2 AA on the grounds its token's note names; see the
 - **Store pages:** the `page` family, which names the store's own "Motiva Sans" first. It is referenced by name only, never bundled; outside the store it falls back to Noto Sans or Arial.
 - **The summary box:** the `summary` family (Arial), like the store's own summary rows and tag chips there.
 - **Extension pages:** the `ext` family, a system UI stack. The store font is not available there.
-- Sizes follow the store's 11, 12, 13, 15, 18 and 24px steps, plus 14/21 for quoted notes, the size the store sets its own disclosure section in. The banner is set light (300), like the store's own notices, and its notes italic, like the store's disclosure section. Use the named styles: `sar-text-badge`, `sar-text-compact`, `sar-text-compact-lg`, `sar-text-banner-title`, `sar-text-banner-meta`, `sar-text-banner-quote`, `sar-text-banner-button`, `sar-text-banner-note` on store pages; `sar-text-options-title`, `sar-text-card-title`, `sar-text-popup-caption`, `sar-text-body`, `sar-text-help` on extension pages.
+- Sizes follow the store's 11, 12, 13, 15, 18 and 24px steps, plus 14/21 for quoted notes, the size the store sets its own disclosure section in. The banner's title and meta lines are set light (300), like the store's own notices, and its notes italic, like the store's disclosure section. Use the named styles: `sar-text-badge`, `sar-text-compact`, `sar-text-compact-lg`, `sar-text-banner-title`, `sar-text-banner-meta`, `sar-text-banner-quote`, `sar-text-banner-button`, `sar-text-banner-note` on store pages; `sar-text-options-title`, `sar-text-card-title`, `sar-text-popup-caption`, `sar-text-body`, `sar-text-help` on extension pages.
 - Never shrink type to fit a translation; truncate a badge or let the block wrap.
 
 ## Space, radius, layering
@@ -130,7 +130,7 @@ Settings gate each column: `badges` off removes both badges and the summary row,
 
 ## 1. Full badge
 
-The text badge that labels a disclosed game on rows with room for words: search results and wishlist rows.
+The text badge that labels a disclosed game on rows with room for words: search results, wishlist rows and DLC rows.
 
 Preview: `previews/Badge.html`.
 
@@ -163,6 +163,8 @@ Built like the store's own tag chips, in our hue.
 
 - Search rows: directly after the title, with `margin-inline-start: sar-space-2`, keeping its full size. The title line clips with `overflow: hidden`, so on a disclosed row it becomes a flex row: the title shrinks and ends in an ellipsis, and the badge stays visible. The platform icons below keep their place.
 - Wishlist rows: directly after the title element, `margin-inline-start: sar-space-2`. The exact anchor is unverified until the surface spike.
+- DLC rows on an app page: the last child of the name (`.game_area_dlc_name`), so the badge follows the name text. The row is a flex row that spreads name and price apart, so a badge between them would float mid-row at a different spot on each row. On a disclosed row the name becomes a flex row: its trailing space drops, and `margin-inline-start: sar-space-2` is the whole gap, as on search rows. A long name wraps beside the badge.
+- A row placement picks the slot: `after` makes the badge the anchor's next sibling, `end` its last child.
 - Any other row: after the title, never before it, so titles stay aligned.
 
 ### States
@@ -335,7 +337,7 @@ Modeled on the store's per-app notice bubbles (the DLC notice sits in the same s
 - No border, no radius, no shadow.
 - Padding `sar-space-2` at block-start, `sar-space-3` at block-end, `sar-space-4` inline. `sar-space-4` below: the store's own 2px would glue the banner to the purchase box and read as part of the offer.
 - All text in `sar-banner-fg`. Title `sar-text-banner-title` (24/30 light). Source and service lines `sar-text-banner-meta` (13/19 light). Notes `sar-text-banner-quote` (14/21, italic like the notes in the store's own disclosure section).
-- "Stop marking this game" is the store's white-transparent button: `sar-text-banner-button` (15/30 light) in `sar-banner-button-fg`, `sar-banner-button-pad-inline`, a 1px `sar-banner-button-border`, `sar-radius-sm`, a `sar-banner-button-bg-hover` wash on hover.
+- "Stop marking this game" matches the store's outlined buttons right below the banner ("Compare Editions", "Browse all"): `sar-text-banner-button` (13/18 regular) in `sar-banner-button-fg`, `sar-banner-button-pad-block` (2px) and `sar-banner-button-pad-inline` (15px), a 1px `sar-banner-button-border` (white at 40%), `sar-radius-sm`, a `sar-banner-button-bg-hover` wash on hover. It is at least `sar-control-height-xs` (24px) tall, the target size.
 - "Show full report" and "Undo" are the store's underlined in-bubble links, in `sar-banner-link-color`, as `button` elements with a 24px minimum target.
 - Errors in `sar-banner-error`, never `sar-color-error` (4.21:1 on the bright end).
 - Never `sar-color-text-muted` or `sar-color-text-subtle` on the wash.
@@ -422,6 +424,7 @@ Preview: `previews/OptionsPage.html`.
 - Page: centered, `sar-options-max-width` (640px), `sar-space-4` padding, `sar-color-bg-panel`, `color-scheme: dark`.
 - Popup: `sar-popup-width` (360px), `sar-space-3` padding, short labels where a key exists. Sections are flat, not cards: no fill, radius or inline padding, `sar-space-2` above and below, and a 1px `sar-color-divider` line between them. Section titles become captions in `sar-text-popup-caption` (11/16 medium, uppercase) and `sar-color-text-subtle`, like the store's own section labels. Rows take `sar-space-1` padding, the segmented control takes `sar-control-height-xs` (24px, the store's smallest control), and the allow-list scrolls inside 240px. An empty allow-list is left out of the popup; the full page keeps its empty state.
 - Font: the `ext` family (a system stack). The store font is not loaded on extension pages and none is bundled.
+- Type on the full page: field labels, help and error lines in `sar-text-body` (13/18). The popup keeps help and error lines in `sar-text-help` (12/16).
 - On the full page, sections are `.sar-card`: `sar-color-bg-raised`, `sar-radius-md`, `sar-space-3` padding, `sar-space-2` apart, titled in `sar-text-card-title` with `sar-space-2` below the title.
 - Header: the 32px icon (48px source), `ext_name` in `sar-text-options-title`, the version in `sar-color-text-subtle`.
 
@@ -479,7 +482,7 @@ The label column is `minmax(0, 1fr)` and wraps; the switch keeps its own column,
 
 ## 8. Segmented control
 
-A full-width three-way choice built from a fieldset of radios, used for the list filter (Show, Dim, Hide).
+A three-way choice built from a fieldset of radios, used for the list filter (Show, Dim, Hide).
 
 Preview: `previews/SegmentedControl.html`.
 
@@ -503,6 +506,7 @@ Preview: `previews/SegmentedControl.html`.
 ### Look
 
 - Well: `sar-segment-bg`, 1px `sar-color-border`, `sar-radius-md`, `sar-space-0` padding.
+- Width: on the full page the well hugs its segments. Each segment is as wide as the widest label, and at least `sar-segment-min-inline-size` (72px). In the popup and the userscript dialog it spans the row.
 - Segments: at least `sar-control-height-sm` (28px), `sar-radius-sm`, label in `sar-color-text`.
 - Selected: `sar-segment-selected-bg` with a `sar-segment-selected-border` edge and `sar-segment-selected-fg` text (10.02:1).
 - Focus: the ring on the label of the focused radio.
@@ -513,7 +517,7 @@ Native radio behavior: arrow keys move between options. A change applies at once
 
 ### Longer translations
 
-Always full width with equal columns. A long label wraps to two lines inside its segment, and the segments grow together.
+Equal columns. On the full page the well grows with the widest label up to the row's width; past that, and in the popup, a long label wraps to two lines inside its segment, and the segments grow together.
 
 ## 9. Select
 
@@ -766,7 +770,7 @@ Preview: `previews/HoverCard.html`.
 
 - One card per page, created on first use and appended to `body`. Every trigger reuses it; opening for another game refills it.
 - Triggers register with the card when they render: a `WeakMap` from trigger element to verdict, plus whether the trigger sits on the game's own page (the summary row). Nothing is set on the trigger, and no listener is added to it.
-- Opening and closing run on delegated listeners on the document: `pointerover`, `pointerout`, `focusin`, `focusout`, `keydown` and `scroll`. Their number does not depend on how many badges the page holds.
+- Opening and closing run on delegated listeners on the document: `pointerover`, `pointerout`, `focusin`, `focusout`, `keydown` and `scroll`. Their number does not depend on how many badges the page holds. One `pagehide` listener on the window closes the card.
 - The notes go in through `textContent` with `\r\n` turned into `\n`, never translated or cut in the DOM. The service line appears only when GetItems named one (`ai_generation_service`), the name inserted as data.
 - No request: the card shows the verdict the badge was drawn from.
 
@@ -786,8 +790,9 @@ Built like the store's game hover popup, sampled on the home page on 2026-10-21:
 
 - Fixed to the viewport, `sar-hovercard-offset` (8px) below the trigger. Where it would cross the bottom edge and fits above, it flips above (`data-sar-side="above"`).
 - Horizontally, the full badge and the summary row (banner off) align the card's inline-start edge with their own. A compact badge aligns the inline-end edges: the card hangs back over the capsule art, away from the side where the store's popup opens. Either way the card stays one offset inside the viewport edges.
-- `z-index: sar-z-hovercard` (2100), above the store's game hover popup (1526) and the full-viewport layer that React store pages (tag hubs, categories) mount for their capsule hover (2000). The card is also a manual popover, shown again on every open, so it enters the browser's top layer after any store popover that is open; the React hover layer is one, and no z-index reaches above it. The z-index covers engines without the Popover API. Over a capsule both open: the store's popup beside the capsule, ours under the badge. Where the store's popup flips to the same side, ours is on top, because the pointer is on our badge.
-- On React store pages (tag hubs, categories) the store's hover layer covers the capsule as soon as the pointer enters it, so the pointer cannot rest on the compact badge there. Focus on the capsule link still opens the card.
+- `z-index: sar-z-hovercard` (2100), above the store's game hover popup (1526) and the full-viewport layer that React store pages (tag hubs, categories) mount for their capsule hover (2000). The card is also a manual popover, shown again on every open, so it enters the browser's top layer after any store popover that is open; the React hover layer is one, and no z-index reaches above it. The z-index covers engines without the Popover API.
+- While the card is open, the root element carries `data-sar-hovercard="open"`, and one page rule sets the store's game hover popup (`#global_hover`) to `visibility: hidden`. On a search row the badge sits inside the row's link, so without it both would open for one pointer. Closing the card, `pagehide` and stopping remove the attribute, and the store's popup shows again while the pointer is still on the row.
+- On React store pages (tag hubs, categories) the store's hover layer covers the capsule as soon as the pointer enters it and takes the pointer, so the pointer cannot rest on the compact badge there. Focus on the capsule link still opens the card. The layer has no stable selector (a hashed class and `popover="manual"`, which our card shares), so no rule hides it.
 - The card covers store content only while it is open, and only in answer to a pointer or focus on our own element. It never opens by itself.
 
 ### Behavior
@@ -962,7 +967,7 @@ WCAG 2.2 AA: 4.5:1 for text, 3:1 for non-text. Grounds are the store's own, samp
 | Banner text `sar-banner-fg` | dark end | 9.84 |
 | Banner button label `sar-banner-button-fg` | bright end | 8.06 |
 | Banner button label on its hover wash | bright end | 6.29 |
-| Banner button edge `sar-banner-button-border` | bright end | 3.27 |
+| Banner button edge `sar-banner-button-border` | bright end | 2.63 |
 | Banner error `sar-banner-error` | bright end | 4.97 |
 | Focus ring `sar-accent-300` | banner bright end | 3.69 |
 | Allow-listed note `sar-color-text-muted` | its strip | 7.68 |
@@ -987,7 +992,7 @@ WCAG 2.2 AA: 4.5:1 for text, 3:1 for non-text. Grounds are the store's own, samp
 ### Limits that keep these true
 
 - On the banner wash, text is `sar-banner-fg` only. `sar-color-text-muted` is 3.77:1 at the bright end, `sar-color-error` 4.21:1, and the store's own in-bubble link color `#c3c1c0` 4.49:1.
-- The banner button's edge is white at 50%. The store's own 40% would be 2.63:1 on our bright end.
+- The banner button's edge is white at 40%, the store's own, and 2.63:1 on our bright end. Its white label (8.06:1) identifies the button, so WCAG 1.4.11 does not ask 3:1 of the edge.
 - `sar-color-text-subtle` only on page, row, panel, raised and sunken. On the store's row hover it is 3.32:1.
 - `sar-accent-300` as link text only on solid grounds. On the store's row hover it is 4.45:1, so links there use `sar-accent-200`.
 - The compact badge's surface stays at accent 900. A mid-tone flag color such as accent 700 would leave mid grey art with no boundary at 3:1 (surface 2.54, edge 1.11) and violet art at 2.01.

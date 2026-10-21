@@ -195,6 +195,45 @@ describe("createHoverCard", () => {
     expect(node === null ? undefined : getComputedStyle(node).display).toBe("none");
   });
 
+  it("marks the root while open, and the page CSS hides the store's game hover then", () => {
+    adoptPageStyles(document);
+    const { badge, other } = page();
+    const storeHover = document.createElement("div");
+    storeHover.id = "global_hover";
+    document.body.append(storeHover);
+    expect(getComputedStyle(storeHover).visibility).not.toBe("hidden");
+    start().bind(badge, disclosedVerdict());
+    pointerOver(badge);
+    flush();
+    expect(document.documentElement.getAttribute("data-sar-hovercard")).toBe("open");
+    expect(getComputedStyle(storeHover).visibility).toBe("hidden");
+    pointerOver(other);
+    flush();
+    expect(document.documentElement.hasAttribute("data-sar-hovercard")).toBe(false);
+  });
+
+  it("clears the root mark on Escape, on pagehide and on stop", () => {
+    const { badge, other } = page();
+    const hover = start();
+    hover.bind(badge, disclosedVerdict());
+    const marked = () => document.documentElement.hasAttribute("data-sar-hovercard");
+    const reopen = () => {
+      pointerOver(other);
+      pointerOver(badge);
+      flush();
+      expect(marked()).toBe(true);
+    };
+    reopen();
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+    expect(marked()).toBe(false);
+    reopen();
+    window.dispatchEvent(new Event("pagehide"));
+    expect(marked()).toBe(false);
+    reopen();
+    hover.stop();
+    expect(marked()).toBe(false);
+  });
+
   it("renders notes with markup as plain text", () => {
     const { badge } = page();
     start().bind(badge, disclosedVerdict({ notes: XSS, service: XSS }));
