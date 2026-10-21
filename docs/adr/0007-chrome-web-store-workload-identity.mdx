@@ -1,0 +1,70 @@
+---
+status: accepted
+date: 2026-10-21
+decision-makers: Jorge Rodriguez de la Vega
+---
+
+# Chrome Web Store publishing authenticates through Workload Identity Federation
+
+## Context and problem statement
+
+The prod workflow uploads the Chrome zip and submits it for review through Chrome Web Store API v2. The API takes a Google OAuth access token with the `https://www.googleapis.com/auth/chromewebstore` scope. [ADR 0005](0005-release-pipeline.mdx) started with an OAuth refresh token stored in the `chrome-web-store` environment. That token lives until revoked, belongs to a personal Google login, and lapses after about six months without use. Prod runs rarely, which makes the last point likely.
+
+How does the Chrome job get its access token?
+
+## Decision drivers
+
+- No long-lived Google credential stored in GitHub.
+- Only a release run of this repository can obtain a token.
+- Nothing to rotate or renew on a calendar.
+- The code we own stays small enough to unit test.
+
+## Considered options
+
+1. **Workload Identity Federation to a service account** (chosen).
+2. **OAuth refresh token** for a personal Google account, used through `chrome-webstore-upload-cli` 4.
+3. **Service account JSON key** stored as an environment secret.
+
+## Decision outcome
+
+Chosen option 1.
+
+A Google Cloud service account with no IAM roles is added under Account in the Chrome Web Store developer dashboard. A publisher can register one service account.
+
+A workload identity pool has a GitHub OIDC provider. Its attribute condition admits a token only when `repository_id` is `1426952065` (`jrv97/steam-ai-reporter`), `ref` starts with `refs/tags/`, and `environment` is `chrome-web-store`. Principals from that provider hold `roles/iam.workloadIdentityUser` on the service account.
+
+The Chrome job asks for `id-token: write`. `google-github-actions/auth` 3.0.0 exchanges the GitHub OIDC token for an access token that lasts 15 minutes, with the Chrome Web Store scope, and writes no credentials file.
+
+`scripts/cws.py` makes the API calls with the Python standard library: upload the zip, call `fetchStatus` while the upload is `IN_PROGRESS` (at most 60 checks, 5 seconds apart), then `publish`. Unit tests drive these paths through a fake API.
+
+The `chrome-web-store` environment holds four variables and no secrets: `CWS_WORKLOAD_IDENTITY_PROVIDER`, `CWS_SERVICE_ACCOUNT`, `CWS_PUBLISHER_ID` and `CWS_EXTENSION_ID`. None of them grants access on its own.
+
+### Consequences
+
+- Good: GitHub stores no Google secret, so none can leak, expire or need rotation.
+- Good: a token lasts 15 minutes, and Google issues one only to a release tag run in this repository's `chrome-web-store` environment.
+- Good: `chrome-webstore-upload-cli` leaves `mise.toml`, one pinned tool fewer.
+- Bad: Chrome's service account page documents impersonation and key files but does not mention Workload Identity Federation. The first prod run is the test of this exact path.
+- Bad: about 70 lines of API client and tests to maintain, where a CLI maintained elsewhere did the same job.
+- Bad: a one-time Google Cloud setup (pool, provider, service account, IAM binding).
+- Neutral: AMO has no equivalent. Its JWT keys stay as secrets in the `amo` environment.
+
+## Pros and cons of the options
+
+### 2. OAuth refresh token
+
+- Good: works with a maintained CLI and has the most field use.
+- Bad: three long-lived secrets, tied to a personal Google login.
+- Bad: lapses after about six months unused, and after 7 days while the consent screen is in testing status.
+
+### 3. Service account key
+
+- Good: not tied to a personal login.
+- Bad: a long-lived private key in GitHub, a risk Chrome's own service account page warns about.
+- Bad: needs rotation, and an RS256 JWT exchange that the Python standard library cannot sign.
+
+## More information
+
+- Chrome Web Store service accounts: https://developer.chrome.com/docs/webstore/service-accounts
+- Chrome Web Store API v2 reference: https://developer.chrome.com/docs/webstore/api/reference/rest
+- This ADR replaces the Chrome Web Store auth choice in [ADR 0005](0005-release-pipeline.mdx).
