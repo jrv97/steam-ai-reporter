@@ -1,3 +1,12 @@
+<p align="center">
+  <img
+    src="assets/icons/icon.svg"
+    alt="AI Reporter for Steam logo: a purple label tag holding a white spark"
+    width="96"
+    height="96"
+  >
+</p>
+
 # AI Reporter for Steam
 
 A browser extension (Chrome and Firefox) and a userscript (Tampermonkey and Violentmonkey) that mark items on the Steam store whose developers disclosed generative AI use in Steam's own AI content disclosure.
