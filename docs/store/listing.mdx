@@ -35,7 +35,7 @@ What it does:
 
 What the badge means: the developer wrote a disclosure about generative AI on Steam. It is self-reported. The badge does not say how much AI a game uses, and a game without a badge is not guaranteed to be free of AI, because developers may not have disclosed anything, and Steam may not have the information for every item.
 
-Privacy: nothing is collected. To find out which items have a disclosure, the app IDs of the items on the page you are viewing go to Valve's own hosts that your browser already uses (api.steampowered.com and store.steampowered.com), without cookies. Verdicts and your settings stay in your browser. The full policy is in PRIVACY.md in the project repository.
+Privacy: nothing is collected. To find out which items have a disclosure, the app IDs of the items on the page you are viewing go to Valve's own hosts that your browser uses (api.steampowered.com and store.steampowered.com), without cookies. Verdicts and your settings stay in your browser. The full policy is in PRIVACY.md in the project repository.
 
 Open source (MIT). Source and build steps: https://github.com/jrv97/steam-ai-reporter
 
@@ -49,7 +49,7 @@ AI Reporter for Steam has one purpose: to show, on Steam store pages, which item
 
 The extension asks for one permission and no host permissions. It has no background script.
 
-- `storage`: keeps the cache of verdicts (so an app is not requested again until its entry expires), your settings, the per-game allow-list, and a small record used to back off if Steam is limiting requests. All of it stays on your device in the extension's local storage.
+- `storage`: keeps the cache of verdicts (an app is not requested again until its entry expires), your settings, the per-game allow-list, and a small record used to back off if Steam is limiting requests. All of it stays on your device in the extension's local storage.
 - Site access (content script matches `https://store.steampowered.com/*`): the content script runs only on the Steam store, because that is where the items to mark are. Its requests to `api.steampowered.com` and `store.steampowered.com` are made from the store page's own origin, so no `host_permissions` entry is needed. Both are Valve hosts the user is already on, and every request is made with `credentials: "omit"`.
 - Remote code: none. No `eval`, no remote scripts and no remote selectors. The bundles in the package are not minified and are built from the public source.
 

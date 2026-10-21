@@ -1,7 +1,7 @@
 """Run a build in a development browser through `web-ext run`, reloading on every rebuild.
 
 Firefox: only Firefox Nightly, from SAR_FIREFOX_BIN, with the dedicated profile directory in
-SAR_FIREFOX_PROFILE. There is no fallback to a Firefox on PATH: the user's regular Firefox and its
+SAR_FIREFOX_PROFILE. There is no fallback to a Firefox on PATH: a personal Firefox and its
 profiles are never launched or touched. The binary must be a Nightly build (its channel-prefs.js
 says "nightly"), and a profile last used by another Firefox install is refused.
 

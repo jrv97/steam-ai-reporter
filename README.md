@@ -30,7 +30,7 @@ If you browse the store the same way, I hope you find it useful too.
 - Optionally dims or hides disclosing items in lists. This is off by default.
 - Lets you ignore a game you consider a false flag, with a per-game allow-list.
 
-The badge says "AI use disclosed". It does not say a game uses AI, and the absence of a badge does not mean a game is AI-free: the disclosure is self-reported by the developer, so it marks what developers chose to disclose and nothing more.
+The badge says "AI use disclosed". It does not say a game uses AI, and the absence of a badge does not mean a game is AI-free: the disclosure is self-reported by the developer and marks what developers chose to disclose.
 
 ### On the store
 
@@ -66,7 +66,7 @@ The toolbar popup holds the same switches, the list filter and the games you sto
 
 ### Known gaps
 
-- In the header's search suggestions on a game's own store page, the suggestion for that same game gets no badge. The banner on the page already shows its disclosure.
+- In the header's search suggestions on a game's own store page, the suggestion for that same game gets no badge. The banner on the page shows its disclosure.
 
 ## Install
 

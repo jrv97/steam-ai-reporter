@@ -1,6 +1,6 @@
 # Privacy
 
-AI Reporter for Steam collects nothing. It has no analytics, no telemetry, no account, no server of its own and no third-party hosts. It sends no reports anywhere, and nothing is ever sent to the developer.
+AI Reporter for Steam collects nothing. It has no analytics, no telemetry, no account, no server of its own and no third-party hosts. It sends no reports anywhere, and nothing is sent to the developer.
 
 ## What is stored on your device
 
@@ -15,12 +15,12 @@ This lives in the extension's local storage (`storage.local`) or, in the userscr
 
 To find out which items have a disclosure, the app IDs of the items on the page you are viewing are sent to Valve, and only to Valve:
 
-- `https://api.steampowered.com/IStoreBrowseService/GetItems/v1`: the app IDs on the page, in batches of up to 50, with the page's Steam language so the developer's text can come back translated.
+- `https://api.steampowered.com/IStoreBrowseService/GetItems/v1`: the app IDs on the page, in batches of up to 50, with the page's Steam language to get the developer's text translated.
 - `https://store.steampowered.com/app/<id>/?l=english`: a fallback that fetches an app's store page when the API gives no answer, for a few apps per page view.
 
 Every one of these requests is made without cookies (`credentials: "omit"`), so Steam does not receive your login or session from it. Valve sees your IP address and the app IDs, as it does for any store request. These are the same hosts your browser already talks to while you browse the store.
 
-Cached verdicts are reused, so an app already checked is not requested again until its entry expires.
+Cached verdicts are reused: a checked app is not requested again until its entry expires.
 
 ## What is never read or sent
 
