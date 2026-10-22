@@ -1,0 +1,3 @@
+kind: Changed
+body: The per-game opt-out button now reads "Ignore this game", the list of those games in settings reads "Games you ignored", and its button reads "Stop ignoring". Steam has its own Ignore button; this one only affects this extension.
+time: 2026-10-22T12:14:11.1211425+02:00

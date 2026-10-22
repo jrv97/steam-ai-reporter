@@ -74,7 +74,7 @@ describe("createBanner", () => {
     banner.show(disclosedVerdict(), false);
     expect(query(root, "h2").textContent).toBe("AI use reported");
     expect(query(root, ".sar-banner-source").textContent).toBe("In the developer's own words:");
-    expect(query(root, ".sar-banner-action").textContent).toBe("Stop marking this game");
+    expect(query(root, ".sar-banner-action").textContent).toBe("Ignore this game");
     expect(root.querySelector("svg")).toBeNull();
   });
 
@@ -123,9 +123,7 @@ describe("createBanner", () => {
     const aside = query(root, "aside");
     expect(aside.getAttribute("data-sar-variant")).toBe("ignored");
     expect(aside.getAttribute("aria-label")).toBe("AI use report");
-    expect(query(root, ".sar-banner-ignored-text").textContent).toBe(
-      "You stopped marking this game.",
-    );
+    expect(query(root, ".sar-banner-ignored-text").textContent).toBe("Game ignored");
     expect(query(root, ".sar-banner-link").textContent).toBe("Undo");
     expect(root.querySelector("blockquote, h2, .sar-banner-action")).toBeNull();
     expect(root.textContent).not.toContain("Backgrounds");
@@ -143,7 +141,7 @@ describe("createBanner", () => {
       expect(query(root, "aside").getAttribute("data-sar-variant")).toBe("ignored");
     });
     expect(root.activeElement).toBe(query(root, '[data-sar-action="undo"]'));
-    expect(query(root, "[aria-live]").textContent).toBe("Marking stopped for this game.");
+    expect(query(root, "[aria-live]").textContent).toBe("This game will be ignored");
 
     query(root, '[data-sar-action="undo"]').click();
     actions.calls[1]?.resolve();
@@ -151,7 +149,7 @@ describe("createBanner", () => {
       expect(root.querySelector("blockquote")).not.toBeNull();
     });
     expect(root.activeElement).toBe(query(root, ".sar-banner-action"));
-    expect(query(root, "[aria-live]").textContent).toBe("Marking restored for this game.");
+    expect(query(root, "[aria-live]").textContent).toBe("This game is no longer ignored");
   });
 
   it("keeps the banner and shows an error when the allow-list cannot be saved", async () => {

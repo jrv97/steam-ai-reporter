@@ -1,7 +1,7 @@
 ---
 title: AI Reporter for Steam UI design decisions (v1)
 status: draft
-updated: 2026-10-21
+updated: 2026-10-22
 ---
 
 # AI Reporter for Steam UI design decisions (v1)
@@ -25,7 +25,7 @@ The choices behind `tokens.css`, `components.mdx` and `assets/icons/`, with the 
 6. **On search rows the full badge goes on the line under the title.** The title line clips.
 7. **The banner sits above the purchase box, in a shadow root.** Rejected: the right column (326px wide, below the fold), under "About this game" (after the buying decision), a modal (what people asked to get away from), light DOM (store CSS styles bare `h2`, `p`, `button`).
 8. **The banner attributes every word to the developer.** Nothing paraphrases or rates the notes.
-9. **"Stop marking this game", not "Ignore this game".** The store's own Ignore sits just above. The allow-list is "Games you stopped marking" with "Mark again".
+9. **"Ignore this game", next to the store's own Ignore button.** The store's button sits just above. Ours only stops badges and the notice for one game in this extension and never calls the store's feature. The list is "Games you ignored" with "Stop ignoring".
 10. **The list filter reads Show, Dim, Hide.** "Games that report AI use: Off" could read as turning the games off.
 11. **Dim is opacity 0.4 only.** Rejected: grayscale (an effect layer per capsule, hundreds on a sale page).
 12. **Settings are attributes on the root element; the list filter is pure CSS.** Rejected: toggling classes per host (one write per capsule, re-applied on every React re-render), inline styles (same cost, and they fight the store's).
@@ -59,20 +59,19 @@ Nothing was copied from prior-art extensions. Ideas that shaped this, to credit 
 
 ## Open questions
 
-1. **"Stop marking" or "Ignore".** Keep decision 9, or return to the plan's "ignore this game" and accept the clash with the store's button?
-2. **Wishlist anchor.** The wishlist is React and the sampled one was private; the full badge's exact anchor is unverified.
-3. **Row hover color.** `#2a475e` is assumed. The badge passes on it (5.21:1), but confirm the live value.
-4. **CSP for styles.** The banner and dialog use `adoptedStyleSheets`; badges rely on the content stylesheet or `GM_addStyle`. If the store's CSP blocks either, fall back to light DOM plus the badge reset.
-5. **Line clamp with `pre-line` in Firefox.** Unchecked with notes that contain blank lines.
-6. **Forced colors.** The rules are written but unchecked in Windows high contrast mode.
-7. **"Steam" in the name and description.** "AI Reporter for Steam" and `ext_description` use the trademark descriptively; check both against the listing policies.
-8. **Language of the quoted notes.** The API does not say which language the developer wrote in, so the quote carries no `lang`.
-9. **Dim distinctness.** 0.4 against the store's 0.3 is a small difference. If people confuse the two, profile a cheap second cue (a tinted outline on the host) on a sale page first.
-10. **Banner next to the DLC bubble.** A game with DLC can carry a report too, so our banner may stack with the store's plum DLC bubble. Compare the two side by side on such a page.
-11. **Compact badge and the store's flags.** Both share the 5px row, and the compact badge carries the full label (decision 35). On a 184px capsule the English label leaves 33px beside a 64px flag and the Spanish one 9px; a longer translation can reach a store flag at the other corner. Measure the widest flag and cap our label if needed.
-12. **Banner button hover.** The 10% white hover wash is ours; the store's white-transparent hover state was not sampled.
-13. **Restore: merge or replace.** Restore merges game lists by default. Decide whether to also offer "replace everything", for someone who wants this browser to match the backup exactly.
-14. **History in backups.** Lookup history is the bulk of the file and refreshes itself anyway. Decide whether it stays in, becomes optional, and how large a file to accept.
-15. **Summary row over background art.** The summary box sits on transparent layers: a column gradient (to the right, from 0 to 40% black) and the page's glow, over the game's background art when the page has some. Contrast here is measured on the plain page color. On a page with custom art, measure the chip against the lightest pixel behind the box.
-16. **Summary row in the narrow layout.** The store's responsive layout moves the summary box. Confirm the row still lands under Publisher there.
-17. **Summary row on a tall summary box.** A game with two review rows and a publisher name that wraps adds about 36px; the tag row would hang past the media's bottom edge. Check one such page; if it overflows, drop the row there.
+1. **Wishlist anchor.** The wishlist is React and the sampled one was private; the full badge's exact anchor is unverified.
+2. **Row hover color.** `#2a475e` is assumed. The badge passes on it (5.21:1), but confirm the live value.
+3. **CSP for styles.** The banner and dialog use `adoptedStyleSheets`; badges rely on the content stylesheet or `GM_addStyle`. If the store's CSP blocks either, fall back to light DOM plus the badge reset.
+4. **Line clamp with `pre-line` in Firefox.** Unchecked with notes that contain blank lines.
+5. **Forced colors.** The rules are written but unchecked in Windows high contrast mode.
+6. **"Steam" in the name and description.** "AI Reporter for Steam" and `ext_description` use the trademark descriptively; check both against the listing policies.
+7. **Language of the quoted notes.** The API does not say which language the developer wrote in, so the quote carries no `lang`.
+8. **Dim distinctness.** 0.4 against the store's 0.3 is a small difference. If people confuse the two, profile a cheap second cue (a tinted outline on the host) on a sale page first.
+9. **Banner next to the DLC bubble.** A game with DLC can carry a report too, so our banner may stack with the store's plum DLC bubble. Compare the two side by side on such a page.
+10. **Compact badge and the store's flags.** Both share the 5px row, and the compact badge carries the full label (decision 35). On a 184px capsule the English label leaves 33px beside a 64px flag and the Spanish one 9px; a longer translation can reach a store flag at the other corner. Measure the widest flag and cap our label if needed.
+11. **Banner button hover.** The 10% white hover wash is ours; the store's white-transparent hover state was not sampled.
+12. **Restore: merge or replace.** Restore merges game lists by default. Decide whether to also offer "replace everything", for someone who wants this browser to match the backup exactly.
+13. **History in backups.** Lookup history is the bulk of the file and refreshes itself anyway. Decide whether it stays in, becomes optional, and how large a file to accept.
+14. **Summary row over background art.** The summary box sits on transparent layers: a column gradient (to the right, from 0 to 40% black) and the page's glow, over the game's background art when the page has some. Contrast here is measured on the plain page color. On a page with custom art, measure the chip against the lightest pixel behind the box.
+15. **Summary row in the narrow layout.** The store's responsive layout moves the summary box. Confirm the row still lands under Publisher there.
+16. **Summary row on a tall summary box.** A game with two review rows and a publisher name that wraps adds about 36px; the tag row would hang past the media's bottom edge. Check one such page; if it overflows, drop the row there.

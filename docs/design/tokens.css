@@ -130,7 +130,7 @@
   /* Show full report and Undo, underlined like the store's in-bubble links (the store's own
      #c3c1c0 would be 4.49:1 here). */
   --sar-banner-link-color: var(--sar-banner-fg);
-  /* Stop marking this game, as the store's outlined buttons: 8.06:1 on the bright end. */
+  /* Ignore this game, as the store's outlined buttons: 8.06:1 on the bright end. */
   --sar-banner-button-fg: #ffffff;
   /* That button's edge, the store's own: 2.63:1 on the bright end. The label identifies it. */
   --sar-banner-button-border: rgba(255, 255, 255, 0.4);
@@ -150,7 +150,7 @@
   --sar-button-primary-bg-hover: var(--sar-accent-500);
   /* Primary button label: 6.77:1 on the fill, 4.98:1 on hover. */
   --sar-button-primary-fg: #ffffff;
-  /* Secondary button fill (Mark again). */
+  /* Secondary button fill (Stop ignoring). */
   --sar-button-secondary-bg: rgba(255, 255, 255, 0.08);
   /* Secondary button hover fill. */
   --sar-button-secondary-bg-hover: rgba(255, 255, 255, 0.14);

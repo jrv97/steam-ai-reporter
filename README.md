@@ -40,7 +40,7 @@ In search results, rows of games whose developers reported AI use carry the badg
 
 ![A game's store page with a purple banner above the purchase box that reads "AI use reported" and quotes the developer's report; the DLC rows below are badged too](docs/store/screenshots/02-app-banner.jpg)
 
-On a game's page, a banner above the purchase box quotes the developer's report in their own words. "Stop marking this game" adds it to your allow-list. Its DLC rows get badges too.
+On a game's page, a banner above the purchase box quotes the developer's report in their own words. The page's DLC rows get badges too. "Ignore this game" stops the badges and the banner for that game in this extension and does not touch Steam's own Ignore button.
 
 ![A search row's badge with a panel open below it that quotes the developer's report](docs/store/screenshots/03-hover-card.jpg)
 
@@ -52,17 +52,17 @@ Sale pages such as Next Fest, tag and category hubs and the home page get a comp
 
 ### Settings
 
-![The options page: switches for badges and the banner, a Show, Dim and Hide control for lists, a language picker, and a list of games you stopped marking](docs/store/screenshots/05-options.jpg)
+![The options page: switches for badges and the banner, a Show, Dim and Hide control for lists, a language picker, and a list of games you ignored](docs/store/screenshots/05-options.jpg)
 
-The options page turns badges and the banner on or off, sets how lists treat those games, picks the language (automatic follows the store page), and lists the games you stopped marking, each with "Mark again".
+The options page turns badges and the banner on or off, sets how lists treat those games, picks the language (automatic follows the store page), and lists the games you ignored, each with "Stop ignoring".
 
 ![The same search results with the list filter set to Dim, where the three badged rows are faded](docs/store/screenshots/list-dim.jpg)
 
 With the list filter on Dim, badged games fade in lists and come back on hover. Hide removes them from lists. Show, the default, leaves lists as they are.
 
-<img src="docs/store/screenshots/popup.jpg" alt="The toolbar popup with the badge and banner switches, the Show, Dim and Hide control, one game you stopped marking, and a link to all settings" width="360">
+<img src="docs/store/screenshots/popup.jpg" alt="The toolbar popup with the badge and banner switches, the Show, Dim and Hide control, one game you ignored, and a link to all settings" width="360">
 
-The toolbar popup holds the same switches, the list filter and the games you stopped marking, with a link to the full options page. The userscript opens the same settings in a dialog from the script manager's menu.
+The toolbar popup holds the same switches, the list filter and the games you ignored, with a link to the full options page. The userscript opens the same settings in a dialog from the script manager's menu.
 
 ### Known gaps
 

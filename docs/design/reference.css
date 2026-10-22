@@ -327,7 +327,7 @@ a.sar-summary-row .sar-badge {
   overflow: hidden;
 }
 
-/* "Stop marking this game": the store's outlined button, at least 24px tall */
+/* "Ignore this game": the store's outlined button, at least 24px tall */
 .sar-banner-action {
   appearance: none;
   display: inline-flex;
