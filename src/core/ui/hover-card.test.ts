@@ -90,9 +90,10 @@ describe("createHoverCard", () => {
   }
 
   function page(): { link: HTMLAnchorElement; badge: HTMLElement; other: HTMLElement; } {
+    const label = i18n.t("badge_label");
     setBody(`
       <a class="row" href="/app/10/"><span class="title">Game</span>
-      <span class="sar-badge"><span class="sar-badge-label">AI use reported</span></span></a>
+      <span class="sar-badge"><span class="sar-badge-label">${label}</span></span></a>
       <a class="other" href="/app/20/">Other</a>`);
     const link = document.querySelector<HTMLAnchorElement>(".row");
     const badge = document.querySelector<HTMLElement>(".sar-badge");
@@ -142,12 +143,12 @@ describe("createHoverCard", () => {
     flush();
     const node = shown();
     expect(node?.getAttribute("role")).toBe("tooltip");
-    expect(node?.querySelector(".sar-hovercard-title")?.textContent).toBe("AI use reported");
+    expect(node?.querySelector(".sar-hovercard-title")?.textContent).toBe(i18n.t("badge_label"));
     expect(node?.querySelector(".sar-hovercard-source")?.textContent)
-      .toBe("In the developer's own words:");
+      .toBe(i18n.t("badge_card_source"));
     expect(node?.querySelector(".sar-hovercard-notes")?.textContent).toBe("Line one\nLine two");
     expect(node?.querySelector(".sar-hovercard-service")?.textContent)
-      .toBe("AI service named by the developer: Midjourney");
+      .toBe(`${i18n.t("badge_card_service_label")} Midjourney`);
     expect(node?.getAttribute("data-sar-side")).toBe("below");
   });
 
@@ -262,7 +263,7 @@ describe("createHoverCard", () => {
     flush();
     const more = shown()?.querySelector<HTMLElement>(".sar-hovercard-more");
     expect(more?.hidden).toBe(false);
-    expect(more?.textContent).toBe("The full text is on the game's store page.");
+    expect(more?.textContent).toBe(i18n.t("badge_card_more"));
     expect(shown()?.querySelector(".sar-hovercard-notes")?.textContent).toBe("word ".repeat(400));
 
     overflowing = false;

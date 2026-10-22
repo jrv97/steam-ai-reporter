@@ -4,6 +4,7 @@ import searchItems from "../../tests/fixtures/getitems/search-roguelike-50.json"
 import { fakeHttp } from "../../tests/helpers/fake-http";
 import { fixedClock } from "../../tests/helpers/fixed-clock";
 import { fixtureItems, getItemsRequest, getItemsRoute } from "../../tests/helpers/getitems";
+import { englishI18n } from "../../tests/helpers/i18n";
 import { memoryStore } from "../../tests/helpers/memory-store";
 import { loadPage, SURFACES } from "../../tests/helpers/surfaces";
 import { type App, start } from "./app";
@@ -13,6 +14,7 @@ import { createSettingsSource } from "./settings/settings-source";
 import { ALLOW_KEY } from "./storage-keys";
 import { adoptPageStyles } from "./ui/styles";
 
+const i18n = englishI18n();
 const DISCLOSED = "4461450";
 const SEARCH_IDS = [4075620, 3934270, 3784030, 1045010, 3432110, 3664320, 4461450, 2624160];
 const NOW = Date.UTC(2026, 9, 20);
@@ -56,7 +58,7 @@ describe("start on the search page", () => {
     expect(http.calls).toHaveLength(1);
     expect(getItemsRequest(http.calls[0] ?? "").ids).toEqual(SEARCH_IDS);
     const badge = row(DISCLOSED)?.querySelector(".search_name > .title + .sar-badge");
-    expect(badge?.textContent).toBe("AI use reported");
+    expect(badge?.textContent).toBe(i18n.t("badge_label"));
     expect(row(DISCLOSED)?.getAttribute("data-sar-state")).toBe("disclosed");
     const states = SEARCH_IDS.map((id) => row(String(id))?.getAttribute("data-sar-state"));
     expect(states.filter((state) => state === "not-disclosed")).toHaveLength(7);

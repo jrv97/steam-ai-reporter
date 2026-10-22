@@ -4,12 +4,14 @@ import searchItems from "../../../tests/fixtures/getitems/search-roguelike-50.js
 import { fakeFetch } from "../../../tests/helpers/fake-http";
 import { fixtureItems, getItemsRoute } from "../../../tests/helpers/getitems";
 import { fakeGm } from "../../../tests/helpers/gm-fake";
+import { englishI18n } from "../../../tests/helpers/i18n";
 import { loadPage, SURFACES } from "../../../tests/helpers/surfaces";
 import type { App } from "../../core/app";
 import { DEFAULT_SETTINGS, encodeSettings } from "../../core/settings/settings";
 import { SETTINGS_KEY } from "../../core/storage-keys";
 import { startUserscript, type UserscriptEnv } from "./userscript";
 
+const i18n = englishI18n();
 const quiet = { error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() };
 
 let app: App | undefined;
@@ -75,8 +77,9 @@ describe("startUserscript", () => {
     const { env, commands } = setup();
     app = await startUserscript(env);
 
-    expect([...commands.keys()]).toStrictEqual(["Settings"]);
-    commands.get("Settings")?.();
+    const caption = i18n.t("userscript_menu_settings");
+    expect([...commands.keys()]).toStrictEqual([caption]);
+    commands.get(caption)?.();
     await expect.poll(() => document.querySelector(".sar-dialog-host")).not.toBeNull();
     const dialog = document.querySelector(".sar-dialog-host")?.shadowRoot?.querySelector("dialog");
     expect(dialog?.open).toBe(true);
