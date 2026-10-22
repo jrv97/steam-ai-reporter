@@ -20,7 +20,7 @@ Prior note: `docs/research/steam-ai-disclosure/rq4-prior-art.md` section 1.4. Co
 - Asserted: the banner appears for "games that disclose AI usage" (API `summary`). The listing does not say what it reads: the store-page heading text, a Steam data field or a list.
 - Not retrievable: the matching logic, the language handling, the handling of negated or partial disclosures, and any misses. No review, issue tracker or press item describes a false flag or a miss for this tool, because none exists (see section 8).
 - Inference from the declared permissions: the add-on has no `storage` permission and no host access beyond the store (section 5). It can read the open page. Any privileged lookup of other hosts is outside its declared reach. Whether it fetches other store pages is unknown.
-- Asserted wording: the banner says "AI sh*t in this game" (listing copy). That wording is an opinion about the game. It states neither "AI use disclosed", nor the scope (pre-generated, live, marketing only), nor the developer's text. Whether the banner shows the disclosure text is unknown.
+- Asserted wording: the banner says "AI sh*t in this game" (listing copy). That wording is an opinion about the game. It states neither "AI use reported", nor the scope (pre-generated, live, marketing only), nor the developer's text. Whether the banner shows the disclosure text is unknown.
 
 ## 3. Surface coverage
 

@@ -82,14 +82,14 @@ Supports Restraint:
 - Declares data collection in the Firefox manifest and ships a plain privacy file that lists what is sent and stored. [code] and [listing] URLs above.
 - Permissions stay on the store host plus `storage`; the manifest has no background script. [code] manifest URL
 - Limit: app IDs of viewed pages go to a non-Valve server; the host is unnamed; votes carry a durable install ID and an IP hash; no retention period. [listing] PRIVACY.md URL
-- Limit: the label "slop" is a judgment that differs from "AI use disclosed"; 2 votes of 3 can flag a game; no unknown state is documented. [listing] README URL
+- Limit: the label "slop" is a judgment that differs from "AI use reported"; 2 votes of 3 can flag a game; no unknown state is documented. [listing] README URL
 - Limit: host_permissions is set for the store host, where our rule 3 allows none (content-script match only). [code] manifest URL
 
 ## 11. Lessons for our design
 
 - Avoid sending app IDs to any host but Valve's: crowd votes force a server of our own, an install ID and an IP hash, which break rule 1; the idea would need its own ADR first.
 - Match the plain privacy file that lists what is sent, what is stored and how to delete it, and the Firefox manifest declaration of data collection; avoid leaving the server host and the retention period unstated.
-- Avoid verdicts from a vote tally and the word "slop"; keep three states and the wording "AI use disclosed", and keep a language-independent signal in mind, since app-ID keyed data does not break on the store language.
+- Avoid verdicts from a vote tally and the word "slop"; keep three states and the wording "AI use reported", and keep a language-independent signal in mind, since app-ID keyed data does not break on the store language.
 
 ## 12. Not retrievable
 

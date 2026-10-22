@@ -8,7 +8,7 @@ The product is AI Reporter for Steam: a Chrome and Firefox extension and a users
 
 - Strategic tension: Coverage x Restraint, scored as two separate poles and never averaged.
   - Coverage: the tool finds disclosed games on every Steam surface and in every store language, and it survives Steam markup and translation changes.
-  - Restraint: minimal permissions, Valve hosts only, a non-blocking UI, and honest wording ("AI use disclosed", never "uses AI"), with unknown results kept apart from clean ones.
+  - Restraint: minimal permissions, Valve hosts only, a non-blocking UI, and honest wording ("AI use reported", never "uses AI"), with unknown results kept apart from clean ones.
 - Target quadrant: high on both poles.
 - Central question: does any tool already sit in that quadrant?
 - Differentiators claimed by the v1 plan (`docs/plans/steam-ai-reporter-v1.md`): batched GetItems detection (one request per 50 apps), three verdict states, credentials omitted, a content-script-only runtime, and one core for the extension and the userscript.

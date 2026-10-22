@@ -145,7 +145,7 @@ Weakens Restraint:
 - Avoid: any "everything below the highest known ID is negative" rule. It breaks our three-state verdict (unknown is not "not disclosed") and failed for 37% to 41% of later additions in their own list history.
 - Avoid: per-app HTML page fetches as the detection source. They cost about 100 to 400 thousand characters each, serial at 1 s, and hit sign-in or age walls (7 of 40 in the sample). Our GetItems batches of 50 sidestep that; confirm in RQ2 that the response carries the disclosure.
 - Match: never store a negative from a response that is not the expected data shape; map redirects, walls and error pages to "unknown".
-- Avoid: "Uses AI" copy, English-only strings and install-by-raw-URL packaging (the competitor needed 6.5 months to make the links installable). Use "AI use disclosed" from a localized catalog, and ship through the stores.
+- Avoid: "Uses AI" copy, English-only strings and install-by-raw-URL packaging (the competitor needed 6.5 months to make the links installable). Use "AI use reported" from a localized catalog, and ship through the stores.
 
 ## 12. Not retrievable
 

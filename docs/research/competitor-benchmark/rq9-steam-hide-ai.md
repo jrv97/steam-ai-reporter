@@ -200,7 +200,7 @@ Restraint, supports:
 
 Restraint, limits:
 
-- Banner title reads "This game uses AI-generated content", for disclosed and for crowd-reported games alike. Our rule 4 wording is "AI use disclosed". [code]
+- Banner title reads "This game uses AI-generated content", for disclosed and for crowd-reported games alike. Our rule 4 wording is "AI use reported". [code]
 - Crowd reports present undisclosed games as AI users on the strength of counts; reporters self-declare. [code] [listing]
 - App IDs and a SteamID64-bearing token go to a non-Valve host; the list download hits GitHub on every store page start-up regardless of the toggle. [code]
 - Store-page fetches carry Steam cookies. [code]

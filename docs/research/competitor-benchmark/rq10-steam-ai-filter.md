@@ -93,7 +93,7 @@ Misses and false flags
 - Storage scope: settings and cache sit in the browser's local extension storage; the code never uses synced storage, and settings do not follow the user across devices. [code] a scan of all compiled files found no synced-storage call. https://github.com/RyuuMeow/steam-ai-filter/tree/main/extension
 - UI languages: English, Traditional Chinese, Simplified Chinese. The first language follows the browser; a Language setting overrides. Game names and the developer's disclosure stay untouched. [code] https://github.com/RyuuMeow/steam-ai-filter/blob/main/src/i18n.ts ; [listing] README.en.md
 - Developer text is placed in the dialog and bar as plain text; the two inner-markup assignments in the content script and mask carry static templates only. [code] a scan for dynamic markup insertion; content.ts and mask.ts. Not a proof against all injection.
-- Wording: the mask says "AI-generated content". The mark pill says "AI". The dialog title says "Original developer disclosure". The check icon says "This does not prove whether AI was used". The first two are stronger than "AI use disclosed". [code] i18n.ts https://github.com/RyuuMeow/steam-ai-filter/blob/main/src/i18n.ts
+- Wording: the mask says "AI-generated content". The mark pill says "AI". The dialog title says "Original developer disclosure". The check icon says "This does not prove whether AI was used". The first two are stronger than "AI use reported". [code] i18n.ts https://github.com/RyuuMeow/steam-ai-filter/blob/main/src/i18n.ts
 - Dismissal: the detail-page bar has no dismiss control. Turning the mode to Off removes every mark and restores cards. [code] content.ts
 - Missing controls: no per-surface toggle, no developer allow list, no report-a-false-flag, no export of settings, no keyboard shortcut. [code] popup.html and popup.ts
 
@@ -163,7 +163,7 @@ Account-writing action (the "Not interested" and automatic ignore features)
 
 ## 10. Coverage and Restraint evidence
 
-Coverage means working on every Steam surface and store language and surviving Steam markup and translation changes. Restraint means minimal permissions, Valve hosts only, non-blocking UI and honest wording ("AI use disclosed", never "uses AI"). Items marked "limit" count against the list they sit in.
+Coverage means working on every Steam surface and store language and surviving Steam markup and translation changes. Restraint means minimal permissions, Valve hosts only, non-blocking UI and honest wording ("AI use reported", never "uses AI"). Items marked "limit" count against the list they sit in.
 
 Supports Coverage:
 
@@ -190,14 +190,14 @@ Supports Restraint:
 - Limit: `alarms`, host access and a background worker are held; our rule allows none of these (section 5).
 - Limit: credentials are included on every request, including the page lookups (section 5).
 - Limit: it can write to the Steam account ignore list using a session token parsed from a page (section 5).
-- Limit: the mask reads "AI-generated content" and the mark reads "AI", not "AI use disclosed" (section 4).
+- Limit: the mask reads "AI-generated content" and the mark reads "AI", not "AI use reported" (section 4).
 - Limit: masked cards capture clicks and block Steam hover previews until the user unmasks, and Mask is the default mode on first install (sections 4 and 9).
 - Limit: the lookup cache is a stored list of up to 500 games the user saw, with disclosure text (section 5).
 
 ## 11. Lessons for our design
 
 - Match the forced-English page lookup, the page identity and completeness check before any "not found", the "heading outside expected structure" canary and the tests on gate, redirect and truncated pages. Avoid reading the heading in the page with a three-language list; use one language-independent route for every surface.
-- Match the three-state verdict and the "checked does not prove" wording. Avoid "AI-generated content" on masks; use "AI use disclosed" and keep the developer text verbatim in plain text.
+- Match the three-state verdict and the "checked does not prove" wording. Avoid "AI-generated content" on masks; use "AI use reported" and keep the developer text verbatim in plain text.
 - Match per-card Unmask with an eye to mask again, an allow list kept by app ID, serialized settings with rollback on a failed save, and the unchanged-state skip for DOM writes. Avoid per-card listeners, click capture on unmasked-by-default shelves, and a default mode that hides before the user chose.
 - Avoid one full store-page fetch per app (100 to 300 KB each, measured) when a batched request returns 50 apps; if a per-use filter is wanted, treat keyword classification as a labelled heuristic in a separate layer, not as the verdict, and measure it on real disclosures first.
 - Avoid account-writing actions, `alarms`, host access and a background worker under our rules 1 and 3; if a "not interested" action is ever wanted it needs an ADR first, and this tool's pattern (real click, slot reservation before the request, read-back confirmation, pause on doubt) is the reference to study.
