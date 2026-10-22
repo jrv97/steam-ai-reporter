@@ -96,11 +96,29 @@ Main tasks:
 - `mise run build`: build `dist/chrome`, `dist/firefox`, `dist/userscript` and the dev-only `dist/dev`.
 - `mise run check`: text, catalog, version and bundle checks on top of the build.
 - `mise run ci`: everything CI runs. The pre-push hook runs `prepush`, which is the same without the reproducibility check and `web-ext lint`.
-- `mise run dev`: rebuild on change. In another terminal, `mise run run-firefox` (Firefox Nightly only) or `mise run run-chrome` loads the build with auto-reload. In Chrome you can also load `dist/chrome` with "Load unpacked".
+- `mise run dev`: rebuild on change. In another terminal, `mise run run-firefox` (Firefox Nightly only) or `mise run run-chrome` loads the build with auto-reload.
 - `mise run package`: write the Chrome and Firefox zips, the userscript and its `.meta.js`, and the source archive for store reviewers to `artifacts/`, then check them.
 - `mise run canary`: before a release, check that live Steam still answers in the shape the detectors expect (two requests). It is not part of `ci`.
 - `mise run capture-fixtures`: refresh the public test fixtures from the live store.
 - `mise run change-new`: add a changelog fragment. A pull request that changes `src/` needs one, unless it carries the `no-changelog-fragment` label.
+
+### Try a build in your browser
+
+For the quick loop, `mise run run-chrome` or `mise run run-firefox` builds, opens the browser with the dedicated profile from `mise.local.toml` and reloads the extension after each rebuild. Run `mise run dev` in another terminal to rebuild on every change.
+
+To test what a release ships, run `mise run package`. It writes these files to `artifacts/`:
+
+- `steam-ai-reporter-chrome-<version>.zip` and `steam-ai-reporter-firefox-<version>.zip`.
+- `steam-ai-reporter.user.js` and `steam-ai-reporter.meta.js`.
+- `steam-ai-reporter-source-<version>.zip`, the archive for store reviewers.
+
+`<version>` is the `package.json` version, which holds the last release, so a local package carries that number. Load it like this:
+
+- Chrome: open `chrome://extensions`, turn on Developer mode, choose "Load unpacked" and pick `dist/chrome`. Chrome cannot load the zip.
+- Firefox Nightly: open `about:debugging#/runtime/this-firefox`, choose "Load Temporary Add-on" and pick the Firefox zip. The browser removes it on restart.
+- Userscript: open `artifacts/steam-ai-reporter.user.js` in Tampermonkey or Violentmonkey.
+
+Run `mise run ci` before trusting a package. It adds the reproducibility check and `web-ext lint`.
 
 ## Build from source
 
@@ -111,6 +129,17 @@ For store reviewers and anyone who wants to reproduce a release. The build runs 
 3. Run `mise run build`. It installs the JavaScript dependencies from `pnpm-lock.yaml` and writes the unminified bundles to `dist/` (`dist/firefox` is the Firefox add-on).
 
 `mise run check-reproducible` builds twice and fails if any output byte differs.
+
+## Releasing
+
+[ADR 0005](docs/adr/0005-release-pipeline.mdx) records the design. Versions are unpadded CalVer: `2026.10.21`, and `2026.10.21.1` for a recut on the same day. The `package.json` version holds the last release, and feature pull requests never edit it.
+
+1. A pull request that changes `src/` adds a changelog fragment with `mise run change-new`.
+2. The `release-train` workflow runs at 00:00 UTC or on demand. `gh workflow run release-train.yml -f dry_run=true` reports the version it would cut and opens nothing. A real run opens a batch pull request that bumps the version and writes the changelog, and the pull request merges when the checks pass. With no fragments there is no release.
+3. After CI passes on the merged batch commit, the pipeline tags it. `release-nightly` builds once, checks that the build reproduces, and publishes a GitHub prerelease with the five artifacts from `mise run package`. No store is touched. Install the prerelease by hand to test it.
+4. To ship, run `gh workflow run release-prod.yml --ref <tag> -f tag=<tag>`. It promotes the prerelease artifacts without a rebuild. The Chrome Web Store and AMO jobs each wait for a reviewer's approval. The last job marks the release as latest, which updates userscript installs.
+
+A recut after a store rejection needs a new `.N` version, because AMO never reuses a version number.
 
 ## Prior art and thanks
 
