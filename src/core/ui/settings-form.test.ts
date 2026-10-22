@@ -80,10 +80,17 @@ describe("mountSettingsForm", () => {
     );
   });
 
+  it("names the badge label in the badges help", async () => {
+    const { root } = await setup();
+    expect(root.textContent).toContain(
+      'Adds "AI use reported" to search and wishlist rows and to game images.',
+    );
+  });
+
   it("says that it sends no reports", async () => {
     const page = await setup("page");
     expect(page.root.textContent).toContain(
-      "Sends no reports. It only reads the disclosures developers made on Steam.",
+      "Sends no reports. It only reads what developers report on Steam.",
     );
     document.body.replaceChildren();
     const popup = await setup("popup");

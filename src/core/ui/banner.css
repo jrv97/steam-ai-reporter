@@ -106,7 +106,7 @@
   background: var(--sar-banner-button-bg-hover);
 }
 
-/* "Show full disclosure" and "Undo": the store's underlined in-bubble links, as buttons */
+/* "Show full report" and "Undo": the store's underlined in-bubble links, as buttons */
 .sar-banner-link {
   appearance: none;
   display: inline-flex;

@@ -49,7 +49,7 @@ describe("createAppPageUi", () => {
     setup().render(view());
     const row = summaryRow();
     expect(row?.previousElementSibling?.id).toBe("publisher");
-    expect(row?.textContent).toBe("AI use:Disclosed by the developer");
+    expect(row?.textContent).toBe("AI use reported");
     expect(row?.getAttribute("href")).toBe(`#${BANNER_ID}`);
     expect(row?.hasAttribute("title")).toBe(false);
     // The link jumps to the full notes, so it opens no hover card.

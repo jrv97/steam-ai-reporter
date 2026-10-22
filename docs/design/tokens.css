@@ -53,8 +53,8 @@
   /* Meta lines on solid grounds and the allow-listed note (7.68:1 on its strip); 6.97:1 or more on
      page, row, panel and raised. Never on the banner wash (3.77:1 at its bright end). */
   --sar-color-text-muted: #acb2b8;
-  /* Help text, versions, dates and footers on page, row, panel, raised and sunken (5.09:1 or more),
-     and the summary row label. Never on the banner wash or the store's row hover (3.32:1). */
+  /* Help text, versions, dates and footers on page, row, panel, raised and sunken (5.09:1 or more).
+     Never on the banner wash or the store's row hover (3.32:1). */
   --sar-color-text-subtle: #8f98a0;
   /* Form control edges and the off switch's edge: 3.48:1 on raised, 3.88:1 on panel, 4.23:1 on
      sunken. */
@@ -127,7 +127,7 @@
   /* All banner text: title, source and service lines, notes. The store's bubble text color: 5.54:1
      on the bright end, 9.84:1 on the dark end. */
   --sar-banner-fg: #d5d6d8;
-  /* Show full disclosure and Undo, underlined like the store's in-bubble links (the store's own
+  /* Show full report and Undo, underlined like the store's in-bubble links (the store's own
      #c3c1c0 would be 4.49:1 here). */
   --sar-banner-link-color: var(--sar-banner-fg);
   /* Stop marking this game, as the store's white-transparent button: 8.06:1 on the bright end. */
@@ -209,8 +209,6 @@
   --sar-compact-pad-inline: 5px;
   /* Banner button inline padding, as the store's white-transparent button. */
   --sar-banner-button-pad-inline: 15px;
-  /* Gap after the summary row label, as the store's own summary labels. */
-  --sar-summary-label-pad-inline-end: 10px;
   /* Compact badge offset from the image's block-start edge: the store's corner flags sit 5px down.
   */
   --sar-compact-inset-block: 5px;
@@ -238,10 +236,11 @@
 
   /* Full badge block size: the store's tag-chip height. */
   --sar-badge-height: 19px;
-  /* Full badge cap. English needs about 96px; past the cap the label ends in an ellipsis. */
+  /* Full badge cap. English needs about 90px; past the cap the label ends in an ellipsis. */
   --sar-badge-max-inline-size: 180px;
-  /* Summary row label column: the share of the row the store gives its own labels. */
-  --sar-summary-label-inline-size: 35%;
+  /* Summary row chip offset from the row's inline start: the share of the row the store gives its
+     own labels, so the chip lines up with the Developer and Publisher values. */
+  --sar-summary-chip-inset-inline: 35%;
   /* Compact badge block size, text tier: the store's corner-flag height. */
   --sar-compact-height: 19px;
   /* Compact badge block size, large tier. */
@@ -368,8 +367,6 @@
   --sar-banner-button-font: var(--sar-weight-light) var(--sar-size-xl) / 30px var(--sar-font-page);
   --sar-banner-note-font: var(--sar-weight-regular) var(--sar-size-sm) / 17px var(--sar-font-page);
 
-  --sar-summary-label-font: var(--sar-weight-regular) var(--sar-size-xs) / 18px
-    var(--sar-font-summary);
   --sar-summary-tag-font: var(--sar-weight-regular) var(--sar-size-xs) / 19px
     var(--sar-font-summary);
 

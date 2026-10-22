@@ -131,15 +131,16 @@
   font: var(--sar-compact-font-lg);
 }
 
-/* Summary row: one label and value row in the game's summary box, under Publisher. Same
-   shape as the store's own rows, with our own classes. */
+/* Summary row: the chip alone in the game's summary box, under Publisher, with our own classes.
+   The inset skips the store's label column, so the chip starts where the Developer and Publisher
+   values start. */
 
 .sar-summary-row {
   display: flex;
   align-items: center;
+  inline-size: fit-content;
   min-block-size: var(--sar-badge-height);
-  color: var(--sar-color-text);
-  font: var(--sar-summary-label-font);
+  margin-inline-start: var(--sar-summary-chip-inset-inline);
   white-space: nowrap;
 }
 
@@ -152,19 +153,7 @@ a.sar-summary-row:focus-visible {
   outline-offset: var(--sar-focus-offset);
 }
 
-.sar-summary-label {
-  display: block;
-  flex: none;
-  inline-size: var(--sar-summary-label-inline-size);
-  padding-inline-end: var(--sar-summary-label-pad-inline-end);
-  overflow: hidden;
-  color: var(--sar-color-text-subtle);
-  font: var(--sar-summary-label-font);
-  text-overflow: ellipsis;
-  text-transform: uppercase;
-}
-
-/* The full badge, set like the store's tag chips, allowed the whole value column */
+/* The full badge, set like the store's tag chips; past the row's 65% it truncates */
 .sar-summary-row .sar-badge {
   flex: 0 1 auto;
   max-inline-size: 100%;
@@ -364,7 +353,7 @@ a.sar-summary-row .sar-badge {
   background: var(--sar-banner-button-bg-hover);
 }
 
-/* "Show full disclosure" and "Undo": the store's underlined in-bubble links, as buttons */
+/* "Show full report" and "Undo": the store's underlined in-bubble links, as buttons */
 .sar-banner-link {
   appearance: none;
   display: inline-flex;

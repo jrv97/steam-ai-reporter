@@ -1,7 +1,7 @@
 # AI Reporter for Steam
 
 A Chrome and Firefox MV3 extension and a Tampermonkey/Violentmonkey userscript, built from one
-TypeScript core, that mark Steam store items whose developers disclosed generative AI use.
+TypeScript core, that mark Steam store items whose developers reported generative AI use.
 
 ## Working knowledge (docs/)
 
@@ -26,8 +26,8 @@ These are hard rules. A change that breaks one needs an ADR first.
 3. **Permissions.** `storage` plus content-script matches on `https://store.steampowered.com/*`.
    No `host_permissions` and no background script unless an ADR says otherwise.
 4. **Semantics.** Three verdict states: disclosed, not disclosed, unknown. Unknown is never stored
-   or shown as not disclosed. The wording is "AI use disclosed", never "uses AI" or "AI-free". The
-   developer's disclosure text is rendered verbatim through `textContent`.
+   or shown as not disclosed. The wording is "AI use reported", never "uses AI" or "AI-free". The
+   developer's own text is rendered verbatim through `textContent`.
 5. **Core purity.** `src/core` uses only DOM and web standards and never names `chrome`, `browser`
    or `GM`. Platform code lives in `src/platform/`.
 6. **Originality and credit.** No code is copied from other AI-disclosure extensions, and nothing

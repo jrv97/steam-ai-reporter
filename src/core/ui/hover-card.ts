@@ -227,7 +227,7 @@ export function createHoverCard(
     filled = verdict;
     target.notes.textContent = normalizeBreaks(verdict.notes);
     const parts: HTMLElement[] = [
-      line("sar-hovercard-title", i18n.t("badge_card_title")),
+      line("sar-hovercard-title", i18n.t("badge_label")),
       line("sar-hovercard-source", i18n.t("badge_card_source")),
       target.notes,
     ];

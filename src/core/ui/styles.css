@@ -117,14 +117,15 @@
   font: var(--sar-compact-font-lg);
 }
 
-/* Summary row: a label and value row in the game's summary box, under Publisher */
+/* Summary row: the chip alone in the game's summary box, under Publisher. The inset skips the
+   store's label column, so the chip starts where the Developer and Publisher values start. */
 
 .sar-summary-row {
   display: flex;
   align-items: center;
+  inline-size: fit-content;
   min-block-size: var(--sar-badge-height);
-  color: var(--sar-color-text);
-  font: var(--sar-summary-label-font);
+  margin-inline-start: var(--sar-summary-chip-inset-inline);
   white-space: nowrap;
 }
 
@@ -135,18 +136,6 @@ a.sar-summary-row {
 .sar-summary-row:focus-visible {
   outline: var(--sar-focus-width) solid var(--sar-focus-color);
   outline-offset: var(--sar-focus-offset);
-}
-
-.sar-summary-label {
-  display: block;
-  flex: none;
-  inline-size: var(--sar-summary-label-inline-size);
-  padding-inline-end: var(--sar-summary-label-pad-inline-end);
-  overflow: hidden;
-  color: var(--sar-color-text-subtle);
-  font: var(--sar-summary-label-font);
-  text-overflow: ellipsis;
-  text-transform: uppercase;
 }
 
 .sar-summary-row .sar-badge {

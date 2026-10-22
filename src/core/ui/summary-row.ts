@@ -8,10 +8,10 @@ import type { CardTriggers } from "./hover-card";
 const DEV_ROW_SELECTOR = ".glance_ctn_responsive_left .dev_row";
 
 /**
- * The summary box row "AI use: Disclosed by the developer", in the store's own row shape. With the
- * banner on it is a link to the banner, and `jump` handles the click (scroll and focus, no history
- * entry); without the banner it is a focusable row that opens the hover card, when one is given.
- * The row is its own root, with one listener.
+ * The summary box row: the badge label's chip alone, in the column of the store's Developer and
+ * Publisher values. With the banner on it is a link to the banner, and `jump` handles the click
+ * (scroll and focus, no history entry); without the banner it is a focusable row that opens the
+ * hover card, when one is given. The row is its own root, with one listener.
  */
 export function createSummaryRow(
   doc: Document,
@@ -22,10 +22,7 @@ export function createSummaryRow(
 ): HTMLElement {
   const row = doc.createElement(jump === undefined ? "div" : "a");
   row.className = "sar-summary-row";
-  const label = doc.createElement("span");
-  label.className = "sar-summary-label";
-  label.textContent = i18n.t("summary_label");
-  row.append(label, createChip(doc, i18n.t("summary_value")));
+  row.append(createChip(doc, i18n.t("badge_label")));
   if (jump !== undefined) {
     row.setAttribute("href", `#${BANNER_ID}`);
     row.addEventListener("click", (event) => {
