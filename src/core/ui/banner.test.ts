@@ -5,6 +5,7 @@ import { englishI18n } from "../../../tests/helpers/i18n";
 import { disclosedVerdict } from "../../../tests/helpers/verdicts";
 import { type BannerActions, type BannerOptions, createBanner, placeBanner } from "./banner";
 
+const i18n = englishI18n();
 const XSS = '<img src=x onerror="alert(1)">Backgrounds\r\nwere generated.';
 
 interface Pending {
@@ -30,7 +31,7 @@ function manualActions(): BannerActions & { readonly calls: Pending[]; } {
 function setup(options: BannerOptions = {}, actions: BannerActions = manualActions()) {
   setBody('<div class="game_description_column"><div id="game_area_purchase"></div></div>');
   const frames: (() => void)[] = [];
-  const banner = createBanner(document, englishI18n(), actions, {
+  const banner = createBanner(document, i18n, actions, {
     frame: (callback) => frames.push(callback),
     ...options,
   });
@@ -72,9 +73,9 @@ describe("createBanner", () => {
   it("uses catalog copy and the developer as the source", () => {
     const { banner, root } = setup();
     banner.show(disclosedVerdict(), false);
-    expect(query(root, "h2").textContent).toBe("AI use reported");
-    expect(query(root, ".sar-banner-source").textContent).toBe("In the developer's own words:");
-    expect(query(root, ".sar-banner-action").textContent).toBe("Ignore this game");
+    expect(query(root, "h2").textContent).toBe(i18n.t("badge_label"));
+    expect(query(root, ".sar-banner-source").textContent).toBe(i18n.t("banner_source"));
+    expect(query(root, ".sar-banner-action").textContent).toBe(i18n.t("banner_ignore"));
     expect(root.querySelector("svg")).toBeNull();
   });
 
@@ -82,7 +83,7 @@ describe("createBanner", () => {
     const { banner, root } = setup();
     banner.show(disclosedVerdict({ service: "<b>Midjourney</b>" }), false);
     const service = query(root, ".sar-banner-service");
-    expect(service.textContent).toBe("AI service named by the developer: <b>Midjourney</b>");
+    expect(service.textContent).toBe(`${i18n.t("banner_service_label")} <b>Midjourney</b>`);
     expect(service.querySelector("a, b")).toBeNull();
   });
 
@@ -103,10 +104,10 @@ describe("createBanner", () => {
     toggle.click();
     expect(quote.getAttribute("data-sar-collapsed")).toBe("false");
     expect(toggle.getAttribute("aria-expanded")).toBe("true");
-    expect(toggle.textContent).toBe("Show less");
+    expect(toggle.textContent).toBe(i18n.t("banner_collapse"));
     toggle.click();
     expect(quote.getAttribute("data-sar-collapsed")).toBe("true");
-    expect(toggle.textContent).toBe("Show full report");
+    expect(toggle.textContent).toBe(i18n.t("banner_expand"));
   });
 
   it("drops the clamp and the toggle for short notes", () => {
@@ -122,9 +123,9 @@ describe("createBanner", () => {
     banner.show(disclosedVerdict({ notes: XSS }), true);
     const aside = query(root, "aside");
     expect(aside.getAttribute("data-sar-variant")).toBe("ignored");
-    expect(aside.getAttribute("aria-label")).toBe("AI use report");
-    expect(query(root, ".sar-banner-ignored-text").textContent).toBe("Game ignored");
-    expect(query(root, ".sar-banner-link").textContent).toBe("Undo");
+    expect(aside.getAttribute("aria-label")).toBe(i18n.t("banner_region_label"));
+    expect(query(root, ".sar-banner-ignored-text").textContent).toBe(i18n.t("banner_ignored"));
+    expect(query(root, ".sar-banner-link").textContent).toBe(i18n.t("banner_undo"));
     expect(root.querySelector("blockquote, h2, .sar-banner-action")).toBeNull();
     expect(root.textContent).not.toContain("Backgrounds");
   });
@@ -141,7 +142,7 @@ describe("createBanner", () => {
       expect(query(root, "aside").getAttribute("data-sar-variant")).toBe("ignored");
     });
     expect(root.activeElement).toBe(query(root, '[data-sar-action="undo"]'));
-    expect(query(root, "[aria-live]").textContent).toBe("This game will be ignored");
+    expect(query(root, "[aria-live]").textContent).toBe(i18n.t("notice_marking_stopped"));
 
     query(root, '[data-sar-action="undo"]').click();
     actions.calls[1]?.resolve();
@@ -149,7 +150,7 @@ describe("createBanner", () => {
       expect(root.querySelector("blockquote")).not.toBeNull();
     });
     expect(root.activeElement).toBe(query(root, ".sar-banner-action"));
-    expect(query(root, "[aria-live]").textContent).toBe("This game is no longer ignored");
+    expect(query(root, "[aria-live]").textContent).toBe(i18n.t("notice_marking_restored"));
   });
 
   it("keeps the banner and shows an error when the allow-list cannot be saved", async () => {
@@ -161,9 +162,7 @@ describe("createBanner", () => {
     await vi.waitFor(() => {
       expect(query(root, ".sar-banner-error").hidden).toBe(false);
     });
-    expect(query(root, ".sar-banner-error").textContent).toBe(
-      "Could not update this game. Try again.",
-    );
+    expect(query(root, ".sar-banner-error").textContent).toBe(i18n.t("error_allow_list_save"));
     expect(query(root, ".sar-banner-error").getAttribute("role")).toBe("alert");
     expect(root.querySelector("blockquote")).not.toBeNull();
   });
@@ -181,7 +180,7 @@ describe("createBanner", () => {
 describe("placeBanner", () => {
   it("puts the banner first in the description column, above the purchase box", () => {
     setBody(APP_PAGES["5072580-ai-first.html"]);
-    const banner = createBanner(document, englishI18n(), manualActions());
+    const banner = createBanner(document, i18n, manualActions());
     expect(placeBanner(document, banner.host)).toBe(true);
     const column = document.querySelector(".game_description_column");
     expect(column?.firstElementChild).toBe(banner.host);
@@ -190,7 +189,7 @@ describe("placeBanner", () => {
 
   it("reports a page without the column", () => {
     setBody("<div></div>");
-    const banner = createBanner(document, englishI18n(), manualActions());
+    const banner = createBanner(document, i18n, manualActions());
     expect(placeBanner(document, banner.host)).toBe(false);
     expect(banner.host.isConnected).toBe(false);
   });

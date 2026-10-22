@@ -8,7 +8,7 @@ The platform-free heart of AI Reporter for Steam: detection, cache, scanning, pl
 - Nothing from `src/platform/`. Dependencies point inward: platform imports core, never the reverse.
 - Only DOM and web standards are available: `fetch`, `DOMParser`, `MutationObserver`, `Intl`, `WeakMap`, `URL`. Anything else comes in through a port.
 - No `eval`, `new Function` or dynamic remote code. No direct `JSON.parse`: use `parseJson(text): unknown` from `json.ts`.
-- No user-visible or logged string literals. Code holds `MessageKey`s; copy lives in `src/locales/` (rule 9, i18n from day 1). Allowed literals: identifiers, selectors, URLs, storage keys, CSS class names, detection constants such as the heading `AI Generated Content Disclosure`.
+- No user-visible or logged string literals, and no catalog text in tests. Code holds `MessageKey`s and tests take expected text from `t(key, params)`; copy lives in `src/locales/` (rule 9, i18n from day 1), and `scripts/check_i18n.py` fails on a literal that repeats it. Allowed literals: identifiers, selectors, URLs, storage keys, CSS class names, detection constants such as the heading `AI Generated Content Disclosure`.
 - No `any`, no type assertions other than `as const`, no non-null assertions, no `@ts-ignore`, `@ts-expect-error` or `@ts-nocheck` (rule 10, strict static typing). Untrusted input is `unknown` until a valibot schema turns it into a typed value.
 - Valve hosts only, always `credentials: "omit"` (rule 1, privacy). Core never builds a request to another host.
 
@@ -35,7 +35,7 @@ Every implementation of a port passes the same shared contract suite, with no pe
 
 - A new store surface is a new `Placement` entry in `scan/placements.ts`, with a fixture test. The scanner is not edited.
 - A new detection source is a new `Detector` link in the chain. The chain and the scanner are not edited.
-- A new message is a catalog key in `src/locales/`, never a literal in code.
+- A new message is a catalog key in `src/locales/`, never a literal in code or in a test.
 
 ## Style in this folder
 

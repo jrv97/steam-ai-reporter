@@ -1,16 +1,12 @@
 import { describe, expect, it } from "vitest";
 import en from "../../locales/en/messages.json";
 import es from "../../locales/es/messages.json";
-import { type Catalog, DEFAULT_LOCALE } from "./catalog";
+import { type Catalog, DEFAULT_LOCALE, type Params, substitute } from "./catalog";
 import { resolveLocale } from "./locale";
 import { SHIPPED_CATALOGS } from "./shipped";
 import { createI18n } from "./t";
 
-// Repo text is ASCII (rule 8), so the Spanish characters are spelled out by code point.
-const LEFT_GUILLEMET = String.fromCodePoint(0xab);
-const RIGHT_GUILLEMET = String.fromCodePoint(0xbb);
-const A_ACUTE = String.fromCodePoint(0xe1);
-const U_ACUTE = String.fromCodePoint(0xfa);
+const PLACEHOLDER = /\$[A-Za-z0-9_@]+\$/;
 
 const locales = new Set(Object.keys(SHIPPED_CATALOGS));
 
@@ -32,14 +28,21 @@ describe("shipped catalogs", () => {
   it("loads the Spanish messages", () => {
     const spanish = createI18n(SHIPPED_CATALOGS, "es");
     expect(spanish.locale).toBe("es");
-    expect(spanish.t("banner_ignore")).toBe("Ignorar este juego");
-    expect(spanish.t("banner_ignored")).toBe("Juego ignorado");
+    expect(spanish.t("banner_ignore")).toBe(es.banner_ignore.message);
     expect(spanish.t("options_allow_restore_label", { name: "Fixture Game" })).toBe(
-      "Dejar de ignorar Fixture Game",
+      substitute(es.options_allow_restore_label.message, { name: "Fixture Game" }),
     );
     expect(spanish.t("options_allow_empty", { action: spanish.t("banner_ignore") })).toBe(
-      `Ninguno a${U_ACUTE}n. Usa ${LEFT_GUILLEMET}Ignorar este juego${RIGHT_GUILLEMET} en la `
-        + `p${A_ACUTE}gina de un juego.`,
+      substitute(es.options_allow_empty.message, { action: es.banner_ignore.message }),
+    );
+  });
+
+  it("serves every Spanish message without placeholders as the catalog writes it", () => {
+    const spanish = createI18n<Record<string, Params>>(SHIPPED_CATALOGS, "es");
+    const bare = Object.entries(es).filter(([, entry]) => !PLACEHOLDER.test(entry.message));
+    expect(bare.length).toBeGreaterThan(0);
+    expect(bare.map(([key]) => [key, spanish.t(key)])).toStrictEqual(
+      bare.map(([key, entry]) => [key, entry.message]),
     );
   });
 
@@ -57,7 +60,7 @@ describe("shipped catalogs", () => {
   it("falls back to English for a key the Spanish catalog lacks", () => {
     const partial = { en: shipped("en"), es: { badge_label: shipped("es")["badge_label"] } };
     const spanish = createI18n(partial, "es");
-    expect(spanish.t("badge_label")).toBe("Uso de IA declarado");
-    expect(spanish.t("banner_ignore")).toBe("Ignore this game");
+    expect(spanish.t("badge_label")).toBe(es.badge_label.message);
+    expect(spanish.t("banner_ignore")).toBe(en.banner_ignore.message);
   });
 });

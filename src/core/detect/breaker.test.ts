@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { httpResult, type Reply } from "../../../tests/helpers/fake-http";
 import { fixedClock } from "../../../tests/helpers/fixed-clock";
+import { englishI18n } from "../../../tests/helpers/i18n";
 import { memoryStore } from "../../../tests/helpers/memory-store";
 import { recordingLogger } from "../../../tests/helpers/recording-logger";
 import type { JsonValue } from "../json";
@@ -14,6 +15,7 @@ import {
 } from "./breaker";
 
 const T0 = 1_000_000;
+const i18n = englishI18n();
 const URL = "https://api.steampowered.com/IStoreBrowseService/GetItems/v1";
 
 function result(reply: Reply): HttpResult {
@@ -83,7 +85,7 @@ describe("createBreaker", () => {
     );
     expect(sink.warn).toHaveBeenCalledWith(
       "[sar]",
-      "Steam refused or dropped a request; detection pauses for 65 seconds (v1:breaker).",
+      i18n.t("warn_breaker_opened", { seconds: "65", breaker: API_BREAKER_KEY }),
     );
     clock.advance(64_999);
     expect(await breaker.isOpen()).toBe(true);
@@ -93,7 +95,7 @@ describe("createBreaker", () => {
     expect(sink.info).toHaveBeenCalledOnce();
     expect(sink.info).toHaveBeenCalledWith(
       "[sar]",
-      "Detection resumes after the pause (v1:breaker).",
+      i18n.t("notice_breaker_closed", { breaker: API_BREAKER_KEY }),
     );
   });
 

@@ -9,6 +9,7 @@ import { toAppId } from "../types";
 import { mountSettingsForm, type SettingsContext } from "./settings-form";
 
 const DAY = 86_400_000;
+const i18n = englishI18n();
 
 function isEventTarget(value: object): value is EventTarget {
   return "addEventListener" in value;
@@ -32,7 +33,7 @@ async function setup(context: SettingsContext = "page") {
   const root = document.createElement("main");
   document.body.append(root);
   const form = await mountSettingsForm(root, {
-    i18n: englishI18n(),
+    i18n,
     settings,
     allowList,
     context,
@@ -66,7 +67,7 @@ describe("mountSettingsForm", () => {
     expect(input("[data-sar-setting=badges]").checked).toBe(true);
     expect(input("input[value=off]").checked).toBe(true);
     expect(control(".sar-segment ~ .sar-field-help").textContent).toBe(
-      "Lists stay as they are, apart from badges.",
+      i18n.t("options_filter_off_help"),
     );
     const names = [...root.querySelectorAll(".sar-allow-name")].map((name) => name.textContent);
     expect(names).toEqual(["Newer <b>Game</b>", "Older Game"]);
@@ -74,27 +75,27 @@ describe("mountSettingsForm", () => {
     expect(control(".sar-allow-name").getAttribute("href")).toBe(
       "https://store.steampowered.com/app/20/",
     );
-    expect(control(".sar-allow-meta").textContent).toBe("Since Oct 2, 2026");
+    expect(control(".sar-allow-meta").textContent).toBe(
+      i18n.t("options_allow_since", { date: "Oct 2, 2026" }),
+    );
     expect(control(".sar-allow-item button").getAttribute("aria-label")).toBe(
-      "Stop ignoring Newer <b>Game</b>",
+      i18n.t("options_allow_restore_label", { name: "Newer <b>Game</b>" }),
     );
   });
 
   it("names the badge label in the badges help", async () => {
     const { root } = await setup();
     expect(root.textContent).toContain(
-      'Adds "AI use reported" to search and wishlist rows and to game images.',
+      i18n.t("options_badges_help", { label: i18n.t("badge_label") }),
     );
   });
 
   it("says that it sends no reports", async () => {
     const page = await setup("page");
-    expect(page.root.textContent).toContain(
-      "Sends no reports. It only reads what developers report on Steam.",
-    );
+    expect(page.root.textContent).toContain(i18n.t("options_privacy_no_reports"));
     document.body.replaceChildren();
     const popup = await setup("popup");
-    expect(popup.root.textContent).toContain("Sends no reports.");
+    expect(popup.root.textContent).toContain(i18n.t("options_privacy_no_reports"));
     expect(popup.root.querySelector("select")).toBeNull();
   });
 
@@ -102,7 +103,7 @@ describe("mountSettingsForm", () => {
     const root = document.createElement("main");
     document.body.append(root);
     await mountSettingsForm(root, {
-      i18n: englishI18n(),
+      i18n,
       settings: createSettingsSource(memoryStore()),
       allowList: createAllowList(memoryStore(), fixedClock(0)),
       context: "popup",
@@ -112,12 +113,14 @@ describe("mountSettingsForm", () => {
     });
     const header = root.firstElementChild;
     expect(header?.matches("header.sar-options-header")).toBe(true);
-    expect(header?.querySelector("h1")?.textContent).toBe("AI Reporter for Steam");
-    expect(header?.querySelector(".sar-options-version")?.textContent).toBe("Version 2026.10.20");
+    expect(header?.querySelector("h1")?.textContent).toBe(i18n.t("ext_name"));
+    expect(header?.querySelector(".sar-options-version")?.textContent).toBe(
+      i18n.t("options_version", { version: "2026.10.20" }),
+    );
     expect(header?.querySelector("img")?.getAttribute("src")).toBe("icons/icon-32.png");
     expect(header?.querySelector("img")?.getAttribute("alt")).toBe("");
     const link = root.querySelector(".sar-options-footer a");
-    expect(link?.textContent).toBe("All settings");
+    expect(link?.textContent).toBe(i18n.t("options_all_settings"));
     expect(link?.getAttribute("href")).toBe("options.html");
     expect(link?.getAttribute("target")).toBe("_blank");
   });
@@ -143,9 +146,9 @@ describe("mountSettingsForm", () => {
     await vi.waitFor(async () => {
       expect(await settings.read()).toMatchObject({ listFilter: "dim" });
     });
-    expect(control("[aria-live]").textContent).toBe("Saved.");
+    expect(control("[aria-live]").textContent).toBe(i18n.t("notice_settings_saved"));
     expect(control(".sar-segment ~ .sar-field-help").textContent).toBe(
-      "Fades these games in lists. Hover to see one clearly.",
+      i18n.t("options_filter_dim_help"),
     );
   });
 
@@ -160,7 +163,7 @@ describe("mountSettingsForm", () => {
       expect(error?.hidden).toBe(false);
     });
     expect(badges.checked).toBe(true);
-    expect(error?.textContent).toBe("Could not save this change. Try again.");
+    expect(error?.textContent).toBe(i18n.t("error_settings_save"));
   });
 
   it("follows changes from other tabs", async () => {
@@ -177,7 +180,7 @@ describe("mountSettingsForm", () => {
     });
     expect([...(await allowList.list()).keys()]).toEqual([10]);
     expect(document.activeElement).toBe(control('[data-sar-restore="10"]'));
-    expect(control("[aria-live]").textContent).toBe("This game is no longer ignored");
+    expect(control("[aria-live]").textContent).toBe(i18n.t("notice_marking_restored"));
   });
 
   it("shows the empty state with the action's own label", async () => {
@@ -189,7 +192,7 @@ describe("mountSettingsForm", () => {
     control('[data-sar-restore="10"]').click();
     await vi.waitFor(() => {
       expect(control(".sar-empty").textContent).toBe(
-        'None yet. Use "Ignore this game" on a game page.',
+        i18n.t("options_allow_empty", { action: i18n.t("banner_ignore") }),
       );
     });
   });
@@ -206,7 +209,7 @@ describe("mountSettingsForm", () => {
     await vi.waitFor(() => {
       expect(section?.hidden).toBe(true);
     });
-    expect(document.activeElement?.textContent).toBe("In lists");
+    expect(document.activeElement?.textContent).toBe(i18n.t("options_section_lists"));
   });
 
   it("keeps the empty state on the full page", async () => {
@@ -230,7 +233,7 @@ describe("mountSettingsForm", () => {
     await vi.waitFor(() => {
       expect(error?.hidden).toBe(false);
     });
-    expect(error?.textContent).toBe("Could not update this game. Try again.");
+    expect(error?.textContent).toBe(i18n.t("error_allow_list_save"));
   });
 
   it("shows the defaults and an error when the settings cannot be read", async () => {
@@ -238,7 +241,7 @@ describe("mountSettingsForm", () => {
     vi.spyOn(settings, "read").mockRejectedValue(new Error());
     const root = document.createElement("main");
     await mountSettingsForm(root, {
-      i18n: englishI18n(),
+      i18n,
       settings,
       allowList: createAllowList(memoryStore(), fixedClock(0)),
       context: "page",
@@ -246,7 +249,7 @@ describe("mountSettingsForm", () => {
     });
     const error = root.querySelector<HTMLElement>(".sar-card .sar-field-error");
     expect(error?.hidden).toBe(false);
-    expect(error?.textContent).toBe("Could not load your settings. Showing the defaults.");
+    expect(error?.textContent).toBe(i18n.t("error_settings_load"));
     expect(root.querySelector<HTMLInputElement>("[data-sar-setting=banner]")?.checked).toBe(true);
   });
 

@@ -14,6 +14,7 @@ const PAGE = `
   </div>
   <div class="game_description_column"><div id="game_area_purchase"></div></div>`;
 
+const i18n = englishI18n();
 const actions = { stopMarking: () => Promise.resolve(), markAgain: () => Promise.resolve() };
 
 interface Bound {
@@ -30,7 +31,7 @@ function setup() {
     bind: (trigger: Element, verdict: DisclosedVerdict, ownPage?: boolean) =>
       bound.set(trigger, { verdict, ownPage }),
   };
-  return createAppPageUi(document, englishI18n(), actions, { frame: () => undefined, card });
+  return createAppPageUi(document, i18n, actions, { frame: () => undefined, card });
 }
 
 function view(overrides: Partial<AppPageView> = {}): AppPageView {
@@ -49,7 +50,7 @@ describe("createAppPageUi", () => {
     setup().render(view());
     const row = summaryRow();
     expect(row?.previousElementSibling?.id).toBe("publisher");
-    expect(row?.textContent).toBe("AI use reported");
+    expect(row?.textContent).toBe(i18n.t("badge_label"));
     expect(row?.getAttribute("href")).toBe(`#${BANNER_ID}`);
     expect(row?.hasAttribute("title")).toBe(false);
     // The link jumps to the full notes, so it opens no hover card.

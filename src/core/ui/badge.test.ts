@@ -59,7 +59,7 @@ describe("createBadgeRenderer", () => {
     renderer.render(view(host, { kind: "full", anchor: title, position: "afterend" }, { verdict }));
     const badge = host.querySelector<HTMLElement>(".sar-badge");
     expect(badge?.previousElementSibling).toBe(title);
-    expect(badge?.textContent).toBe("AI use reported");
+    expect(badge?.textContent).toBe(i18n.t("badge_label"));
     expect(badge?.querySelector("svg")).toBeNull();
     expect(badge?.hasAttribute("title")).toBe(false);
     expect(badge === null ? undefined : bound.get(badge)).toBe(verdict);
@@ -83,7 +83,7 @@ describe("createBadgeRenderer", () => {
     );
     const badge = image.querySelector<HTMLElement>(".sar-compact");
     expect(badge?.getAttribute("data-sar-size")).toBe("large");
-    expect(badge?.textContent).toBe("AI use reported");
+    expect(badge?.textContent).toBe(i18n.t("badge_label"));
     expect(badge?.getAttribute("data-sar-in-link")).toBe("true");
     expect(badge?.hasAttribute("title")).toBe(false);
     expect(badge !== null && bound.has(badge)).toBe(true);

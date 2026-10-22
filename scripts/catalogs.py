@@ -47,6 +47,11 @@ def used_placeholders(message: str) -> tuple[str, ...]:
     return tuple(sorted({name.lower() for name in PLACEHOLDER.findall(message)}))
 
 
+def static_parts(message: str) -> list[str]:
+    """The text between the `$name$` placeholders of a message, untrimmed."""
+    return PLACEHOLDER.sub("\0", message).split("\0")
+
+
 def plural_base(key: str) -> str | None:
     """The base key if `key` is a plural form such as `items_one`, else None."""
     base, _, category = key.rpartition("_")

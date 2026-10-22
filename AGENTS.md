@@ -41,9 +41,12 @@ These are hard rules. A change that breaks one needs an ADR first.
    (CI changes are `build`), and carry no trailers.
 9. **i18n from day 1.** Every user-visible or logged message (UI copy, errors, warnings, notices,
    ARIA labels, tooltips, manifest and userscript names and descriptions) lives in a message
-   catalog under `src/locales/`, keyed and typed. Code holds keys, never copy. Allowed literals:
-   identifiers, selectors, URLs, storage keys, CSS class names, and detection constants such as
-   Steam's own `AI Generated Content Disclosure` heading.
+   catalog under `src/locales/`, keyed and typed. Code and tests read copy from the catalog and
+   hold keys, never copy: a test takes its expected text from `t(key, params)` or the catalog
+   JSON. `scripts/check_i18n.py` fails on catalog text typed as a string literal under `src/` or
+   `tests/`; `tests/locales/` and `tests/fixtures/` are exempt. Allowed literals: identifiers,
+   selectors, URLs, storage keys, CSS class names, and detection constants such as Steam's own
+   `AI Generated Content Disclosure` heading.
 10. **Strict static typing.** No `any`, explicit or implicit. Untrusted input is `unknown` until a
     validation schema turns it into a typed value. No type assertions other than `as const`, no
     non-null assertions, no `@ts-ignore` or `@ts-nocheck`. Branded types for domain IDs,
