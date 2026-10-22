@@ -127,7 +127,7 @@ Evidence tags used in the bullets:
 
 - Stores: Chrome Web Store and Firefox AMO (listed, public). No Edge Add-ons listing found (one site-restricted search, no result). No userscript build. GitHub holds source only, no releases or tags. [listing] https://raw.githubusercontent.com/SoBloxsy/AI-Content-Hider-for-Steam/main/README.md and [api] AMO URL above.
 - Update path: store auto-update. AMO versions are approved within minutes after the first one. Chrome review time is unknown.
-- Manifest version 3 with a service worker as the only background key; whether the Firefox package carries a different background key is not visible (section 12). [code] manifest. Firefox minimum version 128. [api]
+- Manifest version 3. The repo manifest declares a service worker; the Firefox package declares a background script and a minimum Firefox of 128.0 (package manifest read 2026-10-22). [code] manifest. Firefox minimum version 128. [api]
 - Version skew across channels: repo 3.4.0 (2026-08-01) reached Chrome but not AMO, which went 3.3.3 to 3.4.1; both stores show 3.4.2 on 2026-10-21 and the repo still shows 3.4.1. [api], the update check and the Firefox review in section 8.
 - Package sizes for 3.4.2: Chrome 63,174 bytes (update check), AMO 68,628 bytes. The tracker reports 60.82 KiB for 3.4.1 on Chrome. [api] and [tracker]
 - Listing languages: English only on both stores (section 4). Listing copy is the README text.
@@ -169,9 +169,9 @@ Supports Restraint:
 - Chrome Web Store detail, reviews tab and privacy tab: the built-in browser refused the host ("only works in a full browser"); the fetch tool was redirected to Google's consent page (302) on three URL forms and cannot answer the consent form; claude-in-chrome tools were excluded by the brief. Chrome install count, rating and review text therefore come from a tracker (section 8) with the limits listed there. Store-side facts not recovered: privacy practices answers, listing languages beyond the tracker's "English (1)", version history, reply threads on reviews.
 - What did work for Chrome: a version query on the extension update service (3.4.2, package 63,174 bytes) without downloading the package.
 - Other mirrors: chrome-stats.com returned 403; the Wayback Machine host is refused by the fetch tool; ChromeBoard held no reviews and a 2026-08-23 version.
-- Source of 3.4.2 (and of the Firefox package manifest): the repo has no matching commit; reading the packages needs a download of the XPI or CRX, which the rules forbid, and the AMO code viewer was denied in the browser pane.
+- Source of 3.4.2: the repo has no matching commit. The Firefox package was downloaded on 2026-10-22 (hash matches AMO) and its manifest and file list read, not its code. Its content script is 23,388 bytes, against 19,639 bytes at repo version 3.4.1 (section 1), so the store build carries about 19% more script than the repo head. The Chrome package was not downloaded.
 - Live wishlist and event page behavior: not observed (a wishlist needs sign-in; the Next Fest page showed no app links in my pane). Wishlist notes come from code only.
-- Firefox background behavior: a manifest with only a service-worker background key may not start a background in Firefox; I could not test it. If it does not, the badge and statistics would not work there (unverified).
+- Firefox background behavior: the Firefox package declares a background script and no service worker, so the background runs in Firefox. Read from the downloaded package manifest on 2026-10-22; runtime not tested.
 - Cause of the Brave failure: not established. Language is one measured candidate; browser or shield effects are untested.
 - Press and community: Reddit is blocked for the search tool; nothing found for this tool elsewhere.
 - One read of a shared browser tab returned an unrelated SteamDB check page that another session had loaded; I discarded it and used my own tab.

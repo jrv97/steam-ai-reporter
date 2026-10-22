@@ -81,7 +81,7 @@ Tension poles:
 ## Evidence rules
 
 - Notes tag facts as `[code]`, `[api]`, `[listing]`, `[measured]` and `[tracker]`. "Proven" means code, manifest, commits or issue threads. "Asserted" means listing or README copy.
-- Chrome Web Store figures come from trackers (ExtScope, ChromeBoard). They are unverified and lag the store. The built-in browser refuses the store, and the Claude in Chrome extension was not connected to the account on 2026-10-22. No Chrome store page was read.
+- Chrome Web Store figures come from trackers (ExtScope, ChromeBoard). They are unverified and lag the store. The built-in browser refuses the store, and Chrome blocks scripted reads of it for every extension (Claude in Chrome failed with "The extensions gallery cannot be scripted" on 2026-10-22). A screenshot route was proposed and declined. No Chrome store page was read.
 - Tools under 8 days old (Slop-Inator, Steam Hide AI, Steam AI Filter, Steam Slop Filter) get "n/s" for maintenance. Their reach scores describe a launch week.
 - No tool was installed or run. Behavior claims come from source, manifests, listings and a few anonymous read-only fetches of public store pages. Where a note says "inference", the card keeps that label.
 - Scores were set side by side after all notes were read. A 4 means the same thing in every card.
@@ -92,7 +92,7 @@ Tension poles:
 - Augmented Steam (GPL-3.0): no source file was read. Issue and pull request threads, which users fill with CSS and stack traces, were read for behavior (issues 1913, 2390, 2370, 2104, 2014, 1976 and pull requests 2372, 2377, 2389). Nothing from them is recorded. The Edge listing JSON shows the published manifest.
 - MIT and Apache-2.0 tools (AI warning for Steam, AI Generated Content Filter, Steam AI Games Indicator, ceeprus, Steam Hide AI, Steam AI Filter): source was read for behavior.
 - No LICENSE file: Slop-Inator (the README asserts MIT and CC BY-SA 4.0; GitHub reports none) and Steam Slop Filter. For Slop-Inator the code was read for behavior only and the data files for aggregate counts. For Steam Slop Filter only the README, PRIVACY.md and manifest were read.
-- Obvious Steam AI: code unread. AMO's source viewer was refused and the XPI download was out of bounds.
+- Obvious Steam AI: code unread. AMO's source viewer was refused. On 2026-10-22 the main session downloaded the four AMO packages (AI warning for Steam, AI Generated Content Filter, Slop-Inator, Obvious Steam AI) with approval and read manifests and file lists only.
 - Provenance finding that bears on project rule 6 (originality and credit): ceeprus copied the heading list of AI warning for Steam under MIT, then removed the credit comment on 2026-09-22 (commit 99eb29d). Steam Hide AI credits the same list. Our design has no heading table.
 
 ## Method

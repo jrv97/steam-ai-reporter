@@ -8,7 +8,7 @@ Researched 2026-10-21 and 2026-10-22. Ten tools scored; evidence in `competitor-
 2. The v1 plan avoids the failure patterns that recur. Four of seven page-fetching tools store at least one error page, redirect or store-front page as "not disclosed". Six of the nine marker tools name AI use or its absence as a fact in their own copy ("Uses AI", "AI sh*t", "human", "clean", "AI-generated content", "slop"). Seven fetch a full 100K to 400K-character page per game, and most send cookies. The plan's batched GetItems call, three verdict states, credentials omitted and "AI use disclosed" wording remove all four patterns.
 3. Seven items need a decision or a check before the plan is trusted on live pages (section 7): demo and DLC rows, a silent total failure of the single data source, how unknown looks in dim and hide modes, developer and publisher allow-lists, four surfaces missing from step 13, the forbidden-wording list, and manifest guards. None is large.
 4. The field is moving fast and the technical lead is copyable. Four tools launched in the week of 2026-10-14, during the October Next Fest. PCGamesN named one of them on 2026-10-21. The leader has about 15.5K users. Augmented Steam reaches about 544K users and has three open requests for an AI marker with no maintainer reply. A competitor could adopt the batched endpoint in a day. The durable difference is discipline: verdict integrity, wording, footprint and speed of fixes.
-5. Chrome Web Store figures are tracker-only. The built-in browser refuses the store and the Claude in Chrome extension was not connected on 2026-10-22. Chrome user counts and review text for four tools remain unverified.
+5. Chrome Web Store figures are tracker-only. The built-in browser refuses the store, and Chrome blocks scripted reads of it for every extension (Claude in Chrome connected on 2026-10-22 and failed with "The extensions gallery cannot be scripted"). A screenshot route was proposed and declined. Chrome user counts and review text for four tools remain unverified.
 
 ## 2. Landscape and tension map
 
@@ -116,7 +116,7 @@ ceeprus caps tooltips at 400 characters (rq8 s2). Two tools splice text or names
 
 ### 6. A small footprint, written as invariants
 
-ceeprus writes cookies and patches fetch and XHR (rq8 s5). Steam AI Filter writes to the Steam account and includes credentials (rq10 s5). Two tools expose icon files to web pages (rq3 s5, rq7 s5). Rules 1 to 3 hold, and the bundle check asserts permissions, matches and no background key. Status: partial. No rule names cookie writes, page-world injection or account-writing actions, and the bundle check does not look at `web_accessible_resources`. Add both. A rule change needs an ADR first.
+ceeprus writes cookies and patches fetch and XHR (rq8 s5). Steam AI Filter writes to the Steam account and includes credentials (rq10 s5). Two tools expose icon files to web pages, Slop-Inator to every page and AI Generated Content Filter to store pages (rq3 s5, rq7 s5; both confirmed in the Firefox packages). Rules 1 to 3 hold, and the bundle check asserts permissions, matches and no background key. Status: partial. No rule names cookie writes, page-world injection or account-writing actions, and the bundle check does not look at `web_accessible_resources`. Add both. A rule change needs an ADR first.
 
 ### 7. Non-blocking by default, with a real off switch
 
@@ -188,7 +188,8 @@ Not now:
 
 - Per-tool evidence: `competitor-benchmark/rq2` to `rq11`. Sweep: `rq1`. Themes: `rq12`. Method, tiers, anchors, corrections to the earlier prior-art note and the clean-room log: `competitor-benchmark/scope-and-rubric.md`.
 - Chrome Web Store: not read from the store itself. Chrome user counts, ratings and review text for AI warning for Steam, AI Generated Content Filter, Augmented Steam and Slop-Inator come from trackers and are unverified.
-- Obvious Steam AI: code unread. Detection, surfaces and efficiency for it are not scored.
+- Firefox packages: the AMO packages of AI warning for Steam, AI Generated Content Filter, Slop-Inator and Obvious Steam AI were downloaded on 2026-10-22 and their manifests and file lists read. Hashes match AMO. Code was not read from them. Chrome packages were not downloaded.
+- Obvious Steam AI: the manifest shows no permissions and one 990-byte content script; the code is unread. Detection, surfaces and efficiency for it are not scored.
 - Day-old tools (Slop-Inator, Steam Hide AI, Steam AI Filter, Steam Slop Filter): maintenance not scored; reach describes a launch week.
 - No tool was installed or run. Behavior comes from source, manifests, listings and a few anonymous fetches of public store pages.
 - Reddit and SteamDB were unreachable. Reddit threads, including the one with more than 8,800 upvotes that press cites, were not read.

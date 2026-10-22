@@ -42,13 +42,13 @@ Prior note: `docs/research/steam-ai-disclosure/rq4-prior-art.md` section 1.4. Co
 - Proven (AMO record from the manifest): one required permission entry, `*://store.steampowered.com/*`; `host_permissions` empty; optional permissions empty (API `file.*` fields, https://addons.mozilla.org/api/v5/addons/addon/obvious-steam-ai/versions/ , 2026-10-21). The page renders this as "Access your data for store.steampowered.com" (listing page).
 - Data collection: the developer declares "none" required and none optional (API `data_collection_permissions: ["none"]`; the page says "The developer says this extension doesn't require data collection").
 - No privacy policy and no EULA (`has_privacy_policy` false, `has_eula` false).
-- Cross-check of how AMO lists permissions: for AI warning for Steam (Manifest V3, `storage` plus two content-script matches, no `host_permissions`, per the prior note) the AMO file record lists `storage` and the two match patterns; for AI Generated Content Filter for Steam it lists `storage` and the all-store pattern (API sources in section 1, 2026-10-21). AMO therefore folds content-script matches into this list. For Obvious Steam AI the single entry is most likely one content-script match, and the missing `storage` entry points to an add-on that uses no storage API (inference).
+- Cross-check of how AMO lists permissions: for AI warning for Steam (Manifest V3, `storage` plus two content-script matches, no `host_permissions`, per the prior note) the AMO file record lists `storage` and the two match patterns; for AI Generated Content Filter for Steam it lists `storage` and the all-store pattern (API sources in section 1, 2026-10-21). AMO therefore folds content-script matches into this list. For Obvious Steam AI the single entry is most likely one content-script match, and the missing `storage` entry points to an add-on that uses no storage API. Confirmed from the downloaded package on 2026-10-22: the manifest declares no permissions and one content script matched to every path on the store host.
 - Outbound requests: unknown without the code. The declared permissions give no access to `api.steampowered.com` or any non-store host through the extension API.
 - Remote code, minification, `eval`: not checkable.
 
 ## 6. Efficiency
 
-- Proven: package size 13,653 bytes (section 1).
+- Proven: package size 13,653 bytes (section 1); the single content script is 990 bytes (package file list, 2026-10-22).
 - Not retrievable: requests per page, caching, observers, scan timing. No `storage` permission means no extension-level cache (inference). Without the code, whether it issues any request at all is unknown.
 
 ## 7. Maintenance and responsiveness
@@ -70,7 +70,7 @@ Prior note: `docs/research/steam-ai-disclosure/rq4-prior-art.md` section 1.4. Co
 - Stores: Firefox Add-ons only. Edge Add-ons search for "obvious steam ai" returned 10 unrelated results, none this tool (https://microsoftedge.microsoft.com/addons/search/obvious%20steam%20ai , 2026-10-21, cookie banner rejected; search relevance caveat). Chrome Web Store: the built-in browser refuses the site; a web search found no Chrome listing (unverified). GreasyFork, OpenUserJS: a web search found nothing (unverified).
 - Update path: AMO automatic updates; one version to date (section 7).
 - Source availability: the license field says MPL-2.0 and the versions page repeats it, with no repository or source link on the listing. The code is public only inside the signed package (not read, section 12).
-- Manifest version: not read. The Firefox minimum of 109.0a1 equals the value on AI warning for Steam, a known Manifest V3 add-on; AI Generated Content Filter for Steam, also Manifest V3, declares 128.0 itself. The value is consistent with Manifest V3 but does not settle it (inference).
+- Manifest version 3, read from the downloaded package on 2026-10-22 (hash matches AMO). The package holds one content script of 990 bytes, a 4,923-byte icon and the manifest. The code itself was not read.
 
 ## 10. Coverage and Restraint evidence
 
@@ -96,7 +96,7 @@ Supports Restraint:
 
 ## 12. Not retrievable
 
-- Extension code (manifest, content script, any CSS): not read. AMO's in-browser source viewer is the Code Manager at code.addons.mozilla.org; the built-in browser refused that host on two tries (navigate and preview_start) and the web fetch tool failed with a DNS error for the host (2026-10-21). The older viewer path `files/browse/4646932` redirects to a reviewers host and returns "Not Found". The reviewer API endpoints return "Not found" without a login. The version history page has no "view source" link. The only remaining route is the XPI download (https://addons.mozilla.org/firefox/downloads/file/4646932/obvious_steam_ai-1.0.xpi), which the brief forbids. I did not use it or any tool that fetches it.
+- Extension code (content script, any CSS): not read. The manifest and file list were read from the downloaded package on 2026-10-22 (manifest only, as approved). AMO's in-browser source viewer is the Code Manager at code.addons.mozilla.org; the built-in browser refused that host on two tries (navigate and preview_start) and the web fetch tool failed with a DNS error for the host (2026-10-21). The older viewer path `files/browse/4646932` redirects to a reviewers host and returns "Not Found". The reviewer API endpoints return "Not found" without a login. The version history page has no "view source" link. The only remaining route is the XPI download (https://addons.mozilla.org/firefox/downloads/file/4646932/obvious_steam_ai-1.0.xpi), which the brief forbids. The research agent did not use it; the main session later downloaded the package with approval and read the manifest only.
 - Behavior on live pages: not tested (no install allowed). Banner look, wording on screen, placement, whether it reads the heading in other languages: unknown.
 - Chrome Web Store: the built-in browser refuses the site; Chrome presence was checked only through web search (nothing found).
 - Reddit: refused by the built-in browser and blocked in the web search tool; no community discussion could be checked there.
