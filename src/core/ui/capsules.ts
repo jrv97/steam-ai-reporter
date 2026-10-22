@@ -1,9 +1,15 @@
 import { HOST_APPID } from "../scan/marks";
+import type { RowPlacement } from "../scan/placements";
 import type { CapsuleHost, CapsuleRenderer, ScanBatch } from "../scan/renderer";
 import type { AppId, Detector, Verdict } from "../types";
 import { compactSize } from "./badge";
 import type { BadgeSlot, HostRenderer } from "./host";
 
+/** Where a full badge goes for each row slot, relative to its anchor. */
+const ROW_POSITION = {
+  after: "afterend",
+  end: "beforeend",
+} as const satisfies Record<RowPlacement["slot"], InsertPosition>;
 /** Set on a capsule image box that computes to `position: static`; CSS makes it relative. */
 const ANCHOR_MARK = "data-sar-anchor";
 /** Positions that already contain an absolutely placed badge. */
@@ -105,7 +111,7 @@ export function createCapsuleUi(options: CapsuleUiOptions): CapsuleUi {
     const { placement, anchor } = host;
     if (placement.badge === "full") {
       return {
-        slot: { kind: "full", anchor, position: "afterend" },
+        slot: { kind: "full", anchor, position: ROW_POSITION[placement.slot] },
         markAnchor: false,
         unsized: false,
       };

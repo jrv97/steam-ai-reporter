@@ -5,6 +5,9 @@ import { normalizeBreaks } from "./notes";
 /** The card's id, the target of `aria-describedby` while focus holds it open. */
 export const HOVER_CARD_ID = "sar-hovercard";
 
+/** Set to `open` on the root element while the card shows; page CSS hides the store's hover. */
+const OPEN_MARK = "data-sar-hovercard";
+
 /** Elements that can open the card. The summary row holds a chip, so lookups climb past it. */
 const TRIGGER_SELECTOR = ".sar-summary-row, .sar-badge, .sar-compact";
 
@@ -148,7 +151,8 @@ function defaultOverflows(notes: HTMLElement): boolean {
 /**
  * The hover card: one panel per page, built like the store's game hover popup, that quotes the
  * developer's notes for the badge or summary row under the pointer or focus. Triggers register
- * in a `WeakMap`; six delegated listeners on the document serve every trigger on the page.
+ * in a `WeakMap`; six delegated listeners on the document serve every trigger on the page. The
+ * card closes on `pagehide`.
  */
 export function createHoverCard(
   doc: Document,
@@ -288,6 +292,7 @@ export function createHoverCard(
     clearTimer();
     release();
     open = undefined;
+    doc.documentElement.removeAttribute(OPEN_MARK);
     if (card !== undefined) {
       card.root.hidden = true;
       leaveTopLayer(card.root);
@@ -313,6 +318,7 @@ export function createHoverCard(
       describe(focused);
     }
     place(target, trigger);
+    doc.documentElement.setAttribute(OPEN_MARK, "open");
     open = { trigger, via };
   }
 
@@ -505,6 +511,7 @@ export function createHoverCard(
   for (const [type, listener] of listeners) {
     doc.addEventListener(type, listener, capture);
   }
+  view?.addEventListener("pagehide", close);
 
   return {
     bind(trigger, verdict, ownPage = false) {
@@ -515,6 +522,7 @@ export function createHoverCard(
       for (const [type, listener] of listeners) {
         doc.removeEventListener(type, listener, capture);
       }
+      view?.removeEventListener("pagehide", close);
       card?.root.remove();
       card = undefined;
       filled = undefined;

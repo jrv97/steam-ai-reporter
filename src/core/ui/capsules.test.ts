@@ -1,13 +1,13 @@
 import { describe, expect, it, vi } from "vitest";
 import { setBody } from "../../../tests/helpers/dom";
 import { disclosedVerdict, NOT_DISCLOSED } from "../../../tests/helpers/verdicts";
-import { GENERIC, type Placement } from "../scan/placements";
+import { GENERIC, type Placement, type RowPlacement } from "../scan/placements";
 import type { CapsuleHost } from "../scan/renderer";
 import { type AppId, type Detector, toAppId, type Verdict } from "../types";
 import { createCapsuleUi, type SizeWatch } from "./capsules";
 import type { HostView } from "./host";
 
-const ROW: Placement = {
+const ROW: RowPlacement = {
   id: "row",
   host: "*",
   hideable: false,
@@ -85,6 +85,15 @@ describe("createCapsuleUi", () => {
     expect(views).toHaveLength(1);
     expect(views[0]?.slot).toEqual({ kind: "full", anchor: found.anchor, position: "afterend" });
     expect(views[0]?.hideable).toBe(false);
+  });
+
+  it("draws a full badge of an end slot as the anchor's last child", async () => {
+    const id = appId(6);
+    const { ui, views, flush } = setup(new Map([[id, disclosedVerdict()]]));
+    const found = host(6, { ...ROW, slot: "end" });
+    ui.render({ found: [found], changed: [] });
+    await flush();
+    expect(views[0]?.slot).toEqual({ kind: "full", anchor: found.anchor, position: "beforeend" });
   });
 
   it("measures the image box for a compact badge and anchors a static box", async () => {

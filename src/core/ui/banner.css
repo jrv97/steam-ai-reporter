@@ -80,7 +80,7 @@
   overflow: hidden;
 }
 
-/* "Stop marking this game": the store's white-transparent button */
+/* "Stop marking this game": the store's outlined button, at least 24px tall */
 .sar-banner-action {
   appearance: none;
   display: inline-flex;
@@ -88,7 +88,8 @@
   max-inline-size: 100%;
   margin: 0;
   margin-inline-start: auto;
-  padding-block: 0;
+  min-block-size: var(--sar-control-height-xs);
+  padding-block: var(--sar-banner-button-pad-block);
   padding-inline: var(--sar-banner-button-pad-inline);
   border: 1px solid var(--sar-banner-button-border);
   border-radius: var(--sar-radius-sm);

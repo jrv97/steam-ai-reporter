@@ -27,10 +27,13 @@ export interface OverlayPlacement extends PlacementBase {
   readonly slot: "overlay";
 }
 
-/** A full badge in a row with room for words, placed as the anchor's next sibling. */
+/**
+ * A full badge in a row with room for words. `after` makes it the anchor's next sibling. `end`
+ * makes it the anchor's last child, after its text.
+ */
 export interface RowPlacement extends PlacementBase {
   readonly badge: "full";
-  readonly slot: "after";
+  readonly slot: "after" | "end";
 }
 
 export type Placement = OverlayPlacement | RowPlacement;
@@ -120,12 +123,13 @@ export const PLACEMENTS: readonly Placement[] = [
     anchor: firstTextLeaf,
   },
   {
-    // DLC rows on an app page; most have no image.
+    // DLC rows on an app page; most have no image. The row spreads its children apart. The
+    // badge goes inside the name, so it follows the text.
     id: "dlc-row",
     host: "a.game_area_dlc_row",
     hideable: true,
     badge: "full",
-    slot: "after",
+    slot: "end",
     anchor: inside(".game_area_dlc_name"),
   },
   {

@@ -163,6 +163,13 @@
   line-height: var(--sar-leading-sm);
 }
 
+/* Full page: help and error lines at the body size; the popup keeps them small */
+.sar-options[data-sar-context="page"] .sar-field-help,
+.sar-options[data-sar-context="page"] .sar-field-error {
+  font-size: var(--sar-size-md);
+  line-height: var(--sar-leading-md);
+}
+
 /* Switch: a checkbox with role="switch" */
 .sar-toggle {
   appearance: none;
@@ -199,7 +206,7 @@
   transform: translateX(16px);
 }
 
-/* Segmented control: a fieldset of radios, full row, equal columns */
+/* Segmented control: a fieldset of radios, equal columns */
 .sar-segment {
   display: grid;
   grid-auto-flow: column;
@@ -236,6 +243,13 @@
   border-color: var(--sar-segment-selected-border);
   background: var(--sar-segment-selected-bg);
   color: var(--sar-segment-selected-fg);
+}
+
+/* Full page: the well hugs its segments, which share one width: the widest label or the min */
+.sar-options[data-sar-context="page"] .sar-segment {
+  grid-auto-columns: minmax(var(--sar-segment-min-inline-size), 1fr);
+  inline-size: max-content;
+  max-inline-size: 100%;
 }
 
 .sar-select {

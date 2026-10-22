@@ -78,7 +78,15 @@
   white-space: nowrap;
 }
 
-.search_name > .sar-badge {
+/* DLC rows: at the end of the name. A disclosed name becomes a flex row, which drops its
+   trailing space. The badge's margin is then the whole gap, as on search rows. */
+.game_area_dlc_row[data-sar-state="disclosed"] .game_area_dlc_name {
+  display: flex;
+  align-items: center;
+}
+
+.search_name > .sar-badge,
+.game_area_dlc_name > .sar-badge {
   margin-inline-start: var(--sar-space-2);
 }
 
@@ -212,6 +220,11 @@ a.sar-summary-row .sar-badge {
 
 .sar-hovercard-service-name {
   color: var(--sar-color-text);
+}
+
+/* The store's game hover stays hidden while the card is open, or both open on a search row */
+[data-sar-hovercard="open"] #global_hover {
+  visibility: hidden !important;
 }
 
 /* List filter: data-sar-filter on the root element, data-sar-state on each host. The dim is a
