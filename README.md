@@ -42,7 +42,7 @@ In search results, rows of games whose developers reported AI use carry the badg
 
 On a game's page, a banner above the purchase box quotes the developer's report in their own words. "Stop marking this game" adds it to your allow-list. Its DLC rows get badges too.
 
-![A search row's badge with a panel open beside it that quotes the developer's report, next to Steam's own game hover](docs/store/screenshots/03-hover-card.jpg)
+![A search row's badge with a panel open below it that quotes the developer's report](docs/store/screenshots/03-hover-card.jpg)
 
 Hovering or tabbing to a badge opens a panel in the style of Steam's game hover, with the developer's own text and any AI service they named.
 

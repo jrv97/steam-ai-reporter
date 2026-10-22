@@ -82,13 +82,13 @@ The extension has no background script, requests no host permissions and makes n
 
 1. `01-search.jpg`: search results for "roguelike" with three badged rows.
 2. `02-app-banner.jpg`: the banner on app 1808500, with its badged DLC rows.
-3. `03-hover-card.jpg`: the panel that opens on a search badge, next to Steam's own game hover.
+3. `03-hover-card.jpg`: the panel that opens on a search badge. While it is open, Steam's own game hover stays hidden.
 4. `04-next-fest.jpg`: Next Fest sale cards with the compact badge on the game image.
 5. `05-options.jpg`: the options page with the list filter on Dim and one game in the allow-list.
 
 `list-dim.jpg` (Dim mode in search) and `popup.jpg` (the toolbar popup, 360 px wide) appear in the README only.
 
-They were captured on 2026-10-21 in headless Chrome with a fresh, signed-out profile, a 1280 x 800 viewport and Steam's cookie banner hidden. The store pages run the dev bundle (`dist/dev/inject.js`) of release 2026.10.21. The options page and the popup are `dist/chrome/options.html` with `chrome.storage` stubbed in memory. Prices show in euros because of the capture location.
+They were captured on 2026-10-22 in headless Chrome with a fresh, signed-out profile, a 1280 x 800 viewport and Steam's cookie banner hidden. The store pages run the dev bundle (`dist/dev/inject.js`) built from main at commit 59417c5. The options page and the popup are `dist/chrome/options.html` with `chrome.storage` stubbed in memory. Prices show in euros because of the capture location.
 
 ## Assets still needed
 
