@@ -1,3 +1,0 @@
-kind: Changed
-body: 'Every label for a game whose developer reported AI use now reads "AI use reported": the badge in search results and lists, the badge on game images, the hover panel, the chip in the game''s summary box, and the banner heading on its store page. The chip stands alone under Developer and Publisher, lined up with their names. Settings and the toolbar popup use the same wording.'
-time: 2026-10-21T22:48:53.190848+02:00
