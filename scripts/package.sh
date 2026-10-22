@@ -3,7 +3,8 @@
 #   steam-ai-reporter-chrome-<version>.zip     dist/chrome
 #   steam-ai-reporter-firefox-<version>.zip    dist/firefox
 #   steam-ai-reporter.user.js / .meta.js       dist/userscript (fixed names, stable URLs)
-#   steam-ai-reporter-source-<version>.zip     git archive of HEAD, lockfile included (AMO)
+#   steam-ai-reporter-source-<version>.zip     git archive of HEAD (AMO): lockfile in, docs/ out
+#                                              except the design tokens the build reads
 # dist/dev (the dev injection bundle) is never packaged.
 set -euo pipefail
 
@@ -31,7 +32,12 @@ mkdir -p artifacts
 python scripts/zip_dir.py dist/chrome "artifacts/${slug}-chrome-${version}.zip"
 python scripts/zip_dir.py dist/firefox "artifacts/${slug}-firefox-${version}.zip"
 cp "dist/userscript/${slug}.user.js" "dist/userscript/${slug}.meta.js" artifacts/
+# A pathspec exclude of docs would drop the tokens too, so list every other top-level entry.
+paths=()
+while IFS= read -r entry; do
+  [[ "$entry" == docs ]] || paths+=("$entry")
+done < <(git ls-tree --name-only HEAD)
 git archive --format=zip --prefix="${slug}-source-${version}/" \
-  -o "artifacts/${slug}-source-${version}.zip" HEAD
+  -o "artifacts/${slug}-source-${version}.zip" HEAD -- "${paths[@]}" docs/design/tokens.css
 
 ls -l artifacts
