@@ -14,7 +14,8 @@
   shipped catalog is inlined, so each added locale costs about 5 KB in both.
 - The STEAM_API_KEY value, when set, appears nowhere in dist/ or artifacts/ (rule 16).
 - The dev injection bundle is never packaged into artifacts/, and when artifacts/ exists it holds
-  exactly the five release artifacts, with a manifest at the root of each extension zip.
+  exactly the five release artifacts, with a manifest at the root of each extension zip. The source
+  archive holds no dist/, artifacts/ or node_modules/, and from docs/ only the design tokens.
 """
 
 import os
@@ -41,6 +42,8 @@ URL = re.compile(r"https?://([A-Za-z0-9.-]+)")
 GM_NAME = re.compile(r"\bGM(?:\.[A-Za-z_]\w*|_[A-Za-z]\w*)")
 HEADER_FIELD = re.compile(r"^//\s+(@[\w:-]+)[ \t]*(.*?)\s*$", re.MULTILINE)
 MSG = re.compile(r"__MSG_([A-Za-z0-9_@]+)__")
+# The only file of docs/ that the source archive keeps: scripts/gen_styles.py reads it to build.
+SOURCE_DOCS = {"docs/design/tokens.css"}
 
 
 def paths(value: object, where: str) -> list[str]:
@@ -250,12 +253,16 @@ def artifact_problems() -> list[str]:
             if entry.startswith("dev/") or entry.endswith("inject.js")
         ]
     if source in present:
-        roots = {entry.split("/", 2)[1] for entry in zip_names(ARTIFACTS / source) if "/" in entry}
+        names = [entry.split("/", 1)[1] for entry in zip_names(ARTIFACTS / source) if "/" in entry]
+        roots = {name.split("/", 1)[0] for name in names if name}
         problems += [
             f"artifacts/{source}: contains {root}/"
             for root in ("dist", "artifacts", "node_modules")
             if root in roots
         ]
+        docs = {name for name in names if name.startswith("docs/") and not name.endswith("/")}
+        if docs != SOURCE_DOCS:
+            problems.append(f"artifacts/{source}: docs/ must hold only {sorted(SOURCE_DOCS)}")
     return problems
 
 
