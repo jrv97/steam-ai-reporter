@@ -4,6 +4,7 @@
   content scripts match the store only; Gecko settings only in Firefox; every __MSG_*__ resolves;
   every file the manifest names exists.
 - Extension pages carry no copy (rule 9): only whitespace text, and `data-i18n` keys that resolve.
+  Each page links an icon that exists, or its browser tab shows a puzzle piece.
 - Userscript: header present, no @connect, exact @match, @updateURL and @downloadURL; every `GM`
   name in the bundle has an @grant and every @grant is used; no userscript header in any other
   bundle.
@@ -67,15 +68,18 @@ def manifest_files(manifest: dict[str, object], where: str) -> list[str]:
 
 
 class PageText(HTMLParser):
-    """Collects the text and the `data-i18n` keys of an extension page."""
+    """Collects the text, the `data-i18n` keys and the icon links of an extension page."""
 
     def __init__(self) -> None:
         super().__init__()
         self.text: list[str] = []
         self.keys: list[str] = []
+        self.icons: list[str] = []
 
-    def handle_starttag(self, _tag: str, attrs: list[tuple[str, str | None]]) -> None:
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         self.keys += [value for name, value in attrs if name == "data-i18n" and value is not None]
+        if tag == "link" and ("rel", "icon") in attrs:
+            self.icons += [value for name, value in attrs if name == "href" and value is not None]
 
     def handle_data(self, data: str) -> None:
         if data.strip():
@@ -89,6 +93,13 @@ def page_problems(path: Path, catalog: dict[str, object]) -> list[str]:
     problems = [f"{where}: copy belongs in the catalog, found {text!r}" for text in parser.text]
     problems += [
         f"{where}: data-i18n key {key} has no message" for key in parser.keys if key not in catalog
+    ]
+    if not parser.icons:
+        problems.append(f'{where}: no <link rel="icon">')
+    problems += [
+        f"{where}: icon {href} is missing"
+        for href in parser.icons
+        if not (path.parent / href).is_file()
     ]
     return problems
 
