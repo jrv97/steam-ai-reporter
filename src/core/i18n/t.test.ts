@@ -7,7 +7,7 @@ import type { Catalogs } from "./catalog";
 import { createI18n } from "./t";
 
 // Test-only catalogs: `xx` is a pseudo-locale for fallback, plurals and placeholders, `es` a
-// realistic translation. English is the only shipped locale.
+// realistic translation. All three are test-only; src/locales holds the shipped catalogs.
 const catalogs: Catalogs = { en, es, xx };
 
 // Repo text is ASCII (rule 8), so the Spanish characters are spelled out by code point.

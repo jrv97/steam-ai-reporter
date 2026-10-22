@@ -1,3 +1,3 @@
 kind: Fixed
-body: On a game's page, the badge on a DLC row now follows the DLC's name instead of floating between the name and the price, and the "Stop marking this game" button matches the size and edge of Steam's own buttons below it. Hovering a badge in search results no longer opens Steam's game popup beside the disclosure panel. On the options page, the Show, Dim and Hide control fits its labels instead of spanning the card, and help text is larger.
+body: On a game's page, the badge on a DLC row now follows the DLC's name instead of floating between the name and the price, and the "Ignore this game" button matches the size and edge of Steam's own buttons below it. Hovering a badge in search results no longer opens Steam's game popup beside the disclosure panel. On the options page, the Show, Dim and Hide control fits its labels instead of spanning the card, and help text is larger.
 time: 2026-10-21T22:50:00.0000000+02:00

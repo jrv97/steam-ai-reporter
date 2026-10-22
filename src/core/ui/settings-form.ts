@@ -272,7 +272,7 @@ export async function mountSettingsForm(
     cards.push(language);
   }
 
-  // Games you stopped marking
+  // Games you ignored
   const allow = card("options_section_allow", "allow");
   const allowBody = element("div", "");
   allow.append(allowBody);

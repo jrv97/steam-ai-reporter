@@ -1,7 +1,7 @@
 ---
 title: AI Reporter for Steam UI components (v1)
 status: draft
-updated: 2026-10-21
+updated: 2026-10-22
 ---
 
 # AI Reporter for Steam UI components (v1)
@@ -34,10 +34,10 @@ Every class, attribute and custom property starts with `sar-`.
 ## Voice and copy
 
 - Say "report" or "reported". Never "uses AI", "AI-free" or "no AI", in any locale; the copy test fails the build on them.
-- Plain, short, sentence case: "AI use reported", "Stop marking this game", "Show full report".
+- Plain, short, sentence case: "AI use reported", "Ignore this game", "Show full report".
 - One label names the verdict everywhere: "AI use reported" on both badges, the summary row chip, the hover card title and the banner heading.
 - Name the developer as the source: "In the developer's own words:", "AI service named by the developer:".
-- "Stop marking this game", never "Ignore": the store has its own Ignore button just above.
+- The opt-out label is "Ignore this game". The store has its own Ignore button just above; ours only affects this extension.
 - Settings speak about games, not switches: the list filter reads "Show", "Dim", "Hide".
 - No exclamation marks, no emoji, no em dashes.
 - The full catalog, with translator notes, is in the Messages section.
@@ -337,7 +337,7 @@ Modeled on the store's per-app notice bubbles (the DLC notice sits in the same s
 - No border, no radius, no shadow.
 - Padding `sar-space-2` at block-start, `sar-space-3` at block-end, `sar-space-4` inline. `sar-space-4` below: the store's own 2px would glue the banner to the purchase box and read as part of the offer.
 - All text in `sar-banner-fg`. Title `sar-text-banner-title` (24/30 light). Source and service lines `sar-text-banner-meta` (13/19 light). Notes `sar-text-banner-quote` (14/21, italic like the notes in the store's own disclosure section).
-- "Stop marking this game" matches the store's outlined buttons right below the banner ("Compare Editions", "Browse all"): `sar-text-banner-button` (11/14 regular, the store's size) in `sar-banner-button-fg`, `sar-banner-button-pad-block` (2px) and `sar-banner-button-pad-inline` (15px), a 1px `sar-banner-button-border` (white at 40%), `sar-radius-sm`, a `sar-banner-button-bg-hover` wash on hover. It stays at least `sar-control-height-xs` (24px) tall for the target size (WCAG 2.5.8), where the store's buttons are 22px.
+- "Ignore this game" matches the store's outlined buttons right below the banner ("Compare Editions", "Browse all"): `sar-text-banner-button` (11/14 regular, the store's size) in `sar-banner-button-fg`, `sar-banner-button-pad-block` (2px) and `sar-banner-button-pad-inline` (15px), a 1px `sar-banner-button-border` (white at 40%), `sar-radius-sm`, a `sar-banner-button-bg-hover` wash on hover. It stays at least `sar-control-height-xs` (24px) tall for the target size (WCAG 2.5.8), where the store's buttons are 22px.
 - "Show full report" and "Undo" are the store's underlined in-bubble links, in `sar-banner-link-color`, as `button` elements with a 24px minimum target.
 - Errors in `sar-banner-error`, never `sar-color-error` (4.21:1 on the bright end).
 - Never `sar-color-text-muted` or `sar-color-text-subtle` on the wash.
@@ -352,8 +352,8 @@ Modeled on the store's per-app notice bubbles (the DLC notice sits in the same s
 
 ### Behavior
 
-- "Stop marking this game" adds the app ID (with the name and today's date) to the allow-list and swaps in the one-line note; focus moves to Undo. It never calls the store's own ignore feature.
-- "Undo" restores the full banner, collapsed; focus returns to "Stop marking this game".
+- "Ignore this game" adds the app ID (with the name and today's date) to the allow-list and swaps in the one-line note; focus moves to Undo. It never calls the store's own ignore feature.
+- "Undo" restores the full banner, collapsed; focus returns to "Ignore this game".
 - The polite live region announces `notice_marking_stopped` or `notice_marking_restored`.
 
 ### Longer translations
@@ -434,7 +434,7 @@ Preview: `previews/OptionsPage.html`.
 2. On store pages: Switch `options_badges` (popup `options_badges_short`), Switch `options_banner`, each with help.
 3. In lists: a stacked SegmentedControl, Show, Dim, Hide (values `off`, `dim`, `hide`); the help follows the selection.
 4. Language (page only): a stacked Select, `Automatic` first, then each shipped locale named in its own language through `Intl.DisplayNames`.
-5. Games you stopped marking: the AllowList, newest first. Left out of the popup while it is empty.
+5. Games you ignored: the AllowList, newest first. Left out of the popup while it is empty.
 6. Backup (page only): the Backup card, to download a file and restore from one.
 7. Privacy (page only): four bullets.
 8. Footer: `options_unaffiliated` in `sar-text-help`, subtle. The popup uses `options_unaffiliated_short` and adds an `options_all_settings` link.
@@ -550,7 +550,7 @@ Not in the popup: the popup leaves language to the full page.
 
 ## 10. Button
 
-Buttons on extension pages: secondary by default ("Mark again"), primary only for Restore in the backup summary.
+Buttons on extension pages: secondary by default ("Stop ignoring"), primary only for Restore in the backup summary.
 
 Preview: `previews/Button.html`.
 
@@ -577,7 +577,7 @@ Preview: `previews/Button.html`.
 
 ## 11. Allow-list
 
-The list of games the person stopped marking, newest first, each with a way to mark it again.
+The list of games the person ignored, newest first, each with a way to stop ignoring it.
 
 Preview: `previews/AllowList.html`.
 
@@ -598,7 +598,7 @@ Preview: `previews/AllowList.html`.
 
 - The game name as data, untranslated, linked to its store page.
 - The date formatted with `Intl.DateTimeFormat(locale, { dateStyle: "medium" })`.
-- Empty: `<p class="sar-empty">t('options_allow_empty', { action })</p>`, where `action` is the "Stop marking this game" label.
+- Empty: `<p class="sar-empty">t('options_allow_empty', { action })</p>`, where `action` is the "Ignore this game" label.
 - A failed removal shows `error_allow_list_save` under that item.
 
 ### Look
@@ -616,14 +616,14 @@ Preview: `previews/Backup.html`.
 ### What a backup holds
 
 - Settings: badges, banner, list filter, language.
-- Games you stopped marking, with their names and dates.
+- Games you ignored, with their names and dates.
 - Lookup history: every game already checked, marked or not, with when it was checked, so a restored history still expires on its usual schedule.
 
 One JSON file named `ai-reporter-backup-YYYY-MM-DD.json`, with a format version. Its schema lives with the storage code. Nothing else goes in: no cookies, no account data, nothing from the store.
 
 ### Where it appears
 
-- The full options page: its own card, after "Games you stopped marking" and before "Privacy".
+- The full options page: its own card, after "Games you ignored" and before "Privacy".
 - The userscript settings dialog: the same card.
 - Not the toolbar popup: opening a file picker can close an extension popup before the file arrives. The popup's "All settings" link leads to the full page.
 
@@ -678,7 +678,7 @@ One JSON file named `ai-reporter-backup-YYYY-MM-DD.json`, with a format version.
 2. The file is untrusted data: cap its size, parse it as JSON, validate it against the schema, and never render any of its text as HTML. Game names go in with `textContent`.
 3. Not a backup: `error_backup_invalid`. From a newer format: `error_backup_newer`. Unreadable: `error_backup_read`. Nothing changes in any of these.
 4. Valid: the summary opens in place, inside the card. No modal. Focus moves to its title, so a screen reader hears the date and contents.
-5. "Restore" applies everything in one write: settings are replaced; games you stopped marking are merged (the earlier date wins); history is merged (the newer check wins). Open store tabs update through the settings subscription, as for any settings change.
+5. "Restore" applies everything in one write: settings are replaced; games you ignored are merged (the earlier date wins); history is merged (the newer check wins). Open store tabs update through the settings subscription, as for any settings change.
 6. Afterwards the summary closes, the status line reads `notice_backup_restored`, the live region announces it, and focus returns to "Restore from a backup".
 7. If the write fails: `error_backup_restore`. Nothing is half-applied.
 8. "Cancel" closes the summary and returns focus to "Restore from a backup".
@@ -849,8 +849,8 @@ For every translator:
 | `banner_expand` | Show full report | Expands the collapsed text. |
 | `banner_collapse` | Show less | Collapses it again. |
 | `banner_service_label` | AI service named by the developer: | Precedes a product name inserted as data. |
-| `banner_ignore` | Stop marking this game | Stops badges and this notice for one game. Avoid the word the store uses for its own ignore feature. |
-| `banner_ignored` | You stopped marking this game. | Replaces the notice after the action above. |
+| `banner_ignore` | Ignore this game | The store has its own Ignore button; this one only stops badges and this notice for one game in this extension. |
+| `banner_ignored` | Game ignored | Replaces the notice after the action above. |
 | `banner_undo` | Undo | Reverses the action above. |
 | `banner_region_label` | AI use report | Screen reader name for the one-line note. |
 
@@ -858,8 +858,8 @@ For every translator:
 
 | Key | English | Note |
 | --- | --- | --- |
-| `notice_marking_stopped` | Marking stopped for this game. | Screen reader announcement. |
-| `notice_marking_restored` | Marking restored for this game. | Screen reader announcement. |
+| `notice_marking_stopped` | This game will be ignored | Screen reader announcement. |
+| `notice_marking_restored` | This game is no longer ignored | Screen reader announcement. |
 | `notice_settings_saved` | Saved. | Screen reader announcement after a setting changes. |
 | `notice_backup_downloaded` | Backup downloaded. | Screen reader announcement after the file is saved. |
 | `notice_backup_restored` | Backup restored. | Shown under the backup buttons and announced after a restore. |
@@ -870,7 +870,7 @@ For every translator:
 | --- | --- | --- |
 | `error_settings_save` | Could not save this change. Try again. | Under a setting whose change failed to save. |
 | `error_settings_load` | Could not load your settings. Showing the defaults. | Top of the settings page. |
-| `error_allow_list_save` | Could not update this game. Try again. | After "Stop marking", "Undo" or "Mark again" fails. |
+| `error_allow_list_save` | Could not update this game. Try again. | After "Ignore this game", "Undo" or "Stop ignoring" fails. |
 | `error_backup_create` | Could not create the backup. Try again. | When the backup file cannot be built. |
 | `error_backup_read` | Could not read this file. | When the chosen file cannot be opened or is not text. |
 | `error_backup_invalid` | This file is not a backup from `$name$`. | `name` is the product name (`ext_name`). |
@@ -902,11 +902,11 @@ For every translator:
 | `options_language_label` | Language of this extension | Label of the picker. |
 | `options_language_auto` | Automatic | First picker entry. |
 | `options_language_help` | Automatic follows the store page's language when a translation exists, and English otherwise. | Help under the picker. |
-| `options_section_allow` | Games you stopped marking | Section heading. |
+| `options_section_allow` | Games you ignored | Section heading. |
 | `options_allow_since` | Since `$date$` | `date` is already formatted for the locale. |
-| `options_allow_restore` | Mark again | Button next to a game. |
-| `options_allow_restore_label` | Mark `$name$` again | Screen reader name of that button; `name` is untranslated. |
-| `options_allow_empty` | None yet. Use "`$action$`" on a game page. | `action` is the "Stop marking this game" label. |
+| `options_allow_restore` | Stop ignoring | Button next to a game. |
+| `options_allow_restore_label` | Stop ignoring `$name$` | Screen reader name of that button; `name` is untranslated. |
+| `options_allow_empty` | None yet. Use "`$action$`" on a game page. | `action` is the "Ignore this game" label. |
 | `options_section_privacy` | Privacy | Section heading. |
 | `options_privacy_storage` | Settings and results stay in this browser. | Privacy bullet. |
 | `options_privacy_lookup` | To check a game, the extension asks Valve's own store servers, without your cookies or account. | Privacy bullet. |
@@ -921,8 +921,8 @@ For every translator:
 | `options_backup_restore` | Restore from a backup | Button that opens the file picker. |
 | `options_backup_summary_title` | Backup from `$date$` | Heading of the check shown before restoring. `date` is already formatted for the locale. |
 | `options_backup_summary_settings` | Settings | First item of that check. |
-| `options_backup_summary_allow_one` | 1 game you stopped marking | Plural, one. |
-| `options_backup_summary_allow_other` | `$count$` games you stopped marking | Plural, other. |
+| `options_backup_summary_allow_one` | 1 game you ignored | Plural, one. |
+| `options_backup_summary_allow_other` | `$count$` games you ignored | Plural, other. |
 | `options_backup_summary_history_one` | 1 checked game | Plural, one: a game the extension has already looked up. |
 | `options_backup_summary_history_other` | `$count$` checked games | Plural, other. |
 | `options_backup_restore_note` | Restoring replaces your settings and adds these games to your lists. Nothing already here is removed. | Under the check, before the buttons. |

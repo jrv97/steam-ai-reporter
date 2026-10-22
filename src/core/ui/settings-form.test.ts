@@ -76,7 +76,7 @@ describe("mountSettingsForm", () => {
     );
     expect(control(".sar-allow-meta").textContent).toBe("Since Oct 2, 2026");
     expect(control(".sar-allow-item button").getAttribute("aria-label")).toBe(
-      "Mark Newer <b>Game</b> again",
+      "Stop ignoring Newer <b>Game</b>",
     );
   });
 
@@ -177,7 +177,7 @@ describe("mountSettingsForm", () => {
     });
     expect([...(await allowList.list()).keys()]).toEqual([10]);
     expect(document.activeElement).toBe(control('[data-sar-restore="10"]'));
-    expect(control("[aria-live]").textContent).toBe("Marking restored for this game.");
+    expect(control("[aria-live]").textContent).toBe("This game is no longer ignored");
   });
 
   it("shows the empty state with the action's own label", async () => {
@@ -189,7 +189,7 @@ describe("mountSettingsForm", () => {
     control('[data-sar-restore="10"]').click();
     await vi.waitFor(() => {
       expect(control(".sar-empty").textContent).toBe(
-        'None yet. Use "Stop marking this game" on a game page.',
+        'None yet. Use "Ignore this game" on a game page.',
       );
     });
   });

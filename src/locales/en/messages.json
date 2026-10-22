@@ -76,28 +76,28 @@
     "description": "Precedes a product name inserted as data, untranslated."
   },
   "banner_ignore": {
-    "message": "Stop marking this game",
-    "description": "Button that stops badges and this notice for one game. Avoid the word the store uses for its own ignore feature."
+    "message": "Ignore this game",
+    "description": "Button that stops badges and this notice for one game, in this extension only. The store has its own Ignore button; this one does not touch it."
   },
   "banner_ignored": {
-    "message": "You stopped marking this game.",
-    "description": "Replaces the notice after \"Stop marking this game\"."
+    "message": "Game ignored",
+    "description": "Replaces the notice after \"Ignore this game\"."
   },
   "banner_undo": {
     "message": "Undo",
-    "description": "Reverses \"Stop marking this game\"."
+    "description": "Reverses \"Ignore this game\"."
   },
   "banner_region_label": {
     "message": "AI use report",
     "description": "Screen reader name for the one-line note shown instead of the notice."
   },
   "notice_marking_stopped": {
-    "message": "Marking stopped for this game.",
-    "description": "Screen reader announcement after \"Stop marking this game\"."
+    "message": "This game will be ignored",
+    "description": "Screen reader announcement after \"Ignore this game\"."
   },
   "notice_marking_restored": {
-    "message": "Marking restored for this game.",
-    "description": "Screen reader announcement after \"Undo\" or \"Mark again\"."
+    "message": "This game is no longer ignored",
+    "description": "Screen reader announcement after \"Undo\" or \"Stop ignoring\"."
   },
   "notice_settings_saved": {
     "message": "Saved.",
@@ -113,7 +113,7 @@
   },
   "error_allow_list_save": {
     "message": "Could not update this game. Try again.",
-    "description": "After \"Stop marking this game\", \"Undo\" or \"Mark again\" fails to save."
+    "description": "After \"Ignore this game\", \"Undo\" or \"Stop ignoring\" fails to save."
   },
   "options_version": {
     "message": "Version $version$",
@@ -204,12 +204,12 @@
     "description": "Help under the language picker."
   },
   "options_section_allow": {
-    "message": "Games you stopped marking",
+    "message": "Games you ignored",
     "description": "Section heading in the settings."
   },
   "options_allow_since": {
     "message": "Since $date$",
-    "description": "Under a game you stopped marking. $date$ is already formatted for the locale.",
+    "description": "Under a game you ignored. $date$ is already formatted for the locale.",
     "placeholders": {
       "date": {
         "content": "$1",
@@ -218,12 +218,12 @@
     }
   },
   "options_allow_restore": {
-    "message": "Mark again",
-    "description": "Button next to a game you stopped marking."
+    "message": "Stop ignoring",
+    "description": "Button next to a game you ignored."
   },
   "options_allow_restore_label": {
-    "message": "Mark $name$ again",
-    "description": "Screen reader name of the \"Mark again\" button; $name$ is the game's name, untranslated.",
+    "message": "Stop ignoring $name$",
+    "description": "Screen reader name of the \"Stop ignoring\" button; $name$ is the game's name, untranslated.",
     "placeholders": {
       "name": {
         "content": "$1",
@@ -233,11 +233,11 @@
   },
   "options_allow_empty": {
     "message": "None yet. Use \"$action$\" on a game page.",
-    "description": "Shown when no game is in the list. $action$ is the \"Stop marking this game\" label.",
+    "description": "Shown when no game is in the list. $action$ is the \"Ignore this game\" label.",
     "placeholders": {
       "action": {
         "content": "$1",
-        "example": "Stop marking this game"
+        "example": "Ignore this game"
       }
     }
   },

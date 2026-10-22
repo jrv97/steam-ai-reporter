@@ -72,7 +72,7 @@ function defaultOverflows(quote: HTMLElement): boolean {
 /**
  * The app page banner: a store notice bubble in our hue, in a shadow root so store CSS cannot
  * reach it. It quotes the developer's notes verbatim through `textContent`, names the AI service
- * as plain text, and offers "Stop marking this game"; an allow-listed game gets only a one-line
+ * as plain text, and offers "Ignore this game"; an allow-listed game gets only a one-line
  * note with Undo. One delegated click listener on the shadow root serves every button.
  */
 export function createBanner(
