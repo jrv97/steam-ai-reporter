@@ -31,7 +31,9 @@ Chosen option 1.
 
 A Google Cloud service account with no IAM roles is added under Settings > Service account in the Chrome Web Store developer dashboard. A publisher can register one service account.
 
-A workload identity pool has a GitHub OIDC provider that maps `google.subject` to the token's `sub`. Its attribute condition admits a token only when `repository_id` is `1426952065` (`jrv97/steam-ai-reporter`), `ref` starts with `refs/tags/`, and `environment` is `chrome-web-store`. Only the subject `repo:jrv97/steam-ai-reporter:environment:chrome-web-store` holds `roles/iam.workloadIdentityUser` on the service account.
+A workload identity pool has a GitHub OIDC provider that maps `google.subject` to the token's `sub`. Its attribute condition admits a token only when `repository_id` is `1426952065` (`jrv97/steam-ai-reporter`), `ref` starts with `refs/tags/`, and `environment` is `chrome-web-store`. Only the subject `repo:jrv97@60591482/steam-ai-reporter@1426952065:environment:chrome-web-store` holds `roles/iam.workloadIdentityUser` on the service account.
+
+The repository's `sub` claim uses GitHub's immutable form, which names the owner and the repository by numeric ID. `gh api repos/jrv97/steam-ai-reporter/actions/oidc/customization/sub` shows its prefix. A binding written with the plain `repo:jrv97/steam-ai-reporter:environment:chrome-web-store` subject did not match in the first prod run, and the job failed with `iam.serviceAccounts.getAccessToken` denied.
 
 The Chrome job asks for `id-token: write`. `google-github-actions/auth` 3.0.0 exchanges the GitHub OIDC token for an access token that lasts 15 minutes, with the Chrome Web Store scope, and writes no credentials file.
 
@@ -44,7 +46,8 @@ The `chrome-web-store` environment holds four variables and no secrets: `CWS_WOR
 - Good: GitHub stores no Google secret, so none can leak, expire or need rotation.
 - Good: a token lasts 15 minutes, and Google issues one only to a release tag run in this repository's `chrome-web-store` environment.
 - Good: `chrome-webstore-upload-cli` leaves `mise.toml`, one pinned tool fewer.
-- Bad: Chrome's service account page documents impersonation and key files but does not mention Workload Identity Federation. The first prod run is the test of this exact path.
+- Bad: Chrome's service account page documents impersonation and key files but does not mention Workload Identity Federation. The first prod run (2026.10.22) tested this path and it worked once the binding used the immutable subject.
+- Bad: Google applies an IAM change after a few minutes. A run right after a binding change can still fail with the 403 above, so re-run only the failed job.
 - Bad: about 70 lines of API client and tests to maintain, where a CLI maintained elsewhere did the same job.
 - Bad: a one-time Google Cloud setup (pool, provider, service account, IAM binding).
 - Neutral: AMO has no equivalent. Its JWT keys stay as secrets in the `amo` environment.
