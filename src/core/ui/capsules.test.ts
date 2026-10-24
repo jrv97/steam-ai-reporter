@@ -42,7 +42,7 @@ function setup(verdicts: ReadonlyMap<AppId, Verdict>, allowed = new Set<AppId>()
   const ui = createCapsuleUi({
     document,
     detector,
-    renderers: [{ render: (view) => views.push(view) }],
+    renderers: [{ render: (view) => views.push({ ...view, allowed: { ...view.allowed } }) }],
     isAllowed: (id) => allowed.has(id),
     frame: (callback) => frames.push(callback),
     watchSize: (onSized): SizeWatch => {

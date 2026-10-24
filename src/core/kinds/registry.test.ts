@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { KIND_IDS } from "./id";
-import { kindOf, KINDS, perKind } from "./registry";
+import { kindOf, KINDS, kindsFromGetItems, perKind } from "./registry";
 
 describe("KINDS", () => {
   it("holds one definition for each kind id, in order, and each one knows its id", () => {
@@ -37,5 +37,18 @@ describe("perKind", () => {
     expect(seen).toStrictEqual([...KIND_IDS]);
     expect(Object.keys(result)).toStrictEqual([...KIND_IDS]);
     expect(result.ai).toBe(kindOf("ai").messages.label);
+  });
+});
+
+describe("kindsFromGetItems", () => {
+  it("gives every kind the verdict its definition derives from the item", () => {
+    const details = { content_survey_ai_notes: "Concept art." };
+    const verdicts = kindsFromGetItems(details, "Fixture Game", "english");
+    expect(Object.keys(verdicts)).toStrictEqual([...KIND_IDS]);
+    for (const kind of KINDS) {
+      expect(verdicts[kind.id]).toStrictEqual(
+        kind.fromGetItems(details, "Fixture Game", "english"),
+      );
+    }
   });
 });

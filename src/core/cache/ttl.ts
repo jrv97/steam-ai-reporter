@@ -1,3 +1,4 @@
+import { KINDS } from "../kinds/registry";
 import type { KindVerdicts } from "../kinds/verdicts";
 import type { UnknownReason, Verdict } from "../types";
 
@@ -47,5 +48,13 @@ export function ttlMs(verdict: Verdict): number {
  */
 export function isFresh(verdicts: KindVerdicts, time: number, now: number): boolean {
   const age = now - time;
-  return age >= 0 && Object.values(verdicts).every((verdict) => age < ttlMs(verdict));
+  if (age < 0) {
+    return false;
+  }
+  for (const kind of KINDS) {
+    if (age >= ttlMs(verdicts[kind.id])) {
+      return false;
+    }
+  }
+  return true;
 }

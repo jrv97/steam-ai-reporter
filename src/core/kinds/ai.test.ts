@@ -1,18 +1,17 @@
 import { describe, expect, it } from "vitest";
 import type { ExtraDetails } from "../detect/getitems.schema";
 import { AI_KIND } from "./ai";
-import type { KindInput } from "./kind";
 
-function input(details: ExtraDetails, name?: string): KindInput {
-  return { details, name, language: "english" };
+function fromItem(details: ExtraDetails, name?: string) {
+  return AI_KIND.fromGetItems(details, name, "english");
 }
 
 describe("AI_KIND.fromGetItems", () => {
   it("is disclosed with the trimmed notes, the service and the store name", () => {
-    const verdict = AI_KIND.fromGetItems(input({
+    const verdict = fromItem({
       content_survey_ai_notes: "\u200b Concept art was generated.\nNo AI text. \n",
       ai_generation_service: { name: " Midjourney " },
-    }, " Fixture Game "));
+    }, " Fixture Game ");
     expect(verdict).toStrictEqual({
       state: "disclosed",
       notes: "Concept art was generated.\nNo AI text.",
@@ -24,10 +23,10 @@ describe("AI_KIND.fromGetItems", () => {
   });
 
   it("leaves out the service and the name when they are blank or absent", () => {
-    const verdict = AI_KIND.fromGetItems(input({
+    const verdict = fromItem({
       content_survey_ai_notes: "Used for textures.",
       ai_generation_service: { name: " " },
-    }, ""));
+    }, "");
     expect(verdict).toStrictEqual({
       state: "disclosed",
       notes: "Used for textures.",
@@ -37,11 +36,11 @@ describe("AI_KIND.fromGetItems", () => {
   });
 
   it("keeps the language the request asked for", () => {
-    const verdict = AI_KIND.fromGetItems({
-      details: { content_survey_ai_notes: "Texturas." },
-      name: undefined,
-      language: "spanish",
-    });
+    const verdict = AI_KIND.fromGetItems(
+      { content_survey_ai_notes: "Texturas." },
+      undefined,
+      "spanish",
+    );
     expect(verdict.state === "disclosed" ? verdict.language : undefined).toBe("spanish");
   });
 
@@ -51,7 +50,7 @@ describe("AI_KIND.fromGetItems", () => {
         content_survey_ai_notes: " \u200b\n",
       }]
     ) {
-      expect(AI_KIND.fromGetItems(input(details))).toStrictEqual({
+      expect(fromItem(details)).toStrictEqual({
         state: "not-disclosed",
         source: "api",
       });
@@ -59,7 +58,7 @@ describe("AI_KIND.fromGetItems", () => {
   });
 
   it("is not disclosed when only a service is named", () => {
-    const verdict = AI_KIND.fromGetItems(input({ ai_generation_service: { name: "Midjourney" } }));
+    const verdict = fromItem({ ai_generation_service: { name: "Midjourney" } });
     expect(verdict.state).toBe("not-disclosed");
   });
 });

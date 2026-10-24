@@ -65,7 +65,11 @@ export interface CapsuleUi extends CapsuleRenderer {
 interface HostRecord {
   host: CapsuleHost;
   verdicts: KindVerdicts | undefined;
+  /** Per kind: the game is ignored. Each draw refreshes it, so drawing allocates nothing. */
+  readonly allowed: Record<KindId, boolean>;
 }
+
+const NOT_ALLOWED: Readonly<Record<KindId, boolean>> = perKind(() => false);
 
 /** One host's draw, decided in the read phase. */
 interface Draw {
@@ -169,14 +173,15 @@ export function createCapsuleUi(options: CapsuleUiOptions): CapsuleUi {
     const draws: Draw[] = [];
     // Read phase: image boxes and computed positions, only for hosts that will show a badge.
     for (const record of batch) {
-      const { host, verdicts } = record;
+      const { host, verdicts, allowed } = record;
       if (verdicts === undefined || !host.element.isConnected) {
         continue;
       }
-      const allowed = perKind((kind) => isAllowed(host.appId, kind.id));
-      const shows = KINDS.some((kind) =>
-        verdicts[kind.id].state === "disclosed" && !allowed[kind.id]
-      );
+      let shows = false;
+      for (const kind of KINDS) {
+        allowed[kind.id] = isAllowed(host.appId, kind.id);
+        shows ||= verdicts[kind.id].state === "disclosed" && !allowed[kind.id];
+      }
       const { slot, markAnchor, unsized: waits } = shows ? slotOf(host) : NO_SLOT;
       if (waits) {
         watch(record);
@@ -231,7 +236,7 @@ export function createCapsuleUi(options: CapsuleUiOptions): CapsuleUi {
       }
       const found: HostRecord[] = [];
       for (const host of batch.found) {
-        const record: HostRecord = { host, verdicts: undefined };
+        const record: HostRecord = { host, verdicts: undefined, allowed: { ...NOT_ALLOWED } };
         records.set(host.element, record);
         found.push(record);
       }

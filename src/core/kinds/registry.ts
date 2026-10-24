@@ -1,3 +1,6 @@
+import type { ExtraDetails } from "../detect/getitems.schema";
+import type { SteamLanguage } from "../i18n/locale";
+import type { Verdict } from "../types";
 import { AI_KIND } from "./ai";
 import { KIND_IDS, type KindId } from "./id";
 import type { TagKind } from "./kind";
@@ -24,4 +27,13 @@ export function definedKinds<T>(
 ): Readonly<Record<KindId, T>> | undefined {
   const { ai } = values;
   return ai === undefined ? undefined : { ai };
+}
+
+/** Every kind's verdict for a GetItems item with `extra_details`. */
+export function kindsFromGetItems(
+  details: ExtraDetails,
+  name: string | undefined,
+  language: SteamLanguage,
+): Readonly<Record<KindId, Verdict>> {
+  return { ai: REGISTRY.ai.fromGetItems(details, name, language) };
 }

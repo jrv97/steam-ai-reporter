@@ -8,7 +8,7 @@ const NOT_DISCLOSED: NotDisclosedVerdict = { state: "not-disclosed", source: "ap
 export const AI_KIND: TagKind = {
   id: "ai",
 
-  fromGetItems({ details, name, language }) {
+  fromGetItems(details, name, language) {
     const notes = trimNotes(details.content_survey_ai_notes ?? "");
     if (notes === "") {
       return NOT_DISCLOSED;

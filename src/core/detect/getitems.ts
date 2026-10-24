@@ -1,7 +1,7 @@
 import * as v from "valibot";
 import type { SteamLanguage } from "../i18n/locale";
 import { parseJson } from "../json";
-import { perKind } from "../kinds/registry";
+import { kindsFromGetItems } from "../kinds/registry";
 import { type KindVerdicts, UNKNOWN_KINDS } from "../kinds/verdicts";
 import type { Http, HttpResponse, HttpResult } from "../ports";
 import type { AppId, Detector, UnknownReason } from "../types";
@@ -135,8 +135,7 @@ function itemVerdicts(item: StoreItem, language: SteamLanguage): KindVerdicts {
   if (item.success !== ERESULT_OK || details === undefined) {
     return UNKNOWN_KINDS.missing;
   }
-  const input = { details, name: item.name, language };
-  return perKind((kind) => kind.fromGetItems(input));
+  return kindsFromGetItems(details, item.name, language);
 }
 
 /**

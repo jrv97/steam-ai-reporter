@@ -1,12 +1,17 @@
+import { KINDS } from "../kinds/registry";
 import { type KindVerdicts, UNKNOWN_KINDS } from "../kinds/verdicts";
 import type { AppId, Detector } from "../types";
 import { settle } from "./settle";
 
 /** Only Steam having no usable item, so that no kind has an answer, is worth a second source. */
 function passesOn(verdicts: KindVerdicts): boolean {
-  return Object.values(verdicts).every(
-    (verdict) => verdict.state === "unknown" && verdict.reason === "missing",
-  );
+  for (const kind of KINDS) {
+    const verdict = verdicts[kind.id];
+    if (verdict.state !== "unknown" || verdict.reason !== "missing") {
+      return false;
+    }
+  }
+  return true;
 }
 
 /**

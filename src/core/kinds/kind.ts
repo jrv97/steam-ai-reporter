@@ -22,23 +22,21 @@ export interface KindMessages {
   readonly filterLabel: BareMessageKey;
 }
 
-/** What a kind reads to derive its verdict from a GetItems item that has `extra_details`. */
-export interface KindInput {
-  readonly details: ExtraDetails;
-  /** The app's store name, when Steam sent one. */
-  readonly name: string | undefined;
-  /** The Steam language the request asked for. */
-  readonly language: SteamLanguage;
-}
-
 /**
  * One tag kind: what the extension reports about a game. Adding a kind is adding an id, a
  * definition and a registry entry; the scanner, the detector chain and the cache stay as they are.
  */
 export interface TagKind {
   readonly id: KindId;
-  /** The kind's verdict for one usable GetItems item: disclosed or not disclosed. */
-  readonly fromGetItems: (input: KindInput) => Verdict;
+  /**
+   * The kind's verdict for a GetItems item with `extra_details`: disclosed or not disclosed. The
+   * name is the store name when Steam sent one; the language is the one the request asked for.
+   */
+  readonly fromGetItems: (
+    details: ExtraDetails,
+    name: string | undefined,
+    language: SteamLanguage,
+  ) => Verdict;
   readonly messages: KindMessages;
   readonly defaults: KindSettings;
 }
