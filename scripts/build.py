@@ -44,6 +44,7 @@ CONTENT_CSS = ("TOKENS_CSS", "PAGE_CSS")
 USERSCRIPT_MATCH = "https://store.steampowered.com/*"
 # Script managers may treat a renamed script as a new one, so @name keeps its own key.
 # Set this to "ext_name" and delete userscript_name from the catalogs to follow the product name.
+# The steps, and the spike to run first, are in docs/testing/userscript-install.mdx.
 USERSCRIPT_NAME_KEY = "userscript_name"
 USERSCRIPT_NAMESPACE = "https://github.com/jrv97/steam-ai-reporter"
 USERSCRIPT_UPDATE_BASE = f"{USERSCRIPT_NAMESPACE}/releases/latest/download"

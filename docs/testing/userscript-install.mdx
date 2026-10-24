@@ -35,3 +35,18 @@ Open each page logged out first, then logged in. The first page load after insta
 ## Reporting back
 
 Per manager and browser, note which of the five checks passed, and for each failure the text of the first red line in the page console (F12, Console tab, filter on `[sar]`). Tampermonkey was verified before this build (plain `fetch`, storage, styles); Violentmonkey has not been run yet, so its first run is the real test.
+
+## Renaming the userscript
+
+The script keeps the `@name` of its first release: "AI Reporter for Steam" in English and "Marcador de IA para Steam" in Spanish, both held in the `userscript_name` catalog key. Script managers tell installed scripts apart by name and namespace, so a renamed `@name` may install as a second script beside the old one and leave the stored settings and ignored games with the old copy. Run a spike in Tampermonkey and in Violentmonkey, in Chrome and in Firefox Nightly, before flipping:
+
+1. Install the current build and change a setting, for example ignore one game.
+2. Build with a different `@name` and update the way users do (the update URL, or reinstall from the file).
+3. Note whether the manager updates in place, installs a second script or asks, and whether the setting survived.
+
+Flip once both managers behave:
+
+1. In `scripts/build.py`, set `USERSCRIPT_NAME_KEY` to `"ext_name"`. The `@name` and `@name:es` lines then follow the product name.
+2. Delete the `userscript_name` key from `src/locales/en/messages.json` and `src/locales/es/messages.json`. `check_i18n.py` fails on a key nothing uses.
+3. Update every spot that names the script. In this file: the name check in step 4 of the Tampermonkey list and step 4 of "What you should see". In `docs/store/listing.mdx`: the sentence about `@name` in the first paragraph. In `docs/design/components.mdx`: the `userscript_name` row of the message table.
+4. Add a changie fragment (`mise run change-new`). If the spike showed a second script, say that the old copy needs removing and how to carry the settings over, using the backup on the settings dialog.
