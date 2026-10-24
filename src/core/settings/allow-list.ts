@@ -8,7 +8,7 @@ import {
   decodeAllow,
   encodeAllow,
 } from "./allow-data";
-import { migrateOnce } from "./migrate";
+import { readAllowValue } from "./migrate";
 
 /** The games the user chose to ignore, per scope: one tag kind, or all kinds. */
 export interface AllowList {
@@ -21,15 +21,12 @@ export interface AllowList {
 }
 
 /**
- * The allow-list over a `KeyValueStore`, stored as `v2:allow`, an object per scope from app ID to
- * name and date. `add` and `remove` read, change and write the whole object, so two tabs changing
- * it at the same moment can lose one change; the user's own clicks make that rare enough to
- * accept. The first use moves a `v1:allow` list into the AI scope (see `migrateOnce`).
+ * The allow-list over a `KeyValueStore`, stored as `v2:allow`, an object per scope. Changes read
+ * and write the whole object, so two tabs at once can lose one. A read copies a `v1:allow` list.
  */
 export function createAllowList(store: KeyValueStore, clock: Clock): AllowList {
   async function read(): Promise<AllowEntries> {
-    await migrateOnce(store);
-    return decodeAllow((await store.get([ALLOW_KEY])).get(ALLOW_KEY));
+    return decodeAllow(await readAllowValue(store));
   }
 
   async function write(entries: AllowEntries): Promise<void> {

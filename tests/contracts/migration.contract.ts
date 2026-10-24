@@ -52,7 +52,7 @@ async function stored(store: KeyValueStore, key: string): Promise<unknown> {
  */
 export function migrationContract(name: string, make: () => KeyValueStore): void {
   describe(`migration contract: ${name}`, () => {
-    it("moves default v1 settings and an empty list to the v2 keys", async () => {
+    it("copies default v1 settings and an empty list to the v2 keys", async () => {
       const store = make();
       await seed(store, { "v1:settings": V1_DEFAULTS, "v1:allow": {} });
       expect(await migrateStorage(store)).toBe("migrated");
@@ -62,7 +62,12 @@ export function migrationContract(name: string, make: () => KeyValueStore): void
         kinds: { ai: PLAIN_AI },
       });
       expect(await stored(store, "v2:allow")).toStrictEqual({ all: {}, ai: {} });
-      expect([...(await store.keys())].toSorted()).toStrictEqual(["v2:allow", "v2:settings"]);
+      expect([...(await store.keys())].toSorted()).toStrictEqual([
+        "v1:allow",
+        "v1:settings",
+        "v2:allow",
+        "v2:settings",
+      ]);
     });
 
     it("maps customized v1 settings into the AI kind and keeps the global ones", async () => {
@@ -74,7 +79,7 @@ export function migrationContract(name: string, make: () => KeyValueStore): void
         debug: true,
         kinds: { ai: { enabled: true, badge: false, banner: true, filter: "hide" } },
       });
-      expect(await stored(store, "v1:settings")).toBeUndefined();
+      expect(await stored(store, "v1:settings")).toStrictEqual(V1_CUSTOM);
     });
 
     it("puts every ignored game in the AI scope, and none in the scope for all kinds", async () => {
@@ -85,7 +90,7 @@ export function migrationContract(name: string, make: () => KeyValueStore): void
         all: {},
         ai: { "1808500": ARC, "5072580": COURAGE },
       });
-      expect(await stored(store, "v1:allow")).toBeUndefined();
+      expect(await stored(store, "v1:allow")).toStrictEqual(V1_ALLOW);
     });
 
     it("migrates a customized install as the settings read it", async () => {
@@ -143,6 +148,14 @@ export function migrationContract(name: string, make: () => KeyValueStore): void
       expect(await store.keys()).toStrictEqual([]);
     });
 
+    it("never removes a key", async () => {
+      const store = make();
+      await seed(store, { "v1:settings": V1_CUSTOM, "v1:allow": V1_ALLOW });
+      const before = [...(await store.keys())].toSorted();
+      await migrateStorage(store);
+      expect([...(await store.keys())]).toEqual(expect.arrayContaining(before));
+    });
+
     it("is idempotent: a second run changes nothing", async () => {
       const store = make();
       await seed(store, { "v1:settings": V1_CUSTOM, "v1:allow": V1_ALLOW });
@@ -155,7 +168,7 @@ export function migrationContract(name: string, make: () => KeyValueStore): void
       expect(await stored(store, "v2:allow")).toStrictEqual(allow);
     });
 
-    it("keeps v2 data the user changed, and drops the v1 keys that came back", async () => {
+    it("keeps v2 data the user changed, and leaves the v1 keys as they are", async () => {
       const store = make();
       await seed(store, { "v1:settings": V1_CUSTOM, "v1:allow": V1_ALLOW });
       await migrateStorage(store);
@@ -163,7 +176,23 @@ export function migrationContract(name: string, make: () => KeyValueStore): void
       await seed(store, { "v2:settings": changed, "v1:settings": V1_DEFAULTS });
       expect(await migrateStorage(store)).toBe("current");
       expect(await stored(store, "v2:settings")).toStrictEqual(changed);
-      expect(await stored(store, "v1:settings")).toBeUndefined();
+      expect(await stored(store, "v1:settings")).toStrictEqual(V1_DEFAULTS);
+    });
+
+    it("leaves a corrupt v2 value alone and keeps the v1 data", async () => {
+      const store = make();
+      await seed(store, {
+        "v2:settings": "garbage",
+        "v2:allow": 7,
+        "v1:settings": V1_CUSTOM,
+        "v1:allow": V1_ALLOW,
+      });
+      expect(await migrateStorage(store)).toBe("current");
+      expect(await stored(store, "v2:settings")).toBe("garbage");
+      expect(await stored(store, "v2:allow")).toBe(7);
+      expect(await stored(store, "v1:settings")).toStrictEqual(V1_CUSTOM);
+      expect(await stored(store, "v1:allow")).toStrictEqual(V1_ALLOW);
+      expect(parseSettings(await stored(store, "v2:settings"))).toStrictEqual(DEFAULT_SETTINGS);
     });
 
     it("finishes a run that stopped after one key, converting only the missing one", async () => {
@@ -176,8 +205,8 @@ export function migrationContract(name: string, make: () => KeyValueStore): void
         all: {},
         ai: { "1808500": ARC, "5072580": COURAGE },
       });
-      expect(await stored(store, "v1:settings")).toBeUndefined();
-      expect(await stored(store, "v1:allow")).toBeUndefined();
+      expect(await stored(store, "v1:settings")).toStrictEqual(V1_CUSTOM);
+      expect(await stored(store, "v1:allow")).toStrictEqual(V1_ALLOW);
     });
 
     it("leaves verdicts, the meta record and the breaker alone", async () => {

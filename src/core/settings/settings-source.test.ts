@@ -43,13 +43,18 @@ describe("createSettingsSource", () => {
     expect(parseSettings(await createSettingsSource(store).read())).toStrictEqual(DIMMED);
   });
 
-  it("writes with one storage call, after one check for v1 settings", async () => {
+  it("writes with one storage call", async () => {
+    const store = countingStore(memoryStore());
+    await createSettingsSource(store).write(DIMMED);
+    expect(store.calls).toStrictEqual({ get: 0, set: 1, remove: 0, keys: 0 });
+  });
+
+  it("reads with one storage call once settings are stored", async () => {
     const store = countingStore(memoryStore());
     const source = createSettingsSource(store);
     await source.write(DIMMED);
+    await source.read();
     expect(store.calls).toStrictEqual({ get: 1, set: 1, remove: 0, keys: 0 });
-    await source.write(DEFAULT_SETTINGS);
-    expect(store.calls).toStrictEqual({ get: 1, set: 2, remove: 0, keys: 0 });
   });
 
   it("stores the settings under the v2 key", async () => {
@@ -58,7 +63,7 @@ describe("createSettingsSource", () => {
     expect([...(await store.keys())]).toStrictEqual(["v2:settings"]);
   });
 
-  it("moves v1 settings to the v2 key on the first read", async () => {
+  it("copies v1 settings to the v2 key on the first read", async () => {
     const store = memoryStore(
       new Map([["v1:settings", { badges: false, banner: true, listFilter: "hide", locale: "es" }]]),
     );
@@ -69,7 +74,7 @@ describe("createSettingsSource", () => {
       { badge: false, filter: "hide" },
     );
     expect(parseSettings(await source.read())).toStrictEqual(expected);
-    expect([...(await store.keys())]).toStrictEqual(["v2:settings"]);
+    expect([...(await store.keys())].toSorted()).toStrictEqual(["v1:settings", "v2:settings"]);
   });
 
   it("reads again after a migration that failed, instead of remembering the failure", async () => {

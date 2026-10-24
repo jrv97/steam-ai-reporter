@@ -111,6 +111,33 @@ describe("start on the search page", () => {
     expect(document.documentElement.getAttribute("data-sar-badges")).toBe("on");
   });
 
+  it("logs a settings read that fails and starts on the defaults", async () => {
+    quiet.error.mockClear();
+    loadPage(SURFACES.search);
+    document.documentElement.lang = "en";
+    const store = memoryStore();
+    const problem = new Error();
+    app = await start({
+      document,
+      http: fakeHttp([getItemsRoute(fixtureItems(searchItems))]),
+      store,
+      settings: {
+        read: () => Promise.reject(problem),
+        subscribe: () => () => undefined,
+      },
+      clock: fixedClock(NOW),
+      console: quiet,
+      addPageStyles: adoptPageStyles,
+    });
+    expect(quiet.error).toHaveBeenCalledWith(
+      expect.any(String),
+      i18n.t("error_unexpected"),
+      problem,
+    );
+    expect(document.documentElement.getAttribute("data-sar-filter")).toBe("off");
+    await expect.poll(() => document.querySelectorAll(".sar-badge").length).toBe(1);
+  });
+
   it("starts on the settings and the ignored games a v1 install stored", async () => {
     const { store } = await startOnSearch(
       new Map<string, JsonValue>([
@@ -123,7 +150,8 @@ describe("start on the search page", () => {
     expect(document.documentElement.getAttribute("data-sar-filter")).toBe("dim");
     const keys = await store.keys();
     expect(keys).toContain("v2:settings");
-    expect(keys).not.toContain("v1:settings");
-    expect(keys).not.toContain("v1:allow");
+    expect(keys).toContain("v2:allow");
+    expect(keys).toContain("v1:settings");
+    expect(keys).toContain("v1:allow");
   });
 });

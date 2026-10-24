@@ -68,11 +68,17 @@ export interface App {
 /** The store app page name element, the fallback when the verdict carries no name. */
 const APP_NAME_SELECTOR = "#appHubAppName";
 
-async function readSettings(source: SettingsSource): Promise<Settings> {
+/** The stored settings, or the defaults and the failure to read them. */
+interface SettingsRead {
+  readonly settings: Settings;
+  readonly failure: { readonly problem: unknown; } | undefined;
+}
+
+async function readSettings(source: SettingsSource): Promise<SettingsRead> {
   try {
-    return parseSettings(await source.read());
-  } catch {
-    return DEFAULT_SETTINGS;
+    return { settings: parseSettings(await source.read()), failure: undefined };
+  } catch (problem) {
+    return { settings: DEFAULT_SETTINGS, failure: { problem } };
   }
 }
 
@@ -201,7 +207,8 @@ export async function start(deps: AppDeps): Promise<App> {
   const catalogs = deps.catalogs ?? SHIPPED_CATALOGS;
   const root = doc.documentElement;
 
-  let settings = await readSettings(deps.settings);
+  const read = await readSettings(deps.settings);
+  let { settings } = read;
   const { browserLang } = deps;
   const localeContext: LocaleContext = browserLang === undefined
     ? { setting: settings.locale, pageLang: root.lang }
@@ -209,6 +216,9 @@ export async function start(deps: AppDeps): Promise<App> {
   const locale = resolveLocale(localeContext, new Set(Object.keys(catalogs)));
   const i18n = createI18n(catalogs, locale);
   const logger = createLogger(i18n, deps.console, settings.debug);
+  if (read.failure !== undefined) {
+    logger.error(read.failure.problem);
+  }
   await maintainCache(store, clock).catch((problem: unknown) => {
     logger.error(problem);
   });

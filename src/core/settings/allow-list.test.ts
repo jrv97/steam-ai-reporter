@@ -92,12 +92,55 @@ describe("createAllowList", () => {
     expect((await scoped(createAllowList(store, clock), "ai")).has(appId(10))).toBe(true);
   });
 
-  it("checks for v1 data once, then reads once per call and writes once per change", async () => {
+  it("reads once per call and writes once per change", async () => {
     const { allow, store } = setup();
     await allow.add("ai", appId(10), "A");
-    expect(store.calls).toStrictEqual({ get: 2, set: 1, remove: 0, keys: 0 });
+    expect(store.calls).toStrictEqual({ get: 1, set: 1, remove: 0, keys: 0 });
     await allow.list();
-    expect(store.calls.get).toBe(3);
+    expect(store.calls.get).toBe(2);
+  });
+
+  describe("a v1 list", () => {
+    const V1 = {
+      "10": { name: "Counter-Strike", added: T },
+      "20": { name: "Team Fortress", added: T },
+    };
+
+    it("is copied to the AI scope on the first read, and left in place", async () => {
+      const { allow, store } = setup(new Map<string, JsonValue>([["v1:allow", V1]]));
+      expect(await scoped(allow, "ai")).toStrictEqual(
+        new Map([[10, V1["10"]], [20, V1["20"]]]),
+      );
+      expect(await scoped(allow, "all")).toStrictEqual(new Map());
+      expect((await store.get(["v2:allow"])).get("v2:allow")).toStrictEqual({ all: {}, ai: V1 });
+      expect((await store.get(["v1:allow"])).get("v1:allow")).toStrictEqual(V1);
+    });
+
+    it("is copied once: later changes go to v2 and the list is not copied again", async () => {
+      const { allow, store } = setup(new Map<string, JsonValue>([["v1:allow", V1]]));
+      await allow.remove("ai", appId(10));
+      expect([...(await scoped(allow, "ai")).keys()]).toStrictEqual([20]);
+      expect([...(await scoped(createAllowList(store, fixedClock(T)), "ai")).keys()]).toStrictEqual(
+        [20],
+      );
+    });
+
+    it("keeps the entries it can read when part of the list is corrupt", async () => {
+      const { allow } = setup(
+        new Map<string, JsonValue>([["v1:allow", { "10": V1["10"], "20": 7, "abc": V1["20"] }]]),
+      );
+      expect([...(await scoped(allow, "ai")).keys()]).toStrictEqual([10]);
+    });
+
+    it("adds to the AI scope after the copy and keeps the copied games", async () => {
+      const { allow } = setup(new Map<string, JsonValue>([["v1:allow", V1]]));
+      await allow.add("ai", appId(30), "New");
+      expect([...(await scoped(allow, "ai")).keys()].toSorted((a, b) => a - b)).toStrictEqual([
+        10,
+        20,
+        30,
+      ]);
+    });
   });
 
   describe("invalid stored values", () => {

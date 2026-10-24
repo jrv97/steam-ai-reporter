@@ -35,14 +35,14 @@ Every implementation of a port passes the same shared contract suite, with no pe
 
 - A new store surface is a new `Placement` entry in `scan/placements.ts`, with a fixture test. The scanner is not edited.
 - A new detection source is a new `Detector` link in the chain. The chain and the scanner are not edited.
-- A new tag kind is an id in `kinds/id.ts`, a `TagKind` definition (its verdict from a GetItems item, its catalog keys, its settings defaults) and an entry in `kinds/registry.ts`. The type checker names the other spots that list every kind (`perKind`, `definedKinds`); the detectors, the chain and the cache read the registry.
+- A new tag kind is an id in `kinds/id.ts`, a `TagKind` definition (its verdict from a GetItems item, its catalog keys, its settings defaults) and an entry in `kinds/registry.ts`. The type checker names the other spots that list every kind (`perKind`, `definedKinds`, `kindsFromGetItems`); the detectors, the chain and the cache read the registry.
 - A new message is a catalog key in `src/locales/`, never a literal in code or in a test.
 
 ## Style in this folder
 
 - One module, one reason to change.
 - `readonly` by default; discriminated unions with exhaustive `never` checks for states such as `Verdict`; branded types for domain IDs (`AppId`).
-- A `Detector` answers with `KindVerdicts`, one `Verdict` per tag kind. Settings and the ignore list are stored per kind (`v2:settings`, `v2:allow`); `settings/migrate.ts` moves the `v1` keys the first time either is read.
+- A `Detector` answers with `KindVerdicts`, one `Verdict` per tag kind. Settings and the ignore list are stored per kind (`v2:settings`, `v2:allow`); `settings/migrate.ts` copies the `v1` keys to them the first time either is read; the `v1` keys stay.
 - CSS classes and data attributes use the prefix `sar-` and `data-sar-*`; errors are `SarError` with a catalog-key `code`.
 - Efficiency is a requirement (rule 13, efficiency): scan only added subtrees, batch DOM reads before writes, no per-node closures or listeners, `WeakSet` and `WeakMap` keyed by elements, bounded caches, no polling.
 - Tests sit next to the module as `*.test.ts` and use the builders in `tests/helpers/`.

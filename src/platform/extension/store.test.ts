@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { keyValueStoreContract } from "../../../tests/contracts/key-value-store.contract";
+import { migrationFaultContract } from "../../../tests/contracts/migration-faults.contract";
 import { migrationContract } from "../../../tests/contracts/migration.contract";
-import { fakeArea } from "../../../tests/helpers/fake-area";
+import { fakeArea, faultyArea } from "../../../tests/helpers/fake-area";
 import type { Unsubscribe } from "../../core/ports";
 import { DEFAULT_SETTINGS, encodeSettings, withKind } from "../../core/settings/settings";
 import { SETTINGS_KEY } from "../../core/storage-keys";
@@ -31,6 +32,10 @@ function fakeChanges() {
 
 keyValueStoreContract("extension storage.local", () => createExtensionStore(fakeArea()));
 migrationContract("extension storage.local", () => createExtensionStore(fakeArea()));
+migrationFaultContract(
+  "extension storage.local",
+  (faults) => createExtensionStore(faultyArea(faults)),
+);
 
 describe("createExtensionStore", () => {
   it("makes no storage call for empty batches", async () => {

@@ -16,7 +16,7 @@ import {
 } from "./settings";
 
 // Layout v1 kept one flat settings object and one list of ignored games, both about AI. The
-// migration reads them into the v2 shape and writes them to the v2 keys.
+// migration copies them to the v2 keys and leaves the v1 keys as they are.
 
 const LegacySettingsSchema = v.fallback(
   v.object({
@@ -53,7 +53,7 @@ export function allowFromV1(stored: unknown): JsonValue {
   return encodeAllow({ ...perScope(() => new Map()), ai: decodeAllowScope(stored) });
 }
 
-/** What a migration run did to the v2 keys: moved v1 values, or found nothing to move. */
+/** What a migration run did to the v2 keys: copied v1 values, or found nothing to copy. */
 export type Migration = "migrated" | "current";
 
 /** One v1 key and the v2 key that replaces it. */
@@ -66,56 +66,75 @@ interface Move {
   readonly canonical: (v2: unknown) => JsonValue;
 }
 
-const MOVES: readonly Move[] = [
-  {
-    from: LEGACY_SETTINGS_KEY,
-    to: SETTINGS_KEY,
-    convert: (v1) => encodeSettings(settingsFromV1(v1)),
-    canonical: (v2) => encodeSettings(parseSettings(v2)),
-  },
-  {
-    from: LEGACY_ALLOW_KEY,
-    to: ALLOW_KEY,
-    convert: allowFromV1,
-    canonical: (v2) => encodeAllow(decodeAllow(v2)),
-  },
-];
+const SETTINGS_MOVE: Move = {
+  from: LEGACY_SETTINGS_KEY,
+  to: SETTINGS_KEY,
+  convert: (v1) => encodeSettings(settingsFromV1(v1)),
+  canonical: (v2) => encodeSettings(parseSettings(v2)),
+};
+
+const ALLOW_MOVE: Move = {
+  from: LEGACY_ALLOW_KEY,
+  to: ALLOW_KEY,
+  convert: allowFromV1,
+  canonical: (v2) => encodeAllow(decodeAllow(v2)),
+};
+
+const MOVES: readonly Move[] = [SETTINGS_MOVE, ALLOW_MOVE];
+
+interface Written {
+  readonly move: Move;
+  readonly value: JsonValue;
+}
+
+/** Removes the keys this run wrote that still hold what it wrote; any other value stays. */
+async function undo(store: KeyValueStore, written: readonly Written[]): Promise<void> {
+  const current = await store.get(written.map(({ move }) => move.to));
+  const own = written
+    .filter(({ move, value }) => JSON.stringify(current.get(move.to)) === JSON.stringify(value))
+    .map(({ move }) => move.to);
+  if (own.length > 0) {
+    await store.remove(own);
+  }
+}
 
 /**
- * Moves the v1 settings and ignore list to their v2 keys, converting a value only while its v2
- * key is absent. The v1 keys go once the v2 values read back as written; if they do not, the v2
- * keys are cleared, the v1 data stays and the run throws.
+ * Copies the v1 settings and ignore list to their v2 keys, one key at a time and only while the
+ * v2 key is absent. The v1 keys stay. If the copies do not read back as written, the run throws.
  */
 export async function migrateStorage(store: KeyValueStore): Promise<Migration> {
   const found = await store.get(MOVES.flatMap((move) => [move.from, move.to]));
-  const writes = MOVES
-    .filter((move) => found.has(move.from) && !found.has(move.to))
-    .map((move) => ({ move, value: move.convert(found.get(move.from)) }));
-  if (writes.length > 0) {
-    const targets = writes.map(({ move }) => move.to);
-    await store.set(new Map(writes.map(({ move, value }) => [move.to, value])));
-    const stored = await store.get(targets);
-    const intact = writes.every(({ move, value }) =>
-      stored.has(move.to)
-      && JSON.stringify(move.canonical(stored.get(move.to))) === JSON.stringify(value)
-    );
-    if (!intact) {
-      await store.remove(targets);
-      throw new SarError("error_settings_load", {});
+  const written: Written[] = [];
+  for (const move of MOVES) {
+    // Another context may have written the v2 key since the first read.
+    if (!found.has(move.from) || found.has(move.to) || (await store.get([move.to])).has(move.to)) {
+      continue;
     }
+    const value = move.convert(found.get(move.from));
+    await store.set(new Map([[move.to, value]]));
+    written.push({ move, value });
   }
-  const stale = MOVES.filter((move) => found.has(move.from)).map((move) => move.from);
-  if (stale.length > 0) {
-    await store.remove(stale);
+  if (written.length === 0) {
+    return "current";
   }
-  return writes.length > 0 ? "migrated" : "current";
+  const stored = await store.get(written.map(({ move }) => move.to));
+  const intact = written.every(({ move, value }) =>
+    stored.has(move.to)
+    && JSON.stringify(move.canonical(stored.get(move.to))) === JSON.stringify(value)
+  );
+  if (!intact) {
+    // Best effort: the run has failed already, and its error is the one to report.
+    await undo(store, written).catch(() => undefined);
+    throw new SarError("error_settings_load", {});
+  }
+  return "migrated";
 }
 
 const runs = new WeakMap<KeyValueStore, Promise<Migration>>();
 
 /**
- * `migrateStorage` once per store in this context: the settings source and the allow-list both
- * call it before their first read or write. A failed run is forgotten, so the next call retries.
+ * `migrateStorage` once per store in this context. A failed run is forgotten, so the next call
+ * retries.
  */
 export function migrateOnce(store: KeyValueStore): Promise<Migration> {
   const earlier = runs.get(store);
@@ -128,4 +147,25 @@ export function migrateOnce(store: KeyValueStore): Promise<Migration> {
     runs.delete(store);
   });
   return run;
+}
+
+/**
+ * The stored value of a v2 key. One read when the key exists or v1 holds nothing; when only v1
+ * data exists, the first read migrates it and reads again.
+ */
+async function readMigrated(store: KeyValueStore, move: Move): Promise<unknown> {
+  const found = await store.get([move.to, move.from]);
+  if (found.has(move.to) || !found.has(move.from)) {
+    return found.get(move.to);
+  }
+  await migrateOnce(store);
+  return (await store.get([move.to])).get(move.to);
+}
+
+export function readSettingsValue(store: KeyValueStore): Promise<unknown> {
+  return readMigrated(store, SETTINGS_MOVE);
+}
+
+export function readAllowValue(store: KeyValueStore): Promise<unknown> {
+  return readMigrated(store, ALLOW_MOVE);
 }
