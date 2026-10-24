@@ -25,11 +25,15 @@
   position: relative;
 }
 
-/* Badges turned off while the page is open: one attribute write on the root element */
-[data-sar-badges="off"] .sar-badge,
-[data-sar-badges="off"] .sar-compact,
-[data-sar-badges="off"] .sar-summary-row,
-[data-sar-badges="off"] .sar-hovercard {
+/* One kind's badges turned off while the page is open: one attribute write per kind on the root
+   element. Chips and the summary row carry data-sar-kind. */
+[data-sar-badges-ai="off"] [data-sar-kind="ai"],
+[data-sar-badges-kernel="off"] [data-sar-kind="kernel"],
+[data-sar-badges-anticheat="off"] [data-sar-kind="anticheat"],
+[data-sar-badges-drm="off"] [data-sar-kind="drm"],
+[data-sar-badges-account="off"] [data-sar-kind="account"],
+[data-sar-badges-eula="off"] [data-sar-kind="eula"],
+[data-sar-badges-pvp="off"] [data-sar-kind="pvp"] {
   display: none !important;
 }
 
@@ -66,12 +70,12 @@
 
 /* Search rows: right after the title. On a disclosed row the one-line title box becomes a flex
    row, so a long title ends in an ellipsis and the badge stays visible. */
-.search_result_row[data-sar-state="disclosed"] .search_name {
+.search_result_row[data-sar-kinds] .search_name {
   display: flex;
   align-items: center;
 }
 
-.search_result_row[data-sar-state="disclosed"] .search_name > .title {
+.search_result_row[data-sar-kinds] .search_name > .title {
   min-inline-size: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -80,7 +84,7 @@
 
 /* DLC rows: at the end of the name. A disclosed name becomes a flex row, which drops its
    trailing space. The badge's margin is then the whole gap, as on search rows. */
-.game_area_dlc_row[data-sar-state="disclosed"] .game_area_dlc_name {
+.game_area_dlc_row[data-sar-kinds] .game_area_dlc_name {
   display: flex;
   align-items: center;
 }
@@ -227,23 +231,62 @@ a.sar-summary-row .sar-badge {
   visibility: hidden !important;
 }
 
-/* List filter: data-sar-filter on the root element, data-sar-state on each host. The dim is a
-   filter opacity: it multiplies with the store's own opacity, so a carousel slide the store hides
-   with opacity 0 stays hidden. No transition on a mode change, so every host flips in one pass. */
+/* List filter: data-sar-filter-<kind> on the root element, data-sar-kinds on each host. A kind
+   dims or hides the hosts that carry it. Several kinds on one host need no extra rule: a hidden
+   host ignores a dim, and where hiding would break the list the hide dims, as the dim does. The dim
+   is a filter opacity: it multiplies with the store's own opacity, so a carousel slide the store
+   hides with opacity 0 stays hidden. No transition on a mode change, so every host flips in one
+   pass. */
 
-[data-sar-filter="dim"] [data-sar-state="disclosed"],
-[data-sar-filter="hide"] [data-sar-state="disclosed"][data-sar-hideable="false"] {
+[data-sar-filter-ai="dim"] [data-sar-kinds~="ai"],
+[data-sar-filter-kernel="dim"] [data-sar-kinds~="kernel"],
+[data-sar-filter-anticheat="dim"] [data-sar-kinds~="anticheat"],
+[data-sar-filter-drm="dim"] [data-sar-kinds~="drm"],
+[data-sar-filter-account="dim"] [data-sar-kinds~="account"],
+[data-sar-filter-eula="dim"] [data-sar-kinds~="eula"],
+[data-sar-filter-pvp="dim"] [data-sar-kinds~="pvp"],
+[data-sar-filter-ai="hide"] [data-sar-kinds~="ai"][data-sar-hideable="false"],
+[data-sar-filter-kernel="hide"] [data-sar-kinds~="kernel"][data-sar-hideable="false"],
+[data-sar-filter-anticheat="hide"] [data-sar-kinds~="anticheat"][data-sar-hideable="false"],
+[data-sar-filter-drm="hide"] [data-sar-kinds~="drm"][data-sar-hideable="false"],
+[data-sar-filter-account="hide"] [data-sar-kinds~="account"][data-sar-hideable="false"],
+[data-sar-filter-eula="hide"] [data-sar-kinds~="eula"][data-sar-hideable="false"],
+[data-sar-filter-pvp="hide"] [data-sar-kinds~="pvp"][data-sar-hideable="false"] {
   filter: opacity(var(--sar-dim-opacity)) !important;
 }
 
-[data-sar-filter="dim"] [data-sar-state="disclosed"]:is(:hover, :focus-within),
-[data-sar-filter="hide"]
-  [data-sar-state="disclosed"][data-sar-hideable="false"]:is(:hover, :focus-within) {
+[data-sar-filter-ai="dim"] [data-sar-kinds~="ai"]:is(:hover, :focus-within),
+[data-sar-filter-kernel="dim"] [data-sar-kinds~="kernel"]:is(:hover, :focus-within),
+[data-sar-filter-anticheat="dim"] [data-sar-kinds~="anticheat"]:is(:hover, :focus-within),
+[data-sar-filter-drm="dim"] [data-sar-kinds~="drm"]:is(:hover, :focus-within),
+[data-sar-filter-account="dim"] [data-sar-kinds~="account"]:is(:hover, :focus-within),
+[data-sar-filter-eula="dim"] [data-sar-kinds~="eula"]:is(:hover, :focus-within),
+[data-sar-filter-pvp="dim"] [data-sar-kinds~="pvp"]:is(:hover, :focus-within),
+[data-sar-filter-ai="hide"]
+  [data-sar-kinds~="ai"][data-sar-hideable="false"]:is(:hover, :focus-within),
+[data-sar-filter-kernel="hide"]
+  [data-sar-kinds~="kernel"][data-sar-hideable="false"]:is(:hover, :focus-within),
+[data-sar-filter-anticheat="hide"]
+  [data-sar-kinds~="anticheat"][data-sar-hideable="false"]:is(:hover, :focus-within),
+[data-sar-filter-drm="hide"]
+  [data-sar-kinds~="drm"][data-sar-hideable="false"]:is(:hover, :focus-within),
+[data-sar-filter-account="hide"]
+  [data-sar-kinds~="account"][data-sar-hideable="false"]:is(:hover, :focus-within),
+[data-sar-filter-eula="hide"]
+  [data-sar-kinds~="eula"][data-sar-hideable="false"]:is(:hover, :focus-within),
+[data-sar-filter-pvp="hide"]
+  [data-sar-kinds~="pvp"][data-sar-hideable="false"]:is(:hover, :focus-within) {
   filter: none !important;
   transition: filter var(--sar-duration-fast) var(--sar-ease);
 }
 
-[data-sar-filter="hide"] [data-sar-state="disclosed"]:not([data-sar-hideable="false"]) {
+[data-sar-filter-ai="hide"] [data-sar-kinds~="ai"]:not([data-sar-hideable="false"]),
+[data-sar-filter-kernel="hide"] [data-sar-kinds~="kernel"]:not([data-sar-hideable="false"]),
+[data-sar-filter-anticheat="hide"] [data-sar-kinds~="anticheat"]:not([data-sar-hideable="false"]),
+[data-sar-filter-drm="hide"] [data-sar-kinds~="drm"]:not([data-sar-hideable="false"]),
+[data-sar-filter-account="hide"] [data-sar-kinds~="account"]:not([data-sar-hideable="false"]),
+[data-sar-filter-eula="hide"] [data-sar-kinds~="eula"]:not([data-sar-hideable="false"]),
+[data-sar-filter-pvp="hide"] [data-sar-kinds~="pvp"]:not([data-sar-hideable="false"]) {
   display: none !important;
 }
 

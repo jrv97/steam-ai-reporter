@@ -6,7 +6,7 @@ import {
   recordingRenderer,
 } from "../../../tests/helpers/recording-renderer";
 import { loadPage, nodes, setBody, SURFACES, the } from "../../../tests/helpers/surfaces";
-import { HOST_APPID, HOST_HIDEABLE, HOST_STATE } from "./marks";
+import { HOST_APPID, HOST_HIDEABLE, HOST_KINDS } from "./marks";
 import type { CapsuleHost } from "./renderer";
 import { createScanner, DEBOUNCE_MS, type Scanner, type ScanReport } from "./scanner";
 
@@ -325,12 +325,12 @@ describe("host rule", () => {
 });
 
 describe("marking", () => {
-  it("marks hosts once with the app ID and a pending state", async () => {
+  it("marks hosts once with the app ID and no kinds yet", async () => {
     loadPage(SURFACES.search);
     await startScanner();
     const row = the("a.search_result_row");
     expect(row.getAttribute(HOST_APPID)).toBe("4075620");
-    expect(row.getAttribute(HOST_STATE)).toBe("pending");
+    expect(row.hasAttribute(HOST_KINDS)).toBe(false);
     expect(row.hasAttribute(HOST_HIDEABLE)).toBe(false);
   });
 
@@ -516,11 +516,11 @@ describe("observing", () => {
     loadPage(SURFACES.search);
     const row = the("a.search_result_row");
     row.setAttribute(HOST_APPID, "4075620");
-    row.setAttribute(HOST_STATE, "disclosed");
+    row.setAttribute(HOST_KINDS, "ai");
     row.append(...nodes(`<span class="sar-badge"></span><span class="sar-badge"></span>`));
     await startScanner({ badges: true });
     expect(hostElements()).toContain(row);
-    expect(row.getAttribute(HOST_STATE)).toBe("pending");
+    expect(row.hasAttribute(HOST_KINDS)).toBe(false);
     expect(row.querySelectorAll(".sar-badge")).toHaveLength(1);
   });
 
@@ -614,7 +614,7 @@ describe("work budget", () => {
     expect(reports).toHaveLength(1);
     const done = work();
     expectWithin(done, PAGE_LIMITS, 200);
-    expect(done.setAttribute).toBe(200 * 2);
+    expect(done.setAttribute).toBe(200);
     expect(done.removeAttribute).toBe(0);
   });
 
@@ -633,7 +633,7 @@ describe("work budget", () => {
     expect(reports).toHaveLength(2);
     const done = work();
     expectWithin(done, ADDED_LIMITS, 50);
-    expect(done.setAttribute).toBe(50 * 2);
+    expect(done.setAttribute).toBe(50);
     expect(done.removeAttribute).toBe(0);
   });
 });

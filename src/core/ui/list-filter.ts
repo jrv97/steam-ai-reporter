@@ -1,35 +1,34 @@
 import type { TagKind } from "../kinds/kind";
-import type { ListFilter } from "../kinds/kind-settings";
-import { HOST_HIDEABLE, HOST_STATE } from "../scan/marks";
-import { type HostRenderer, hostState } from "./host";
+import { KINDS } from "../kinds/registry";
+import { HOST_HIDEABLE, HOST_KINDS } from "../scan/marks";
+import type { HostRenderer } from "./host";
+import { setAttributeOnce } from "./kind-attributes";
 
 /**
- * Sets the list filter for the whole page: one attribute on the root element. The CSS in
- * styles.css dims or hides every host whose `data-sar-state` is `disclosed`, and dims instead of
- * hiding where the host says `data-sar-hideable="false"`. No host is touched.
+ * Records on each host which kinds it carries, for the list filter and the layout rules:
+ * `data-sar-kinds` holds the ids of the kinds that are disclosed and not ignored for the game, and
+ * `data-sar-hideable="false"` marks hosts where hiding would break the list. The style rules turn
+ * the root's per-kind filters into dim or hide on these hosts (`applyKindSettings`). Writes only
+ * what changed, so a rescan or a setting change causes no mutation churn.
  */
-export function applyListFilter(root: Element, filter: ListFilter): void {
-  if (root.getAttribute("data-sar-filter") !== filter) {
-    root.setAttribute("data-sar-filter", filter);
-  }
-}
-
-/**
- * Records each host's state for the list filter: `data-sar-state` (disclosed, not-disclosed,
- * unknown, allowed) and, where hiding would break the list, `data-sar-hideable="false"`. Writes
- * only what changed, so a rescan or a setting change causes no mutation churn.
- */
-export function createHostStateRenderer(kind: TagKind): HostRenderer {
+export function createHostKindsRenderer(kinds: readonly TagKind[] = KINDS): HostRenderer {
   return {
     render({ host, verdicts, allowed, hideable }) {
-      const state = hostState(verdicts[kind.id], allowed[kind.id]);
-      if (host.getAttribute(HOST_STATE) !== state) {
-        host.setAttribute(HOST_STATE, state);
+      let present = "";
+      for (const kind of kinds) {
+        if (verdicts[kind.id].state === "disclosed" && !allowed[kind.id]) {
+          present = present === "" ? kind.id : `${present} ${kind.id}`;
+        }
+      }
+      if (present === "") {
+        host.removeAttribute(HOST_KINDS);
+      } else {
+        setAttributeOnce(host, HOST_KINDS, present);
       }
       if (hideable) {
         host.removeAttribute(HOST_HIDEABLE);
-      } else if (host.getAttribute(HOST_HIDEABLE) !== "false") {
-        host.setAttribute(HOST_HIDEABLE, String(false));
+      } else {
+        setAttributeOnce(host, HOST_HIDEABLE, String(false));
       }
     },
   };

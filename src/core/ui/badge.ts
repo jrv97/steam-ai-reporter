@@ -3,6 +3,7 @@ import type { TagKind } from "../kinds/kind";
 import type { MessageCatalog } from "../ports";
 import type { BadgeSlot, CompactSize, HostRenderer } from "./host";
 import type { CardTriggers } from "./hover-card";
+import { KIND_ATTRIBUTE } from "./kind-attributes";
 
 /** Compact badge tiers by image box (components.mdx, section 2). Smaller images get none. */
 const TEXT_MIN_WIDTH = 180;
@@ -39,12 +40,14 @@ function chipText(i18n: MessageCatalog, kind: TagKind): ChipText {
  */
 function createChipElement(
   doc: Document,
+  kind: TagKind,
   text: ChipText,
   className: string,
   labelClass: string,
 ): HTMLElement {
   const chip = doc.createElement("span");
   chip.className = className;
+  chip.setAttribute(KIND_ATTRIBUTE, kind.id);
   const label = doc.createElement("span");
   label.className = labelClass;
   label.setAttribute("aria-hidden", TRUE);
@@ -58,15 +61,7 @@ function createChipElement(
 
 /** The full badge's chip, the store's tag-chip shape in our hue. The summary row reuses it. */
 export function createChip(doc: Document, i18n: MessageCatalog, kind: TagKind): HTMLElement {
-  return createChipElement(doc, chipText(i18n, kind), "sar-badge", "sar-badge-label");
-}
-
-/** Turns badges on or off on the whole page: one root attribute, and CSS does the rest. */
-export function applyBadgeSetting(root: Element, on: boolean): void {
-  const value = on ? "on" : "off";
-  if (root.getAttribute("data-sar-badges") !== value) {
-    root.setAttribute("data-sar-badges", value);
-  }
+  return createChipElement(doc, kind, chipText(i18n, kind), "sar-badge", "sar-badge-label");
 }
 
 interface Drawn {
@@ -96,9 +91,9 @@ export function createBadgeRenderer(
 
   function build(slot: BadgeSlot): HTMLElement {
     if (slot.kind === "full") {
-      return createChipElement(doc, text, "sar-badge", "sar-badge-label");
+      return createChipElement(doc, kind, text, "sar-badge", "sar-badge-label");
     }
-    const badge = createChipElement(doc, text, "sar-compact", "sar-compact-label");
+    const badge = createChipElement(doc, kind, text, "sar-compact", "sar-compact-label");
     badge.setAttribute("data-sar-size", slot.size);
     return badge;
   }

@@ -7,7 +7,7 @@ import type { Placement } from "./placements";
 
 /** A capsule host the scanner marked, with what its placement found during the read phase. */
 export interface CapsuleHost {
-  /** The host element; it carries `data-sar-appid` and `data-sar-state`. */
+  /** The host element; it carries `data-sar-appid`. */
   readonly element: Element;
   readonly appId: AppId;
   readonly placement: Placement;
@@ -17,7 +17,7 @@ export interface CapsuleHost {
 
 /** What one scan found. Both lists may be empty; a scan with nothing to report is not sent. */
 export interface ScanBatch {
-  /** Hosts marked for the first time, with `data-sar-state="pending"`. */
+  /** Hosts marked for the first time. */
   readonly found: readonly CapsuleHost[];
   /**
    * Known hosts that received new content: a re-render may have dropped their badge, or the

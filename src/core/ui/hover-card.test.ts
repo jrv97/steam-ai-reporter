@@ -94,7 +94,8 @@ describe("createHoverCard", () => {
     const label = i18n.t("kind_ai_chip");
     setBody(`
       <a class="row" href="/app/10/"><span class="title">Game</span>
-      <span class="sar-badge"><span class="sar-badge-label">${label}</span></span></a>
+      <span class="sar-badge" data-sar-kind="ai">
+      <span class="sar-badge-label">${label}</span></span></a>
       <a class="other" href="/app/20/">Other</a>`);
     const link = document.querySelector<HTMLAnchorElement>(".row");
     const badge = document.querySelector<HTMLElement>(".sar-badge");
@@ -131,7 +132,7 @@ describe("createHoverCard", () => {
   afterEach(() => {
     card?.stop();
     card = undefined;
-    document.documentElement.removeAttribute("data-sar-badges");
+    document.documentElement.removeAttribute("data-sar-badges-ai");
     Reflect.deleteProperty(document.documentElement, "clientWidth");
     Reflect.deleteProperty(document.documentElement, "clientHeight");
   });
@@ -414,7 +415,7 @@ describe("createHoverCard", () => {
 
   it("opens nothing while badges are turned off", () => {
     const { badge } = page();
-    document.documentElement.setAttribute("data-sar-badges", "off");
+    document.documentElement.setAttribute("data-sar-badges-ai", "off");
     start().bind(badge, AI_KIND, disclosedVerdict());
     pointerOver(badge);
     flush();

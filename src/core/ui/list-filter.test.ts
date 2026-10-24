@@ -1,10 +1,23 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { clearRoot } from "../../../tests/helpers/dom";
 import { hostView, type HostViewOptions } from "../../../tests/helpers/host-view";
-import { disclosedVerdict, NOT_DISCLOSED } from "../../../tests/helpers/verdicts";
+import {
+  ALL_DISCLOSED,
+  disclosedKinds,
+  disclosedVerdict,
+  NOT_DISCLOSED,
+} from "../../../tests/helpers/verdicts";
 import { AI_KIND } from "../kinds/ai";
+import { KIND_IDS, type KindId } from "../kinds/id";
+import { LIST_FILTERS, type ListFilter, strongestFilter } from "../kinds/kind-settings";
+import { perKind } from "../kinds/registry";
 import { UNKNOWN } from "../types";
-import { applyListFilter, createHostStateRenderer } from "./list-filter";
+import { applyKindSettings } from "./kind-attributes";
+import { createHostKindsRenderer } from "./list-filter";
 import { adoptStyles, PAGE_CSS, TOKENS_CSS } from "./styles";
+
+const DIM = "opacity(0.4)";
+const ALL_KINDS = KIND_IDS.join(" ");
 
 function host(): HTMLElement {
   const element = document.createElement("div");
@@ -18,23 +31,53 @@ function view(element: Element, options: HostViewOptions = {}) {
 
 afterEach(() => {
   document.body.replaceChildren();
-  document.documentElement.removeAttribute("data-sar-filter");
+  clearRoot();
 });
 
-describe("createHostStateRenderer", () => {
-  const renderer = createHostStateRenderer(AI_KIND);
+describe("createHostKindsRenderer", () => {
+  const renderer = createHostKindsRenderer();
+  const kinds = (element: Element) => element.getAttribute("data-sar-kinds");
 
-  it.each(
-    [
-      ["disclosed", disclosedVerdict(), false],
-      ["not-disclosed", NOT_DISCLOSED, false],
-      ["unknown", UNKNOWN.gated, false],
-      ["allowed", disclosedVerdict(), true],
-    ] as const,
-  )("marks the host %s", (state, verdict, allowed) => {
+  it("lists every disclosed kind in registry order", () => {
     const element = host();
-    renderer.render(view(element, { verdict, allowed }));
-    expect(element.getAttribute("data-sar-state")).toBe(state);
+    renderer.render(view(element, { verdicts: ALL_DISCLOSED }));
+    expect(kinds(element)).toBe(ALL_KINDS);
+  });
+
+  it("leaves out kinds that are not disclosed, unknown or ignored", () => {
+    const element = host();
+    const verdicts = {
+      ...disclosedKinds(["ai", "drm", "pvp", "account"]),
+      kernel: UNKNOWN.error,
+      eula: UNKNOWN.gated,
+    };
+    renderer.render(view(element, { verdicts, ignored: ["pvp"] }));
+    expect(kinds(element)).toBe("ai drm account");
+  });
+
+  it("marks no kind for a game that is not disclosed, unknown or ignored for every kind", () => {
+    const [none, unknown, ignored] = [host(), host(), host()];
+    renderer.render(view(none, { verdict: NOT_DISCLOSED }));
+    renderer.render(view(unknown, { verdict: UNKNOWN.gated }));
+    renderer.render(view(ignored, { verdicts: ALL_DISCLOSED, allowed: true }));
+    expect([none, unknown, ignored].map((element) => element.hasAttribute("data-sar-kinds")))
+      .toEqual([false, false, false]);
+  });
+
+  it("follows the verdicts when they change, and drops the attribute when none is left", () => {
+    const element = host();
+    renderer.render(view(element, { verdicts: disclosedKinds(["ai", "eula"]) }));
+    expect(kinds(element)).toBe("ai eula");
+    renderer.render(view(element, { verdicts: disclosedKinds(["eula"]) }));
+    expect(kinds(element)).toBe("eula");
+    renderer.render(view(element, { verdicts: disclosedKinds([]) }));
+    expect(element.hasAttribute("data-sar-kinds")).toBe(false);
+  });
+
+  it("covers only the kinds it is given", () => {
+    const element = host();
+    createHostKindsRenderer([AI_KIND]).render(view(element, { verdicts: ALL_DISCLOSED }));
+    expect(kinds(element)).toBe("ai");
   });
 
   it("marks hosts that must not be hidden, and clears the mark", () => {
@@ -54,57 +97,109 @@ describe("createHostStateRenderer", () => {
   });
 });
 
-describe("applyListFilter", () => {
-  it("toggles one attribute on the root element", () => {
-    applyListFilter(document.documentElement, "hide");
-    expect(document.documentElement.getAttribute("data-sar-filter")).toBe("hide");
-  });
-
-  // happy-dom does not restyle descendants when a root attribute changes, so each mode gets
-  // fresh hosts; browsers restyle in one pass.
-  function styled(filter: "off" | "dim" | "hide") {
+// happy-dom does not restyle descendants when a root attribute changes, so every case builds its
+// hosts after the root attributes are set; browsers restyle in one pass.
+describe("the list filter styles", () => {
+  function filters(modes: Partial<Record<KindId, ListFilter>>): void {
     adoptStyles(document, TOKENS_CSS + PAGE_CSS);
-    applyListFilter(document.documentElement, filter);
-    const renderer = createHostStateRenderer(AI_KIND);
-    const [disclosed, fixed, other] = [host(), host(), host()];
-    renderer.render(view(disclosed));
-    renderer.render(view(fixed, { hideable: false }));
-    renderer.render(view(other, { verdict: NOT_DISCLOSED }));
-    return {
-      disclosed: getComputedStyle(disclosed),
-      fixed: getComputedStyle(fixed),
-      other: getComputedStyle(other),
-    };
+    applyKindSettings(
+      document.documentElement,
+      perKind((kind) => ({ ...kind.defaults, filter: modes[kind.id] ?? "off" })),
+    );
   }
 
-  it("dims disclosed hosts through the page CSS alone", () => {
-    const { disclosed, fixed, other } = styled("dim");
-    expect(disclosed.filter).toBe("opacity(0.4)");
-    expect(fixed.filter).toBe("opacity(0.4)");
-    expect(other.filter).not.toBe("opacity(0.4)");
+  /** The style of a host that carries `carried`, drawn the way the renderer draws it. */
+  function carrying(
+    carried: readonly KindId[],
+    options: HostViewOptions = {},
+  ): CSSStyleDeclaration {
+    const element = host();
+    const verdicts = disclosedKinds(carried);
+    createHostKindsRenderer().render(view(element, { verdicts, ...options }));
+    return getComputedStyle(element);
+  }
+
+  const dimmed = (style: CSSStyleDeclaration) => style.filter === DIM;
+  const hidden = (style: CSSStyleDeclaration) => style.display === "none";
+  const others = (id: KindId) => KIND_IDS.filter((other) => other !== id);
+
+  it.each(KIND_IDS)("%s dims the hosts that carry it and no others", (id) => {
+    filters({ [id]: "dim" });
+    expect(dimmed(carrying([id]))).toBe(true);
+    expect(dimmed(carrying(others(id)))).toBe(false);
+  });
+
+  it.each(KIND_IDS)("%s hides the hosts that carry it, and dims those that must stay", (id) => {
+    filters({ [id]: "hide" });
+    const shown = carrying([id]);
+    const fixed = carrying([id], { hideable: false });
+    expect([hidden(shown), dimmed(shown)]).toEqual([true, false]);
+    expect([hidden(fixed), dimmed(fixed)]).toEqual([false, true]);
+    expect(hidden(carrying(others(id)))).toBe(false);
+  });
+
+  it("leaves hosts alone while every filter is off", () => {
+    filters({});
+    const style = carrying(KIND_IDS);
+    expect([hidden(style), dimmed(style)]).toEqual([false, false]);
+  });
+
+  // The strongest mode wins: hide over dim over off.
+  const PAIRS = LIST_FILTERS.flatMap((ai) => LIST_FILTERS.map((drm) => [ai, drm] as const));
+  const CASES = PAIRS.flatMap(([ai, drm]) => [[ai, drm, true], [ai, drm, false]] as const);
+
+  it.each(CASES)(
+    "a host with AI on %s and DRM on %s, hideable %s, follows the strongest mode",
+    (ai, drm, hideable) => {
+      filters({ ai, drm });
+      const style = carrying(["ai", "drm"], { hideable });
+      const strongest = strongestFilter([ai, drm]);
+      const gone = strongest === "hide" && hideable;
+      expect(hidden(style)).toBe(gone);
+      // A hidden host shows nothing to dim; any other host dims for a dim or a hide that cannot.
+      expect(gone || dimmed(style) === (strongest !== "off")).toBe(true);
+    },
+  );
+
+  it("lets one hiding kind outrank the dims of the others on a host", () => {
+    filters({ ai: "dim", kernel: "dim", pvp: "hide" });
+    expect(hidden(carrying(["ai", "kernel", "pvp"]))).toBe(true);
+    expect(dimmed(carrying(["ai", "kernel"]))).toBe(true);
+    expect(hidden(carrying(["ai", "kernel"]))).toBe(false);
+  });
+
+  it("ignores a filter of a kind the host does not carry", () => {
+    filters({ kernel: "hide", drm: "dim" });
+    const style = carrying(["ai", "pvp"]);
+    expect([hidden(style), dimmed(style)]).toEqual([false, false]);
+  });
+
+  it("never filters a kind that is not disclosed, unknown or ignored", () => {
+    filters(Object.fromEntries(KIND_IDS.map((id) => [id, "hide"])));
+    const none = carrying([]);
+    const unknown = carrying([], { verdicts: perKind(() => UNKNOWN.error) });
+    const ignored = carrying(KIND_IDS, { allowed: true });
+    for (const style of [none, unknown, ignored]) {
+      expect([hidden(style), dimmed(style)]).toEqual([false, false]);
+    }
+  });
+
+  it("filters nothing for a kind that is disabled", () => {
+    adoptStyles(document, TOKENS_CSS + PAGE_CSS);
+    applyKindSettings(
+      document.documentElement,
+      perKind((kind) => ({ ...kind.defaults, enabled: kind.id !== "drm", filter: "hide" })),
+    );
+    expect(hidden(carrying(["drm"]))).toBe(false);
+    expect(hidden(carrying(["ai"]))).toBe(true);
   });
 
   it("keeps a host the store hides with opacity 0 hidden when dimming", () => {
-    adoptStyles(document, TOKENS_CSS + PAGE_CSS);
-    applyListFilter(document.documentElement, "dim");
+    filters({ ai: "dim" });
     const slide = host();
     slide.setAttribute("style", "opacity: 0");
-    createHostStateRenderer(AI_KIND).render(view(slide, { hideable: false }));
+    createHostKindsRenderer().render(view(slide, { verdict: disclosedVerdict(), hideable: false }));
     expect(getComputedStyle(slide).opacity).toBe("0");
-    expect(getComputedStyle(slide).filter).toBe("opacity(0.4)");
-  });
-
-  it("hides disclosed hosts, and dims those that must not be hidden", () => {
-    const { disclosed, fixed, other } = styled("hide");
-    expect(disclosed.display).toBe("none");
-    expect(fixed.display).not.toBe("none");
-    expect(fixed.filter).toBe("opacity(0.4)");
-    expect(other.display).not.toBe("none");
-  });
-
-  it("leaves hosts alone when the filter is off", () => {
-    const { disclosed } = styled("off");
-    expect(disclosed.display).not.toBe("none");
-    expect(disclosed.filter).not.toBe("opacity(0.4)");
+    expect(getComputedStyle(slide).filter).toBe(DIM);
   });
 });

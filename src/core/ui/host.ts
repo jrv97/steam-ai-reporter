@@ -1,7 +1,5 @@
 import type { KindId } from "../kinds/id";
 import type { KindVerdicts } from "../kinds/verdicts";
-import type { HostState } from "../scan/marks";
-import type { Verdict } from "../types";
 
 /** The tier of a compact badge, from the measured image box (see `compactSize`). */
 export type CompactSize = "text" | "large";
@@ -37,9 +35,4 @@ export interface HostView {
  */
 export interface HostRenderer {
   render(view: HostView): void;
-}
-
-/** A host's `data-sar-state` once its verdict is known; `allowed` wins over the verdict. */
-export function hostState(verdict: Verdict, allowed: boolean): Exclude<HostState, "pending"> {
-  return allowed ? "allowed" : verdict.state;
 }

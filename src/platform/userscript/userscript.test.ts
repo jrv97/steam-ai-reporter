@@ -95,10 +95,11 @@ describe("startUserscript", () => {
       },
     });
     app = await startUserscript(env);
-    expect(document.documentElement.getAttribute("data-sar-filter")).toBe("off");
+    expect(document.documentElement.getAttribute("data-sar-filter-ai")).toBe("off");
 
     notify(encodeSettings(withKind(DEFAULT_SETTINGS, "ai", { filter: "hide" })));
-    expect(document.documentElement.getAttribute("data-sar-filter")).toBe("hide");
+    expect(document.documentElement.getAttribute("data-sar-filter-ai")).toBe("hide");
+    expect(document.documentElement.getAttribute("data-sar-filter-drm")).toBe("off");
   });
 
   it("starts on stored settings", async () => {
@@ -109,6 +110,6 @@ describe("startUserscript", () => {
     );
     app = await startUserscript(env);
 
-    expect(document.documentElement.getAttribute("data-sar-filter")).toBe("dim");
+    expect(document.documentElement.getAttribute("data-sar-filter-ai")).toBe("dim");
   });
 });

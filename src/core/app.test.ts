@@ -1,6 +1,7 @@
 // @vitest-environment-options {"url":"https://store.steampowered.com/search/?term=roguelike"}
 import { afterEach, describe, expect, it, vi } from "vitest";
 import searchItems from "../../tests/fixtures/getitems/search-roguelike-50.json";
+import { clearRoot } from "../../tests/helpers/dom";
 import { fakeHttp } from "../../tests/helpers/fake-http";
 import { fixedClock } from "../../tests/helpers/fixed-clock";
 import { fixtureItems, getItemsRequest, getItemsRoute } from "../../tests/helpers/getitems";
@@ -42,12 +43,20 @@ async function startOnSearch(initial: ReadonlyMap<string, JsonValue> = new Map()
 }
 
 const row = (id: string) => document.querySelector(`a.search_result_row[data-ds-appid="${id}"]`);
+const rootMark = (name: string) => document.documentElement.getAttribute(name);
+
+/** Waits for the page's one GetItems request, then for the draw that follows its answer. */
+async function drawn(http: { readonly calls: readonly unknown[]; }): Promise<void> {
+  await expect.poll(() => http.calls.length).toBe(1);
+  for (let frame = 0; frame < 4; frame++) {
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+  }
+}
 
 afterEach(() => {
   app?.stop();
   app = undefined;
-  document.documentElement.removeAttribute("data-sar-filter");
-  document.documentElement.removeAttribute("data-sar-badges");
+  clearRoot();
 });
 
 describe("start on the search page", () => {
@@ -59,20 +68,24 @@ describe("start on the search page", () => {
     expect(getItemsRequest(http.calls[0] ?? "").ids).toEqual(SEARCH_IDS);
     const badge = row(DISCLOSED)?.querySelector(".search_name > .title + .sar-badge");
     expect(badge?.querySelector(".sar-badge-label")?.textContent).toBe(i18n.t("kind_ai_chip"));
-    expect(row(DISCLOSED)?.getAttribute("data-sar-state")).toBe("disclosed");
-    const states = SEARCH_IDS.map((id) => row(String(id))?.getAttribute("data-sar-state"));
-    expect(states.filter((state) => state === "not-disclosed")).toHaveLength(7);
+    expect(row(DISCLOSED)?.getAttribute("data-sar-kinds")).toBe("ai");
+    const others = SEARCH_IDS.filter((id) => String(id) !== DISCLOSED);
+    expect(others.map((id) => row(String(id))?.hasAttribute("data-sar-kinds"))).toEqual(
+      others.map(() => false),
+    );
     expect(document.adoptedStyleSheets.length).toBeGreaterThan(0);
   });
 
-  it("switches to hide mode when the settings change, with one root attribute", async () => {
+  it("switches one kind to hide mode with one root attribute per setting", async () => {
     const { settings } = await startOnSearch();
-    await expect.poll(() => row(DISCLOSED)?.getAttribute("data-sar-state")).toBe("disclosed");
-    expect(document.documentElement.getAttribute("data-sar-filter")).toBe("off");
+    await expect.poll(() => row(DISCLOSED)?.getAttribute("data-sar-kinds")).toBe("ai");
+    expect(rootMark("data-sar-filter-ai")).toBe("off");
 
     await settings.write(withKind(DEFAULT_SETTINGS, "ai", { filter: "hide", badge: false }));
-    expect(document.documentElement.getAttribute("data-sar-filter")).toBe("hide");
-    expect(document.documentElement.getAttribute("data-sar-badges")).toBe("off");
+    expect(rootMark("data-sar-filter-ai")).toBe("hide");
+    expect(rootMark("data-sar-badges-ai")).toBe("off");
+    expect(rootMark("data-sar-filter-kernel")).toBe("off");
+    expect(rootMark("data-sar-badges-kernel")).toBe("on");
     const disclosed = row(DISCLOSED);
     const other = row(String(SEARCH_IDS[0]));
     expect(disclosed === null ? "" : getComputedStyle(disclosed).display).toBe("none");
@@ -80,22 +93,24 @@ describe("start on the search page", () => {
   });
 
   it("marks nothing for an allow-listed game, in lists or on badges", async () => {
-    await startOnSearch(
+    const { http } = await startOnSearch(
       new Map<string, JsonValue>([
         [ALLOW_KEY, { all: {}, ai: { [DISCLOSED]: { name: "Ignored", added: NOW } } }],
       ]),
     );
-    await expect.poll(() => row(DISCLOSED)?.getAttribute("data-sar-state")).toBe("allowed");
+    await drawn(http);
+    expect(row(DISCLOSED)?.hasAttribute("data-sar-kinds")).toBe(false);
     expect(document.querySelector(".sar-badge")).toBeNull();
   });
 
   it("marks nothing for a game ignored for all kinds", async () => {
-    await startOnSearch(
+    const { http } = await startOnSearch(
       new Map<string, JsonValue>([
         [ALLOW_KEY, { all: { [DISCLOSED]: { name: "Ignored", added: NOW } }, ai: {} }],
       ]),
     );
-    await expect.poll(() => row(DISCLOSED)?.getAttribute("data-sar-state")).toBe("allowed");
+    await drawn(http);
+    expect(row(DISCLOSED)?.hasAttribute("data-sar-kinds")).toBe(false);
     expect(document.querySelector(".sar-badge")).toBeNull();
   });
 
@@ -105,10 +120,10 @@ describe("start on the search page", () => {
     await settings.write(
       withKind(DEFAULT_SETTINGS, "ai", { enabled: false, filter: "hide" }),
     );
-    expect(document.documentElement.getAttribute("data-sar-badges")).toBe("off");
-    expect(document.documentElement.getAttribute("data-sar-filter")).toBe("off");
+    expect(rootMark("data-sar-badges-ai")).toBe("off");
+    expect(rootMark("data-sar-filter-ai")).toBe("off");
     await settings.write(DEFAULT_SETTINGS);
-    expect(document.documentElement.getAttribute("data-sar-badges")).toBe("on");
+    expect(rootMark("data-sar-badges-ai")).toBe("on");
   });
 
   it("logs a settings read that fails and starts on the defaults", async () => {
@@ -134,20 +149,22 @@ describe("start on the search page", () => {
       i18n.t("error_unexpected"),
       problem,
     );
-    expect(document.documentElement.getAttribute("data-sar-filter")).toBe("off");
+    expect(rootMark("data-sar-filter-ai")).toBe("off");
     await expect.poll(() => document.querySelectorAll(".sar-badge").length).toBe(1);
   });
 
   it("starts on the settings and the ignored games a v1 install stored", async () => {
-    const { store } = await startOnSearch(
+    const { http, store } = await startOnSearch(
       new Map<string, JsonValue>([
         ["v1:settings", { badges: false, banner: true, listFilter: "dim", locale: "auto" }],
         ["v1:allow", { [DISCLOSED]: { name: "Ignored", added: NOW } }],
       ]),
     );
-    await expect.poll(() => row(DISCLOSED)?.getAttribute("data-sar-state")).toBe("allowed");
-    expect(document.documentElement.getAttribute("data-sar-badges")).toBe("off");
-    expect(document.documentElement.getAttribute("data-sar-filter")).toBe("dim");
+    await drawn(http);
+    expect(row(DISCLOSED)?.hasAttribute("data-sar-kinds")).toBe(false);
+    expect(rootMark("data-sar-filter-ai")).toBe("dim");
+    expect(rootMark("data-sar-badges-ai")).toBe("off");
+    expect(rootMark("data-sar-filter-kernel")).toBe("off");
     const keys = await store.keys();
     expect(keys).toContain("v2:settings");
     expect(keys).toContain("v2:allow");

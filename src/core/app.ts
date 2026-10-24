@@ -31,10 +31,11 @@ import { type AllowList, createAllowList } from "./settings/allow-list";
 import { DEFAULT_SETTINGS, parseSettings, type Settings } from "./settings/settings";
 import type { AppId, Detector } from "./types";
 import { createAppPageUi } from "./ui/app-page";
-import { applyBadgeSetting, createBadgeRenderer } from "./ui/badge";
+import { createBadgeRenderer } from "./ui/badge";
 import { createCapsuleUi } from "./ui/capsules";
 import { type CardTriggers, createHoverCard } from "./ui/hover-card";
-import { applyListFilter, createHostStateRenderer } from "./ui/list-filter";
+import { applyKindSettings } from "./ui/kind-attributes";
+import { createHostKindsRenderer } from "./ui/list-filter";
 
 /** What a composition root hands to core: the ports, already built for its platform. */
 export interface AppDeps {
@@ -223,19 +224,16 @@ export async function start(deps: AppDeps): Promise<App> {
   const allowList = createAllowList(store, clock);
   const ignored = await loadIgnored(allowList, logger);
 
-  // The page surfaces (badge, banner, list filter) show the AI kind.
+  // The badge, the banner and the summary row show the AI kind; hosts and filters cover all.
   const kind = AI_KIND;
-  const shown = effectiveSettings(settings.kinds[kind.id]);
   deps.addPageStyles(doc);
-  applyBadgeSetting(root, shown.badge);
-  applyListFilter(root, shown.filter);
+  applyKindSettings(root, settings.kinds);
 
   const card = createHoverCard(doc, i18n);
   const capsules = createCapsuleUi({
     document: doc,
     detector: detectors.detector,
-    kinds: [kind],
-    renderers: [createHostStateRenderer(kind), createBadgeRenderer(doc, i18n, card, kind)],
+    renderers: [createHostKindsRenderer(), createBadgeRenderer(doc, i18n, card, kind)],
     isAllowed: (id, forKind) => isIgnored(ignored, id, forKind),
   });
   const scanner = createScanner({ document: doc, renderer: capsules });
@@ -267,8 +265,7 @@ export async function start(deps: AppDeps): Promise<App> {
     const before = effectiveSettings(settings.kinds[kind.id]);
     settings = parseSettings(value);
     const next = effectiveSettings(settings.kinds[kind.id]);
-    applyBadgeSetting(root, next.badge);
-    applyListFilter(root, next.filter);
+    applyKindSettings(root, settings.kinds);
     if (next.banner !== before.banner) {
       renderAppPage();
     }

@@ -4,6 +4,7 @@ import type { MessageCatalog } from "../ports";
 import { createChip } from "./badge";
 import { BANNER_ID } from "./banner";
 import type { CardTriggers } from "./hover-card";
+import { KIND_ATTRIBUTE } from "./kind-attributes";
 
 /** The store's own label and value rows in the summary box (Developer, Publisher). */
 const DEV_ROW_SELECTOR = ".glance_ctn_responsive_left .dev_row";
@@ -24,6 +25,7 @@ export function createSummaryRow(
 ): HTMLElement {
   const row = doc.createElement(jump === undefined ? "div" : "a");
   row.className = "sar-summary-row";
+  row.setAttribute(KIND_ATTRIBUTE, kind.id);
   row.append(createChip(doc, i18n, kind));
   if (jump !== undefined) {
     row.setAttribute("href", `#${BANNER_ID}`);

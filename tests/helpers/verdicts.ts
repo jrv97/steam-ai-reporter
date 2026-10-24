@@ -1,4 +1,5 @@
 import type { AiDisclosed, AiVerdict } from "../../src/core/kinds/ai";
+import type { KindId } from "../../src/core/kinds/id";
 import { perKind } from "../../src/core/kinds/registry";
 import { type KindVerdicts, UNKNOWN_KINDS } from "../../src/core/kinds/verdicts";
 import type { NotDisclosedVerdict, UnknownReason } from "../../src/core/types";
@@ -77,4 +78,18 @@ export function uniformVerdicts(
     return ALL_DISCLOSED;
   }
   return state === "not-disclosed" ? perKind(() => NOT_DISCLOSED) : UNKNOWN_KINDS[state];
+}
+
+/** The kinds in `kinds` disclosed with a full payload, every other kind not disclosed. */
+export function disclosedKinds(kinds: readonly KindId[]): KindVerdicts {
+  const pick = <T>(id: KindId, verdict: T) => kinds.includes(id) ? verdict : NOT_DISCLOSED;
+  return {
+    ai: pick("ai", ALL_DISCLOSED.ai),
+    kernel: pick("kernel", ALL_DISCLOSED.kernel),
+    anticheat: pick("anticheat", ALL_DISCLOSED.anticheat),
+    drm: pick("drm", ALL_DISCLOSED.drm),
+    account: pick("account", ALL_DISCLOSED.account),
+    eula: pick("eula", ALL_DISCLOSED.eula),
+    pvp: pick("pvp", ALL_DISCLOSED.pvp),
+  };
 }

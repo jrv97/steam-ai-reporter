@@ -1,6 +1,7 @@
 import type { AiDisclosed } from "../kinds/ai";
 import type { TagKind } from "../kinds/kind";
 import type { MessageCatalog } from "../ports";
+import { badgesOff } from "./kind-attributes";
 import { normalizeBreaks } from "./notes";
 
 /** The card's id, the target of `aria-describedby` while focus holds it open. */
@@ -304,8 +305,7 @@ export function createHoverCard(
   function show(trigger: Element, via: Via, focused?: Element): void {
     const binding = bindings.get(trigger);
     if (
-      binding === undefined || !trigger.isConnected
-      || doc.documentElement.getAttribute("data-sar-badges") === "off"
+      binding === undefined || !trigger.isConnected || badgesOff(doc.documentElement, trigger)
     ) {
       close();
       return;
