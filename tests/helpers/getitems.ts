@@ -156,3 +156,18 @@ export function verdictOf<Disclosed extends DisclosedBase>(
   const parsed = parsedItem(details, overrides);
   return kind.fromGetItems(parsed.item, parsed.details, language);
 }
+
+const ItemRecordSchema = v.record(v.string(), v.unknown());
+
+/**
+ * The item of a GetItems fixture for the app `from`, as another app: the same name, categories
+ * and extra details under the ID `to`. Throws when the fixture has no such item.
+ */
+export function itemAs(
+  fixture: unknown,
+  from: number,
+  to: number,
+): Readonly<Record<string, unknown>> {
+  const found = fixtureItems(fixture).find((item) => v.parse(ItemIdSchema, item).id === from);
+  return { ...v.parse(ItemRecordSchema, found), id: to, appid: to };
+}

@@ -8,6 +8,7 @@
 @import "./shared.css";
 
 /* Store CSS styles bare span and a in places; the reset leaves custom properties alone */
+.sar-chips,
 .sar-badge,
 .sar-badge *,
 .sar-compact,
@@ -35,6 +36,18 @@
 [data-sar-badges-eula="off"] [data-sar-kind="eula"],
 [data-sar-badges-pvp="off"] [data-sar-kind="pvp"] {
   display: none !important;
+}
+
+/* A host's chips: one group per host, so a row or an image overlay places them as one. The
+   store's own tag chips sit 2px apart. */
+
+.sar-chips {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sar-space-0);
+  flex: none;
+  min-inline-size: 0;
+  vertical-align: middle;
 }
 
 /* Full badge: the store's tag chip in our hue */
@@ -89,22 +102,30 @@
   align-items: center;
 }
 
-.search_name > .sar-badge,
-.game_area_dlc_name > .sar-badge {
+.search_name > .sar-chips,
+.game_area_dlc_name > .sar-chips {
   margin-inline-start: var(--sar-space-2);
 }
 
-/* Compact badge: mirrors the store's corner flags, at the inline-end corner */
+/* Compact badge: mirrors the store's corner flags, at the inline-end corner. The group sits there
+   and its chips shrink to the image's width, the label ending in an ellipsis. */
 
-.sar-compact {
+.sar-chips[data-sar-chips="compact"] {
   position: absolute;
   inset-block-start: var(--sar-compact-inset-block);
   inset-inline-end: var(--sar-compact-inset-inline);
   z-index: var(--sar-z-badge);
+  flex: initial;
+  max-inline-size: calc(100% - var(--sar-compact-inset-inline));
+  pointer-events: none;
+}
+
+.sar-compact {
   display: inline-flex;
   align-items: center;
+  flex: 0 1 auto;
   block-size: var(--sar-compact-height);
-  max-inline-size: calc(100% - var(--sar-compact-inset-inline));
+  min-inline-size: 0;
   padding-inline: var(--sar-compact-pad-inline);
   border: 1px solid var(--sar-compact-border);
   background: var(--sar-compact-bg);

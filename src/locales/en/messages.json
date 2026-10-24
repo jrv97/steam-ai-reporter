@@ -141,6 +141,20 @@
       }
     }
   },
+  "kind_chip_more": {
+    "message": "+$count$",
+    "description": "Chip that stands for the kinds that do not fit beside the other chips. $count$ is how many kinds it stands for.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "2"
+      }
+    }
+  },
+  "kind_chip_more_name": {
+    "message": "more tags",
+    "description": "After the chip text, names the hidden chips for screen readers, as in \"+2: more tags\"."
+  },
   "badge_card_declared": {
     "message": "Declared by the developer on the store page",
     "description": "Last line of the hover card. It says the developer, not this extension, made the declarations above."

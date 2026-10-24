@@ -1,15 +1,18 @@
 // @vitest-environment-options {"url":"https://store.steampowered.com/search/?term=roguelike"}
 import { afterEach, describe, expect, it, vi } from "vitest";
+import kindItems from "../../tests/fixtures/getitems/kinds.json";
 import searchItems from "../../tests/fixtures/getitems/search-roguelike-50.json";
 import { clearRoot } from "../../tests/helpers/dom";
 import { fakeHttp } from "../../tests/helpers/fake-http";
 import { fixedClock } from "../../tests/helpers/fixed-clock";
-import { fixtureItems, getItemsRequest, getItemsRoute } from "../../tests/helpers/getitems";
+import { fixtureItems, getItemsRequest, getItemsRoute, itemAs } from "../../tests/helpers/getitems";
 import { englishI18n } from "../../tests/helpers/i18n";
 import { memoryStore } from "../../tests/helpers/memory-store";
 import { loadPage, SURFACES } from "../../tests/helpers/surfaces";
 import { type App, start } from "./app";
 import type { JsonValue } from "./json";
+import type { KindId } from "./kinds/id";
+import { KIND_BY_ID } from "./kinds/registry";
 import { DEFAULT_SETTINGS, withKind } from "./settings/settings";
 import { createSettingsSource } from "./settings/settings-source";
 import { ALLOW_KEY } from "./storage-keys";
@@ -24,12 +27,15 @@ const quiet = { error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() };
 
 let app: App | undefined;
 
-async function startOnSearch(initial: ReadonlyMap<string, JsonValue> = new Map()) {
+async function startOnSearch(
+  initial: ReadonlyMap<string, JsonValue> = new Map(),
+  items: readonly unknown[] = fixtureItems(searchItems),
+) {
   loadPage(SURFACES.search);
   document.documentElement.lang = "en";
   const store = memoryStore(initial);
   const settings = createSettingsSource(store);
-  const http = fakeHttp([getItemsRoute(fixtureItems(searchItems))]);
+  const http = fakeHttp([getItemsRoute(items)]);
   app = await start({
     document,
     http,
@@ -66,7 +72,7 @@ describe("start on the search page", () => {
 
     expect(http.calls).toHaveLength(1);
     expect(getItemsRequest(http.calls[0] ?? "").ids).toEqual(SEARCH_IDS);
-    const badge = row(DISCLOSED)?.querySelector(".search_name > .title + .sar-badge");
+    const badge = row(DISCLOSED)?.querySelector(".search_name > .title + .sar-chips > .sar-badge");
     expect(badge?.querySelector(".sar-badge-label")?.textContent).toBe(i18n.t("kind_ai_chip"));
     expect(row(DISCLOSED)?.getAttribute("data-sar-kinds")).toBe("ai");
     const others = SEARCH_IDS.filter((id) => String(id) !== DISCLOSED);
@@ -90,6 +96,69 @@ describe("start on the search page", () => {
     const other = row(String(SEARCH_IDS[0]));
     expect(disclosed === null ? "" : getComputedStyle(disclosed).display).toBe("none");
     expect(other === null ? "" : getComputedStyle(other).display).not.toBe("none");
+  });
+
+  describe("with a game that discloses several kinds", () => {
+    // ARC Raiders' item (AI notes, a kernel anti-cheat, a EULA and PvP) replaces the disclosed
+    // row's item: the route keeps the last item of an ID.
+    const several = [
+      ...fixtureItems(searchItems),
+      itemAs(kindItems, 1808500, Number(DISCLOSED)),
+    ];
+    const chips = () =>
+      Array.from(
+        row(DISCLOSED)?.querySelectorAll(".sar-chips > .sar-badge") ?? [],
+        (element) => element.querySelector(".sar-badge-label")?.textContent,
+      );
+    const chip = (id: KindId) => i18n.t(KIND_BY_ID[id].messages.chip);
+
+    it("draws the placement's allowance of chips and a +N chip for the rest", async () => {
+      const { http } = await startOnSearch(new Map(), several);
+      await drawn(http);
+      expect(row(DISCLOSED)?.getAttribute("data-sar-kinds")).toBe("ai kernel eula pvp");
+      expect(chips()).toEqual([
+        chip("ai"),
+        chip("kernel"),
+        chip("eula"),
+        i18n.t("kind_chip_more", { count: "1" }),
+      ]);
+    });
+
+    it("draws the chips again when a kind's badges are switched off", async () => {
+      const { http, settings } = await startOnSearch(new Map(), several);
+      await drawn(http);
+      await settings.write(withKind(DEFAULT_SETTINGS, "kernel", { badge: false }));
+      expect(rootMark("data-sar-badges-kernel")).toBe("off");
+      await expect.poll(() => chips()).toEqual([
+        chip("ai"),
+        chip("eula"),
+        chip("pvp"),
+      ]);
+      expect(row(DISCLOSED)?.getAttribute("data-sar-kinds")).toBe("ai kernel eula pvp");
+    });
+
+    it("draws no chip for an ignored kind, and keeps the others", async () => {
+      const ignored = new Map<string, JsonValue>([
+        [ALLOW_KEY, { all: {}, kernel: { [DISCLOSED]: { name: "Ignored", added: NOW } } }],
+      ]);
+      const { http } = await startOnSearch(ignored, several);
+      await drawn(http);
+      expect(row(DISCLOSED)?.getAttribute("data-sar-kinds")).toBe("ai eula pvp");
+      expect(chips()).toEqual([
+        chip("ai"),
+        chip("eula"),
+        chip("pvp"),
+      ]);
+    });
+
+    it("hides the row when any of its kinds hides, whatever the others do", async () => {
+      const { http, settings } = await startOnSearch(new Map(), several);
+      await drawn(http);
+      const dimAi = withKind(DEFAULT_SETTINGS, "ai", { filter: "dim" });
+      await settings.write(withKind(dimAi, "pvp", { filter: "hide" }));
+      const style = getComputedStyle(row(DISCLOSED) ?? document.body);
+      expect(style.display).toBe("none");
+    });
   });
 
   it("marks nothing for an allow-listed game, in lists or on badges", async () => {

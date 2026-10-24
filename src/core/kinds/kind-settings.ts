@@ -72,6 +72,11 @@ export function encodeKindSettings(settings: KindSettings): JsonValue {
   return stored;
 }
 
+/** Whether the kind's badges show: the kind is enabled and its badge setting is on. */
+export function showsBadge(settings: KindSettings): boolean {
+  return settings.enabled && settings.badge;
+}
+
 /** The settings that take effect: a disabled kind shows no badge or banner and filters nothing. */
 export function effectiveSettings(settings: KindSettings): KindSettings {
   return settings.enabled ? settings : { ...settings, badge: false, banner: false, filter: "off" };

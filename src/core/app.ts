@@ -20,7 +20,8 @@ import { SHIPPED_CATALOGS } from "./i18n/shipped";
 import { createI18n, type I18n } from "./i18n/t";
 import { AI_KIND, type AiKind, type AiVerdict } from "./kinds/ai";
 import type { KindId } from "./kinds/id";
-import { effectiveSettings } from "./kinds/kind-settings";
+import { effectiveSettings, showsBadge } from "./kinds/kind-settings";
+import { KINDS } from "./kinds/registry";
 import { type KindVerdicts, UNKNOWN_KINDS } from "./kinds/verdicts";
 import { type ConsoleSink, createLogger, type Logger } from "./log";
 import type { Clock, Http, KeyValueStore, SettingsSource, Unsubscribe } from "./ports";
@@ -153,6 +154,13 @@ function appName(doc: Document, verdict: AiVerdict, id: AppId): string {
   return fromVerdict ?? (fromPage === undefined || fromPage === "" ? String(id) : fromPage);
 }
 
+/** Whether some kind's badges show in one settings and not in the other. */
+function badgesChanged(before: Settings, after: Settings): boolean {
+  return KINDS.some((kind) =>
+    showsBadge(before.kinds[kind.id]) !== showsBadge(after.kinds[kind.id])
+  );
+}
+
 /** The app page for one kind: its banner and summary row, wired to the allow-list. */
 async function startAppPage(
   doc: Document,
@@ -224,7 +232,7 @@ export async function start(deps: AppDeps): Promise<App> {
   const allowList = createAllowList(store, clock);
   const ignored = await loadIgnored(allowList, logger);
 
-  // The badge, the banner and the summary row show the AI kind; hosts and filters cover all.
+  // The banner and the summary row show the AI kind; chips, hosts and filters cover every kind.
   const kind = AI_KIND;
   deps.addPageStyles(doc);
   applyKindSettings(root, settings.kinds);
@@ -233,8 +241,9 @@ export async function start(deps: AppDeps): Promise<App> {
   const capsules = createCapsuleUi({
     document: doc,
     detector: detectors.detector,
-    renderers: [createHostKindsRenderer(), createBadgeRenderer(doc, i18n, card, kind)],
+    renderers: [createHostKindsRenderer(), createBadgeRenderer(doc, i18n, card)],
     isAllowed: (id, forKind) => isIgnored(ignored, id, forKind),
+    isBadged: (forKind) => showsBadge(settings.kinds[forKind]),
   });
   const scanner = createScanner({ document: doc, renderer: capsules });
 
@@ -262,11 +271,14 @@ export async function start(deps: AppDeps): Promise<App> {
   }
 
   const unsubscribe: Unsubscribe = deps.settings.subscribe((value) => {
-    const before = effectiveSettings(settings.kinds[kind.id]);
+    const before = settings;
     settings = parseSettings(value);
-    const next = effectiveSettings(settings.kinds[kind.id]);
     applyKindSettings(root, settings.kinds);
-    if (next.banner !== before.banner) {
+    if (badgesChanged(before, settings)) {
+      capsules.refresh();
+    }
+    const wasBanner = effectiveSettings(before.kinds[kind.id]).banner;
+    if (effectiveSettings(settings.kinds[kind.id]).banner !== wasBanner) {
       renderAppPage();
     }
   });

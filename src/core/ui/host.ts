@@ -23,6 +23,10 @@ export interface HostView {
   readonly verdicts: KindVerdicts;
   /** Per kind: the game is on the allow-list, so nothing marks it, in lists or on badges. */
   readonly allowed: Readonly<Record<KindId, boolean>>;
+  /** Per kind: the kind's badge shows, by its settings. Ignored games and other states aside. */
+  readonly badged: Readonly<Record<KindId, boolean>>;
+  /** How many chips the placement shows before the "+N" chip. */
+  readonly maxChips: number;
   /** Where the badge goes; undefined when the placement shows none (a thumbnail too small). */
   readonly slot: BadgeSlot | undefined;
   /** False where hiding would break the list (virtualized, carousel); hide then dims. */

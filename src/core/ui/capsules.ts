@@ -53,6 +53,8 @@ export interface CapsuleUiOptions {
   readonly kinds?: readonly TagKind[];
   /** Whether the game is on the allow-list for the kind now. */
   readonly isAllowed: (id: AppId, kind: KindId) => boolean;
+  /** Whether the kind's badges show now, by its settings. Every kind's do by default. */
+  readonly isBadged?: (kind: KindId) => boolean;
   /** Schedules a read-then-write pass; `requestAnimationFrame` by default. */
   readonly frame?: (callback: () => void) => void;
   /** Watches image boxes that had no size when drawn; one `ResizeObserver` by default. */
@@ -70,15 +72,19 @@ interface HostRecord {
   verdicts: KindVerdicts | undefined;
   /** Per kind: the game is ignored. Each draw refreshes it, so drawing allocates nothing. */
   readonly allowed: Record<KindId, boolean>;
+  /** Per kind: the badge shows. Refreshed by each draw like `allowed`. */
+  readonly badged: Record<KindId, boolean>;
 }
 
 const NOT_ALLOWED: Readonly<Record<KindId, boolean>> = perKind(() => false);
+const ALL_BADGED: Readonly<Record<KindId, boolean>> = perKind(() => true);
 
 /** One host's draw, decided in the read phase. */
 interface Draw {
   readonly record: HostRecord;
   readonly verdicts: KindVerdicts;
   readonly allowed: Readonly<Record<KindId, boolean>>;
+  readonly badged: Readonly<Record<KindId, boolean>>;
   readonly slot: BadgeSlot | undefined;
   readonly markAnchor: boolean;
 }
@@ -102,6 +108,7 @@ const NO_SLOT: SlotRead = { slot: undefined, markAnchor: false, unsized: false }
  */
 export function createCapsuleUi(options: CapsuleUiOptions): CapsuleUi {
   const { document: doc, detector, renderers, isAllowed } = options;
+  const isBadged = options.isBadged ?? (() => true);
   const kinds = options.kinds ?? KINDS;
   const frame = options.frame ?? ((callback: () => void) => {
     const view = doc.defaultView;
@@ -177,14 +184,16 @@ export function createCapsuleUi(options: CapsuleUiOptions): CapsuleUi {
     const draws: Draw[] = [];
     // Read phase: image boxes and computed positions, only for hosts that will show a badge.
     for (const record of batch) {
-      const { host, verdicts, allowed } = record;
+      const { host, verdicts, allowed, badged } = record;
       if (verdicts === undefined || !host.element.isConnected) {
         continue;
       }
       let shows = false;
       for (const kind of kinds) {
         allowed[kind.id] = isAllowed(host.appId, kind.id);
-        shows ||= verdicts[kind.id].state === "disclosed" && !allowed[kind.id];
+        badged[kind.id] = isBadged(kind.id);
+        shows ||= verdicts[kind.id].state === "disclosed" && !allowed[kind.id]
+          && badged[kind.id];
       }
       const { slot, markAnchor, unsized: waits } = shows ? slotOf(host) : NO_SLOT;
       if (waits) {
@@ -192,10 +201,10 @@ export function createCapsuleUi(options: CapsuleUiOptions): CapsuleUi {
       } else if (slot !== undefined) {
         unwatch(slot.anchor);
       }
-      draws.push({ record, verdicts, allowed, slot, markAnchor });
+      draws.push({ record, verdicts, allowed, badged, slot, markAnchor });
     }
     // Write phase.
-    for (const { record, verdicts, allowed, slot, markAnchor } of draws) {
+    for (const { record, verdicts, allowed, badged, slot, markAnchor } of draws) {
       if (markAnchor && slot !== undefined) {
         slot.anchor.setAttribute(ANCHOR_MARK, "");
       }
@@ -203,6 +212,8 @@ export function createCapsuleUi(options: CapsuleUiOptions): CapsuleUi {
         host: record.host.element,
         verdicts,
         allowed,
+        badged,
+        maxChips: record.host.placement.maxChips,
         slot,
         hideable: record.host.placement.hideable,
       };
@@ -240,7 +251,12 @@ export function createCapsuleUi(options: CapsuleUiOptions): CapsuleUi {
       }
       const found: HostRecord[] = [];
       for (const host of batch.found) {
-        const record: HostRecord = { host, verdicts: undefined, allowed: { ...NOT_ALLOWED } };
+        const record: HostRecord = {
+          host,
+          verdicts: undefined,
+          allowed: { ...NOT_ALLOWED },
+          badged: { ...ALL_BADGED },
+        };
         records.set(host.element, record);
         found.push(record);
       }

@@ -2,11 +2,17 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { setBody } from "../../../tests/helpers/dom";
 import { hostView, type HostViewOptions } from "../../../tests/helpers/host-view";
 import { englishI18n } from "../../../tests/helpers/i18n";
-import { disclosedVerdict, NOT_DISCLOSED } from "../../../tests/helpers/verdicts";
-import { AI_KIND } from "../kinds/ai";
+import {
+  ALL_DISCLOSED,
+  disclosedKinds,
+  disclosedVerdict,
+  NOT_DISCLOSED,
+} from "../../../tests/helpers/verdicts";
+import { KIND_IDS, type KindId } from "../kinds/id";
+import { KIND_BY_ID } from "../kinds/registry";
 import type { AnyDisclosed } from "../kinds/verdicts";
 import { UNKNOWN } from "../types";
-import { compactSize, createBadgeRenderer } from "./badge";
+import { compactSize, createBadgeRenderer, createChip } from "./badge";
 import type { BadgeSlot } from "./host";
 
 function capsule(): {
@@ -48,80 +54,196 @@ describe("compactSize", () => {
 
 describe("createBadgeRenderer", () => {
   const i18n = englishI18n();
+  const chip = (id: KindId) => i18n.t(KIND_BY_ID[id].messages.chip);
   // The accessible name starts with the visible chip text, then Steam's full line.
-  const AI_NAME = i18n.t("kind_chip_name", {
-    chip: i18n.t("kind_ai_chip"),
-    heading: i18n.t("kind_ai_heading"),
-  });
+  const nameOf = (id: KindId) =>
+    i18n.t("kind_chip_name", { chip: chip(id), heading: i18n.t(KIND_BY_ID[id].messages.heading) });
+  const AI_NAME = nameOf("ai");
+  const MANY: readonly KindId[] = ["ai", "kernel", "drm", "eula", "pvp"];
+
   let bound = new Map<Element, readonly AnyDisclosed[]>();
-  let renderer = createBadgeRenderer(
-    document,
-    i18n,
-    { bind: (t, entries) => bound.set(t, entries) },
-    AI_KIND,
-  );
+  let renderer = createBadgeRenderer(document, i18n, { bind: () => undefined });
 
   beforeEach(() => {
     bound = new Map();
-    renderer = createBadgeRenderer(
-      document,
-      i18n,
-      { bind: (t, entries) => bound.set(t, entries) },
-      AI_KIND,
-    );
+    renderer = createBadgeRenderer(document, i18n, {
+      bind: (trigger, entries) => bound.set(trigger, entries),
+    });
   });
+
+  const full = (anchor: Element): BadgeSlot => ({ kind: "full", anchor, position: "afterend" });
+  const overlay = (anchor: Element, size: "text" | "large" = "text"): BadgeSlot => ({
+    kind: "compact",
+    anchor,
+    position: "beforeend",
+    size,
+  });
+
+  /** A chip's visible text and its accessible name. */
+  function texts(element: Element) {
+    return [
+      element.querySelector(":scope > [aria-hidden]")?.textContent,
+      element.querySelector(":scope > .sar-vh")?.textContent,
+    ];
+  }
+
+  const chipsIn = (host: Element) => Array.from(host.querySelectorAll(".sar-chips > *"));
+  const kindsOf = (host: Element) => chipsIn(host).map((c) => c.getAttribute("data-sar-kind"));
 
   it("draws the full badge with the catalog label and binds it to the hover card", () => {
     const { host, title } = capsule();
     const verdict = disclosedVerdict({ notes: "Concept art." });
-    renderer.render(view(host, { kind: "full", anchor: title, position: "afterend" }, { verdict }));
+    renderer.render(view(host, full(title), { verdict }));
+    const group = host.querySelector(".sar-chips");
+    expect(group?.previousElementSibling).toBe(title);
+    expect(group?.getAttribute("data-sar-chips")).toBe("full");
     const badge = host.querySelector<HTMLElement>(".sar-badge");
-    expect(badge?.previousElementSibling).toBe(title);
-    expect(badge?.querySelector(".sar-badge-label")?.textContent).toBe(i18n.t("kind_ai_chip"));
+    expect(badge?.parentElement).toBe(group);
+    expect(badge?.querySelector(".sar-badge-label")?.textContent).toBe(chip("ai"));
     expect(badge?.querySelector(".sar-badge-label")?.getAttribute("aria-hidden")).toBe("true");
     expect(badge?.querySelector(".sar-vh")?.textContent).toBe(AI_NAME);
+    expect(badge?.getAttribute("data-sar-kind")).toBe("ai");
     expect(badge?.querySelector("svg")).toBeNull();
     expect(badge?.hasAttribute("title")).toBe(false);
     expect(badge === null ? undefined : bound.get(badge)).toEqual([verdict]);
   });
 
-  it("binds a kept badge to a new verdict without drawing it again", () => {
+  it.each(KIND_IDS)("gives the %s chip an accessible name that starts with its text", (id) => {
     const { host, title } = capsule();
-    const slot: BadgeSlot = { kind: "full", anchor: title, position: "afterend" };
+    renderer.render(view(host, full(title), { verdicts: disclosedKinds([id]) }));
+    const [label, name] = texts(chipsIn(host)[0] ?? host);
+    expect(label).toBe(chip(id));
+    expect(name).toBe(nameOf(id));
+    expect(name?.startsWith(`${label ?? ""}: `)).toBe(true);
+    expect(name).toContain(i18n.t(KIND_BY_ID[id].messages.heading));
+  });
+
+  it("draws one chip per disclosed kind, in registry order, whatever the data order", () => {
+    const { host, title } = capsule();
+    const verdicts = disclosedKinds(["pvp", "drm", "ai"]);
+    renderer.render(view(host, full(title), { verdicts, maxChips: 5 }));
+    expect(host.querySelectorAll(".sar-chips")).toHaveLength(1);
+    expect(kindsOf(host)).toEqual(["ai", "drm", "pvp"]);
+    expect(chipsIn(host).map((c) => texts(c)[0])).toEqual([chip("ai"), chip("drm"), chip("pvp")]);
+  });
+
+  it("binds every chip to the verdicts of all the kinds shown", () => {
+    const { host, title } = capsule();
+    renderer.render(view(host, full(title), { verdicts: ALL_DISCLOSED, maxChips: 7 }));
+    const expected = KIND_IDS.map((id) => ALL_DISCLOSED[id]);
+    expect(chipsIn(host)).toHaveLength(KIND_IDS.length);
+    for (const element of chipsIn(host)) {
+      expect(bound.get(element)).toEqual(expected);
+    }
+  });
+
+  describe("past the placement's allowance", () => {
+    it("shows the allowed chips and a +N chip for the rest", () => {
+      const { host, title } = capsule();
+      renderer.render(view(host, full(title), { verdicts: disclosedKinds(MANY), maxChips: 2 }));
+      expect(kindsOf(host)).toEqual(["ai", "kernel", null]);
+      const more = chipsIn(host)[2];
+      const label = i18n.t("kind_chip_more", { count: "3" });
+      expect(more?.classList.contains("sar-badge")).toBe(true);
+      expect(texts(more ?? host)).toEqual([
+        label,
+        i18n.t("kind_chip_name", { chip: label, heading: i18n.t("kind_chip_more_name") }),
+      ]);
+    });
+
+    it("lists all the kinds in the hover card from the +N chip too", () => {
+      const { host, title } = capsule();
+      renderer.render(view(host, full(title), { verdicts: disclosedKinds(MANY), maxChips: 2 }));
+      const more = chipsIn(host)[2];
+      expect(more === undefined ? undefined : bound.get(more)?.map((v) => v.kind)).toEqual(MANY);
+    });
+
+    it("draws no +N chip when the kinds fit exactly", () => {
+      const { host, title } = capsule();
+      renderer.render(view(host, full(title), { verdicts: disclosedKinds(MANY), maxChips: 5 }));
+      expect(kindsOf(host)).toEqual(MANY);
+    });
+
+    it("can show nothing but the +N chip", () => {
+      const { host, title } = capsule();
+      renderer.render(view(host, full(title), { verdicts: disclosedKinds(MANY), maxChips: 0 }));
+      expect(kindsOf(host)).toEqual([null]);
+    });
+
+    it("counts only the kinds shown, not the ones whose badges are off", () => {
+      const { host, title } = capsule();
+      const unbadged: readonly KindId[] = ["ai", "kernel", "pvp"];
+      renderer.render(
+        view(host, full(title), { verdicts: disclosedKinds(MANY), unbadged, maxChips: 2 }),
+      );
+      expect(kindsOf(host)).toEqual(["drm", "eula"]);
+    });
+
+    it("draws the +N chip in the compact style over an image", () => {
+      const { host, image } = capsule();
+      renderer.render(view(host, overlay(image), { verdicts: disclosedKinds(MANY), maxChips: 1 }));
+      const chips = chipsIn(host);
+      expect(chips.map((c) => c.className)).toEqual(["sar-compact", "sar-compact"]);
+      expect(chips[1]?.querySelector(".sar-compact-label")?.textContent).toBe(
+        i18n.t("kind_chip_more", { count: "4" }),
+      );
+      expect(chips[1]?.getAttribute("data-sar-size")).toBe("text");
+    });
+  });
+
+  it("binds a kept group to new verdicts without drawing it again", () => {
+    const { host, title } = capsule();
+    const slot = full(title);
     renderer.render(view(host, slot));
-    const badge = host.querySelector(".sar-badge");
+    const group = host.querySelector(".sar-chips");
     const next = disclosedVerdict({ notes: "Voice lines." });
     renderer.render(view(host, slot, { verdict: next }));
-    expect(host.querySelector(".sar-badge")).toBe(badge);
+    expect(host.querySelector(".sar-chips")).toBe(group);
+    const badge = host.querySelector(".sar-badge");
     expect(badge === null ? undefined : bound.get(badge)).toEqual([next]);
   });
 
-  it("draws the compact badge in its tier, linked to the capsule link", () => {
-    const { host, image } = capsule();
-    renderer.render(
-      view(host, { kind: "compact", anchor: image, position: "beforeend", size: "large" }),
-    );
-    const badge = image.querySelector<HTMLElement>(".sar-compact");
-    expect(badge?.getAttribute("data-sar-size")).toBe("large");
-    expect(badge?.querySelector(".sar-compact-label")?.textContent).toBe(i18n.t("kind_ai_chip"));
-    expect(badge?.querySelector(".sar-vh")?.textContent).toBe(AI_NAME);
-    expect(badge?.getAttribute("data-sar-in-link")).toBe("true");
-    expect(badge?.hasAttribute("title")).toBe(false);
-    expect(badge !== null && bound.has(badge)).toBe(true);
+  it("draws the group again when the kinds, the allowance or the slot change", () => {
+    const { host, title, image } = capsule();
+    renderer.render(view(host, full(title), { verdicts: disclosedKinds(["ai"]) }));
+    const first = host.querySelector(".sar-chips");
+    renderer.render(view(host, full(title), { verdicts: disclosedKinds(["ai", "drm"]) }));
+    expect(host.querySelector(".sar-chips")).not.toBe(first);
+    expect(first?.isConnected).toBe(false);
+    expect(kindsOf(host)).toEqual(["ai", "drm"]);
+    const verdicts = disclosedKinds(["ai", "drm"]);
+    renderer.render(view(host, full(title), { verdicts, maxChips: 1 }));
+    expect(kindsOf(host)).toEqual(["ai", null]);
+    renderer.render(view(host, overlay(image), { verdicts, maxChips: 1 }));
+    expect(host.querySelectorAll(".sar-chips")).toHaveLength(1);
+    expect(host.querySelector(".sar-chips")?.getAttribute("data-sar-chips")).toBe("compact");
   });
 
-  it("gives a compact badge outside a link no pointer", () => {
+  it("draws the compact chips in their tier, linked to the capsule link", () => {
+    const { host, image } = capsule();
+    const verdicts = disclosedKinds(["ai", "kernel"]);
+    renderer.render(view(host, overlay(image, "large"), { verdicts }));
+    const chips = Array.from(image.querySelectorAll<HTMLElement>(".sar-chips > .sar-compact"));
+    expect(image.querySelector(".sar-chips")?.getAttribute("data-sar-chips")).toBe("compact");
+    expect(chips.map((c) => c.getAttribute("data-sar-size"))).toEqual(["large", "large"]);
+    expect(chips.map((c) => c.getAttribute("data-sar-in-link"))).toEqual(["true", "true"]);
+    expect(chips.map((c) => texts(c))).toEqual([
+      [chip("ai"), AI_NAME],
+      [chip("kernel"), nameOf("kernel")],
+    ]);
+    expect(chips.some((c) => c.hasAttribute("title"))).toBe(false);
+    expect(chips.every((c) => bound.has(c))).toBe(true);
+  });
+
+  it("gives compact chips outside a link no pointer", () => {
     setBody('<div class="row"><div class="image"></div></div>');
     const host = document.querySelector(".row");
     const image = document.querySelector(".image");
     if (host === null || image === null) {
       throw new TypeError();
     }
-    renderer.render(
-      view(host, { kind: "compact", anchor: image, position: "beforeend", size: "text" }),
-    );
-    const badge = image.querySelector<HTMLElement>(".sar-compact");
-    expect(badge?.hasAttribute("data-sar-in-link")).toBe(false);
+    renderer.render(view(host, overlay(image)));
+    expect(image.querySelector(".sar-compact")?.hasAttribute("data-sar-in-link")).toBe(false);
   });
 
   it.each([
@@ -130,35 +252,64 @@ describe("createBadgeRenderer", () => {
   ])("renders nothing for %s", (_name, verdict) => {
     const { host, title } = capsule();
     const before = host.innerHTML;
-    renderer.render(view(host, { kind: "full", anchor: title, position: "afterend" }, { verdict }));
+    renderer.render(view(host, full(title), { verdict }));
     expect(host.innerHTML).toBe(before);
   });
 
-  it("renders nothing for an allow-listed game, and removes a badge it drew", () => {
+  it("draws no chip for a kind that is ignored or has its badges off", () => {
     const { host, title } = capsule();
-    const slot: BadgeSlot = { kind: "full", anchor: title, position: "afterend" };
+    renderer.render(
+      view(host, full(title), {
+        verdicts: disclosedKinds(["ai", "drm", "eula"]),
+        ignored: ["drm"],
+        unbadged: ["eula"],
+      }),
+    );
+    expect(kindsOf(host)).toEqual(["ai"]);
+  });
+
+  it("removes the chips of a game that is ignored for every kind", () => {
+    const { host, title } = capsule();
+    const slot = full(title);
     renderer.render(view(host, slot));
     expect(host.querySelectorAll(".sar-badge")).toHaveLength(1);
     renderer.render(view(host, slot, { allowed: true }));
-    expect(host.querySelector(".sar-badge")).toBeNull();
+    expect(host.querySelector(".sar-chips")).toBeNull();
   });
 
-  it("keeps the badge for the same view and restores one a re-render dropped", () => {
+  it("keeps the group for the same view and restores one a re-render dropped", () => {
     const { host, title } = capsule();
-    const slot: BadgeSlot = { kind: "full", anchor: title, position: "afterend" };
+    const slot = full(title);
     renderer.render(view(host, slot));
-    const first = host.querySelector(".sar-badge");
+    const first = host.querySelector(".sar-chips");
     renderer.render(view(host, slot));
-    expect(host.querySelector(".sar-badge")).toBe(first);
+    expect(host.querySelector(".sar-chips")).toBe(first);
     first?.remove();
     renderer.render(view(host, slot));
-    expect(host.querySelectorAll(".sar-badge")).toHaveLength(1);
-    expect(host.querySelector(".sar-badge")).not.toBe(first);
+    expect(host.querySelectorAll(".sar-chips")).toHaveLength(1);
+    expect(host.querySelector(".sar-chips")).not.toBe(first);
   });
 
-  it("draws no badge where the placement gives no slot", () => {
+  it("draws no chip where the placement gives no slot", () => {
     const { host } = capsule();
     renderer.render(view(host, undefined));
-    expect(host.querySelector(".sar-badge, .sar-compact")).toBeNull();
+    expect(host.querySelector(".sar-chips, .sar-badge, .sar-compact")).toBeNull();
+  });
+
+  it("covers only the kinds it is given", () => {
+    const { host, title } = capsule();
+    const onlyAi = createBadgeRenderer(document, i18n, { bind: () => undefined }, [KIND_BY_ID.ai]);
+    onlyAi.render(view(host, full(title), { verdicts: ALL_DISCLOSED }));
+    expect(kindsOf(host)).toEqual(["ai"]);
+  });
+});
+
+describe("createChip", () => {
+  it("builds a chip with the kind's text, name and id", () => {
+    const i18n = englishI18n();
+    const element = createChip(document, i18n, KIND_BY_ID.drm);
+    expect(element.className).toBe("sar-badge");
+    expect(element.getAttribute("data-sar-kind")).toBe("drm");
+    expect(element.querySelector(".sar-badge-label")?.textContent).toBe(i18n.t("kind_drm_chip"));
   });
 });

@@ -7,7 +7,7 @@ import {
   NOT_DISCLOSED,
 } from "../../../tests/helpers/verdicts";
 import { AI_KIND, type AiVerdict } from "../kinds/ai";
-import { KIND_IDS } from "../kinds/id";
+import { KIND_IDS, type KindId } from "../kinds/id";
 import type { TagKind } from "../kinds/kind";
 import type { KindVerdicts } from "../kinds/verdicts";
 import { GENERIC, type Placement, type RowPlacement } from "../scan/placements";
@@ -20,6 +20,7 @@ const ROW: RowPlacement = {
   id: "row",
   host: "*",
   hideable: false,
+  maxChips: 3,
   badge: "full",
   slot: "after",
   anchor: (host) => host.firstElementChild ?? undefined,
@@ -39,6 +40,8 @@ function setup(
   kinds?: readonly TagKind[],
   /** Verdicts of kinds other than the AI kind, for every app. */
   others: Partial<KindVerdicts> = {},
+  /** Kinds whose badges are off in the settings. */
+  unbadged: ReadonlySet<KindId> = new Set(),
 ) {
   const detect = vi.fn((ids: readonly AppId[]) =>
     Promise.resolve(
@@ -56,9 +59,13 @@ function setup(
   const ui = createCapsuleUi({
     document,
     detector,
-    renderers: [{ render: (view) => views.push({ ...view, allowed: { ...view.allowed } }) }],
+    renderers: [{
+      render: (view) =>
+        views.push({ ...view, allowed: { ...view.allowed }, badged: { ...view.badged } }),
+    }],
     ...(kinds === undefined ? {} : { kinds }),
     isAllowed: (id) => allowed.has(id),
+    isBadged: (kind) => !unbadged.has(kind),
     frame: (callback) => frames.push(callback),
     watchSize: (onSized): SizeWatch => {
       reportSized = onSized;
@@ -123,6 +130,41 @@ describe("createCapsuleUi", () => {
     aiOnly.ui.render({ found: [host(4)], changed: [] });
     await aiOnly.flush();
     expect(aiOnly.views[0]?.slot).toBeUndefined();
+  });
+
+  it("passes the chip allowance and the badge settings to the renderers", async () => {
+    const id = appId(3);
+    const { ui, views, flush } = setup(
+      new Map([[id, disclosedVerdict()]]),
+      new Set(),
+      undefined,
+      {},
+      new Set<KindId>(["drm", "pvp"]),
+    );
+    ui.render({ found: [host(3, { ...ROW, maxChips: 2 })], changed: [] });
+    await flush();
+    expect(views[0]?.maxChips).toBe(2);
+    expect(KIND_IDS.filter((kind) => views[0]?.badged[kind] === false)).toEqual(["drm", "pvp"]);
+  });
+
+  it("gives a host no slot when the only kind it discloses has its badges off", async () => {
+    const id = appId(2);
+    const aiOff = setup(
+      new Map([[id, disclosedVerdict()]]),
+      new Set(),
+      undefined,
+      {},
+      new Set<KindId>(["ai"]),
+    );
+    aiOff.ui.render({ found: [host(2)], changed: [] });
+    await aiOff.flush();
+    expect(aiOff.views[0]?.slot).toBeUndefined();
+    const withPvp = setup(new Map([[id, disclosedVerdict()]]), new Set(), undefined, {
+      pvp: ALL_DISCLOSED.pvp,
+    }, new Set<KindId>(["ai"]));
+    withPvp.ui.render({ found: [host(2)], changed: [] });
+    await withPvp.flush();
+    expect(withPvp.views[0]?.slot).toMatchObject({ kind: "full" });
   });
 
   it("draws a full badge of an end slot as the anchor's last child", async () => {
