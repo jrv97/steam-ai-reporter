@@ -1,5 +1,5 @@
 import * as v from "valibot";
-import type { JsonValue } from "../json";
+import { type JsonValue, parseWithDefaults } from "../json";
 import type { KindId } from "../kinds/id";
 import { encodeKindSettings, type KindSettings, parseKindSettings } from "../kinds/kind-settings";
 import { KINDS, perKind } from "../kinds/registry";
@@ -32,18 +32,15 @@ export const DEFAULT_SETTINGS: Settings = {
 // Each field falls back to its own default, so one bad or missing field (an old version, a
 // hand-edited value) does not reset the others. The kinds stay unvalidated until each one is
 // parsed against its own defaults.
-const SettingsSchema = v.fallback(
-  v.object({
-    locale: v.fallback(LocaleSchema, DEFAULT_SETTINGS.locale),
-    debug: v.fallback(v.boolean(), DEFAULT_SETTINGS.debug),
-    kinds: v.fallback(v.record(v.string(), v.unknown()), {}),
-  }),
-  { locale: DEFAULT_SETTINGS.locale, debug: DEFAULT_SETTINGS.debug, kinds: {} },
-);
+const SettingsSchema = v.object({
+  locale: v.fallback(LocaleSchema, DEFAULT_SETTINGS.locale),
+  debug: v.fallback(v.boolean(), DEFAULT_SETTINGS.debug),
+  kinds: v.fallback(v.record(v.string(), v.unknown()), {}),
+});
 
 /** The settings in a stored value: every valid field, and the default for every other one. */
 export function parseSettings(stored: unknown): Settings {
-  const { locale, debug, kinds } = v.parse(SettingsSchema, stored);
+  const { locale, debug, kinds } = parseWithDefaults(SettingsSchema, stored);
   return {
     locale,
     debug,

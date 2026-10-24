@@ -1,5 +1,5 @@
 import * as v from "valibot";
-import type { JsonValue } from "../json";
+import { type JsonValue, parseWithDefaults } from "../json";
 
 /** What the list filter does to hosts whose app carries a kind's tag. */
 export const LIST_FILTERS = ["off", "dim", "hide"] as const;
@@ -17,21 +17,25 @@ export interface KindSettings {
   readonly filter: ListFilter;
 }
 
-/**
- * The settings in a stored value: every valid field, and the default for every other one, so one
- * bad or missing field does not reset the others.
- */
+function kindSettingsSchema(defaults: KindSettings) {
+  return v.object({
+    enabled: v.fallback(v.boolean(), defaults.enabled),
+    badge: v.fallback(v.boolean(), defaults.badge),
+    banner: v.fallback(v.boolean(), defaults.banner),
+    filter: v.fallback(v.picklist(LIST_FILTERS), defaults.filter),
+  });
+}
+
+const schemas = new WeakMap<KindSettings, ReturnType<typeof kindSettingsSchema>>();
+
+/** The stored settings: each valid field, and the default for every other one. */
 export function parseKindSettings(defaults: KindSettings, stored: unknown): KindSettings {
-  const schema = v.fallback(
-    v.object({
-      enabled: v.fallback(v.boolean(), defaults.enabled),
-      badge: v.fallback(v.boolean(), defaults.badge),
-      banner: v.fallback(v.boolean(), defaults.banner),
-      filter: v.fallback(v.picklist(LIST_FILTERS), defaults.filter),
-    }),
-    defaults,
-  );
-  return v.parse(schema, stored);
+  let schema = schemas.get(defaults);
+  if (schema === undefined) {
+    schema = kindSettingsSchema(defaults);
+    schemas.set(defaults, schema);
+  }
+  return parseWithDefaults(schema, stored);
 }
 
 /** The stored value of one kind's settings; a field added to `KindSettings` must be added here. */
