@@ -32,6 +32,7 @@ ENGLISH = catalog(
     options_privacy_lookup="To check a game, it asks Valve's own store servers.",
     only_placeholder="$count$",
     short_with_placeholder="$n$ ok",
+    ext_description="Tags: AI Generated Content Disclosure, PvP.",
 )
 SPANISH = catalog(banner_undo="Deshacer", banner_source="En palabras del desarrollador:")
 CATALOGS = {"en": ENGLISH, "es": SPANISH}
@@ -82,6 +83,12 @@ class MatchTest(unittest.TestCase):
         )
         self.assertEqual(
             keys(self.index, "En palabras del desarrollador: x"), ["banner_source (es)"]
+        )
+
+    def test_a_detection_constant_may_repeat_a_message(self) -> None:
+        self.assertEqual(keys(self.index, "AI Generated Content Disclosure"), [])
+        self.assertEqual(
+            keys(self.index, "Tags: AI Generated Content Disclosure, PvP."), ["ext_description"]
         )
 
     def test_a_long_piece_of_a_message_matches(self) -> None:
