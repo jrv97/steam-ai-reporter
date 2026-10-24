@@ -57,7 +57,23 @@ export function encodeSettings(settings: Settings): JsonValue {
   return { locale: settings.locale, debug: settings.debug, kinds };
 }
 
+/** A change to the settings: only the fields it names, so it leaves every other one alone. */
+export interface SettingsPatch {
+  readonly locale?: string;
+  readonly debug?: boolean;
+  readonly kinds?: Readonly<Partial<Record<KindId, Readonly<Partial<KindSettings>>>>>;
+}
+
+/** The settings with the fields of `patch` replaced. */
+export function applyPatch(settings: Settings, patch: SettingsPatch): Settings {
+  return {
+    locale: patch.locale ?? settings.locale,
+    debug: patch.debug ?? settings.debug,
+    kinds: perKind((kind) => ({ ...settings.kinds[kind.id], ...patch.kinds?.[kind.id] })),
+  };
+}
+
 /** The settings with `patch` applied to one kind's settings. */
 export function withKind(settings: Settings, id: KindId, patch: Partial<KindSettings>): Settings {
-  return { ...settings, kinds: { ...settings.kinds, [id]: { ...settings.kinds[id], ...patch } } };
+  return applyPatch(settings, { kinds: { [id]: patch } });
 }

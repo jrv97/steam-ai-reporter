@@ -32,6 +32,90 @@ function remoteEvents() {
   };
 }
 
+describe("patch", () => {
+  it("changes only the fields it names in what is stored now", async () => {
+    const store = memoryStore();
+    const source = createSettingsSource(store);
+    await source.write({ ...DEFAULT_SETTINGS, locale: "es" });
+    await source.patch({ kinds: { drm: { badge: false } } });
+    expect(parseSettings(await source.read())).toStrictEqual({
+      ...withKind(DEFAULT_SETTINGS, "drm", { badge: false }),
+      locale: "es",
+    });
+  });
+
+  it("keeps what another source stored since this one last read", async () => {
+    const store = memoryStore();
+    const first = createSettingsSource(store);
+    const second = createSettingsSource(store);
+    await first.write(DEFAULT_SETTINGS);
+    await second.patch({ kinds: { kernel: { filter: "hide" } } });
+    await first.patch({ kinds: { drm: { banner: false } } });
+    const stored = parseSettings(await first.read());
+    expect(stored.kinds.kernel.filter).toBe("hide");
+    expect(stored.kinds.drm.banner).toBe(false);
+  });
+
+  it("starts from the defaults when nothing is stored", async () => {
+    const source = createSettingsSource(memoryStore());
+    await source.patch({ debug: true });
+    expect(parseSettings(await source.read())).toStrictEqual({ ...DEFAULT_SETTINGS, debug: true });
+  });
+
+  it("copies v1 settings before it patches, so a patch never puts defaults over them", async () => {
+    const store = memoryStore(
+      new Map([["v1:settings", { badges: false, banner: true, listFilter: "hide", locale: "es" }]]),
+    );
+    const source = createSettingsSource(store);
+    await source.patch({ kinds: { kernel: { enabled: false } } });
+    const stored = parseSettings(await source.read());
+    expect(stored.locale).toBe("es");
+    expect(stored.kinds.ai).toStrictEqual({
+      enabled: true,
+      badge: false,
+      banner: true,
+      filter: "hide",
+    });
+    expect(stored.kinds.kernel.enabled).toBe(false);
+  });
+
+  it("runs patches from one context one after another, losing none", async () => {
+    const source = createSettingsSource(memoryStore());
+    await Promise.all([
+      source.patch({ kinds: { ai: { badge: false } } }),
+      source.patch({ kinds: { drm: { badge: false } } }),
+      source.patch({ kinds: { eula: { badge: false } } }),
+    ]);
+    const { kinds } = parseSettings(await source.read());
+    expect([kinds.ai.badge, kinds.drm.badge, kinds.eula.badge, kinds.pvp.badge]).toEqual([
+      false,
+      false,
+      false,
+      true,
+    ]);
+  });
+
+  it("rejects when the stored settings cannot be read, and the next patch still runs", async () => {
+    const inner = memoryStore(new Map([["v2:settings", encodeSettings(DIMMED)]]));
+    const store = countingStore(inner);
+    const source = createSettingsSource(store);
+    store.break();
+    await expect(source.patch({ debug: true })).rejects.toBeInstanceOf(Error);
+    store.heal();
+    await source.patch({ debug: true });
+    expect(parseSettings(await source.read())).toStrictEqual({ ...DIMMED, debug: true });
+  });
+
+  it("tells this context's subscribers the patched settings", async () => {
+    const source = createSettingsSource(memoryStore());
+    const heard = vi.fn();
+    source.subscribe(heard);
+    await source.patch({ kinds: { pvp: { filter: "dim" } } });
+    expect(heard).toHaveBeenCalledTimes(1);
+    expect(parseSettings(heard.mock.calls[0]?.[0]).kinds.pvp.filter).toBe("dim");
+  });
+});
+
 describe("createSettingsSource", () => {
   it("reads nothing before settings are written", async () => {
     expect(await createSettingsSource(memoryStore()).read()).toBeUndefined();

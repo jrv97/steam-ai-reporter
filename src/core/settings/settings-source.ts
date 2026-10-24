@@ -1,7 +1,13 @@
 import type { KeyValueStore, SettingsSource, Unsubscribe } from "../ports";
 import { SETTINGS_KEY } from "../storage-keys";
 import { migrateSettings, readSettingsValue } from "./migrate";
-import { encodeSettings, type Settings } from "./settings";
+import {
+  applyPatch,
+  encodeSettings,
+  parseSettings,
+  type Settings,
+  type SettingsPatch,
+} from "./settings";
 
 /**
  * Reports changes made by other tabs. The platform adapter supplies it from its own change event
@@ -14,6 +20,12 @@ export type RemoteSettingsChanges = (listener: (value: unknown) => void) => Unsu
 export interface StoredSettings extends SettingsSource {
   /** Replaces the stored settings and tells this context's subscribers. */
   write(settings: Settings): Promise<void>;
+  /**
+   * Reads the stored settings at the moment of the call, replaces the fields of `patch` and writes
+   * the result. A page that holds older settings changes only what it names. Patches from one
+   * context run one after another; two tabs at once can still lose one.
+   */
+  patch(patch: SettingsPatch): Promise<void>;
 }
 
 /**
@@ -27,6 +39,7 @@ export function createSettingsSource(
   const listeners = new Set<(value: unknown) => void>();
   let lastTold: string | undefined;
   let unsubscribeRemote: Unsubscribe | undefined;
+  let patching: Promise<unknown> = Promise.resolve();
 
   function tell(value: unknown): void {
     const signature = JSON.stringify(value);
@@ -39,17 +52,28 @@ export function createSettingsSource(
     }
   }
 
+  async function write(settings: Settings): Promise<void> {
+    // Never put defaults over v1 settings that were not copied: a failed copy rejects the write.
+    await migrateSettings(store);
+    const value = encodeSettings(settings);
+    await store.set(new Map([[SETTINGS_KEY, value]]));
+    tell(value);
+  }
+
   return {
     async read() {
       return readSettingsValue(store);
     },
 
-    async write(settings) {
-      // Never put defaults over v1 settings that were not copied: a failed copy rejects the write.
-      await migrateSettings(store);
-      const value = encodeSettings(settings);
-      await store.set(new Map([[SETTINGS_KEY, value]]));
-      tell(value);
+    write,
+
+    patch(patch) {
+      const run = async (): Promise<void> => {
+        await write(applyPatch(parseSettings(await readSettingsValue(store)), patch));
+      };
+      const result = patching.then(run);
+      patching = result.catch(() => undefined);
+      return result;
     },
 
     subscribe(listener) {

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { KINDS, perKind } from "../kinds/registry";
 import {
+  applyPatch,
   DEFAULT_SETTINGS,
   encodeSettings,
   parseSettings,
@@ -142,5 +143,37 @@ describe("withKind", () => {
     });
     expect(DEFAULT_SETTINGS.kinds.ai).toStrictEqual(PLAIN);
     expect(next.kinds.kernel).toStrictEqual(PLAIN);
+  });
+});
+
+describe("applyPatch", () => {
+  const stored: Settings = {
+    locale: "es",
+    debug: true,
+    kinds: { ...perKind(() => PLAIN), kernel: { ...PLAIN, filter: "dim" } },
+  };
+
+  it("replaces the fields it names and keeps every other one", () => {
+    const next = applyPatch(stored, { locale: "en", kinds: { drm: { badge: false } } });
+    expect(next).toStrictEqual({
+      locale: "en",
+      debug: true,
+      kinds: { ...stored.kinds, drm: { ...PLAIN, badge: false } },
+    });
+  });
+
+  it("changes nothing for an empty patch, and leaves the settings it was given alone", () => {
+    expect(applyPatch(stored, {})).toStrictEqual(stored);
+    expect(applyPatch(stored, { kinds: {} })).toStrictEqual(stored);
+    applyPatch(stored, { debug: false, kinds: { kernel: { filter: "hide" } } });
+    expect(stored.debug).toBe(true);
+    expect(stored.kinds.kernel.filter).toBe("dim");
+  });
+
+  it("patches several kinds at once", () => {
+    const next = applyPatch(stored, { kinds: { ai: { enabled: false }, pvp: { filter: "hide" } } });
+    expect(next.kinds.ai.enabled).toBe(false);
+    expect(next.kinds.pvp.filter).toBe("hide");
+    expect(next.kinds.kernel.filter).toBe("dim");
   });
 });
