@@ -20,9 +20,9 @@ catalog text when, trimmed, it either
   contains that text, or is a piece of it.
 Shorter shared text is a word that also occurs inside identifiers and header names ("Settings" in
 `parseSettings`), so only a whole-message match catches the short messages. A literal that is one of
-DETECTION_CONSTANTS, Steam's own page text that a detector matches (rule 9), is never copy.
-tests/locales/ and tests/fixtures/ hold their own catalogs and captured Steam pages, so they are
-not scanned.
+DETECTION_CONSTANTS, Steam's own page text that a detector matches (rule 9), skips the shared-text
+match, so a message may quote it. A message that equals it still matches. tests/locales/ and
+tests/fixtures/ hold their own catalogs and captured Steam pages, so they are not scanned.
 
 The literal-flow rules (no hardcoded copy in code sinks) live in lint/restricted-syntax.mjs.
 
@@ -101,10 +101,8 @@ class CopyIndex:
         found: set[Ref] = set()
         for part in parts:
             text = part.strip()
-            if text in DETECTION_CONSTANTS:
-                continue
             found.update(self.whole.get(text, ()))
-            if len(text) >= MIN_SHARED:
+            if len(text) >= MIN_SHARED and text not in DETECTION_CONSTANTS:
                 found.update(ref for shared, ref in self.shared if shared in text or text in shared)
         whole = EXPRESSION.join(parts).strip()
         found.update(ref for pattern, ref in self.patterns if pattern.fullmatch(whole))
