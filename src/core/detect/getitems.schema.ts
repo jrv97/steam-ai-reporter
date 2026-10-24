@@ -24,23 +24,50 @@ export const GetItemsEnvelopeSchema = v.pipe(
 /** What a field holds when Steam sent it in the wrong shape. */
 export const MALFORMED: unique symbol = Symbol("malformed");
 
+/** The longest developer string a kind reads; a longer one is malformed. */
+export const MAX_TEXT_LENGTH = 4000;
+/** The most entries a list a kind reads may have; a longer one is malformed. */
+export const MAX_LIST_LENGTH = 50;
+
 const MalformedSchema = v.pipe(v.unknown(), v.transform((): typeof MALFORMED => MALFORMED));
+const DroppedSchema = v.pipe(v.unknown(), v.transform((): undefined => undefined));
+
+const TextSchema = v.pipe(v.string(), v.maxLength(MAX_TEXT_LENGTH));
+
+/** A list of at most `MAX_LIST_LENGTH` entries. */
+function list<const TItem extends v.GenericSchema>(item: TItem) {
+  return v.pipe(v.array(item), v.maxLength(MAX_LIST_LENGTH), v.readonly());
+}
 
 /**
  * A field that parses to its own value, or to `MALFORMED`. Each kind reads the fields it needs
  * and answers unknown when one is malformed, so one bad field costs only the kinds that read it.
  */
 function lenient<const TSchema extends v.GenericSchema>(schema: TSchema) {
-  return v.union([schema, MalformedSchema]);
+  return v.exactOptional(v.union([schema, MalformedSchema]));
 }
 
 /**
- * A readonly object schema that, unlike valibot's `object`, does not take an array for an object
- * whose keys are all missing: an array in an object's place is malformed, not an empty object.
+ * A field that only adds detail to a verdict: when it is malformed it reads as if it were absent,
+ * and its kind stays known.
+ */
+function droppable<const TSchema extends v.GenericSchema>(schema: TSchema) {
+  return v.exactOptional(v.union([schema, DroppedSchema]));
+}
+
+/** Steam's JSON has shown `[]` for an empty object, so an empty array stands for `{}`. */
+function emptyArrayAsObject(input: unknown): unknown {
+  return Array.isArray(input) && input.length === 0 ? {} : input;
+}
+
+/**
+ * A readonly object schema. Unlike valibot's `object`, it takes no array for an object whose
+ * keys are all missing: a list with entries in an object's place is malformed.
  */
 function record<const TEntries extends v.ObjectEntries>(entries: TEntries) {
   return v.pipe(
     v.unknown(),
+    v.transform(emptyArrayAsObject),
     v.check((input) => !Array.isArray(input)),
     v.object(entries),
     v.readonly(),
@@ -49,28 +76,28 @@ function record<const TEntries extends v.ObjectEntries>(entries: TEntries) {
 
 const AnticheatSchema = record({
   kernel_mode: v.exactOptional(v.boolean()),
-  uninstall_completely: v.exactOptional(v.boolean()),
-  boot_protection: v.exactOptional(v.boolean()),
-  name: v.exactOptional(v.string()),
-  name_loc: v.exactOptional(v.string()),
-  boot_protection_name: v.exactOptional(v.string()),
+  uninstall_completely: droppable(v.boolean()),
+  boot_protection: droppable(v.boolean()),
+  name: droppable(TextSchema),
+  name_loc: droppable(TextSchema),
+  boot_protection_name: droppable(TextSchema),
 });
 
-const EulaEntrySchema = record({ name: v.string(), url: v.string() });
+const EulaEntrySchema = record({ name: TextSchema, url: v.exactOptional(TextSchema) });
 
 const ExtraDetailsSchema = record({
-  content_survey_ai_notes: v.exactOptional(lenient(v.string())),
-  ai_generation_service: v.exactOptional(lenient(record({ name: v.exactOptional(v.string()) }))),
-  anticheat: v.exactOptional(lenient(AnticheatSchema)),
-  drm_third_party_type: v.exactOptional(lenient(v.string())),
-  drm_activation_limit: v.exactOptional(lenient(v.string())),
-  user_account_third_party: v.exactOptional(lenient(v.string())),
-  user_account_third_party_link_to_steam: v.exactOptional(lenient(v.boolean())),
-  eula: v.exactOptional(lenient(v.pipe(v.array(EulaEntrySchema), v.readonly()))),
+  content_survey_ai_notes: lenient(TextSchema),
+  ai_generation_service: lenient(record({ name: v.exactOptional(TextSchema) })),
+  anticheat: lenient(AnticheatSchema),
+  drm_third_party_type: lenient(TextSchema),
+  drm_activation_limit: droppable(TextSchema),
+  user_account_third_party: lenient(TextSchema),
+  user_account_third_party_link_to_steam: droppable(v.boolean()),
+  eula: lenient(list(EulaEntrySchema)),
 });
 
 const CategoriesSchema = record({
-  supported_player_categoryids: v.exactOptional(v.pipe(v.array(v.number()), v.readonly())),
+  supported_player_categoryids: v.exactOptional(list(v.number())),
 });
 
 /**
@@ -82,8 +109,8 @@ export const StoreItemSchema = v.pipe(
   v.object({
     id: AppIdSchema,
     success: v.number(),
-    name: v.exactOptional(lenient(v.string())),
-    categories: v.exactOptional(lenient(CategoriesSchema)),
+    name: lenient(TextSchema),
+    categories: lenient(CategoriesSchema),
     extra_details: v.exactOptional(ExtraDetailsSchema),
   }),
   v.readonly(),

@@ -47,9 +47,18 @@ describe("ANTICHEAT_KIND.fromGetItems", () => {
   });
 
   it("is unknown malformed when the anti-cheat field is malformed", () => {
-    for (const anticheat of [0, "VAC", null, { name: {} }, { kernel_mode: 1 }]) {
+    for (const anticheat of [0, "VAC", null, [{}], { kernel_mode: 1 }]) {
       expect(fromDetails({ anticheat })).toBe(UNKNOWN.malformed);
     }
+  });
+
+  it("stays disclosed when the name is malformed, and reads an empty list as no object", () => {
+    expect(fromDetails({ anticheat: { name: {}, name_loc: 4 } })).toStrictEqual({
+      state: "disclosed",
+      kind: "anticheat",
+      source: "api",
+    });
+    expect(fromDetails({ anticheat: [] }).state).toBe("disclosed");
   });
 });
 

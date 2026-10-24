@@ -76,10 +76,35 @@ describe("KERNEL_KIND.fromGetItems", () => {
   });
 
   it("is unknown malformed when the anti-cheat field is malformed, and only then", () => {
-    for (const anticheat of [true, "kernel", [], { kernel_mode: "true" }, { name: 3 }]) {
+    for (const anticheat of [true, "kernel", [1], { kernel_mode: "true" }, { kernel_mode: 1 }]) {
       expect(fromDetails({ anticheat })).toBe(UNKNOWN.malformed);
     }
     const others = { drm_third_party_type: 4, eula: "x", user_account_third_party: [] };
     expect(fromDetails({ ...others, anticheat: { kernel_mode: true } }).state).toBe("disclosed");
+  });
+
+  it("stays disclosed when a field that only adds detail is malformed", () => {
+    const anticheat = {
+      kernel_mode: true,
+      uninstall_completely: "yes",
+      boot_protection: 1,
+      name: 3,
+      name_loc: [],
+      boot_protection_name: false,
+    };
+    expect(fromDetails({ anticheat })).toStrictEqual({
+      state: "disclosed",
+      kind: "kernel",
+      source: "api",
+      uninstallsCompletely: false,
+    });
+  });
+
+  it("reads a name over 4,000 characters as absent, and 4,000 as given", () => {
+    const name = "x".repeat(4000);
+    expect(fromDetails({ anticheat: { kernel_mode: true, name } })).toMatchObject({ name });
+    const over = fromDetails({ anticheat: { kernel_mode: true, name: `${name}x` } });
+    expect(over).toMatchObject({ state: "disclosed" });
+    expect(over).not.toHaveProperty("name");
   });
 });

@@ -22,7 +22,7 @@ export const DRM_KIND: KindDefinition<DrmDisclosed> = {
 
   fromGetItems(_item, details) {
     const { drm_third_party_type: text, drm_activation_limit: limit } = details;
-    if (text === MALFORMED || limit === MALFORMED) {
+    if (text === MALFORMED) {
       return UNKNOWN.malformed;
     }
     if (text === undefined || !hasText(text)) {

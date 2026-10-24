@@ -205,6 +205,15 @@ describe("parseGetItems with one malformed field", () => {
     expect(disclosedKinds(found)).toStrictEqual(["ai", "kernel", "drm", "account", "eula"]);
   });
 
+  it("reads an empty list for extra_details as an object that declares nothing", () => {
+    const categories = { supported_player_categoryids: [2] };
+    const found = parse(storeItem(1, { extra_details: [], categories }));
+    expect(disclosedKinds(found)).toStrictEqual([]);
+    for (const id of KIND_IDS) {
+      expect(found[id].state).toBe("not-disclosed");
+    }
+  });
+
   it("keeps the item-level rule: no extra_details is unknown for every kind", () => {
     const categories = { supported_player_categoryids: [49] };
     expect(parse(storeItem(1, { extra_details: undefined, categories }))).toBe(

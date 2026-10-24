@@ -141,13 +141,52 @@ describe("EULA_KIND.fromGetItems", () => {
     expect(verdict).toMatchObject({ items: [{ name }] });
   });
 
+  it("keeps the kind disclosed for an entry that has a name and no link", () => {
+    expect(fromEula([{ name: "Game terms" }])).toStrictEqual({
+      state: "disclosed",
+      kind: "eula",
+      source: "api",
+      items: [{ name: "Game terms" }],
+    });
+  });
+
+  it("drops the entries with a blank name and keeps the others in order", () => {
+    const verdict = fromEula([
+      { name: "", url: "https://store.steampowered.com/eula/1" },
+      { name: "First" },
+      { name: " \n" },
+      { name: "Second", url: "https://store.steampowered.com/eula/2" },
+    ]);
+    expect(verdict).toMatchObject({
+      state: "disclosed",
+      items: [{ name: "First" }, { name: "Second", url: "https://store.steampowered.com/eula/2" }],
+    });
+  });
+
+  it("is not disclosed when every entry has a blank name", () => {
+    const none = { state: "not-disclosed", source: "api" };
+    expect(fromEula([{ name: "" }, { name: "  ", url: "https://store.steampowered.com/eula/1" }]))
+      .toStrictEqual(none);
+  });
+
+  it("allows 50 entries and is unknown malformed at 51", () => {
+    const entries = (count: number) => Array.from({ length: count }, () => ({ name: "Agreement" }));
+    expect(fromEula(entries(50))).toMatchObject({ state: "disclosed" });
+    expect(fromEula(entries(51))).toBe(UNKNOWN.malformed);
+  });
+
+  it("allows a name of 4,000 characters and is unknown malformed at 4,001", () => {
+    expect(fromEula([{ name: "x".repeat(4000) }]).state).toBe("disclosed");
+    expect(fromEula([{ name: "x".repeat(4001) }])).toBe(UNKNOWN.malformed);
+  });
+
   it("is not disclosed without entries", () => {
     expect(verdictOf(EULA_KIND, {})).toStrictEqual({ state: "not-disclosed", source: "api" });
     expect(fromEula([])).toStrictEqual({ state: "not-disclosed", source: "api" });
   });
 
   it("is unknown malformed when the field is malformed, and only then", () => {
-    for (const eula of ["none", {}, [3], [{ name: "Game terms" }], [{ url: "https://x" }]]) {
+    for (const eula of ["none", {}, [3], [{ url: "https://x" }], [{ name: 4 }]]) {
       expect(fromEula(eula)).toBe(UNKNOWN.malformed);
     }
     const others = { drm_third_party_type: 4, anticheat: "x" };

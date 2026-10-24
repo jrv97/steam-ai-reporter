@@ -44,11 +44,26 @@ describe("DRM_KIND.fromGetItems", () => {
 
   it("is unknown malformed when a field it reads is malformed, and only then", () => {
     expect(fromDetails({ drm_third_party_type: 4 })).toBe(UNKNOWN.malformed);
-    expect(fromDetails({ drm_third_party_type: "Denuvo", drm_activation_limit: [] })).toBe(
-      UNKNOWN.malformed,
-    );
+    expect(fromDetails({ drm_third_party_type: "x".repeat(4001) })).toBe(UNKNOWN.malformed);
     expect(fromDetails({ drm_third_party_type: "Denuvo", anticheat: 5, eula: 6 }).state).toBe(
       "disclosed",
     );
+  });
+
+  it("allows 4,000 characters of text", () => {
+    const text = "x".repeat(4000);
+    expect(fromDetails({ drm_third_party_type: text })).toMatchObject({ text });
+  });
+
+  it("stays disclosed without the activation limit when that field is malformed", () => {
+    for (const drm_activation_limit of [[], 5, "x".repeat(4001)]) {
+      const verdict = fromDetails({ drm_third_party_type: "Denuvo", drm_activation_limit });
+      expect(verdict).toStrictEqual({
+        state: "disclosed",
+        kind: "drm",
+        source: "api",
+        text: "Denuvo",
+      });
+    }
   });
 });

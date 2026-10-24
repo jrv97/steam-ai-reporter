@@ -1,5 +1,6 @@
 import * as v from "valibot";
 import { MALFORMED } from "../detect/getitems.schema";
+import { hasText } from "../detect/notes";
 import { type DisclosedBase, NOT_DISCLOSED, UNKNOWN } from "../types";
 import type { KindDefinition } from "./kind";
 import { DEFAULT_KIND_SETTINGS } from "./kind-settings";
@@ -50,6 +51,14 @@ export function eulaLink(raw: string): string | undefined {
     : undefined;
 }
 
+/** The entries as stored, with a link that is not an EULA link dropped and the name kept. */
+function keepSafeLinks(stored: EulaItem[]): EulaItem[] {
+  return stored.map(({ name, url }) => {
+    const link = url === undefined ? undefined : eulaLink(url);
+    return link === undefined ? { name } : { name, url: link };
+  });
+}
+
 /** The third-party agreements a player must accept: the names the developer typed, and links. */
 export const EULA_KIND: KindDefinition<EulaDisclosed> = {
   id: "eula",
@@ -59,21 +68,23 @@ export const EULA_KIND: KindDefinition<EulaDisclosed> = {
     if (eula === MALFORMED) {
       return UNKNOWN.malformed;
     }
-    if (eula === undefined || eula.length === 0) {
-      return NOT_DISCLOSED.api;
-    }
     const items: EulaItem[] = [];
-    for (const entry of eula) {
-      const url = eulaLink(entry.url);
-      items.push(url === undefined ? { name: entry.name } : { name: entry.name, url });
+    for (const entry of eula ?? []) {
+      if (hasText(entry.name)) {
+        const url = entry.url === undefined ? undefined : eulaLink(entry.url);
+        items.push(url === undefined ? { name: entry.name } : { name: entry.name, url });
+      }
     }
-    return { state: "disclosed", kind: "eula", source: "api", items };
+    return items.length === 0
+      ? NOT_DISCLOSED.api
+      : { state: "disclosed", kind: "eula", source: "api", items };
   },
 
   stored: storedDisclosed("eula", {
     items: v.pipe(
       v.array(v.object({ name: v.string(), url: v.exactOptional(v.string()) })),
       v.minLength(1),
+      v.transform(keepSafeLinks),
     ),
   }),
 

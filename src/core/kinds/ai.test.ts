@@ -80,6 +80,17 @@ describe("AI_KIND.fromGetItems", () => {
     }
   });
 
+  it("allows 4,000 characters of notes and is unknown malformed at 4,001", () => {
+    expect(fromItem({ content_survey_ai_notes: "x".repeat(4000) }).state).toBe("disclosed");
+    expect(fromItem({ content_survey_ai_notes: "x".repeat(4001) })).toBe(UNKNOWN.malformed);
+  });
+
+  it("keeps the AI kind known when the service is an empty list", () => {
+    const verdict = fromItem({ content_survey_ai_notes: "Art.", ai_generation_service: [] });
+    expect(verdict).toMatchObject({ state: "disclosed", notes: "Art." });
+    expect(verdict).not.toHaveProperty("service");
+  });
+
   it("ignores a malformed field of another kind", () => {
     expect(fromItem({ content_survey_ai_notes: "x", anticheat: 5, eula: "none" }).state).toBe(
       "disclosed",

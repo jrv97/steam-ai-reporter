@@ -70,6 +70,12 @@ describe("PVP_KIND.fromGetItems", () => {
     expect(fromIds([49, null])).toBe(UNKNOWN.malformed);
   });
 
+  it("allows 50 category IDs and is unknown malformed at 51", () => {
+    const ids = (count: number) => Array.from({ length: count }, (_, i) => 1000 + i);
+    expect(fromIds([...ids(49), 49]).state).toBe("disclosed");
+    expect(fromIds(ids(51))).toBe(UNKNOWN.malformed);
+  });
+
   it("is not moved by a malformed field of another kind", () => {
     const verdict = verdictOf(PVP_KIND, { anticheat: 4, eula: "x" }, {
       categories: { supported_player_categoryids: [49] },

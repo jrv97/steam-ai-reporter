@@ -46,13 +46,26 @@ describe("ACCOUNT_KIND.fromGetItems", () => {
 
   it("is unknown malformed when a field it reads is malformed, and only then", () => {
     expect(fromDetails({ user_account_third_party: 7 })).toBe(UNKNOWN.malformed);
-    expect(
-      fromDetails({
-        user_account_third_party: "EA",
-        user_account_third_party_link_to_steam: "yes",
-      }),
-    ).toBe(UNKNOWN.malformed);
-    expect(fromDetails({ user_account_third_party_link_to_steam: 1 })).toBe(UNKNOWN.malformed);
+    expect(fromDetails({ user_account_third_party: "x".repeat(4001) })).toBe(UNKNOWN.malformed);
     expect(fromDetails({ user_account_third_party: "EA", anticheat: 5 }).state).toBe("disclosed");
+  });
+
+  it("allows 4,000 characters of text", () => {
+    const text = "x".repeat(4000);
+    expect(fromDetails({ user_account_third_party: text })).toMatchObject({ text });
+  });
+
+  it("stays disclosed, with no link, when the link flag is malformed", () => {
+    for (const link of ["yes", 1, []]) {
+      const verdict = fromDetails({
+        user_account_third_party: "EA",
+        user_account_third_party_link_to_steam: link,
+      });
+      expect(verdict).toMatchObject({ state: "disclosed", linksToSteam: false });
+    }
+  });
+
+  it("is not disclosed on a malformed link flag alone", () => {
+    expect(fromDetails({ user_account_third_party_link_to_steam: 1 }).state).toBe("not-disclosed");
   });
 });

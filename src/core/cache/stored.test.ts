@@ -284,6 +284,27 @@ describe("decodeVerdicts", () => {
     }
   });
 
+  it("drops a stored link that is not an EULA link and keeps the name", () => {
+    const items = [
+      { name: "Script", url: "javascript:alert(1)" },
+      { name: "Elsewhere", url: "https://example.com/eula/1" },
+      { name: "Clean", url: "https://store.steampowered.com//eula/3_eula_0" },
+      { name: "Plain" },
+    ];
+    const decoded = decodeVerdicts(withEntry("eula", { ...STORED_KINDS.eula, items }));
+    expect(decoded?.verdicts.eula).toStrictEqual({
+      state: "disclosed",
+      kind: "eula",
+      source: "api",
+      items: [
+        { name: "Script" },
+        { name: "Elsewhere" },
+        { name: "Clean", url: "https://store.steampowered.com/eula/3_eula_0" },
+        { name: "Plain" },
+      ],
+    });
+  });
+
   it("drops unknown keys and kinds", () => {
     const decoded = decodeVerdicts({
       time: T,

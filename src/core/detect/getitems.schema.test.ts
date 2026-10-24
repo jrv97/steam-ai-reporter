@@ -3,7 +3,14 @@ import { describe, expect, it } from "vitest";
 import kinds from "../../../tests/fixtures/getitems/kinds.json";
 import { fixtureItems, storeItem } from "../../../tests/helpers/getitems";
 import { parseJson } from "../json";
-import { type ExtraDetails, MALFORMED, type StoreItem, StoreItemSchema } from "./getitems.schema";
+import {
+  type ExtraDetails,
+  MALFORMED,
+  MAX_LIST_LENGTH,
+  MAX_TEXT_LENGTH,
+  type StoreItem,
+  StoreItemSchema,
+} from "./getitems.schema";
 
 /** The item as a response body carries it, after a JSON round trip. */
 function parse(item: unknown) {
@@ -72,13 +79,7 @@ describe("StoreItemSchema leniency", () => {
     ["ai_generation_service", "OpenAI", (d) => d.ai_generation_service],
     ["anticheat", true, (d) => d.anticheat],
     ["drm_third_party_type", ["Denuvo"], (d) => d.drm_third_party_type],
-    ["drm_activation_limit", 5, (d) => d.drm_activation_limit],
     ["user_account_third_party", null, (d) => d.user_account_third_party],
-    [
-      "user_account_third_party_link_to_steam",
-      "yes",
-      (d) => d.user_account_third_party_link_to_steam,
-    ],
     ["eula", "none", (d) => d.eula],
   ];
 
@@ -95,29 +96,70 @@ describe("StoreItemSchema leniency", () => {
     expect(details.drm_third_party_type).toBe("Denuvo");
   });
 
-  it("marks an anticheat object with a field of the wrong type as malformed", () => {
-    const wrong = [{ kernel_mode: "true" }, { name: 3 }, { boot_protection_name: false }];
-    for (const anticheat of wrong) {
+  it("marks an anticheat object whose kernel flag has the wrong type as malformed", () => {
+    for (const anticheat of [{ kernel_mode: "true" }, { kernel_mode: 1 }]) {
       expect(detailsOf(storeItem(1, { extra_details: { anticheat } })).anticheat).toBe(MALFORMED);
     }
   });
 
-  it("marks an array in the place of an object as malformed, not as an empty object", () => {
+  it("reads a field that only enriches a verdict as absent when it is malformed", () => {
+    const anticheat = {
+      kernel_mode: true,
+      uninstall_completely: "yes",
+      boot_protection: 1,
+      name: 3,
+      name_loc: [],
+      boot_protection_name: false,
+    };
+    const details = detailsOf(storeItem(1, {
+      extra_details: {
+        anticheat,
+        drm_activation_limit: 5,
+        user_account_third_party_link_to_steam: "yes",
+      },
+    }));
+    expect(details.anticheat).toStrictEqual({
+      kernel_mode: true,
+      uninstall_completely: undefined,
+      boot_protection: undefined,
+      name: undefined,
+      name_loc: undefined,
+      boot_protection_name: undefined,
+    });
+    expect(details.drm_activation_limit).toBeUndefined();
+    expect(details.user_account_third_party_link_to_steam).toBeUndefined();
+  });
+
+  it("marks a list with entries in the place of an object as malformed", () => {
     const details = detailsOf(
-      storeItem(1, { extra_details: { anticheat: [], ai_generation_service: [] } }),
+      storeItem(1, { extra_details: { anticheat: [1], ai_generation_service: [{}] } }),
     );
     expect(details.anticheat).toBe(MALFORMED);
     expect(details.ai_generation_service).toBe(MALFORMED);
     expect(parse(storeItem(1, { categories: [49] })).categories).toBe(MALFORMED);
   });
 
-  it("marks an eula list with an entry that is not name and url strings as malformed", () => {
-    const wrong = [[{ name: "Game terms" }], [{ url: "https://store.steampowered.com//eula/1" }], [
-      3,
-    ]];
+  it("reads an empty list in the place of an object as an empty object", () => {
+    const item = parse(storeItem(1, {
+      categories: [],
+      extra_details: { anticheat: [], ai_generation_service: [] },
+    }));
+    expect(item.categories).toStrictEqual({});
+    expect(item.extra_details?.anticheat).toStrictEqual({});
+    expect(item.extra_details?.ai_generation_service).toStrictEqual({});
+    expect(parse(storeItem(1, { extra_details: [] })).extra_details).toStrictEqual({});
+  });
+
+  it("marks an eula list with an entry that has no name string as malformed", () => {
+    const wrong = [[{ url: "https://store.steampowered.com//eula/1" }], [3], [{ name: 4 }]];
     for (const eula of wrong) {
       expect(detailsOf(storeItem(1, { extra_details: { eula } })).eula).toBe(MALFORMED);
     }
+  });
+
+  it("reads an eula entry with a name and no link", () => {
+    const eula = [{ name: "Game terms" }];
+    expect(detailsOf(storeItem(1, { extra_details: { eula } })).eula).toStrictEqual(eula);
   });
 
   it("marks malformed categories and names without dropping the item", () => {
@@ -138,12 +180,64 @@ describe("StoreItemSchema leniency", () => {
         storeItem(1, { success: "1" }),
         storeItem(1, { extra_details: "none" }),
         storeItem(1, { extra_details: null }),
-        storeItem(1, { extra_details: [] }),
+        storeItem(1, { extra_details: [1] }),
         { ...storeItem(1), id: "1" },
       ]
     ) {
       expect(v.safeParse(StoreItemSchema, parseJson(JSON.stringify(item))).success).toBe(false);
     }
+  });
+
+  describe("size caps", () => {
+    const text = (length: number) => "x".repeat(length);
+    const list = (length: number) => Array.from({ length }, () => ({ name: "Agreement" }));
+
+    it("allows a developer string of 4,000 characters and marks a longer one malformed", () => {
+      expect(MAX_TEXT_LENGTH).toBe(4000);
+      const read = (value: string) =>
+        detailsOf(storeItem(1, {
+          extra_details: { drm_third_party_type: value, user_account_third_party: value },
+        }));
+      expect(read(text(4000)).drm_third_party_type).toBe(text(4000));
+      expect(read(text(4000)).user_account_third_party).toBe(text(4000));
+      expect(read(text(4001)).drm_third_party_type).toBe(MALFORMED);
+      expect(read(text(4001)).user_account_third_party).toBe(MALFORMED);
+    });
+
+    it("applies the cap to the AI notes, the store name and the EULA names", () => {
+      expect(
+        detailsOf(storeItem(1, { extra_details: { content_survey_ai_notes: text(4001) } }))
+          .content_survey_ai_notes,
+      ).toBe(MALFORMED);
+      expect(parse(storeItem(1, { name: text(4001) })).name).toBe(MALFORMED);
+      expect(parse(storeItem(1, { name: text(4000) })).name).toBe(text(4000));
+      const eula = [{ name: text(4001) }];
+      expect(detailsOf(storeItem(1, { extra_details: { eula } })).eula).toBe(MALFORMED);
+    });
+
+    it("reads an over-long enrichment string as absent", () => {
+      const details = detailsOf(storeItem(1, {
+        extra_details: { drm_activation_limit: text(4001), anticheat: { name: text(4001) } },
+      }));
+      expect(details.drm_activation_limit).toBeUndefined();
+      expect(details.anticheat).toStrictEqual({ name: undefined });
+    });
+
+    it("allows 50 EULA entries and marks 51 malformed", () => {
+      expect(MAX_LIST_LENGTH).toBe(50);
+      const read = (eula: unknown) => detailsOf(storeItem(1, { extra_details: { eula } })).eula;
+      expect(read(list(50))).toHaveLength(50);
+      expect(read(list(51))).toBe(MALFORMED);
+    });
+
+    it("allows 50 category IDs and marks 51 malformed", () => {
+      const read = (ids: readonly number[]) =>
+        parse(storeItem(1, { categories: { supported_player_categoryids: ids } })).categories;
+      expect(read(Array.from({ length: 50 }, (_, i) => i))).toMatchObject({
+        supported_player_categoryids: { length: 50 },
+      });
+      expect(read(Array.from({ length: 51 }, (_, i) => i))).toBe(MALFORMED);
+    });
   });
 
   it("drops the keys it does not read", () => {

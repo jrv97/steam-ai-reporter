@@ -23,7 +23,7 @@ export const ACCOUNT_KIND: KindDefinition<AccountDisclosed> = {
   fromGetItems(_item, details) {
     const { user_account_third_party: text, user_account_third_party_link_to_steam: link } =
       details;
-    if (text === MALFORMED || link === MALFORMED) {
+    if (text === MALFORMED) {
       return UNKNOWN.malformed;
     }
     if (text === undefined || !hasText(text)) {
