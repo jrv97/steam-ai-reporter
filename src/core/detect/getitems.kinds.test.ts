@@ -9,7 +9,10 @@ import { type KindVerdicts, UNKNOWN_KINDS } from "../kinds/verdicts";
 import { GETITEMS_URL, parseGetItems } from "./getitems";
 
 // Every kind derived from the batch captured for the tag kinds (tests/fixtures/README.md).
-const IDS = [3751950, 2807960, 1808500, 813230, 730, 570, 105600, 1245620, 1172470, 271590];
+const DECLARING = [3751950, 2807960, 1808500, 730, 570, 105600, 1245620, 1172470, 271590];
+// Games from 2004 to 2024 that declare nothing, and have no PvP category.
+const NOTHING = [813230, 1145360, 413150, 504230, 367520, 2379780, 620];
+const IDS = [...DECLARING, ...NOTHING];
 const OTHER_ITEMS = [320795, 1, 99999999];
 
 const verdicts = parseGetItems(
@@ -107,8 +110,10 @@ describe("parseGetItems over the tag kind fixture", () => {
     });
   });
 
-  it("reads a game that declares nothing as not disclosed for every kind (813230)", () => {
-    expect(states(813230)).toStrictEqual(NONE);
+  it("reads a game that declares nothing as not disclosed for every kind", () => {
+    for (const id of NOTHING) {
+      expect(states(id)).toStrictEqual(NONE);
+    }
   });
 
   it("reads the VAC anti-cheat of Counter-Strike 2 and Dota 2 as non-kernel (730, 570)", () => {

@@ -39,6 +39,10 @@ describe("parsePageDetails over the captured pages", () => {
     });
   });
 
+  it("reads no boot line from a page that has none, if declared (1172470)", () => {
+    expect(details("1172470-kernel-easyac.html", BOOT)).toStrictEqual({});
+  });
+
   it("reads a non-kernel anti-cheat section (730)", () => {
     expect(details("730-anticheat-nonkernel.html")).toStrictEqual({
       anticheatName: "VAC (Valve Anti-Cheat)",

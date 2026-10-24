@@ -98,8 +98,8 @@ class AppPage:
     file: str
     appid: int
     shallow: bool = False
-    # Extra element ids cut from this page only.
-    drop_ids: frozenset[str] = frozenset()
+    # Keep only the name and the features list (#category_block) in a minimal document.
+    features_only: bool = False
 
 
 APP_PAGES = (
@@ -114,16 +114,16 @@ APP_PAGES = (
 # The tag kinds: the apps that show each declaration, the package and bundle that carry no
 # `extra_details`, and an ID that does not exist.
 KIND_APPS = (3751950, 2807960, 1808500, 813230, 730, 570, 105600, 1245620, 1172470, 271590)
+# Games that declare nothing of any kind, from 2004 to 2024.
+KIND_NOTHING = (1145360, 413150, 504230, 367520, 2379780, 620)
 KIND_PACKAGE = 320795
 KIND_BUNDLE = 1
 KIND_MISSING = 99999999
-# The kinds pages keep the features list (#category_block) and cut the bulk around it.
-KIND_PAGE_DROPS = frozenset({"languageTable", "game_area_purchase", "gameAreaDLCSection"})
 KIND_PAGES = (
-    AppPage("3751950-drm-account-eula.html", 3751950, drop_ids=KIND_PAGE_DROPS),
-    AppPage("2807960-kernel-boot-protection.html", 2807960, drop_ids=KIND_PAGE_DROPS),
-    AppPage("730-anticheat-nonkernel.html", 730, drop_ids=KIND_PAGE_DROPS),
-    AppPage("1172470-kernel-easyac.html", 1172470, drop_ids=KIND_PAGE_DROPS),
+    AppPage("3751950-drm-account-eula.html", 3751950, features_only=True),
+    AppPage("2807960-kernel-boot-protection.html", 2807960, features_only=True),
+    AppPage("730-anticheat-nonkernel.html", 730, features_only=True),
+    AppPage("1172470-kernel-easyac.html", 1172470, features_only=True),
 )
 
 
@@ -145,10 +145,9 @@ def ascii_refs(text: str) -> str:
 class Sanitizer(HTMLParser):
     """Streams a page back out, dropping what tests/fixtures/README.md lists as removed."""
 
-    def __init__(self, shallow: bool, drop_ids: frozenset[str] = frozenset()) -> None:
+    def __init__(self, shallow: bool) -> None:
         super().__init__(convert_charrefs=True)
         self.shallow = shallow
-        self.drop_ids = DROPPED_IDS | drop_ids
         self.out: list[str] = []
         self._stack: list[str] = []
         self._skip_from: int | None = None
@@ -157,7 +156,7 @@ class Sanitizer(HTMLParser):
 
     def _drops(self, tag: str, attrs: dict[str, str | None]) -> bool:
         classes = (attrs.get("class") or "").split()
-        if tag in DROPPED_TAGS or attrs.get("id") in self.drop_ids:
+        if tag in DROPPED_TAGS or attrs.get("id") in DROPPED_IDS:
             return True
         if any(name in DROPPED_CLASSES or "avatar" in name for name in classes):
             return True
@@ -239,11 +238,42 @@ class Sanitizer(HTMLParser):
     # Comments and processing instructions are dropped by not overriding their handlers.
 
 
-def sanitize_page(text: str, shallow: bool, drop_ids: frozenset[str] = frozenset()) -> str:
-    parser = Sanitizer(shallow, drop_ids)
+def sanitize_page(text: str, shallow: bool) -> str:
+    parser = Sanitizer(shallow)
     parser.feed(text)
     parser.close()
     return re.sub(r"\n{2,}", "\n", "".join(parser.out)).strip() + "\n"
+
+
+def element_html(text: str, element_id: str) -> str:
+    """The sanitized div with this id, found by counting the divs inside it."""
+    marker = text.find(f'id="{element_id}"')
+    start = text.rfind("<div", 0, marker)
+    if marker < 0 or start < 0:
+        fail(f"no div with the id {element_id} in the page")
+    depth = 0
+    end = -1
+    for tag in re.finditer(r"<(/?)div\b", text[start:]):
+        depth += -1 if tag.group(1) else 1
+        if depth == 0:
+            end = text.index(">", start + tag.end()) + 1
+            break
+    if end < 0:
+        fail(f"the div with the id {element_id} never closes")
+    return text[start:end]
+
+
+def features_page(text: str) -> str:
+    """A minimal document with the page title, the app name and the features list."""
+    title = re.search(r"<title>(.*?)</title>", text, re.DOTALL)
+    if title is None:
+        fail("no title in the page")
+    return (
+        '<!DOCTYPE html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n'
+        f"<title>{title.group(1)}</title>\n</head>\n<body>\n"
+        f"{element_html(text, 'appHubAppName')}\n{element_html(text, 'category_block')}\n"
+        "</body>\n</html>\n"
+    )
 
 
 def getitems_url(ids: list[dict[str, int]], language: str, country: str) -> str:
@@ -305,7 +335,7 @@ def capture_getitems(out: Path) -> None:
 
 def capture_kinds_getitems(out: Path) -> None:
     ids = [
-        *app_ids(list(KIND_APPS)),
+        *app_ids([*KIND_APPS, *KIND_NOTHING]),
         {"packageid": KIND_PACKAGE},
         {"bundleid": KIND_BUNDLE},
         *app_ids([KIND_MISSING]),
@@ -320,7 +350,8 @@ def capture_kinds_getitems(out: Path) -> None:
 def capture_app_pages(out: Path, pages: tuple[AppPage, ...] = APP_PAGES) -> None:
     for page in pages:
         body = fetch(f"https://store.steampowered.com/app/{page.appid}/?l=english")
-        write(out / "app-page" / page.file, sanitize_page(body, page.shallow, page.drop_ids))
+        clean = sanitize_page(body, page.shallow)
+        write(out / "app-page" / page.file, features_page(clean) if page.features_only else clean)
         time.sleep(SPACING_SECONDS)
 
 
