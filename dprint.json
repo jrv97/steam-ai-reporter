@@ -32,7 +32,8 @@
     "LICENSE",
     "CHANGELOG.md",
     ".changes/*.md",
-    "docs/design/**"
+    "docs/design/**",
+    "assets/icons/mark-*.svg"
   ],
   "plugins": [
     "npm:@dprint/typescript@0.96.1",
