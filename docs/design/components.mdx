@@ -87,10 +87,10 @@ Every text pair meets WCAG 2.2 AA on the grounds its token's note names; see the
 
 ## Iconography
 
-- **The mark** is a label tag pointing toward inline-end with a four-point spark on its visual center: "a label about AI", not "an AI tool". One flat `sar-accent-400` fill with a white spark; no outline, no gradient, no letters. See the Icon asset group for files and sizes.
-- **No icons in components.** Badges, the summary row and the banner carry no icon, like the store's own tags, corner flags and notice bubbles. The violet hue and the wording mark them as ours. The spark appears only in the extension icon.
+- **The mark** is a Steam badge, a ring around the Steam glyph, with a tag icon attached at its lower right: "Steam store pages, tagged". One ink per file, `sar-accent-400` in the extension icon; the tag leaves a transparent cut where it crosses the ring; no gradient, no letters. See section 14 for files, variants and sizes.
+- **No icons in components.** Badges, the summary row and the banner carry no icon, like the store's own tags, corner flags and notice bubbles. The violet hue and the wording mark them as ours. The mark appears only as the extension icon. Icons on chips for the other tag kinds are a later design decision (decision 39).
 - No other icon set. Platform icons and flags around our badges are the store's.
-- No Valve logo, wordmark, icon, image or font file appears anywhere.
+- The extension icon holds an outlined Steam glyph (decision 40). No component, badge or banner shows a Valve mark, and no Valve wordmark, image or font file ships anywhere.
 
 ## What renders for each state
 
@@ -760,30 +760,19 @@ Specified only. No dialog rules exist yet, so this card has no preview.
 
 Files in `assets/icons/`.
 
-The extension's mark: a label tag in `sar-accent-400` holding a white four-point spark. Drawn for this project; nothing from Valve or any prior-art extension.
+The extension's mark: a Steam badge (a ring around the Steam glyph) with a tag icon attached at its lower right, chosen by the owner on 2026-10-24 (decisions 36 to 40). The tag is derived from Lucide's `tags` icon (ISC, with an MIT notice for the parts derived from Feather) and the glyph from Simple Icons' Steam icon (CC0). The Steam logo is Valve's trademark. The notices ship in `THIRD_PARTY_NOTICES.md`.
 
-- `icon.svg`: the master on a 128 grid, full bleed. Renders the 32 and 48px PNGs.
-- `icon-16.svg`: hand-hinted for 16px, snapped to the pixel grid, with a fuller spark so it reads as a star, not a plus.
-- `icon-16.png`, `icon-32.png`, `icon-48.png`: toolbar and extension-management sizes, full bleed.
+- `mark.svg`: the master, 300 by 300, one ink in `currentColor`, which a page can theme. Every other file derives from it.
+- `mark-purple.svg`: the master in `#8f73f3` (`sar-accent-400`). The extension icon, the store listings and the README logo.
+- `mark-white.svg` and `mark-black.svg`: single-ink copies for grounds that cannot take purple, such as a monochrome toolbar or a listing banner.
+- `icon-16.png`, `icon-32.png`, `icon-48.png`: toolbar and extension-management sizes, rendered from `mark-purple.svg`, full bleed.
 - `icon-128.png`: store and install-dialog size, the artwork at 96px centered in 128px with 16px of transparent padding.
 
-Use the PNG nearest the display size; the options header shows `icon-48.png` at 32px, the popup `icon-32.png`. Never recolor, outline, add a gradient or put letters on it. Two inks only: `#8f73f3` and `#ffffff`.
+The ring is as thick as the tag's stroke: 20 units on the 300 unit canvas. The tag sits clear of the ring behind a transparent cut 8 units wide. The artwork spans 4 to 285 of the canvas, and the full bleed renders crop to that span.
 
-Regenerate the PNGs with ImageMagick 7 and librsvg, in the icons folder:
+Use the PNG nearest the display size; the options header shows `icon-48.png` at 32px, the popup `icon-32.png`. The 16 and 32px renders are interim: the owner hand-hints reduced versions later. One ink per file; never add a gradient, a second color or letters.
 
-```sh
-magick -background none -density 96 icon-16.svg -strip PNG32:icon-16.png
-magick -background none -density 384 icon.svg -filter Lanczos -resize 32x32 -strip PNG32:icon-32.png
-magick -background none -density 384 icon.svg -filter Lanczos -resize 48x48 -strip PNG32:icon-48.png
-magick -background none -density 384 icon.svg -filter Lanczos -resize 96x96 -gravity center -extent 128x128 -strip PNG32:icon-128.png
-```
-
-### Glyph
-
-`glyph.svg`: the spark from the extension icon, alone, on a `0 0 10 10` view box, path `M5 0Q5.7 4.3 10 5Q5.7 5.7 5 10Q4.3 5.7 0 5Q4.3 4.3 5 0Z`.
-
-- Not used by any component: badges, the summary row and the banner carry no icon (decision 30). Kept as a reference for the mark.
-- Single ink, `currentColor`. Shown as an image it renders black, so its tile here looks dark.
+Regenerate the PNGs with `mise run icons`. It runs `scripts/render_icons.py`, which paints `mark-purple.svg` with headless Chrome (`SAR_CHROME_BIN`) into a page of exactly each size on a transparent ground.
 
 ## 15. Hover card
 
@@ -1081,4 +1070,4 @@ WCAG 2.2 AA: 4.5:1 for text, 3:1 for non-text. Grounds are the store's own, samp
 
 ### The mark on browser toolbars
 
-The icon's `sar-accent-400` fill against toolbar grounds: Chrome light `#ffffff` 3.55, Chrome light toolbar `#f1f3f4` 3.19, Chrome dark `#202124` 4.53, Chrome dark toolbar `#3c3c3c` 3.11, Firefox dark `#2b2a33` 3.99, Firefox light `#f9f9fb` 3.38. The white spark on the fill is 3.55.
+The icon's `sar-accent-400` ink against toolbar grounds: Chrome light `#ffffff` 3.55, Chrome light toolbar `#f1f3f4` 3.19, Chrome dark `#202124` 4.53, Chrome dark toolbar `#3c3c3c` 3.11, Firefox dark `#2b2a33` 3.99, Firefox light `#f9f9fb` 3.38.
