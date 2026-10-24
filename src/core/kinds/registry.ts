@@ -1,31 +1,41 @@
-import type { ExtraDetails } from "../detect/getitems.schema";
-import type { SteamLanguage } from "../i18n/locale";
-import type { Verdict } from "../types";
+import { SarError } from "../errors";
 import { AI_KIND } from "./ai";
-import { KIND_IDS, type KindId } from "./id";
+import type { KindId } from "./id";
 import type { TagKind } from "./kind";
 
-// The one place that lists the kinds. Each literal here is checked against `KindId`, so a kind in
-// `KIND_IDS` without an entry fails the type check.
-const REGISTRY: Readonly<Record<KindId, TagKind>> = { ai: AI_KIND };
+/**
+ * The one place that lists the kinds. The kind ids, the kind list, the settings defaults and every
+ * per-kind record derive from it, so a new kind is one entry here and its definition.
+ */
+export const KINDS = [AI_KIND] as const;
 
-/** Every registered kind, in `KIND_IDS` order. */
-export const KINDS: readonly TagKind[] = KIND_IDS.map((id) => REGISTRY[id]);
-
-export function kindOf(id: KindId): TagKind {
-  return REGISTRY[id];
+/** Whether `values` holds a value for every registered kind. */
+export function hasEveryKind(values: Partial<Record<KindId, unknown>>): boolean {
+  for (const kind of KINDS) {
+    if (values[kind.id] === undefined) {
+      return false;
+    }
+  }
+  return true;
 }
 
-/** One `make(kind)` result for each registered kind, keyed by kind id. */
+function isEveryKind<T>(
+  values: Partial<Record<KindId, T>>,
+): values is Readonly<Record<KindId, T>> {
+  return hasEveryKind(values);
+}
+
+/**
+ * One `make(kind)` result for each registered kind, keyed by kind id. `make` never returns
+ * undefined. The hot paths loop over `KINDS` instead, so they allocate no closure per call.
+ */
 export function perKind<T>(make: (kind: TagKind) => T): Readonly<Record<KindId, T>> {
-  return { ai: make(REGISTRY.ai) };
-}
-
-/** Every kind's verdict for a GetItems item with `extra_details`. */
-export function kindsFromGetItems(
-  details: ExtraDetails,
-  name: string | undefined,
-  language: SteamLanguage,
-): Readonly<Record<KindId, Verdict>> {
-  return { ai: REGISTRY.ai.fromGetItems(details, name, language) };
+  const values: Partial<Record<KindId, T>> = {};
+  for (const kind of KINDS) {
+    values[kind.id] = make(kind);
+  }
+  if (isEveryKind(values)) {
+    return values;
+  }
+  throw new SarError("error_unexpected", {});
 }

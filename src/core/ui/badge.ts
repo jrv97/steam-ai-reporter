@@ -1,6 +1,5 @@
-import type { TagKind } from "../kinds/kind";
+import type { AiDisclosed, AiKind } from "../kinds/ai";
 import type { MessageCatalog } from "../ports";
-import type { DisclosedVerdict } from "../types";
 import type { BadgeSlot, CompactSize, HostRenderer } from "./host";
 import type { CardTriggers } from "./hover-card";
 
@@ -39,7 +38,7 @@ export function applyBadgeSetting(root: Element, on: boolean): void {
 
 interface Drawn {
   readonly badge: HTMLElement;
-  readonly verdict: DisclosedVerdict;
+  readonly verdict: AiDisclosed;
   readonly slot: BadgeSlot;
 }
 
@@ -57,7 +56,7 @@ export function createBadgeRenderer(
   doc: Document,
   i18n: MessageCatalog,
   card: CardTriggers,
-  kind: TagKind,
+  kind: AiKind,
 ): HostRenderer {
   const drawn = new WeakMap<Element, Drawn>();
   const label = i18n.t(kind.messages.label);

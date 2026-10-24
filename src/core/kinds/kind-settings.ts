@@ -17,6 +17,14 @@ export interface KindSettings {
   readonly filter: ListFilter;
 }
 
+/** What a kind starts with: switched on, badge and banner shown, the list left alone. */
+export const DEFAULT_KIND_SETTINGS: KindSettings = {
+  enabled: true,
+  badge: true,
+  banner: true,
+  filter: "off",
+};
+
 function kindSettingsSchema(defaults: KindSettings) {
   return v.object({
     enabled: v.fallback(v.boolean(), defaults.enabled),

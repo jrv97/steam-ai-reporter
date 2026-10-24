@@ -1,7 +1,6 @@
-import type { TagKind } from "../kinds/kind";
+import type { AiKind, AiVerdict } from "../kinds/ai";
 import type { KindVerdicts } from "../kinds/verdicts";
 import type { MessageCatalog } from "../ports";
-import type { Verdict } from "../types";
 import {
   type Banner,
   type BannerActions,
@@ -46,14 +45,14 @@ interface Row {
 export function createAppPageUi(
   doc: Document,
   i18n: MessageCatalog,
-  kind: TagKind,
+  kind: AiKind,
   actions: BannerActions,
   options: AppPageOptions = {},
 ): AppPageUi {
   let banner: Banner | undefined;
   let row: Row | undefined;
 
-  function renderBanner(verdict: Verdict, view: AppPageView): boolean {
+  function renderBanner(verdict: AiVerdict, view: AppPageView): boolean {
     if (verdict.state !== "disclosed" || !view.banner) {
       banner?.host.remove();
       return false;

@@ -1,8 +1,7 @@
 import * as v from "valibot";
 import type { SteamLanguage } from "../i18n/locale";
 import { parseJson } from "../json";
-import { kindsFromGetItems } from "../kinds/registry";
-import { type KindVerdicts, UNKNOWN_KINDS } from "../kinds/verdicts";
+import { kindsFromGetItems, type KindVerdicts, UNKNOWN_KINDS } from "../kinds/verdicts";
 import type { Http, HttpResponse, HttpResult } from "../ports";
 import type { AppId, Detector, UnknownReason } from "../types";
 import {

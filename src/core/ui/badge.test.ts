@@ -3,8 +3,8 @@ import { setBody } from "../../../tests/helpers/dom";
 import { hostView, type HostViewOptions } from "../../../tests/helpers/host-view";
 import { englishI18n } from "../../../tests/helpers/i18n";
 import { disclosedVerdict, NOT_DISCLOSED } from "../../../tests/helpers/verdicts";
-import { AI_KIND } from "../kinds/ai";
-import { type DisclosedVerdict, UNKNOWN } from "../types";
+import { AI_KIND, type AiDisclosed } from "../kinds/ai";
+import { UNKNOWN } from "../types";
 import { applyBadgeSetting, compactSize, createBadgeRenderer } from "./badge";
 import type { BadgeSlot } from "./host";
 
@@ -47,7 +47,7 @@ describe("compactSize", () => {
 
 describe("createBadgeRenderer", () => {
   const i18n = englishI18n();
-  let bound = new Map<Element, DisclosedVerdict>();
+  let bound = new Map<Element, AiDisclosed>();
   let renderer = createBadgeRenderer(
     document,
     i18n,

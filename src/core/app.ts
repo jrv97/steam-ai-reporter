@@ -18,11 +18,9 @@ import {
 } from "./i18n/locale";
 import { SHIPPED_CATALOGS } from "./i18n/shipped";
 import { createI18n, type I18n } from "./i18n/t";
-import { AI_KIND } from "./kinds/ai";
+import { AI_KIND, type AiKind, type AiVerdict } from "./kinds/ai";
 import type { KindId } from "./kinds/id";
-import type { TagKind } from "./kinds/kind";
 import { effectiveSettings } from "./kinds/kind-settings";
-import { KINDS, perKind } from "./kinds/registry";
 import { type KindVerdicts, UNKNOWN_KINDS } from "./kinds/verdicts";
 import { type ConsoleSink, createLogger, type Logger } from "./log";
 import type { Clock, Http, KeyValueStore, SettingsSource, Unsubscribe } from "./ports";
@@ -31,7 +29,7 @@ import { createScanner } from "./scan/scanner";
 import { ALLOW_ALL, type AllowScope, perScope } from "./settings/allow-data";
 import { type AllowList, createAllowList } from "./settings/allow-list";
 import { DEFAULT_SETTINGS, parseSettings, type Settings } from "./settings/settings";
-import type { AppId, Detector, Verdict } from "./types";
+import type { AppId, Detector } from "./types";
 import { createAppPageUi } from "./ui/app-page";
 import { applyBadgeSetting, createBadgeRenderer } from "./ui/badge";
 import { createCapsuleUi } from "./ui/capsules";
@@ -98,13 +96,13 @@ function createDetector(deps: AppDeps, logger: Logger, language: SteamLanguage) 
   return { getItems, detector: cachedDetector(chain, createVerdictCache(store, clock), logger) };
 }
 
-/** Whether a kind holds a disclosure from the API in another language than the page's. */
+/**
+ * Whether the AI kind holds a disclosure from the API in another language than the page's. The
+ * developer's notes are the only text that comes in a language.
+ */
 function needsTranslation(verdicts: KindVerdicts, language: SteamLanguage): boolean {
-  return KINDS.some((kind) => {
-    const verdict = verdicts[kind.id];
-    return verdict.state === "disclosed" && verdict.source === "api"
-      && verdict.language !== language;
-  });
+  const { ai } = verdicts;
+  return ai.state === "disclosed" && ai.source === "api" && ai.language !== language;
 }
 
 /**
@@ -126,11 +124,8 @@ async function pageVerdicts(
   if (!needsTranslation(verdicts, language)) {
     return verdicts;
   }
-  const translated = (await detectors.getItems.detect([id])).get(id);
-  return perKind((kind) => {
-    const fresh = translated?.[kind.id];
-    return fresh?.state === "disclosed" ? fresh : verdicts[kind.id];
-  });
+  const fresh = (await detectors.getItems.detect([id])).get(id)?.ai;
+  return fresh?.state === "disclosed" ? { ...verdicts, ai: fresh } : verdicts;
 }
 
 /** The games the user ignored, in page memory: one set of app IDs per scope. */
@@ -151,7 +146,7 @@ function isIgnored(ignored: IgnoredGames, id: AppId, kind: KindId): boolean {
   return ignored[ALLOW_ALL].has(id) || ignored[kind].has(id);
 }
 
-function appName(doc: Document, verdict: Verdict, id: AppId): string {
+function appName(doc: Document, verdict: AiVerdict, id: AppId): string {
   const fromVerdict = verdict.state === "disclosed" ? verdict.name : undefined;
   const fromPage = doc.querySelector(APP_NAME_SELECTOR)?.textContent.trim();
   return fromVerdict ?? (fromPage === undefined || fromPage === "" ? String(id) : fromPage);
@@ -162,7 +157,7 @@ async function startAppPage(
   doc: Document,
   id: AppId,
   i18n: I18n,
-  kind: TagKind,
+  kind: AiKind,
   verdicts: Promise<KindVerdicts>,
   context: {
     readonly ignored: IgnoredGames;
@@ -239,6 +234,7 @@ export async function start(deps: AppDeps): Promise<App> {
   const capsules = createCapsuleUi({
     document: doc,
     detector: detectors.detector,
+    kinds: [kind],
     renderers: [createHostStateRenderer(kind), createBadgeRenderer(doc, i18n, card, kind)],
     isAllowed: (id, forKind) => isIgnored(ignored, id, forKind),
   });

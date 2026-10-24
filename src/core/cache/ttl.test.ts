@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { aiVerdicts, disclosedVerdict, NOT_DISCLOSED } from "../../../tests/helpers/verdicts";
-import { UNKNOWN, type Verdict } from "../types";
+import type { AiVerdict } from "../kinds/ai";
+import { UNKNOWN } from "../types";
 import {
   DAY_MS,
   DISCLOSED_TTL_MS,
@@ -40,7 +41,7 @@ describe("isStoredReason", () => {
 });
 
 describe("isFresh", () => {
-  const cases: readonly (readonly [string, Verdict, number])[] = [
+  const cases: readonly (readonly [string, AiVerdict, number])[] = [
     ["disclosed", disclosedVerdict(), DISCLOSED_TTL_MS],
     ["not disclosed", NOT_DISCLOSED, NOT_DISCLOSED_TTL_MS],
     ["unknown gated", UNKNOWN.gated, UNKNOWN_TTL_MS],

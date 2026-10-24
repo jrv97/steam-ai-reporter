@@ -5,8 +5,9 @@ import { fixedClock } from "../../../tests/helpers/fixed-clock";
 import { memoryStore } from "../../../tests/helpers/memory-store";
 import { aiVerdicts, disclosedVerdict, NOT_DISCLOSED } from "../../../tests/helpers/verdicts";
 import type { JsonValue } from "../json";
+import type { AiVerdict } from "../kinds/ai";
 import type { KindVerdicts } from "../kinds/verdicts";
-import { type AppId, UNKNOWN, type Verdict } from "../types";
+import { type AppId, UNKNOWN } from "../types";
 import { DISCLOSED_TTL_MS, NOT_DISCLOSED_TTL_MS, TRANSIENT_TTL_MS, UNKNOWN_TTL_MS } from "./ttl";
 import { createVerdictCache } from "./verdict-cache";
 
@@ -102,7 +103,7 @@ describe("VerdictCache", () => {
   });
 
   describe("TTL edges", () => {
-    const cases: readonly (readonly [string, Verdict, number])[] = [
+    const cases: readonly (readonly [string, AiVerdict, number])[] = [
       ["disclosed", disclosedVerdict(), DISCLOSED_TTL_MS],
       ["not disclosed", NOT_DISCLOSED, NOT_DISCLOSED_TTL_MS],
       ["unknown gated", UNKNOWN.gated, UNKNOWN_TTL_MS],
@@ -124,7 +125,7 @@ describe("VerdictCache", () => {
   });
 
   describe("verdicts that are not stored", () => {
-    const cases: readonly (readonly [string, Verdict])[] = [
+    const cases: readonly (readonly [string, AiVerdict])[] = [
       ["unknown error", UNKNOWN.error],
       ["unknown rate-limited", UNKNOWN["rate-limited"]],
     ];

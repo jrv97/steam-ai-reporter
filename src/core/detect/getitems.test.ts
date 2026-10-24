@@ -67,6 +67,7 @@ describe("parseGetItems over the captured fixtures", () => {
     expect(notesOf(verdicts, 5072580)).toMatch(/^Generative AI is used in both pre-generated/);
     expect(verdicts.get(appId(5072580))?.ai).toStrictEqual({
       state: "disclosed",
+      kind: "ai",
       notes: notesOf(verdicts, 5072580),
       language: "english",
       service: "OpenAI API",
@@ -76,6 +77,7 @@ describe("parseGetItems over the captured fixtures", () => {
     expect(notesOf(verdicts, 1808500)).toMatch(/^During the development process/);
     expect(verdicts.get(appId(1808500))?.ai).toStrictEqual({
       state: "disclosed",
+      kind: "ai",
       notes: notesOf(verdicts, 1808500),
       language: "english",
       name: "ARC Raiders",
@@ -176,6 +178,7 @@ describe("parseGetItems edge cases", () => {
     expect(named?.state === "disclosed" ? named.service : undefined).toBe("Midjourney");
     expect(verdicts.get(appId(2))?.ai).toStrictEqual({
       state: "disclosed",
+      kind: "ai",
       notes: "notes",
       language: "english",
       source: "api",

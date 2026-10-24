@@ -1,4 +1,5 @@
 import type { KindId } from "../kinds/id";
+import type { TagKind } from "../kinds/kind";
 import { KINDS, perKind } from "../kinds/registry";
 import type { KindVerdicts } from "../kinds/verdicts";
 import { HOST_APPID } from "../scan/marks";
@@ -48,6 +49,8 @@ export interface CapsuleUiOptions {
   readonly detector: Detector;
   /** Drawn in order for every host: state marks, badges. */
   readonly renderers: readonly HostRenderer[];
+  /** The kinds the renderers draw; a host with a disclosure in none of them gets no badge slot. */
+  readonly kinds?: readonly TagKind[];
   /** Whether the game is on the allow-list for the kind now. */
   readonly isAllowed: (id: AppId, kind: KindId) => boolean;
   /** Schedules a read-then-write pass; `requestAnimationFrame` by default. */
@@ -99,6 +102,7 @@ const NO_SLOT: SlotRead = { slot: undefined, markAnchor: false, unsized: false }
  */
 export function createCapsuleUi(options: CapsuleUiOptions): CapsuleUi {
   const { document: doc, detector, renderers, isAllowed } = options;
+  const kinds = options.kinds ?? KINDS;
   const frame = options.frame ?? ((callback: () => void) => {
     const view = doc.defaultView;
     if (view === null) {
@@ -178,7 +182,7 @@ export function createCapsuleUi(options: CapsuleUiOptions): CapsuleUi {
         continue;
       }
       let shows = false;
-      for (const kind of KINDS) {
+      for (const kind of kinds) {
         allowed[kind.id] = isAllowed(host.appId, kind.id);
         shows ||= verdicts[kind.id].state === "disclosed" && !allowed[kind.id];
       }

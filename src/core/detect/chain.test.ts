@@ -17,6 +17,7 @@ import { createThrottledHttp } from "./throttle";
 
 const DISCLOSED = aiVerdicts({
   state: "disclosed",
+  kind: "ai",
   notes: "Art",
   language: "english",
   source: "api",

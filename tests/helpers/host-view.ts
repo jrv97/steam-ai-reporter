@@ -1,11 +1,11 @@
+import type { AiVerdict } from "../../src/core/kinds/ai";
 import { perKind } from "../../src/core/kinds/registry";
-import type { Verdict } from "../../src/core/types";
 import type { BadgeSlot, HostView } from "../../src/core/ui/host";
 import { aiVerdicts, disclosedVerdict } from "./verdicts";
 
 export interface HostViewOptions {
   /** The AI kind's verdict; disclosed unless a test says otherwise. */
-  readonly verdict?: Verdict;
+  readonly verdict?: AiVerdict;
   /** Whether the game is on the allow-list, for every kind. */
   readonly allowed?: boolean;
   readonly slot?: BadgeSlot | undefined;

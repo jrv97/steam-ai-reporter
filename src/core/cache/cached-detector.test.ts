@@ -5,14 +5,15 @@ import { countingStore } from "../../../tests/helpers/counting-store";
 import { fixedClock } from "../../../tests/helpers/fixed-clock";
 import { memoryStore } from "../../../tests/helpers/memory-store";
 import { aiVerdicts, disclosedVerdict, NOT_DISCLOSED } from "../../../tests/helpers/verdicts";
-import { type AppId, type Detector, UNKNOWN, type Verdict } from "../types";
+import type { AiVerdict } from "../kinds/ai";
+import { type AppId, type Detector, UNKNOWN } from "../types";
 import { cachedDetector } from "./cached-detector";
 import { createVerdictCache } from "./verdict-cache";
 
 const T = 1_000_000_000_000;
 
 /** A detector that answers from a table (not disclosed by default) and records its calls. */
-function stubDetector(table: ReadonlyMap<AppId, Verdict> = new Map()) {
+function stubDetector(table: ReadonlyMap<AppId, AiVerdict> = new Map()) {
   const calls: (readonly AppId[])[] = [];
   const detector: Detector = {
     detect(ids) {
@@ -25,7 +26,7 @@ function stubDetector(table: ReadonlyMap<AppId, Verdict> = new Map()) {
   return { detector, calls };
 }
 
-function setup(table?: ReadonlyMap<AppId, Verdict>) {
+function setup(table?: ReadonlyMap<AppId, AiVerdict>) {
   const store = countingStore(memoryStore());
   const clock = fixedClock(T);
   const logger = { error: vi.fn<(problem: unknown) => void>() };

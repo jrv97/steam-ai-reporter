@@ -4,8 +4,9 @@ import { fixedClock } from "../../../tests/helpers/fixed-clock";
 import { memoryStore } from "../../../tests/helpers/memory-store";
 import { aiVerdicts, disclosedVerdict, NOT_DISCLOSED } from "../../../tests/helpers/verdicts";
 import type { JsonValue } from "../json";
+import type { AiVerdict } from "../kinds/ai";
 import { CACHE_SCHEMA, META_KEY } from "../storage-keys";
-import { UNKNOWN, type Verdict } from "../types";
+import { UNKNOWN } from "../types";
 import { maintainCache } from "./maintenance";
 import { encodeVerdicts } from "./stored";
 import { DAY_MS, DISCLOSED_TTL_MS, NOT_DISCLOSED_TTL_MS } from "./ttl";
@@ -16,7 +17,7 @@ const SETTINGS: JsonValue = { badges: false };
 const ALLOW: JsonValue = { "10": { name: "Ignored", added: T } };
 
 /** The stored value of a verdict that is persisted; `null` (invalid) for one that is not. */
-function verdict(value: Verdict, time: number): JsonValue {
+function verdict(value: AiVerdict, time: number): JsonValue {
   return encodeVerdicts(aiVerdicts(value), time) ?? null;
 }
 

@@ -1,29 +1,21 @@
 import * as v from "valibot";
-import { SteamLanguageSchema } from "../i18n/locale";
-import type { JsonValue } from "../json";
+import { type JsonValue, toJsonValue } from "../json";
 import type { KindId } from "../kinds/id";
+import type { TagKind } from "../kinds/kind";
 import { KINDS } from "../kinds/registry";
-import { type KindVerdicts, UNKNOWN_KINDS } from "../kinds/verdicts";
-import { UNKNOWN, type Verdict } from "../types";
+import { isKindVerdicts, type KindVerdict, type KindVerdicts } from "../kinds/verdicts";
+import { UNKNOWN, VerdictSourceSchema } from "../types";
 import { isStoredReason, STORED_REASONS } from "./ttl";
 
 // The stored form of one app's verdicts (`v1:a:<appid>`): the fetch time and one entry per kind.
-// Storage is untrusted: a read that fails these schemas is discarded, never cast. Only the
-// unknown reasons in `STORED_REASONS` appear here.
+// A disclosed entry is the verdict itself, read back with the schema its kind declares; the other
+// two states are shared. Storage is untrusted: a read that fails these schemas is discarded, never
+// cast. Only the unknown reasons in `STORED_REASONS` appear here.
 
-const SourceSchema = v.picklist(["api", "html"]);
 const TimeSchema = v.pipe(v.number(), v.finite());
 
-const StoredVerdictSchema = v.variant("state", [
-  v.object({
-    state: v.literal("disclosed"),
-    notes: v.pipe(v.string(), v.minLength(1)),
-    language: SteamLanguageSchema,
-    service: v.exactOptional(v.string()),
-    name: v.exactOptional(v.string()),
-    source: SourceSchema,
-  }),
-  v.object({ state: v.literal("not-disclosed"), source: SourceSchema }),
+const StoredOtherSchema = v.variant("state", [
+  v.object({ state: v.literal("not-disclosed"), source: VerdictSourceSchema }),
   v.object({ state: v.literal("unknown"), reason: v.picklist(STORED_REASONS) }),
 ]);
 
@@ -39,29 +31,13 @@ export interface TimedVerdicts {
   readonly time: number;
 }
 
-function decodeVerdict(stored: unknown): Verdict | undefined {
-  const result = v.safeParse(StoredVerdictSchema, stored);
-  if (!result.success) {
-    return undefined;
+function decodeVerdict(kind: TagKind, stored: unknown): KindVerdict | undefined {
+  const other = v.safeParse(StoredOtherSchema, stored);
+  if (other.success) {
+    return other.output.state === "unknown" ? UNKNOWN[other.output.reason] : other.output;
   }
-  const entry = result.output;
-  switch (entry.state) {
-    case "disclosed":
-      return {
-        state: "disclosed",
-        notes: entry.notes,
-        language: entry.language,
-        source: entry.source,
-        ...(entry.service === undefined ? {} : { service: entry.service }),
-        ...(entry.name === undefined ? {} : { name: entry.name }),
-      };
-    case "not-disclosed":
-      return { state: "not-disclosed", source: entry.source };
-    case "unknown":
-      return UNKNOWN[entry.reason];
-    default:
-      return entry satisfies never;
-  }
+  const disclosed = v.safeParse(kind.stored, stored);
+  return disclosed.success ? disclosed.output : undefined;
 }
 
 /**
@@ -73,28 +49,21 @@ export function decodeVerdicts(stored: unknown): TimedVerdicts | undefined {
   if (!app.success) {
     return undefined;
   }
-  const verdicts: Record<KindId, Verdict> = { ...UNKNOWN_KINDS.missing };
+  const verdicts: Partial<Record<KindId, KindVerdict>> = {};
   for (const kind of KINDS) {
-    const verdict = decodeVerdict(app.output.kinds[kind.id]);
+    const verdict = decodeVerdict(kind, app.output.kinds[kind.id]);
     if (verdict === undefined) {
       return undefined;
     }
     verdicts[kind.id] = verdict;
   }
-  return { verdicts, time: app.output.time };
+  return isKindVerdicts(verdicts) ? { verdicts, time: app.output.time } : undefined;
 }
 
-function encodeVerdict(verdict: Verdict): JsonValue | undefined {
+function encodeVerdict(verdict: KindVerdict): JsonValue | undefined {
   switch (verdict.state) {
     case "disclosed":
-      return {
-        state: "disclosed",
-        notes: verdict.notes,
-        language: verdict.language,
-        source: verdict.source,
-        ...(verdict.service === undefined ? {} : { service: verdict.service }),
-        ...(verdict.name === undefined ? {} : { name: verdict.name }),
-      };
+      return toJsonValue(verdict);
     case "not-disclosed":
       return { state: "not-disclosed", source: verdict.source };
     case "unknown":

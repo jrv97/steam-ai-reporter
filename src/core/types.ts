@@ -1,5 +1,4 @@
 import * as v from "valibot";
-import type { SteamLanguage } from "./i18n/locale";
 import type { KindVerdicts } from "./kinds/verdicts";
 
 /** Steam app IDs are unsigned 32-bit integers; 0 is what GetItems reports for an invalid item. */
@@ -26,7 +25,9 @@ export function toAppId(value: unknown): AppId | undefined {
 }
 
 /** Where a known verdict came from: the GetItems API or the English app page (HTML fallback). */
-export type VerdictSource = "api" | "html";
+export const VerdictSourceSchema = v.picklist(["api", "html"]);
+
+export type VerdictSource = v.InferOutput<typeof VerdictSourceSchema>;
 
 /**
  * Why a verdict is unknown. `gated`: the app page hid the store content (age gate, sign-in,
@@ -35,16 +36,14 @@ export type VerdictSource = "api" | "html";
  */
 export type UnknownReason = "gated" | "missing" | "error" | "rate-limited";
 
-export interface DisclosedVerdict {
+/**
+ * What every disclosed verdict carries. A tag kind adds its own fields (see `kinds/`): the
+ * developer's text, the named product, the matching categories.
+ */
+export interface DisclosedBase<Kind extends string = string> {
   readonly state: "disclosed";
-  /** The developer's text, trimmed of outer whitespace and zero-width characters only. */
-  readonly notes: string;
-  /** The Steam language the notes were requested in; Steam answers in English when untranslated. */
-  readonly language: SteamLanguage;
-  /** `ai_generation_service.name`, when the developer named one. */
-  readonly service?: string;
-  /** The app's store name, for the allow-list. */
-  readonly name?: string;
+  /** The id of the tag kind the developer disclosed. */
+  readonly kind: Kind;
   readonly source: VerdictSource;
 }
 
@@ -66,8 +65,14 @@ export const UNKNOWN: Readonly<Record<UnknownReason, UnknownVerdict>> = {
   "rate-limited": { state: "unknown", reason: "rate-limited" },
 };
 
-/** What core knows about one app for one tag kind. Exactly three states (rule 4). */
-export type Verdict = DisclosedVerdict | NotDisclosedVerdict | UnknownVerdict;
+/**
+ * What core knows about one app for one tag kind. Exactly three states (rule 4). `Disclosed` is
+ * the disclosed shape of one kind; without it the verdict is the shape every kind shares.
+ */
+export type Verdict<Disclosed extends DisclosedBase = DisclosedBase> =
+  | Disclosed
+  | NotDisclosedVerdict
+  | UnknownVerdict;
 
 /**
  * One source of verdicts: GetItems, the HTML fallback, or a chain or decorator of them. Its

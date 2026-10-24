@@ -1,6 +1,6 @@
+import type { AiDisclosed } from "../kinds/ai";
 import type { TagKind } from "../kinds/kind";
 import type { MessageCatalog } from "../ports";
-import type { DisclosedVerdict } from "../types";
 import { normalizeBreaks } from "./notes";
 
 /** The card's id, the target of `aria-describedby` while focus holds it open. */
@@ -71,7 +71,7 @@ export interface CardTriggers {
    * Makes the element open the card with this kind's verdict. Sets nothing on it. `ownPage` marks
    * a trigger on the game's own store page, where the card does not point to that page.
    */
-  bind(trigger: Element, kind: TagKind, verdict: DisclosedVerdict, ownPage?: boolean): void;
+  bind(trigger: Element, kind: TagKind, verdict: AiDisclosed, ownPage?: boolean): void;
 }
 
 export interface HoverCard extends CardTriggers {
@@ -110,7 +110,7 @@ interface Placed {
 
 interface Binding {
   readonly kind: TagKind;
-  readonly verdict: DisclosedVerdict;
+  readonly verdict: AiDisclosed;
   readonly ownPage: boolean;
 }
 
@@ -182,7 +182,7 @@ export function createHoverCard(
   const bindings = new WeakMap<Element, Binding>();
 
   let card: Card | undefined;
-  let filled: DisclosedVerdict | undefined;
+  let filled: AiDisclosed | undefined;
   /** Whether the clamp hides part of the filled notes. */
   let clamped = false;
   let open: Open | undefined;

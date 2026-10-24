@@ -1,6 +1,6 @@
+import type { AiDisclosed } from "../kinds/ai";
 import type { TagKind } from "../kinds/kind";
 import type { MessageCatalog } from "../ports";
-import type { DisclosedVerdict } from "../types";
 import { createChip } from "./badge";
 import { BANNER_ID } from "./banner";
 import type { CardTriggers } from "./hover-card";
@@ -18,7 +18,7 @@ export function createSummaryRow(
   doc: Document,
   i18n: MessageCatalog,
   kind: TagKind,
-  verdict: DisclosedVerdict,
+  verdict: AiDisclosed,
   jump: (() => void) | undefined,
   card?: CardTriggers,
 ): HTMLElement {

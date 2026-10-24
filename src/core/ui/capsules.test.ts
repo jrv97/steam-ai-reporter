@@ -1,10 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
 import { setBody } from "../../../tests/helpers/dom";
 import { aiVerdicts, disclosedVerdict, NOT_DISCLOSED } from "../../../tests/helpers/verdicts";
+import type { AiVerdict } from "../kinds/ai";
 import { KIND_IDS } from "../kinds/id";
+import type { TagKind } from "../kinds/kind";
 import { GENERIC, type Placement, type RowPlacement } from "../scan/placements";
 import type { CapsuleHost } from "../scan/renderer";
-import { type AppId, type Detector, toAppId, type Verdict } from "../types";
+import { type AppId, type Detector, toAppId } from "../types";
 import { createCapsuleUi, type SizeWatch } from "./capsules";
 import type { HostView } from "./host";
 
@@ -25,7 +27,11 @@ function appId(value: number): AppId {
   return id;
 }
 
-function setup(verdicts: ReadonlyMap<AppId, Verdict>, allowed = new Set<AppId>()) {
+function setup(
+  verdicts: ReadonlyMap<AppId, AiVerdict>,
+  allowed = new Set<AppId>(),
+  kinds?: readonly TagKind[],
+) {
   const detect = vi.fn((ids: readonly AppId[]) =>
     Promise.resolve(
       new Map(ids.flatMap((id) => {
@@ -43,6 +49,7 @@ function setup(verdicts: ReadonlyMap<AppId, Verdict>, allowed = new Set<AppId>()
     document,
     detector,
     renderers: [{ render: (view) => views.push({ ...view, allowed: { ...view.allowed } }) }],
+    ...(kinds === undefined ? {} : { kinds }),
     isAllowed: (id) => allowed.has(id),
     frame: (callback) => frames.push(callback),
     watchSize: (onSized): SizeWatch => {
@@ -86,6 +93,15 @@ describe("createCapsuleUi", () => {
     expect(views).toHaveLength(1);
     expect(views[0]?.slot).toEqual({ kind: "full", anchor: found.anchor, position: "afterend" });
     expect(views[0]?.hideable).toBe(false);
+  });
+
+  it("gives a host no slot when it is disclosed in none of the kinds it draws", async () => {
+    const id = appId(5);
+    const { ui, views, flush } = setup(new Map([[id, disclosedVerdict()]]), new Set(), []);
+    ui.render({ found: [host(5)], changed: [] });
+    await flush();
+    expect(views).toHaveLength(1);
+    expect(views[0]?.slot).toBeUndefined();
   });
 
   it("draws a full badge of an end slot as the anchor's last child", async () => {
@@ -154,7 +170,7 @@ describe("createCapsuleUi", () => {
 
   it("does not watch a small image that has a size, nor a host without a badge", async () => {
     const { ui, flush, watched } = setup(
-      new Map<AppId, Verdict>([[appId(14), disclosedVerdict()], [appId(15), NOT_DISCLOSED]]),
+      new Map<AppId, AiVerdict>([[appId(14), disclosedVerdict()], [appId(15), NOT_DISCLOSED]]),
     );
     const small = host(14, {
       ...GENERIC,

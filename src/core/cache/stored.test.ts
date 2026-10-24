@@ -1,14 +1,15 @@
 import { describe, expect, it } from "vitest";
 import { aiVerdicts, disclosedVerdict, NOT_DISCLOSED } from "../../../tests/helpers/verdicts";
+import type { AiVerdict } from "../kinds/ai";
 import { UNKNOWN_KINDS } from "../kinds/verdicts";
-import { UNKNOWN, type Verdict } from "../types";
+import { UNKNOWN } from "../types";
 import { decodeVerdicts, encodeVerdicts } from "./stored";
 
 const T = 1_000_000_000_000;
 
 describe("encodeVerdicts and decodeVerdicts", () => {
   it("round trip every stored verdict", () => {
-    const verdicts: readonly Verdict[] = [
+    const verdicts: readonly AiVerdict[] = [
       disclosedVerdict(),
       disclosedVerdict({ language: "german", source: "html" }),
       NOT_DISCLOSED,
@@ -38,6 +39,7 @@ describe("encodeVerdicts and decodeVerdicts", () => {
       kinds: {
         ai: {
           state: "disclosed",
+          kind: "ai",
           notes: withAll.notes,
           language: "spanish",
           service: "Suno",
@@ -46,15 +48,18 @@ describe("encodeVerdicts and decodeVerdicts", () => {
         },
       },
     });
-    const bare: Verdict = {
+    const bare: AiVerdict = {
       state: "disclosed",
+      kind: "ai",
       notes: "x",
       language: "english",
       source: "api",
     };
     expect(encodeVerdicts(aiVerdicts(bare), T)).toStrictEqual({
       time: T,
-      kinds: { ai: { state: "disclosed", notes: "x", language: "english", source: "api" } },
+      kinds: {
+        ai: { state: "disclosed", kind: "ai", notes: "x", language: "english", source: "api" },
+      },
     });
   });
 
@@ -73,7 +78,9 @@ describe("encodeVerdicts and decodeVerdicts", () => {
 describe("decodeVerdicts", () => {
   const valid = {
     time: T,
-    kinds: { ai: { state: "disclosed", notes: "text", language: "english", source: "api" } },
+    kinds: {
+      ai: { state: "disclosed", kind: "ai", notes: "text", language: "english", source: "api" },
+    },
   };
 
   function withAi(ai: unknown, time: unknown = T): unknown {
@@ -110,6 +117,8 @@ describe("decodeVerdicts", () => {
     const bad: readonly unknown[] = [
       withAi({ ...ai, state: "maybe" }),
       withAi({ ...ai, state: undefined }),
+      withAi({ ...ai, kind: "drm" }),
+      withAi({ ...ai, kind: undefined }),
       withAi(ai, "yesterday"),
       withAi(ai, Number.NaN),
       withoutTime,
@@ -138,7 +147,13 @@ describe("decodeVerdicts", () => {
       kinds: { ai: { ...valid.kinds.ai, extra: "x" }, other: { state: "unknown" } },
     });
     expect(decoded?.verdicts).toStrictEqual(
-      aiVerdicts({ state: "disclosed", notes: "text", language: "english", source: "api" }),
+      aiVerdicts({
+        state: "disclosed",
+        kind: "ai",
+        notes: "text",
+        language: "english",
+        source: "api",
+      }),
     );
   });
 });

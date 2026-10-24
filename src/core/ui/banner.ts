@@ -1,6 +1,6 @@
+import type { AiDisclosed } from "../kinds/ai";
 import type { TagKind } from "../kinds/kind";
 import type { MessageCatalog } from "../ports";
-import type { DisclosedVerdict } from "../types";
 import { normalizeBreaks } from "./notes";
 import { adoptStyles, BANNER_CSS } from "./styles";
 
@@ -35,7 +35,7 @@ export interface Banner {
   /** `div.sar-banner-host`, the light-DOM element that holds the shadow root. */
   readonly host: HTMLElement;
   /** Shows the full notice, or the one-line note for an allow-listed game. Same view: no change. */
-  show(verdict: DisclosedVerdict, allowed: boolean): void;
+  show(verdict: AiDisclosed, allowed: boolean): void;
   /** Scrolls the banner into view and moves focus to it, for the summary row's jump. */
   reveal(): void;
 }
@@ -52,7 +52,7 @@ function parseAction(value: string | null): Action | undefined {
 
 interface Shown {
   readonly variant: Variant;
-  readonly verdict: DisclosedVerdict;
+  readonly verdict: AiDisclosed;
 }
 
 function defaultFrame(doc: Document): (callback: () => void) => void {
@@ -140,7 +140,7 @@ export function createBanner(
     }
   }
 
-  function buildFull(verdict: DisclosedVerdict): HTMLElement {
+  function buildFull(verdict: AiDisclosed): HTMLElement {
     const aside = element("aside", "sar-banner");
     aside.setAttribute("aria-labelledby", TITLE_ID);
     aside.tabIndex = -1;
@@ -184,7 +184,7 @@ export function createBanner(
     return aside;
   }
 
-  function render(variant: Variant, verdict: DisclosedVerdict): void {
+  function render(variant: Variant, verdict: AiDisclosed): void {
     const next = variant === "full" ? buildFull(verdict) : buildIgnored();
     box.replaceWith(next);
     box = next;

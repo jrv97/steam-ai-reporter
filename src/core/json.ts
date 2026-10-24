@@ -29,3 +29,41 @@ export function parseWithDefaults<TSchema extends v.GenericSchema>(
   const result = v.safeParse(schema, input);
   return result.success ? result.output : v.parse(schema, {});
 }
+
+/**
+ * The JSON form of a plain data value, or undefined when it holds something JSON cannot carry (a
+ * function, a symbol, NaN). Object keys whose value is undefined are left out, like
+ * `JSON.stringify` does, so an optional field that is not set costs no storage.
+ */
+export function toJsonValue(value: unknown): JsonValue | undefined {
+  if (value === null || typeof value === "string" || typeof value === "boolean") {
+    return value;
+  }
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? value : undefined;
+  }
+  if (Array.isArray(value)) {
+    const items: JsonValue[] = [];
+    for (const item of value) {
+      const json = toJsonValue(item);
+      if (json === undefined) {
+        return undefined;
+      }
+      items.push(json);
+    }
+    return items;
+  }
+  if (typeof value === "object") {
+    const fields: Record<string, JsonValue> = {};
+    for (const [key, field] of Object.entries(value)) {
+      const json = toJsonValue(field);
+      if (json !== undefined) {
+        fields[key] = json;
+      } else if (field !== undefined) {
+        return undefined;
+      }
+    }
+    return fields;
+  }
+  return undefined;
+}

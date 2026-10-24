@@ -3,6 +3,7 @@ import { detectorContract } from "../../../tests/contracts/detector.contract";
 import { appId, appIds } from "../../../tests/helpers/app-ids";
 import { APP_PAGES, type AppPageName } from "../../../tests/helpers/app-page";
 import { fakeHttp, type Reply } from "../../../tests/helpers/fake-http";
+import type { AiVerdict } from "../kinds/ai";
 import { UNKNOWN_KINDS } from "../kinds/verdicts";
 import { UNKNOWN, type Verdict } from "../types";
 import { createAppPageDetector, parseAppPage, parseLiveAppPage } from "./app-page";
@@ -15,13 +16,13 @@ function doc(html: string): Document {
   return new DOMParser().parseFromString(html, "text/html");
 }
 
-function parseFixture(name: AppPageName, url: string): Verdict {
-  return parseAppPage(doc(fixture(name)), url);
+function parseFixture(name: AppPageName, url: string): AiVerdict {
+  return parseAppPage(doc(fixture(name)), url).ai;
 }
 
 const APP = (id: number): string => `https://store.steampowered.com/app/${id}/?l=english`;
 
-function notesOf(verdict: Verdict): string | undefined {
+function notesOf(verdict: AiVerdict): string | undefined {
   return verdict.state === "disclosed" ? verdict.notes : undefined;
 }
 
@@ -97,7 +98,7 @@ describe("parseAppPage over the captured fixtures", () => {
   });
 
   it("is unknown gated when the app name is missing", () => {
-    expect(parseAppPage(doc("<html><body></body></html>"), APP(1))).toBe(UNKNOWN.gated);
+    expect(parseAppPage(doc("<html><body></body></html>"), APP(1))).toBe(UNKNOWN_KINDS.gated);
   });
 });
 

@@ -14,6 +14,7 @@ describe("AI_KIND.fromGetItems", () => {
     }, " Fixture Game ");
     expect(verdict).toStrictEqual({
       state: "disclosed",
+      kind: "ai",
       notes: "Concept art was generated.\nNo AI text.",
       language: "english",
       service: "Midjourney",
@@ -29,6 +30,7 @@ describe("AI_KIND.fromGetItems", () => {
     }, "");
     expect(verdict).toStrictEqual({
       state: "disclosed",
+      kind: "ai",
       notes: "Used for textures.",
       language: "english",
       source: "api",

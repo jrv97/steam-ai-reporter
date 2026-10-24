@@ -1,13 +1,14 @@
 import { steamLanguage } from "../i18n/locale";
-import { type KindVerdicts, UNKNOWN_KINDS } from "../kinds/verdicts";
-import type { Http, HttpResult } from "../ports";
+import type { KindId } from "../kinds/id";
+import { KINDS } from "../kinds/registry";
 import {
-  type AppId,
-  type Detector,
-  type NotDisclosedVerdict,
-  UNKNOWN,
-  type Verdict,
-} from "../types";
+  isKindVerdicts,
+  type KindVerdict,
+  type KindVerdicts,
+  UNKNOWN_KINDS,
+} from "../kinds/verdicts";
+import type { Http, HttpResult } from "../ports";
+import { type AppId, type Detector, UNKNOWN } from "../types";
 import { trimNotes } from "./notes";
 
 // Detection from the English app page (ADR 0001, the fallback when GetItems cannot answer). Rules
@@ -15,16 +16,10 @@ import { trimNotes } from "./notes";
 
 export const APP_PAGE_ORIGIN = "https://store.steampowered.com";
 
-/** Steam's own heading of the AI block; the mature content block uses the same element ID. */
-const DISCLOSURE_HEADING = "AI Generated Content Disclosure";
-const BLOCK_SELECTOR = "#game_area_content_descriptors";
 const NAME_SELECTOR = "#appHubAppName";
-const NOTES_SELECTOR = "p > i";
 const HTTP_OK = 200;
 const HTTP_TOO_MANY_REQUESTS = 429;
 const APP_PATH = /^\/app\/\d+(?:\/|$)/;
-
-const NOT_DISCLOSED: NotDisclosedVerdict = { state: "not-disclosed", source: "html" };
 
 /** `/app/<id>` is the only path of an app page; `/agecheck/`, `/login/` and `/` are gates. */
 function isAppPage(finalUrl: string): boolean {
@@ -36,44 +31,25 @@ function isAppPage(finalUrl: string): boolean {
   }
 }
 
-/** The notes of the AI block among the blocks sharing the ID, or undefined when there is none. */
-function disclosureNotes(doc: Document): string | undefined {
-  for (const block of doc.querySelectorAll(BLOCK_SELECTOR)) {
-    if (block.querySelector("h2")?.textContent.trim() === DISCLOSURE_HEADING) {
-      return trimNotes(block.querySelector(NOTES_SELECTOR)?.textContent ?? "");
-    }
-  }
-  return undefined;
-}
-
 /**
- * The verdict an English app page gives. `finalUrl` is where the request ended up after redirects:
- * unknown `gated` when that is not an app page, or when the page has no app name (age gate, sign-in
- * and home redirects, rq6 S2 and S7). A page without the AI block, or with an empty one, is not
- * disclosed. Notes keep their line breaks: each `<br>` is followed by a newline in the source.
+ * The verdicts an English app page gives. `finalUrl` is where the request ended up after
+ * redirects: every kind is unknown `gated` when that is not an app page, or when the page has no
+ * app name (age gate, sign-in and home redirects, rq6 S2 and S7). A kind that cannot be read from
+ * the page is unknown `missing`; the others read their own block.
  */
-export function parseAppPage(doc: Document, finalUrl: string): Verdict {
+export function parseAppPage(doc: Document, finalUrl: string): KindVerdicts {
   if (!isAppPage(finalUrl)) {
-    return UNKNOWN.gated;
+    return UNKNOWN_KINDS.gated;
   }
   const name = trimNotes(doc.querySelector(NAME_SELECTOR)?.textContent ?? "");
   if (name === "") {
-    return UNKNOWN.gated;
+    return UNKNOWN_KINDS.gated;
   }
-  const notes = disclosureNotes(doc);
-  if (notes === undefined || notes === "") {
-    return NOT_DISCLOSED;
+  const verdicts: Partial<Record<KindId, KindVerdict>> = {};
+  for (const kind of KINDS) {
+    verdicts[kind.id] = kind.fromAppPage?.(doc, name) ?? UNKNOWN.missing;
   }
-  return { state: "disclosed", notes, language: "english", source: "html", name };
-}
-
-/**
- * The page only carries the AI block, so the AI kind gets its verdict and the other kinds share
- * the page's unknown reason, or are unknown `missing` when the page did answer.
- */
-function aiVerdicts(verdict: Verdict): KindVerdicts {
-  const rest = UNKNOWN_KINDS[verdict.state === "unknown" ? verdict.reason : "missing"];
-  return { ...rest, ai: verdict };
+  return isKindVerdicts(verdicts) ? verdicts : UNKNOWN_KINDS.error;
 }
 
 /**
@@ -82,7 +58,7 @@ function aiVerdicts(verdict: Verdict): KindVerdicts {
  */
 export function parseLiveAppPage(doc: Document, pageUrl: string): KindVerdicts | undefined {
   return steamLanguage(doc.documentElement.lang) === "english"
-    ? aiVerdicts(parseAppPage(doc, pageUrl))
+    ? parseAppPage(doc, pageUrl)
     : undefined;
 }
 
@@ -90,17 +66,20 @@ export function appPageUrl(id: AppId): string {
   return `${APP_PAGE_ORIGIN}/app/${id}/?l=english`;
 }
 
-function verdictOf(result: HttpResult, parse: (body: string, url: string) => Verdict): Verdict {
+function verdictsOf(
+  result: HttpResult,
+  parse: (body: string, url: string) => KindVerdicts,
+): KindVerdicts {
   switch (result.kind) {
     case "response":
       if (result.status === HTTP_TOO_MANY_REQUESTS) {
-        return UNKNOWN["rate-limited"];
+        return UNKNOWN_KINDS["rate-limited"];
       }
-      return result.status === HTTP_OK ? parse(result.body, result.url) : UNKNOWN.error;
+      return result.status === HTTP_OK ? parse(result.body, result.url) : UNKNOWN_KINDS.error;
     case "failed":
-      return UNKNOWN.error;
+      return UNKNOWN_KINDS.error;
     case "withheld":
-      return UNKNOWN["rate-limited"];
+      return UNKNOWN_KINDS["rate-limited"];
   }
 }
 
@@ -110,14 +89,14 @@ function verdictOf(result: HttpResult, parse: (body: string, url: string) => Ver
  */
 export function createAppPageDetector(http: Http): Detector {
   const parser = new DOMParser();
-  const parse = (body: string, url: string): Verdict =>
+  const parse = (body: string, url: string): KindVerdicts =>
     parseAppPage(parser.parseFromString(body, "text/html"), url);
   return {
     async detect(ids: readonly AppId[]): Promise<ReadonlyMap<AppId, KindVerdicts>> {
       const verdicts = new Map<AppId, KindVerdicts>();
       for (const id of new Set(ids)) {
         // Sequential on purpose: one request in flight (rule 13).
-        verdicts.set(id, aiVerdicts(verdictOf(await http.get(appPageUrl(id)), parse)));
+        verdicts.set(id, verdictsOf(await http.get(appPageUrl(id)), parse));
       }
       return verdicts;
     },
