@@ -1,5 +1,5 @@
 import type * as v from "valibot";
-import type { ExtraDetails } from "../detect/getitems.schema";
+import type { ExtraDetails, StoreItem } from "../detect/getitems.schema";
 import type { SteamLanguage } from "../i18n/locale";
 import type { BareMessageKey } from "../i18n/t";
 import type { DisclosedBase, Verdict } from "../types";
@@ -32,13 +32,12 @@ export interface KindDefinition<Disclosed extends DisclosedBase> {
   /** Stable; stored in the settings and in the ignore list. */
   readonly id: Disclosed["kind"];
   /**
-   * The kind's verdict for a GetItems item with `extra_details`: disclosed or not disclosed, or
-   * unknown when a field it reads is malformed. The name is the store name when Steam sent one; the
-   * language is the one the request asked for.
+   * The kind's verdict for a GetItems item and its `extra_details`: disclosed or not disclosed, or
+   * unknown when a field it reads is malformed. The language is the one the request asked for.
    */
   readonly fromGetItems: (
+    item: StoreItem,
     details: ExtraDetails,
-    name: string | undefined,
     language: SteamLanguage,
   ) => Verdict<Disclosed>;
   /**

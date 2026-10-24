@@ -2,7 +2,7 @@ import * as v from "valibot";
 import { AppIdSchema } from "../types";
 
 // Schemas for the IStoreBrowseService/GetItems answer (ADR 0001, rq6 S2). They name only the
-// fields the parser reads; valibot drops every other key. Each nested object is readonly, so the
+// fields the kinds read; valibot drops every other key. Each nested object is readonly, so the
 // parsed data is deep readonly.
 
 /**
@@ -21,22 +21,67 @@ export const GetItemsEnvelopeSchema = v.pipe(
   v.readonly(),
 );
 
-const ExtraDetailsSchema = v.pipe(
+/** What a field holds when Steam sent it in the wrong shape. */
+export const MALFORMED: unique symbol = Symbol("malformed");
+
+const MalformedSchema = v.pipe(v.unknown(), v.transform((): typeof MALFORMED => MALFORMED));
+
+/**
+ * A field that parses to its own value, or to `MALFORMED`. Each kind reads the fields it needs
+ * and answers unknown when one is malformed, so one bad field costs only the kinds that read it.
+ */
+function lenient<const TSchema extends v.GenericSchema>(schema: TSchema) {
+  return v.union([schema, MalformedSchema]);
+}
+
+const AnticheatSchema = v.pipe(
   v.object({
-    content_survey_ai_notes: v.exactOptional(v.string()),
-    ai_generation_service: v.exactOptional(
-      v.pipe(v.object({ name: v.exactOptional(v.string()) }), v.readonly()),
-    ),
+    kernel_mode: v.exactOptional(v.boolean()),
+    uninstall_completely: v.exactOptional(v.boolean()),
+    boot_protection: v.exactOptional(v.boolean()),
+    name: v.exactOptional(v.string()),
+    name_loc: v.exactOptional(v.string()),
+    boot_protection_name: v.exactOptional(v.string()),
   }),
   v.readonly(),
 );
 
-/** One store item. `id` echoes the requested ID; `appid` is 0 for invalid items and unused. */
+const EulaEntrySchema = v.pipe(v.object({ name: v.string(), url: v.string() }), v.readonly());
+
+const ExtraDetailsSchema = v.pipe(
+  v.object({
+    content_survey_ai_notes: v.exactOptional(lenient(v.string())),
+    ai_generation_service: v.exactOptional(
+      lenient(v.pipe(v.object({ name: v.exactOptional(v.string()) }), v.readonly())),
+    ),
+    anticheat: v.exactOptional(lenient(AnticheatSchema)),
+    drm_third_party_type: v.exactOptional(lenient(v.string())),
+    drm_activation_limit: v.exactOptional(lenient(v.string())),
+    user_account_third_party: v.exactOptional(lenient(v.string())),
+    user_account_third_party_link_to_steam: v.exactOptional(lenient(v.boolean())),
+    eula: v.exactOptional(lenient(v.pipe(v.array(EulaEntrySchema), v.readonly()))),
+  }),
+  v.readonly(),
+);
+
+const CategoriesSchema = v.pipe(
+  v.object({
+    supported_player_categoryids: v.exactOptional(v.pipe(v.array(v.number()), v.readonly())),
+  }),
+  v.readonly(),
+);
+
+/**
+ * One store item. `id` echoes the requested ID; `appid` is 0 for invalid items and unused. The
+ * name and the categories are lenient like the details; `success`, `id` and `extra_details` are
+ * not, because an item without them says nothing about any kind.
+ */
 export const StoreItemSchema = v.pipe(
   v.object({
     id: AppIdSchema,
     success: v.number(),
-    name: v.exactOptional(v.string()),
+    name: v.exactOptional(lenient(v.string())),
+    categories: v.exactOptional(lenient(CategoriesSchema)),
     extra_details: v.exactOptional(ExtraDetailsSchema),
   }),
   v.readonly(),

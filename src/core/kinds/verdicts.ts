@@ -1,4 +1,4 @@
-import type { ExtraDetails } from "../detect/getitems.schema";
+import type { ExtraDetails, StoreItem } from "../detect/getitems.schema";
 import type { SteamLanguage } from "../i18n/locale";
 import { type DisclosedBase, UNKNOWN, type UnknownReason, type Verdict } from "../types";
 import type { KindId } from "./id";
@@ -46,13 +46,13 @@ export const UNKNOWN_KINDS: Readonly<Record<UnknownReason, KindVerdicts>> = {
 
 /** Every kind's verdict for a GetItems item with `extra_details`. */
 export function kindsFromGetItems(
+  item: StoreItem,
   details: ExtraDetails,
-  name: string | undefined,
   language: SteamLanguage,
 ): KindVerdicts {
   const verdicts: Partial<Record<KindId, KindVerdict>> = {};
   for (const kind of KINDS) {
-    verdicts[kind.id] = kind.fromGetItems(details, name, language);
+    verdicts[kind.id] = kind.fromGetItems(item, details, language);
   }
   return isKindVerdicts(verdicts) ? verdicts : UNKNOWN_KINDS.error;
 }

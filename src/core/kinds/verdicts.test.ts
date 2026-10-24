@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { parsedItem } from "../../../tests/helpers/getitems";
 import { UNKNOWN, type UnknownReason } from "../types";
 import { KIND_IDS } from "./id";
 import { KINDS } from "./registry";
@@ -26,13 +27,11 @@ describe("isKindVerdicts", () => {
 
 describe("kindsFromGetItems", () => {
   it("gives every kind the verdict its definition derives from the item", () => {
-    const details = { content_survey_ai_notes: "Concept art." };
-    const verdicts = kindsFromGetItems(details, "Fixture Game", "english");
+    const { item, details } = parsedItem({ content_survey_ai_notes: "Concept art." });
+    const verdicts = kindsFromGetItems(item, details, "english");
     expect(Object.keys(verdicts)).toStrictEqual([...KIND_IDS]);
     for (const kind of KINDS) {
-      expect(verdicts[kind.id]).toStrictEqual(
-        kind.fromGetItems(details, "Fixture Game", "english"),
-      );
+      expect(verdicts[kind.id]).toStrictEqual(kind.fromGetItems(item, details, "english"));
     }
   });
 });

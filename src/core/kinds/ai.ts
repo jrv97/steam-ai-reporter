@@ -1,10 +1,11 @@
 import * as v from "valibot";
-import type { ExtraDetails } from "../detect/getitems.schema";
+import { type ExtraDetails, MALFORMED, type StoreItem } from "../detect/getitems.schema";
 import { trimNotes } from "../detect/notes";
 import { type SteamLanguage, SteamLanguageSchema } from "../i18n/locale";
 import {
   type DisclosedBase,
   type NotDisclosedVerdict,
+  UNKNOWN,
   type Verdict,
   VerdictSourceSchema,
 } from "../types";
@@ -44,17 +45,17 @@ function disclosureNotes(doc: Document): string | undefined {
   return undefined;
 }
 
-function fromGetItems(
-  details: ExtraDetails,
-  name: string | undefined,
-  language: SteamLanguage,
-): AiDisclosed | NotDisclosedVerdict {
-  const notes = trimNotes(details.content_survey_ai_notes ?? "");
+function fromGetItems(item: StoreItem, details: ExtraDetails, language: SteamLanguage): AiVerdict {
+  const { content_survey_ai_notes: rawNotes, ai_generation_service: rawService } = details;
+  if (rawNotes === MALFORMED || rawService === MALFORMED || item.name === MALFORMED) {
+    return UNKNOWN.error;
+  }
+  const notes = trimNotes(rawNotes ?? "");
   if (notes === "") {
     return NOT_DISCLOSED_API;
   }
-  const service = trimNotes(details.ai_generation_service?.name ?? "");
-  const storeName = trimNotes(name ?? "");
+  const service = trimNotes(rawService?.name ?? "");
+  const storeName = trimNotes(item.name ?? "");
   return {
     state: "disclosed",
     kind: "ai",
@@ -70,7 +71,7 @@ function fromGetItems(
  * The page has no block for a game that disclosed nothing, or an empty one: not disclosed. Notes
  * keep their line breaks: each `<br>` is followed by a newline in the source.
  */
-function fromAppPage(doc: Document, name: string): AiDisclosed | NotDisclosedVerdict {
+function fromAppPage(doc: Document, name: string): AiVerdict {
   const notes = disclosureNotes(doc);
   if (notes === undefined || notes === "") {
     return NOT_DISCLOSED_HTML;

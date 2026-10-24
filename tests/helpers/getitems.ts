@@ -1,5 +1,10 @@
 import * as v from "valibot";
 import { GETITEMS_URL } from "../../src/core/detect/getitems";
+import {
+  type ExtraDetails,
+  type StoreItem,
+  StoreItemSchema,
+} from "../../src/core/detect/getitems.schema";
 import { parseJson } from "../../src/core/json";
 import { type AppId, AppIdSchema } from "../../src/core/types";
 import type { Reply, Route } from "./fake-http";
@@ -114,4 +119,27 @@ const FixtureSchema = v.object({
 /** The `store_items` of a GetItems fixture. */
 export function fixtureItems(fixture: unknown): readonly unknown[] {
   return v.parse(FixtureSchema, fixture).response.store_items ?? [];
+}
+
+/** A store item and its extra details, as the schema parses them. */
+export interface ParsedItem {
+  readonly item: StoreItem;
+  readonly details: ExtraDetails;
+}
+
+/**
+ * Parses a plain store item with these extra details through the real schema, after a JSON round
+ * trip like a response body, so a kind sees what it sees in production. `overrides` replace item
+ * keys such as `name` or `categories`; an undefined value leaves the key out.
+ */
+export function parsedItem(
+  details: Readonly<Record<string, unknown>> = {},
+  overrides: Readonly<Record<string, unknown>> = {},
+): ParsedItem {
+  const body = JSON.stringify(storeItem(1, { extra_details: details, ...overrides }));
+  const item = v.parse(StoreItemSchema, parseJson(body));
+  if (item.extra_details === undefined) {
+    throw new TypeError();
+  }
+  return { item, details: item.extra_details };
 }

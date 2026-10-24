@@ -134,7 +134,7 @@ function itemVerdicts(item: StoreItem, language: SteamLanguage): KindVerdicts {
   if (item.success !== ERESULT_OK || details === undefined) {
     return UNKNOWN_KINDS.missing;
   }
-  return kindsFromGetItems(details, item.name, language);
+  return kindsFromGetItems(item, details, language);
 }
 
 /**
