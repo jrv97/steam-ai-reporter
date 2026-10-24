@@ -346,28 +346,27 @@ export async function mountSettingsForm(
     }
   }
 
-  /** The settings with the control's value applied; undefined when the value is not valid. */
-  function changed(
-    field: Field,
-    control: HTMLInputElement | HTMLSelectElement,
-  ): Settings | undefined {
+  /** The settings with the control's value applied; an invalid value becomes the default. */
+  function changed(field: Field, control: HTMLInputElement | HTMLSelectElement): Settings {
+    const defaults = kind.defaults;
     switch (field) {
       case "badges":
-        return control instanceof HTMLInputElement
-          ? withKind(current, kind.id, { badge: control.checked })
-          : undefined;
+        return withKind(current, kind.id, {
+          badge: control instanceof HTMLInputElement ? control.checked : defaults.badge,
+        });
       case "banner":
-        return control instanceof HTMLInputElement
-          ? withKind(current, kind.id, { banner: control.checked })
-          : undefined;
-      case "listFilter": {
-        const filter = v.safeParse(v.picklist(LIST_FILTERS), control.value);
-        return filter.success ? withKind(current, kind.id, { filter: filter.output }) : undefined;
-      }
-      case "locale": {
-        const locale = v.safeParse(LocaleSchema, control.value);
-        return locale.success ? { ...current, locale: locale.output } : undefined;
-      }
+        return withKind(current, kind.id, {
+          banner: control instanceof HTMLInputElement ? control.checked : defaults.banner,
+        });
+      case "listFilter":
+        return withKind(current, kind.id, {
+          filter: v.parse(v.fallback(v.picklist(LIST_FILTERS), defaults.filter), control.value),
+        });
+      case "locale":
+        return {
+          ...current,
+          locale: v.parse(v.fallback(LocaleSchema, DEFAULT_SETTINGS.locale), control.value),
+        };
     }
   }
 
@@ -398,10 +397,7 @@ export async function mountSettingsForm(
     if (!field.success) {
       return;
     }
-    const next = changed(field.output, target);
-    if (next !== undefined) {
-      void save(field.output, next);
-    }
+    void save(field.output, changed(field.output, target));
   }
 
   function renderAllowList(entries: ReadonlyMap<AppId, AllowEntry>): void {

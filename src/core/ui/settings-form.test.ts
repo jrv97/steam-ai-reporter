@@ -55,7 +55,14 @@ async function setup(context: SettingsContext = "page") {
     }
     return found;
   };
-  return { root, form, settings, allowList, control, input };
+  const select = (selector: string): HTMLSelectElement => {
+    const found = control(selector);
+    if (!(found instanceof HTMLSelectElement)) {
+      throw new TypeError(selector);
+    }
+    return found;
+  };
+  return { root, form, settings, allowList, control, input, select };
 }
 
 afterEach(() => {
@@ -170,23 +177,34 @@ describe("mountSettingsForm", () => {
     });
   });
 
-  it("saves nothing for a value the setting does not allow", async () => {
-    const { settings, input, control } = await setup();
-    const write = vi.spyOn(settings, "write");
-    const radio = input("input[value=dim]");
+  it("sets a list filter the setting does not allow to its default and shows it", async () => {
+    const { settings, input } = await setup();
+    await settings.write(withKind(DEFAULT_SETTINGS, "ai", { filter: "dim" }));
+    expect(input("input[value=dim]").checked).toBe(true);
+    const radio = input("input[value=hide]");
     radio.value = "blur";
     radio.checked = true;
     radio.dispatchEvent(new Event("change", { bubbles: true }));
-    const picker = control("select");
-    if (picker instanceof HTMLSelectElement) {
-      const option = document.createElement("option");
-      option.value = "x y";
-      picker.append(option);
-      picker.value = "x y";
-      picker.dispatchEvent(new Event("change", { bubbles: true }));
-    }
-    await Promise.resolve();
-    expect(write).not.toHaveBeenCalled();
+    await vi.waitFor(async () => {
+      expect(parseSettings(await settings.read()).kinds.ai.filter).toBe("off");
+    });
+    expect(input("input[value=off]").checked).toBe(true);
+  });
+
+  it("sets a language the setting does not allow to automatic and shows it", async () => {
+    const { settings, select } = await setup();
+    await settings.write({ ...DEFAULT_SETTINGS, locale: "es" });
+    const picker = select("select");
+    expect(picker.value).toBe("es");
+    const option = document.createElement("option");
+    option.value = "x y";
+    picker.append(option);
+    picker.value = "x y";
+    picker.dispatchEvent(new Event("change", { bubbles: true }));
+    await vi.waitFor(async () => {
+      expect(parseSettings(await settings.read()).locale).toBe("auto");
+    });
+    expect(picker.value).toBe("auto");
   });
 
   it("reverts the control and shows an error when a change cannot be saved", async () => {
