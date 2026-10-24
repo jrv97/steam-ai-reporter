@@ -241,6 +241,7 @@ export async function start(deps: AppDeps): Promise<App> {
   const capsules = createCapsuleUi({
     document: doc,
     detector: detectors.detector,
+    kinds: KINDS,
     renderers: [createHostKindsRenderer(), createBadgeRenderer(doc, i18n, card)],
     isAllowed: (id, forKind) => isIgnored(ignored, id, forKind),
     isBadged: (forKind) => showsBadge(settings.kinds[forKind]),

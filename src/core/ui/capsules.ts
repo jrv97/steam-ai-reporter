@@ -1,6 +1,6 @@
 import type { KindId } from "../kinds/id";
 import type { TagKind } from "../kinds/kind";
-import { KINDS, perKind } from "../kinds/registry";
+import { perKind } from "../kinds/registry";
 import type { KindVerdicts } from "../kinds/verdicts";
 import { HOST_APPID } from "../scan/marks";
 import type { RowPlacement } from "../scan/placements";
@@ -50,7 +50,7 @@ export interface CapsuleUiOptions {
   /** Drawn in order for every host: state marks, badges. */
   readonly renderers: readonly HostRenderer[];
   /** The kinds the renderers draw; a host with a disclosure in none of them gets no badge slot. */
-  readonly kinds?: readonly TagKind[];
+  readonly kinds: readonly TagKind[];
   /** Whether the game is on the allow-list for the kind now. */
   readonly isAllowed: (id: AppId, kind: KindId) => boolean;
   /** Whether the kind's badges show now, by its settings. Every kind's do by default. */
@@ -107,9 +107,8 @@ const NO_SLOT: SlotRead = { slot: undefined, markAnchor: false, unsized: false }
  * badge fits. Showing a hidden tab changes no node the scanner sees, and tabs fade in.
  */
 export function createCapsuleUi(options: CapsuleUiOptions): CapsuleUi {
-  const { document: doc, detector, renderers, isAllowed } = options;
+  const { document: doc, detector, renderers, kinds, isAllowed } = options;
   const isBadged = options.isBadged ?? (() => true);
-  const kinds = options.kinds ?? KINDS;
   const frame = options.frame ?? ((callback: () => void) => {
     const view = doc.defaultView;
     if (view === null) {

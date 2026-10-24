@@ -9,6 +9,7 @@ import {
 import { AI_KIND, type AiVerdict } from "../kinds/ai";
 import { KIND_IDS, type KindId } from "../kinds/id";
 import type { TagKind } from "../kinds/kind";
+import { KINDS } from "../kinds/registry";
 import type { KindVerdicts } from "../kinds/verdicts";
 import { GENERIC, type Placement, type RowPlacement } from "../scan/placements";
 import type { CapsuleHost } from "../scan/renderer";
@@ -37,7 +38,7 @@ function appId(value: number): AppId {
 function setup(
   verdicts: ReadonlyMap<AppId, AiVerdict>,
   allowed = new Set<AppId>(),
-  kinds?: readonly TagKind[],
+  kinds: readonly TagKind[] = KINDS,
   /** Verdicts of kinds other than the AI kind, for every app. */
   others: Partial<KindVerdicts> = {},
   /** Kinds whose badges are off in the settings. */
@@ -63,7 +64,7 @@ function setup(
       render: (view) =>
         views.push({ ...view, allowed: { ...view.allowed }, badged: { ...view.badged } }),
     }],
-    ...(kinds === undefined ? {} : { kinds }),
+    kinds,
     isAllowed: (id) => allowed.has(id),
     isBadged: (kind) => !unbadged.has(kind),
     frame: (callback) => frames.push(callback),
