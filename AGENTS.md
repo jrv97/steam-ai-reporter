@@ -35,7 +35,8 @@ These are hard rules. A change that breaks one needs an ADR first.
    or `GM`. Platform code lives in `src/platform/`.
 6. **Originality and credit.** No code is copied from other AI-disclosure extensions, and nothing
    from GPL projects such as Augmented Steam. Ideas are credited in the README.
-   `THIRD_PARTY_NOTICES.md` lists the licenses of bundled dependencies only.
+   `THIRD_PARTY_NOTICES.md` lists the licenses of bundled dependencies and of third-party artwork in
+   the bundle.
 7. **One version source.** The `package.json` version feeds both manifests and the userscript
    header. Feature changes never edit it; the release pipeline does.
 8. **Repo hygiene.** Repo text is ASCII with normal capitalization and no em dashes (non-English
