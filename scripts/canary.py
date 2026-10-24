@@ -1,10 +1,12 @@
 """Check that Steam still answers in the shape the detectors rely on (live, keyless).
 
-One GetItems call for 5072580 and 1808500 (disclosed) and 413150 (not disclosed), then one
-`?l=english` app page for the disclosure heading. Two requests in total, both without cookies,
-to the two Valve hosts the extension itself uses. Exits non-zero, listing what changed, when an
-answer no longer has the expected shape. Not part of `ci`: it needs the network and Steam's
-mood. Run it before a release.
+One GetItems call for 5072580 and 1808500 (disclosed) and 413150 (not disclosed), plus one app
+for each tag kind (3751950 DRM, account and EULA; 2807960 kernel anti-cheat with boot protection;
+730 non-kernel anti-cheat; 105600 PvP categories), then one `?l=english` app page for the
+disclosure heading and the anti-cheat and EULA notices. Two requests in total, both without
+cookies, to the two Valve hosts the extension itself uses. Exits non-zero, listing what changed,
+when an answer no longer has the expected shape. Not part of `ci`: it needs the network and
+Steam's mood. Run it before a release.
 """
 
 import json
@@ -25,6 +27,14 @@ DISCLOSED = (5072580, 1808500)
 NOT_DISCLOSED = (413150,)
 AI_SERVICE_APPID = 5072580
 PAGE_APPID = 1808500
+DRM_APPID = 3751950
+KERNEL_APPID = 2807960
+NONKERNEL_APPID = 730
+PVP_APPID = 105600
+KIND_APPIDS = (DRM_APPID, KERNEL_APPID, NONKERNEL_APPID, PVP_APPID)
+# Steam's category IDs for PvP, Online PvP, LAN PvP and Shared/Split Screen PvP.
+PVP_CATEGORY_IDS = frozenset({49, 36, 47, 37})
+EULA_URL = re.compile(r"^https://store\.steampowered\.com/+eula/")
 APP_PATH = re.compile(r"^/app/(\d+)(?:/|$)")
 
 
@@ -88,6 +98,8 @@ def getitems_problems(response: Response) -> list[str]:
             by_id[item_id] = item
     for appid in (*DISCLOSED, *NOT_DISCLOSED):
         problems += item_problems(appid, by_id.get(appid))
+    for appid in KIND_APPIDS:
+        problems += kind_problems(appid, by_id.get(appid))
     return problems
 
 
@@ -115,21 +127,99 @@ def item_problems(appid: int, item: dict[str, object] | None) -> list[str]:
     return problems
 
 
+def non_empty_string(value: object) -> bool:
+    return isinstance(value, str) and bool(value.strip())
+
+
+def drm_problems(where: str, details: dict[str, object]) -> list[str]:
+    problems: list[str] = []
+    for key in ("drm_third_party_type", "user_account_third_party"):
+        if not non_empty_string(details.get(key)):
+            problems.append(f"{where}: expected a non-empty string in {key}")
+    if not isinstance(details.get("user_account_third_party_link_to_steam"), bool):
+        problems.append(f"{where}: expected a bool in user_account_third_party_link_to_steam")
+    eula = details.get("eula")
+    entries = eula if isinstance(eula, list) else []
+    if not entries:
+        return [*problems, f"{where}: expected a list of name and url in eula"]
+    for entry in entries:
+        link = as_object(entry)
+        url = link.get("url") if link else None
+        if not (link and non_empty_string(link.get("name")) and isinstance(url, str)):
+            problems.append(f"{where}: an eula entry is not name and url strings")
+        elif not EULA_URL.match(url):
+            problems.append(f"{where}: eula url {url!r} is not an https store /eula/ link")
+    return problems
+
+
+def anticheat_problems(where: str, details: dict[str, object], *, kernel: bool) -> list[str]:
+    anticheat = as_object(details.get("anticheat"))
+    if anticheat is None:
+        return [f"{where}: expected an anticheat object"]
+    problems: list[str] = []
+    if kernel:
+        for key in ("kernel_mode", "boot_protection"):
+            if anticheat.get(key) is not True:
+                problems.append(f"{where}: expected anticheat.{key} to be true")
+        if not non_empty_string(anticheat.get("boot_protection_name")):
+            problems.append(f"{where}: expected a string in anticheat.boot_protection_name")
+    elif anticheat.get("kernel_mode") is True:
+        problems.append(f"{where}: expected an anti-cheat without kernel_mode")
+    for key in ("name", "name_loc"):
+        if key in anticheat and not isinstance(anticheat[key], str):
+            problems.append(f"{where}: anticheat.{key} is not a string")
+    return problems
+
+
+def pvp_problems(where: str, item: dict[str, object]) -> list[str]:
+    categories = as_object(item.get("categories"))
+    ids = categories.get("supported_player_categoryids") if categories else None
+    if not isinstance(ids, list):
+        return [f"{where}: expected categories.supported_player_categoryids to be a list"]
+    if not PVP_CATEGORY_IDS.intersection(entry for entry in ids if isinstance(entry, int)):
+        return [f"{where}: expected a PvP category in supported_player_categoryids"]
+    return []
+
+
+def kind_problems(appid: int, item: dict[str, object] | None) -> list[str]:
+    where = f"GetItems app {appid}"
+    if item is None:
+        return [f"{where}: no item with this id in the answer"]
+    if appid == PVP_APPID:
+        return pvp_problems(where, item)
+    details = as_object(item.get("extra_details"))
+    if details is None:
+        return [f"{where}: extra_details is missing"]
+    if appid == DRM_APPID:
+        return drm_problems(where, details)
+    return anticheat_problems(where, details, kernel=appid == KERNEL_APPID)
+
+
 class PageScan(HTMLParser):
-    """Collects whether `#appHubAppName` exists and the `h2` texts of every disclosure block."""
+    """Collects `#appHubAppName`, the `h2` texts of every disclosure block and the notice hooks."""
 
     def __init__(self) -> None:
         super().__init__()
         self.has_app_name = False
         self.headings: list[str] = []
+        self.kernel_sections = 0
+        self.anticheat_names = 0
+        self.eula_links = 0
         self._block_depth = 0
         self._in_h2 = False
         self._text = ""
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         ids = {value for key, value in attrs if key == "id"}
+        classes = {name for key, value in attrs if key == "class" for name in (value or "").split()}
         if "appHubAppName" in ids:
             self.has_app_name = True
+        if {"anticheat_section", "DRM_notice"} <= classes:
+            self.kernel_sections += 1
+        if "anticheat_name" in classes:
+            self.anticheat_names += 1
+        if tag == "a" and any(key == "href" and "/eula/" in (value or "") for key, value in attrs):
+            self.eula_links += 1
         if self._block_depth:
             if tag == "div":
                 self._block_depth += 1
@@ -168,11 +258,15 @@ def app_page_problems(response: Response) -> list[str]:
             f"{where}: no #game_area_content_descriptors block with the h2 {HEADING!r}"
             f" (found {scan.headings!r})"
         )
+    if scan.kernel_sections == 0 or scan.anticheat_names == 0:
+        problems.append(f"{where}: no .anticheat_section.DRM_notice with an .anticheat_name")
+    if scan.eula_links == 0:
+        problems.append(f"{where}: no link to /eula/")
     return problems
 
 
 def main() -> None:
-    problems = getitems_problems(get(getitems_url((*DISCLOSED, *NOT_DISCLOSED))))
+    problems = getitems_problems(get(getitems_url((*DISCLOSED, *NOT_DISCLOSED, *KIND_APPIDS))))
     problems += app_page_problems(get(APP_PAGE_URL.format(appid=PAGE_APPID)))
     if problems:
         print("\n".join(problems))
