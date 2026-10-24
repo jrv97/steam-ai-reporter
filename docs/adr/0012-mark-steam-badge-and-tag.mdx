@@ -1,0 +1,36 @@
+---
+status: accepted
+date: 2026-10-25
+decision-makers: Jorge Rodriguez de la Vega
+---
+
+# Draw the extension mark from the Steam badge and a tag
+
+## Context and problem statement
+
+The old mark was a label with an AI spark, which names one tag. The product tags Steam store items. Which mark says that, and what does it do about Valve's trademark?
+
+## Decision drivers
+
+- It reads as "tags for Steam" at 128, 48 and 32 px.
+- The ring and the tag share one line weight.
+- One master file, with the colors generated from it.
+- Valve's branding page requires approved artwork, a logo that stands alone, and no implied endorsement. The design system said no Valve marks anywhere.
+
+## Considered options
+
+1. The Steam badge (ring and glyph) with a Lucide tags icon attached.
+2. A tags icon alone.
+3. A tags icon with a gamepad, no Steam shape.
+4. Keep the AI spark.
+
+## Decision outcome
+
+Chosen option 1, accepting the trademark risk. The badge uses the Simple Icons Steam path (CC0) and Lucide's `tags` icon (ISC). The ring and the tag stroke are 20 units on a 300 grid. The mark appears in the extension icon, the README logo, the store listing images, the options and popup headers and the design previews. It does not appear in any in-page component (chip, banner or hover card). `mark.svg` is the master (`currentColor`), and a script generates the purple, white and black files and the PNGs.
+
+### Consequences
+
+- Good: the mark says what the product tags and where.
+- Bad: Valve or a store reviewer can object to the glyph. The tags icon alone is the replacement.
+- Bad: the 16 px and 32 px renders are interim. Hand-hinted versions must replace them before store submission.
+- Neutral: the notices file lists the artwork. Design decisions 36 to 41 record the detail.
