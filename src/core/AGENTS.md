@@ -35,8 +35,36 @@ Every implementation of a port passes the same shared contract suite, with no pe
 
 - A new store surface is a new `Placement` entry in `scan/placements.ts`, with a fixture test. The scanner is not edited.
 - A new detection source is a new `Detector` link in the chain. The chain and the scanner are not edited.
-- A new tag kind is an id in `kinds/id.ts`, a `TagKind` definition (its verdict from a GetItems item, its catalog keys, its settings defaults) and an entry in `kinds/registry.ts`. The type checker names the other spots that list every kind (`perKind`, `kindsFromGetItems`, and `kindDetails` for the hover card and banner lines); the per-kind rules in `ui/styles.css` list each kind by hand, and `ui/styles.test.ts` fails for a kind they miss. The detectors, the chain and the cache read the registry.
 - A new message is a catalog key in `src/locales/`, never a literal in code or in a test.
+
+### A new tag kind
+
+A kind is data. The detectors, the chain, the cache, the settings and the ignore list read the registry, so these are the steps, and the type checker names the ones that list every kind:
+
+1. The definition, `kinds/<id>.ts`: a `KindDefinition` with its id, `fromGetItems` (and `fromAppPage` when the English page can answer), the `stored` schema built with `storedDisclosed`, the catalog keys of its heading and chip, its settings defaults and its cache TTLs. Its disclosed type extends `DisclosedBase<"<id>">`.
+2. One line in `KINDS` in `kinds/registry.ts`. The kind id, the verdict type, `perKind` and the settings defaults follow from it. `kindsFromGetItems`, the guards in `kinds/verdicts.ts` and the settings parser need no edit.
+3. The catalog keys in `src/locales/en/` and `src/locales/es/`: `kind_<id>_heading` (Steam's own line for the kind, in each language), `kind_<id>_chip` and any detail line Steam shows. Each key carries a translator note.
+4. A case in `kindDetails` (`ui/kind-details.ts`), which gives the hover card and the banner the lines under the heading. The `switch` is exhaustive, so the type checker fails until it is there.
+5. The per-kind rules in `ui/styles.css`: the badge switch, the dim and hide filters, their hover and focus rules and the hide rule list each kind by hand, because no selector joins an attribute on the root element with one on a host. `ui/styles.test.ts` fails for a kind they miss.
+6. A fixture: a captured GetItems item of a game that declares the kind in `tests/fixtures/getitems/kinds.json`, and a captured app page when the kind has page-only detail (`scripts/capture_fixtures.py`, then the table in `tests/fixtures/README.md`).
+7. A check in `scripts/canary.py` for the field the kind reads, so a change on Valve's side shows up before users see it.
+8. The test helpers that list every kind: `FULL_DISCLOSED` and `disclosedKinds` in `tests/helpers/verdicts.ts` (typed, so the checker names them). Fixture-based tests take the captured verdicts from `tests/helpers/fixture-verdicts.ts`.
+9. Tests next to the definition and in `kinds/registry.test.ts`; the settings form, the chips, the hover card and the banner pick the kind up without an edit.
+
+### The DOM marks
+
+Every attribute core writes on a store node starts with `data-sar-`. The scheme is per kind, so one setting change is one attribute write on the root element and no host is touched.
+
+| Where                       | Attribute                   | Holds                                                                                                                                                                  |
+| --------------------------- | --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Each host                   | `data-sar-appid`            | The app ID the host shows.                                                                                                                                             |
+| Each host with a kind       | `data-sar-kinds`            | The ids of the kinds that are disclosed and not ignored for the game, in registry order, separated by spaces. Absent when there is none. Rules match one id with `~=`. |
+| Hosts that cannot hide      | `data-sar-hideable="false"` | Hiding would break the list, so hide dims instead.                                                                                                                     |
+| The root element            | `data-sar-filter-<kind>`    | The kind's list filter that takes effect: `off`, `dim` or `hide`.                                                                                                      |
+| The root element            | `data-sar-badges-<kind>`    | `on` or `off`. A kind that is switched off reads `off` and `off` here.                                                                                                 |
+| A chip, and the summary row | `data-sar-kind`             | The id of the kind it shows, so `[data-sar-badges-<kind>="off"] [data-sar-kind="<kind>"]` hides it.                                                                    |
+
+A host with several kinds takes the strongest filter without a rule for it: a hidden host ignores a dim, and a host that cannot hide dims for either mode. A kind the game is ignored for is left out of `data-sar-kinds` and gets no chip, so it counts as absent.
 
 ## Style in this folder
 
