@@ -1,12 +1,12 @@
 ---
-title: AI Reporter for Steam UI components (v1)
+title: Tag Kit for Steam UI components (v1)
 status: draft
 updated: 2026-10-25
 ---
 
-# AI Reporter for Steam UI components (v1)
+# Tag Kit for Steam UI components (v1)
 
-Component specs for everything the extension and the userscript inject into store pages or own outright. This folder mirrors the published design system (https://claude.ai/artifact/3xsXmaA5vjofhEWkL8nYsQ, private to the owner's account): change one, then sync the other. The UI step of `docs/plans/steam-ai-reporter-v1.md` (step 10) builds from this file, and the i18n step (step 4) authors `src/locales/en/messages.json` from the message catalog at the end.
+Component specs for everything the extension and the userscript inject into store pages or own outright. This folder mirrors the published design system (https://claude.ai/artifact/3xsXmaA5vjofhEWkL8nYsQ, private to the account that published it): change one, then sync the other. The UI step of `docs/plans/steam-ai-reporter-v1.md` (step 10) builds from this file, and the i18n step (step 4) authors `src/locales/en/messages.json` from the message catalog at the end.
 
 **Files**
 
@@ -17,7 +17,7 @@ Component specs for everything the extension and the userscript inject into stor
 - `assets/icons/`: the extension icon (section 14).
 - `docs/design/decisions.mdx`: why each choice was made, and what is still open.
 
-AI Reporter for Steam tags games on the Steam store whose developers declared something players weigh before buying: AI use, kernel-level or other anti-cheat, third-party DRM, a required third-party account or a third-party EULA. It also tags games with a PvP mode, from Steam's own categories. Each tag is written in Steam's words, and the developer's text is quoted as written. It ships as a browser extension and a userscript. Its UI lives in two places: small pieces injected into store pages (chips, a banner, a hover card, a list filter) and its own settings pages (options page, toolbar popup, userscript dialog). This system covers both.
+Tag Kit for Steam tags games on the Steam store whose developers declared something players weigh before buying: AI use, kernel-level or other anti-cheat, third-party DRM, a required third-party account or a third-party EULA. It also tags games with a PvP mode, from Steam's own categories. Each tag is written in Steam's words, and the developer's text is quoted as written. It ships as a browser extension and a userscript. Its UI lives in two places: small pieces injected into store pages (chips, a banner, a hover card, a list filter) and its own settings pages (options page, toolbar popup, userscript dialog). This system covers both.
 
 Every class, attribute and custom property starts with `sar-`.
 
@@ -760,7 +760,7 @@ Specified only. No dialog rules exist yet, so this card has no preview.
 
 Files in `assets/icons/`.
 
-The extension's mark: a Steam badge (a ring around the Steam glyph) with a tag icon attached at its lower right, chosen by the owner on 2026-10-24 (decisions 36 to 40). The tag is derived from Lucide's `tags` icon (ISC, with an MIT notice for the parts derived from Feather) and the glyph from Simple Icons' Steam icon (CC0). The Steam logo is Valve's trademark. The notices ship in `THIRD_PARTY_NOTICES.md`.
+The extension's mark: a Steam badge (a ring around the Steam glyph) with a tag icon attached at its lower right, decided on 2026-10-24 (decisions 36 to 40). The tag is derived from Lucide's `tags` icon and the glyph from Simple Icons' Steam icon (CC0). Lucide is ISC licensed; the icons it derives from Feather carry a separate MIT notice, and `tags` is not one of them. The Steam logo is Valve's trademark. The notices ship in `THIRD_PARTY_NOTICES.md`.
 
 - `mark.svg`: the master, 300 by 300, one ink in `currentColor`, which a page can theme. Every other file derives from it.
 - `mark-purple.svg`: the master in `#8f73f3` (`sar-accent-400`). The extension icon, the store listings and the README logo.
@@ -770,7 +770,7 @@ The extension's mark: a Steam badge (a ring around the Steam glyph) with a tag i
 
 The ring is as thick as the tag's stroke: 20 units on the 300 unit canvas. The tag sits clear of the ring behind a transparent cut 8 units wide. The artwork spans 4 to 285 of the canvas, and the full bleed renders crop to that span.
 
-Use the PNG nearest the display size; the options header shows `icon-48.png` at 32px, the popup `icon-32.png`. The 16 and 32px renders are interim: the owner hand-hints reduced versions later. One ink per file; never add a gradient, a second color or letters.
+Use the PNG nearest the display size; the options header shows `icon-48.png` at 32px, the popup `icon-32.png`. The 16 and 32px renders are interim until hand-hinted reduced versions replace them. One ink per file; never add a gradient, a second color or letters.
 
 Regenerate the PNGs with `mise run icons`. It runs `scripts/render_icons.py`, which paints `mark-purple.svg` with headless Chrome (`SAR_CHROME_BIN`) into a page of exactly each size on a transparent ground.
 
