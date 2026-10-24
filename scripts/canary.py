@@ -1,12 +1,12 @@
 """Check that Steam still answers in the shape the detectors rely on (live, keyless).
 
-One GetItems call for 5072580 and 1808500 (disclosed) and 413150 (not disclosed), plus one app
-for each tag kind (3751950 DRM, account and EULA; 2807960 kernel anti-cheat with boot protection;
-730 non-kernel anti-cheat; 105600 PvP categories), then one `?l=english` app page for the
-disclosure heading and the anti-cheat and EULA notices. Two requests in total, both without
-cookies, to the two Valve hosts the extension itself uses. Exits non-zero, listing what changed,
-when an answer no longer has the expected shape. Not part of `ci`: it needs the network and
-Steam's mood. Run it before a release.
+One GetItems call for a sample of apps, then one `?l=english` app page of an app from that sample.
+Two requests in total, both without cookies, to the two Valve hosts the extension itself uses.
+The sample pins no game's data. Each field has the type the schemas expect when it is present,
+and across the sample some app shows each kind of declaration. The page is checked against what
+GetItems says about its own app. Exits non-zero, listing what changed, when an answer no longer
+has the expected shape. Not part of `ci`: it needs the network and Steam's mood. Run it before a
+release.
 """
 
 import json
@@ -23,19 +23,32 @@ APP_PAGE_URL = "https://store.steampowered.com/app/{appid}/?l=english"
 USER_AGENT = "steam-ai-reporter-canary (+https://github.com/jrv97/steam-ai-reporter)"
 TIMEOUT_SECONDS = 30
 HEADING = "AI Generated Content Disclosure"
-DISCLOSED = (5072580, 1808500)
-NOT_DISCLOSED = (413150,)
-AI_SERVICE_APPID = 5072580
-PAGE_APPID = 1808500
-DRM_APPID = 3751950
-KERNEL_APPID = 2807960
-NONKERNEL_APPID = 730
-PVP_APPID = 105600
-KIND_APPIDS = (DRM_APPID, KERNEL_APPID, NONKERNEL_APPID, PVP_APPID)
+# Apps that between them declare every kind. The first one with a kernel anti-cheat and AI notes
+# lends its page, and the order is the only thing about them that matters.
+SAMPLE = (1808500, 5072580, 413150, 3751950, 2807960, 730, 105600, 1245620)
 # Steam's category IDs for PvP, Online PvP, LAN PvP and Shared/Split Screen PvP.
 PVP_CATEGORY_IDS = frozenset({49, 36, 47, 37})
 EULA_URL = re.compile(r"^https://store\.steampowered\.com/+eula/")
 APP_PATH = re.compile(r"^/app/(\d+)(?:/|$)")
+
+STRING_FIELDS = (
+    "content_survey_ai_notes",
+    "drm_third_party_type",
+    "drm_activation_limit",
+    "user_account_third_party",
+)
+ANTICHEAT_BOOLS = ("kernel_mode", "uninstall_completely", "boot_protection")
+ANTICHEAT_STRINGS = ("name", "name_loc", "boot_protection_name")
+# What some app in the sample must show. A declaration that nobody makes any more is a change.
+REQUIRED_FACTS = {
+    "ai": "content_survey_ai_notes with text",
+    "kernel": "anticheat.kernel_mode true",
+    "nonkernel": "an anticheat object without kernel_mode",
+    "drm": "drm_third_party_type with text",
+    "account": "user_account_third_party with text",
+    "eula": "a non-empty eula list",
+    "pvp": "categories.supported_player_categoryids with a PvP category",
+}
 
 
 class Response:
@@ -75,32 +88,71 @@ def as_object(value: object) -> dict[str, object] | None:
     return {str(key): item for key, item in value.items()}
 
 
-def getitems_problems(response: Response) -> list[str]:
-    where = "GetItems"
-    if response.status != 200:
-        return [f"{where}: HTTP {response.status}, expected 200"]
+def has_text(value: object) -> bool:
+    return isinstance(value, str) and bool(value.strip())
+
+
+def type_problems(
+    where: str, object_: dict[str, object], names: tuple[str, ...], kind: type
+) -> list[str]:
+    """Each of `names` that is present must have the type `kind`."""
+    return [
+        f"{where}: {name} is not a {kind.__name__}"
+        for name in names
+        if name in object_ and not isinstance(object_[name], kind)
+    ]
+
+
+def eula_problems(where: str, eula: object) -> list[str]:
+    if not isinstance(eula, list):
+        return [f"{where}: eula is not a list"]
     problems: list[str] = []
-    if response.headers.get("x-eresult", "").strip() != "1":
-        problems.append(f"{where}: x-eresult is {response.headers.get('x-eresult')!r}, expected 1")
-    try:
-        envelope = as_object(json.loads(response.body))
-    except json.JSONDecodeError:
-        return [*problems, f"{where}: the body is not JSON"]
-    inner = as_object(envelope.get("response")) if envelope else None
-    items = inner.get("store_items") if inner else None
-    if not isinstance(items, list):
-        return [*problems, f"{where}: response.store_items is missing or not a list"]
-    by_id: dict[int, dict[str, object]] = {}
-    for entry in items:
-        item = as_object(entry)
-        item_id = item.get("id") if item else None
-        if item is not None and isinstance(item_id, int):
-            by_id[item_id] = item
-    for appid in (*DISCLOSED, *NOT_DISCLOSED):
-        problems += item_problems(appid, by_id.get(appid))
-    for appid in KIND_APPIDS:
-        problems += kind_problems(appid, by_id.get(appid))
+    for entry in eula:
+        link = as_object(entry)
+        name = link.get("name") if link else None
+        url = link.get("url") if link else None
+        if not (isinstance(name, str) and isinstance(url, str)):
+            problems.append(f"{where}: an eula entry is not name and url strings")
+        elif not EULA_URL.match(url):
+            problems.append(f"{where}: an eula url is not an https store /eula/ link")
     return problems
+
+
+def anticheat_problems(where: str, anticheat: object) -> list[str]:
+    fields = as_object(anticheat)
+    if fields is None:
+        return [f"{where}: anticheat is not an object"]
+    return [
+        *type_problems(f"{where} anticheat", fields, ANTICHEAT_BOOLS, bool),
+        *type_problems(f"{where} anticheat", fields, ANTICHEAT_STRINGS, str),
+    ]
+
+
+def service_problems(where: str, service: object) -> list[str]:
+    fields = as_object(service)
+    if fields is None or not isinstance(fields.get("name", ""), str):
+        return [f"{where}: ai_generation_service is not an object with a name string"]
+    return []
+
+
+def details_problems(where: str, details: dict[str, object]) -> list[str]:
+    problems = type_problems(where, details, STRING_FIELDS, str)
+    problems += type_problems(where, details, ("user_account_third_party_link_to_steam",), bool)
+    if "anticheat" in details:
+        problems += anticheat_problems(where, details["anticheat"])
+    if "eula" in details:
+        problems += eula_problems(where, details["eula"])
+    if "ai_generation_service" in details:
+        problems += service_problems(where, details["ai_generation_service"])
+    return problems
+
+
+def category_ids(item: dict[str, object]) -> list[int] | None:
+    categories = as_object(item.get("categories"))
+    ids = categories.get("supported_player_categoryids") if categories else None
+    if not isinstance(ids, list):
+        return None
+    return [entry for entry in ids if isinstance(entry, int)]
 
 
 def item_problems(appid: int, item: dict[str, object] | None) -> list[str]:
@@ -112,87 +164,79 @@ def item_problems(appid: int, item: dict[str, object] | None) -> list[str]:
     details = as_object(item.get("extra_details"))
     if details is None:
         return [f"{where}: extra_details is missing"]
-    notes = details.get("content_survey_ai_notes")
-    problems: list[str] = []
-    if appid in DISCLOSED:
-        if not (isinstance(notes, str) and notes.strip()):
-            problems.append(f"{where}: expected a disclosure in content_survey_ai_notes")
-    elif isinstance(notes, str) and notes.strip():
-        problems.append(f"{where}: expected no disclosure, content_survey_ai_notes is set")
-    if appid == AI_SERVICE_APPID:
-        service = as_object(details.get("ai_generation_service"))
-        name = service.get("name") if service else None
-        if not (isinstance(name, str) and name.strip()):
-            problems.append(f"{where}: expected ai_generation_service.name")
+    problems = details_problems(where, details)
+    if "categories" in item and category_ids(item) is None:
+        problems.append(f"{where}: categories.supported_player_categoryids is not a list")
     return problems
 
 
-def non_empty_string(value: object) -> bool:
-    return isinstance(value, str) and bool(value.strip())
-
-
-def drm_problems(where: str, details: dict[str, object]) -> list[str]:
-    problems: list[str] = []
-    for key in ("drm_third_party_type", "user_account_third_party"):
-        if not non_empty_string(details.get(key)):
-            problems.append(f"{where}: expected a non-empty string in {key}")
-    if not isinstance(details.get("user_account_third_party_link_to_steam"), bool):
-        problems.append(f"{where}: expected a bool in user_account_third_party_link_to_steam")
-    eula = details.get("eula")
-    entries = eula if isinstance(eula, list) else []
-    if not entries:
-        return [*problems, f"{where}: expected a list of name and url in eula"]
-    for entry in entries:
-        link = as_object(entry)
-        url = link.get("url") if link else None
-        if not (link and non_empty_string(link.get("name")) and isinstance(url, str)):
-            problems.append(f"{where}: an eula entry is not name and url strings")
-        elif not EULA_URL.match(url):
-            problems.append(f"{where}: eula url {url!r} is not an https store /eula/ link")
-    return problems
-
-
-def anticheat_problems(where: str, details: dict[str, object], *, kernel: bool) -> list[str]:
+def facts_of(item: dict[str, object]) -> set[str]:
+    """Which declarations an item shows, by the keys of `REQUIRED_FACTS`."""
+    details = as_object(item.get("extra_details")) or {}
     anticheat = as_object(details.get("anticheat"))
-    if anticheat is None:
-        return [f"{where}: expected an anticheat object"]
+    eula = details.get("eula")
+    return {
+        fact
+        for fact, shown in (
+            ("ai", has_text(details.get("content_survey_ai_notes"))),
+            ("kernel", anticheat is not None and anticheat.get("kernel_mode") is True),
+            ("nonkernel", anticheat is not None and anticheat.get("kernel_mode") is not True),
+            ("drm", has_text(details.get("drm_third_party_type"))),
+            ("account", has_text(details.get("user_account_third_party"))),
+            ("eula", isinstance(eula, list) and bool(eula)),
+            ("pvp", bool(PVP_CATEGORY_IDS.intersection(category_ids(item) or []))),
+        )
+        if shown
+    }
+
+
+def parse_items(response: Response) -> tuple[list[str], dict[int, dict[str, object]]]:
+    where = "GetItems"
+    if response.status != 200:
+        return [f"{where}: HTTP {response.status}, expected 200"], {}
     problems: list[str] = []
-    if kernel:
-        for key in ("kernel_mode", "boot_protection"):
-            if anticheat.get(key) is not True:
-                problems.append(f"{where}: expected anticheat.{key} to be true")
-        if not non_empty_string(anticheat.get("boot_protection_name")):
-            problems.append(f"{where}: expected a string in anticheat.boot_protection_name")
-    elif anticheat.get("kernel_mode") is True:
-        problems.append(f"{where}: expected an anti-cheat without kernel_mode")
-    for key in ("name", "name_loc"):
-        if key in anticheat and not isinstance(anticheat[key], str):
-            problems.append(f"{where}: anticheat.{key} is not a string")
+    if response.headers.get("x-eresult", "").strip() != "1":
+        problems.append(f"{where}: x-eresult is {response.headers.get('x-eresult')!r}, expected 1")
+    try:
+        envelope = as_object(json.loads(response.body))
+    except json.JSONDecodeError:
+        return [*problems, f"{where}: the body is not JSON"], {}
+    inner = as_object(envelope.get("response")) if envelope else None
+    items = inner.get("store_items") if inner else None
+    if not isinstance(items, list):
+        return [*problems, f"{where}: response.store_items is missing or not a list"], {}
+    by_id: dict[int, dict[str, object]] = {}
+    for entry in items:
+        item = as_object(entry)
+        item_id = item.get("id") if item else None
+        if item is not None and isinstance(item_id, int):
+            by_id[item_id] = item
+    return problems, by_id
+
+
+def getitems_problems(by_id: dict[int, dict[str, object]]) -> list[str]:
+    problems: list[str] = []
+    seen: set[str] = set()
+    for appid in SAMPLE:
+        item = by_id.get(appid)
+        problems += item_problems(appid, item)
+        seen |= facts_of(item) if item is not None else set()
+    problems += [
+        f"GetItems: no app in the sample shows {shown}"
+        for fact, shown in REQUIRED_FACTS.items()
+        if fact not in seen
+    ]
     return problems
 
 
-def pvp_problems(where: str, item: dict[str, object]) -> list[str]:
-    categories = as_object(item.get("categories"))
-    ids = categories.get("supported_player_categoryids") if categories else None
-    if not isinstance(ids, list):
-        return [f"{where}: expected categories.supported_player_categoryids to be a list"]
-    if not PVP_CATEGORY_IDS.intersection(entry for entry in ids if isinstance(entry, int)):
-        return [f"{where}: expected a PvP category in supported_player_categoryids"]
-    return []
-
-
-def kind_problems(appid: int, item: dict[str, object] | None) -> list[str]:
-    where = f"GetItems app {appid}"
-    if item is None:
-        return [f"{where}: no item with this id in the answer"]
-    if appid == PVP_APPID:
-        return pvp_problems(where, item)
-    details = as_object(item.get("extra_details"))
-    if details is None:
-        return [f"{where}: extra_details is missing"]
-    if appid == DRM_APPID:
-        return drm_problems(where, details)
-    return anticheat_problems(where, details, kernel=appid == KERNEL_APPID)
+def pick_page_app(by_id: dict[int, dict[str, object]]) -> int:
+    """The first app with AI notes and a kernel anti-cheat, else the first with either."""
+    for wanted in ({"ai", "kernel"}, {"kernel"}, {"ai"}):
+        for appid in SAMPLE:
+            item = by_id.get(appid)
+            if item is not None and wanted <= facts_of(item):
+                return appid
+    return SAMPLE[0]
 
 
 class PageScan(HTMLParser):
@@ -203,23 +247,42 @@ class PageScan(HTMLParser):
         self.has_app_name = False
         self.headings: list[str] = []
         self.kernel_sections = 0
+        self.nonkernel_notices = 0
         self.anticheat_names = 0
         self.eula_links = 0
+        self.plain_notices = 0
+        self.break_notices_with_markup = 0
         self._block_depth = 0
         self._in_h2 = False
         self._text = ""
+        self._notice_depth = 0
+        self._notice_tags: list[str] = []
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         ids = {value for key, value in attrs if key == "id"}
         classes = {name for key, value in attrs if key == "class" for name in (value or "").split()}
-        if "appHubAppName" in ids:
-            self.has_app_name = True
-        if {"anticheat_section", "DRM_notice"} <= classes:
-            self.kernel_sections += 1
-        if "anticheat_name" in classes:
-            self.anticheat_names += 1
-        if tag == "a" and any(key == "href" and "/eula/" in (value or "") for key, value in attrs):
-            self.eula_links += 1
+        roles = {value for key, value in attrs if key == "role"}
+        self.has_app_name = self.has_app_name or "appHubAppName" in ids
+        self.kernel_sections += {"anticheat_section", "DRM_notice"} <= classes
+        self.nonkernel_notices += "anticheat_nonkernel_notice" in classes
+        self.anticheat_names += "anticheat_name" in classes
+        self.eula_links += tag == "a" and any(
+            key == "href" and "/eula/" in (value or "") for key, value in attrs
+        )
+        self._scan_notice(tag, classes, bool(roles))
+        self._scan_block(tag, ids)
+
+    def _scan_notice(self, tag: str, classes: set[str], has_role: bool) -> None:
+        if self._notice_depth:
+            self._notice_depth += tag == "div"
+            self._notice_tags.append(tag)
+        elif tag == "div" and "DRM_notice" in classes and not has_role:
+            if "anticheat_section" not in classes:
+                self.plain_notices += 1
+                self._notice_depth = 1
+                self._notice_tags = []
+
+    def _scan_block(self, tag: str, ids: set[str | None]) -> None:
         if self._block_depth:
             if tag == "div":
                 self._block_depth += 1
@@ -229,6 +292,10 @@ class PageScan(HTMLParser):
             self._block_depth = 1
 
     def handle_endtag(self, tag: str) -> None:
+        if self._notice_depth and tag == "div":
+            self._notice_depth -= 1
+            if not self._notice_depth and "br" in self._notice_tags and self._notice_tags != ["br"]:
+                self.break_notices_with_markup += 1
         if self._in_h2 and tag == "h2":
             self._in_h2 = False
             self.headings.append(self._text.strip())
@@ -240,34 +307,50 @@ class PageScan(HTMLParser):
             self._text += data
 
 
-def app_page_problems(response: Response) -> list[str]:
-    where = f"app page {PAGE_APPID}"
-    if response.status != 200:
-        return [f"{where}: HTTP {response.status}, expected 200"]
-    path = urllib.parse.urlparse(response.url).path
-    match = APP_PATH.match(path)
-    if match is None or int(match.group(1)) != PAGE_APPID:
-        return [f"{where}: redirected to {response.url}, expected the app page"]
-    scan = PageScan()
-    scan.feed(response.body)
+def page_problems(where: str, scan: PageScan, facts: set[str]) -> list[str]:
+    """What the page must show for the declarations GetItems gave for the same app."""
     problems: list[str] = []
     if not scan.has_app_name:
         problems.append(f"{where}: #appHubAppName is missing")
-    if HEADING not in scan.headings:
+    if "ai" in facts and HEADING not in scan.headings:
         problems.append(
             f"{where}: no #game_area_content_descriptors block with the h2 {HEADING!r}"
             f" (found {scan.headings!r})"
         )
-    if scan.kernel_sections == 0 or scan.anticheat_names == 0:
+    if "kernel" in facts and (scan.kernel_sections == 0 or scan.anticheat_names == 0):
         problems.append(f"{where}: no .anticheat_section.DRM_notice with an .anticheat_name")
-    if scan.eula_links == 0:
+    if "nonkernel" in facts and scan.nonkernel_notices == 0:
+        problems.append(f"{where}: no .anticheat_nonkernel_notice")
+    if "eula" in facts and scan.eula_links == 0:
         problems.append(f"{where}: no link to /eula/")
+    if "drm" in facts and scan.plain_notices == 0:
+        problems.append(f"{where}: no plain .DRM_notice")
+    if scan.break_notices_with_markup:
+        problems.append(
+            f"{where}: a .DRM_notice with a <br> holds more than a text, a <br>, a text"
+        )
     return problems
 
 
+def app_page_problems(response: Response, appid: int, facts: set[str]) -> list[str]:
+    where = f"app page {appid}"
+    if response.status != 200:
+        return [f"{where}: HTTP {response.status}, expected 200"]
+    match = APP_PATH.match(urllib.parse.urlparse(response.url).path)
+    if match is None or int(match.group(1)) != appid:
+        return [f"{where}: redirected to {response.url}, expected the app page"]
+    scan = PageScan()
+    scan.feed(response.body)
+    return page_problems(where, scan, facts)
+
+
 def main() -> None:
-    problems = getitems_problems(get(getitems_url((*DISCLOSED, *NOT_DISCLOSED, *KIND_APPIDS))))
-    problems += app_page_problems(get(APP_PAGE_URL.format(appid=PAGE_APPID)))
+    problems, by_id = parse_items(get(getitems_url(SAMPLE)))
+    problems += getitems_problems(by_id)
+    appid = pick_page_app(by_id)
+    item = by_id.get(appid)
+    facts = facts_of(item) if item is not None else set()
+    problems += app_page_problems(get(APP_PAGE_URL.format(appid=appid)), appid, facts)
     if problems:
         print("\n".join(problems))
         fail(f"{len(problems)} canary problem(s): Steam's shape may have changed")
