@@ -1,8 +1,8 @@
 ---
-title: Tag Kit for Steam: one tagger for AI, anti-cheat, DRM, EULA, account and PvP
-  status: active
-  issue: none
-  updated: 2026-10-24
+title: "Tag Kit for Steam: one tagger for AI, anti-cheat, DRM, EULA, account and PvP"
+status: active
+issue: none
+updated: 2026-10-24
 ---
 
 # Tag Kit for Steam
