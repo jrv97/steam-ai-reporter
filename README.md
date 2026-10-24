@@ -9,7 +9,7 @@
 
 # Tag Kit for Steam
 
-A browser extension (Chrome and Firefox) and a userscript (Tampermonkey and Violentmonkey) that tag items on the Steam store with what Steam's own store data says about them: AI Generated Content Disclosure, anti-cheat (Kernel Level Anti-Cheat first), 3rd-party DRM, 3rd-Party Account, 3rd-party EULA and PvP.
+A browser extension for Chromium-based browsers and Firefox, and a userscript for Tampermonkey and Violentmonkey, that tag items on the Steam store with what Steam's own store data says about them: AI Generated Content Disclosure, anti-cheat (Kernel Level Anti-Cheat first), 3rd-party DRM, 3rd-Party Account, 3rd-party EULA and PvP.
 
 > Status: in development. Nothing is released yet, and the install links below are placeholders.
 
@@ -98,36 +98,36 @@ mise trust
 mise run setup
 ```
 
-`setup` installs the tools and the JavaScript dependencies, writes the pre-commit and pre-push Git hooks, and checks the browser paths. Copy `mise.local.toml.example` to `mise.local.toml` (ignored by Git) and set `SAR_FIREFOX_BIN` and `SAR_FIREFOX_PROFILE` (Firefox Nightly and a profile dedicated to this project), plus `SAR_CHROME_BIN` and `SAR_CHROME_PROFILE`.
+`setup` installs the tools and the JavaScript dependencies, writes the pre-commit and pre-push Git hooks, and checks the browser paths. Copy `mise.local.toml.example` to `mise.local.toml` (ignored by Git) and set `SAR_GECKO_BIN` and `SAR_GECKO_PROFILE` (Firefox Nightly and a profile dedicated to this project), plus `SAR_CHROMIUM_BIN` and `SAR_CHROMIUM_PROFILE` (Chromium and its own profile).
 
 Main tasks:
 
 - `mise run fmt`: format every file we own (width 100; Markdown is formatted for structure only).
 - `mise run lint`, `mise run typecheck`, `mise run test`: oxlint with type-aware rules, ruff, mypy, shellcheck, actionlint and zizmor; TypeScript 7; vitest with happy-dom.
-- `mise run build`: build `dist/chrome`, `dist/firefox`, `dist/userscript` and the dev-only `dist/dev`.
+- `mise run build`: build `dist/chromium`, `dist/gecko`, `dist/userscript` and the dev-only `dist/dev`.
 - `mise run check`: text, catalog, version and bundle checks on top of the build.
 - `mise run ci`: everything CI runs. The pre-push hook runs `prepush`, which is the same without the reproducibility check and `web-ext lint`.
-- `mise run dev`: rebuild on change. In another terminal, `mise run run-firefox` (Firefox Nightly only) or `mise run run-chrome` loads the build with auto-reload.
-- `mise run package`: write the Chrome and Firefox zips, the userscript and its `.meta.js`, and the source archive for store reviewers to `artifacts/`, then check them.
+- `mise run dev`: rebuild on change. In another terminal, `mise run run-gecko` (Firefox Nightly only) or `mise run run-chromium` loads the build with auto-reload.
+- `mise run package`: write the Chromium and Gecko zips, the userscript and its `.meta.js`, and the source archive for store reviewers to `artifacts/`, then check them.
 - `mise run canary`: before a release, check that live Steam still answers in the shape the detectors expect (two requests). It is not part of `ci`.
 - `mise run capture-fixtures`: refresh the public test fixtures from the live store.
-- `mise run icons`: render the extension icon PNGs in `assets/icons/` from `mark-purple.svg` with headless Chrome (`SAR_CHROME_BIN`).
+- `mise run icons`: render the extension icon PNGs in `assets/icons/` from `mark-purple.svg` with headless Chromium (`SAR_CHROMIUM_BIN`).
 - `mise run change-new`: add a changelog fragment. A pull request that changes `src/` needs one, unless it carries the `no-changelog-fragment` label.
 
 ### Try a build in your browser
 
-For the quick loop, `mise run run-chrome` or `mise run run-firefox` builds, opens the browser with the dedicated profile from `mise.local.toml` and reloads the extension after each rebuild. Run `mise run dev` in another terminal to rebuild on every change.
+For the quick loop, `mise run run-chromium` or `mise run run-gecko` builds, opens the browser with the dedicated profile from `mise.local.toml` and reloads the extension after each rebuild. Run `mise run dev` in another terminal to rebuild on every change.
 
 To test what a release ships, run `mise run package`. It writes these files to `artifacts/`:
 
-- `steam-ai-reporter-chrome-<version>.zip` and `steam-ai-reporter-firefox-<version>.zip`.
+- `steam-ai-reporter-chromium-<version>.zip` and `steam-ai-reporter-gecko-<version>.zip`.
 - `steam-ai-reporter.user.js` and `steam-ai-reporter.meta.js`.
 - `steam-ai-reporter-source-<version>.zip`, the archive for store reviewers.
 
 `<version>` is the `package.json` version, which holds the last release, so a local package carries that number. Load it like this:
 
-- Chrome: open `chrome://extensions`, turn on Developer mode, choose "Load unpacked" and pick `dist/chrome`. Chrome cannot load the zip.
-- Firefox Nightly: open `about:debugging#/runtime/this-firefox`, choose "Load Temporary Add-on" and pick the Firefox zip. The browser removes it on restart.
+- Chromium: open `chrome://extensions`, turn on Developer mode, choose "Load unpacked" and pick `dist/chromium`. Chromium cannot load the zip.
+- Firefox Nightly: open `about:debugging#/runtime/this-firefox`, choose "Load Temporary Add-on" and pick the Gecko zip. The browser removes it on restart.
 - Userscript: open `artifacts/steam-ai-reporter.user.js` in Tampermonkey or Violentmonkey.
 
 Run `mise run ci` before trusting a package. It adds the reproducibility check and `web-ext lint`.
@@ -138,7 +138,7 @@ For store reviewers and anyone who wants to reproduce a release. The build runs 
 
 1. Install mise: `curl https://mise.run | sh` (see [mise's install guide](https://mise.jdx.dev/getting-started.html) for other options).
 2. In the source folder, run `mise trust`, then `mise install`. This installs the exact tool versions pinned in `mise.toml` and `mise.lock`.
-3. Run `mise run build`. It installs the JavaScript dependencies from `pnpm-lock.yaml` and writes the unminified bundles to `dist/` (`dist/firefox` is the Firefox add-on).
+3. Run `mise run build`. It installs the JavaScript dependencies from `pnpm-lock.yaml` and writes the unminified bundles to `dist/` (`dist/gecko` is the Firefox add-on).
 
 `mise run check-reproducible` builds twice and fails if any output byte differs.
 

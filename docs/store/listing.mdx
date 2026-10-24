@@ -73,7 +73,7 @@ These match PRIVACY.md.
 - Does it read the Steam account, wishlist contents, library, cookies or browsing history? No.
 - Is data sold or used for purposes unrelated to the single purpose? No.
 - Chrome Web Store data usage categories: none are collected. Certify the three limited-use statements (not sold, not used for unrelated purposes, not used for creditworthiness or lending).
-- AMO `data_collection_permissions`: `required: ["none"]`, set in the Firefox manifest.
+- AMO `data_collection_permissions`: `required: ["none"]`, set in the Gecko manifest overlay (`manifest.gecko.json`).
 - Privacy policy URL: https://github.com/jrv97/steam-ai-reporter/blob/main/PRIVACY.md
 
 ## AMO reviewer notes
@@ -82,7 +82,7 @@ The package is built from source, unminified. Build steps are in the README unde
 
 1. Install mise (`curl https://mise.run | sh`) on Linux or macOS, or see the mise install guide for Windows.
 2. In the unpacked source folder run `mise trust`, then `mise install`, then `mise run build`.
-3. `dist/firefox` is the submitted add-on.
+3. `dist/gecko` is the submitted add-on.
 
 The extension has no background script, requests no host permissions and makes no network request other than the two Valve hosts above.
 
@@ -98,7 +98,7 @@ The extension has no background script, requests no host permissions and makes n
 
 `list-dim.jpg` (Dim mode in search) and `popup.jpg` (the toolbar popup, 360 px wide) appear in the README only.
 
-They were captured on 2026-10-22 in headless Chrome with a fresh, signed-out profile, a 1280 x 800 viewport and Steam's cookie banner hidden. The store pages run the dev bundle (`dist/dev/inject.js`) built from main at commit 59417c5. The options page and the popup are `dist/chrome/options.html` with `chrome.storage` stubbed in memory. Prices show in euros because of the capture location.
+They were captured on 2026-10-22 in headless Chrome with a fresh, signed-out profile, a 1280 x 800 viewport and Steam's cookie banner hidden. The store pages run the dev bundle (`dist/dev/inject.js`) built from main at commit 59417c5. The options page and the popup are `dist/chromium/options.html` with `chrome.storage` stubbed in memory. Prices show in euros because of the capture location.
 
 ## Assets still needed
 
