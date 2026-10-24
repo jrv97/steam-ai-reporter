@@ -1,8 +1,9 @@
 """Check the built bundles in dist/ (and artifacts/ when present) against the project rules.
 
 - Manifests: permissions exactly ["storage"], no host permissions and no background (rule 3);
-  content scripts match the store only; Gecko settings only in Firefox; every __MSG_*__ resolves;
-  every file the manifest names exists, and each icon is a PNG of the size its key declares.
+  content scripts match the store only; Gecko settings only in the Gecko build; every __MSG_*__
+  resolves; every file the manifest names exists, and each icon is a PNG of the size its key
+  declares.
 - THIRD_PARTY_NOTICES.md is in each extension build, extension zip and the source archive, and its
   valibot text equals node_modules/valibot/LICENSE.md once whitespace is normalized.
 - Extension pages carry no copy (rule 9): only whitespace text, and `data-i18n` keys that resolve.
@@ -30,6 +31,7 @@ from pathlib import Path
 from repo import (
     ARTIFACTS,
     DIST,
+    EXTENSION_TARGETS,
     SLUG,
     VALIBOT_LICENSE,
     fail,
@@ -43,10 +45,8 @@ from repo import (
 
 KIB = 1024
 BUDGETS = {
-    DIST / "chrome" / "content.js": 183 * KIB,
-    DIST / "firefox" / "content.js": 183 * KIB,
-    DIST / "chrome" / "options.js": 114 * KIB,
-    DIST / "firefox" / "options.js": 114 * KIB,
+    **{DIST / target / "content.js": 183 * KIB for target in EXTENSION_TARGETS},
+    **{DIST / target / "options.js": 114 * KIB for target in EXTENSION_TARGETS},
     DIST / "userscript" / f"{SLUG}.user.js": 236 * KIB,
 }
 STORE_MATCH = ["https://store.steampowered.com/*"]
@@ -126,28 +126,28 @@ def page_problems(path: Path, catalog: dict[str, object]) -> list[str]:
 
 
 def packaged_problems(
-    browser: str, manifest: dict[str, object], catalog: dict[str, object]
+    target: str, manifest: dict[str, object], catalog: dict[str, object]
 ) -> list[str]:
     """The files the manifest names exist, and its pages carry no copy."""
-    root = DIST / browser
+    root = DIST / target
     problems: list[str] = []
-    for name in sorted(set(manifest_files(manifest, f"dist/{browser}/manifest.json"))):
+    for name in sorted(set(manifest_files(manifest, f"dist/{target}/manifest.json"))):
         if not (root / name).is_file():
-            problems.append(f"dist/{browser}/manifest.json: names {name}, which is missing")
+            problems.append(f"dist/{target}/manifest.json: names {name}, which is missing")
         elif name.endswith(".html"):
             problems += page_problems(root / name, catalog)
     return problems
 
 
-def icon_problems(browser: str, manifest: dict[str, object]) -> list[str]:
+def icon_problems(target: str, manifest: dict[str, object]) -> list[str]:
     """Each icon the manifest declares by size is a PNG of exactly that size."""
-    where = f"dist/{browser}/manifest.json"
+    where = f"dist/{target}/manifest.json"
     action = json_object(manifest.get("action", {}), where)
     declared = [manifest.get("icons", {}), action.get("default_icon", {})]
     problems: list[str] = []
     for icons in declared:
         for size, name in json_object(icons, where).items():
-            path = DIST / browser / json_string(name, where)
+            path = DIST / target / json_string(name, where)
             if not size.isdigit() or not path.is_file():
                 continue
             found = png_size(path)
@@ -172,9 +172,9 @@ def notices_problems(where: str, path: Path) -> list[str]:
     return notices_text_problems(where, path.read_text(encoding="utf-8"))
 
 
-def manifest_problems(browser: str) -> list[str]:
-    root = DIST / browser
-    where = f"dist/{browser}/manifest.json"
+def manifest_problems(target: str) -> list[str]:
+    root = DIST / target
+    where = f"dist/{target}/manifest.json"
     manifest = json_object(read_json(root / "manifest.json"), where)
     problems: list[str] = []
     if manifest.get("permissions") != ["storage"]:
@@ -192,8 +192,8 @@ def manifest_problems(browser: str) -> list[str]:
             if json_object(script, where).get("matches") != STORE_MATCH:
                 problems.append(f"{where}: content script matches must be {STORE_MATCH}")
     has_gecko = "browser_specific_settings" in manifest
-    if has_gecko != (browser == "firefox"):
-        problems.append(f"{where}: browser_specific_settings belongs in the Firefox build only")
+    if has_gecko != (target == "gecko"):
+        problems.append(f"{where}: browser_specific_settings belongs in the Gecko build only")
     locale = json_string(manifest.get("default_locale"), f"{where} default_locale")
     catalog = json_object(read_json(root / "_locales" / locale / "messages.json"), locale)
     for key in MSG.findall((root / "manifest.json").read_text(encoding="utf-8")):
@@ -201,9 +201,9 @@ def manifest_problems(browser: str) -> list[str]:
             problems.append(f"{where}: __MSG_{key}__ has no message in _locales/{locale}")
     return (
         problems
-        + packaged_problems(browser, manifest, catalog)
-        + icon_problems(browser, manifest)
-        + notices_problems(f"dist/{browser}/{NOTICES}", root / NOTICES)
+        + packaged_problems(target, manifest, catalog)
+        + icon_problems(target, manifest)
+        + notices_problems(f"dist/{target}/{NOTICES}", root / NOTICES)
     )
 
 
@@ -314,7 +314,7 @@ def zip_names(path: Path) -> list[str]:
 def artifact_problems() -> list[str]:
     """The artifacts/ folder holds exactly the five release files, and no dev bundle."""
     version = package_version()
-    extensions = [f"{SLUG}-{browser}-{version}.zip" for browser in ("chrome", "firefox")]
+    extensions = [f"{SLUG}-{target}-{version}.zip" for target in EXTENSION_TARGETS]
     source = f"{SLUG}-source-{version}.zip"
     expected = {*extensions, source, f"{SLUG}.user.js", f"{SLUG}.meta.js"}
     present = {path.name for path in ARTIFACTS.iterdir()}
@@ -351,8 +351,8 @@ def main() -> None:
     if not DIST.is_dir():
         fail("dist/ is missing; run `mise run build` first")
     problems: list[str] = []
-    for browser in ("chrome", "firefox"):
-        problems += manifest_problems(browser)
+    for target in EXTENSION_TARGETS:
+        problems += manifest_problems(target)
     for path in sorted(DIST.rglob("*.js")):
         problems += script_problems(path)
     for path, budget in BUDGETS.items():

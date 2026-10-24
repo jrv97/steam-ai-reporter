@@ -1,6 +1,6 @@
 """Build every target into dist/ with one esbuild call each.
 
-Targets: the Chrome and Firefox extensions (dist/chrome, dist/firefox: the manifest, the content
+Targets: the Chromium and Gecko extensions (dist/chromium, dist/gecko: the manifest, the content
 script and its stylesheet, the options page, the catalogs, the icons and the third-party notices),
 the userscript (dist/userscript) and the dev-only injection bundle (dist/dev, never packaged). The
 userscript header goes in through `--banner:js` on the userscript call only. Bundles are never
@@ -20,6 +20,7 @@ from pathlib import Path
 from gen_styles import stylesheet
 from repo import (
     DIST,
+    EXTENSION_TARGETS,
     ICON_SIZES,
     ICONS_DIR,
     ROOT,
@@ -37,7 +38,6 @@ EXTENSION_DIR = ROOT / "src" / "platform" / "extension"
 LOCALES_DIR = ROOT / "src" / "locales"
 NOTICES = ROOT / "THIRD_PARTY_NOTICES.md"
 DEFAULT_LOCALE = "en"
-BROWSERS = ("chrome", "firefox")
 # The store page stylesheet, loaded by the manifest so the content script need not adopt it.
 CONTENT_CSS = ("TOKENS_CSS", "PAGE_CSS")
 
@@ -125,10 +125,10 @@ def write_text(path: Path, text: str) -> None:
     path.write_text(text, encoding="utf-8", newline="\n")
 
 
-def write_extension(browser: str, version: str) -> None:
-    out = DIST / browser
+def write_extension(target: str, version: str) -> None:
+    out = DIST / target
     base = json_object(read_json(EXTENSION_DIR / "manifest.base.json"), "manifest.base.json")
-    overlay_path = EXTENSION_DIR / f"manifest.{browser}.json"
+    overlay_path = EXTENSION_DIR / f"manifest.{target}.json"
     overlay = json_object(read_json(overlay_path), overlay_path.name)
     manifest = merge(base, overlay) | {"version": version}
     write_text(out / "manifest.json", json.dumps(manifest, indent=2, ensure_ascii=False) + "\n")
@@ -141,9 +141,9 @@ def write_extension(browser: str, version: str) -> None:
             json.dumps(manifest_catalog(catalog, locale), indent=2, ensure_ascii=False) + "\n",
         )
     for size in ICON_SIZES:
-        target = out / "icons" / f"icon-{size}.png"
-        target.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copyfile(ICONS_DIR / f"icon-{size}.png", target)
+        icon = out / "icons" / f"icon-{size}.png"
+        icon.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(ICONS_DIR / f"icon-{size}.png", icon)
 
 
 def userscript_header(version: str, catalogs: dict[str, dict[str, object]]) -> str:
@@ -182,8 +182,8 @@ def userscript_header(version: str, catalogs: dict[str, dict[str, object]]) -> s
 
 def bundles(header: str) -> list[Bundle]:
     result = [
-        Bundle(f"src/platform/extension/{entry}.ts", DIST / browser / f"{entry}.js")
-        for browser in BROWSERS
+        Bundle(f"src/platform/extension/{entry}.ts", DIST / target / f"{entry}.js")
+        for target in EXTENSION_TARGETS
         for entry in ("content", "options")
     ]
     result.append(
@@ -216,8 +216,8 @@ def main() -> None:
     header = userscript_header(version, catalogs)
 
     shutil.rmtree(DIST, ignore_errors=True)
-    for browser in BROWSERS:
-        write_extension(browser, version)
+    for target in EXTENSION_TARGETS:
+        write_extension(target, version)
     write_text(DIST / "userscript" / f"{SLUG}.meta.js", header + "\n")
     run_esbuild(bundles(header), watch=False)
     if args.watch:

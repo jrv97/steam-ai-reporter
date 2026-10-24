@@ -2,18 +2,18 @@
 # ignores) and fill in the paths for this machine. mise loads it on top of mise.toml.
 
 [env]
-# Firefox Nightly only, used by `mise run run-firefox` and checked by `mise run setup`. Never point
+# Firefox Nightly only, used by `mise run run-gecko` and checked by `mise run setup`. Never point
 # this at the regular Firefox: run_browser.py refuses a binary whose update channel is not
 # "nightly", and there is no fallback to a Firefox on PATH.
-SAR_FIREFOX_BIN = "C:/Program Files/Firefox Nightly/firefox.exe"
+SAR_GECKO_BIN = "C:/Program Files/Firefox Nightly/firefox.exe"
 # A profile directory dedicated to this project, outside the repo, so the Steam login survives
 # restarts. An absolute path; it is created on first run. A profile last used by another Firefox
 # install is refused.
-SAR_FIREFOX_PROFILE = "C:/Users/you/dev-profiles/steam-ai-reporter-nightly"
+SAR_GECKO_PROFILE = "C:/Users/you/dev-profiles/steam-ai-reporter-nightly"
 
-# Chrome and a profile directory dedicated to this project, used by `mise run run-chrome`.
-SAR_CHROME_BIN = "C:/Program Files/Google/Chrome/Application/chrome.exe"
-SAR_CHROME_PROFILE = "C:/Users/you/dev-profiles/steam-ai-reporter-chrome"
+# Chromium and a profile directory dedicated to this project, used by `mise run run-chromium`.
+SAR_CHROMIUM_BIN = "C:/Users/you/AppData/Local/Chromium/Application/chrome.exe"
+SAR_CHROMIUM_PROFILE = "C:/Users/you/dev-profiles/steam-ai-reporter-chromium"
 
 # Windows only. From PowerShell or cmd, `bash` is WSL's bash.exe, which cannot run the tasks'
 # shell scripts. Put Git for Windows' bin folder first on PATH so tasks find Git Bash. Git hooks

@@ -36,7 +36,7 @@ run = [
   "mise install",
   "pnpm install --frozen-lockfile",
   "mise run hooks",
-  "python scripts/run_browser.py firefox --check",
+  "python scripts/run_browser.py gecko --check",
 ]
 
 [tasks.hooks]
@@ -143,7 +143,7 @@ run = "python scripts/changelog_gate.py"
 # Build and run
 
 [tasks.build]
-description = "Build the Chrome and Firefox extensions, the userscript and the dev bundle"
+description = "Build the Chromium and Gecko extensions, the userscript and the dev bundle"
 depends = ["deps", "gen"]
 run = "python scripts/build.py"
 
@@ -153,23 +153,23 @@ depends = ["deps", "gen"]
 run = "python scripts/build.py --watch"
 
 [tasks.icons]
-description = "Render the extension icon PNGs from the purple mark with headless Chrome"
+description = "Render the extension icon PNGs from the purple mark with headless Chromium"
 run = "python scripts/render_icons.py"
 
-[tasks.lint-firefox]
-description = "Run web-ext lint on the Firefox build"
+[tasks.lint-gecko]
+description = "Run web-ext lint on the Gecko build"
 depends = ["build"]
-run = "web-ext lint --source-dir dist/firefox --warnings-as-errors"
+run = "web-ext lint --source-dir dist/gecko --warnings-as-errors"
 
-[tasks.run-firefox]
-description = "Run the Firefox build in Firefox Nightly ($SAR_FIREFOX_BIN) with auto-reload"
+[tasks.run-gecko]
+description = "Run the Gecko build in Firefox Nightly ($SAR_GECKO_BIN) with auto-reload"
 depends = ["build"]
-run = "python scripts/run_browser.py firefox"
+run = "python scripts/run_browser.py gecko"
 
-[tasks.run-chrome]
-description = "Run the Chrome build in Chrome ($SAR_CHROME_BIN) with auto-reload"
+[tasks.run-chromium]
+description = "Run the Chromium build in Chromium ($SAR_CHROMIUM_BIN) with auto-reload"
 depends = ["build"]
-run = "python scripts/run_browser.py chrome"
+run = "python scripts/run_browser.py chromium"
 
 [tasks.package]
 description = "Write the store zips, the userscript and the AMO source archive to artifacts/"
@@ -218,11 +218,11 @@ description = "Re-validate $RELEASE_TAG and its prerelease assets before a store
 run = "python scripts/release.py validate --release"
 
 [tasks."release:chrome"]
-description = "Promote the $RELEASE_TAG prerelease's Chrome zip to the Chrome Web Store"
+description = "Promote the $RELEASE_TAG prerelease's Chromium zip to the Chrome Web Store"
 run = "python scripts/release.py chrome"
 
 [tasks."release:amo"]
-description = "Promote the $RELEASE_TAG prerelease's Firefox and source zips to AMO (listed)"
+description = "Promote the $RELEASE_TAG prerelease's Gecko and source zips to AMO (listed)"
 run = "python scripts/release.py amo"
 
 [tasks."release:latest"]
@@ -253,5 +253,5 @@ description = "Everything CI runs: prepush plus reproducibility and web-ext lint
 run = [
   { task = "prepush" },
   { task = "check-reproducible" },
-  { task = "lint-firefox" },
+  { task = "lint-gecko" },
 ]

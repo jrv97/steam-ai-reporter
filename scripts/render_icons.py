@@ -1,6 +1,6 @@
 """Write the mark's color files and the extension icon PNGs in assets/icons/.
 
-mark-<color>.svg is mark.svg with its currentColor replaced. Headless Chrome ($SAR_CHROME_BIN)
+mark-<color>.svg is mark.svg with its currentColor replaced. Headless Chromium ($SAR_CHROMIUM_BIN)
 paints icon-<size>.png from mark-purple.svg, or from icon-<size>.svg when that hand-hinted file
 exists. The 16 and 32 px renders from the mark are interim; no icon-<size>.svg is ever written.
 
@@ -33,7 +33,7 @@ PAGE = (
     "img{{position:absolute;inset:{padding}px;width:{art}px;height:{art}px}}</style>"
     '<img src="{source}" alt="">'
 )
-CHROME_TIMEOUT_SECONDS = 120
+BROWSER_TIMEOUT_SECONDS = 120
 STDERR_LINES = 5
 
 
@@ -48,7 +48,7 @@ def cropped(text: str) -> str:
 
 
 def kill_tree(process: subprocess.Popen[str]) -> None:
-    """Stop Chrome and the helper processes it started."""
+    """Stop the browser and the helper processes it started."""
     if sys.platform == "win32":
         subprocess.run(
             ["taskkill", "/PID", str(process.pid), "/T", "/F"], capture_output=True, check=False
@@ -57,7 +57,7 @@ def kill_tree(process: subprocess.Popen[str]) -> None:
         os.killpg(os.getpgid(process.pid), signal.SIGKILL)
 
 
-def run_chrome(command: list[str], size: int) -> tuple[int, str]:
+def run_headless(command: list[str], size: int) -> tuple[int, str]:
     with subprocess.Popen(
         command,
         stdout=subprocess.PIPE,
@@ -67,11 +67,11 @@ def run_chrome(command: list[str], size: int) -> tuple[int, str]:
         start_new_session=True,
     ) as process:
         try:
-            _, stderr = process.communicate(timeout=CHROME_TIMEOUT_SECONDS)
+            _, stderr = process.communicate(timeout=BROWSER_TIMEOUT_SECONDS)
         except subprocess.TimeoutExpired:
             kill_tree(process)
             process.communicate()
-            fail(f"Chrome took over {CHROME_TIMEOUT_SECONDS} s to render the {size} px icon")
+            fail(f"Chromium took over {BROWSER_TIMEOUT_SECONDS} s to render the {size} px icon")
         return process.returncode, stderr
 
 
@@ -84,7 +84,7 @@ def source_svg(work: Path, size: int, painted: str) -> Path:
     return target
 
 
-def render(chrome: Path, work: Path, size: int, painted: str) -> Path:
+def render(browser: Path, work: Path, size: int, painted: str) -> Path:
     padding = STORE_PADDING if size == STORE_SIZE else 0
     svg = source_svg(work, size, painted)
     page = work / f"icon-{size}.html"
@@ -92,9 +92,9 @@ def render(chrome: Path, work: Path, size: int, painted: str) -> Path:
         PAGE.format(padding=padding, art=size - 2 * padding, source=svg.name), encoding="utf-8"
     )
     shot = work / f"icon-{size}.png"
-    code, stderr = run_chrome(
+    code, stderr = run_headless(
         [
-            str(chrome),
+            str(browser),
             "--headless=new",
             "--disable-gpu",
             "--disable-background-networking",
@@ -112,17 +112,17 @@ def render(chrome: Path, work: Path, size: int, painted: str) -> Path:
     )
     if not shot.is_file():
         tail = "\n".join(stderr.strip().splitlines()[-STDERR_LINES:])
-        fail(f"Chrome wrote no {size} px icon (exit {code})\n{tail}")
+        fail(f"Chromium wrote no {size} px icon (exit {code})\n{tail}")
     if png_size(shot) != (size, size):
         fail(f"{shot.name}: expected {size}x{size}, got {png_size(shot)}")
     return shot
 
 
-def write_all(chrome: Path, work: Path) -> None:
+def write_all(browser: Path, work: Path) -> None:
     """Render every size first; touch assets/icons only when all of them rendered."""
     master = MASTER.read_text(encoding="utf-8")
     painted = colored(master, COLORS[PAINT_COLOR])
-    shots = {size: render(chrome, work, size, painted) for size in ICON_SIZES}
+    shots = {size: render(browser, work, size, painted) for size in ICON_SIZES}
     for name, color in COLORS.items():
         target = ICONS_DIR / f"mark-{name}.svg"
         target.write_text(colored(master, color), encoding="utf-8", newline="\n")
@@ -134,13 +134,13 @@ def write_all(chrome: Path, work: Path) -> None:
 
 
 def main() -> None:
-    chrome = env_path("SAR_CHROME_BIN")
-    if not chrome.is_file():
-        fail(f"SAR_CHROME_BIN does not exist: {chrome}")
-    # The profile is a throwaway folder, so a running Chrome and its profiles stay untouched.
+    browser = env_path("SAR_CHROMIUM_BIN")
+    if not browser.is_file():
+        fail(f"SAR_CHROMIUM_BIN does not exist: {browser}")
+    # The profile is a throwaway folder, so a running Chromium and its profiles stay untouched.
     scratch = tempfile.TemporaryDirectory(prefix="sar-icons-", ignore_cleanup_errors=True)
     try:
-        write_all(chrome, Path(scratch.name))
+        write_all(browser, Path(scratch.name))
     finally:
         scratch.cleanup()
         if Path(scratch.name).exists():
