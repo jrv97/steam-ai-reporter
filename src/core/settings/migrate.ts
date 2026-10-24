@@ -1,7 +1,6 @@
 import * as v from "valibot";
 import { SarError } from "../errors";
 import { type JsonValue, parseWithDefaults } from "../json";
-import { AI_KIND } from "../kinds/ai";
 import { LIST_FILTERS } from "../kinds/kind-settings";
 import type { KeyValueStore } from "../ports";
 import { ALLOW_KEY, LEGACY_ALLOW_KEY, LEGACY_SETTINGS_KEY, SETTINGS_KEY } from "../storage-keys";
@@ -35,7 +34,7 @@ export function settingsFromV1(stored: unknown): Settings {
     kinds: {
       ...DEFAULT_SETTINGS.kinds,
       ai: {
-        ...AI_KIND.defaults,
+        ...DEFAULT_SETTINGS.kinds.ai,
         badge: legacy.badges,
         banner: legacy.banner,
         filter: legacy.listFilter,
