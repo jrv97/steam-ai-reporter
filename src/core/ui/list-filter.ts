@@ -1,3 +1,4 @@
+import type { TagKind } from "../kinds/kind";
 import type { ListFilter } from "../kinds/kind-settings";
 import { HOST_HIDEABLE, HOST_STATE } from "../scan/marks";
 import { type HostRenderer, hostState } from "./host";
@@ -18,10 +19,10 @@ export function applyListFilter(root: Element, filter: ListFilter): void {
  * unknown, allowed) and, where hiding would break the list, `data-sar-hideable="false"`. Writes
  * only what changed, so a rescan or a setting change causes no mutation churn.
  */
-export function createHostStateRenderer(): HostRenderer {
+export function createHostStateRenderer(kind: TagKind): HostRenderer {
   return {
-    render({ host, verdict, allowed, hideable }) {
-      const state = hostState(verdict, allowed);
+    render({ host, verdicts, allowed, hideable }) {
+      const state = hostState(verdicts[kind.id], allowed[kind.id]);
       if (host.getAttribute(HOST_STATE) !== state) {
         host.setAttribute(HOST_STATE, state);
       }

@@ -1,4 +1,5 @@
-import { type AppId, type Detector, UNKNOWN, type Verdict } from "../types";
+import { type KindVerdicts, UNKNOWN_KINDS } from "../kinds/verdicts";
+import type { AppId, Detector } from "../types";
 import { settle } from "./settle";
 
 /** HTML fallback apps per page view (ADR 0001): each one is a full app page request. */
@@ -17,12 +18,15 @@ export function createBudgetDetector(inner: Detector, limit = DEFAULT_HTML_BUDGE
       const distinct = [...new Set(ids)];
       const allowed = distinct.slice(0, Math.max(left, 0));
       left -= allowed.length;
-      const verdicts = new Map<AppId, Verdict>(
-        distinct.slice(allowed.length).map((id): [AppId, Verdict] => [id, UNKNOWN["rate-limited"]]),
+      const verdicts = new Map<AppId, KindVerdicts>(
+        distinct.slice(allowed.length).map((id): [AppId, KindVerdicts] => [
+          id,
+          UNKNOWN_KINDS["rate-limited"],
+        ]),
       );
       if (allowed.length > 0) {
-        for (const [id, verdict] of await settle(inner, allowed)) {
-          verdicts.set(id, verdict);
+        for (const [id, found] of await settle(inner, allowed)) {
+          verdicts.set(id, found);
         }
       }
       return verdicts;

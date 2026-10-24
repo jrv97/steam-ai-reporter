@@ -4,7 +4,7 @@ import { appId, appIds } from "../../../tests/helpers/app-ids";
 import { countingStore } from "../../../tests/helpers/counting-store";
 import { fixedClock } from "../../../tests/helpers/fixed-clock";
 import { memoryStore } from "../../../tests/helpers/memory-store";
-import { disclosedVerdict, NOT_DISCLOSED } from "../../../tests/helpers/verdicts";
+import { aiVerdicts, disclosedVerdict, NOT_DISCLOSED } from "../../../tests/helpers/verdicts";
 import { type AppId, type Detector, UNKNOWN, type Verdict } from "../types";
 import { cachedDetector } from "./cached-detector";
 import { createVerdictCache } from "./verdict-cache";
@@ -17,7 +17,9 @@ function stubDetector(table: ReadonlyMap<AppId, Verdict> = new Map()) {
   const detector: Detector = {
     detect(ids) {
       calls.push(ids);
-      return Promise.resolve(new Map(ids.map((id) => [id, table.get(id) ?? NOT_DISCLOSED])));
+      return Promise.resolve(
+        new Map(ids.map((id) => [id, aiVerdicts(table.get(id) ?? NOT_DISCLOSED)])),
+      );
     },
   };
   return { detector, calls };
@@ -88,8 +90,8 @@ describe("cachedDetector", () => {
     const { detector, store, logger } = setup(new Map([[appId(1), disclosedVerdict()]]));
     store.break();
     const got = await detector.detect(appIds(1, 2));
-    expect(got.get(appId(1))).toStrictEqual(disclosedVerdict());
-    expect(got.get(appId(2))).toStrictEqual(NOT_DISCLOSED);
+    expect(got.get(appId(1))).toStrictEqual(aiVerdicts(disclosedVerdict()));
+    expect(got.get(appId(2))).toStrictEqual(aiVerdicts(NOT_DISCLOSED));
     expect(logger.error).toHaveBeenCalledTimes(2);
   });
 });

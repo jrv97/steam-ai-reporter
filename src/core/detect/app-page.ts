@@ -1,4 +1,5 @@
 import { steamLanguage } from "../i18n/locale";
+import { type KindVerdicts, UNKNOWN_KINDS } from "../kinds/verdicts";
 import type { Http, HttpResult } from "../ports";
 import {
   type AppId,
@@ -67,12 +68,21 @@ export function parseAppPage(doc: Document, finalUrl: string): Verdict {
 }
 
 /**
- * The verdict of the app page the user is on, with no request. It answers only when the page is
+ * The page only carries the AI block, so the AI kind gets its verdict and the other kinds share
+ * the page's unknown reason, or are unknown `missing` when the page did answer.
+ */
+function aiVerdicts(verdict: Verdict): KindVerdicts {
+  const rest = UNKNOWN_KINDS[verdict.state === "unknown" ? verdict.reason : "missing"];
+  return { ...rest, ai: verdict };
+}
+
+/**
+ * The verdicts of the app page the user is on, with no request. It answers only when the page is
  * English, because the notes of a localized page would be labelled as English; otherwise undefined.
  */
-export function parseLiveAppPage(doc: Document, pageUrl: string): Verdict | undefined {
+export function parseLiveAppPage(doc: Document, pageUrl: string): KindVerdicts | undefined {
   return steamLanguage(doc.documentElement.lang) === "english"
-    ? parseAppPage(doc, pageUrl)
+    ? aiVerdicts(parseAppPage(doc, pageUrl))
     : undefined;
 }
 
@@ -103,11 +113,11 @@ export function createAppPageDetector(http: Http): Detector {
   const parse = (body: string, url: string): Verdict =>
     parseAppPage(parser.parseFromString(body, "text/html"), url);
   return {
-    async detect(ids: readonly AppId[]): Promise<ReadonlyMap<AppId, Verdict>> {
-      const verdicts = new Map<AppId, Verdict>();
+    async detect(ids: readonly AppId[]): Promise<ReadonlyMap<AppId, KindVerdicts>> {
+      const verdicts = new Map<AppId, KindVerdicts>();
       for (const id of new Set(ids)) {
         // Sequential on purpose: one request in flight (rule 13).
-        verdicts.set(id, verdictOf(await http.get(appPageUrl(id)), parse));
+        verdicts.set(id, aiVerdicts(verdictOf(await http.get(appPageUrl(id)), parse)));
       }
       return verdicts;
     },

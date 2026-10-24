@@ -1,10 +1,12 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { setBody } from "../../../tests/helpers/dom";
+import { hostView, type HostViewOptions } from "../../../tests/helpers/host-view";
 import { englishI18n } from "../../../tests/helpers/i18n";
 import { disclosedVerdict, NOT_DISCLOSED } from "../../../tests/helpers/verdicts";
+import { AI_KIND } from "../kinds/ai";
 import { type DisclosedVerdict, UNKNOWN } from "../types";
 import { applyBadgeSetting, compactSize, createBadgeRenderer } from "./badge";
-import type { BadgeSlot, HostView } from "./host";
+import type { BadgeSlot } from "./host";
 
 function capsule(): {
   host: HTMLElement;
@@ -25,8 +27,8 @@ function capsule(): {
   return { host, link, image, title };
 }
 
-function view(host: Element, slot: BadgeSlot | undefined, overrides: Partial<HostView> = {}) {
-  return { host, verdict: disclosedVerdict(), allowed: false, slot, hideable: true, ...overrides };
+function view(host: Element, slot: BadgeSlot | undefined, options: HostViewOptions = {}) {
+  return hostView(host, { ...options, slot });
 }
 
 describe("compactSize", () => {
@@ -46,11 +48,21 @@ describe("compactSize", () => {
 describe("createBadgeRenderer", () => {
   const i18n = englishI18n();
   let bound = new Map<Element, DisclosedVerdict>();
-  let renderer = createBadgeRenderer(document, i18n, { bind: (t, v) => bound.set(t, v) });
+  let renderer = createBadgeRenderer(
+    document,
+    i18n,
+    { bind: (t, _kind, v) => bound.set(t, v) },
+    AI_KIND,
+  );
 
   beforeEach(() => {
     bound = new Map();
-    renderer = createBadgeRenderer(document, i18n, { bind: (t, v) => bound.set(t, v) });
+    renderer = createBadgeRenderer(
+      document,
+      i18n,
+      { bind: (t, _kind, v) => bound.set(t, v) },
+      AI_KIND,
+    );
   });
 
   it("draws the full badge with the catalog label and binds it to the hover card", () => {

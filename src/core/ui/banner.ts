@@ -1,3 +1,4 @@
+import type { TagKind } from "../kinds/kind";
 import type { MessageCatalog } from "../ports";
 import type { DisclosedVerdict } from "../types";
 import { normalizeBreaks } from "./notes";
@@ -78,6 +79,7 @@ function defaultOverflows(quote: HTMLElement): boolean {
 export function createBanner(
   doc: Document,
   i18n: MessageCatalog,
+  kind: TagKind,
   actions: BannerActions,
   options: BannerOptions = {},
 ): Banner {
@@ -144,7 +146,7 @@ export function createBanner(
     aside.tabIndex = -1;
 
     const head = element("div", "sar-banner-head");
-    const title = element("h2", "sar-banner-title", i18n.t("badge_label"));
+    const title = element("h2", "sar-banner-title", i18n.t(kind.messages.label));
     title.id = TITLE_ID;
     head.append(title, button("sar-banner-action", "stop", i18n.t("banner_ignore")));
 
@@ -158,7 +160,7 @@ export function createBanner(
 
     aside.append(head, element("p", "sar-banner-source", i18n.t("banner_source")), quote, toggle);
     if (verdict.service !== undefined && verdict.service !== "") {
-      const service = element("p", "sar-banner-service", i18n.t("banner_service_label"));
+      const service = element("p", "sar-banner-service", i18n.t(kind.messages.bannerService));
       service.append(" ", element("span", "sar-banner-service-name", verdict.service));
       aside.append(service);
     }
@@ -172,7 +174,7 @@ export function createBanner(
   function buildIgnored(): HTMLElement {
     const aside = element("aside", "sar-banner");
     aside.setAttribute("data-sar-variant", "ignored");
-    aside.setAttribute("aria-label", i18n.t("banner_region_label"));
+    aside.setAttribute("aria-label", i18n.t(kind.messages.bannerRegion));
     aside.tabIndex = -1;
     aside.append(
       element("span", "sar-banner-ignored-text", i18n.t("banner_ignored")),

@@ -1,3 +1,4 @@
+import type { TagKind } from "../kinds/kind";
 import type { MessageCatalog } from "../ports";
 import type { DisclosedVerdict } from "../types";
 import type { BadgeSlot, CompactSize, HostRenderer } from "./host";
@@ -48,16 +49,18 @@ function sameSlot(a: BadgeSlot, b: BadgeSlot): boolean {
 }
 
 /**
- * Draws the full or compact badge of a disclosed host in the slot its placement chose, and removes
- * it for every other state. Each badge registers with the hover card, which shows the notes.
+ * Draws the full or compact badge of a host disclosed for `kind` in the slot its placement chose,
+ * and removes it for every other state. Each badge registers with the hover card, which shows the
+ * notes.
  */
 export function createBadgeRenderer(
   doc: Document,
   i18n: MessageCatalog,
   card: CardTriggers,
+  kind: TagKind,
 ): HostRenderer {
   const drawn = new WeakMap<Element, Drawn>();
-  const label = i18n.t("badge_label");
+  const label = i18n.t(kind.messages.label);
 
   function build(slot: BadgeSlot): HTMLElement {
     if (slot.kind === "full") {
@@ -82,9 +85,10 @@ export function createBadgeRenderer(
   }
 
   return {
-    render({ host, verdict, allowed, slot }) {
+    render({ host, verdicts, allowed, slot }) {
       const current = drawn.get(host);
-      if (verdict.state !== "disclosed" || allowed || slot === undefined) {
+      const verdict = verdicts[kind.id];
+      if (verdict.state !== "disclosed" || allowed[kind.id] || slot === undefined) {
         current?.badge.remove();
         drawn.delete(host);
         return;
@@ -93,7 +97,7 @@ export function createBadgeRenderer(
         current !== undefined && current.badge.isConnected && sameSlot(current.slot, slot)
       ) {
         if (current.verdict !== verdict) {
-          card.bind(current.badge, verdict);
+          card.bind(current.badge, kind, verdict);
           drawn.set(host, { ...current, verdict });
         }
         return;
@@ -104,7 +108,7 @@ export function createBadgeRenderer(
       if (slot.kind === "compact") {
         linkCompact(badge, host);
       }
-      card.bind(badge, verdict);
+      card.bind(badge, kind, verdict);
       drawn.set(host, { badge, verdict, slot });
     },
   };

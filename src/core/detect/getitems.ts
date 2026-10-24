@@ -1,15 +1,10 @@
 import * as v from "valibot";
 import type { SteamLanguage } from "../i18n/locale";
 import { parseJson } from "../json";
+import { perKind } from "../kinds/registry";
+import { type KindVerdicts, UNKNOWN_KINDS } from "../kinds/verdicts";
 import type { Http, HttpResponse, HttpResult } from "../ports";
-import {
-  type AppId,
-  type Detector,
-  type NotDisclosedVerdict,
-  UNKNOWN,
-  type UnknownReason,
-  type Verdict,
-} from "../types";
+import type { AppId, Detector, UnknownReason } from "../types";
 import {
   type GetItemsEnvelope,
   GetItemsEnvelopeSchema,
@@ -17,7 +12,6 @@ import {
   StoreItemIdSchema,
   StoreItemSchema,
 } from "./getitems.schema";
-import { trimNotes } from "./notes";
 
 // Detection through IStoreBrowseService/GetItems (ADR 0001). Rules from rq6: S1 for batch sizes,
 // S2 for item states and batch errors.
@@ -46,8 +40,6 @@ export interface GetItemsBatch {
   readonly ids: readonly AppId[];
   readonly url: string;
 }
-
-const NOT_DISCLOSED: NotDisclosedVerdict = { state: "not-disclosed", source: "api" };
 
 /** The GetItems URL for these IDs, with `context.language` set to the page's Steam language. */
 export function getItemsUrl(ids: readonly AppId[], language: SteamLanguage): string {
@@ -137,30 +129,19 @@ function batchItems(result: HttpResult): BatchItems {
   }
 }
 
-function itemVerdict(item: StoreItem, language: SteamLanguage): Verdict {
+/** Every kind's verdict for one item; unknown `missing` when the item has no usable details. */
+function itemVerdicts(item: StoreItem, language: SteamLanguage): KindVerdicts {
   const details = item.extra_details;
   if (item.success !== ERESULT_OK || details === undefined) {
-    return UNKNOWN.missing;
+    return UNKNOWN_KINDS.missing;
   }
-  const notes = trimNotes(details.content_survey_ai_notes ?? "");
-  if (notes === "") {
-    return NOT_DISCLOSED;
-  }
-  const service = trimNotes(details.ai_generation_service?.name ?? "");
-  const name = trimNotes(item.name ?? "");
-  return {
-    state: "disclosed",
-    notes,
-    language,
-    source: "api",
-    ...(service === "" ? {} : { service }),
-    ...(name === "" ? {} : { name }),
-  };
+  const input = { details, name: item.name, language };
+  return perKind((kind) => kind.fromGetItems(input));
 }
 
 /**
- * Maps one GetItems result to one verdict per requested ID, keyed by the item's `id` (never by
- * `appid`, which is 0 for invalid items). An item that fails its schema gets unknown `error`; a
+ * Maps one GetItems result to the verdicts of every requested ID, keyed by the item's `id` (never
+ * by `appid`, which is 0 for invalid items). An item that fails its schema gets unknown `error`; a
  * requested ID with no item gets unknown `missing`, or `error` when the batch also held an item
  * whose ID could not be read. A broken answer makes the whole batch unknown.
  */
@@ -168,33 +149,33 @@ export function parseGetItems(
   ids: readonly AppId[],
   result: HttpResult,
   language: SteamLanguage,
-): ReadonlyMap<AppId, Verdict> {
+): ReadonlyMap<AppId, KindVerdicts> {
   const read = batchItems(result);
   if (!read.ok) {
-    const unknown = UNKNOWN[read.reason];
-    return new Map(ids.map((id): [AppId, Verdict] => [id, unknown]));
+    const unknown = UNKNOWN_KINDS[read.reason];
+    return new Map(ids.map((id): [AppId, KindVerdicts] => [id, unknown]));
   }
-  const found = new Map<AppId, Verdict>();
+  const found = new Map<AppId, KindVerdicts>();
   let unattributed = false;
   for (const entry of read.items) {
     const item = v.safeParse(StoreItemSchema, entry);
     if (item.success) {
       if (!found.has(item.output.id)) {
-        found.set(item.output.id, itemVerdict(item.output, language));
+        found.set(item.output.id, itemVerdicts(item.output, language));
       }
       continue;
     }
     const idOnly = v.safeParse(StoreItemIdSchema, entry);
     if (idOnly.success) {
       if (!found.has(idOnly.output.id)) {
-        found.set(idOnly.output.id, UNKNOWN.error);
+        found.set(idOnly.output.id, UNKNOWN_KINDS.error);
       }
     } else {
       unattributed = true;
     }
   }
-  const rest = unattributed ? UNKNOWN.error : UNKNOWN.missing;
-  return new Map(ids.map((id): [AppId, Verdict] => [id, found.get(id) ?? rest]));
+  const rest = unattributed ? UNKNOWN_KINDS.error : UNKNOWN_KINDS.missing;
+  return new Map(ids.map((id): [AppId, KindVerdicts] => [id, found.get(id) ?? rest]));
 }
 
 export interface GetItemsOptions {
@@ -212,8 +193,8 @@ export function createGetItemsDetector(options: GetItemsOptions): Detector {
   const { http, language } = options;
   const limits = options.limits ?? DEFAULT_BATCH_LIMITS;
   return {
-    async detect(ids: readonly AppId[]): Promise<ReadonlyMap<AppId, Verdict>> {
-      const verdicts = new Map<AppId, Verdict>();
+    async detect(ids: readonly AppId[]): Promise<ReadonlyMap<AppId, KindVerdicts>> {
+      const verdicts = new Map<AppId, KindVerdicts>();
       for (const batch of planBatches(ids, language, limits)) {
         // Sequential on purpose: one request in flight (rule 13).
         const result = await http.get(batch.url);

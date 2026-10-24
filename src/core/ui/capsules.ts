@@ -1,7 +1,10 @@
+import type { KindId } from "../kinds/id";
+import { KINDS, perKind } from "../kinds/registry";
+import type { KindVerdicts } from "../kinds/verdicts";
 import { HOST_APPID } from "../scan/marks";
 import type { RowPlacement } from "../scan/placements";
 import type { CapsuleHost, CapsuleRenderer, ScanBatch } from "../scan/renderer";
-import type { AppId, Detector, Verdict } from "../types";
+import type { AppId, Detector } from "../types";
 import { compactSize } from "./badge";
 import type { BadgeSlot, HostRenderer } from "./host";
 
@@ -45,8 +48,8 @@ export interface CapsuleUiOptions {
   readonly detector: Detector;
   /** Drawn in order for every host: state marks, badges. */
   readonly renderers: readonly HostRenderer[];
-  /** Whether the game is on the allow-list now. */
-  readonly isAllowed: (id: AppId) => boolean;
+  /** Whether the game is on the allow-list for the kind now. */
+  readonly isAllowed: (id: AppId, kind: KindId) => boolean;
   /** Schedules a read-then-write pass; `requestAnimationFrame` by default. */
   readonly frame?: (callback: () => void) => void;
   /** Watches image boxes that had no size when drawn; one `ResizeObserver` by default. */
@@ -61,14 +64,14 @@ export interface CapsuleUi extends CapsuleRenderer {
 
 interface HostRecord {
   host: CapsuleHost;
-  verdict: Verdict | undefined;
+  verdicts: KindVerdicts | undefined;
 }
 
 /** One host's draw, decided in the read phase. */
 interface Draw {
   readonly record: HostRecord;
-  readonly verdict: Verdict;
-  readonly allowed: boolean;
+  readonly verdicts: KindVerdicts;
+  readonly allowed: Readonly<Record<KindId, boolean>>;
   readonly slot: BadgeSlot | undefined;
   readonly markAnchor: boolean;
 }
@@ -85,7 +88,7 @@ const NO_SLOT: SlotRead = { slot: undefined, markAnchor: false, unsized: false }
 /**
  * The adapter between the scanner and the renderers. Found hosts are detected in one call per
  * scan batch (the detector batches and caches); changed hosts are drawn again from their known
- * verdict. Drawing reads every image box first and writes after, in one frame per pass. Records
+ * verdicts. Drawing reads every image box first and writes after, in one frame per pass. Records
  * live in a `WeakMap` keyed by host, and a refresh walks the marked hosts in the page, so no host
  * outlives its element. An image box with no size waits in one shared size watch until a compact
  * badge fits. Showing a hidden tab changes no node the scanner sees, and tabs fade in.
@@ -166,28 +169,30 @@ export function createCapsuleUi(options: CapsuleUiOptions): CapsuleUi {
     const draws: Draw[] = [];
     // Read phase: image boxes and computed positions, only for hosts that will show a badge.
     for (const record of batch) {
-      const { host, verdict } = record;
-      if (verdict === undefined || !host.element.isConnected) {
+      const { host, verdicts } = record;
+      if (verdicts === undefined || !host.element.isConnected) {
         continue;
       }
-      const allowed = isAllowed(host.appId);
-      const shows = verdict.state === "disclosed" && !allowed;
+      const allowed = perKind((kind) => isAllowed(host.appId, kind.id));
+      const shows = KINDS.some((kind) =>
+        verdicts[kind.id].state === "disclosed" && !allowed[kind.id]
+      );
       const { slot, markAnchor, unsized: waits } = shows ? slotOf(host) : NO_SLOT;
       if (waits) {
         watch(record);
       } else if (slot !== undefined) {
         unwatch(slot.anchor);
       }
-      draws.push({ record, verdict, allowed, slot, markAnchor });
+      draws.push({ record, verdicts, allowed, slot, markAnchor });
     }
     // Write phase.
-    for (const { record, verdict, allowed, slot, markAnchor } of draws) {
+    for (const { record, verdicts, allowed, slot, markAnchor } of draws) {
       if (markAnchor && slot !== undefined) {
         slot.anchor.setAttribute(ANCHOR_MARK, "");
       }
       const view = {
         host: record.host.element,
-        verdict,
+        verdicts,
         allowed,
         slot,
         hideable: record.host.placement.hideable,
@@ -208,7 +213,7 @@ export function createCapsuleUi(options: CapsuleUiOptions): CapsuleUi {
   async function detect(found: readonly HostRecord[]): Promise<void> {
     const verdicts = await detector.detect(found.map((record) => record.host.appId));
     for (const record of found) {
-      record.verdict = verdicts.get(record.host.appId);
+      record.verdicts = verdicts.get(record.host.appId);
       queue(record);
     }
   }
@@ -219,14 +224,14 @@ export function createCapsuleUi(options: CapsuleUiOptions): CapsuleUi {
         const record = records.get(host.element);
         if (record !== undefined) {
           record.host = host;
-          if (record.verdict !== undefined) {
+          if (record.verdicts !== undefined) {
             queue(record);
           }
         }
       }
       const found: HostRecord[] = [];
       for (const host of batch.found) {
-        const record: HostRecord = { host, verdict: undefined };
+        const record: HostRecord = { host, verdicts: undefined };
         records.set(host.element, record);
         found.push(record);
       }
@@ -238,7 +243,7 @@ export function createCapsuleUi(options: CapsuleUiOptions): CapsuleUi {
     refresh(ids) {
       for (const element of doc.querySelectorAll(`[${HOST_APPID}]`)) {
         const record = records.get(element);
-        if (record?.verdict !== undefined && (ids === undefined || ids.has(record.host.appId))) {
+        if (record?.verdicts !== undefined && (ids === undefined || ids.has(record.host.appId))) {
           queue(record);
         }
       }

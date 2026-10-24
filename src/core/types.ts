@@ -1,5 +1,6 @@
 import * as v from "valibot";
 import type { SteamLanguage } from "./i18n/locale";
+import type { KindVerdicts } from "./kinds/verdicts";
 
 /** Steam app IDs are unsigned 32-bit integers; 0 is what GetItems reports for an invalid item. */
 const MAX_APP_ID = 0xffff_ffff;
@@ -65,14 +66,14 @@ export const UNKNOWN: Readonly<Record<UnknownReason, UnknownVerdict>> = {
   "rate-limited": { state: "unknown", reason: "rate-limited" },
 };
 
-/** What core knows about one app's AI disclosure. Exactly three states (rule 4). */
+/** What core knows about one app for one tag kind. Exactly three states (rule 4). */
 export type Verdict = DisclosedVerdict | NotDisclosedVerdict | UnknownVerdict;
 
 /**
  * One source of verdicts: GetItems, the HTML fallback, or a chain or decorator of them. Its
  * contract (tests/contracts/detector.contract.ts): it never rejects, and the result holds exactly
- * one verdict per distinct requested ID, with `unknown` for anything it could not settle.
+ * one `KindVerdicts` per distinct requested ID, with `unknown` for anything it could not settle.
  */
 export interface Detector {
-  detect(ids: readonly AppId[]): Promise<ReadonlyMap<AppId, Verdict>>;
+  detect(ids: readonly AppId[]): Promise<ReadonlyMap<AppId, KindVerdicts>>;
 }

@@ -3,6 +3,7 @@ import { detectorContract } from "../../../tests/contracts/detector.contract";
 import { appId, appIds } from "../../../tests/helpers/app-ids";
 import { APP_PAGES, type AppPageName } from "../../../tests/helpers/app-page";
 import { fakeHttp, type Reply } from "../../../tests/helpers/fake-http";
+import { UNKNOWN_KINDS } from "../kinds/verdicts";
 import { UNKNOWN, type Verdict } from "../types";
 import { createAppPageDetector, parseAppPage, parseLiveAppPage } from "./app-page";
 
@@ -104,7 +105,15 @@ describe("parseLiveAppPage", () => {
   const url = "https://store.steampowered.com/app/1808500/ARC_Raiders/";
 
   it("parses an English document", () => {
-    expect(parseLiveAppPage(doc(fixture("1808500-live-dom.html")), url)?.state).toBe("disclosed");
+    expect(parseLiveAppPage(doc(fixture("1808500-live-dom.html")), url)?.ai.state).toBe(
+      "disclosed",
+    );
+  });
+
+  it("shares the page's unknown reason with every kind", () => {
+    expect(parseLiveAppPage(doc('<html lang="en"><body></body></html>'), url)).toStrictEqual(
+      UNKNOWN_KINDS.gated,
+    );
   });
 
   it("does not answer on a localized document", () => {
@@ -138,11 +147,18 @@ describe("createAppPageDetector", () => {
     const verdicts = await d.detect(appIds(5072580, 413150, 99999999, 5072580));
     expect(http.calls).toStrictEqual([APP(5072580), APP(413150), APP(99999999)]);
     expect(http.maxInFlight).toBe(1);
-    expect([...verdicts.values()].map((verdict) => verdict.state)).toStrictEqual([
+    expect([...verdicts.values()].map((verdicts) => verdicts.ai.state)).toStrictEqual([
       "disclosed",
       "not-disclosed",
       "unknown",
     ]);
+  });
+
+  it("answers the AI kind only: the other kinds stay unknown", async () => {
+    const { detector: d } = detector(fixtureRoutes);
+    const found = await d.detect(appIds(5072580, 413150, 99999999));
+    expect(found.get(aiId)?.ai.state).toBe("disclosed");
+    expect(found.get(appId(99999999))).toStrictEqual(UNKNOWN_KINDS.gated);
   });
 
   it("maps failures to unknown, never to not disclosed", async () => {
@@ -154,7 +170,7 @@ describe("createAppPageDetector", () => {
     ];
     for (const [reply, expected] of cases) {
       const { detector: d } = detector([["https://", reply]]);
-      expect((await d.detect(ai)).get(aiId)).toBe(expected);
+      expect((await d.detect(ai)).get(aiId)?.ai).toBe(expected);
     }
   });
 });

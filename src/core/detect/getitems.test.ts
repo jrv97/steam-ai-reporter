@@ -17,8 +17,10 @@ import {
   storeItem,
 } from "../../../tests/helpers/getitems";
 import type { SteamLanguage } from "../i18n/locale";
+import { KIND_IDS } from "../kinds/id";
+import { type KindVerdicts, UNKNOWN_KINDS } from "../kinds/verdicts";
 import type { Http } from "../ports";
-import { type AppId, UNKNOWN, type Verdict } from "../types";
+import type { AppId } from "../types";
 import {
   createGetItemsDetector,
   DEFAULT_BATCH_LIMITS,
@@ -34,7 +36,7 @@ function parse(
   ids: readonly AppId[],
   reply: Reply,
   language: SteamLanguage = "english",
-): ReadonlyMap<AppId, Verdict> {
+): ReadonlyMap<AppId, KindVerdicts> {
   return parseGetItems(ids, httpResult(reply, URL_FOR_TESTS), language);
 }
 
@@ -42,13 +44,14 @@ function fixtureReply(fixture: unknown): Reply {
   return getItemsResponse(fixtureItems(fixture));
 }
 
-function stateOf(verdicts: ReadonlyMap<AppId, Verdict>, id: number): string | undefined {
-  const verdict = verdicts.get(appId(id));
+/** The state of the AI kind's verdict, with the reason for unknown. */
+function stateOf(verdicts: ReadonlyMap<AppId, KindVerdicts>, id: number): string | undefined {
+  const verdict = verdicts.get(appId(id))?.ai;
   return verdict?.state === "unknown" ? `unknown:${verdict.reason}` : verdict?.state;
 }
 
-function notesOf(verdicts: ReadonlyMap<AppId, Verdict>, id: number): string | undefined {
-  const verdict = verdicts.get(appId(id));
+function notesOf(verdicts: ReadonlyMap<AppId, KindVerdicts>, id: number): string | undefined {
+  const verdict = verdicts.get(appId(id))?.ai;
   return verdict?.state === "disclosed" ? verdict.notes : undefined;
 }
 
@@ -62,7 +65,7 @@ describe("parseGetItems over the captured fixtures", () => {
     const ids = appIds(5072580, 1808500, 1938090, 413150, 339800, 99999999, 50300);
     const verdicts = parse(ids, fixtureReply(mixed));
     expect(notesOf(verdicts, 5072580)).toMatch(/^Generative AI is used in both pre-generated/);
-    expect(verdicts.get(appId(5072580))).toStrictEqual({
+    expect(verdicts.get(appId(5072580))?.ai).toStrictEqual({
       state: "disclosed",
       notes: notesOf(verdicts, 5072580),
       language: "english",
@@ -71,7 +74,7 @@ describe("parseGetItems over the captured fixtures", () => {
       source: "api",
     });
     expect(notesOf(verdicts, 1808500)).toMatch(/^During the development process/);
-    expect(verdicts.get(appId(1808500))).toStrictEqual({
+    expect(verdicts.get(appId(1808500))?.ai).toStrictEqual({
       state: "disclosed",
       notes: notesOf(verdicts, 1808500),
       language: "english",
@@ -81,20 +84,20 @@ describe("parseGetItems over the captured fixtures", () => {
     expect(stateOf(verdicts, 1938090)).toBe("disclosed");
     // Not disclosed: 413150 has no notes, 339800 has mature notes only, 50300 is delisted.
     for (const id of [413150, 339800, 50300]) {
-      expect(verdicts.get(appId(id))).toStrictEqual({ state: "not-disclosed", source: "api" });
+      expect(verdicts.get(appId(id))?.ai).toStrictEqual({ state: "not-disclosed", source: "api" });
     }
     // Invalid ID: success 15, appid 0, no extra_details; keyed by the requested id.
-    expect(verdicts.get(appId(99999999))).toBe(UNKNOWN.missing);
+    expect(verdicts.get(appId(99999999))).toBe(UNKNOWN_KINDS.missing);
     expect(verdicts.size).toBe(7);
   });
 
   it("keeps the requested language and the developer's translation (german-context.json)", () => {
     const verdicts = parse(appIds(1938090, 5072580), fixtureReply(german), "german");
-    const cod = verdicts.get(appId(1938090));
+    const cod = verdicts.get(appId(1938090))?.ai;
     expect(cod?.state === "disclosed" ? cod.language : undefined).toBe("german");
     expect(notesOf(verdicts, 1938090)).toMatch(/^Unser Team setzt generative KI-Tools ein/);
     // No German translation: Steam answers in English, still requested as german.
-    const courage = verdicts.get(appId(5072580));
+    const courage = verdicts.get(appId(5072580))?.ai;
     expect(courage?.state === "disclosed" ? courage.language : undefined).toBe("german");
     expect(notesOf(verdicts, 5072580)).toMatch(/^Generative AI is used/);
   });
@@ -103,7 +106,7 @@ describe("parseGetItems over the captured fixtures", () => {
     const items = fixtureItems(roguelike);
     const ids = itemIds(items);
     const verdicts = parse(ids, fixtureReply(roguelike));
-    const disclosed = [...verdicts].filter(([, verdict]) => verdict.state === "disclosed");
+    const disclosed = [...verdicts].filter(([, verdict]) => verdict.ai.state === "disclosed");
     expect(disclosed.map(([id]) => id)).toStrictEqual([
       4461450,
       5269270,
@@ -116,13 +119,13 @@ describe("parseGetItems over the captured fixtures", () => {
       5271980,
       5081750,
     ]);
-    expect([...verdicts.values()].filter((v) => v.state === "not-disclosed")).toHaveLength(40);
+    expect([...verdicts.values()].filter((v) => v.ai.state === "not-disclosed")).toHaveLength(40);
     expect(notesOf(verdicts, 4431800)).toBe(
       "Partily AI Assets:\r\nWaifus\r\nBackgrounds\r\nMusics",
     );
     expect(notesOf(verdicts, 5269270)).toContain("\u200b\u200b");
     for (const [, verdict] of disclosed) {
-      const notes = verdict.state === "disclosed" ? verdict.notes : "";
+      const notes = verdict.ai.state === "disclosed" ? verdict.ai.notes : "";
       expect(notes).toBe(notes.trim());
     }
   });
@@ -130,7 +133,7 @@ describe("parseGetItems over the captured fixtures", () => {
   it("treats the body without store_items as a batch error (empty-response.json)", () => {
     const reply: Reply = { body: JSON.stringify(empty), headers: { "x-eresult": "1" } };
     expect(parse(appIds(413150, 5072580), reply)).toStrictEqual(
-      new Map([[appId(413150), UNKNOWN.error], [appId(5072580), UNKNOWN.error]]),
+      new Map([[appId(413150), UNKNOWN_KINDS.error], [appId(5072580), UNKNOWN_KINDS.error]]),
     );
     const contextless: Reply = { body: JSON.stringify(empty), headers: { "x-eresult": "8" } };
     expect(stateOf(parse(appIds(413150), contextless), 413150)).toBe("unknown:error");
@@ -169,14 +172,25 @@ describe("parseGetItems edge cases", () => {
         }),
       ]),
     );
-    const named = verdicts.get(appId(1));
+    const named = verdicts.get(appId(1))?.ai;
     expect(named?.state === "disclosed" ? named.service : undefined).toBe("Midjourney");
-    expect(verdicts.get(appId(2))).toStrictEqual({
+    expect(verdicts.get(appId(2))?.ai).toStrictEqual({
       state: "disclosed",
       notes: "notes",
       language: "english",
       source: "api",
     });
+  });
+
+  it("gives every registered kind a verdict for each requested ID", () => {
+    const verdicts = parse(
+      appIds(1, 2, 3),
+      getItemsResponse([disclosedItem(1, "notes"), storeItem(2)]),
+    );
+    expect(verdicts.size).toBe(3);
+    for (const found of verdicts.values()) {
+      expect(Object.keys(found)).toStrictEqual([...KIND_IDS]);
+    }
   });
 
   it("reads an item without extra_details as unknown missing", () => {
@@ -186,7 +200,7 @@ describe("parseGetItems edge cases", () => {
 
   it("keys an invalid item (success 15, appid 0) by its id", () => {
     const verdicts = parse(appIds(99999999), getItemsResponse([invalidItem(99999999)]));
-    expect([...verdicts]).toStrictEqual([[99999999, UNKNOWN.missing]]);
+    expect([...verdicts]).toStrictEqual([[99999999, UNKNOWN_KINDS.missing]]);
   });
 
   it("reads a requested ID without an item as unknown missing", () => {
@@ -251,7 +265,7 @@ describe("parseGetItems edge cases", () => {
       ]
     ) {
       const verdicts = parse(ids, reply);
-      expect([...verdicts.values()]).toStrictEqual([UNKNOWN.error, UNKNOWN.error]);
+      expect([...verdicts.values()]).toStrictEqual([UNKNOWN_KINDS.error, UNKNOWN_KINDS.error]);
     }
   });
 
@@ -268,10 +282,10 @@ describe("parseGetItems edge cases", () => {
   it("maps a failed request to error and a withheld one to rate-limited", () => {
     const ids = appIds(1);
     expect(parseGetItems(ids, { kind: "failed", cause: new TypeError() }, "english")).toStrictEqual(
-      new Map([[appId(1), UNKNOWN.error]]),
+      new Map([[appId(1), UNKNOWN_KINDS.error]]),
     );
     expect(parseGetItems(ids, { kind: "withheld" }, "english")).toStrictEqual(
-      new Map([[appId(1), UNKNOWN["rate-limited"]]]),
+      new Map([[appId(1), UNKNOWN_KINDS["rate-limited"]]]),
     );
   });
 });

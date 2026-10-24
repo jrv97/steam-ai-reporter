@@ -3,8 +3,11 @@ import { type AppId, toAppId } from "./types";
 // The storage layout. Every key carries the layout version `v1`. Step 7's breaker key
 // (`v1:breaker`) lives next to these but is owned by the breaker; nothing here touches it.
 
-/** Bump to discard every cached verdict on the next start (and only verdicts). */
-export const CACHE_SCHEMA = 1;
+/**
+ * Bump to discard every cached verdict on the next start (and only verdicts). Version 2 stores
+ * one entry per tag kind in each verdict.
+ */
+export const CACHE_SCHEMA = 2;
 
 const VERDICT_PREFIX = "v1:a:";
 

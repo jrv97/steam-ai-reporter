@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { disclosedVerdict, NOT_DISCLOSED } from "../../../tests/helpers/verdicts";
+import { aiVerdicts, disclosedVerdict, NOT_DISCLOSED } from "../../../tests/helpers/verdicts";
 import { UNKNOWN, type Verdict } from "../types";
 import {
   DAY_MS,
@@ -50,13 +50,14 @@ describe("isFresh", () => {
   ];
 
   it.each(cases)("%s: fresh until exactly its TTL", (_name, verdict, ttl) => {
-    expect(isFresh(verdict, T, T)).toBe(true);
-    expect(isFresh(verdict, T, T + ttl - 1)).toBe(true);
-    expect(isFresh(verdict, T, T + ttl)).toBe(false);
-    expect(isFresh(verdict, T, T + ttl + 1)).toBe(false);
+    const verdicts = aiVerdicts(verdict);
+    expect(isFresh(verdicts, T, T)).toBe(true);
+    expect(isFresh(verdicts, T, T + ttl - 1)).toBe(true);
+    expect(isFresh(verdicts, T, T + ttl)).toBe(false);
+    expect(isFresh(verdicts, T, T + ttl + 1)).toBe(false);
   });
 
   it("treats a fetch time in the future as stale", () => {
-    expect(isFresh(NOT_DISCLOSED, T + 1, T)).toBe(false);
+    expect(isFresh(aiVerdicts(NOT_DISCLOSED), T + 1, T)).toBe(false);
   });
 });

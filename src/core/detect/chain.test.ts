@@ -6,20 +6,27 @@ import { fakeHttp, type Route } from "../../../tests/helpers/fake-http";
 import { memoryStore } from "../../../tests/helpers/memory-store";
 import { recordingLogger } from "../../../tests/helpers/recording-logger";
 import { T0, useTimerClock } from "../../../tests/helpers/timer-clock";
+import { aiVerdicts } from "../../../tests/helpers/verdicts";
+import { type KindVerdicts, UNKNOWN_KINDS } from "../kinds/verdicts";
 import type { Http } from "../ports";
-import { type AppId, type Detector, UNKNOWN, type Verdict } from "../types";
+import type { AppId, Detector } from "../types";
 import { createBreaker, HTML_BREAKER_KEY } from "./breaker";
 import { createBudgetDetector } from "./budget";
 import { createChainDetector } from "./chain";
 import { createThrottledHttp } from "./throttle";
 
-const DISCLOSED: Verdict = { state: "disclosed", notes: "Art", language: "english", source: "api" };
-const NOT_DISCLOSED: Verdict = { state: "not-disclosed", source: "html" };
+const DISCLOSED = aiVerdicts({
+  state: "disclosed",
+  notes: "Art",
+  language: "english",
+  source: "api",
+});
+const NOT_DISCLOSED = aiVerdicts({ state: "not-disclosed", source: "html" });
 const PAGE = "https://store.steampowered.com/app/";
 
 /** Every ID unknown `missing`, like GetItems for IDs it has no item for. */
 function allMissing() {
-  return fakeDetector(() => UNKNOWN.missing);
+  return fakeDetector(() => UNKNOWN_KINDS.missing);
 }
 
 /**
@@ -32,16 +39,16 @@ function pageDetector(http: Http): Detector {
       const distinct = [...new Set(ids)];
       const results = await Promise.all(distinct.map((id) => http.get(`${PAGE}${String(id)}/`)));
       return new Map(
-        distinct.map((id, index): [AppId, Verdict] => {
+        distinct.map((id, index): [AppId, KindVerdicts] => {
           const result = results[index];
           if (result?.kind === "withheld") {
-            return [id, UNKNOWN["rate-limited"]];
+            return [id, UNKNOWN_KINDS["rate-limited"]];
           }
           return [
             id,
             result?.kind === "response" && result.status === 200
               ? NOT_DISCLOSED
-              : UNKNOWN.error,
+              : UNKNOWN_KINDS.error,
           ];
         }),
       );
@@ -65,24 +72,24 @@ detectorContract(
 
 describe("createChainDetector", () => {
   it("sends only the IDs a link left unknown missing to the next link", async () => {
-    const verdictFor = new Map<number, Verdict>([
+    const verdictFor = new Map<number, KindVerdicts>([
       [1, DISCLOSED],
-      [2, UNKNOWN.missing],
-      [3, UNKNOWN.error],
-      [4, UNKNOWN["rate-limited"]],
-      [5, UNKNOWN.missing],
+      [2, UNKNOWN_KINDS.missing],
+      [3, UNKNOWN_KINDS.error],
+      [4, UNKNOWN_KINDS["rate-limited"]],
+      [5, UNKNOWN_KINDS.missing],
     ]);
-    const api = fakeDetector((id) => verdictFor.get(id) ?? UNKNOWN.error);
+    const api = fakeDetector((id) => verdictFor.get(id) ?? UNKNOWN_KINDS.error);
     const html = fakeDetector(() => NOT_DISCLOSED);
     const verdicts = await createChainDetector([api, html]).detect(appIds(1, 2, 3, 4, 5, 2));
     expect(api.calls).toStrictEqual([appIds(1, 2, 3, 4, 5)]);
     expect(html.calls).toStrictEqual([appIds(2, 5)]);
     expect(verdicts).toStrictEqual(
-      new Map<AppId, Verdict>([
+      new Map<AppId, KindVerdicts>([
         [appId(1), DISCLOSED],
         [appId(2), NOT_DISCLOSED],
-        [appId(3), UNKNOWN.error],
-        [appId(4), UNKNOWN["rate-limited"]],
+        [appId(3), UNKNOWN_KINDS.error],
+        [appId(4), UNKNOWN_KINDS["rate-limited"]],
         [appId(5), NOT_DISCLOSED],
       ]),
     );
@@ -96,14 +103,14 @@ describe("createChainDetector", () => {
 
   it("keeps missing when the last link also has nothing", async () => {
     const verdicts = await createChainDetector([allMissing(), allMissing()]).detect(appIds(7));
-    expect(verdicts).toStrictEqual(new Map([[appId(7), UNKNOWN.missing]]));
+    expect(verdicts).toStrictEqual(new Map([[appId(7), UNKNOWN_KINDS.missing]]));
   });
 
   it("answers unknown error for IDs a faulty link rejected or left out", async () => {
     const partial: Detector = { detect: () => Promise.resolve(new Map([[appId(1), DISCLOSED]])) };
     const verdicts = await createChainDetector([partial]).detect(appIds(1, 2));
     expect(verdicts).toStrictEqual(
-      new Map<AppId, Verdict>([[appId(1), DISCLOSED], [appId(2), UNKNOWN.error]]),
+      new Map<AppId, KindVerdicts>([[appId(1), DISCLOSED], [appId(2), UNKNOWN_KINDS.error]]),
     );
   });
 });
@@ -142,12 +149,12 @@ describe("the HTML fallback budget in a chain", () => {
     expect(server.maxInFlight).toBe(1);
     const states = [...verdicts.values()];
     expect(states.filter((verdict) => verdict === NOT_DISCLOSED)).toHaveLength(10);
-    expect(states.filter((verdict) => verdict === UNKNOWN["rate-limited"])).toHaveLength(5);
+    expect(states.filter((verdict) => verdict === UNKNOWN_KINDS["rate-limited"])).toHaveLength(5);
 
     // The budget is spent for this page view: later scans send nothing.
     const later = chain.detect(appIds(5_000_000));
     await vi.advanceTimersByTimeAsync(5_000);
-    expect(await later).toStrictEqual(new Map([[appId(5_000_000), UNKNOWN["rate-limited"]]]));
+    expect(await later).toStrictEqual(new Map([[appId(5_000_000), UNKNOWN_KINDS["rate-limited"]]]));
     expect(sent).toHaveLength(10);
   });
 
@@ -157,6 +164,8 @@ describe("the HTML fallback budget in a chain", () => {
     await vi.advanceTimersByTimeAsync(20_000);
     const verdicts = await pending;
     expect(sent).toStrictEqual([0]);
-    expect([...verdicts.values()].filter((v) => v === UNKNOWN["rate-limited"])).toHaveLength(14);
+    expect([...verdicts.values()].filter((v) => v === UNKNOWN_KINDS["rate-limited"])).toHaveLength(
+      14,
+    );
   });
 });

@@ -17,3 +17,11 @@ export function kindOf(id: KindId): TagKind {
 export function perKind<T>(make: (kind: TagKind) => T): Readonly<Record<KindId, T>> {
   return { ai: make(REGISTRY.ai) };
 }
+
+/** The values keyed by kind id, or undefined when any kind has none. */
+export function definedKinds<T>(
+  values: Readonly<Record<KindId, T | undefined>>,
+): Readonly<Record<KindId, T>> | undefined {
+  const { ai } = values;
+  return ai === undefined ? undefined : { ai };
+}

@@ -2,10 +2,12 @@ import { describe, expect, it } from "vitest";
 import { detectorContract } from "../../../tests/contracts/detector.contract";
 import { appId, appIds } from "../../../tests/helpers/app-ids";
 import { fakeDetector } from "../../../tests/helpers/fake-detector";
-import { type AppId, UNKNOWN, type Verdict } from "../types";
+import { aiVerdicts } from "../../../tests/helpers/verdicts";
+import { type KindVerdicts, UNKNOWN_KINDS } from "../kinds/verdicts";
+import type { AppId } from "../types";
 import { createBudgetDetector, DEFAULT_HTML_BUDGET } from "./budget";
 
-const NOT_DISCLOSED: Verdict = { state: "not-disclosed", source: "html" };
+const NOT_DISCLOSED = aiVerdicts({ state: "not-disclosed", source: "html" });
 
 detectorContract(
   "createBudgetDetector",
@@ -25,13 +27,16 @@ describe("createBudgetDetector", () => {
     const inner = fakeDetector(() => NOT_DISCLOSED);
     const detector = createBudgetDetector(inner, 3);
     expect(await detector.detect(appIds(1, 2, 1))).toStrictEqual(
-      new Map<AppId, Verdict>([[appId(1), NOT_DISCLOSED], [appId(2), NOT_DISCLOSED]]),
+      new Map<AppId, KindVerdicts>([[appId(1), NOT_DISCLOSED], [appId(2), NOT_DISCLOSED]]),
     );
     expect(await detector.detect(appIds(3, 4))).toStrictEqual(
-      new Map<AppId, Verdict>([[appId(3), NOT_DISCLOSED], [appId(4), UNKNOWN["rate-limited"]]]),
+      new Map<AppId, KindVerdicts>([[appId(3), NOT_DISCLOSED], [
+        appId(4),
+        UNKNOWN_KINDS["rate-limited"],
+      ]]),
     );
     expect(await detector.detect(appIds(5))).toStrictEqual(
-      new Map([[appId(5), UNKNOWN["rate-limited"]]]),
+      new Map([[appId(5), UNKNOWN_KINDS["rate-limited"]]]),
     );
     expect(inner.calls).toStrictEqual([appIds(1, 2), appIds(3)]);
   });

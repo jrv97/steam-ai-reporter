@@ -4,11 +4,13 @@ import { appId, appIds } from "../../../tests/helpers/app-ids";
 import { fakeDetector } from "../../../tests/helpers/fake-detector";
 import { fakeHttp } from "../../../tests/helpers/fake-http";
 import { getItemsRequest, getItemsRoute, storeItem } from "../../../tests/helpers/getitems";
-import { type AppId, type Detector, UNKNOWN, type Verdict } from "../types";
+import { aiVerdicts } from "../../../tests/helpers/verdicts";
+import { type KindVerdicts, UNKNOWN_KINDS } from "../kinds/verdicts";
+import type { AppId, Detector } from "../types";
 import { createDedupingDetector } from "./dedupe";
 import { createGetItemsDetector } from "./getitems";
 
-const NOT_DISCLOSED: Verdict = { state: "not-disclosed", source: "api" };
+const NOT_DISCLOSED = aiVerdicts({ state: "not-disclosed", source: "api" });
 
 detectorContract(
   "createDedupingDetector",
@@ -29,7 +31,7 @@ function heldDetector() {
       await new Promise<void>((resolve) => {
         release = resolve;
       });
-      return new Map(ids.map((id): [AppId, Verdict] => [id, NOT_DISCLOSED]));
+      return new Map(ids.map((id): [AppId, KindVerdicts] => [id, NOT_DISCLOSED]));
     },
   };
   const releaseNow = (): void => {
@@ -86,6 +88,8 @@ describe("createDedupingDetector", () => {
 
   it("answers unknown error when the inner detector rejects", async () => {
     const detector = createDedupingDetector({ detect: () => Promise.reject(new Error()) });
-    expect(await detector.detect(appIds(9))).toStrictEqual(new Map([[appId(9), UNKNOWN.error]]));
+    expect(await detector.detect(appIds(9))).toStrictEqual(
+      new Map([[appId(9), UNKNOWN_KINDS.error]]),
+    );
   });
 });

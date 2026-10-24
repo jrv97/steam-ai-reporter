@@ -1,9 +1,12 @@
-import { type AppId, type Detector, UNKNOWN, type Verdict } from "../types";
+import { type KindVerdicts, UNKNOWN_KINDS } from "../kinds/verdicts";
+import type { AppId, Detector } from "../types";
 import { settle } from "./settle";
 
-/** Only Steam having no usable item is worth asking the next source about. */
-function passesOn(verdict: Verdict): boolean {
-  return verdict.state === "unknown" && verdict.reason === "missing";
+/** Only Steam having no usable item, so that no kind has an answer, is worth a second source. */
+function passesOn(verdicts: KindVerdicts): boolean {
+  return Object.values(verdicts).every(
+    (verdict) => verdict.state === "unknown" && verdict.reason === "missing",
+  );
 }
 
 /**
@@ -18,16 +21,18 @@ export function createChainDetector(links: readonly Detector[]): Detector {
     async detect(ids) {
       let pending: readonly AppId[] = [...new Set(ids)];
       // What no link has answered yet is unknown `missing`, so an empty chain still answers.
-      const verdicts = new Map(pending.map((id): [AppId, Verdict] => [id, UNKNOWN.missing]));
+      const verdicts = new Map(
+        pending.map((id): [AppId, KindVerdicts] => [id, UNKNOWN_KINDS.missing]),
+      );
       for (const link of links) {
         if (pending.length === 0) {
           break;
         }
         // Sequential on purpose: each link sees only what the one before it could not settle.
         const next: AppId[] = [];
-        for (const [id, verdict] of await settle(link, pending)) {
-          verdicts.set(id, verdict);
-          if (passesOn(verdict)) {
+        for (const [id, found] of await settle(link, pending)) {
+          verdicts.set(id, found);
+          if (passesOn(found)) {
             next.push(id);
           }
         }

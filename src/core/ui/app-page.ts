@@ -1,3 +1,5 @@
+import type { TagKind } from "../kinds/kind";
+import type { KindVerdicts } from "../kinds/verdicts";
 import type { MessageCatalog } from "../ports";
 import type { Verdict } from "../types";
 import {
@@ -12,13 +14,14 @@ import { createSummaryRow, placeSummaryRow } from "./summary-row";
 
 /** What the app page shows for its own game. */
 export interface AppPageView {
-  readonly verdict: Verdict;
+  readonly verdicts: KindVerdicts;
+  /** The game is on the allow-list for the kind this page shows. */
   readonly allowed: boolean;
   /** The `banner` setting. The `badges` setting is a root attribute (`applyBadgeSetting`). */
   readonly banner: boolean;
 }
 
-/** The game's own page: the banner above the purchase box and the summary box row. */
+/** The game's own page for one kind: the banner above the purchase box and the summary row. */
 export interface AppPageUi {
   /** Idempotent: an unchanged view changes nothing; a node a store re-render dropped returns. */
   render(view: AppPageView): void;
@@ -43,19 +46,20 @@ interface Row {
 export function createAppPageUi(
   doc: Document,
   i18n: MessageCatalog,
+  kind: TagKind,
   actions: BannerActions,
   options: AppPageOptions = {},
 ): AppPageUi {
   let banner: Banner | undefined;
   let row: Row | undefined;
 
-  function renderBanner(view: AppPageView): boolean {
-    if (view.verdict.state !== "disclosed" || !view.banner) {
+  function renderBanner(verdict: Verdict, view: AppPageView): boolean {
+    if (verdict.state !== "disclosed" || !view.banner) {
       banner?.host.remove();
       return false;
     }
-    banner ??= createBanner(doc, i18n, actions, options);
-    banner.show(view.verdict, view.allowed);
+    banner ??= createBanner(doc, i18n, kind, actions, options);
+    banner.show(verdict, view.allowed);
     return placeBanner(doc, banner.host);
   }
 
@@ -66,8 +70,8 @@ export function createAppPageUi(
 
   return {
     render(view) {
-      const bannerShown = renderBanner(view);
-      const { verdict } = view;
+      const verdict = view.verdicts[kind.id];
+      const bannerShown = renderBanner(verdict, view);
       if (verdict.state !== "disclosed" || view.allowed) {
         removeRow();
         return;
@@ -80,7 +84,7 @@ export function createAppPageUi(
       }
       removeRow();
       const jump = bannerShown ? () => banner?.reveal() : undefined;
-      const element = createSummaryRow(doc, i18n, verdict, jump, options.card);
+      const element = createSummaryRow(doc, i18n, kind, verdict, jump, options.card);
       if (placeSummaryRow(doc, element)) {
         row = { element, notes: verdict.notes, linked: bannerShown };
       }

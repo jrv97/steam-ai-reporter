@@ -18,13 +18,17 @@ import {
 } from "./i18n/locale";
 import { SHIPPED_CATALOGS } from "./i18n/shipped";
 import { createI18n, type I18n } from "./i18n/t";
+import { AI_KIND } from "./kinds/ai";
+import type { TagKind } from "./kinds/kind";
+import { KINDS, perKind } from "./kinds/registry";
+import { type KindVerdicts, UNKNOWN_KINDS } from "./kinds/verdicts";
 import { type ConsoleSink, createLogger, type Logger } from "./log";
 import type { Clock, Http, KeyValueStore, SettingsSource, Unsubscribe } from "./ports";
 import { appIdFromHref } from "./scan/appid";
 import { createScanner } from "./scan/scanner";
 import { createAllowList } from "./settings/allow-list";
 import { DEFAULT_SETTINGS, parseSettings, type Settings } from "./settings/settings";
-import { type AppId, type Detector, UNKNOWN, type Verdict } from "./types";
+import type { AppId, Detector, Verdict } from "./types";
 import { createAppPageUi } from "./ui/app-page";
 import { applyBadgeSetting, createBadgeRenderer } from "./ui/badge";
 import { createCapsuleUi } from "./ui/capsules";
@@ -85,27 +89,39 @@ function createDetector(deps: AppDeps, logger: Logger, language: SteamLanguage) 
   return { getItems, detector: cachedDetector(chain, createVerdictCache(store, clock), logger) };
 }
 
+/** Whether a kind holds a disclosure from the API in another language than the page's. */
+function needsTranslation(verdicts: KindVerdicts, language: SteamLanguage): boolean {
+  return KINDS.some((kind) => {
+    const verdict = verdicts[kind.id];
+    return verdict.state === "disclosed" && verdict.source === "api"
+      && verdict.language !== language;
+  });
+}
+
 /**
- * The verdict for the app page the user is on: read from the page itself when it is English (no
+ * The verdicts for the app page the user is on: read from the page itself when it is English (no
  * request), else from the detector. A cached disclosure in another language than the page's is
  * fetched again for this one app, so the banner quotes the developer's own translation.
  */
-async function pageVerdict(
+async function pageVerdicts(
   doc: Document,
   id: AppId,
   language: SteamLanguage,
   detectors: { readonly getItems: Detector; readonly detector: Detector; },
-): Promise<Verdict> {
+): Promise<KindVerdicts> {
   const live = parseLiveAppPage(doc, doc.URL);
   if (live !== undefined) {
     return live;
   }
-  const verdict = (await detectors.detector.detect([id])).get(id) ?? UNKNOWN.missing;
-  if (verdict.state !== "disclosed" || verdict.source !== "api" || verdict.language === language) {
-    return verdict;
+  const verdicts = (await detectors.detector.detect([id])).get(id) ?? UNKNOWN_KINDS.missing;
+  if (!needsTranslation(verdicts, language)) {
+    return verdicts;
   }
   const translated = (await detectors.getItems.detect([id])).get(id);
-  return translated?.state === "disclosed" ? translated : verdict;
+  return perKind((kind) => {
+    const fresh = translated?.[kind.id];
+    return fresh?.state === "disclosed" ? fresh : verdicts[kind.id];
+  });
 }
 
 function appName(doc: Document, verdict: Verdict, id: AppId): string {
@@ -114,12 +130,13 @@ function appName(doc: Document, verdict: Verdict, id: AppId): string {
   return fromVerdict ?? (fromPage === undefined || fromPage === "" ? String(id) : fromPage);
 }
 
-/** The app page: its banner and summary row, wired to the allow-list. */
+/** The app page for one kind: its banner and summary row, wired to the allow-list. */
 async function startAppPage(
   doc: Document,
   id: AppId,
   i18n: I18n,
-  verdict: Promise<Verdict>,
+  kind: TagKind,
+  verdicts: Promise<KindVerdicts>,
   context: {
     readonly allowed: Set<AppId>;
     readonly allowList: ReturnType<typeof createAllowList>;
@@ -128,10 +145,10 @@ async function startAppPage(
     readonly card: CardTriggers;
   },
 ): Promise<() => void> {
-  const known = await verdict;
-  const ui = createAppPageUi(doc, i18n, {
+  const known = await verdicts;
+  const ui = createAppPageUi(doc, i18n, kind, {
     async stopMarking() {
-      await context.allowList.add(id, appName(doc, known, id));
+      await context.allowList.add(id, appName(doc, known[kind.id], id));
       context.allowed.add(id);
       context.onAllowChange(id);
     },
@@ -143,7 +160,7 @@ async function startAppPage(
   }, { card: context.card });
   const render = (): void => {
     ui.render({
-      verdict: known,
+      verdicts: known,
       allowed: context.allowed.has(id),
       banner: context.settings().banner,
     });
@@ -191,11 +208,13 @@ export async function start(deps: AppDeps): Promise<App> {
   applyBadgeSetting(root, settings.badges);
   applyListFilter(root, settings.listFilter);
 
+  // The page surfaces (badge, banner, list filter) show the AI kind.
+  const kind = AI_KIND;
   const card = createHoverCard(doc, i18n);
   const capsules = createCapsuleUi({
     document: doc,
     detector: detectors.detector,
-    renderers: [createHostStateRenderer(), createBadgeRenderer(doc, i18n, card)],
+    renderers: [createHostStateRenderer(kind), createBadgeRenderer(doc, i18n, card, kind)],
     isAllowed: (id) => allowed.has(id),
   });
   const scanner = createScanner({ document: doc, renderer: capsules });
@@ -209,7 +228,8 @@ export async function start(deps: AppDeps): Promise<App> {
       doc,
       pageId,
       i18n,
-      pageVerdict(doc, pageId, language, detectors),
+      kind,
+      pageVerdicts(doc, pageId, language, detectors),
       {
         allowed,
         allowList,

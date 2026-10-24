@@ -1,7 +1,7 @@
 import * as v from "valibot";
 import type { Clock, KeyValueStore } from "../ports";
 import { CACHE_SCHEMA, isVerdictKey, META_KEY } from "../storage-keys";
-import { decodeVerdict } from "./stored";
+import { decodeVerdicts } from "./stored";
 import { DAY_MS, isFresh } from "./ttl";
 
 const MetaSchema = v.object({
@@ -54,7 +54,7 @@ async function expired(
   }
   const stored = await store.get(keys);
   return keys.filter((key) => {
-    const entry = decodeVerdict(stored.get(key));
-    return entry === undefined || !isFresh(entry.verdict, entry.time, now);
+    const entry = decodeVerdicts(stored.get(key));
+    return entry === undefined || !isFresh(entry.verdicts, entry.time, now);
   });
 }

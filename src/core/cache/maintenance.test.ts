@@ -2,12 +2,12 @@ import { describe, expect, it } from "vitest";
 import { countingStore } from "../../../tests/helpers/counting-store";
 import { fixedClock } from "../../../tests/helpers/fixed-clock";
 import { memoryStore } from "../../../tests/helpers/memory-store";
-import { disclosedVerdict, NOT_DISCLOSED } from "../../../tests/helpers/verdicts";
+import { aiVerdicts, disclosedVerdict, NOT_DISCLOSED } from "../../../tests/helpers/verdicts";
 import type { JsonValue } from "../json";
 import { CACHE_SCHEMA, META_KEY } from "../storage-keys";
-import { UNKNOWN } from "../types";
+import { UNKNOWN, type Verdict } from "../types";
 import { maintainCache } from "./maintenance";
-import { encodeVerdict } from "./stored";
+import { encodeVerdicts } from "./stored";
 import { DAY_MS, DISCLOSED_TTL_MS, NOT_DISCLOSED_TTL_MS } from "./ttl";
 
 const T = 1_000_000_000_000;
@@ -16,8 +16,8 @@ const SETTINGS: JsonValue = { badges: false };
 const ALLOW: JsonValue = { "10": { name: "Ignored", added: T } };
 
 /** The stored value of a verdict that is persisted; `null` (invalid) for one that is not. */
-function verdict(value: Parameters<typeof encodeVerdict>[0], time: number): JsonValue {
-  return encodeVerdict(value, time) ?? null;
+function verdict(value: Verdict, time: number): JsonValue {
+  return encodeVerdicts(aiVerdicts(value), time) ?? null;
 }
 
 function setup(entries: readonly (readonly [string, JsonValue])[]) {
@@ -52,6 +52,27 @@ describe("maintainCache: schema reset", () => {
     expect(await store.get([META_KEY])).toStrictEqual(
       new Map([[META_KEY, { schema: CACHE_SCHEMA, sweptAt: T }]]),
     );
+  });
+
+  it("drops the verdicts written before the per-kind layout, once", async () => {
+    // Version 1 kept one flat verdict per app, with the time inside.
+    const flat: JsonValue = {
+      state: "disclosed",
+      time: T,
+      notes: "Concept art was generated.",
+      language: "english",
+      source: "api",
+    };
+    const { store, run } = setup([
+      [META_KEY, { schema: 1, sweptAt: T }],
+      ["v1:a:1", flat],
+      ["v1:a:2", { state: "not-disclosed", time: T, source: "api" }],
+      ...others,
+    ]);
+    expect(CACHE_SCHEMA).toBeGreaterThan(1);
+    expect(await run()).toBe("reset");
+    expect(await keysOf(store)).toStrictEqual(["v1:allow", "v1:breaker", META_KEY, "v1:settings"]);
+    expect(await run()).toBe("skipped");
   });
 
   it("clears the verdicts of a newer schema too, after a downgrade", async () => {

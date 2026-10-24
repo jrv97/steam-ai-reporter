@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { setBody } from "../../../tests/helpers/dom";
 import { englishI18n } from "../../../tests/helpers/i18n";
 import { disclosedVerdict } from "../../../tests/helpers/verdicts";
+import { AI_KIND } from "../kinds/ai";
 import { createHoverCard, HOVER_CARD_ID, type HoverCard, placeCard } from "./hover-card";
 import { adoptPageStyles } from "./styles";
 
@@ -137,7 +138,11 @@ describe("createHoverCard", () => {
 
   it("opens after the pointer rests on a badge and quotes the notes verbatim", () => {
     const { badge } = page();
-    start().bind(badge, disclosedVerdict({ notes: "Line one\r\nLine two", service: "Midjourney" }));
+    start().bind(
+      badge,
+      AI_KIND,
+      disclosedVerdict({ notes: "Line one\r\nLine two", service: "Midjourney" }),
+    );
     pointerOver(badge.firstElementChild ?? badge);
     expect(shown()).toBeNull();
     flush();
@@ -165,8 +170,8 @@ describe("createHoverCard", () => {
       second.className = "sar-badge";
       other.append(second);
       const hover = start();
-      hover.bind(badge, disclosedVerdict());
-      hover.bind(second, disclosedVerdict());
+      hover.bind(badge, AI_KIND, disclosedVerdict());
+      hover.bind(second, AI_KIND, disclosedVerdict());
       pointerOver(badge);
       flush();
       pointerOver(second);
@@ -184,7 +189,7 @@ describe("createHoverCard", () => {
   it("keeps a closed card hidden through the reset, which unsets the popover's own rules", () => {
     adoptPageStyles(document);
     const { badge, other } = page();
-    start().bind(badge, disclosedVerdict());
+    start().bind(badge, AI_KIND, disclosedVerdict());
     pointerOver(badge);
     flush();
     const node = document.getElementById(HOVER_CARD_ID);
@@ -203,7 +208,7 @@ describe("createHoverCard", () => {
     storeHover.id = "global_hover";
     document.body.append(storeHover);
     expect(getComputedStyle(storeHover).visibility).not.toBe("hidden");
-    start().bind(badge, disclosedVerdict());
+    start().bind(badge, AI_KIND, disclosedVerdict());
     pointerOver(badge);
     flush();
     expect(document.documentElement.getAttribute("data-sar-hovercard")).toBe("open");
@@ -216,7 +221,7 @@ describe("createHoverCard", () => {
   it("clears the root mark on Escape, on pagehide and on stop", () => {
     const { badge, other } = page();
     const hover = start();
-    hover.bind(badge, disclosedVerdict());
+    hover.bind(badge, AI_KIND, disclosedVerdict());
     const marked = () => document.documentElement.hasAttribute("data-sar-hovercard");
     const reopen = () => {
       pointerOver(other);
@@ -237,7 +242,7 @@ describe("createHoverCard", () => {
 
   it("renders notes with markup as plain text", () => {
     const { badge } = page();
-    start().bind(badge, disclosedVerdict({ notes: XSS, service: XSS }));
+    start().bind(badge, AI_KIND, disclosedVerdict({ notes: XSS, service: XSS }));
     pointerOver(badge);
     flush();
     expect(shown()?.querySelector(".sar-hovercard-notes")?.textContent).toBe(XSS);
@@ -248,7 +253,7 @@ describe("createHoverCard", () => {
   it("leaves out the service line when the developer named none", () => {
     const { badge } = page();
     const { service: _service, ...unnamed } = disclosedVerdict();
-    start().bind(badge, unnamed);
+    start().bind(badge, AI_KIND, unnamed);
     pointerOver(badge);
     flush();
     expect(shown()?.querySelector(".sar-hovercard-service")).toBeNull();
@@ -258,7 +263,7 @@ describe("createHoverCard", () => {
     const { badge, other } = page();
     const hover = start();
     overflowing = true;
-    hover.bind(badge, disclosedVerdict({ notes: "word ".repeat(400) }));
+    hover.bind(badge, AI_KIND, disclosedVerdict({ notes: "word ".repeat(400) }));
     pointerOver(badge);
     flush();
     const more = shown()?.querySelector<HTMLElement>(".sar-hovercard-more");
@@ -270,7 +275,7 @@ describe("createHoverCard", () => {
     const second = document.createElement("span");
     second.className = "sar-badge";
     other.append(second);
-    hover.bind(second, disclosedVerdict({ notes: "Short." }));
+    hover.bind(second, AI_KIND, disclosedVerdict({ notes: "Short." }));
     pointerOver(second);
     expect(shown()?.querySelector<HTMLElement>(".sar-hovercard-more")?.hidden).toBe(true);
   });
@@ -280,7 +285,7 @@ describe("createHoverCard", () => {
     const hover = start();
     overflowing = true;
     const verdict = disclosedVerdict({ notes: "word ".repeat(400) });
-    hover.bind(badge, verdict, true);
+    hover.bind(badge, AI_KIND, verdict, true);
     pointerOver(badge);
     flush();
     expect(shown()?.querySelector<HTMLElement>(".sar-hovercard-more")?.hidden).toBe(true);
@@ -288,7 +293,7 @@ describe("createHoverCard", () => {
     const capsule = document.createElement("span");
     capsule.className = "sar-compact";
     other.append(capsule);
-    hover.bind(capsule, verdict);
+    hover.bind(capsule, AI_KIND, verdict);
     pointerOver(capsule);
     expect(shown()?.querySelector<HTMLElement>(".sar-hovercard-more")?.hidden).toBe(false);
   });
@@ -298,7 +303,7 @@ describe("createHoverCard", () => {
     setBody(Array.from({ length: 200 }, () => '<span class="sar-badge">AI</span>').join(""));
     const hover = start();
     for (const badge of document.querySelectorAll(".sar-badge")) {
-      hover.bind(badge, disclosedVerdict());
+      hover.bind(badge, AI_KIND, disclosedVerdict());
     }
     pointerOver(document.querySelectorAll(".sar-badge")[150] ?? document.body);
     flush();
@@ -310,7 +315,7 @@ describe("createHoverCard", () => {
 
   it("stays open while the pointer crosses onto the card, and closes after leaving both", () => {
     const { badge, other } = page();
-    start().bind(badge, disclosedVerdict());
+    start().bind(badge, AI_KIND, disclosedVerdict());
     pointerOver(badge);
     flush();
     const node = shown();
@@ -328,7 +333,7 @@ describe("createHoverCard", () => {
 
   it("opens nothing when the pointer only passes over a badge", () => {
     const { badge, other } = page();
-    start().bind(badge, disclosedVerdict());
+    start().bind(badge, AI_KIND, disclosedVerdict());
     pointerOver(badge);
     pointerOver(other);
     flush();
@@ -340,7 +345,7 @@ describe("createHoverCard", () => {
     const badge = link.querySelector(".sar-badge");
     link.setAttribute("aria-describedby", STORE_NOTE_ID);
     if (badge !== null) {
-      start().bind(badge, disclosedVerdict());
+      start().bind(badge, AI_KIND, disclosedVerdict());
     }
     focusIn(link);
     expect(shown()).not.toBeNull();
@@ -353,7 +358,7 @@ describe("createHoverCard", () => {
 
   it("closes on Escape and stays closed until the pointer leaves the badge", () => {
     const { badge, other } = page();
-    start().bind(badge, disclosedVerdict());
+    start().bind(badge, AI_KIND, disclosedVerdict());
     pointerOver(badge);
     flush();
     document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
@@ -370,7 +375,7 @@ describe("createHoverCard", () => {
   it("moves a focus-opened card with its link, once per frame, through a scroll", () => {
     const { link, badge } = page();
     layout(badge, 300);
-    start().bind(badge, disclosedVerdict());
+    start().bind(badge, AI_KIND, disclosedVerdict());
     focusIn(link);
     layout(badge, 100);
     const moved = vi.spyOn(badge, "getBoundingClientRect");
@@ -388,7 +393,7 @@ describe("createHoverCard", () => {
   it("closes a focus-opened card once its link leaves the viewport", () => {
     const { link, badge } = page();
     layout(badge, 300);
-    start().bind(badge, disclosedVerdict());
+    start().bind(badge, AI_KIND, disclosedVerdict());
     focusIn(link);
     layout(badge, -50);
     document.dispatchEvent(new Event("scroll"));
@@ -399,7 +404,7 @@ describe("createHoverCard", () => {
 
   it("closes on a page scroll", () => {
     const { badge } = page();
-    start().bind(badge, disclosedVerdict());
+    start().bind(badge, AI_KIND, disclosedVerdict());
     pointerOver(badge);
     flush();
     document.dispatchEvent(new Event("scroll"));
@@ -409,7 +414,7 @@ describe("createHoverCard", () => {
   it("opens nothing while badges are turned off", () => {
     const { badge } = page();
     document.documentElement.setAttribute("data-sar-badges", "off");
-    start().bind(badge, disclosedVerdict());
+    start().bind(badge, AI_KIND, disclosedVerdict());
     pointerOver(badge);
     flush();
     expect(shown()).toBeNull();
@@ -421,7 +426,7 @@ describe("createHoverCard", () => {
     pointerOver(badge);
     flush();
     expect(shown()).toBeNull();
-    hover.bind(badge, disclosedVerdict());
+    hover.bind(badge, AI_KIND, disclosedVerdict());
     pointerOver(badge);
     flush();
     hover.stop();

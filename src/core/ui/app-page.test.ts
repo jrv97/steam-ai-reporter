@@ -1,7 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { setBody } from "../../../tests/helpers/dom";
 import { englishI18n } from "../../../tests/helpers/i18n";
-import { disclosedVerdict, NOT_DISCLOSED } from "../../../tests/helpers/verdicts";
+import { aiVerdicts, disclosedVerdict, NOT_DISCLOSED } from "../../../tests/helpers/verdicts";
+import { AI_KIND } from "../kinds/ai";
+import type { TagKind } from "../kinds/kind";
 import { type DisclosedVerdict, UNKNOWN, type Verdict } from "../types";
 import { type AppPageView, createAppPageUi } from "./app-page";
 import { BANNER_ID } from "./banner";
@@ -28,14 +30,21 @@ function setup() {
   setBody(PAGE);
   bound = new Map();
   const card = {
-    bind: (trigger: Element, verdict: DisclosedVerdict, ownPage?: boolean) =>
+    bind: (trigger: Element, _kind: TagKind, verdict: DisclosedVerdict, ownPage?: boolean) =>
       bound.set(trigger, { verdict, ownPage }),
   };
-  return createAppPageUi(document, i18n, actions, { frame: () => undefined, card });
+  return createAppPageUi(document, i18n, AI_KIND, actions, { frame: () => undefined, card });
 }
 
-function view(overrides: Partial<AppPageView> = {}): AppPageView {
-  return { verdict: disclosedVerdict(), allowed: false, banner: true, ...overrides };
+interface ViewOptions {
+  readonly verdict?: Verdict;
+  readonly allowed?: boolean;
+  readonly banner?: boolean;
+}
+
+function view(options: ViewOptions = {}): AppPageView {
+  const { verdict = disclosedVerdict(), allowed = false, banner = true } = options;
+  return { verdicts: aiVerdicts(verdict), allowed, banner };
 }
 
 const summaryRow = () => document.querySelector<HTMLElement>(".sar-summary-row");
