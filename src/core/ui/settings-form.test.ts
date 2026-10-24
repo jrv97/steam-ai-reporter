@@ -96,7 +96,7 @@ describe("mountSettingsForm", () => {
   it("names the badge label in the badges help", async () => {
     const { root } = await setup();
     expect(root.textContent).toContain(
-      i18n.t("options_badges_help", { label: i18n.t("badge_label") }),
+      i18n.t("options_badges_help", { label: i18n.t("kind_ai_chip") }),
     );
   });
 

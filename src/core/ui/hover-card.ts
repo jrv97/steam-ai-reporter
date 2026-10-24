@@ -233,12 +233,12 @@ export function createHoverCard(
     filled = verdict;
     target.notes.textContent = normalizeBreaks(verdict.notes);
     const parts: HTMLElement[] = [
-      line("sar-hovercard-title", i18n.t(kind.messages.label)),
+      line("sar-hovercard-title", i18n.t(kind.messages.heading)),
       line("sar-hovercard-source", i18n.t("badge_card_source")),
       target.notes,
     ];
     if (verdict.service !== undefined && verdict.service !== "") {
-      const service = line("sar-hovercard-service", i18n.t(kind.messages.cardService));
+      const service = line("sar-hovercard-service", i18n.t("badge_card_service_label"));
       const name = doc.createElement("span");
       name.className = "sar-hovercard-service-name";
       name.textContent = verdict.service;

@@ -1,5 +1,4 @@
-import type { AiDisclosed } from "../kinds/ai";
-import type { TagKind } from "../kinds/kind";
+import type { AiDisclosed, AiKind } from "../kinds/ai";
 import type { MessageCatalog } from "../ports";
 import { normalizeBreaks } from "./notes";
 import { adoptStyles, BANNER_CSS } from "./styles";
@@ -79,7 +78,7 @@ function defaultOverflows(quote: HTMLElement): boolean {
 export function createBanner(
   doc: Document,
   i18n: MessageCatalog,
-  kind: TagKind,
+  kind: AiKind,
   actions: BannerActions,
   options: BannerOptions = {},
 ): Banner {
@@ -146,7 +145,7 @@ export function createBanner(
     aside.tabIndex = -1;
 
     const head = element("div", "sar-banner-head");
-    const title = element("h2", "sar-banner-title", i18n.t(kind.messages.label));
+    const title = element("h2", "sar-banner-title", i18n.t(kind.messages.heading));
     title.id = TITLE_ID;
     head.append(title, button("sar-banner-action", "stop", i18n.t("banner_ignore")));
 

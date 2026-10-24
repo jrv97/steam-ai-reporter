@@ -98,7 +98,7 @@ const SAMPLES: readonly (readonly [string, Partial<KindVerdicts>])[] = [
     },
   }],
   ["one EULA with no link", {
-    eula: { state: "disclosed", kind: "eula", source: "api", items: [{ name: "EULA" }] },
+    eula: { state: "disclosed", kind: "eula", source: "api", items: [{ name: "Game terms" }] },
   }],
   ["every PvP category", {
     pvp: { state: "disclosed", kind: "pvp", source: "api", categoryIds: [49, 36, 47, 37] },
@@ -156,13 +156,13 @@ describe("encodeVerdicts and decodeVerdicts", () => {
     const stored = encodeVerdicts({
       ...aiVerdicts(bare),
       kernel: { state: "disclosed", kind: "kernel", source: "api", uninstallsCompletely: false },
-      eula: { state: "disclosed", kind: "eula", source: "api", items: [{ name: "EULA" }] },
+      eula: { state: "disclosed", kind: "eula", source: "api", items: [{ name: "Game terms" }] },
     }, T);
     expect(stored).toMatchObject({
       kinds: {
         ai: { state: "disclosed", kind: "ai", notes: "x", language: "english", source: "api" },
         kernel: { state: "disclosed", kind: "kernel", source: "api", uninstallsCompletely: false },
-        eula: { state: "disclosed", kind: "eula", source: "api", items: [{ name: "EULA" }] },
+        eula: { state: "disclosed", kind: "eula", source: "api", items: [{ name: "Game terms" }] },
       },
     });
     expect(JSON.stringify(stored)).not.toMatch(/undefined|null|nameToken|service|bootProtection/);
@@ -261,9 +261,9 @@ describe("decodeVerdicts", () => {
       withEntry("account", { ...account, linksToSteam: undefined }),
       withEntry("account", { ...account, linksToSteam: "true" }),
       withEntry("eula", { ...eula, items: [] }),
-      withEntry("eula", { ...eula, items: "EULA" }),
+      withEntry("eula", { ...eula, items: "Game terms" }),
       withEntry("eula", { ...eula, items: [{ url: "https://store.steampowered.com/eula/1" }] }),
-      withEntry("eula", { ...eula, items: [{ name: "EULA", url: 5 }] }),
+      withEntry("eula", { ...eula, items: [{ name: "Game terms", url: 5 }] }),
       withEntry("pvp", { ...pvp, categoryIds: [] }),
       withEntry("pvp", { ...pvp, categoryIds: ["49"] }),
       withEntry("pvp", { ...pvp, categoryIds: [49.5] }),
@@ -281,13 +281,13 @@ describe("decodeVerdicts", () => {
       kinds: {
         ...STORED_KINDS,
         ai: { ...STORED_KINDS.ai, extra: "x" },
-        eula: { ...STORED_KINDS.eula, items: [{ name: "EULA", extra: 1 }] },
+        eula: { ...STORED_KINDS.eula, items: [{ name: "Game terms", extra: 1 }] },
         other: { state: "unknown" },
       },
     });
     expect(decoded?.verdicts).toStrictEqual({
       ...ALL_DISCLOSED,
-      eula: { state: "disclosed", kind: "eula", source: "api", items: [{ name: "EULA" }] },
+      eula: { state: "disclosed", kind: "eula", source: "api", items: [{ name: "Game terms" }] },
     });
   });
 });

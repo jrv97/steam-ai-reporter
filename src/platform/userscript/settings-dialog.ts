@@ -1,6 +1,6 @@
 import type { Catalogs } from "../../core/i18n/catalog";
 import type { I18n } from "../../core/i18n/t";
-import type { TagKind } from "../../core/kinds/kind";
+import type { AiKind } from "../../core/kinds/ai";
 import type { AllowList } from "../../core/settings/allow-list";
 import type { StoredSettings } from "../../core/settings/settings-source";
 import { mountSettingsForm } from "../../core/ui/settings-form";
@@ -8,7 +8,7 @@ import { adoptStyles, DIALOG_CSS } from "../../core/ui/styles";
 
 export interface SettingsDialogDeps {
   /** The tag kind whose settings the dialog shows. */
-  readonly kind: TagKind;
+  readonly kind: AiKind;
   readonly document: Document;
   readonly i18n: I18n;
   readonly catalogs: Catalogs;

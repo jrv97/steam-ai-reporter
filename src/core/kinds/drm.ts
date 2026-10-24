@@ -2,7 +2,6 @@ import * as v from "valibot";
 import { MALFORMED } from "../detect/getitems.schema";
 import { hasText } from "../detect/notes";
 import { type DisclosedBase, NOT_DISCLOSED, UNKNOWN } from "../types";
-import { BORROWED_MESSAGES } from "./borrowed-messages";
 import type { KindDefinition } from "./kind";
 import { DEFAULT_KIND_SETTINGS } from "./kind-settings";
 import { storedDisclosed } from "./stored-disclosed";
@@ -42,6 +41,6 @@ export const DRM_KIND: KindDefinition<DrmDisclosed> = {
     activationLimit: v.exactOptional(v.string()),
   }),
 
-  messages: BORROWED_MESSAGES,
+  messages: { heading: "kind_drm_heading", chip: "kind_drm_chip" },
   defaults: DEFAULT_KIND_SETTINGS,
 };

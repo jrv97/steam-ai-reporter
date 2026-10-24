@@ -1,4 +1,5 @@
 import type { AiDisclosed, AiKind } from "../kinds/ai";
+import type { TagKind } from "../kinds/kind";
 import type { MessageCatalog } from "../ports";
 import type { BadgeSlot, CompactSize, HostRenderer } from "./host";
 import type { CardTriggers } from "./hover-card";
@@ -17,15 +18,47 @@ export function compactSize(width: number, height: number): CompactSize | undefi
   return width >= LARGE_MIN_WIDTH && height >= LARGE_MIN_HEIGHT ? "large" : "text";
 }
 
-/** The full badge's chip, the store's tag-chip shape in our hue. The summary row reuses it. */
-export function createChip(doc: Document, label: string): HTMLElement {
+/** An `aria-hidden` token, not copy. */
+const TRUE = "true";
+
+/** A kind's chip text, and the accessible name that starts with it. */
+interface ChipText {
+  readonly label: string;
+  readonly name: string;
+}
+
+function chipText(i18n: MessageCatalog, kind: TagKind): ChipText {
+  const label = i18n.t(kind.messages.chip);
+  const name = i18n.t("kind_chip_name", { chip: label, heading: i18n.t(kind.messages.heading) });
+  return { label, name };
+}
+
+/**
+ * A chip: the short text, which screen readers skip, and the accessible name read instead. The
+ * name starts with the visible text and goes on with Steam's full line.
+ */
+function createChipElement(
+  doc: Document,
+  text: ChipText,
+  className: string,
+  labelClass: string,
+): HTMLElement {
   const chip = doc.createElement("span");
-  chip.className = "sar-badge";
-  const text = doc.createElement("span");
-  text.className = "sar-badge-label";
-  text.textContent = label;
-  chip.append(text);
+  chip.className = className;
+  const label = doc.createElement("span");
+  label.className = labelClass;
+  label.setAttribute("aria-hidden", TRUE);
+  label.textContent = text.label;
+  const name = doc.createElement("span");
+  name.className = "sar-vh";
+  name.textContent = text.name;
+  chip.append(label, name);
   return chip;
+}
+
+/** The full badge's chip, the store's tag-chip shape in our hue. The summary row reuses it. */
+export function createChip(doc: Document, i18n: MessageCatalog, kind: TagKind): HTMLElement {
+  return createChipElement(doc, chipText(i18n, kind), "sar-badge", "sar-badge-label");
 }
 
 /** Turns badges on or off on the whole page: one root attribute, and CSS does the rest. */
@@ -59,19 +92,14 @@ export function createBadgeRenderer(
   kind: AiKind,
 ): HostRenderer {
   const drawn = new WeakMap<Element, Drawn>();
-  const label = i18n.t(kind.messages.label);
+  const text = chipText(i18n, kind);
 
   function build(slot: BadgeSlot): HTMLElement {
     if (slot.kind === "full") {
-      return createChip(doc, label);
+      return createChipElement(doc, text, "sar-badge", "sar-badge-label");
     }
-    const badge = doc.createElement("span");
-    badge.className = "sar-compact";
+    const badge = createChipElement(doc, text, "sar-compact", "sar-compact-label");
     badge.setAttribute("data-sar-size", slot.size);
-    const text = doc.createElement("span");
-    text.className = "sar-compact-label";
-    text.textContent = label;
-    badge.append(text);
     return badge;
   }
 

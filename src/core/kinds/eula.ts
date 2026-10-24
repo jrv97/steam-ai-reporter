@@ -1,7 +1,6 @@
 import * as v from "valibot";
 import { MALFORMED } from "../detect/getitems.schema";
 import { type DisclosedBase, NOT_DISCLOSED, UNKNOWN } from "../types";
-import { BORROWED_MESSAGES } from "./borrowed-messages";
 import type { KindDefinition } from "./kind";
 import { DEFAULT_KIND_SETTINGS } from "./kind-settings";
 import { storedDisclosed } from "./stored-disclosed";
@@ -77,6 +76,6 @@ export const EULA_KIND: KindDefinition<EulaDisclosed> = {
     ),
   }),
 
-  messages: BORROWED_MESSAGES,
+  messages: { heading: "kind_eula_heading", chip: "kind_eula_chip" },
   defaults: DEFAULT_KIND_SETTINGS,
 };

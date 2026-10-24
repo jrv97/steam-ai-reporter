@@ -2,7 +2,6 @@ import * as v from "valibot";
 import { MALFORMED } from "../detect/getitems.schema";
 import { hasText } from "../detect/notes";
 import { type DisclosedBase, NOT_DISCLOSED, UNKNOWN } from "../types";
-import { BORROWED_MESSAGES } from "./borrowed-messages";
 import type { KindDefinition } from "./kind";
 import { DEFAULT_KIND_SETTINGS } from "./kind-settings";
 import { storedDisclosed } from "./stored-disclosed";
@@ -43,6 +42,6 @@ export const ACCOUNT_KIND: KindDefinition<AccountDisclosed> = {
     linksToSteam: v.boolean(),
   }),
 
-  messages: BORROWED_MESSAGES,
+  messages: { heading: "kind_account_heading", chip: "kind_account_chip" },
   defaults: DEFAULT_KIND_SETTINGS,
 };

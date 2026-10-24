@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { SHIPPED_CATALOGS } from "../i18n/shipped";
 import { KIND_IDS } from "./id";
 import { hasEveryKind, KINDS, perKind } from "./registry";
 
@@ -25,11 +26,11 @@ describe("perKind", () => {
     const seen: string[] = [];
     const result = perKind((kind) => {
       seen.push(kind.id);
-      return kind.messages.label;
+      return kind.messages.chip;
     });
     expect(seen).toStrictEqual([...KIND_IDS]);
     expect(Object.keys(result)).toStrictEqual([...KIND_IDS]);
-    expect(result.ai).toBe(KINDS[0].messages.label);
+    expect(result.ai).toBe(KINDS[0].messages.chip);
   });
 });
 
@@ -39,4 +40,28 @@ describe("hasEveryKind", () => {
     expect(hasEveryKind({})).toBe(false);
     expect(hasEveryKind({ ...perKind(() => 1), ai: undefined })).toBe(false);
   });
+});
+
+describe("kind messages", () => {
+  const locales = Object.entries(SHIPPED_CATALOGS);
+
+  it.each(locales)("%s names every kind with a heading and a chip", (_locale, catalog) => {
+    for (const kind of KINDS) {
+      expect(catalog?.[kind.messages.heading]?.message).toBeTruthy();
+      expect(catalog?.[kind.messages.chip]?.message).toBeTruthy();
+    }
+  });
+
+  it.each(locales)(
+    "%s gives every kind its own chip, no longer than its heading",
+    (_l, catalog) => {
+      const chips = KINDS.map((kind) => catalog?.[kind.messages.chip]?.message ?? "");
+      expect(new Set(chips).size).toBe(KINDS.length);
+      for (const kind of KINDS) {
+        const chip = catalog?.[kind.messages.chip]?.message ?? "";
+        const heading = catalog?.[kind.messages.heading]?.message ?? "";
+        expect(chip.length).toBeLessThanOrEqual(heading.length);
+      }
+    },
+  );
 });

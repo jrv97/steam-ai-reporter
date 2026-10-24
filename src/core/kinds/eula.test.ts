@@ -147,11 +147,11 @@ describe("EULA_KIND.fromGetItems", () => {
   });
 
   it("is unknown error when the field is malformed, and only then", () => {
-    for (const eula of ["none", {}, [3], [{ name: "EULA" }], [{ url: "https://x" }]]) {
+    for (const eula of ["none", {}, [3], [{ name: "Game terms" }], [{ url: "https://x" }]]) {
       expect(fromEula(eula)).toBe(UNKNOWN.error);
     }
     const others = { drm_third_party_type: 4, anticheat: "x" };
-    const eula = [{ name: "EULA", url: "https://store.steampowered.com/eula/1" }];
+    const eula = [{ name: "Game terms", url: "https://store.steampowered.com/eula/1" }];
     expect(verdictOf(EULA_KIND, { ...others, eula }).state).toBe("disclosed");
   });
 });

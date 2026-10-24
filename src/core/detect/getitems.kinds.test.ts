@@ -168,7 +168,7 @@ describe("parseGetItems with one malformed field", () => {
     anticheat: { kernel_mode: true },
     drm_third_party_type: "Denuvo",
     user_account_third_party: "EA",
-    eula: [{ name: "EULA", url: "https://store.steampowered.com//eula/1_eula_0" }],
+    eula: [{ name: "Game terms", url: "https://store.steampowered.com//eula/1_eula_0" }],
   };
 
   function disclosedKinds(found: KindVerdicts): readonly string[] {

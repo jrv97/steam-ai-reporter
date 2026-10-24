@@ -1,7 +1,6 @@
 import * as v from "valibot";
 import { MALFORMED } from "../detect/getitems.schema";
 import { type DisclosedBase, NOT_DISCLOSED, UNKNOWN } from "../types";
-import { BORROWED_MESSAGES } from "./borrowed-messages";
 import type { KindDefinition } from "./kind";
 import { DEFAULT_KIND_SETTINGS } from "./kind-settings";
 import { storedDisclosed } from "./stored-disclosed";
@@ -48,6 +47,6 @@ export const PVP_KIND: KindDefinition<PvpDisclosed> = {
     categoryIds: v.pipe(v.array(v.pipe(v.number(), v.integer())), v.minLength(1)),
   }),
 
-  messages: BORROWED_MESSAGES,
+  messages: { heading: "kind_pvp_heading", chip: "kind_pvp_chip" },
   defaults: DEFAULT_KIND_SETTINGS,
 };

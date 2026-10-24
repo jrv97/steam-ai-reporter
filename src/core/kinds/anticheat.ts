@@ -2,7 +2,6 @@ import * as v from "valibot";
 import { MALFORMED } from "../detect/getitems.schema";
 import { hasText } from "../detect/notes";
 import { type DisclosedBase, NOT_DISCLOSED, UNKNOWN } from "../types";
-import { BORROWED_MESSAGES } from "./borrowed-messages";
 import type { KindDefinition } from "./kind";
 import { DEFAULT_KIND_SETTINGS } from "./kind-settings";
 import { storedDisclosed } from "./stored-disclosed";
@@ -44,6 +43,6 @@ export const ANTICHEAT_KIND: KindDefinition<AnticheatDisclosed> = {
     nameToken: v.exactOptional(v.string()),
   }),
 
-  messages: BORROWED_MESSAGES,
+  messages: { heading: "kind_anticheat_heading", chip: "kind_anticheat_chip" },
   defaults: DEFAULT_KIND_SETTINGS,
 };

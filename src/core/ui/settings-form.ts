@@ -1,6 +1,6 @@
 import * as v from "valibot";
 import type { BareMessageKey } from "../i18n/t";
-import type { TagKind } from "../kinds/kind";
+import type { AiKind } from "../kinds/ai";
 import { LIST_FILTERS, type ListFilter } from "../kinds/kind-settings";
 import type { MessageCatalog } from "../ports";
 import type { AllowEntry } from "../settings/allow-data";
@@ -30,7 +30,7 @@ export interface SettingsHeader {
 
 export interface SettingsFormDeps {
   /** The tag kind whose settings and ignored games the form shows. */
-  readonly kind: TagKind;
+  readonly kind: AiKind;
   readonly i18n: MessageCatalog;
   readonly settings: StoredSettings;
   readonly allowList: AllowList;
@@ -210,7 +210,7 @@ export async function mountSettingsForm(
     switchField(
       "badges",
       context === "popup" ? kind.messages.badgesSwitchShort : kind.messages.badgesSwitch,
-      i18n.t("options_badges_help", { label: i18n.t(kind.messages.label) }),
+      i18n.t("options_badges_help", { label: i18n.t(kind.messages.chip) }),
     ),
     switchField("banner", "options_banner", i18n.t("options_banner_help")),
   );

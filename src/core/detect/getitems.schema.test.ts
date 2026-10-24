@@ -112,7 +112,9 @@ describe("StoreItemSchema leniency", () => {
   });
 
   it("marks an eula list with an entry that is not name and url strings as malformed", () => {
-    const wrong = [[{ name: "EULA" }], [{ url: "https://store.steampowered.com//eula/1" }], [3]];
+    const wrong = [[{ name: "Game terms" }], [{ url: "https://store.steampowered.com//eula/1" }], [
+      3,
+    ]];
     for (const eula of wrong) {
       expect(detailsOf(storeItem(1, { extra_details: { eula } })).eula).toBe(MALFORMED);
     }

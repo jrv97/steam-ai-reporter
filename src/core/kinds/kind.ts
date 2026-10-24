@@ -6,21 +6,15 @@ import type { DisclosedBase, Verdict } from "../types";
 import type { KindSettings } from "./kind-settings";
 import type { KINDS } from "./registry";
 
-/** The catalog keys whose text names the kind. Generic copy stays shared between kinds. */
+/** The catalog keys of the words a kind uses on every surface, in Steam's vocabulary. */
 export interface KindMessages {
-  /** The badge text, the hover card title and the banner heading. */
-  readonly label: BareMessageKey;
-  /** In the hover card, precedes the product the developer named. */
-  readonly cardService: BareMessageKey;
-  /** In the banner, precedes the product the developer named. */
-  readonly bannerService: BareMessageKey;
-  /** Screen reader name of the banner's one-line note. */
-  readonly bannerRegion: BareMessageKey;
-  /** Label of the badges switch in the settings page and in the popup. */
-  readonly badgesSwitch: BareMessageKey;
-  readonly badgesSwitchShort: BareMessageKey;
-  /** Label of the list filter choice. */
-  readonly filterLabel: BareMessageKey;
+  /**
+   * Steam's own line for the kind: the hover card title, the banner heading and, after the chip
+   * text, the chip's accessible name.
+   */
+  readonly heading: BareMessageKey;
+  /** The short text of the kind's chip. */
+  readonly chip: BareMessageKey;
 }
 
 /**

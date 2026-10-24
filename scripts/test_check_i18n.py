@@ -5,7 +5,14 @@ import unittest
 from pathlib import Path
 
 from catalogs import Catalog, Entry, load, static_parts, used_placeholders
-from check_i18n import SHIPPED, CopyIndex, copy_index, copy_problems, scanned_sources
+from check_i18n import (
+    MIN_WILDCARD_TEXT,
+    SHIPPED,
+    CopyIndex,
+    copy_index,
+    copy_problems,
+    scanned_sources,
+)
 
 
 def catalog(**messages: str) -> Catalog:
@@ -97,6 +104,9 @@ class ShippedCatalogsTest(unittest.TestCase):
         for locale, messages in shipped.items():
             for key, entry in messages.items():
                 parts = tuple(static_parts(entry.message))
+                if len(parts) > 1 and len("".join(parts).strip()) < MIN_WILDCARD_TEXT:
+                    # Only placeholders and punctuation: no literal can be told from it.
+                    continue
                 with self.subTest(locale=locale, key=key):
                     self.assertTrue(index.matches(("x".join(parts),)), entry.message)
                     self.assertTrue(index.matches(parts), entry.message)
@@ -126,6 +136,19 @@ class ScanTest(unittest.TestCase):
                     f"tests/helpers/a.ts:2: notice_settings_saved: {HIT}",
                     f"tests/helpers/a.ts:3: banner_undo (es): {HIT}",
                 ],
+            )
+
+    def test_a_detection_constant_may_repeat_a_message(self) -> None:
+        heading = "AI Generated Content Disclosure"
+        catalogs = {"en": catalog(kind_ai_heading=heading)}
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            write(root, "src/core/kinds/ai.ts", f'const HEADING = "{heading}";\n')
+            self.assertEqual(copy_problems(root, catalogs), [])
+            write(root, "src/core/ui/a.ts", f'const a = "{heading} (copy)";\n')
+            self.assertEqual(
+                copy_problems(root, catalogs),
+                [f"src/core/ui/a.ts:1: kind_ai_heading: {HIT}"],
             )
 
     def test_ignores_comments_identifiers_and_type_names(self) -> None:

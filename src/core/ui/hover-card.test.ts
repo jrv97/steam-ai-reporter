@@ -91,7 +91,7 @@ describe("createHoverCard", () => {
   }
 
   function page(): { link: HTMLAnchorElement; badge: HTMLElement; other: HTMLElement; } {
-    const label = i18n.t("badge_label");
+    const label = i18n.t("kind_ai_chip");
     setBody(`
       <a class="row" href="/app/10/"><span class="title">Game</span>
       <span class="sar-badge"><span class="sar-badge-label">${label}</span></span></a>
@@ -148,7 +148,8 @@ describe("createHoverCard", () => {
     flush();
     const node = shown();
     expect(node?.getAttribute("role")).toBe("tooltip");
-    expect(node?.querySelector(".sar-hovercard-title")?.textContent).toBe(i18n.t("badge_label"));
+    expect(node?.querySelector(".sar-hovercard-title")?.textContent)
+      .toBe(i18n.t("kind_ai_heading"));
     expect(node?.querySelector(".sar-hovercard-source")?.textContent)
       .toBe(i18n.t("badge_card_source"));
     expect(node?.querySelector(".sar-hovercard-notes")?.textContent).toBe("Line one\nLine two");

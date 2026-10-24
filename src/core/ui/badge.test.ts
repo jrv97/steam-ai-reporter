@@ -47,6 +47,11 @@ describe("compactSize", () => {
 
 describe("createBadgeRenderer", () => {
   const i18n = englishI18n();
+  // The accessible name starts with the visible chip text, then Steam's full line.
+  const AI_NAME = i18n.t("kind_chip_name", {
+    chip: i18n.t("kind_ai_chip"),
+    heading: i18n.t("kind_ai_heading"),
+  });
   let bound = new Map<Element, AiDisclosed>();
   let renderer = createBadgeRenderer(
     document,
@@ -71,7 +76,9 @@ describe("createBadgeRenderer", () => {
     renderer.render(view(host, { kind: "full", anchor: title, position: "afterend" }, { verdict }));
     const badge = host.querySelector<HTMLElement>(".sar-badge");
     expect(badge?.previousElementSibling).toBe(title);
-    expect(badge?.textContent).toBe(i18n.t("badge_label"));
+    expect(badge?.querySelector(".sar-badge-label")?.textContent).toBe(i18n.t("kind_ai_chip"));
+    expect(badge?.querySelector(".sar-badge-label")?.getAttribute("aria-hidden")).toBe("true");
+    expect(badge?.querySelector(".sar-vh")?.textContent).toBe(AI_NAME);
     expect(badge?.querySelector("svg")).toBeNull();
     expect(badge?.hasAttribute("title")).toBe(false);
     expect(badge === null ? undefined : bound.get(badge)).toBe(verdict);
@@ -95,7 +102,8 @@ describe("createBadgeRenderer", () => {
     );
     const badge = image.querySelector<HTMLElement>(".sar-compact");
     expect(badge?.getAttribute("data-sar-size")).toBe("large");
-    expect(badge?.textContent).toBe(i18n.t("badge_label"));
+    expect(badge?.querySelector(".sar-compact-label")?.textContent).toBe(i18n.t("kind_ai_chip"));
+    expect(badge?.querySelector(".sar-vh")?.textContent).toBe(AI_NAME);
     expect(badge?.getAttribute("data-sar-in-link")).toBe("true");
     expect(badge?.hasAttribute("title")).toBe(false);
     expect(badge !== null && bound.has(badge)).toBe(true);

@@ -59,7 +59,13 @@ describe("createAppPageUi", () => {
     setup().render(view());
     const row = summaryRow();
     expect(row?.previousElementSibling?.id).toBe("publisher");
-    expect(row?.textContent).toBe(i18n.t("badge_label"));
+    expect(row?.querySelector(".sar-badge-label")?.textContent).toBe(i18n.t("kind_ai_chip"));
+    expect(row?.querySelector(".sar-vh")?.textContent).toBe(
+      i18n.t("kind_chip_name", {
+        chip: i18n.t("kind_ai_chip"),
+        heading: i18n.t("kind_ai_heading"),
+      }),
+    );
     expect(row?.getAttribute("href")).toBe(`#${BANNER_ID}`);
     expect(row?.hasAttribute("title")).toBe(false);
     // The link jumps to the full notes, so it opens no hover card.

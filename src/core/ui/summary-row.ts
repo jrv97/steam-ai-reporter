@@ -24,7 +24,7 @@ export function createSummaryRow(
 ): HTMLElement {
   const row = doc.createElement(jump === undefined ? "div" : "a");
   row.className = "sar-summary-row";
-  row.append(createChip(doc, i18n.t(kind.messages.label)));
+  row.append(createChip(doc, i18n, kind));
   if (jump !== undefined) {
     row.setAttribute("href", `#${BANNER_ID}`);
     row.addEventListener("click", (event) => {

@@ -74,7 +74,7 @@ describe("createBanner", () => {
   it("uses catalog copy and the developer as the source", () => {
     const { banner, root } = setup();
     banner.show(disclosedVerdict(), false);
-    expect(query(root, "h2").textContent).toBe(i18n.t("badge_label"));
+    expect(query(root, "h2").textContent).toBe(i18n.t("kind_ai_heading"));
     expect(query(root, ".sar-banner-source").textContent).toBe(i18n.t("banner_source"));
     expect(query(root, ".sar-banner-action").textContent).toBe(i18n.t("banner_ignore"));
     expect(root.querySelector("svg")).toBeNull();
@@ -124,7 +124,7 @@ describe("createBanner", () => {
     banner.show(disclosedVerdict({ notes: XSS }), true);
     const aside = query(root, "aside");
     expect(aside.getAttribute("data-sar-variant")).toBe("ignored");
-    expect(aside.getAttribute("aria-label")).toBe(i18n.t("banner_region_label"));
+    expect(aside.getAttribute("aria-label")).toBe(i18n.t("kind_ai_heading"));
     expect(query(root, ".sar-banner-ignored-text").textContent).toBe(i18n.t("banner_ignored"));
     expect(query(root, ".sar-banner-link").textContent).toBe(i18n.t("banner_undo"));
     expect(root.querySelector("blockquote, h2, .sar-banner-action")).toBeNull();
