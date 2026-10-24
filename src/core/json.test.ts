@@ -42,6 +42,18 @@ describe("toJsonValue", () => {
     expect(toJsonValue(value)).toStrictEqual(value);
   });
 
+  it("keeps an own __proto__ key as data and leaves the prototype alone", () => {
+    const parsed = parseJson('{"__proto__":{"polluted":true},"a":1}');
+    const json: unknown = toJsonValue(parsed);
+    if (typeof json !== "object" || json === null) {
+      throw new TypeError();
+    }
+    expect(json).toStrictEqual(parsed);
+    expect(Object.hasOwn(json, "__proto__")).toBe(true);
+    expect(Object.getPrototypeOf(json)).toBe(Object.prototype);
+    expect(Reflect.get(json, "polluted")).toBeUndefined();
+  });
+
   it("leaves out object keys whose value is undefined", () => {
     expect(toJsonValue({ a: 1, b: undefined })).toStrictEqual({ a: 1 });
   });
