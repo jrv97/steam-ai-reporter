@@ -1,15 +1,9 @@
 import * as v from "valibot";
 import type { BareMessageKey } from "../i18n/t";
+import { LIST_FILTERS, type ListFilter } from "../kinds/kind-settings";
 import type { MessageCatalog } from "../ports";
 import type { AllowEntry, AllowList } from "../settings/allow-list";
-import {
-  AUTO_LOCALE,
-  DEFAULT_SETTINGS,
-  LIST_FILTERS,
-  type ListFilter,
-  parseSettings,
-  type Settings,
-} from "../settings/settings";
+import { AUTO_LOCALE, DEFAULT_SETTINGS, parseSettings, type Settings } from "../settings/settings";
 import type { StoredSettings } from "../settings/settings-source";
 import { type AppId, toAppId } from "../types";
 import { adoptStyles, SETTINGS_CSS, TOKENS_CSS } from "./styles";

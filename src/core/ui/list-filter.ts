@@ -1,5 +1,5 @@
+import type { ListFilter } from "../kinds/kind-settings";
 import { HOST_HIDEABLE, HOST_STATE } from "../scan/marks";
-import type { ListFilter } from "../settings/settings";
 import { type HostRenderer, hostState } from "./host";
 
 /**

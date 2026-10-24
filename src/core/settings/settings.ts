@@ -1,10 +1,6 @@
 import * as v from "valibot";
 import type { JsonValue } from "../json";
-
-/** What the list filter does to hosts whose app discloses AI use. */
-export const LIST_FILTERS = ["off", "dim", "hide"] as const;
-
-export type ListFilter = (typeof LIST_FILTERS)[number];
+import { LIST_FILTERS, type ListFilter } from "../kinds/kind-settings";
 
 /** The `locale` setting that follows the store page's language (see `resolveLocale`). */
 export const AUTO_LOCALE = "auto";
