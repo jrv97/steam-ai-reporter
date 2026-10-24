@@ -9,7 +9,7 @@ import { memoryStore } from "../../tests/helpers/memory-store";
 import { loadPage, SURFACES } from "../../tests/helpers/surfaces";
 import { type App, start } from "./app";
 import type { JsonValue } from "./json";
-import { DEFAULT_SETTINGS } from "./settings/settings";
+import { DEFAULT_SETTINGS, withKind } from "./settings/settings";
 import { createSettingsSource } from "./settings/settings-source";
 import { ALLOW_KEY } from "./storage-keys";
 import { adoptPageStyles } from "./ui/styles";
@@ -38,7 +38,7 @@ async function startOnSearch(initial: ReadonlyMap<string, JsonValue> = new Map()
     console: quiet,
     addPageStyles: adoptPageStyles,
   });
-  return { http, settings };
+  return { http, settings, store };
 }
 
 const row = (id: string) => document.querySelector(`a.search_result_row[data-ds-appid="${id}"]`);
@@ -70,7 +70,7 @@ describe("start on the search page", () => {
     await expect.poll(() => row(DISCLOSED)?.getAttribute("data-sar-state")).toBe("disclosed");
     expect(document.documentElement.getAttribute("data-sar-filter")).toBe("off");
 
-    await settings.write({ ...DEFAULT_SETTINGS, listFilter: "hide", badges: false });
+    await settings.write(withKind(DEFAULT_SETTINGS, "ai", { filter: "hide", badge: false }));
     expect(document.documentElement.getAttribute("data-sar-filter")).toBe("hide");
     expect(document.documentElement.getAttribute("data-sar-badges")).toBe("off");
     const disclosed = row(DISCLOSED);
@@ -81,9 +81,49 @@ describe("start on the search page", () => {
 
   it("marks nothing for an allow-listed game, in lists or on badges", async () => {
     await startOnSearch(
-      new Map<string, JsonValue>([[ALLOW_KEY, { [DISCLOSED]: { name: "Ignored", added: NOW } }]]),
+      new Map<string, JsonValue>([
+        [ALLOW_KEY, { all: {}, ai: { [DISCLOSED]: { name: "Ignored", added: NOW } } }],
+      ]),
     );
     await expect.poll(() => row(DISCLOSED)?.getAttribute("data-sar-state")).toBe("allowed");
     expect(document.querySelector(".sar-badge")).toBeNull();
+  });
+
+  it("marks nothing for a game ignored for all kinds", async () => {
+    await startOnSearch(
+      new Map<string, JsonValue>([
+        [ALLOW_KEY, { all: { [DISCLOSED]: { name: "Ignored", added: NOW } }, ai: {} }],
+      ]),
+    );
+    await expect.poll(() => row(DISCLOSED)?.getAttribute("data-sar-state")).toBe("allowed");
+    expect(document.querySelector(".sar-badge")).toBeNull();
+  });
+
+  it("shows no badge and filters nothing while the kind is disabled", async () => {
+    const { settings } = await startOnSearch();
+    await expect.poll(() => document.querySelectorAll(".sar-badge").length).toBe(1);
+    await settings.write(
+      withKind(DEFAULT_SETTINGS, "ai", { enabled: false, filter: "hide" }),
+    );
+    expect(document.documentElement.getAttribute("data-sar-badges")).toBe("off");
+    expect(document.documentElement.getAttribute("data-sar-filter")).toBe("off");
+    await settings.write(DEFAULT_SETTINGS);
+    expect(document.documentElement.getAttribute("data-sar-badges")).toBe("on");
+  });
+
+  it("starts on the settings and the ignored games a v1 install stored", async () => {
+    const { store } = await startOnSearch(
+      new Map<string, JsonValue>([
+        ["v1:settings", { badges: false, banner: true, listFilter: "dim", locale: "auto" }],
+        ["v1:allow", { [DISCLOSED]: { name: "Ignored", added: NOW } }],
+      ]),
+    );
+    await expect.poll(() => row(DISCLOSED)?.getAttribute("data-sar-state")).toBe("allowed");
+    expect(document.documentElement.getAttribute("data-sar-badges")).toBe("off");
+    expect(document.documentElement.getAttribute("data-sar-filter")).toBe("dim");
+    const keys = await store.keys();
+    expect(keys).toContain("v2:settings");
+    expect(keys).not.toContain("v1:settings");
+    expect(keys).not.toContain("v1:allow");
   });
 });

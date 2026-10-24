@@ -7,7 +7,7 @@ import { fakeGm } from "../../../tests/helpers/gm-fake";
 import { englishI18n } from "../../../tests/helpers/i18n";
 import { loadPage, SURFACES } from "../../../tests/helpers/surfaces";
 import type { App } from "../../core/app";
-import { DEFAULT_SETTINGS, encodeSettings } from "../../core/settings/settings";
+import { DEFAULT_SETTINGS, encodeSettings, withKind } from "../../core/settings/settings";
 import { SETTINGS_KEY } from "../../core/storage-keys";
 import { startUserscript, type UserscriptEnv } from "./userscript";
 
@@ -97,13 +97,16 @@ describe("startUserscript", () => {
     app = await startUserscript(env);
     expect(document.documentElement.getAttribute("data-sar-filter")).toBe("off");
 
-    notify(encodeSettings({ ...DEFAULT_SETTINGS, listFilter: "hide" }));
+    notify(encodeSettings(withKind(DEFAULT_SETTINGS, "ai", { filter: "hide" })));
     expect(document.documentElement.getAttribute("data-sar-filter")).toBe("hide");
   });
 
   it("starts on stored settings", async () => {
     const { env, gm } = setup();
-    await gm.setValue(SETTINGS_KEY, encodeSettings({ ...DEFAULT_SETTINGS, listFilter: "dim" }));
+    await gm.setValue(
+      SETTINGS_KEY,
+      encodeSettings(withKind(DEFAULT_SETTINGS, "ai", { filter: "dim" })),
+    );
     app = await startUserscript(env);
 
     expect(document.documentElement.getAttribute("data-sar-filter")).toBe("dim");

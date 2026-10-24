@@ -1,6 +1,8 @@
 import * as v from "valibot";
 import type { JsonValue } from "../json";
-import { LIST_FILTERS, type ListFilter } from "../kinds/kind-settings";
+import type { KindId } from "../kinds/id";
+import { type KindSettings, parseKindSettings } from "../kinds/kind-settings";
+import { KINDS, perKind } from "../kinds/registry";
 
 /** The `locale` setting that follows the store page's language (see `resolveLocale`). */
 export const AUTO_LOCALE = "auto";
@@ -8,53 +10,58 @@ export const AUTO_LOCALE = "auto";
 /** A locale code such as `en`, `pt_BR` or `zh-CN`; `resolveLocale` checks that it has a catalog. */
 const LOCALE_PATTERN = /^[A-Za-z]{2,3}(?:[_-][A-Za-z0-9]{2,8})*$/;
 
-const LocaleSchema = v.union([v.literal(AUTO_LOCALE), v.pipe(v.string(), v.regex(LOCALE_PATTERN))]);
+export const LocaleSchema = v.union([
+  v.literal(AUTO_LOCALE),
+  v.pipe(v.string(), v.regex(LOCALE_PATTERN)),
+]);
 
 export interface Settings {
-  /** Show the badge on capsules. */
-  readonly badges: boolean;
-  /** Show the banner on app pages. */
-  readonly banner: boolean;
-  readonly listFilter: ListFilter;
   /** `auto`, or a catalog locale code the user chose. */
   readonly locale: string;
   /** Write debug lines to the console. */
   readonly debug: boolean;
+  readonly kinds: Readonly<Record<KindId, KindSettings>>;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
-  badges: true,
-  banner: true,
-  listFilter: "off",
   locale: AUTO_LOCALE,
   debug: false,
+  kinds: perKind((kind) => kind.defaults),
 };
 
 // Each field falls back to its own default, so one bad or missing field (an old version, a
-// hand-edited value) does not reset the others.
+// hand-edited value) does not reset the others. The kinds stay unvalidated until each one is
+// parsed against its own defaults.
 const SettingsSchema = v.fallback(
   v.object({
-    badges: v.fallback(v.boolean(), DEFAULT_SETTINGS.badges),
-    banner: v.fallback(v.boolean(), DEFAULT_SETTINGS.banner),
-    listFilter: v.fallback(v.picklist(LIST_FILTERS), DEFAULT_SETTINGS.listFilter),
     locale: v.fallback(LocaleSchema, DEFAULT_SETTINGS.locale),
     debug: v.fallback(v.boolean(), DEFAULT_SETTINGS.debug),
+    kinds: v.fallback(v.record(v.string(), v.unknown()), {}),
   }),
-  DEFAULT_SETTINGS,
+  { locale: DEFAULT_SETTINGS.locale, debug: DEFAULT_SETTINGS.debug, kinds: {} },
 );
 
 /** The settings in a stored value: every valid field, and the default for every other one. */
 export function parseSettings(stored: unknown): Settings {
-  return v.parse(SettingsSchema, stored);
+  const { locale, debug, kinds } = v.parse(SettingsSchema, stored);
+  return {
+    locale,
+    debug,
+    kinds: perKind((kind) => parseKindSettings(kind.defaults, kinds[kind.id])),
+  };
 }
 
 /** The stored value of the settings. */
 export function encodeSettings(settings: Settings): JsonValue {
-  return {
-    badges: settings.badges,
-    banner: settings.banner,
-    listFilter: settings.listFilter,
-    locale: settings.locale,
-    debug: settings.debug,
-  };
+  const kinds: Record<string, JsonValue> = {};
+  for (const kind of KINDS) {
+    const { enabled, badge, banner, filter } = settings.kinds[kind.id];
+    kinds[kind.id] = { enabled, badge, banner, filter };
+  }
+  return { locale: settings.locale, debug: settings.debug, kinds };
+}
+
+/** The settings with `patch` applied to one kind's settings. */
+export function withKind(settings: Settings, id: KindId, patch: Partial<KindSettings>): Settings {
+  return { ...settings, kinds: { ...settings.kinds, [id]: { ...settings.kinds[id], ...patch } } };
 }

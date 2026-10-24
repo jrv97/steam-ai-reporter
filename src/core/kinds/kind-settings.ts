@@ -32,3 +32,8 @@ export function parseKindSettings(defaults: KindSettings, stored: unknown): Kind
   );
   return v.parse(schema, stored);
 }
+
+/** The settings that take effect: a disabled kind shows no badge or banner and filters nothing. */
+export function effectiveSettings(settings: KindSettings): KindSettings {
+  return settings.enabled ? settings : { ...settings, badge: false, banner: false, filter: "off" };
+}

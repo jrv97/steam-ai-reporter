@@ -19,14 +19,17 @@ import {
 import { SHIPPED_CATALOGS } from "./i18n/shipped";
 import { createI18n, type I18n } from "./i18n/t";
 import { AI_KIND } from "./kinds/ai";
+import type { KindId } from "./kinds/id";
 import type { TagKind } from "./kinds/kind";
+import { effectiveSettings } from "./kinds/kind-settings";
 import { KINDS, perKind } from "./kinds/registry";
 import { type KindVerdicts, UNKNOWN_KINDS } from "./kinds/verdicts";
 import { type ConsoleSink, createLogger, type Logger } from "./log";
 import type { Clock, Http, KeyValueStore, SettingsSource, Unsubscribe } from "./ports";
 import { appIdFromHref } from "./scan/appid";
 import { createScanner } from "./scan/scanner";
-import { createAllowList } from "./settings/allow-list";
+import { ALLOW_ALL, type AllowScope, perScope } from "./settings/allow-data";
+import { type AllowList, createAllowList } from "./settings/allow-list";
 import { DEFAULT_SETTINGS, parseSettings, type Settings } from "./settings/settings";
 import type { AppId, Detector, Verdict } from "./types";
 import { createAppPageUi } from "./ui/app-page";
@@ -124,6 +127,24 @@ async function pageVerdicts(
   });
 }
 
+/** The games the user ignored, in page memory: one set of app IDs per scope. */
+type IgnoredGames = Readonly<Record<AllowScope, Set<AppId>>>;
+
+async function loadIgnored(allowList: AllowList, logger: Logger): Promise<IgnoredGames> {
+  try {
+    const entries = await allowList.list();
+    return perScope((scope) => new Set(entries[scope].keys()));
+  } catch (problem) {
+    logger.error(problem);
+    return perScope(() => new Set());
+  }
+}
+
+/** Whether the game is ignored for the kind, on its own or for all kinds. */
+function isIgnored(ignored: IgnoredGames, id: AppId, kind: KindId): boolean {
+  return ignored[ALLOW_ALL].has(id) || ignored[kind].has(id);
+}
+
 function appName(doc: Document, verdict: Verdict, id: AppId): string {
   const fromVerdict = verdict.state === "disclosed" ? verdict.name : undefined;
   const fromPage = doc.querySelector(APP_NAME_SELECTOR)?.textContent.trim();
@@ -138,8 +159,8 @@ async function startAppPage(
   kind: TagKind,
   verdicts: Promise<KindVerdicts>,
   context: {
-    readonly allowed: Set<AppId>;
-    readonly allowList: ReturnType<typeof createAllowList>;
+    readonly ignored: IgnoredGames;
+    readonly allowList: AllowList;
     readonly settings: () => Settings;
     readonly onAllowChange: (id: AppId) => void;
     readonly card: CardTriggers;
@@ -148,21 +169,21 @@ async function startAppPage(
   const known = await verdicts;
   const ui = createAppPageUi(doc, i18n, kind, {
     async stopMarking() {
-      await context.allowList.add(id, appName(doc, known[kind.id], id));
-      context.allowed.add(id);
+      await context.allowList.add(kind.id, id, appName(doc, known[kind.id], id));
+      context.ignored[kind.id].add(id);
       context.onAllowChange(id);
     },
     async markAgain() {
-      await context.allowList.remove(id);
-      context.allowed.delete(id);
+      await context.allowList.remove(kind.id, id);
+      context.ignored[kind.id].delete(id);
       context.onAllowChange(id);
     },
   }, { card: context.card });
   const render = (): void => {
     ui.render({
       verdicts: known,
-      allowed: context.allowed.has(id),
-      banner: context.settings().banner,
+      allowed: isIgnored(context.ignored, id, kind.id),
+      banner: effectiveSettings(context.settings().kinds[kind.id]).banner,
     });
   };
   render();
@@ -195,27 +216,21 @@ export async function start(deps: AppDeps): Promise<App> {
   const language = steamLanguage(root.lang) ?? DEFAULT_STEAM_LANGUAGE;
   const detectors = createDetector(deps, logger, language);
   const allowList = createAllowList(store, clock);
-  const allowed = new Set<AppId>();
-  try {
-    for (const id of (await allowList.list()).keys()) {
-      allowed.add(id);
-    }
-  } catch (problem) {
-    logger.error(problem);
-  }
-
-  deps.addPageStyles(doc);
-  applyBadgeSetting(root, settings.badges);
-  applyListFilter(root, settings.listFilter);
+  const ignored = await loadIgnored(allowList, logger);
 
   // The page surfaces (badge, banner, list filter) show the AI kind.
   const kind = AI_KIND;
+  const shown = effectiveSettings(settings.kinds[kind.id]);
+  deps.addPageStyles(doc);
+  applyBadgeSetting(root, shown.badge);
+  applyListFilter(root, shown.filter);
+
   const card = createHoverCard(doc, i18n);
   const capsules = createCapsuleUi({
     document: doc,
     detector: detectors.detector,
     renderers: [createHostStateRenderer(kind), createBadgeRenderer(doc, i18n, card, kind)],
-    isAllowed: (id) => allowed.has(id),
+    isAllowed: (id, forKind) => isIgnored(ignored, id, forKind),
   });
   const scanner = createScanner({ document: doc, renderer: capsules });
 
@@ -231,7 +246,7 @@ export async function start(deps: AppDeps): Promise<App> {
       kind,
       pageVerdicts(doc, pageId, language, detectors),
       {
-        allowed,
+        ignored,
         allowList,
         settings: () => settings,
         onAllowChange: (id) => {
@@ -243,12 +258,12 @@ export async function start(deps: AppDeps): Promise<App> {
   }
 
   const unsubscribe: Unsubscribe = deps.settings.subscribe((value) => {
-    const next = parseSettings(value);
-    applyBadgeSetting(root, next.badges);
-    applyListFilter(root, next.listFilter);
-    const bannerChanged = next.banner !== settings.banner;
-    settings = next;
-    if (bannerChanged) {
+    const before = effectiveSettings(settings.kinds[kind.id]);
+    settings = parseSettings(value);
+    const next = effectiveSettings(settings.kinds[kind.id]);
+    applyBadgeSetting(root, next.badge);
+    applyListFilter(root, next.filter);
+    if (next.banner !== before.banner) {
       renderAppPage();
     }
   });

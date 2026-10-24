@@ -1,7 +1,8 @@
 import { type AppId, toAppId } from "./types";
 
-// The storage layout. Every key carries the layout version `v1`. Step 7's breaker key
-// (`v1:breaker`) lives next to these but is owned by the breaker; nothing here touches it.
+// The storage layout. Settings and the ignore list are layout `v2`, which holds one entry per tag
+// kind. The verdict cache, its meta record and the breaker keep `v1`: the cache is versioned by
+// `CACHE_SCHEMA`, and the breaker owns `v1:breaker`; nothing here touches it.
 
 /**
  * Bump to discard every cached verdict on the next start (and only verdicts). Version 2 stores
@@ -11,9 +12,13 @@ export const CACHE_SCHEMA = 2;
 
 const VERDICT_PREFIX = "v1:a:";
 
-export const SETTINGS_KEY = "v1:settings";
-export const ALLOW_KEY = "v1:allow";
+export const SETTINGS_KEY = "v2:settings";
+export const ALLOW_KEY = "v2:allow";
 export const META_KEY = "v1:meta";
+
+/** The layout `v1` keys of settings and the ignore list; only the migration reads them. */
+export const LEGACY_SETTINGS_KEY = "v1:settings";
+export const LEGACY_ALLOW_KEY = "v1:allow";
 
 export function verdictKey(id: AppId): string {
   return `${VERDICT_PREFIX}${id}`;

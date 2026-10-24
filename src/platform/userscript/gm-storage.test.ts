@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { keyValueStoreContract } from "../../../tests/contracts/key-value-store.contract";
+import { migrationContract } from "../../../tests/contracts/migration.contract";
 import { fakeGm } from "../../../tests/helpers/gm-fake";
 import { SETTINGS_KEY } from "../../core/storage-keys";
 import { createGmStore, createRemoteSettings, type WatchValue } from "./gm-storage";
 
 keyValueStoreContract("createGmStore over the GM fake", () => createGmStore(fakeGm()));
+migrationContract("createGmStore over the GM fake", () => createGmStore(fakeGm()));
 
 describe("createGmStore", () => {
   it("writes through GM.setValue once per key", async () => {

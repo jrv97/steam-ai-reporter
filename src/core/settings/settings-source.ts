@@ -1,5 +1,6 @@
 import type { KeyValueStore, SettingsSource, Unsubscribe } from "../ports";
 import { SETTINGS_KEY } from "../storage-keys";
+import { migrateOnce } from "./migrate";
 import { encodeSettings, type Settings } from "./settings";
 
 /**
@@ -18,7 +19,8 @@ export interface StoredSettings extends SettingsSource {
 /**
  * `SettingsSource` over a `KeyValueStore`. Subscribers hear this context's writes and, when
  * `remote` is given, the other tabs' changes. A platform that reports its own writes through
- * `remote` too does not notify twice: a value equal to the last one told is not told again.
+ * `remote` too does not notify twice: a value equal to the last one told is not told again. The
+ * first read or write moves v1 settings to the v2 key (see `migrateOnce`).
  */
 export function createSettingsSource(
   store: KeyValueStore,
@@ -41,10 +43,12 @@ export function createSettingsSource(
 
   return {
     async read() {
+      await migrateOnce(store);
       return (await store.get([SETTINGS_KEY])).get(SETTINGS_KEY);
     },
 
     async write(settings) {
+      await migrateOnce(store);
       const value = encodeSettings(settings);
       await store.set(new Map([[SETTINGS_KEY, value]]));
       tell(value);

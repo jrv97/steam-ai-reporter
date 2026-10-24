@@ -2,8 +2,9 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { fixedClock } from "../../../tests/helpers/fixed-clock";
 import { englishI18n } from "../../../tests/helpers/i18n";
 import { memoryStore } from "../../../tests/helpers/memory-store";
+import { AI_KIND } from "../kinds/ai";
 import { createAllowList } from "../settings/allow-list";
-import { DEFAULT_SETTINGS } from "../settings/settings";
+import { DEFAULT_SETTINGS, parseSettings, withKind } from "../settings/settings";
 import { createSettingsSource } from "../settings/settings-source";
 import { toAppId } from "../types";
 import { mountSettingsForm, type SettingsContext } from "./settings-form";
@@ -27,12 +28,13 @@ async function setup(context: SettingsContext = "page") {
   const clock = fixedClock(Date.UTC(2026, 9, 1));
   const settings = createSettingsSource(memoryStore());
   const allowList = createAllowList(memoryStore(), clock);
-  await allowList.add(appId(10), "Older Game");
+  await allowList.add("ai", appId(10), "Older Game");
   clock.advance(DAY);
-  await allowList.add(appId(20), "Newer <b>Game</b>");
+  await allowList.add("ai", appId(20), "Newer <b>Game</b>");
   const root = document.createElement("main");
   document.body.append(root);
   const form = await mountSettingsForm(root, {
+    kind: AI_KIND,
     i18n,
     settings,
     allowList,
@@ -103,6 +105,7 @@ describe("mountSettingsForm", () => {
     const root = document.createElement("main");
     document.body.append(root);
     await mountSettingsForm(root, {
+      kind: AI_KIND,
       i18n,
       settings: createSettingsSource(memoryStore()),
       allowList: createAllowList(memoryStore(), fixedClock(0)),
@@ -144,12 +147,46 @@ describe("mountSettingsForm", () => {
     dim.checked = true;
     dim.dispatchEvent(new Event("change", { bubbles: true }));
     await vi.waitFor(async () => {
-      expect(await settings.read()).toMatchObject({ listFilter: "dim" });
+      expect(parseSettings(await settings.read()).kinds.ai.filter).toBe("dim");
     });
     expect(control("[aria-live]").textContent).toBe(i18n.t("notice_settings_saved"));
     expect(control(".sar-segment ~ .sar-field-help").textContent).toBe(
       i18n.t("options_filter_dim_help"),
     );
+  });
+
+  it("changes only the field of the kind and keeps the other settings", async () => {
+    const { settings, input } = await setup();
+    await settings.write({ ...DEFAULT_SETTINGS, locale: "es", debug: true });
+    const banner = input("[data-sar-setting=banner]");
+    banner.checked = false;
+    banner.dispatchEvent(new Event("change", { bubbles: true }));
+    await vi.waitFor(async () => {
+      expect(parseSettings(await settings.read())).toStrictEqual({
+        ...withKind(DEFAULT_SETTINGS, "ai", { banner: false }),
+        locale: "es",
+        debug: true,
+      });
+    });
+  });
+
+  it("saves nothing for a value the setting does not allow", async () => {
+    const { settings, input, control } = await setup();
+    const write = vi.spyOn(settings, "write");
+    const radio = input("input[value=dim]");
+    radio.value = "blur";
+    radio.checked = true;
+    radio.dispatchEvent(new Event("change", { bubbles: true }));
+    const picker = control("select");
+    if (picker instanceof HTMLSelectElement) {
+      const option = document.createElement("option");
+      option.value = "x y";
+      picker.append(option);
+      picker.value = "x y";
+      picker.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+    await Promise.resolve();
+    expect(write).not.toHaveBeenCalled();
   });
 
   it("reverts the control and shows an error when a change cannot be saved", async () => {
@@ -168,7 +205,7 @@ describe("mountSettingsForm", () => {
 
   it("follows changes from other tabs", async () => {
     const { settings, input } = await setup();
-    await settings.write({ ...DEFAULT_SETTINGS, banner: false });
+    await settings.write(withKind(DEFAULT_SETTINGS, "ai", { banner: false }));
     expect(input("[data-sar-setting=banner]").checked).toBe(false);
   });
 
@@ -178,7 +215,7 @@ describe("mountSettingsForm", () => {
     await vi.waitFor(() => {
       expect(root.querySelectorAll(".sar-allow-item")).toHaveLength(1);
     });
-    expect([...(await allowList.list()).keys()]).toEqual([10]);
+    expect([...(await allowList.list()).ai.keys()]).toEqual([10]);
     expect(document.activeElement).toBe(control('[data-sar-restore="10"]'));
     expect(control("[aria-live]").textContent).toBe(i18n.t("notice_marking_restored"));
   });
@@ -241,6 +278,7 @@ describe("mountSettingsForm", () => {
     vi.spyOn(settings, "read").mockRejectedValue(new Error());
     const root = document.createElement("main");
     await mountSettingsForm(root, {
+      kind: AI_KIND,
       i18n,
       settings,
       allowList: createAllowList(memoryStore(), fixedClock(0)),

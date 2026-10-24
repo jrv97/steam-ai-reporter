@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { type KindSettings, LIST_FILTERS, parseKindSettings } from "./kind-settings";
+import {
+  effectiveSettings,
+  type KindSettings,
+  LIST_FILTERS,
+  parseKindSettings,
+} from "./kind-settings";
 
 const DEFAULTS: KindSettings = { enabled: true, badge: true, banner: true, filter: "off" };
 
@@ -34,5 +39,18 @@ describe("parseKindSettings", () => {
 
   it("drops keys it does not know", () => {
     expect(parseKindSettings(DEFAULTS, { ...DEFAULTS, theme: "dark" })).toStrictEqual(DEFAULTS);
+  });
+});
+
+describe("effectiveSettings", () => {
+  it("keeps the settings of an enabled kind as they are", () => {
+    const settings: KindSettings = { enabled: true, badge: false, banner: true, filter: "dim" };
+    expect(effectiveSettings(settings)).toBe(settings);
+  });
+
+  it("shows no badge or banner and filters nothing while the kind is disabled", () => {
+    expect(
+      effectiveSettings({ enabled: false, badge: true, banner: true, filter: "hide" }),
+    ).toStrictEqual({ enabled: false, badge: false, banner: false, filter: "off" });
   });
 });

@@ -1,6 +1,7 @@
 import { type App, start } from "../../core/app";
 import { createFetchHttp, type Fetch } from "../../core/http";
 import { SHIPPED_CATALOGS } from "../../core/i18n/shipped";
+import { AI_KIND } from "../../core/kinds/ai";
 import { type ConsoleSink, createLogger } from "../../core/log";
 import { createAllowList } from "../../core/settings/allow-list";
 import { createSettingsSource } from "../../core/settings/settings-source";
@@ -53,6 +54,7 @@ export async function startUserscript(env: UserscriptEnv): Promise<App | undefin
   env.registerMenuCommand?.(i18n.t("userscript_menu_settings"), () => {
     void (async () => {
       await openSettingsDialog({
+        kind: AI_KIND,
         document: doc,
         i18n: await currentI18n(doc, settings, SHIPPED_CATALOGS, browserLang),
         catalogs: SHIPPED_CATALOGS,

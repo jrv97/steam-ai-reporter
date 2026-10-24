@@ -1,9 +1,18 @@
 import * as v from "valibot";
 import type { BareMessageKey } from "../i18n/t";
+import type { TagKind } from "../kinds/kind";
 import { LIST_FILTERS, type ListFilter } from "../kinds/kind-settings";
 import type { MessageCatalog } from "../ports";
-import type { AllowEntry, AllowList } from "../settings/allow-list";
-import { AUTO_LOCALE, DEFAULT_SETTINGS, parseSettings, type Settings } from "../settings/settings";
+import type { AllowEntry } from "../settings/allow-data";
+import type { AllowList } from "../settings/allow-list";
+import {
+  AUTO_LOCALE,
+  DEFAULT_SETTINGS,
+  LocaleSchema,
+  parseSettings,
+  type Settings,
+  withKind,
+} from "../settings/settings";
 import type { StoredSettings } from "../settings/settings-source";
 import { type AppId, toAppId } from "../types";
 import { adoptStyles, SETTINGS_CSS, TOKENS_CSS } from "./styles";
@@ -20,6 +29,8 @@ export interface SettingsHeader {
 }
 
 export interface SettingsFormDeps {
+  /** The tag kind whose settings and ignored games the form shows. */
+  readonly kind: TagKind;
   readonly i18n: MessageCatalog;
   readonly settings: StoredSettings;
   readonly allowList: AllowList;
@@ -98,7 +109,7 @@ export async function mountSettingsForm(
   root: HTMLElement,
   deps: SettingsFormDeps,
 ): Promise<SettingsForm> {
-  const { i18n, settings, allowList, context } = deps;
+  const { i18n, settings, allowList, context, kind } = deps;
   const doc = root.ownerDocument;
   mounts += 1;
   const prefix = `sar-${String(mounts)}-`;
@@ -198,8 +209,8 @@ export async function mountSettingsForm(
     loadError,
     switchField(
       "badges",
-      context === "popup" ? "options_badges_short" : "options_badges",
-      i18n.t("options_badges_help", { label: i18n.t("badge_label") }),
+      context === "popup" ? kind.messages.badgesSwitchShort : kind.messages.badgesSwitch,
+      i18n.t("options_badges_help", { label: i18n.t(kind.messages.label) }),
     ),
     switchField("banner", "options_banner", i18n.t("options_banner_help")),
   );
@@ -208,7 +219,7 @@ export async function mountSettingsForm(
   const lists = card("options_section_lists", "lists");
   const filter = element("div", "sar-field");
   filter.setAttribute("data-sar-layout", "stacked");
-  const filterLabel = element("span", "sar-field-label", i18n.t("options_filter_label"));
+  const filterLabel = element("span", "sar-field-label", i18n.t(kind.messages.filterLabel));
   filterLabel.id = `${prefix}filter`;
   const segment = element("fieldset", "sar-segment");
   segment.setAttribute("aria-labelledby", filterLabel.id);
@@ -322,26 +333,41 @@ export async function mountSettingsForm(
   }
 
   function sync(): void {
+    const own = current.kinds[kind.id];
     for (const [field, input] of switches) {
-      input.checked = field === "badges" ? current.badges : current.banner;
+      input.checked = field === "badges" ? own.badge : own.banner;
     }
     for (const [value, input] of radios) {
-      input.checked = value === current.listFilter;
+      input.checked = value === own.filter;
     }
-    filterHelp.textContent = i18n.t(FILTER_HELP[current.listFilter]);
+    filterHelp.textContent = i18n.t(FILTER_HELP[own.filter]);
     if (picker !== undefined) {
       picker.value = current.locale;
     }
   }
 
-  function valueOf(field: Field, control: HTMLInputElement | HTMLSelectElement): unknown {
+  /** The settings with the control's value applied; undefined when the value is not valid. */
+  function changed(
+    field: Field,
+    control: HTMLInputElement | HTMLSelectElement,
+  ): Settings | undefined {
     switch (field) {
       case "badges":
+        return control instanceof HTMLInputElement
+          ? withKind(current, kind.id, { badge: control.checked })
+          : undefined;
       case "banner":
-        return control instanceof HTMLInputElement ? control.checked : undefined;
-      case "listFilter":
-      case "locale":
-        return control.value;
+        return control instanceof HTMLInputElement
+          ? withKind(current, kind.id, { banner: control.checked })
+          : undefined;
+      case "listFilter": {
+        const filter = v.safeParse(v.picklist(LIST_FILTERS), control.value);
+        return filter.success ? withKind(current, kind.id, { filter: filter.output }) : undefined;
+      }
+      case "locale": {
+        const locale = v.safeParse(LocaleSchema, control.value);
+        return locale.success ? { ...current, locale: locale.output } : undefined;
+      }
     }
   }
 
@@ -372,8 +398,10 @@ export async function mountSettingsForm(
     if (!field.success) {
       return;
     }
-    const next = parseSettings({ ...current, [field.output]: valueOf(field.output, target) });
-    void save(field.output, next);
+    const next = changed(field.output, target);
+    if (next !== undefined) {
+      void save(field.output, next);
+    }
   }
 
   function renderAllowList(entries: ReadonlyMap<AppId, AllowEntry>): void {
@@ -420,7 +448,7 @@ export async function mountSettingsForm(
   async function refreshAllowList(): Promise<void> {
     let entries: ReadonlyMap<AppId, AllowEntry> = new Map();
     try {
-      entries = await allowList.list();
+      entries = (await allowList.list())[kind.id];
     } catch {
       // Shown as empty; the next refresh tries again.
     }
@@ -433,7 +461,7 @@ export async function mountSettingsForm(
       ?? item?.previousElementSibling?.querySelector<HTMLElement>("[data-sar-restore]");
     const nextId = next?.getAttribute("data-sar-restore");
     try {
-      await allowList.remove(id);
+      await allowList.remove(kind.id, id);
     } catch {
       const error = item?.querySelector<HTMLElement>(".sar-field-error");
       if (error !== null && error !== undefined) {

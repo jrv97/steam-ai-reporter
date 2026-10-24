@@ -2,6 +2,7 @@ import * as v from "valibot";
 import { resolveLocale } from "../../core/i18n/locale";
 import { SHIPPED_CATALOGS } from "../../core/i18n/shipped";
 import { type BareMessageKey, createI18n, type I18n } from "../../core/i18n/t";
+import { AI_KIND } from "../../core/kinds/ai";
 import { createAllowList } from "../../core/settings/allow-list";
 import { AUTO_LOCALE, parseSettings } from "../../core/settings/settings";
 import { ALLOW_KEY } from "../../core/storage-keys";
@@ -63,6 +64,7 @@ async function main(): Promise<void> {
   fillText(document, i18n);
 
   const form = await mountSettingsForm(document.body, {
+    kind: AI_KIND,
     i18n,
     settings,
     allowList,
