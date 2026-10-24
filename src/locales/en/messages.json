@@ -183,10 +183,6 @@
     "message": "Show less",
     "description": "Collapses the text of the notice again."
   },
-  "banner_service_label": {
-    "message": "AI service named by the developer:",
-    "description": "Precedes a product name inserted as data, untranslated."
-  },
   "banner_ignore": {
     "message": "Ignore this game",
     "description": "Button on the notice that stops every tag and this notice for one game, in this extension only. The store has its own Ignore button; this one does not touch it."

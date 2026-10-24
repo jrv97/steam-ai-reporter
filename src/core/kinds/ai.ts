@@ -2,9 +2,8 @@ import * as v from "valibot";
 import { type ExtraDetails, MALFORMED, type StoreItem } from "../detect/getitems.schema";
 import { optionalText, trimNotes } from "../detect/notes";
 import { type SteamLanguage, SteamLanguageSchema } from "../i18n/locale";
-import type { BareMessageKey } from "../i18n/t";
 import { NOT_DISCLOSED, UNKNOWN, type Verdict } from "../types";
-import type { KindDefinition, KindMessages } from "./kind";
+import type { KindDefinition } from "./kind";
 import { DEFAULT_KIND_SETTINGS } from "./kind-settings";
 import { DAY_MS, HOUR_MS } from "./kind-ttl";
 import { storedDisclosed } from "./stored-disclosed";
@@ -73,41 +72,15 @@ function fromAppPage(doc: Document, name: string): AiVerdict {
   return { state: "disclosed", kind: "ai", notes, language: "english", source: "html", name };
 }
 
-/** The words only the AI surfaces use: the banner, the settings page and the popup. */
-export interface AiMessages extends KindMessages {
-  /** In the banner, precedes the product the developer named. */
-  readonly bannerService: BareMessageKey;
-  /** Screen reader name of the banner's one-line note. */
-  readonly bannerRegion: BareMessageKey;
-  /** Label of the badges switch in the settings page and in the popup. */
-  readonly badgesSwitch: BareMessageKey;
-  readonly badgesSwitchShort: BareMessageKey;
-  /** Label of the list filter choice. */
-  readonly filterLabel: BareMessageKey;
-}
-
-/** The AI kind with its own type, for the screens that draw it. */
-export interface AiKind extends KindDefinition<AiDisclosed> {
-  readonly messages: AiMessages;
-}
-
 /** Generative AI use that the developer reported on Steam's content survey. */
-export const AI_KIND: AiKind = {
+export const AI_KIND: KindDefinition<AiDisclosed> = {
   id: "ai",
   fromGetItems,
   fromAppPage,
 
   stored: STORED,
 
-  messages: {
-    heading: "kind_ai_heading",
-    chip: "kind_ai_chip",
-    bannerService: "banner_service_label",
-    bannerRegion: "kind_ai_heading",
-    badgesSwitch: "options_badges",
-    badgesSwitchShort: "options_badges_short",
-    filterLabel: "options_filter_label",
-  },
+  messages: { heading: "kind_ai_heading", chip: "kind_ai_chip" },
 
   defaults: DEFAULT_KIND_SETTINGS,
   // A disclosure rarely goes away; a missing one can appear.
