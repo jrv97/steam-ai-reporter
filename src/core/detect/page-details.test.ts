@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { APP_PAGES, type AppPageName } from "../../../tests/helpers/app-page";
+import { englishI18n } from "../../../tests/helpers/i18n";
 import { parsePageDetails } from "./page-details";
 
 function doc(html: string): Document {
@@ -19,7 +20,7 @@ describe("parsePageDetails over the captured pages", () => {
   it("reads the custom anti-cheat name and the boot protection line (2807960)", () => {
     expect(details("2807960-kernel-boot-protection.html", true)).toStrictEqual({
       anticheatName: "EA Javelin Anticheat",
-      bootProtection: "Boot Protection - Requires both Secure Boot & TPM 2.0",
+      bootProtection: englishI18n().t("kind_kernel_boot"),
     });
   });
 

@@ -2,8 +2,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { setBody } from "../../../tests/helpers/dom";
 import { englishI18n } from "../../../tests/helpers/i18n";
 import { aiVerdicts, disclosedVerdict, NOT_DISCLOSED } from "../../../tests/helpers/verdicts";
-import { AI_KIND, type AiDisclosed, type AiVerdict } from "../kinds/ai";
-import type { TagKind } from "../kinds/kind";
+import { AI_KIND, type AiVerdict } from "../kinds/ai";
+import type { AnyDisclosed } from "../kinds/verdicts";
 import { UNKNOWN } from "../types";
 import { type AppPageView, createAppPageUi } from "./app-page";
 import { BANNER_ID } from "./banner";
@@ -20,7 +20,7 @@ const i18n = englishI18n();
 const actions = { stopMarking: () => Promise.resolve(), markAgain: () => Promise.resolve() };
 
 interface Bound {
-  readonly verdict: AiDisclosed;
+  readonly entries: readonly AnyDisclosed[];
   readonly ownPage: boolean | undefined;
 }
 
@@ -30,8 +30,8 @@ function setup() {
   setBody(PAGE);
   bound = new Map();
   const card = {
-    bind: (trigger: Element, _kind: TagKind, verdict: AiDisclosed, ownPage?: boolean) =>
-      bound.set(trigger, { verdict, ownPage }),
+    bind: (trigger: Element, entries: readonly AnyDisclosed[], ownPage?: boolean) =>
+      bound.set(trigger, { entries, ownPage }),
   };
   return createAppPageUi(document, i18n, AI_KIND, actions, { frame: () => undefined, card });
 }

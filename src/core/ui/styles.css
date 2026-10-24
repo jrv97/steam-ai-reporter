@@ -197,6 +197,17 @@ a.sar-summary-row .sar-badge {
   display: none !important;
 }
 
+/* One entry per kind: Steam's line as a violet title, then its details. */
+.sar-hovercard-entry {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sar-hovercard-gap);
+}
+
+.sar-hovercard-entry + .sar-hovercard-entry {
+  margin-block-start: var(--sar-space-2);
+}
+
 .sar-hovercard-title {
   display: block;
   color: var(--sar-badge-fg);
@@ -208,6 +219,12 @@ a.sar-summary-row .sar-badge {
 .sar-hovercard-more {
   display: block;
   color: var(--sar-color-text-muted);
+  font: var(--sar-hovercard-meta-font);
+}
+
+.sar-hovercard-detail {
+  display: block;
+  color: var(--sar-color-text);
   font: var(--sar-hovercard-meta-font);
 }
 

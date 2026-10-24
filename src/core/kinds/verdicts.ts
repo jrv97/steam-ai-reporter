@@ -32,6 +32,11 @@ export function isKindVerdicts(
   return hasEveryKind(verdicts);
 }
 
+/** Whether two lists hold the very same verdict objects in the same order. */
+export function sameVerdicts(a: readonly AnyDisclosed[], b: readonly AnyDisclosed[]): boolean {
+  return a.length === b.length && a.every((verdict, index) => verdict === b[index]);
+}
+
 function allUnknown(reason: UnknownReason): KindVerdicts {
   return perKind(() => UNKNOWN[reason]);
 }

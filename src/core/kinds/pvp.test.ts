@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { verdictOf } from "../../../tests/helpers/getitems";
 import { UNKNOWN } from "../types";
-import { PVP_CATEGORY_IDS, PVP_KIND } from "./pvp";
+import { PVP_CATEGORY_IDS, PVP_KIND, pvpCategoryMessage } from "./pvp";
 
 function fromCategories(categories: unknown) {
   return verdictOf(PVP_KIND, {}, { categories });
@@ -10,6 +10,23 @@ function fromCategories(categories: unknown) {
 function fromIds(ids: readonly unknown[]) {
   return fromCategories({ supported_player_categoryids: ids });
 }
+
+describe("pvpCategoryMessage", () => {
+  it("names each PvP category with its own catalog key", () => {
+    const keys = PVP_CATEGORY_IDS.map((id) => pvpCategoryMessage(id));
+    expect(keys).toStrictEqual([
+      "kind_pvp_category_pvp",
+      "kind_pvp_category_online",
+      "kind_pvp_category_lan",
+      "kind_pvp_category_split",
+    ]);
+  });
+
+  it("names no other category", () => {
+    expect(pvpCategoryMessage(1)).toBeUndefined();
+    expect(pvpCategoryMessage(0)).toBeUndefined();
+  });
+});
 
 describe("PVP_KIND.fromGetItems", () => {
   it("knows Steam's four PvP categories", () => {

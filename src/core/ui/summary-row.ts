@@ -35,7 +35,7 @@ export function createSummaryRow(
     });
   } else {
     row.tabIndex = 0;
-    card?.bind(row, kind, verdict, true);
+    card?.bind(row, [verdict], true);
   }
   return row;
 }

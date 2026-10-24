@@ -59,6 +59,14 @@
     "message": "Kernel AC",
     "description": "Short chip for a game with kernel level anti-cheat. Keep it short; it sits in a row and over game images."
   },
+  "kind_kernel_uninstall": {
+    "message": "Requires manual removal after game uninstall",
+    "description": "Steam's own note in the hover card when a kernel level anti-cheat stays on the computer after the game is uninstalled."
+  },
+  "kind_kernel_boot": {
+    "message": "Boot Protection - Requires both Secure Boot & TPM 2.0",
+    "description": "Steam's own note in the hover card when the game needs boot protection. Use the wording Steam shows in this language; keep the hyphen between the two parts."
+  },
   "kind_anticheat_heading": {
     "message": "Uses Anti-Cheat Software",
     "description": "Steam's own line for a game with anti-cheat software that does not run at kernel level. It titles the entry in the hover card and begins the screen reader name of the chip. Use the wording Steam shows in this language."
@@ -83,6 +91,10 @@
     "message": "Account",
     "description": "Short chip for a game that requires a third-party account. Keep it short; it sits in a row and over game images."
   },
+  "kind_account_links": {
+    "message": "(Supports Linking to Steam Account)",
+    "description": "Steam's own note in the hover card, under the third-party account, when that account can be linked to the player's Steam account."
+  },
   "kind_eula_heading": {
     "message": "Requires agreement to a 3rd-party EULA",
     "description": "Steam's own line for a game that makes the player accept an end user license agreement of another company. It titles the entry in the hover card and begins the screen reader name of the chip; the agreement names follow in the card, untranslated."
@@ -99,6 +111,22 @@
     "message": "PvP",
     "description": "Short chip for a game with a player versus player mode, as its Steam categories say. Use the abbreviation Steam uses in this language."
   },
+  "kind_pvp_category_pvp": {
+    "message": "PvP",
+    "description": "Steam's category name for player versus player, listed in the hover card."
+  },
+  "kind_pvp_category_online": {
+    "message": "Online PvP",
+    "description": "Steam's category name for online player versus player, listed in the hover card."
+  },
+  "kind_pvp_category_lan": {
+    "message": "LAN PvP",
+    "description": "Steam's category name for player versus player over a local network, listed in the hover card."
+  },
+  "kind_pvp_category_split": {
+    "message": "Shared/Split Screen PvP",
+    "description": "Steam's category name for player versus player on one shared or split screen, listed in the hover card."
+  },
   "kind_chip_name": {
     "message": "$chip$: $heading$",
     "description": "Screen reader name of a chip: the visible chip text, then Steam's full line for the kind. $chip$ is the chip text and $heading$ the full line.",
@@ -113,9 +141,9 @@
       }
     }
   },
-  "badge_card_source": {
-    "message": "In the developer's own words:",
-    "description": "In the hover card on a badge, introduces the developer's text, which follows untranslated."
+  "badge_card_declared": {
+    "message": "Declared by the developer on the store page",
+    "description": "Last line of the hover card. It says the developer, not this extension, made the declarations above."
   },
   "badge_card_service_label": {
     "message": "AI service named by the developer:",

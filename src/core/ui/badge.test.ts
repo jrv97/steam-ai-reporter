@@ -3,7 +3,8 @@ import { setBody } from "../../../tests/helpers/dom";
 import { hostView, type HostViewOptions } from "../../../tests/helpers/host-view";
 import { englishI18n } from "../../../tests/helpers/i18n";
 import { disclosedVerdict, NOT_DISCLOSED } from "../../../tests/helpers/verdicts";
-import { AI_KIND, type AiDisclosed } from "../kinds/ai";
+import { AI_KIND } from "../kinds/ai";
+import type { AnyDisclosed } from "../kinds/verdicts";
 import { UNKNOWN } from "../types";
 import { compactSize, createBadgeRenderer } from "./badge";
 import type { BadgeSlot } from "./host";
@@ -52,11 +53,11 @@ describe("createBadgeRenderer", () => {
     chip: i18n.t("kind_ai_chip"),
     heading: i18n.t("kind_ai_heading"),
   });
-  let bound = new Map<Element, AiDisclosed>();
+  let bound = new Map<Element, readonly AnyDisclosed[]>();
   let renderer = createBadgeRenderer(
     document,
     i18n,
-    { bind: (t, _kind, v) => bound.set(t, v) },
+    { bind: (t, entries) => bound.set(t, entries) },
     AI_KIND,
   );
 
@@ -65,7 +66,7 @@ describe("createBadgeRenderer", () => {
     renderer = createBadgeRenderer(
       document,
       i18n,
-      { bind: (t, _kind, v) => bound.set(t, v) },
+      { bind: (t, entries) => bound.set(t, entries) },
       AI_KIND,
     );
   });
@@ -81,7 +82,7 @@ describe("createBadgeRenderer", () => {
     expect(badge?.querySelector(".sar-vh")?.textContent).toBe(AI_NAME);
     expect(badge?.querySelector("svg")).toBeNull();
     expect(badge?.hasAttribute("title")).toBe(false);
-    expect(badge === null ? undefined : bound.get(badge)).toBe(verdict);
+    expect(badge === null ? undefined : bound.get(badge)).toEqual([verdict]);
   });
 
   it("binds a kept badge to a new verdict without drawing it again", () => {
@@ -92,7 +93,7 @@ describe("createBadgeRenderer", () => {
     const next = disclosedVerdict({ notes: "Voice lines." });
     renderer.render(view(host, slot, { verdict: next }));
     expect(host.querySelector(".sar-badge")).toBe(badge);
-    expect(badge === null ? undefined : bound.get(badge)).toBe(next);
+    expect(badge === null ? undefined : bound.get(badge)).toEqual([next]);
   });
 
   it("draws the compact badge in its tier, linked to the capsule link", () => {

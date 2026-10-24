@@ -53,3 +53,6 @@ export function perKind<T>(make: (kind: TagKind) => T): Readonly<Record<KindId, 
   }
   throw new SarError("error_unexpected", {});
 }
+
+/** Each registered kind's definition by id, for code that holds a verdict and needs its words. */
+export const KIND_BY_ID: Readonly<Record<KindId, TagKind>> = perKind((kind) => kind);

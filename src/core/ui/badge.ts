@@ -119,7 +119,7 @@ export function createBadgeRenderer(
         current !== undefined && current.badge.isConnected && sameSlot(current.slot, slot)
       ) {
         if (current.verdict !== verdict) {
-          card.bind(current.badge, kind, verdict);
+          card.bind(current.badge, [verdict]);
           drawn.set(host, { ...current, verdict });
         }
         return;
@@ -130,7 +130,7 @@ export function createBadgeRenderer(
       if (slot.kind === "compact") {
         linkCompact(badge, host);
       }
-      card.bind(badge, kind, verdict);
+      card.bind(badge, [verdict]);
       drawn.set(host, { badge, verdict, slot });
     },
   };

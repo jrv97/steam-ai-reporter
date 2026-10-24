@@ -1,11 +1,11 @@
 import * as v from "valibot";
 import { describe, expect, it } from "vitest";
 import { parsedItem } from "../../../tests/helpers/getitems";
-import { ALL_DISCLOSED } from "../../../tests/helpers/verdicts";
+import { ALL_DISCLOSED, FULL_DISCLOSED } from "../../../tests/helpers/verdicts";
 import { UNKNOWN, type UnknownReason } from "../types";
 import { KIND_IDS } from "./id";
 import { KINDS } from "./registry";
-import { isKindVerdicts, kindsFromGetItems, UNKNOWN_KINDS } from "./verdicts";
+import { isKindVerdicts, kindsFromGetItems, sameVerdicts, UNKNOWN_KINDS } from "./verdicts";
 
 const REASONS: readonly UnknownReason[] = ["gated", "missing", "error", "rate-limited"];
 
@@ -17,6 +17,22 @@ describe("UNKNOWN_KINDS", () => {
         expect(UNKNOWN_KINDS[reason][id]).toBe(UNKNOWN[reason]);
       }
     }
+  });
+});
+
+describe("sameVerdicts", () => {
+  const { ai, drm, pvp } = FULL_DISCLOSED;
+
+  it("holds for lists of the very same verdicts in the same order", () => {
+    expect(sameVerdicts([], [])).toBe(true);
+    expect(sameVerdicts([ai, drm], [ai, drm])).toBe(true);
+  });
+
+  it("fails on another order, another length or a copy of a verdict", () => {
+    expect(sameVerdicts([ai, drm], [drm, ai])).toBe(false);
+    expect(sameVerdicts([ai], [ai, pvp])).toBe(false);
+    expect(sameVerdicts([ai, drm], [ai])).toBe(false);
+    expect(sameVerdicts([ai], [{ ...ai }])).toBe(false);
   });
 });
 

@@ -1,5 +1,11 @@
+import type { AccountDisclosed } from "../../src/core/kinds/account";
 import type { AiDisclosed, AiVerdict } from "../../src/core/kinds/ai";
+import type { AnticheatDisclosed } from "../../src/core/kinds/anticheat";
+import type { DrmDisclosed } from "../../src/core/kinds/drm";
+import type { EulaDisclosed } from "../../src/core/kinds/eula";
 import type { KindId } from "../../src/core/kinds/id";
+import type { KernelDisclosed } from "../../src/core/kinds/kernel";
+import type { PvpDisclosed } from "../../src/core/kinds/pvp";
 import { perKind } from "../../src/core/kinds/registry";
 import { type KindVerdicts, UNKNOWN_KINDS } from "../../src/core/kinds/verdicts";
 import type { NotDisclosedVerdict, UnknownReason } from "../../src/core/types";
@@ -25,8 +31,18 @@ export function aiVerdicts(ai: AiVerdict): KindVerdicts {
   return { ...UNKNOWN_KINDS.missing, ai };
 }
 
-/** Every kind disclosed, with every field of its payload set. */
-export const ALL_DISCLOSED: KindVerdicts = {
+interface FullDisclosed {
+  readonly ai: AiDisclosed;
+  readonly kernel: KernelDisclosed;
+  readonly anticheat: AnticheatDisclosed;
+  readonly drm: DrmDisclosed;
+  readonly account: AccountDisclosed;
+  readonly eula: EulaDisclosed;
+  readonly pvp: PvpDisclosed;
+}
+
+/** Each kind's disclosed verdict, with every field of its payload set. */
+export const FULL_DISCLOSED: FullDisclosed = {
   ai: disclosedVerdict(),
   kernel: {
     state: "disclosed",
@@ -69,6 +85,9 @@ export const ALL_DISCLOSED: KindVerdicts = {
   },
   pvp: { state: "disclosed", kind: "pvp", source: "api", categoryIds: [49, 36] },
 };
+
+/** Every kind disclosed, with every field of its payload set. */
+export const ALL_DISCLOSED: KindVerdicts = FULL_DISCLOSED;
 
 /** Every kind in the same state, so a test sees the TTL or the storage of that state alone. */
 export function uniformVerdicts(

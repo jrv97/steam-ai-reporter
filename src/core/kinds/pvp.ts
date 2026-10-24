@@ -1,15 +1,28 @@
 import * as v from "valibot";
 import { MALFORMED } from "../detect/getitems.schema";
+import type { BareMessageKey } from "../i18n/t";
 import { type DisclosedBase, NOT_DISCLOSED, UNKNOWN } from "../types";
 import type { KindDefinition } from "./kind";
 import { DEFAULT_KIND_SETTINGS } from "./kind-settings";
 import { storedDisclosed } from "./stored-disclosed";
 
 /**
- * Steam's player category IDs for player-versus-player modes, with the English names Steam gives
- * them: 49 PvP, 36 Online PvP, 47 LAN PvP, 37 Shared/Split Screen PvP.
+ * Steam's player category IDs for player-versus-player modes, with the catalog key of the name
+ * Steam gives each: 49 PvP, 36 Online PvP, 47 LAN PvP, 37 Shared/Split Screen PvP.
  */
-export const PVP_CATEGORY_IDS: readonly number[] = [49, 36, 47, 37];
+const CATEGORY_MESSAGES: ReadonlyMap<number, BareMessageKey> = new Map([
+  [49, "kind_pvp_category_pvp"],
+  [36, "kind_pvp_category_online"],
+  [47, "kind_pvp_category_lan"],
+  [37, "kind_pvp_category_split"],
+]);
+
+export const PVP_CATEGORY_IDS: readonly number[] = [...CATEGORY_MESSAGES.keys()];
+
+/** The catalog key of a PvP category's name, or undefined for any other category ID. */
+export function pvpCategoryMessage(id: number): BareMessageKey | undefined {
+  return CATEGORY_MESSAGES.get(id);
+}
 
 /** The disclosed verdict of the PvP kind: the player categories of the game that mean PvP. */
 export interface PvpDisclosed extends DisclosedBase<"pvp"> {

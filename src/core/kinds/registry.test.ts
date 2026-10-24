@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { SHIPPED_CATALOGS } from "../i18n/shipped";
 import { KIND_IDS } from "./id";
-import { hasEveryKind, KINDS, perKind } from "./registry";
+import { hasEveryKind, KIND_BY_ID, KINDS, perKind } from "./registry";
 
 describe("KINDS", () => {
   it("holds one definition for each kind id, in order, and each one knows its id", () => {
@@ -31,6 +31,14 @@ describe("perKind", () => {
     expect(seen).toStrictEqual([...KIND_IDS]);
     expect(Object.keys(result)).toStrictEqual([...KIND_IDS]);
     expect(result.ai).toBe(KINDS[0].messages.chip);
+  });
+});
+
+describe("KIND_BY_ID", () => {
+  it("maps each id to its own definition", () => {
+    for (const kind of KINDS) {
+      expect(KIND_BY_ID[kind.id]).toBe(kind);
+    }
   });
 });
 
