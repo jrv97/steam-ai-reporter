@@ -2,7 +2,8 @@
 
 import unittest
 
-from render_icons import COLORS, ICONS_DIR, MASTER, colored
+from render_icons import COLORS, MASTER, colored
+from repo import ICONS_DIR
 
 
 class ColorFilesTest(unittest.TestCase):
