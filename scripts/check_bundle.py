@@ -153,7 +153,7 @@ def icon_problems(browser: str, manifest: dict[str, object]) -> list[str]:
             found = png_size(path)
             if found != (int(size), int(size)):
                 problems.append(f"{where}: {name} is {found or 'no PNG'}, declared {size}x{size}")
-    return problems
+    return list(dict.fromkeys(problems))
 
 
 def normalized(text: str) -> str:
