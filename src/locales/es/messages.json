@@ -1,19 +1,23 @@
 {
   "ext_name": {
-    "message": "Marcador de IA para Steam",
-    "description": "Manifest name, userscript @name and the settings heading. The brand: keep \"AI Reporter\" as is and translate only \"for\". At most 75 characters (Chrome limit)."
+    "message": "Tag Kit para Steam",
+    "description": "Manifest name and the settings heading. The brand: keep \"Tag Kit\" as is and translate only \"for\". At most 75 characters (Chrome limit)."
   },
   "ext_short_name": {
-    "message": "Marcador IA",
+    "message": "Tag Kit",
     "description": "Manifest short_name, where space is tight. The brand, kept as is. At most 12 characters (Chrome recommendation)."
   },
   "ext_description": {
-    "message": "Marca los juegos de Steam cuyos desarrolladores declaran haber usado IA generativa, citando sus propias palabras.",
-    "description": "Manifest description and userscript @description. At most 132 characters (Chrome limit)."
+    "message": "Etiqueta juegos de Steam: contenido generado por IA, antitrampas a nivel de kernel, DRM, cuenta y ALUF de terceros, JcJ.",
+    "description": "Manifest description and userscript @description. At most 132 characters (Chrome limit). Name each tag as Steam's own store in that language does."
   },
   "ext_action_title": {
-    "message": "Configuración de Marcador de IA para Steam",
-    "description": "Tooltip of the extension's toolbar button, which opens the settings popup. At most 75 characters. Keep \"AI Reporter for Steam\" as is (see ext_name)."
+    "message": "Configuración de Tag Kit para Steam",
+    "description": "Tooltip of the extension's toolbar button, which opens the settings popup. At most 75 characters. Keep \"Tag Kit for Steam\" as in ext_name."
+  },
+  "userscript_name": {
+    "message": "Marcador de IA para Steam",
+    "description": "Userscript @name. Script managers may treat a renamed script as a new one, so this keeps the name of the first release. Keep as is."
   },
   "error_unexpected": {
     "message": "Error inesperado.",

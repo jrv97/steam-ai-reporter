@@ -30,6 +30,9 @@ BROWSERS = ("chrome", "firefox")
 CONTENT_CSS = ("TOKENS_CSS", "PAGE_CSS")
 
 USERSCRIPT_MATCH = "https://store.steampowered.com/*"
+# Script managers may treat a renamed script as a new one, so @name keeps its own key.
+# Set this to "ext_name" and delete userscript_name from the catalogs to follow the product name.
+USERSCRIPT_NAME_KEY = "userscript_name"
 USERSCRIPT_NAMESPACE = "https://github.com/jrv97/steam-ai-reporter"
 USERSCRIPT_UPDATE_BASE = f"{USERSCRIPT_NAMESPACE}/releases/latest/download"
 USERSCRIPT_GRANTS = (
@@ -133,11 +136,11 @@ def write_extension(browser: str, version: str) -> None:
 def userscript_header(version: str, catalogs: dict[str, dict[str, object]]) -> str:
     english = catalogs[DEFAULT_LOCALE]
     fields: list[tuple[str, str]] = [
-        ("@name", message(english, "ext_name", DEFAULT_LOCALE)),
+        ("@name", message(english, USERSCRIPT_NAME_KEY, DEFAULT_LOCALE)),
     ]
     for locale, catalog in catalogs.items():
         if locale != DEFAULT_LOCALE:
-            fields.append((f"@name:{locale}", message(catalog, "ext_name", locale)))
+            fields.append((f"@name:{locale}", message(catalog, USERSCRIPT_NAME_KEY, locale)))
     fields += [
         ("@namespace", USERSCRIPT_NAMESPACE),
         ("@version", version),

@@ -1,19 +1,23 @@
 {
   "ext_name": {
-    "message": "AI Reporter for Steam",
-    "description": "Manifest name, userscript @name and the settings heading. The brand: keep \"AI Reporter\" as is and translate only \"for\". At most 75 characters (Chrome limit)."
+    "message": "Tag Kit for Steam",
+    "description": "Manifest name and the settings heading. The brand: keep \"Tag Kit\" as is and translate only \"for\". At most 75 characters (Chrome limit)."
   },
   "ext_short_name": {
-    "message": "AI Reporter",
+    "message": "Tag Kit",
     "description": "Manifest short_name, where space is tight. The brand, kept as is. At most 12 characters (Chrome recommendation)."
   },
   "ext_description": {
-    "message": "Labels Steam games whose developers report generative AI use, in their own words.",
-    "description": "Manifest description and userscript @description. At most 132 characters (Chrome limit)."
+    "message": "Tags Steam games: AI Generated Content Disclosure, Kernel Level Anti-Cheat, 3rd-party DRM, 3rd-Party Account, 3rd-party EULA, PvP.",
+    "description": "Manifest description and userscript @description. At most 132 characters (Chrome limit). Name each tag as Steam's own store in that language does."
   },
   "ext_action_title": {
-    "message": "AI Reporter for Steam settings",
-    "description": "Tooltip of the extension's toolbar button, which opens the settings popup. At most 75 characters. Keep \"AI Reporter for Steam\" as is (see ext_name)."
+    "message": "Tag Kit for Steam settings",
+    "description": "Tooltip of the extension's toolbar button, which opens the settings popup. At most 75 characters. Keep \"Tag Kit for Steam\" as in ext_name."
+  },
+  "userscript_name": {
+    "message": "AI Reporter for Steam",
+    "description": "Userscript @name. Script managers may treat a renamed script as a new one, so this keeps the name of the first release. Keep as is."
   },
   "error_unexpected": {
     "message": "Unexpected error.",

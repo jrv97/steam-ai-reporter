@@ -1003,15 +1003,16 @@ For every translator:
 
 | Key | English | Note |
 | --- | --- | --- |
-| `ext_name` | AI Reporter for Steam | Manifest `name`, userscript `@name`, the settings heading. The brand: keep "AI Reporter" as is and translate only "for". At most 75 characters (Chrome limit). |
-| `ext_short_name` | AI Reporter | Manifest `short_name`, where space is tight. The brand, kept as is. At most 12 characters (Chrome recommendation). |
-| `ext_description` | Labels Steam games whose developers report generative AI use, in their own words. | Manifest and userscript description. At most 132 characters; the English is 81. |
-| `ext_action_title` | AI Reporter settings | Toolbar button tooltip. Keep "AI Reporter" as is. |
+| `ext_name` | Tag Kit for Steam | Manifest `name` and the settings heading. The brand: keep "Tag Kit" as is and translate only "for". At most 75 characters (Chrome limit). |
+| `ext_short_name` | Tag Kit | Manifest `short_name`, where space is tight. The brand, kept as is. At most 12 characters (Chrome recommendation). |
+| `ext_description` | Tags Steam games: AI Generated Content Disclosure, Kernel Level Anti-Cheat, 3rd-party DRM, 3rd-Party Account, 3rd-party EULA, PvP. | Manifest and userscript description. At most 132 characters; the English is 130. Name each tag as Steam's own store does in that language. |
+| `ext_action_title` | Tag Kit for Steam settings | Toolbar button tooltip. Keep "Tag Kit for Steam" as in `ext_name`. |
 
 ### `userscript_`
 
 | Key | English | Note |
 | --- | --- | --- |
+| `userscript_name` | AI Reporter for Steam | Userscript `@name`, kept from the first release because script managers may treat a renamed script as a new one. Keep as is. |
 | `userscript_menu_settings` | Settings | Entry in the script manager's menu. |
 | `userscript_close` | Close | Closes the settings dialog. |
 | `userscript_reload_note` | Changes apply on the next page load. | Shown when the manager cannot apply settings live. |
