@@ -1,0 +1,3 @@
+kind: Added
+body: The extension reads six more store declarations from the data it already fetches for each game. They are kernel-level anti-cheat, other anti-cheat, third-party DRM, a required third-party account, a third-party EULA and PvP modes. It sends no new request and asks for no new permission. Nothing new is drawn yet. Stored lookup results from before now lack these kinds, so those games are checked again as you browse.
+time: 2026-10-25T00:25:00.0000000+02:00
