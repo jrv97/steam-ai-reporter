@@ -31,7 +31,17 @@ If you browse the store the same way, I hope you find it useful too.
 - Optionally dims or hides those items in lists. This is off by default.
 - Lets you ignore a game you consider a false flag, with a per-game allow-list.
 
-The badge says "AI use reported". It does not say a game uses AI, and the absence of a badge does not mean a game is AI-free: the report comes from the developer, and the badge marks what developers chose to report.
+Each tag follows Steam's own words:
+
+- AI Generated Content Disclosure: the developer reported generative AI use. The badge reads "AI use reported".
+- Kernel Level Anti-Cheat: the game's anti-cheat runs at the kernel level.
+- Anti-Cheat Software: the game uses anti-cheat software.
+- 3rd-party DRM: the game uses DRM from a third party.
+- 3rd-Party Account: the game needs an account with a third party.
+- 3rd-party EULA: the game needs agreement to a third party's EULA.
+- PvP: the game has player-versus-player play.
+
+The AI badge does not say a game uses AI, and the absence of a badge does not mean a game is AI-free: the report comes from the developer, and the badge marks what developers chose to report.
 
 ### On the store
 

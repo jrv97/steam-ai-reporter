@@ -20,7 +20,7 @@ To find out which tags an item has, the app IDs of the items on the page you are
 
 Every one of these requests is made without cookies (`credentials: "omit"`), so Steam does not receive your login or session from it. Valve sees your IP address and the app IDs, as it does for any store request. These are the same hosts your browser already talks to while you browse the store.
 
-Cached verdicts are reused: a checked app is not requested again until its entry expires.
+Cached results are reused: a checked app is not requested again until its entry expires.
 
 ## What is never read or sent
 
