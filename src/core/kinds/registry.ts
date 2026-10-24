@@ -21,14 +21,6 @@ export function perKind<T>(make: (kind: TagKind) => T): Readonly<Record<KindId, 
   return { ai: make(REGISTRY.ai) };
 }
 
-/** The values keyed by kind id, or undefined when any kind has none. */
-export function definedKinds<T>(
-  values: Readonly<Record<KindId, T | undefined>>,
-): Readonly<Record<KindId, T>> | undefined {
-  const { ai } = values;
-  return ai === undefined ? undefined : { ai };
-}
-
 /** Every kind's verdict for a GetItems item with `extra_details`. */
 export function kindsFromGetItems(
   details: ExtraDetails,

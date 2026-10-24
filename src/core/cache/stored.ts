@@ -1,8 +1,9 @@
 import * as v from "valibot";
 import { SteamLanguageSchema } from "../i18n/locale";
 import type { JsonValue } from "../json";
-import { definedKinds, KINDS, perKind } from "../kinds/registry";
-import type { KindVerdicts } from "../kinds/verdicts";
+import type { KindId } from "../kinds/id";
+import { KINDS } from "../kinds/registry";
+import { type KindVerdicts, UNKNOWN_KINDS } from "../kinds/verdicts";
 import { UNKNOWN, type Verdict } from "../types";
 import { isStoredReason, STORED_REASONS } from "./ttl";
 
@@ -72,8 +73,15 @@ export function decodeVerdicts(stored: unknown): TimedVerdicts | undefined {
   if (!app.success) {
     return undefined;
   }
-  const verdicts = definedKinds(perKind((kind) => decodeVerdict(app.output.kinds[kind.id])));
-  return verdicts === undefined ? undefined : { verdicts, time: app.output.time };
+  const verdicts: Record<KindId, Verdict> = { ...UNKNOWN_KINDS.missing };
+  for (const kind of KINDS) {
+    const verdict = decodeVerdict(app.output.kinds[kind.id]);
+    if (verdict === undefined) {
+      return undefined;
+    }
+    verdicts[kind.id] = verdict;
+  }
+  return { verdicts, time: app.output.time };
 }
 
 function encodeVerdict(verdict: Verdict): JsonValue | undefined {
