@@ -1,9 +1,10 @@
 """Build every target into dist/ with one esbuild call each.
 
 Targets: the Chrome and Firefox extensions (dist/chrome, dist/firefox: the manifest, the content
-script and its stylesheet, the options page, the catalogs and the icons), the userscript
-(dist/userscript) and the dev-only injection bundle (dist/dev, never packaged). The userscript
-header goes in through `--banner:js` on the userscript call only. Bundles are never minified.
+script and its stylesheet, the options page, the catalogs, the icons and the third-party notices),
+the userscript (dist/userscript) and the dev-only injection bundle (dist/dev, never packaged). The
+userscript header goes in through `--banner:js` on the userscript call only. Bundles are never
+minified.
 
 Usage: build.py [--watch]
 """
@@ -23,6 +24,7 @@ ESBUILD = ROOT / "node_modules" / "esbuild" / "bin" / "esbuild"
 EXTENSION_DIR = ROOT / "src" / "platform" / "extension"
 LOCALES_DIR = ROOT / "src" / "locales"
 ICONS_DIR = ROOT / "assets" / "icons"
+NOTICES = ROOT / "THIRD_PARTY_NOTICES.md"
 ICON_SIZES = (16, 32, 48, 128)
 DEFAULT_LOCALE = "en"
 BROWSERS = ("chrome", "firefox")
@@ -122,6 +124,7 @@ def write_extension(browser: str, version: str) -> None:
     write_text(out / "manifest.json", json.dumps(manifest, indent=2, ensure_ascii=False) + "\n")
     write_text(out / "content.css", "".join(stylesheet(name) for name in CONTENT_CSS))
     shutil.copyfile(EXTENSION_DIR / "options.html", out / "options.html")
+    shutil.copyfile(NOTICES, out / NOTICES.name)
     for locale, catalog in load_catalogs().items():
         write_text(
             out / "_locales" / locale / "messages.json",
