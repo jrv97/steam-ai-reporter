@@ -65,6 +65,12 @@ export const UNKNOWN: Readonly<Record<UnknownReason, UnknownVerdict>> = {
   "rate-limited": { state: "unknown", reason: "rate-limited" },
 };
 
+/** One shared object per source, so a not disclosed verdict costs no allocation. */
+export const NOT_DISCLOSED: Readonly<Record<VerdictSource, NotDisclosedVerdict>> = {
+  api: { state: "not-disclosed", source: "api" },
+  html: { state: "not-disclosed", source: "html" },
+};
+
 /**
  * What core knows about one app for one tag kind. Exactly three states (rule 4). `Disclosed` is
  * the disclosed shape of one kind; without it the verdict is the shape every kind shares.

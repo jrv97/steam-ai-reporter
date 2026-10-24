@@ -2,11 +2,9 @@ import { describe, expect, it } from "vitest";
 import { countingStore } from "../../../tests/helpers/counting-store";
 import { fixedClock } from "../../../tests/helpers/fixed-clock";
 import { memoryStore } from "../../../tests/helpers/memory-store";
-import { aiVerdicts, disclosedVerdict, NOT_DISCLOSED } from "../../../tests/helpers/verdicts";
+import { uniformVerdicts } from "../../../tests/helpers/verdicts";
 import type { JsonValue } from "../json";
-import type { AiVerdict } from "../kinds/ai";
 import { CACHE_SCHEMA, META_KEY } from "../storage-keys";
-import { UNKNOWN } from "../types";
 import { maintainCache } from "./maintenance";
 import { encodeVerdicts } from "./stored";
 import { DAY_MS, DISCLOSED_TTL_MS, NOT_DISCLOSED_TTL_MS } from "./ttl";
@@ -16,9 +14,9 @@ const BREAKER: JsonValue = { openUntil: T + 60_000 };
 const SETTINGS: JsonValue = { badges: false };
 const ALLOW: JsonValue = { "10": { name: "Ignored", added: T } };
 
-/** The stored value of a verdict that is persisted; `null` (invalid) for one that is not. */
-function verdict(value: AiVerdict, time: number): JsonValue {
-  return encodeVerdicts(aiVerdicts(value), time) ?? null;
+/** The stored value of an app whose kinds all have this state; `null` (invalid) if not stored. */
+function verdict(state: Parameters<typeof uniformVerdicts>[0], time: number): JsonValue {
+  return encodeVerdicts(uniformVerdicts(state), time) ?? null;
 }
 
 function setup(entries: readonly (readonly [string, JsonValue])[]) {
@@ -41,8 +39,8 @@ describe("maintainCache: schema reset", () => {
   it("clears the verdict keys when the stored schema differs, and nothing else", async () => {
     const { store, run } = setup([
       [META_KEY, { schema: CACHE_SCHEMA - 1, sweptAt: T }],
-      ["v1:a:1", verdict(NOT_DISCLOSED, T)],
-      ["v1:a:2", verdict(disclosedVerdict(), T)],
+      ["v1:a:1", verdict("not-disclosed", T)],
+      ["v1:a:2", verdict("disclosed", T)],
       ...others,
     ]);
     expect(await run()).toBe("reset");
@@ -79,7 +77,7 @@ describe("maintainCache: schema reset", () => {
   it("clears the verdicts of a newer schema too, after a downgrade", async () => {
     const { store, run } = setup([
       [META_KEY, { schema: CACHE_SCHEMA + 1, sweptAt: T }],
-      ["v1:a:1", verdict(NOT_DISCLOSED, T)],
+      ["v1:a:1", verdict("not-disclosed", T)],
     ]);
     expect(await run()).toBe("reset");
     expect(await keysOf(store)).toStrictEqual([META_KEY]);
@@ -91,7 +89,7 @@ describe("maintainCache: schema reset", () => {
     ) {
       const { store, run } = setup([
         ...(meta === undefined ? [] : [[META_KEY, meta] as const]),
-        ["v1:a:1", verdict(NOT_DISCLOSED, T)],
+        ["v1:a:1", verdict("not-disclosed", T)],
         ["v1:breaker", BREAKER],
       ]);
       expect(await run()).toBe("reset");
@@ -100,9 +98,9 @@ describe("maintainCache: schema reset", () => {
   });
 
   it("does not reset again once the meta record is current", async () => {
-    const { store, run } = setup([["v1:a:1", verdict(NOT_DISCLOSED, T)]]);
+    const { store, run } = setup([["v1:a:1", verdict("not-disclosed", T)]]);
     expect(await run()).toBe("reset");
-    await store.set(new Map([["v1:a:1", verdict(NOT_DISCLOSED, T)]]));
+    await store.set(new Map([["v1:a:1", verdict("not-disclosed", T)]]));
     expect(await run()).toBe("skipped");
     expect(await keysOf(store)).toStrictEqual(["v1:a:1", META_KEY]);
   });
@@ -115,7 +113,7 @@ describe("maintainCache: daily sweep", () => {
   ];
 
   it("skips within a day without reading verdicts", async () => {
-    const { store, clock, run } = setup([current(T), ["v1:a:1", verdict(NOT_DISCLOSED, T - 1)]]);
+    const { store, clock, run } = setup([current(T), ["v1:a:1", verdict("not-disclosed", T - 1)]]);
     clock.set(T + DAY_MS - 1);
     expect(await run()).toBe("skipped");
     expect(store.calls).toStrictEqual({ get: 1, set: 0, remove: 0, keys: 0 });
@@ -124,11 +122,11 @@ describe("maintainCache: daily sweep", () => {
   it("sweeps at exactly a day and removes expired, invalid and future entries", async () => {
     const { store, clock, run } = setup([
       current(T),
-      ["v1:a:1", verdict(NOT_DISCLOSED, T - 1)],
-      ["v1:a:2", verdict(disclosedVerdict(), T - 1)],
-      ["v1:a:3", verdict(UNKNOWN.gated, T + DAY_MS - 1)],
+      ["v1:a:1", verdict("not-disclosed", T - 1)],
+      ["v1:a:2", verdict("disclosed", T - 1)],
+      ["v1:a:3", verdict("gated", T + DAY_MS - 1)],
       ["v1:a:4", { s: "old" }],
-      ["v1:a:5", verdict(NOT_DISCLOSED, T + DAY_MS + 1)],
+      ["v1:a:5", verdict("not-disclosed", T + DAY_MS + 1)],
       ["v1:breaker", BREAKER],
       ["v1:settings", SETTINGS],
     ]);
@@ -148,10 +146,10 @@ describe("maintainCache: daily sweep", () => {
     const sweepAt = T + 30 * DAY_MS;
     const { store, clock, run } = setup([
       current(T),
-      ["v1:a:1", verdict(NOT_DISCLOSED, sweepAt - NOT_DISCLOSED_TTL_MS + 1)],
-      ["v1:a:2", verdict(NOT_DISCLOSED, sweepAt - NOT_DISCLOSED_TTL_MS)],
-      ["v1:a:3", verdict(disclosedVerdict(), sweepAt - DISCLOSED_TTL_MS + 1)],
-      ["v1:a:4", verdict(disclosedVerdict(), sweepAt - DISCLOSED_TTL_MS)],
+      ["v1:a:1", verdict("not-disclosed", sweepAt - NOT_DISCLOSED_TTL_MS + 1)],
+      ["v1:a:2", verdict("not-disclosed", sweepAt - NOT_DISCLOSED_TTL_MS)],
+      ["v1:a:3", verdict("disclosed", sweepAt - DISCLOSED_TTL_MS + 1)],
+      ["v1:a:4", verdict("disclosed", sweepAt - DISCLOSED_TTL_MS)],
     ]);
     clock.set(sweepAt);
     expect(await run()).toBe("swept");
@@ -180,7 +178,7 @@ describe("maintainCache: daily sweep", () => {
   it("writes only the meta record when nothing has expired", async () => {
     const { store, clock, run } = setup([current(T), [
       "v1:a:1",
-      verdict(NOT_DISCLOSED, T + DAY_MS),
+      verdict("not-disclosed", T + DAY_MS),
     ]]);
     clock.set(T + DAY_MS);
     expect(await run()).toBe("swept");

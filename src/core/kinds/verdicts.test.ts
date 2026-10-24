@@ -1,5 +1,7 @@
+import * as v from "valibot";
 import { describe, expect, it } from "vitest";
 import { parsedItem } from "../../../tests/helpers/getitems";
+import { ALL_DISCLOSED } from "../../../tests/helpers/verdicts";
 import { UNKNOWN, type UnknownReason } from "../types";
 import { KIND_IDS } from "./id";
 import { KINDS } from "./registry";
@@ -22,6 +24,16 @@ describe("isKindVerdicts", () => {
   it("accepts verdicts for every kind and nothing less", () => {
     expect(isKindVerdicts(UNKNOWN_KINDS.missing)).toBe(true);
     expect(isKindVerdicts({})).toBe(false);
+  });
+});
+
+describe("a disclosed verdict", () => {
+  it("names the kind it sits under, and is read back by that kind's schema", () => {
+    for (const kind of KINDS) {
+      const verdict = ALL_DISCLOSED[kind.id];
+      expect(verdict.state === "disclosed" ? verdict.kind : undefined).toBe(kind.id);
+      expect(v.safeParse(kind.stored, verdict).success).toBe(true);
+    }
   });
 });
 

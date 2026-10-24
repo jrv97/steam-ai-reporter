@@ -7,9 +7,10 @@ import { memoryStore } from "../../../tests/helpers/memory-store";
 import { recordingLogger } from "../../../tests/helpers/recording-logger";
 import { T0, useTimerClock } from "../../../tests/helpers/timer-clock";
 import { aiVerdicts } from "../../../tests/helpers/verdicts";
+import { KINDS } from "../kinds/registry";
 import { type KindVerdicts, UNKNOWN_KINDS } from "../kinds/verdicts";
 import type { Http } from "../ports";
-import type { AppId, Detector } from "../types";
+import { type AppId, type Detector, NOT_DISCLOSED as NOT_DISCLOSED_VERDICT } from "../types";
 import { createBreaker, HTML_BREAKER_KEY } from "./breaker";
 import { createBudgetDetector } from "./budget";
 import { createChainDetector } from "./chain";
@@ -94,6 +95,20 @@ describe("createChainDetector", () => {
         [appId(5), NOT_DISCLOSED],
       ]),
     );
+  });
+
+  it("passes an ID on only when no kind has an answer, whichever kind has one", async () => {
+    for (const kind of KINDS) {
+      const partly = { ...UNKNOWN_KINDS.missing, [kind.id]: NOT_DISCLOSED_VERDICT };
+      const api = fakeDetector(() => partly);
+      const html = allMissing();
+      const verdicts = await createChainDetector([api, html]).detect(appIds(1));
+      expect(html.calls).toStrictEqual([]);
+      expect(verdicts).toStrictEqual(new Map([[appId(1), partly]]));
+    }
+    const html = allMissing();
+    await createChainDetector([allMissing(), html]).detect(appIds(1));
+    expect(html.calls).toStrictEqual([appIds(1)]);
   });
 
   it("does not call a link when nothing is left for it", async () => {

@@ -49,7 +49,7 @@ describe("createDedupingDetector", () => {
       detector.detect(appIds(413150)),
     ]);
     expect(http.calls).toHaveLength(1);
-    expect(first).toStrictEqual(new Map([[appId(413150), NOT_DISCLOSED]]));
+    expect(first.get(appId(413150))?.ai).toStrictEqual({ state: "not-disclosed", source: "api" });
     expect(second).toStrictEqual(first);
   });
 

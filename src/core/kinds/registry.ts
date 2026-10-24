@@ -1,13 +1,27 @@
 import { SarError } from "../errors";
+import { ACCOUNT_KIND } from "./account";
 import { AI_KIND } from "./ai";
+import { ANTICHEAT_KIND } from "./anticheat";
+import { DRM_KIND } from "./drm";
+import { EULA_KIND } from "./eula";
 import type { KindId } from "./id";
+import { KERNEL_KIND } from "./kernel";
 import type { TagKind } from "./kind";
+import { PVP_KIND } from "./pvp";
 
 /**
  * The one place that lists the kinds. The kind ids, the kind list, the settings defaults and every
  * per-kind record derive from it, so a new kind is one entry here and its definition.
  */
-export const KINDS = [AI_KIND] as const;
+export const KINDS = [
+  AI_KIND,
+  KERNEL_KIND,
+  ANTICHEAT_KIND,
+  DRM_KIND,
+  ACCOUNT_KIND,
+  EULA_KIND,
+  PVP_KIND,
+] as const;
 
 /** Whether `values` holds a value for every registered kind. */
 export function hasEveryKind(values: Partial<Record<KindId, unknown>>): boolean {

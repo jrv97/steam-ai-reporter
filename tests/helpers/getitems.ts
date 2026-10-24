@@ -5,8 +5,10 @@ import {
   type StoreItem,
   StoreItemSchema,
 } from "../../src/core/detect/getitems.schema";
+import type { SteamLanguage } from "../../src/core/i18n/locale";
 import { parseJson } from "../../src/core/json";
-import { type AppId, AppIdSchema } from "../../src/core/types";
+import type { KindDefinition } from "../../src/core/kinds/kind";
+import { type AppId, AppIdSchema, type DisclosedBase, type Verdict } from "../../src/core/types";
 import type { Reply, Route } from "./fake-http";
 
 /** A plain store item as GetItems returns it: listed, `success: 1`, no AI notes. */
@@ -142,4 +144,15 @@ export function parsedItem(
     throw new TypeError();
   }
   return { item, details: item.extra_details };
+}
+
+/** What a kind answers for a store item with these extra details (see `parsedItem`). */
+export function verdictOf<Disclosed extends DisclosedBase>(
+  kind: KindDefinition<Disclosed>,
+  details: Readonly<Record<string, unknown>> = {},
+  overrides: Readonly<Record<string, unknown>> = {},
+  language: SteamLanguage = "english",
+): Verdict<Disclosed> {
+  const parsed = parsedItem(details, overrides);
+  return kind.fromGetItems(parsed.item, parsed.details, language);
 }

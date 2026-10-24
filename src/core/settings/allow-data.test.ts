@@ -38,8 +38,19 @@ describe("decodeAllow and encodeAllow", () => {
     expect(decodeAllow(encodeAllow(entries))).toStrictEqual(entries);
   });
 
+  it("read the games of the scope of any kind, and nothing for a kind not stored", () => {
+    const entries = decodeAllow({ drm: { "30": ENTRY } });
+    expect(entries.drm.get(appId(30))).toStrictEqual(ENTRY);
+    for (const id of KIND_IDS) {
+      expect(entries[id].size).toBe(id === "drm" ? 1 : 0);
+    }
+    expect(entries.all.size).toBe(0);
+  });
+
   it("encode every scope, empty ones too", () => {
-    expect(encodeAllow(decodeAllow(undefined))).toStrictEqual({ all: {}, ai: {} });
+    expect(encodeAllow(decodeAllow(undefined))).toStrictEqual(
+      Object.fromEntries([ALLOW_ALL, ...KIND_IDS].map((scope) => [scope, {}])),
+    );
   });
 
   it("do not take a v1 list, which kept the games at the top level, for a scope", () => {

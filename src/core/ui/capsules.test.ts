@@ -1,9 +1,15 @@
 import { describe, expect, it, vi } from "vitest";
 import { setBody } from "../../../tests/helpers/dom";
-import { aiVerdicts, disclosedVerdict, NOT_DISCLOSED } from "../../../tests/helpers/verdicts";
-import type { AiVerdict } from "../kinds/ai";
+import {
+  aiVerdicts,
+  ALL_DISCLOSED,
+  disclosedVerdict,
+  NOT_DISCLOSED,
+} from "../../../tests/helpers/verdicts";
+import { AI_KIND, type AiVerdict } from "../kinds/ai";
 import { KIND_IDS } from "../kinds/id";
 import type { TagKind } from "../kinds/kind";
+import type { KindVerdicts } from "../kinds/verdicts";
 import { GENERIC, type Placement, type RowPlacement } from "../scan/placements";
 import type { CapsuleHost } from "../scan/renderer";
 import { type AppId, type Detector, toAppId } from "../types";
@@ -31,12 +37,14 @@ function setup(
   verdicts: ReadonlyMap<AppId, AiVerdict>,
   allowed = new Set<AppId>(),
   kinds?: readonly TagKind[],
+  /** Verdicts of kinds other than the AI kind, for every app. */
+  others: Partial<KindVerdicts> = {},
 ) {
   const detect = vi.fn((ids: readonly AppId[]) =>
     Promise.resolve(
       new Map(ids.flatMap((id) => {
         const verdict = verdicts.get(id);
-        return verdict === undefined ? [] : [[id, aiVerdicts(verdict)] as const];
+        return verdict === undefined ? [] : [[id, { ...aiVerdicts(verdict), ...others }] as const];
       })),
     )
   );
@@ -102,6 +110,19 @@ describe("createCapsuleUi", () => {
     await flush();
     expect(views).toHaveLength(1);
     expect(views[0]?.slot).toBeUndefined();
+  });
+
+  it("gives a host a slot for a disclosure in any kind it draws, no other", async () => {
+    const id = appId(4);
+    const pvpOnly = { pvp: ALL_DISCLOSED.pvp };
+    const every = setup(new Map([[id, NOT_DISCLOSED]]), new Set(), undefined, pvpOnly);
+    every.ui.render({ found: [host(4)], changed: [] });
+    await every.flush();
+    expect(every.views[0]?.slot).toMatchObject({ kind: "full" });
+    const aiOnly = setup(new Map([[id, NOT_DISCLOSED]]), new Set(), [AI_KIND], pvpOnly);
+    aiOnly.ui.render({ found: [host(4)], changed: [] });
+    await aiOnly.flush();
+    expect(aiOnly.views[0]?.slot).toBeUndefined();
   });
 
   it("draws a full badge of an end slot as the anchor's last child", async () => {

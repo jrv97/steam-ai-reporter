@@ -2,15 +2,10 @@ import * as v from "valibot";
 import { type ExtraDetails, MALFORMED, type StoreItem } from "../detect/getitems.schema";
 import { trimNotes } from "../detect/notes";
 import { type SteamLanguage, SteamLanguageSchema } from "../i18n/locale";
-import {
-  type DisclosedBase,
-  type NotDisclosedVerdict,
-  UNKNOWN,
-  type Verdict,
-  VerdictSourceSchema,
-} from "../types";
+import { type DisclosedBase, NOT_DISCLOSED, UNKNOWN, type Verdict } from "../types";
 import type { KindDefinition } from "./kind";
 import { DEFAULT_KIND_SETTINGS } from "./kind-settings";
+import { storedDisclosed } from "./stored-disclosed";
 
 /** The disclosed verdict of the AI kind: the developer's notes and, when named, the service. */
 export interface AiDisclosed extends DisclosedBase<"ai"> {
@@ -26,9 +21,6 @@ export interface AiDisclosed extends DisclosedBase<"ai"> {
 
 /** The AI kind's verdict: disclosed with notes, not disclosed, or unknown. */
 export type AiVerdict = Verdict<AiDisclosed>;
-
-const NOT_DISCLOSED_API: NotDisclosedVerdict = { state: "not-disclosed", source: "api" };
-const NOT_DISCLOSED_HTML: NotDisclosedVerdict = { state: "not-disclosed", source: "html" };
 
 /** Steam's own heading of the AI block; the mature content block uses the same element ID. */
 const DISCLOSURE_HEADING = "AI Generated Content Disclosure";
@@ -52,7 +44,7 @@ function fromGetItems(item: StoreItem, details: ExtraDetails, language: SteamLan
   }
   const notes = trimNotes(rawNotes ?? "");
   if (notes === "") {
-    return NOT_DISCLOSED_API;
+    return NOT_DISCLOSED.api;
   }
   const service = trimNotes(rawService?.name ?? "");
   const storeName = trimNotes(item.name ?? "");
@@ -74,7 +66,7 @@ function fromGetItems(item: StoreItem, details: ExtraDetails, language: SteamLan
 function fromAppPage(doc: Document, name: string): AiVerdict {
   const notes = disclosureNotes(doc);
   if (notes === undefined || notes === "") {
-    return NOT_DISCLOSED_HTML;
+    return NOT_DISCLOSED.html;
   }
   return { state: "disclosed", kind: "ai", notes, language: "english", source: "html", name };
 }
@@ -88,10 +80,7 @@ export const AI_KIND: AiKind = {
   fromGetItems,
   fromAppPage,
 
-  stored: v.object({
-    state: v.literal("disclosed"),
-    kind: v.literal("ai"),
-    source: VerdictSourceSchema,
+  stored: storedDisclosed("ai", {
     notes: v.pipe(v.string(), v.minLength(1)),
     language: SteamLanguageSchema,
     service: v.exactOptional(v.string()),

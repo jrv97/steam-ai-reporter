@@ -1,53 +1,151 @@
 import { describe, expect, it } from "vitest";
-import { aiVerdicts, disclosedVerdict, NOT_DISCLOSED } from "../../../tests/helpers/verdicts";
+import {
+  aiVerdicts,
+  ALL_DISCLOSED,
+  disclosedVerdict,
+  NOT_DISCLOSED,
+  uniformVerdicts,
+} from "../../../tests/helpers/verdicts";
 import type { AiVerdict } from "../kinds/ai";
-import { UNKNOWN_KINDS } from "../kinds/verdicts";
+import { KIND_IDS } from "../kinds/id";
+import { perKind } from "../kinds/registry";
+import { type KindVerdicts, UNKNOWN_KINDS } from "../kinds/verdicts";
 import { UNKNOWN } from "../types";
 import { decodeVerdicts, encodeVerdicts } from "./stored";
 
 const T = 1_000_000_000_000;
 
+/** The stored form of `ALL_DISCLOSED`: a disclosed entry is the verdict itself. */
+const STORED_KINDS = {
+  ai: {
+    state: "disclosed",
+    kind: "ai",
+    notes: "Concept art was generated.\nNo AI text in the game.",
+    language: "english",
+    service: "Midjourney",
+    name: "Fixture Game",
+    source: "api",
+  },
+  kernel: {
+    state: "disclosed",
+    kind: "kernel",
+    source: "api",
+    name: "Easy Anti-Cheat",
+    nameToken: "#Store_AntiCheat_Type_easyac",
+    uninstallsCompletely: true,
+    bootProtection: { token: "secureboot_tpm2" },
+  },
+  anticheat: {
+    state: "disclosed",
+    kind: "anticheat",
+    source: "api",
+    name: "VAC (Valve Anti-Cheat)",
+    nameToken: "#Store_AntiCheat_Type_vac",
+  },
+  drm: {
+    state: "disclosed",
+    kind: "drm",
+    source: "api",
+    text: "Denuvo Anti-tamper",
+    activationLimit: "5 a day",
+  },
+  account: {
+    state: "disclosed",
+    kind: "account",
+    source: "api",
+    text: "Ubisoft Account",
+    linksToSteam: true,
+  },
+  eula: {
+    state: "disclosed",
+    kind: "eula",
+    source: "api",
+    items: [
+      { name: "Game EULA", url: "https://store.steampowered.com/eula/1_eula_0" },
+      { name: "Publisher terms" },
+    ],
+  },
+  pvp: { state: "disclosed", kind: "pvp", source: "api", categoryIds: [49, 36] },
+};
+
+/** Round trips: the verdicts of one or two kinds, the rest unknown `missing`. */
+const SAMPLES: readonly (readonly [string, Partial<KindVerdicts>])[] = [
+  ["a kernel anti-cheat with nothing but the flag", {
+    kernel: { state: "disclosed", kind: "kernel", source: "api", uninstallsCompletely: false },
+  }],
+  ["a kernel anti-cheat with boot protection and no token", {
+    kernel: {
+      state: "disclosed",
+      kind: "kernel",
+      source: "api",
+      uninstallsCompletely: true,
+      bootProtection: {},
+    },
+  }],
+  ["an anti-cheat with no name", {
+    anticheat: { state: "disclosed", kind: "anticheat", source: "api" },
+  }],
+  ["a DRM text with no activation limit", {
+    drm: { state: "disclosed", kind: "drm", source: "api", text: "Denuvo" },
+  }],
+  ["an account that does not link to Steam", {
+    account: {
+      state: "disclosed",
+      kind: "account",
+      source: "api",
+      text: "EA",
+      linksToSteam: false,
+    },
+  }],
+  ["one EULA with no link", {
+    eula: { state: "disclosed", kind: "eula", source: "api", items: [{ name: "EULA" }] },
+  }],
+  ["every PvP category", {
+    pvp: { state: "disclosed", kind: "pvp", source: "api", categoryIds: [49, 36, 47, 37] },
+  }],
+  ["AI notes read from the page", {
+    ai: disclosedVerdict({ source: "html", language: "english" }),
+  }],
+];
+
 describe("encodeVerdicts and decodeVerdicts", () => {
-  it("round trip every stored verdict", () => {
-    const verdicts: readonly AiVerdict[] = [
-      disclosedVerdict(),
-      disclosedVerdict({ language: "german", source: "html" }),
-      NOT_DISCLOSED,
-      { state: "not-disclosed", source: "html" },
-      UNKNOWN.gated,
-      UNKNOWN.missing,
+  it("round trip every state of every kind", () => {
+    const all: readonly KindVerdicts[] = [
+      uniformVerdicts("disclosed"),
+      uniformVerdicts("not-disclosed"),
+      uniformVerdicts("gated"),
+      uniformVerdicts("missing"),
+      { ...uniformVerdicts("not-disclosed"), ai: { state: "not-disclosed", source: "html" } },
+      { ...ALL_DISCLOSED, drm: NOT_DISCLOSED, pvp: UNKNOWN.missing },
     ];
-    for (const ai of verdicts) {
-      expect(decodeVerdicts(encodeVerdicts(aiVerdicts(ai), T))).toStrictEqual({
-        verdicts: aiVerdicts(ai),
-        time: T,
-      });
+    for (const verdicts of all) {
+      expect(decodeVerdicts(encodeVerdicts(verdicts, T))).toStrictEqual({ verdicts, time: T });
     }
   });
 
+  it.each(SAMPLES)("round trip %s", (_name, patch) => {
+    const verdicts: KindVerdicts = { ...UNKNOWN_KINDS.missing, ...patch };
+    expect(decodeVerdicts(encodeVerdicts(verdicts, T))).toStrictEqual({ verdicts, time: T });
+  });
+
   it("stores the fetch time once and one entry for each kind", () => {
-    expect(encodeVerdicts(aiVerdicts(NOT_DISCLOSED), T)).toStrictEqual({
+    const encoded = encodeVerdicts(uniformVerdicts("not-disclosed"), T);
+    expect(encoded).toStrictEqual({
       time: T,
-      kinds: { ai: { state: "not-disclosed", source: "api" } },
+      kinds: perKind(() => ({ state: "not-disclosed", source: "api" })),
+    });
+    expect(Object.keys(perKind(() => 0))).toStrictEqual([...KIND_IDS]);
+  });
+
+  it("stores a disclosed verdict as itself, and the unknown ones as their reason", () => {
+    expect(encodeVerdicts(ALL_DISCLOSED, T)).toStrictEqual({ time: T, kinds: STORED_KINDS });
+    expect(encodeVerdicts(uniformVerdicts("gated"), T)).toStrictEqual({
+      time: T,
+      kinds: perKind(() => ({ state: "unknown", reason: "gated" })),
     });
   });
 
-  it("keeps the notes language, service and name, and leaves them out when absent", () => {
-    const withAll = disclosedVerdict({ language: "spanish", service: "Suno", name: "Juego" });
-    expect(encodeVerdicts(aiVerdicts(withAll), T)).toStrictEqual({
-      time: T,
-      kinds: {
-        ai: {
-          state: "disclosed",
-          kind: "ai",
-          notes: withAll.notes,
-          language: "spanish",
-          service: "Suno",
-          name: "Juego",
-          source: "api",
-        },
-      },
-    });
+  it("leaves out the fields a payload does not have instead of storing them empty", () => {
     const bare: AiVerdict = {
       state: "disclosed",
       kind: "ai",
@@ -55,43 +153,47 @@ describe("encodeVerdicts and decodeVerdicts", () => {
       language: "english",
       source: "api",
     };
-    expect(encodeVerdicts(aiVerdicts(bare), T)).toStrictEqual({
-      time: T,
+    const stored = encodeVerdicts({
+      ...aiVerdicts(bare),
+      kernel: { state: "disclosed", kind: "kernel", source: "api", uninstallsCompletely: false },
+      eula: { state: "disclosed", kind: "eula", source: "api", items: [{ name: "EULA" }] },
+    }, T);
+    expect(stored).toMatchObject({
       kinds: {
         ai: { state: "disclosed", kind: "ai", notes: "x", language: "english", source: "api" },
+        kernel: { state: "disclosed", kind: "kernel", source: "api", uninstallsCompletely: false },
+        eula: { state: "disclosed", kind: "eula", source: "api", items: [{ name: "EULA" }] },
       },
     });
+    expect(JSON.stringify(stored)).not.toMatch(/undefined|null|nameToken|service|bootProtection/);
   });
 
   it("does not encode an app that has a verdict living in memory only", () => {
     expect(encodeVerdicts(UNKNOWN_KINDS.error, T)).toBeUndefined();
     expect(encodeVerdicts(UNKNOWN_KINDS["rate-limited"], T)).toBeUndefined();
     expect(encodeVerdicts(aiVerdicts(UNKNOWN.error), T)).toBeUndefined();
+    expect(encodeVerdicts({ ...ALL_DISCLOSED, pvp: UNKNOWN.error }, T)).toBeUndefined();
+    expect(encodeVerdicts({ ...ALL_DISCLOSED, drm: UNKNOWN["rate-limited"] }, T)).toBeUndefined();
   });
 
   it("shares the unknown verdict objects", () => {
     const decoded = decodeVerdicts(encodeVerdicts(UNKNOWN_KINDS.gated, T));
-    expect(decoded?.verdicts.ai).toBe(UNKNOWN.gated);
+    for (const id of KIND_IDS) {
+      expect(decoded?.verdicts[id]).toBe(UNKNOWN.gated);
+    }
   });
 });
 
 describe("decodeVerdicts", () => {
-  const valid = {
-    time: T,
-    kinds: {
-      ai: { state: "disclosed", kind: "ai", notes: "text", language: "english", source: "api" },
-    },
-  };
+  const valid = { time: T, kinds: STORED_KINDS };
 
-  function withAi(ai: unknown, time: unknown = T): unknown {
-    return { time, kinds: { ai } };
+  /** The valid entry with the stored value of one kind replaced. */
+  function withEntry(id: string, entry: unknown, time: unknown = T): unknown {
+    return { time, kinds: { ...STORED_KINDS, [id]: entry } };
   }
 
-  const withoutTime = { kinds: { ai: valid.kinds.ai } };
-
   it("accepts the valid shape", () => {
-    expect(decodeVerdicts(valid)?.verdicts.ai.state).toBe("disclosed");
-    expect(decodeVerdicts(valid)?.time).toBe(T);
+    expect(decodeVerdicts(valid)).toStrictEqual({ verdicts: ALL_DISCLOSED, time: T });
   });
 
   it("discards values of the wrong type", () => {
@@ -100,10 +202,14 @@ describe("decodeVerdicts", () => {
     }
   });
 
-  it("discards an entry written before the kind existed or with a kind missing", () => {
+  it("discards an entry written before a kind existed or with a kind missing", () => {
     expect(decodeVerdicts({ time: T, kinds: {} })).toBeUndefined();
     expect(decodeVerdicts({ time: T })).toBeUndefined();
-    expect(decodeVerdicts({ time: T, kinds: { other: valid.kinds.ai } })).toBeUndefined();
+    expect(decodeVerdicts({ time: T, kinds: { other: STORED_KINDS.ai } })).toBeUndefined();
+    for (const id of KIND_IDS) {
+      const kinds = Object.fromEntries(Object.entries(STORED_KINDS).filter(([key]) => key !== id));
+      expect(decodeVerdicts({ time: T, kinds })).toBeUndefined();
+    }
   });
 
   it("discards the v1 shape, which kept one verdict flat under the key", () => {
@@ -112,28 +218,56 @@ describe("decodeVerdicts", () => {
     expect(decodeVerdicts({ state: "not-disclosed", time: T, source: "api" })).toBeUndefined();
   });
 
+  it("discards an AI entry that carries no kind, as the first layout stored it", () => {
+    const { kind: _kind, ...legacy } = STORED_KINDS.ai;
+    expect(decodeVerdicts(withEntry("ai", legacy))).toBeUndefined();
+  });
+
   it("discards malformed entries instead of casting them", () => {
-    const ai = valid.kinds.ai;
+    const { ai, kernel, anticheat, drm, account, eula, pvp } = STORED_KINDS;
     const bad: readonly unknown[] = [
-      withAi({ ...ai, state: "maybe" }),
-      withAi({ ...ai, state: undefined }),
-      withAi({ ...ai, kind: "drm" }),
-      withAi({ ...ai, kind: undefined }),
-      withAi(ai, "yesterday"),
-      withAi(ai, Number.NaN),
-      withoutTime,
-      withAi({ ...ai, notes: "" }),
-      withAi({ ...ai, notes: 5 }),
-      withAi({ ...ai, language: "klingon" }),
-      withAi({ ...ai, language: undefined }),
-      withAi({ ...ai, source: "guess" }),
-      withAi({ ...ai, service: 3 }),
-      withAi({ ...ai, name: null }),
-      withAi({ state: "not-disclosed" }),
-      withAi({ state: "unknown", reason: "error" }),
-      withAi({ state: "unknown", reason: "rate-limited" }),
-      withAi({ state: "unknown" }),
-      withAi(null),
+      withEntry("ai", { ...ai, state: "maybe" }),
+      withEntry("ai", { ...ai, state: undefined }),
+      withEntry("ai", { ...ai, kind: "drm" }),
+      withEntry("ai", { ...ai, kind: undefined }),
+      withEntry("ai", ai, "yesterday"),
+      withEntry("ai", ai, Number.NaN),
+      { kinds: STORED_KINDS },
+      withEntry("ai", { ...ai, notes: "" }),
+      withEntry("ai", { ...ai, notes: 5 }),
+      withEntry("ai", { ...ai, language: "klingon" }),
+      withEntry("ai", { ...ai, language: undefined }),
+      withEntry("ai", { ...ai, source: "guess" }),
+      withEntry("ai", { ...ai, service: 3 }),
+      withEntry("ai", { ...ai, name: null }),
+      withEntry("ai", { state: "not-disclosed" }),
+      withEntry("ai", { state: "unknown", reason: "error" }),
+      withEntry("ai", { state: "unknown", reason: "rate-limited" }),
+      withEntry("ai", { state: "unknown" }),
+      withEntry("ai", null),
+      withEntry("kernel", { ...kernel, uninstallsCompletely: undefined }),
+      withEntry("kernel", { ...kernel, uninstallsCompletely: "yes" }),
+      withEntry("kernel", { ...kernel, name: 7 }),
+      withEntry("kernel", { ...kernel, nameToken: [] }),
+      withEntry("kernel", { ...kernel, bootProtection: true }),
+      withEntry("kernel", { ...kernel, bootProtection: { token: 1 } }),
+      withEntry("kernel", { ...anticheat }),
+      withEntry("anticheat", { ...anticheat, name: false }),
+      withEntry("anticheat", { ...anticheat, kind: "kernel" }),
+      withEntry("drm", { ...drm, text: "" }),
+      withEntry("drm", { ...drm, text: undefined }),
+      withEntry("drm", { ...drm, activationLimit: 5 }),
+      withEntry("account", { ...account, text: "" }),
+      withEntry("account", { ...account, linksToSteam: undefined }),
+      withEntry("account", { ...account, linksToSteam: "true" }),
+      withEntry("eula", { ...eula, items: [] }),
+      withEntry("eula", { ...eula, items: "EULA" }),
+      withEntry("eula", { ...eula, items: [{ url: "https://store.steampowered.com/eula/1" }] }),
+      withEntry("eula", { ...eula, items: [{ name: "EULA", url: 5 }] }),
+      withEntry("pvp", { ...pvp, categoryIds: [] }),
+      withEntry("pvp", { ...pvp, categoryIds: ["49"] }),
+      withEntry("pvp", { ...pvp, categoryIds: [49.5] }),
+      withEntry("pvp", { ...pvp, categoryIds: undefined }),
     ];
     for (const stored of bad) {
       expect(decodeVerdicts(stored)).toBeUndefined();
@@ -144,16 +278,16 @@ describe("decodeVerdicts", () => {
     const decoded = decodeVerdicts({
       time: T,
       extra: "x",
-      kinds: { ai: { ...valid.kinds.ai, extra: "x" }, other: { state: "unknown" } },
+      kinds: {
+        ...STORED_KINDS,
+        ai: { ...STORED_KINDS.ai, extra: "x" },
+        eula: { ...STORED_KINDS.eula, items: [{ name: "EULA", extra: 1 }] },
+        other: { state: "unknown" },
+      },
     });
-    expect(decoded?.verdicts).toStrictEqual(
-      aiVerdicts({
-        state: "disclosed",
-        kind: "ai",
-        notes: "text",
-        language: "english",
-        source: "api",
-      }),
-    );
+    expect(decoded?.verdicts).toStrictEqual({
+      ...ALL_DISCLOSED,
+      eula: { state: "disclosed", kind: "eula", source: "api", items: [{ name: "EULA" }] },
+    });
   });
 });

@@ -4,6 +4,7 @@ import { appId, appIds } from "../../../tests/helpers/app-ids";
 import { APP_PAGES, type AppPageName } from "../../../tests/helpers/app-page";
 import { fakeHttp, type Reply } from "../../../tests/helpers/fake-http";
 import type { AiVerdict } from "../kinds/ai";
+import { KINDS } from "../kinds/registry";
 import { UNKNOWN_KINDS } from "../kinds/verdicts";
 import { UNKNOWN, type Verdict } from "../types";
 import { createAppPageDetector, parseAppPage, parseLiveAppPage } from "./app-page";
@@ -159,7 +160,18 @@ describe("createAppPageDetector", () => {
     const { detector: d } = detector(fixtureRoutes);
     const found = await d.detect(appIds(5072580, 413150, 99999999));
     expect(found.get(aiId)?.ai.state).toBe("disclosed");
+    for (const kind of KINDS) {
+      if (kind.id !== "ai") {
+        expect(found.get(aiId)?.[kind.id]).toBe(UNKNOWN.missing);
+        expect(found.get(appId(413150))?.[kind.id]).toBe(UNKNOWN.missing);
+      }
+    }
     expect(found.get(appId(99999999))).toStrictEqual(UNKNOWN_KINDS.gated);
+  });
+
+  it("reads the page only for the kinds that declare it", () => {
+    const readers = KINDS.filter((kind) => kind.fromAppPage !== undefined);
+    expect(readers.map((kind) => kind.id)).toStrictEqual(["ai"]);
   });
 
   it("maps failures to unknown, never to not disclosed", async () => {

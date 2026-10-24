@@ -3,7 +3,9 @@ import { migrationContract } from "../../../tests/contracts/migration.contract";
 import { countingStore } from "../../../tests/helpers/counting-store";
 import { memoryStore } from "../../../tests/helpers/memory-store";
 import type { JsonValue } from "../json";
+import { perKind } from "../kinds/registry";
 import type { KeyValueStore } from "../ports";
+import { perScope } from "./allow-data";
 import {
   allowFromV1,
   migrateSettings,
@@ -15,6 +17,8 @@ import {
 import { DEFAULT_SETTINGS, encodeSettings, parseSettings, withKind } from "./settings";
 
 const T = 1_000_000_000_000;
+/** The stored ignore list with no game in any scope. */
+const NO_GAMES = perScope(() => ({}));
 
 // What the version that stored layout v1 wrote: one flat settings object, and one object from app
 // ID to name and date. `ARC` and `COURAGE` are two games the user ignored.
@@ -157,14 +161,14 @@ describe("readSettingsValue and readAllowValue", () => {
         new Map<string, JsonValue>([
           ["v2:settings", encodeSettings(DEFAULT_SETTINGS)],
           ["v1:settings", V1_CUSTOM],
-          ["v2:allow", { all: {}, ai: {} }],
+          ["v2:allow", NO_GAMES],
           ["v1:allow", V1_ALLOW],
         ]),
       ),
       log,
     );
     expect(await readSettingsValue(store)).toStrictEqual(encodeSettings(DEFAULT_SETTINGS));
-    expect(await readAllowValue(store)).toStrictEqual({ all: {}, ai: {} });
+    expect(await readAllowValue(store)).toStrictEqual(NO_GAMES);
     expect(log).toStrictEqual(["get v2:settings", "get v2:allow"]);
   });
 
@@ -245,16 +249,19 @@ describe("settingsFromV1 and allowFromV1", () => {
     expect(settingsFromV1(V1_CUSTOM)).toStrictEqual({
       locale: "es",
       debug: true,
-      kinds: { ai: { enabled: true, badge: false, banner: true, filter: "hide" } },
+      kinds: {
+        ...perKind(() => ({ enabled: true, badge: true, banner: true, filter: "off" })),
+        ai: { enabled: true, badge: false, banner: true, filter: "hide" },
+      },
     });
     expect(settingsFromV1(undefined)).toStrictEqual(DEFAULT_SETTINGS);
   });
 
   it("put the v1 list in the AI scope", () => {
     expect(allowFromV1(V1_ALLOW)).toStrictEqual({
-      all: {},
+      ...NO_GAMES,
       ai: { "1808500": ARC, "5072580": COURAGE },
     });
-    expect(allowFromV1("garbage")).toStrictEqual({ all: {}, ai: {} });
+    expect(allowFromV1("garbage")).toStrictEqual(NO_GAMES);
   });
 });

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { trimNotes } from "./notes";
+import { hasText, trimNotes } from "./notes";
 
 describe("trimNotes", () => {
   it("removes outer whitespace and zero-width characters", () => {
@@ -16,6 +16,16 @@ describe("trimNotes", () => {
   it("returns an empty string for blank notes", () => {
     for (const text of ["", " ", "\r\n", "\u200b", "\u200b \u200b\n"]) {
       expect(trimNotes(text)).toBe("");
+    }
+  });
+});
+
+describe("hasText", () => {
+  it("is true for text and false for blanks only", () => {
+    expect(hasText("Denuvo")).toBe(true);
+    expect(hasText(" a ")).toBe(true);
+    for (const text of ["", " ", "\r\n", "\u200b", "\u200b \u200b\n"]) {
+      expect(hasText(text)).toBe(false);
     }
   });
 });

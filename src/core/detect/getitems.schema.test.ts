@@ -102,6 +102,15 @@ describe("StoreItemSchema leniency", () => {
     }
   });
 
+  it("marks an array in the place of an object as malformed, not as an empty object", () => {
+    const details = detailsOf(
+      storeItem(1, { extra_details: { anticheat: [], ai_generation_service: [] } }),
+    );
+    expect(details.anticheat).toBe(MALFORMED);
+    expect(details.ai_generation_service).toBe(MALFORMED);
+    expect(parse(storeItem(1, { categories: [49] })).categories).toBe(MALFORMED);
+  });
+
   it("marks an eula list with an entry that is not name and url strings as malformed", () => {
     const wrong = [[{ name: "EULA" }], [{ url: "https://store.steampowered.com//eula/1" }], [3]];
     for (const eula of wrong) {
@@ -127,6 +136,7 @@ describe("StoreItemSchema leniency", () => {
         storeItem(1, { success: "1" }),
         storeItem(1, { extra_details: "none" }),
         storeItem(1, { extra_details: null }),
+        storeItem(1, { extra_details: [] }),
         { ...storeItem(1), id: "1" },
       ]
     ) {

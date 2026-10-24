@@ -34,42 +34,44 @@ function lenient<const TSchema extends v.GenericSchema>(schema: TSchema) {
   return v.union([schema, MalformedSchema]);
 }
 
-const AnticheatSchema = v.pipe(
-  v.object({
-    kernel_mode: v.exactOptional(v.boolean()),
-    uninstall_completely: v.exactOptional(v.boolean()),
-    boot_protection: v.exactOptional(v.boolean()),
-    name: v.exactOptional(v.string()),
-    name_loc: v.exactOptional(v.string()),
-    boot_protection_name: v.exactOptional(v.string()),
-  }),
-  v.readonly(),
-);
+/**
+ * A readonly object schema that, unlike valibot's `object`, does not take an array for an object
+ * whose keys are all missing: an array in an object's place is malformed, not an empty object.
+ */
+function record<const TEntries extends v.ObjectEntries>(entries: TEntries) {
+  return v.pipe(
+    v.unknown(),
+    v.check((input) => !Array.isArray(input)),
+    v.object(entries),
+    v.readonly(),
+  );
+}
 
-const EulaEntrySchema = v.pipe(v.object({ name: v.string(), url: v.string() }), v.readonly());
+const AnticheatSchema = record({
+  kernel_mode: v.exactOptional(v.boolean()),
+  uninstall_completely: v.exactOptional(v.boolean()),
+  boot_protection: v.exactOptional(v.boolean()),
+  name: v.exactOptional(v.string()),
+  name_loc: v.exactOptional(v.string()),
+  boot_protection_name: v.exactOptional(v.string()),
+});
 
-const ExtraDetailsSchema = v.pipe(
-  v.object({
-    content_survey_ai_notes: v.exactOptional(lenient(v.string())),
-    ai_generation_service: v.exactOptional(
-      lenient(v.pipe(v.object({ name: v.exactOptional(v.string()) }), v.readonly())),
-    ),
-    anticheat: v.exactOptional(lenient(AnticheatSchema)),
-    drm_third_party_type: v.exactOptional(lenient(v.string())),
-    drm_activation_limit: v.exactOptional(lenient(v.string())),
-    user_account_third_party: v.exactOptional(lenient(v.string())),
-    user_account_third_party_link_to_steam: v.exactOptional(lenient(v.boolean())),
-    eula: v.exactOptional(lenient(v.pipe(v.array(EulaEntrySchema), v.readonly()))),
-  }),
-  v.readonly(),
-);
+const EulaEntrySchema = record({ name: v.string(), url: v.string() });
 
-const CategoriesSchema = v.pipe(
-  v.object({
-    supported_player_categoryids: v.exactOptional(v.pipe(v.array(v.number()), v.readonly())),
-  }),
-  v.readonly(),
-);
+const ExtraDetailsSchema = record({
+  content_survey_ai_notes: v.exactOptional(lenient(v.string())),
+  ai_generation_service: v.exactOptional(lenient(record({ name: v.exactOptional(v.string()) }))),
+  anticheat: v.exactOptional(lenient(AnticheatSchema)),
+  drm_third_party_type: v.exactOptional(lenient(v.string())),
+  drm_activation_limit: v.exactOptional(lenient(v.string())),
+  user_account_third_party: v.exactOptional(lenient(v.string())),
+  user_account_third_party_link_to_steam: v.exactOptional(lenient(v.boolean())),
+  eula: v.exactOptional(lenient(v.pipe(v.array(EulaEntrySchema), v.readonly()))),
+});
+
+const CategoriesSchema = record({
+  supported_player_categoryids: v.exactOptional(v.pipe(v.array(v.number()), v.readonly())),
+});
 
 /**
  * One store item. `id` echoes the requested ID; `appid` is 0 for invalid items and unused. The

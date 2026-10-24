@@ -1,14 +1,22 @@
-import * as v from "valibot";
 import { describe, expect, it } from "vitest";
-import { KIND_IDS, KindIdSchema } from "./id";
+import { KIND_IDS } from "./id";
+import { KINDS } from "./registry";
 
-describe("KindIdSchema", () => {
-  it("accepts every kind id and nothing else", () => {
-    for (const id of KIND_IDS) {
-      expect(v.safeParse(KindIdSchema, id).success).toBe(true);
-    }
-    for (const value of ["", "all", "AI", 1, null, undefined]) {
-      expect(v.safeParse(KindIdSchema, value).success).toBe(false);
-    }
+describe("KIND_IDS", () => {
+  it("lists the id of every registered kind, in registry order, once each", () => {
+    expect(KIND_IDS).toStrictEqual(KINDS.map((kind) => kind.id));
+    expect(new Set(KIND_IDS).size).toBe(KIND_IDS.length);
+  });
+
+  it("holds the seven stable ids the settings store", () => {
+    expect(KIND_IDS).toStrictEqual([
+      "ai",
+      "kernel",
+      "anticheat",
+      "drm",
+      "account",
+      "eula",
+      "pvp",
+    ]);
   });
 });

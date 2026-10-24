@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import type { JsonValue } from "../../src/core/json";
+import { perKind } from "../../src/core/kinds/registry";
 import type { KeyValueStore } from "../../src/core/ports";
+import { perScope } from "../../src/core/settings/allow-data";
 import { allowFromV1, migrateStorage, settingsFromV1 } from "../../src/core/settings/migrate";
 import {
   DEFAULT_SETTINGS,
@@ -33,6 +35,9 @@ const V1_CUSTOM: JsonValue = {
 const V1_ALLOW: JsonValue = { "1808500": ARC, "5072580": COURAGE };
 
 const PLAIN_AI = { enabled: true, badge: true, banner: true, filter: "off" };
+const CUSTOM_AI = { enabled: true, badge: false, banner: true, filter: "hide" };
+/** The stored ignore list with no game in any scope. */
+const NO_GAMES = perScope(() => ({}));
 
 async function seed(
   store: KeyValueStore,
@@ -59,9 +64,9 @@ export function migrationContract(name: string, make: () => KeyValueStore): void
       expect(await stored(store, "v2:settings")).toStrictEqual({
         locale: "auto",
         debug: false,
-        kinds: { ai: PLAIN_AI },
+        kinds: perKind(() => PLAIN_AI),
       });
-      expect(await stored(store, "v2:allow")).toStrictEqual({ all: {}, ai: {} });
+      expect(await stored(store, "v2:allow")).toStrictEqual(NO_GAMES);
       expect([...(await store.keys())].toSorted()).toStrictEqual([
         "v1:allow",
         "v1:settings",
@@ -77,7 +82,7 @@ export function migrationContract(name: string, make: () => KeyValueStore): void
       expect(await stored(store, "v2:settings")).toStrictEqual({
         locale: "es",
         debug: true,
-        kinds: { ai: { enabled: true, badge: false, banner: true, filter: "hide" } },
+        kinds: { ...perKind(() => PLAIN_AI), ai: CUSTOM_AI },
       });
       expect(await stored(store, "v1:settings")).toStrictEqual(V1_CUSTOM);
     });
@@ -87,7 +92,7 @@ export function migrationContract(name: string, make: () => KeyValueStore): void
       await seed(store, { "v1:allow": V1_ALLOW });
       await migrateStorage(store);
       expect(await stored(store, "v2:allow")).toStrictEqual({
-        all: {},
+        ...NO_GAMES,
         ai: { "1808500": ARC, "5072580": COURAGE },
       });
       expect(await stored(store, "v1:allow")).toStrictEqual(V1_ALLOW);
@@ -129,7 +134,10 @@ export function migrationContract(name: string, make: () => KeyValueStore): void
       expect(parseSettings(await stored(store, "v2:settings"))).toStrictEqual(
         withKind(DEFAULT_SETTINGS, "ai", { banner: false }),
       );
-      expect(await stored(store, "v2:allow")).toStrictEqual({ all: {}, ai: { "1808500": ARC } });
+      expect(await stored(store, "v2:allow")).toStrictEqual({
+        ...NO_GAMES,
+        ai: { "1808500": ARC },
+      });
     });
 
     it("turns values that are not objects into defaults and an empty list", async () => {
@@ -138,7 +146,7 @@ export function migrationContract(name: string, make: () => KeyValueStore): void
         await seed(store, { "v1:settings": junk, "v1:allow": junk });
         expect(await migrateStorage(store)).toBe("migrated");
         expect(parseSettings(await stored(store, "v2:settings"))).toStrictEqual(DEFAULT_SETTINGS);
-        expect(await stored(store, "v2:allow")).toStrictEqual({ all: {}, ai: {} });
+        expect(await stored(store, "v2:allow")).toStrictEqual(NO_GAMES);
       }
     });
 
@@ -221,7 +229,7 @@ export function migrationContract(name: string, make: () => KeyValueStore): void
       expect(await migrateStorage(store)).toBe("migrated");
       expect(await stored(store, "v2:settings")).toStrictEqual(done);
       expect(await stored(store, "v2:allow")).toStrictEqual({
-        all: {},
+        ...NO_GAMES,
         ai: { "1808500": ARC, "5072580": COURAGE },
       });
       expect(await stored(store, "v1:settings")).toStrictEqual(V1_CUSTOM);
