@@ -29,6 +29,7 @@ from repo import (
     json_string,
     package_version,
     read_json,
+    valibot_notice,
 )
 
 ESBUILD = ROOT / "node_modules" / "esbuild" / "bin" / "esbuild"
@@ -177,6 +178,11 @@ def userscript_header(version: str, catalogs: dict[str, dict[str, object]]) -> s
     return "\n".join(lines)
 
 
+def userscript_banner(header: str) -> str:
+    """The header, then valibot's license in a `/*!` comment that tools keep."""
+    return f"{header}\n{valibot_notice()}"
+
+
 def bundles(header: str) -> list[Bundle]:
     result = [
         Bundle(f"src/platform/extension/{entry}.ts", DIST / browser / f"{entry}.js")
@@ -187,7 +193,7 @@ def bundles(header: str) -> list[Bundle]:
         Bundle(
             "src/platform/userscript/main.ts",
             DIST / "userscript" / f"{SLUG}.user.js",
-            banner=header,
+            banner=userscript_banner(header),
         )
     )
     result.append(Bundle("src/platform/dev/inject.ts", DIST / "dev" / "inject.js"))

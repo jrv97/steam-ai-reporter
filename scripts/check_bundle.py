@@ -6,8 +6,8 @@
 - Extension pages carry no copy (rule 9): only whitespace text, and `data-i18n` keys that resolve.
   Each page links an icon that exists, or its browser tab shows a puzzle piece.
 - Userscript: header present, no @connect, exact @match, @updateURL and @downloadURL; every `GM`
-  name in the bundle has an @grant and every @grant is used; no userscript header in any other
-  bundle.
+  name in the bundle has an @grant and every @grant is used; valibot's license text follows the
+  header; no userscript header in any other bundle.
 - No eval( or new Function in any bundle (rule 2); no URL outside the two Valve hosts.
 - Size budgets: content.js at most 183 KB, options.js at most 114 KB and the userscript at most
   236 KB, unminified (rule 13). Each is the measured size plus about 15% headroom; raise one only
@@ -25,7 +25,17 @@ import zipfile
 from html.parser import HTMLParser
 from pathlib import Path
 
-from repo import ARTIFACTS, DIST, SLUG, fail, json_object, json_string, package_version, read_json
+from repo import (
+    ARTIFACTS,
+    DIST,
+    SLUG,
+    fail,
+    json_object,
+    json_string,
+    package_version,
+    read_json,
+    valibot_notice,
+)
 
 KIB = 1024
 BUDGETS = {
@@ -192,6 +202,12 @@ def grant_problems(where: str, header: str, body: str) -> list[str]:
     ]
 
 
+def notice_problems(where: str, body: str) -> list[str]:
+    if valibot_notice() in body:
+        return []
+    return [f"{where}: valibot's license text is missing from the userscript"]
+
+
 def script_problems(path: Path) -> list[str]:
     text = path.read_text(encoding="utf-8")
     where = path.relative_to(DIST.parent).as_posix()
@@ -206,6 +222,7 @@ def script_problems(path: Path) -> list[str]:
             problems += header_problems(where, header)
             if path.name.endswith(".user.js"):
                 problems += grant_problems(where, header, body)
+                problems += notice_problems(where, body)
     elif HEADER_START in text:
         problems.append(f"{where}: a userscript header belongs in the userscript only")
     if path.name.endswith(".meta.js"):

@@ -12,6 +12,13 @@ ARTIFACTS = ROOT / "artifacts"
 SLUG = "steam-ai-reporter"
 ICONS_DIR = ROOT / "assets" / "icons"
 ICON_SIZES = (16, 32, 48, 128)
+VALIBOT_LICENSE = ROOT / "node_modules" / "valibot" / "LICENSE.md"
+
+
+def valibot_notice() -> str:
+    """valibot's license as a `/*!` comment: the userscript is one file, so it carries the text."""
+    text = VALIBOT_LICENSE.read_text(encoding="utf-8").strip()
+    return f"/*! valibot\n{text}\n*/"
 
 
 def fail(message: str) -> NoReturn:
