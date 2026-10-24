@@ -247,16 +247,12 @@
       }
     }
   },
-  "options_section_store": {
-    "message": "En las páginas de juegos",
-    "description": "Section heading in the settings."
-  },
   "options_badges": {
-    "message": "Marcadores en los juegos que declaran usar IA",
-    "description": "Switch label."
+    "message": "Marcador en los juegos",
+    "description": "Switch label of one tag's badge."
   },
   "options_badges_short": {
-    "message": "Marcadores",
+    "message": "Marcador",
     "description": "The same switch in the toolbar popup, where space is tight."
   },
   "options_badges_help": {
@@ -270,19 +266,15 @@
     }
   },
   "options_banner": {
-    "message": "Aviso en páginas de juegos",
-    "description": "Switch label."
+    "message": "Entrada en el aviso de las páginas de juegos",
+    "description": "Switch label of one tag's entry in the notice on a game's page."
   },
   "options_banner_help": {
-    "message": "Muestra la declaración del desarrollador encima del botón de compra.",
+    "message": "Muestra lo que declaró el desarrollador encima del botón de compra.",
     "description": "Help under the banner switch."
   },
-  "options_section_lists": {
-    "message": "En las listas",
-    "description": "Section heading in the settings."
-  },
   "options_filter_label": {
-    "message": "Juegos que declaran usar IA",
+    "message": "Juegos con esta etiqueta",
     "description": "Label of a three-way choice: show, dim or hide these games in lists."
   },
   "options_filter_off": {
@@ -339,17 +331,25 @@
       }
     }
   },
+  "options_allow_scope_all": {
+    "message": "Todas las etiquetas",
+    "description": "Heading of the games ignored for every tag, in the list of ignored games. The games ignored for one tag sit under Steam's line for that tag."
+  },
   "options_allow_restore": {
     "message": "Dejar de ignorar",
     "description": "Button next to a game you ignored."
   },
   "options_allow_restore_label": {
-    "message": "Dejar de ignorar $name$",
-    "description": "Screen reader name of the \"Stop ignoring\" button; $name$ is the game's name, untranslated.",
+    "message": "Dejar de ignorar $name$ ($scope$)",
+    "description": "Screen reader name of the \"Stop ignoring\" button; $name$ is the game's name, untranslated, and $scope$ names the tag it was ignored for, or all tags.",
     "placeholders": {
       "name": {
         "content": "$1",
         "example": "Fixture Game"
+      },
+      "scope": {
+        "content": "$2",
+        "example": "Todas las etiquetas"
       }
     }
   },
@@ -394,6 +394,14 @@
   "options_all_settings": {
     "message": "Configuración completa",
     "description": "Link in the toolbar popup footer that opens the full settings page in a tab."
+  },
+  "options_kind_enabled": {
+    "message": "Usar esta etiqueta",
+    "description": "Master switch of one tag in the settings. Its section is titled with Steam's line for the tag."
+  },
+  "options_kind_enabled_help": {
+    "message": "Si la desactivas, se quitan sus marcadores, su entrada en el aviso y su filtro de listas.",
+    "description": "Help under the master switch of one tag."
   },
   "userscript_menu_settings": {
     "message": "Configuración",

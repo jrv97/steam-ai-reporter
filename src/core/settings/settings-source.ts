@@ -22,10 +22,10 @@ export interface StoredSettings extends SettingsSource {
   write(settings: Settings): Promise<void>;
   /**
    * Reads the stored settings at the moment of the call, replaces the fields of `patch` and writes
-   * the result. A page that holds older settings changes only what it names. Patches from one
-   * context run one after another; two tabs at once can still lose one.
+   * the result, which it returns. A page that holds older settings changes only what it names.
+   * Patches from one context run one after another; two tabs at once can still lose one.
    */
-  patch(patch: SettingsPatch): Promise<void>;
+  patch(patch: SettingsPatch): Promise<Settings>;
 }
 
 /**
@@ -68,8 +68,10 @@ export function createSettingsSource(
     write,
 
     patch(patch) {
-      const run = async (): Promise<void> => {
-        await write(applyPatch(parseSettings(await readSettingsValue(store)), patch));
+      const run = async (): Promise<Settings> => {
+        const next = applyPatch(parseSettings(await readSettingsValue(store)), patch);
+        await write(next);
+        return next;
       };
       const result = patching.then(run);
       patching = result.catch(() => undefined);

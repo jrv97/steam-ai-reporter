@@ -3,7 +3,6 @@ import { fixedClock } from "../../../tests/helpers/fixed-clock";
 import { memoryStore } from "../../../tests/helpers/memory-store";
 import { SHIPPED_CATALOGS } from "../../core/i18n/shipped";
 import { createI18n } from "../../core/i18n/t";
-import { AI_KIND } from "../../core/kinds/ai";
 import { createAllowList } from "../../core/settings/allow-list";
 import { createSettingsSource } from "../../core/settings/settings-source";
 import { openSettingsDialog, type SettingsDialogDeps } from "./settings-dialog";
@@ -13,7 +12,6 @@ const i18n = createI18n(SHIPPED_CATALOGS, "en");
 function deps(live: boolean): SettingsDialogDeps {
   const store = memoryStore();
   return {
-    kind: AI_KIND,
     document,
     i18n,
     catalogs: SHIPPED_CATALOGS,
@@ -37,8 +35,8 @@ describe("openSettingsDialog", () => {
 
     expect(dialog()?.open).toBe(true);
     expect(dialog()?.querySelector(".sar-dialog-title")?.textContent).toBe(i18n.t("ext_name"));
-    expect(dialog()?.querySelector("[data-sar-setting='badges']")).not.toBeNull();
-    expect(document.querySelector("[data-sar-setting='badges']")).toBeNull();
+    expect(dialog()?.querySelector("[data-sar-setting='badge']")).not.toBeNull();
+    expect(document.querySelector("[data-sar-setting='badge']")).toBeNull();
   });
 
   it("opens only one dialog", async () => {

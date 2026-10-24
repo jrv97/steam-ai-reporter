@@ -38,8 +38,9 @@ describe("shipped catalogs", () => {
     const spanish = createI18n(SHIPPED_CATALOGS, "es");
     expect(spanish.locale).toBe("es");
     expect(spanish.t("banner_ignore")).toBe(es.banner_ignore.message);
-    expect(spanish.t("options_allow_restore_label", { name: "Fixture Game" })).toBe(
-      substitute(es.options_allow_restore_label.message, { name: "Fixture Game" }),
+    const restore = { name: "Fixture Game", scope: spanish.t("options_allow_scope_all") };
+    expect(spanish.t("options_allow_restore_label", restore)).toBe(
+      substitute(es.options_allow_restore_label.message, restore),
     );
     expect(spanish.t("options_allow_empty", { action: spanish.t("banner_ignore") })).toBe(
       substitute(es.options_allow_empty.message, { action: es.banner_ignore.message }),

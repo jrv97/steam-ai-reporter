@@ -1,14 +1,11 @@
 import type { Catalogs } from "../../core/i18n/catalog";
 import type { I18n } from "../../core/i18n/t";
-import type { AiKind } from "../../core/kinds/ai";
 import type { AllowList } from "../../core/settings/allow-list";
 import type { StoredSettings } from "../../core/settings/settings-source";
 import { mountSettingsForm } from "../../core/ui/settings-form";
 import { adoptStyles, DIALOG_CSS } from "../../core/ui/styles";
 
 export interface SettingsDialogDeps {
-  /** The tag kind whose settings the dialog shows. */
-  readonly kind: AiKind;
   readonly document: Document;
   readonly i18n: I18n;
   readonly catalogs: Catalogs;
@@ -70,7 +67,6 @@ export async function openSettingsDialog(deps: SettingsDialogDeps): Promise<void
   doc.body.append(host);
 
   const form = await mountSettingsForm(formRoot, {
-    kind: deps.kind,
     i18n,
     settings: deps.settings,
     allowList: deps.allowList,

@@ -247,16 +247,12 @@
       }
     }
   },
-  "options_section_store": {
-    "message": "On store pages",
-    "description": "Section heading in the settings."
-  },
   "options_badges": {
-    "message": "Badges on games that report AI use",
-    "description": "Switch label."
+    "message": "Badge on games",
+    "description": "Switch label of one tag's badge."
   },
   "options_badges_short": {
-    "message": "Badges",
+    "message": "Badge",
     "description": "The same switch in the toolbar popup, where space is tight."
   },
   "options_badges_help": {
@@ -270,19 +266,15 @@
     }
   },
   "options_banner": {
-    "message": "Banner on game pages",
-    "description": "Switch label."
+    "message": "Entry in the banner on game pages",
+    "description": "Switch label of one tag's entry in the notice on a game's page."
   },
   "options_banner_help": {
-    "message": "Shows the developer's report above the purchase box.",
+    "message": "Shows what the developer declared above the purchase box.",
     "description": "Help under the banner switch."
   },
-  "options_section_lists": {
-    "message": "In lists",
-    "description": "Section heading in the settings."
-  },
   "options_filter_label": {
-    "message": "Games that report AI use",
+    "message": "Games with this tag",
     "description": "Label of a three-way choice: show, dim or hide these games in lists."
   },
   "options_filter_off": {
@@ -339,17 +331,25 @@
       }
     }
   },
+  "options_allow_scope_all": {
+    "message": "All tags",
+    "description": "Heading of the games ignored for every tag, in the list of ignored games. The games ignored for one tag sit under Steam's line for that tag."
+  },
   "options_allow_restore": {
     "message": "Stop ignoring",
     "description": "Button next to a game you ignored."
   },
   "options_allow_restore_label": {
-    "message": "Stop ignoring $name$",
-    "description": "Screen reader name of the \"Stop ignoring\" button; $name$ is the game's name, untranslated.",
+    "message": "Stop ignoring $name$ ($scope$)",
+    "description": "Screen reader name of the \"Stop ignoring\" button; $name$ is the game's name, untranslated, and $scope$ names the tag it was ignored for, or all tags.",
     "placeholders": {
       "name": {
         "content": "$1",
         "example": "Fixture Game"
+      },
+      "scope": {
+        "content": "$2",
+        "example": "All tags"
       }
     }
   },
@@ -394,6 +394,14 @@
   "options_all_settings": {
     "message": "All settings",
     "description": "Link in the toolbar popup footer that opens the full settings page in a tab."
+  },
+  "options_kind_enabled": {
+    "message": "Use this tag",
+    "description": "Master switch of one tag in the settings. Its section is titled with Steam's line for the tag."
+  },
+  "options_kind_enabled_help": {
+    "message": "Off removes its badges, its entry in the banner and its list filter.",
+    "description": "Help under the master switch of one tag."
   },
   "userscript_menu_settings": {
     "message": "Settings",

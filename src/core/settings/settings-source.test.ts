@@ -56,6 +56,13 @@ describe("patch", () => {
     expect(stored.kinds.drm.banner).toBe(false);
   });
 
+  it("returns the settings it wrote", async () => {
+    const source = createSettingsSource(memoryStore());
+    const written = await source.patch({ kinds: { pvp: { enabled: false } } });
+    expect(written).toStrictEqual(withKind(DEFAULT_SETTINGS, "pvp", { enabled: false }));
+    expect(parseSettings(await source.read())).toStrictEqual(written);
+  });
+
   it("starts from the defaults when nothing is stored", async () => {
     const source = createSettingsSource(memoryStore());
     await source.patch({ debug: true });
