@@ -152,6 +152,10 @@ description = "Rebuild every target on change"
 depends = ["deps", "gen"]
 run = "python scripts/build.py --watch"
 
+[tasks.icons]
+description = "Render the extension icon PNGs from the purple mark with headless Chrome"
+run = "python scripts/render_icons.py"
+
 [tasks.lint-firefox]
 description = "Run web-ext lint on the Firefox build"
 depends = ["build"]

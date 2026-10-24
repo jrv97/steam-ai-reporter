@@ -1,7 +1,7 @@
 <p align="center">
   <img
-    src="assets/icons/icon.svg"
-    alt="AI Reporter for Steam logo: a purple label tag holding a white spark"
+    src="assets/icons/mark-purple.svg"
+    alt="Tag Kit for Steam logo: a purple Steam badge with a tag at its lower right"
     width="96"
     height="96"
   >
