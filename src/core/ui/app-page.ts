@@ -16,7 +16,7 @@ export interface AppPageView {
   readonly verdicts: KindVerdicts;
   /** The game is on the allow-list for the kind this page shows. */
   readonly allowed: boolean;
-  /** The `banner` setting. The `badges` setting is a root attribute (`applyBadgeSetting`). */
+  /** The `banner` setting. Each kind's badge switch is a root attribute (`applyKindSettings`). */
   readonly banner: boolean;
 }
 
