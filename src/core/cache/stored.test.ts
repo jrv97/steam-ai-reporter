@@ -10,7 +10,7 @@ import type { AiVerdict } from "../kinds/ai";
 import { KIND_IDS } from "../kinds/id";
 import { perKind } from "../kinds/registry";
 import { type KindVerdicts, UNKNOWN_KINDS } from "../kinds/verdicts";
-import { UNKNOWN } from "../types";
+import { NOT_DISCLOSED as NOT_DISCLOSED_VERDICT, UNKNOWN } from "../types";
 import { decodeVerdicts, encodeVerdicts } from "./stored";
 
 const T = 1_000_000_000_000;
@@ -184,6 +184,20 @@ describe("encodeVerdicts and decodeVerdicts", () => {
     expect(encodeVerdicts(aiVerdicts(UNKNOWN.error), T)).toBeUndefined();
     expect(encodeVerdicts({ ...ALL_DISCLOSED, pvp: UNKNOWN.error }, T)).toBeUndefined();
     expect(encodeVerdicts({ ...ALL_DISCLOSED, drm: UNKNOWN["rate-limited"] }, T)).toBeUndefined();
+  });
+
+  it("shares the not disclosed verdict objects", () => {
+    const html = {
+      ...uniformVerdicts("not-disclosed"),
+      ai: NOT_DISCLOSED_VERDICT.html,
+    };
+    const decoded = decodeVerdicts(encodeVerdicts(html, T));
+    expect(decoded?.verdicts.ai).toBe(NOT_DISCLOSED_VERDICT.html);
+    for (const id of KIND_IDS) {
+      if (id !== "ai") {
+        expect(decoded?.verdicts[id]).toBe(NOT_DISCLOSED_VERDICT.api);
+      }
+    }
   });
 
   it("shares the unknown verdict objects", () => {

@@ -1,25 +1,27 @@
 import * as v from "valibot";
 import { type ExtraDetails, MALFORMED, type StoreItem } from "../detect/getitems.schema";
-import { trimNotes } from "../detect/notes";
+import { optionalText, trimNotes } from "../detect/notes";
 import { type SteamLanguage, SteamLanguageSchema } from "../i18n/locale";
 import type { BareMessageKey } from "../i18n/t";
-import { type DisclosedBase, NOT_DISCLOSED, UNKNOWN, type Verdict } from "../types";
+import { NOT_DISCLOSED, UNKNOWN, type Verdict } from "../types";
 import type { KindDefinition, KindMessages } from "./kind";
 import { DEFAULT_KIND_SETTINGS } from "./kind-settings";
 import { DAY_MS, HOUR_MS } from "./kind-ttl";
 import { storedDisclosed } from "./stored-disclosed";
 
-/** The disclosed verdict of the AI kind: the developer's notes and, when named, the service. */
-export interface AiDisclosed extends DisclosedBase<"ai"> {
+const STORED = storedDisclosed("ai", {
   /** The developer's text, trimmed of outer whitespace and zero-width characters only. */
-  readonly notes: string;
+  notes: v.pipe(v.string(), v.minLength(1)),
   /** The Steam language the notes were requested in; Steam answers in English when untranslated. */
-  readonly language: SteamLanguage;
+  language: SteamLanguageSchema,
   /** `ai_generation_service.name`, when the developer named one. */
-  readonly service?: string;
+  service: v.exactOptional(v.string()),
   /** The app's store name, for the allow-list. */
-  readonly name?: string;
-}
+  name: v.exactOptional(v.string()),
+});
+
+/** The disclosed verdict of the AI kind: the developer's notes and, when named, the service. */
+export type AiDisclosed = v.InferOutput<typeof STORED>;
 
 /** The AI kind's verdict: disclosed with notes, not disclosed, or unknown. */
 export type AiVerdict = Verdict<AiDisclosed>;
@@ -48,16 +50,14 @@ function fromGetItems(item: StoreItem, details: ExtraDetails, language: SteamLan
   if (notes === "") {
     return NOT_DISCLOSED.api;
   }
-  const service = trimNotes(rawService?.name ?? "");
-  const storeName = trimNotes(item.name ?? "");
   return {
     state: "disclosed",
     kind: "ai",
     notes,
     language,
     source: "api",
-    ...(service === "" ? {} : { service }),
-    ...(storeName === "" ? {} : { name: storeName }),
+    ...optionalText("service", trimNotes(rawService?.name ?? "")),
+    ...optionalText("name", trimNotes(item.name ?? "")),
   };
 }
 
@@ -97,12 +97,7 @@ export const AI_KIND: AiKind = {
   fromGetItems,
   fromAppPage,
 
-  stored: storedDisclosed("ai", {
-    notes: v.pipe(v.string(), v.minLength(1)),
-    language: SteamLanguageSchema,
-    service: v.exactOptional(v.string()),
-    name: v.exactOptional(v.string()),
-  }),
+  stored: STORED,
 
   messages: {
     heading: "kind_ai_heading",

@@ -1,20 +1,21 @@
 import * as v from "valibot";
 import { MALFORMED } from "../detect/getitems.schema";
-import { hasText } from "../detect/notes";
-import { type DisclosedBase, NOT_DISCLOSED, UNKNOWN } from "../types";
+import { hasText, optionalText } from "../detect/notes";
+import { NOT_DISCLOSED, UNKNOWN } from "../types";
 import type { KindDefinition } from "./kind";
 import { DEFAULT_KIND_SETTINGS } from "./kind-settings";
 import { WEEK_TTL } from "./kind-ttl";
 import { storedDisclosed } from "./stored-disclosed";
 
-/**
- * The disclosed verdict of the third-party DRM kind. The text is what the developer typed in
- * `drm_third_party_type`, and the activation limit is `drm_activation_limit` when Steam sends it.
- */
-export interface DrmDisclosed extends DisclosedBase<"drm"> {
-  readonly text: string;
-  readonly activationLimit?: string;
-}
+const STORED = storedDisclosed("drm", {
+  /** What the developer typed in `drm_third_party_type`. */
+  text: v.pipe(v.string(), v.minLength(1)),
+  /** `drm_activation_limit`, when Steam sends it. */
+  activationLimit: v.exactOptional(v.string()),
+});
+
+/** The disclosed verdict of the third-party DRM kind. */
+export type DrmDisclosed = v.InferOutput<typeof STORED>;
 
 /** Third-party DRM that the developer declared. Free text: "Denuvo" has several spellings. */
 export const DRM_KIND: KindDefinition<DrmDisclosed> = {
@@ -33,14 +34,11 @@ export const DRM_KIND: KindDefinition<DrmDisclosed> = {
       kind: "drm",
       source: "api",
       text,
-      ...(limit !== undefined && hasText(limit) ? { activationLimit: limit } : {}),
+      ...optionalText("activationLimit", limit),
     };
   },
 
-  stored: storedDisclosed("drm", {
-    text: v.pipe(v.string(), v.minLength(1)),
-    activationLimit: v.exactOptional(v.string()),
-  }),
+  stored: STORED,
 
   messages: { heading: "kind_drm_heading", chip: "kind_drm_chip" },
   defaults: DEFAULT_KIND_SETTINGS,

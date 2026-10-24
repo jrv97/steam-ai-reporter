@@ -1,22 +1,19 @@
 import * as v from "valibot";
 import { MALFORMED } from "../detect/getitems.schema";
 import { hasText } from "../detect/notes";
-import { type DisclosedBase, NOT_DISCLOSED, UNKNOWN } from "../types";
+import { NOT_DISCLOSED, UNKNOWN } from "../types";
 import type { KindDefinition } from "./kind";
 import { DEFAULT_KIND_SETTINGS } from "./kind-settings";
 import { WEEK_TTL } from "./kind-ttl";
 import { storedDisclosed } from "./stored-disclosed";
 
 /** One third-party agreement: its name as typed, and a link when it is safe to show. */
-export interface EulaItem {
-  readonly name: string;
-  readonly url?: string;
-}
+const ITEM = v.pipe(
+  v.object({ name: v.string(), url: v.exactOptional(v.string()) }),
+  v.readonly(),
+);
 
-/** The disclosed verdict of the third-party EULA kind: every agreement the developer lists. */
-export interface EulaDisclosed extends DisclosedBase<"eula"> {
-  readonly items: readonly EulaItem[];
-}
+export type EulaItem = v.InferOutput<typeof ITEM>;
 
 const EULA_HOST = "store.steampowered.com";
 const EULA_PATH = "/eula/";
@@ -59,6 +56,14 @@ function keepSafeLinks(stored: EulaItem[]): EulaItem[] {
   });
 }
 
+const STORED = storedDisclosed("eula", {
+  /** Every agreement the developer lists. */
+  items: v.pipe(v.array(ITEM), v.minLength(1), v.transform(keepSafeLinks), v.readonly()),
+});
+
+/** The disclosed verdict of the third-party EULA kind. */
+export type EulaDisclosed = v.InferOutput<typeof STORED>;
+
 /** The third-party agreements a player must accept: the names the developer typed, and links. */
 export const EULA_KIND: KindDefinition<EulaDisclosed> = {
   id: "eula",
@@ -80,13 +85,7 @@ export const EULA_KIND: KindDefinition<EulaDisclosed> = {
       : { state: "disclosed", kind: "eula", source: "api", items };
   },
 
-  stored: storedDisclosed("eula", {
-    items: v.pipe(
-      v.array(v.object({ name: v.string(), url: v.exactOptional(v.string()) })),
-      v.minLength(1),
-      v.transform(keepSafeLinks),
-    ),
-  }),
+  stored: STORED,
 
   messages: { heading: "kind_eula_heading", chip: "kind_eula_chip" },
   defaults: DEFAULT_KIND_SETTINGS,

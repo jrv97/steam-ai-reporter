@@ -4,13 +4,12 @@ import type { KindId } from "../kinds/id";
 import type { TagKind } from "../kinds/kind";
 import { KINDS } from "../kinds/registry";
 import { isKindVerdicts, type KindVerdict, type KindVerdicts } from "../kinds/verdicts";
-import { UNKNOWN, VerdictSourceSchema } from "../types";
+import { NOT_DISCLOSED, UNKNOWN, VerdictSourceSchema } from "../types";
 import { isStoredReason, STORED_REASONS } from "./ttl";
 
-// The stored form of one app's verdicts (`v1:a:<appid>`): the fetch time and one entry per kind.
-// A disclosed entry is the verdict itself, read back with the schema its kind declares; the other
-// two states are shared. Storage is untrusted: a read that fails these schemas is discarded, never
-// cast. Only the unknown reasons in `STORED_REASONS` appear here.
+// An app is stored as `v1:a:<appid>`: its fetch time and one entry per kind. A disclosed entry is
+// the verdict, read back with its kind's schema. Storage is untrusted, so a read that fails is
+// discarded.
 
 const TimeSchema = v.pipe(v.number(), v.finite());
 
@@ -31,13 +30,24 @@ export interface TimedVerdicts {
   readonly time: number;
 }
 
+function isDisclosedEntry(stored: unknown): boolean {
+  return typeof stored === "object" && stored !== null && "state" in stored
+    && stored.state === "disclosed";
+}
+
+/** The verdict of a stored entry. Not disclosed and unknown entries come back as shared objects. */
 function decodeVerdict(kind: TagKind, stored: unknown): KindVerdict | undefined {
-  const other = v.safeParse(StoredOtherSchema, stored);
-  if (other.success) {
-    return other.output.state === "unknown" ? UNKNOWN[other.output.reason] : other.output;
+  if (isDisclosedEntry(stored)) {
+    const disclosed = v.safeParse(kind.stored, stored);
+    return disclosed.success ? disclosed.output : undefined;
   }
-  const disclosed = v.safeParse(kind.stored, stored);
-  return disclosed.success ? disclosed.output : undefined;
+  const other = v.safeParse(StoredOtherSchema, stored);
+  if (!other.success) {
+    return undefined;
+  }
+  return other.output.state === "unknown"
+    ? UNKNOWN[other.output.reason]
+    : NOT_DISCLOSED[other.output.source];
 }
 
 /**

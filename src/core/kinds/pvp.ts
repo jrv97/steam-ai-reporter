@@ -1,7 +1,7 @@
 import * as v from "valibot";
 import { MALFORMED } from "../detect/getitems.schema";
 import type { BareMessageKey } from "../i18n/t";
-import { type DisclosedBase, NOT_DISCLOSED, UNKNOWN } from "../types";
+import { NOT_DISCLOSED, UNKNOWN } from "../types";
 import type { KindDefinition } from "./kind";
 import { DEFAULT_KIND_SETTINGS } from "./kind-settings";
 import { WEEK_TTL } from "./kind-ttl";
@@ -25,10 +25,13 @@ export function pvpCategoryMessage(id: number): BareMessageKey | undefined {
   return CATEGORY_MESSAGES.get(id);
 }
 
-/** The disclosed verdict of the PvP kind: the player categories of the game that mean PvP. */
-export interface PvpDisclosed extends DisclosedBase<"pvp"> {
-  readonly categoryIds: readonly number[];
-}
+const STORED = storedDisclosed("pvp", {
+  /** The player categories of the game that mean PvP. */
+  categoryIds: v.pipe(v.array(v.pipe(v.number(), v.integer())), v.minLength(1), v.readonly()),
+});
+
+/** The disclosed verdict of the PvP kind. */
+export type PvpDisclosed = v.InferOutput<typeof STORED>;
 
 /**
  * The game has a player-versus-player mode, from its Steam categories. Unlike the other kinds this
@@ -57,9 +60,7 @@ export const PVP_KIND: KindDefinition<PvpDisclosed> = {
       : { state: "disclosed", kind: "pvp", source: "api", categoryIds };
   },
 
-  stored: storedDisclosed("pvp", {
-    categoryIds: v.pipe(v.array(v.pipe(v.number(), v.integer())), v.minLength(1)),
-  }),
+  stored: STORED,
 
   messages: { heading: "kind_pvp_heading", chip: "kind_pvp_chip" },
   defaults: DEFAULT_KIND_SETTINGS,

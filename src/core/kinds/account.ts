@@ -1,20 +1,21 @@
 import * as v from "valibot";
 import { MALFORMED } from "../detect/getitems.schema";
 import { hasText } from "../detect/notes";
-import { type DisclosedBase, NOT_DISCLOSED, UNKNOWN } from "../types";
+import { NOT_DISCLOSED, UNKNOWN } from "../types";
 import type { KindDefinition } from "./kind";
 import { DEFAULT_KIND_SETTINGS } from "./kind-settings";
 import { WEEK_TTL } from "./kind-ttl";
 import { storedDisclosed } from "./stored-disclosed";
 
-/**
- * The disclosed verdict of the third-party account kind. The text is what the developer typed in
- * `user_account_third_party`; the flag says the account can be linked to a Steam account.
- */
-export interface AccountDisclosed extends DisclosedBase<"account"> {
-  readonly text: string;
-  readonly linksToSteam: boolean;
-}
+const STORED = storedDisclosed("account", {
+  /** What the developer typed in `user_account_third_party`. */
+  text: v.pipe(v.string(), v.minLength(1)),
+  /** The account can be linked to a Steam account. */
+  linksToSteam: v.boolean(),
+});
+
+/** The disclosed verdict of the third-party account kind. */
+export type AccountDisclosed = v.InferOutput<typeof STORED>;
 
 /** A third-party account the game requires. Free text, like the launcher it names. */
 export const ACCOUNT_KIND: KindDefinition<AccountDisclosed> = {
@@ -38,10 +39,7 @@ export const ACCOUNT_KIND: KindDefinition<AccountDisclosed> = {
     };
   },
 
-  stored: storedDisclosed("account", {
-    text: v.pipe(v.string(), v.minLength(1)),
-    linksToSteam: v.boolean(),
-  }),
+  stored: STORED,
 
   messages: { heading: "kind_account_heading", chip: "kind_account_chip" },
   defaults: DEFAULT_KIND_SETTINGS,
