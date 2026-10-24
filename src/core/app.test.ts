@@ -13,9 +13,9 @@ import { type App, start } from "./app";
 import type { JsonValue } from "./json";
 import type { KindId } from "./kinds/id";
 import { KIND_BY_ID } from "./kinds/registry";
-import { DEFAULT_SETTINGS, withKind } from "./settings/settings";
+import { DEFAULT_SETTINGS, encodeSettings, withKind } from "./settings/settings";
 import { createSettingsSource } from "./settings/settings-source";
-import { ALLOW_KEY } from "./storage-keys";
+import { ALLOW_KEY, SETTINGS_KEY } from "./storage-keys";
 import { adoptPageStyles } from "./ui/styles";
 
 const i18n = englishI18n();
@@ -149,6 +149,20 @@ describe("start on the search page", () => {
         chip("eula"),
         chip("pvp"),
       ]);
+    });
+
+    it("leaves the row alone when the kind that would hide it is ignored", async () => {
+      const filters = withKind(withKind(DEFAULT_SETTINGS, "kernel", { filter: "hide" }), "ai", {
+        filter: "dim",
+      });
+      const ignored = new Map<string, JsonValue>([
+        [SETTINGS_KEY, encodeSettings(filters)],
+        [ALLOW_KEY, { all: {}, kernel: { [DISCLOSED]: { name: "Ignored", added: NOW } } }],
+      ]);
+      const { http } = await startOnSearch(ignored, several);
+      await drawn(http);
+      expect(row(DISCLOSED)?.getAttribute("data-sar-kinds")).toBe("ai eula pvp");
+      expect(getComputedStyle(row(DISCLOSED) ?? document.body).display).not.toBe("none");
     });
 
     it("hides the row when any of its kinds hides, whatever the others do", async () => {
