@@ -1,7 +1,7 @@
 import * as v from "valibot";
 import type { JsonValue } from "../json";
 import type { KindId } from "../kinds/id";
-import { type KindSettings, parseKindSettings } from "../kinds/kind-settings";
+import { encodeKindSettings, type KindSettings, parseKindSettings } from "../kinds/kind-settings";
 import { KINDS, perKind } from "../kinds/registry";
 
 /** The `locale` setting that follows the store page's language (see `resolveLocale`). */
@@ -55,8 +55,7 @@ export function parseSettings(stored: unknown): Settings {
 export function encodeSettings(settings: Settings): JsonValue {
   const kinds: Record<string, JsonValue> = {};
   for (const kind of KINDS) {
-    const { enabled, badge, banner, filter } = settings.kinds[kind.id];
-    kinds[kind.id] = { enabled, badge, banner, filter };
+    kinds[kind.id] = encodeKindSettings(settings.kinds[kind.id]);
   }
   return { locale: settings.locale, debug: settings.debug, kinds };
 }

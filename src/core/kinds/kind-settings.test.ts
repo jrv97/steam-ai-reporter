@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   effectiveSettings,
+  encodeKindSettings,
   type KindSettings,
   LIST_FILTERS,
   parseKindSettings,
@@ -52,5 +53,18 @@ describe("effectiveSettings", () => {
     expect(
       effectiveSettings({ enabled: false, badge: true, banner: true, filter: "hide" }),
     ).toStrictEqual({ enabled: false, badge: false, banner: false, filter: "off" });
+  });
+});
+
+describe("encodeKindSettings", () => {
+  it("stores every field and reads back through parseKindSettings", () => {
+    const settings: KindSettings = { enabled: false, badge: true, banner: false, filter: "hide" };
+    expect(encodeKindSettings(settings)).toStrictEqual({
+      enabled: false,
+      badge: true,
+      banner: false,
+      filter: "hide",
+    });
+    expect(parseKindSettings(DEFAULTS, encodeKindSettings(settings))).toStrictEqual(settings);
   });
 });

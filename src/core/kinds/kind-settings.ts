@@ -1,4 +1,5 @@
 import * as v from "valibot";
+import type { JsonValue } from "../json";
 
 /** What the list filter does to hosts whose app carries a kind's tag. */
 export const LIST_FILTERS = ["off", "dim", "hide"] as const;
@@ -31,6 +32,17 @@ export function parseKindSettings(defaults: KindSettings, stored: unknown): Kind
     defaults,
   );
   return v.parse(schema, stored);
+}
+
+/** The stored value of one kind's settings; a field added to `KindSettings` must be added here. */
+export function encodeKindSettings(settings: KindSettings): JsonValue {
+  const stored: { readonly [Field in keyof KindSettings]: JsonValue; } = {
+    enabled: settings.enabled,
+    badge: settings.badge,
+    banner: settings.banner,
+    filter: settings.filter,
+  };
+  return stored;
 }
 
 /** The settings that take effect: a disabled kind shows no badge or banner and filters nothing. */
