@@ -8,7 +8,7 @@
     "description": "Manifest short_name, where space is tight. The brand, kept as is. At most 12 characters (Chrome recommendation)."
   },
   "ext_description": {
-    "message": "Etiqueta juegos de Steam: contenido generado por IA, antitrampas a nivel de kernel, DRM, cuenta y ALUF de terceros, JcJ.",
+    "message": "Etiqueta juegos de Steam: contenido generado por IA, antitrampas (primero a nivel de kernel), DRM, cuenta y ALUF de terceros, y JcJ.",
     "description": "Manifest description and userscript @description. At most 132 characters (Chrome limit). Name each tag as Steam's own store in that language does."
   },
   "ext_action_title": {
