@@ -2,12 +2,14 @@
 
 - Manifests: permissions exactly ["storage"], no host permissions and no background (rule 3);
   content scripts match the store only; Gecko settings only in Firefox; every __MSG_*__ resolves;
-  every file the manifest names exists.
+  every file the manifest names exists, and each icon is a PNG of the size its key declares.
+- THIRD_PARTY_NOTICES.md is in each extension build, extension zip and the source archive, and its
+  valibot text equals node_modules/valibot/LICENSE.md once whitespace is normalized.
 - Extension pages carry no copy (rule 9): only whitespace text, and `data-i18n` keys that resolve.
   Each page links an icon that exists, or its browser tab shows a puzzle piece.
 - Userscript: header present, no @connect, exact @match, @updateURL and @downloadURL; every `GM`
-  name in the bundle has an @grant and every @grant is used; valibot's license text follows the
-  header; no userscript header in any other bundle.
+  name in the bundle has an @grant and every @grant is used; valibot's license block is in the
+  body; no userscript header in any other bundle.
 - No eval( or new Function in any bundle (rule 2); no URL outside the two Valve hosts.
 - Size budgets: content.js at most 183 KB, options.js at most 114 KB and the userscript at most
   236 KB, unminified (rule 13). Each is the measured size plus about 15% headroom; raise one only
@@ -29,10 +31,12 @@ from repo import (
     ARTIFACTS,
     DIST,
     SLUG,
+    VALIBOT_LICENSE,
     fail,
     json_object,
     json_string,
     package_version,
+    png_size,
     read_json,
     valibot_notice,
 )
@@ -57,6 +61,7 @@ HEADER_FIELD = re.compile(r"^//\s+(@[\w:-]+)[ \t]*(.*?)\s*$", re.MULTILINE)
 MSG = re.compile(r"__MSG_([A-Za-z0-9_@]+)__")
 # The only file of docs/ that the source archive keeps: scripts/gen_styles.py reads it to build.
 SOURCE_DOCS = {"docs/design/tokens.css"}
+NOTICES = "THIRD_PARTY_NOTICES.md"
 
 
 def paths(value: object, where: str) -> list[str]:
@@ -134,6 +139,39 @@ def packaged_problems(
     return problems
 
 
+def icon_problems(browser: str, manifest: dict[str, object]) -> list[str]:
+    """Each icon the manifest declares by size is a PNG of exactly that size."""
+    where = f"dist/{browser}/manifest.json"
+    action = json_object(manifest.get("action", {}), where)
+    declared = [manifest.get("icons", {}), action.get("default_icon", {})]
+    problems: list[str] = []
+    for icons in declared:
+        for size, name in json_object(icons, where).items():
+            path = DIST / browser / json_string(name, where)
+            if not size.isdigit() or not path.is_file():
+                continue
+            found = png_size(path)
+            if found != (int(size), int(size)):
+                problems.append(f"{where}: {name} is {found or 'no PNG'}, declared {size}x{size}")
+    return problems
+
+
+def normalized(text: str) -> str:
+    return " ".join(text.split())
+
+
+def notices_text_problems(where: str, text: str) -> list[str]:
+    if normalized(VALIBOT_LICENSE.read_text(encoding="utf-8")) in normalized(text):
+        return []
+    return [f"{where}: the valibot text differs from node_modules/valibot/LICENSE.md"]
+
+
+def notices_problems(where: str, path: Path) -> list[str]:
+    if not path.is_file():
+        return [f"{where}: missing"]
+    return notices_text_problems(where, path.read_text(encoding="utf-8"))
+
+
 def manifest_problems(browser: str) -> list[str]:
     root = DIST / browser
     where = f"dist/{browser}/manifest.json"
@@ -161,7 +199,12 @@ def manifest_problems(browser: str) -> list[str]:
     for key in MSG.findall((root / "manifest.json").read_text(encoding="utf-8")):
         if key not in catalog:
             problems.append(f"{where}: __MSG_{key}__ has no message in _locales/{locale}")
-    return problems + packaged_problems(browser, manifest, catalog)
+    return (
+        problems
+        + packaged_problems(browser, manifest, catalog)
+        + icon_problems(browser, manifest)
+        + notices_problems(f"dist/{browser}/{NOTICES}", root / NOTICES)
+    )
 
 
 def split_header(text: str) -> tuple[str, str]:
@@ -247,6 +290,22 @@ def secret_problems(roots: list[Path]) -> list[str]:
     ]
 
 
+def zip_member(path: Path, name: str, folder: bool) -> str | None:
+    """A member's text: at the zip root, or under the single folder of the source archive."""
+    with zipfile.ZipFile(path) as archive:
+        for entry in archive.namelist():
+            if (entry.split("/", 1)[1] if folder and "/" in entry else entry) == name:
+                return archive.read(entry).decode("utf-8")
+    return None
+
+
+def zip_notices_problems(where: str, path: Path, folder: bool) -> list[str]:
+    text = zip_member(path, NOTICES, folder)
+    if text is None:
+        return [f"{where}: {NOTICES} is missing"]
+    return notices_text_problems(f"{where}: {NOTICES}", text)
+
+
 def zip_names(path: Path) -> list[str]:
     with zipfile.ZipFile(path) as archive:
         return archive.namelist()
@@ -267,12 +326,14 @@ def artifact_problems() -> list[str]:
         names = zip_names(ARTIFACTS / name)
         if "manifest.json" not in names:
             problems.append(f"artifacts/{name}: manifest.json is not at the zip root")
+        problems += zip_notices_problems(f"artifacts/{name}", ARTIFACTS / name, folder=False)
         problems += [
             f"artifacts/{name}: {entry} is a dev bundle file"
             for entry in names
             if entry.startswith("dev/") or entry.endswith("inject.js")
         ]
     if source in present:
+        problems += zip_notices_problems(f"artifacts/{source}", ARTIFACTS / source, folder=True)
         names = [entry.split("/", 1)[1] for entry in zip_names(ARTIFACTS / source) if "/" in entry]
         roots = {name.split("/", 1)[0] for name in names if name}
         problems += [

@@ -1,6 +1,7 @@
 """Shared helpers for the scripts in this folder: repository paths, Git file lists, failures."""
 
 import json
+import struct
 import subprocess
 import sys
 from pathlib import Path
@@ -13,12 +14,26 @@ SLUG = "steam-ai-reporter"
 ICONS_DIR = ROOT / "assets" / "icons"
 ICON_SIZES = (16, 32, 48, 128)
 VALIBOT_LICENSE = ROOT / "node_modules" / "valibot" / "LICENSE.md"
+PNG_SIGNATURE = bytes([137, 80, 78, 71, 13, 10, 26, 10])
+PNG_HEADER_SIZE = 24
 
 
 def valibot_notice() -> str:
     """valibot's license as a `/*!` comment: the userscript is one file, so it carries the text."""
     text = VALIBOT_LICENSE.read_text(encoding="utf-8").strip()
     return f"/*! valibot\n{text}\n*/"
+
+
+def png_size(path: Path) -> tuple[int, int] | None:
+    """The width and height from a PNG's header bytes, or None when the file is no PNG."""
+    with path.open("rb") as file:
+        header = file.read(PNG_HEADER_SIZE)
+    if len(header) < PNG_HEADER_SIZE or not header.startswith(PNG_SIGNATURE):
+        return None
+    if header[12:16] != b"IHDR":
+        return None
+    width, height = struct.unpack(">II", header[16:PNG_HEADER_SIZE])
+    return width, height
 
 
 def fail(message: str) -> NoReturn:

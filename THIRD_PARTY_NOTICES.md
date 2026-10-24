@@ -4,7 +4,9 @@ This project bundles the software and artwork below. Each keeps its own license,
 
 ## valibot
 
-MIT License. Bundled into the extensions and the userscript.
+Bundled into the extensions and the userscript.
+
+MIT License
 
 Copyright (c) Fabian Hiller
 
@@ -20,7 +22,9 @@ The extension icon (`assets/icons/mark*.svg` and the `icon-*.png` files rendered
 
 ### Lucide, the `tags` icon
 
-ISC License. The tag at the lower right of the mark derives from Lucide's `tags` icon. Lucide lists the icons it derives from Feather under a separate MIT notice; `tags` is not among them, so that notice does not apply here.
+The tag at the lower right of the mark derives from Lucide's `tags` icon. Lucide lists the icons it derives from Feather under a separate MIT notice; `tags` is not among them, so that notice does not apply here.
+
+ISC License
 
 Copyright (c) 2026 Lucide Icons and Contributors
 
