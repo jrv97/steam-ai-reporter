@@ -41,6 +41,15 @@ describe("isKindVerdicts", () => {
     expect(isKindVerdicts(UNKNOWN_KINDS.missing)).toBe(true);
     expect(isKindVerdicts({})).toBe(false);
   });
+
+  it("accepts a disclosed verdict in the slot of its own kind", () => {
+    expect(isKindVerdicts(ALL_DISCLOSED)).toBe(true);
+  });
+
+  it("rejects a disclosed verdict in the slot of another kind", () => {
+    expect(isKindVerdicts({ ...ALL_DISCLOSED, kernel: ALL_DISCLOSED.anticheat })).toBe(false);
+    expect(isKindVerdicts({ ...ALL_DISCLOSED, ai: ALL_DISCLOSED.pvp })).toBe(false);
+  });
 });
 
 describe("a disclosed verdict", () => {

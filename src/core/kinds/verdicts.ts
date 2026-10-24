@@ -3,7 +3,7 @@ import type { SteamLanguage } from "../i18n/locale";
 import { type DisclosedBase, UNKNOWN, type UnknownReason, type Verdict } from "../types";
 import type { KindId } from "./id";
 import type { KindDefinition, TagKind } from "./kind";
-import { hasEveryKind, KINDS, perKind } from "./registry";
+import { holdsEveryKind, KINDS, perKind } from "./registry";
 
 type DisclosedOf<Kind> = Kind extends KindDefinition<infer Disclosed> ? Disclosed : never;
 
@@ -22,14 +22,18 @@ export type KindVerdicts = {
   readonly [Id in KindId]: Verdict<Extract<AnyDisclosed, DisclosedBase<Id>>>;
 };
 
+function sitsUnderItsKind(id: KindId, verdict: KindVerdict): boolean {
+  return verdict.state !== "disclosed" || verdict.kind === id;
+}
+
 /**
- * Whether the verdicts hold an answer for every registered kind. Builders fill one entry per kind
- * from that kind's own definition, so the entry of each kind has the shape of that kind.
+ * Whether the verdicts hold an answer for every registered kind, and a disclosed one sits in the
+ * slot of its own kind, so each slot has the shape of its kind.
  */
 export function isKindVerdicts(
   verdicts: Partial<Record<KindId, KindVerdict>>,
 ): verdicts is KindVerdicts {
-  return hasEveryKind(verdicts);
+  return holdsEveryKind(verdicts, sitsUnderItsKind);
 }
 
 /** Whether two lists hold the very same verdict objects in the same order. */

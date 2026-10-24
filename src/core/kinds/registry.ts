@@ -23,20 +23,25 @@ export const KINDS = [
   PVP_KIND,
 ] as const;
 
-/** Whether `values` holds a value for every registered kind. */
-export function hasEveryKind(values: Partial<Record<KindId, unknown>>): boolean {
+function anyValue(): boolean {
+  return true;
+}
+
+/**
+ * Whether `values` holds a value for every registered kind, and `fits` accepts each one in its
+ * slot. Builders fill one slot per kind from that kind's own definition.
+ */
+export function holdsEveryKind<T>(
+  values: Partial<Record<KindId, T>>,
+  fits: (id: KindId, value: T) => boolean = anyValue,
+): values is Readonly<Record<KindId, T>> {
   for (const kind of KINDS) {
-    if (values[kind.id] === undefined) {
+    const value = values[kind.id];
+    if (value === undefined || !fits(kind.id, value)) {
       return false;
     }
   }
   return true;
-}
-
-function isEveryKind<T>(
-  values: Partial<Record<KindId, T>>,
-): values is Readonly<Record<KindId, T>> {
-  return hasEveryKind(values);
 }
 
 /**
@@ -48,7 +53,7 @@ export function perKind<T>(make: (kind: TagKind) => T): Readonly<Record<KindId, 
   for (const kind of KINDS) {
     values[kind.id] = make(kind);
   }
-  if (isEveryKind(values)) {
+  if (holdsEveryKind(values)) {
     return values;
   }
   throw new SarError("error_unexpected", {});

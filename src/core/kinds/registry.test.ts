@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { SHIPPED_CATALOGS } from "../i18n/shipped";
 import { KIND_IDS } from "./id";
-import { hasEveryKind, KIND_BY_ID, KINDS, perKind } from "./registry";
+import { holdsEveryKind, KIND_BY_ID, KINDS, perKind } from "./registry";
 
 describe("KINDS", () => {
   it("holds one definition for each kind id, in order, and each one knows its id", () => {
@@ -42,11 +42,22 @@ describe("KIND_BY_ID", () => {
   });
 });
 
-describe("hasEveryKind", () => {
+describe("holdsEveryKind", () => {
   it("is true only when a value is present for each registered kind", () => {
-    expect(hasEveryKind(perKind(() => 1))).toBe(true);
-    expect(hasEveryKind({})).toBe(false);
-    expect(hasEveryKind({ ...perKind(() => 1), ai: undefined })).toBe(false);
+    expect(holdsEveryKind(perKind(() => 1))).toBe(true);
+    expect(holdsEveryKind({})).toBe(false);
+    expect(holdsEveryKind({ ...perKind(() => 1), ai: undefined })).toBe(false);
+  });
+
+  it("asks `fits` about every slot and fails when one value does not fit", () => {
+    const seen: string[] = [];
+    const fits = (id: string, value: number): boolean => {
+      seen.push(id);
+      return value > 0;
+    };
+    expect(holdsEveryKind(perKind(() => 1), fits)).toBe(true);
+    expect(seen).toStrictEqual([...KIND_IDS]);
+    expect(holdsEveryKind({ ...perKind(() => 1), kernel: 0 }, fits)).toBe(false);
   });
 });
 
