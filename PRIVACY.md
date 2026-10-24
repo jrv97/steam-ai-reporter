@@ -1,10 +1,10 @@
 # Privacy
 
-AI Reporter for Steam collects nothing. It has no analytics, no telemetry, no account, no server of its own and no third-party hosts. It sends no reports anywhere, and nothing is sent to the developer.
+Tag Kit for Steam collects nothing. It has no analytics, no telemetry, no account, no server of its own and no third-party hosts. It sends no reports anywhere, and nothing is sent to the developer.
 
 ## What is stored on your device
 
-- Verdicts per app ID: whether the developer reported AI use, the time it was checked, the developer's report text and its language, the name of a named AI service if there is one, and the game's name.
+- Results per app ID: which tags the store data gives the item, the time it was checked, the developer's AI report text and its language, the name of a named AI service if there is one, and the game's name.
 - Your settings: whether badges and the banner are on, the list filter mode (off, dim or hide), the language, and a debug flag.
 - Your allow-list of games you chose to ignore (app ID, name and date).
 - A small internal record used to back off if Steam is limiting requests.
@@ -13,7 +13,7 @@ This lives in the extension's local storage (`storage.local`) or, in the userscr
 
 ## What is sent, and where
 
-To find out which items have a report, the app IDs of the items on the page you are viewing are sent to Valve, and only to Valve:
+To find out which tags an item has, the app IDs of the items on the page you are viewing are sent to Valve, and only to Valve:
 
 - `https://api.steampowered.com/IStoreBrowseService/GetItems/v1`: the app IDs on the page, in batches of up to 50, with the page's Steam language to get the developer's text translated.
 - `https://store.steampowered.com/app/<id>/?l=english`: a fallback that fetches an app's store page when the API gives no answer, for a few apps per page view.

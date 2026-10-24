@@ -7,13 +7,13 @@
   >
 </p>
 
-# AI Reporter for Steam
+# Tag Kit for Steam
 
-A browser extension (Chrome and Firefox) and a userscript (Tampermonkey and Violentmonkey) that mark items on the Steam store whose developers reported generative AI use in Steam's own AI content disclosure.
+A browser extension (Chrome and Firefox) and a userscript (Tampermonkey and Violentmonkey) that tag items on the Steam store with what Steam's own store data says about them: AI Generated Content Disclosure, anti-cheat (Kernel Level Anti-Cheat first), 3rd-party DRM, 3rd-Party Account, 3rd-party EULA and PvP.
 
 > Status: in development. Nothing is released yet, and the install links below are placeholders.
 
-The extension only reads what developers report on Steam and sends no reports anywhere.
+The extension only reads what Steam's store data and developers report there, and sends no reports anywhere.
 
 ## Why
 
@@ -25,8 +25,9 @@ If you browse the store the same way, I hope you find it useful too.
 
 ## What it does
 
-- Adds a badge to capsules and rows (search, wishlist, home, tag and category hubs, sale pages such as Next Fest, developer and publisher pages, the discovery queue, search suggestions) for items where the developer filled in Steam's AI content disclosure.
-- Shows a non-blocking banner on the app page that quotes the developer's report verbatim.
+- Tags these kinds of items: AI Generated Content Disclosure, Kernel Level Anti-Cheat and other Anti-Cheat Software, 3rd-party DRM, 3rd-Party Account, 3rd-party EULA and PvP.
+- Adds a badge to capsules and rows (search, wishlist, home, tag and category hubs, sale pages such as Next Fest, developer and publisher pages, the discovery queue, search suggestions) for items that carry one of those tags.
+- Shows a non-blocking banner on the app page that quotes the developer's AI report verbatim.
 - Optionally dims or hides those items in lists. This is off by default.
 - Lets you ignore a game you consider a false flag, with a per-game allow-list.
 
@@ -100,6 +101,7 @@ Main tasks:
 - `mise run package`: write the Chrome and Firefox zips, the userscript and its `.meta.js`, and the source archive for store reviewers to `artifacts/`, then check them.
 - `mise run canary`: before a release, check that live Steam still answers in the shape the detectors expect (two requests). It is not part of `ci`.
 - `mise run capture-fixtures`: refresh the public test fixtures from the live store.
+- `mise run icons`: render the extension icon PNGs in `assets/icons/` from `mark-purple.svg` with headless Chrome (`SAR_CHROME_BIN`).
 - `mise run change-new`: add a changelog fragment. A pull request that changes `src/` needs one, unless it carries the `no-changelog-fragment` label.
 
 ### Try a build in your browser
@@ -156,8 +158,8 @@ I built this extension with [Claude Code](https://claude.com/claude-code) and Cl
 
 ## Not affiliated with Valve
 
-AI Reporter for Steam is an independent project. It is not affiliated with, endorsed by or sponsored by Valve Corporation. Steam and the Steam logo are trademarks of Valve Corporation.
+Tag Kit for Steam is an independent project. It is not affiliated with, endorsed by or sponsored by Valve Corporation. Steam and the Steam logo are trademarks of Valve Corporation.
 
 ## License
 
-MIT. See [LICENSE](LICENSE).
+MIT. See [LICENSE](LICENSE). The licenses of the bundled library and of the icon artwork, which derives from Lucide and Simple Icons, are in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

@@ -1,7 +1,7 @@
-# AI Reporter for Steam
+# Tag Kit for Steam
 
 A Chrome and Firefox MV3 extension and a Tampermonkey/Violentmonkey userscript, built from one
-TypeScript core, that mark Steam store items whose developers reported generative AI use.
+TypeScript core, that tag Steam store items: AI Generated Content Disclosure, anti-cheat, 3rd-party DRM, 3rd-Party Account, 3rd-party EULA and PvP.
 
 ## Working knowledge (docs/)
 
