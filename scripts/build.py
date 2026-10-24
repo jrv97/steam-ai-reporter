@@ -17,6 +17,7 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
+from catalogs import BUILD_ONLY_KEYS, USERSCRIPT_NAME_KEY
 from gen_styles import stylesheet
 from repo import (
     DIST,
@@ -42,10 +43,6 @@ BROWSERS = ("chrome", "firefox")
 CONTENT_CSS = ("TOKENS_CSS", "PAGE_CSS")
 
 USERSCRIPT_MATCH = "https://store.steampowered.com/*"
-# Script managers may treat a renamed script as a new one, so @name keeps its own key.
-# Set this to "ext_name" and delete userscript_name from the catalogs to follow the product name.
-# The steps, and the spike to run first, are in docs/testing/userscript-install.mdx.
-USERSCRIPT_NAME_KEY = "userscript_name"
 USERSCRIPT_NAMESPACE = "https://github.com/jrv97/steam-ai-reporter"
 USERSCRIPT_UPDATE_BASE = f"{USERSCRIPT_NAMESPACE}/releases/latest/download"
 USERSCRIPT_GRANTS = (
@@ -104,6 +101,8 @@ def manifest_catalog(catalog: dict[str, object], locale: str) -> dict[str, objec
     """The catalog as `_locales` needs it: each message and its placeholders, no descriptions."""
     result: dict[str, object] = {}
     for key, value in catalog.items():
+        if key in BUILD_ONLY_KEYS:
+            continue
         entry = json_object(value, f"{locale} {key}")
         result[key] = {name: entry[name] for name in ("message", "placeholders") if name in entry}
     return result
@@ -179,11 +178,6 @@ def userscript_header(version: str, catalogs: dict[str, dict[str, object]]) -> s
     return "\n".join(lines)
 
 
-def userscript_banner(header: str) -> str:
-    """The header, then valibot's license in a `/*!` comment that tools keep."""
-    return f"{header}\n{valibot_notice()}"
-
-
 def bundles(header: str) -> list[Bundle]:
     result = [
         Bundle(f"src/platform/extension/{entry}.ts", DIST / browser / f"{entry}.js")
@@ -194,7 +188,7 @@ def bundles(header: str) -> list[Bundle]:
         Bundle(
             "src/platform/userscript/main.ts",
             DIST / "userscript" / f"{SLUG}.user.js",
-            banner=userscript_banner(header),
+            banner=f"{header}\n{valibot_notice()}",
         )
     )
     result.append(Bundle("src/platform/dev/inject.ts", DIST / "dev" / "inject.js"))

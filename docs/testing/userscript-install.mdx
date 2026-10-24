@@ -46,7 +46,7 @@ The script keeps the `@name` of its first release: "AI Reporter for Steam" in En
 
 Flip once both managers behave:
 
-1. In `scripts/build.py`, set `USERSCRIPT_NAME_KEY` to `"ext_name"`. The `@name` and `@name:es` lines then follow the product name.
-2. Delete the `userscript_name` key from `src/locales/en/messages.json` and `src/locales/es/messages.json`. `check_i18n.py` fails on a key nothing uses.
+1. In `scripts/catalogs.py`, set `USERSCRIPT_NAME_KEY` to `"ext_name"`. The `@name` and `@name:es` lines then follow the product name.
+2. Delete the `userscript_name` key from `src/locales/en/messages.json` and `src/locales/es/messages.json`. The key feeds only the userscript header: it never reaches the extension or a bundle.
 3. Update every spot that names the script. In this file: the name check in step 4 of the Tampermonkey list and step 4 of "What you should see". In `docs/store/listing.mdx`: the sentence about `@name` in the first paragraph. In `docs/design/components.mdx`: the `userscript_name` row of the message table.
 4. Add a changie fragment (`mise run change-new`). If the spike showed a second script, say that the old copy needs removing and how to carry the settings over, using the backup on the settings dialog.

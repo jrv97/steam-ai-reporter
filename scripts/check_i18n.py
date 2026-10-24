@@ -7,7 +7,7 @@ Shipped catalogs (src/locales/<locale>/messages.json):
 - every locale has the same keys and placeholders as English (other locales may add plural
   categories such as `_few` for a base that is plural in English);
 - every English key is used: as a string in src/**/*.ts, as `__MSG_<key>__` in a manifest, or in
-  scripts/build.py (the userscript header).
+  scripts/build.py or scripts/catalogs.py (the userscript header).
 
 Every catalog, shipped or test-only (tests/locales/), must be valid and must not say "uses AI",
 "AI-free" or "no AI": the product reports disclosures, it does not judge games.
@@ -167,7 +167,7 @@ def corpus() -> str:
         if not path.name.endswith((".test.ts", ".gen.ts"))
     ]
     sources += sorted((ROOT / "src" / "platform").rglob("manifest.*.json"))
-    sources.append(ROOT / "scripts" / "build.py")
+    sources += [ROOT / "scripts" / "build.py", ROOT / "scripts" / "catalogs.py"]
     return "\n".join(path.read_text(encoding="utf-8") for path in sources)
 
 
@@ -179,7 +179,7 @@ def unused_problems(english: Catalog) -> list[str]:
         base = plural_base(key)
         names.add(base if base is not None and base in bases else key)
     return [
-        f"{DEFAULT_LOCALE}: {name} is not used in src/ or scripts/build.py"
+        f"{DEFAULT_LOCALE}: {name} is not used in src/ or scripts/"
         for name in sorted(names)
         if f'"{name}"' not in text and f"__MSG_{name}__" not in text
     ]
