@@ -13,11 +13,6 @@ from repo import json_object, json_string, read_json
 DEFAULT_LOCALE = "en"
 PLURAL_CATEGORIES = ("zero", "one", "two", "few", "many", "other")
 PLACEHOLDER = re.compile(r"\$([A-Za-z0-9_@]+)\$")
-# The userscript @name reads this key. Set it to "ext_name" and delete userscript_name from the
-# catalogs to follow the product name. The steps are in docs/testing/userscript-install.mdx.
-USERSCRIPT_NAME_KEY = "userscript_name"
-# Keys only the userscript header reads; the bundles and the extension's _locales leave them out.
-BUILD_ONLY_KEYS = frozenset({USERSCRIPT_NAME_KEY} - {"ext_name"})
 
 
 @dataclass(frozen=True)

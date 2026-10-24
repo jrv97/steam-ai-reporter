@@ -9,7 +9,7 @@ Run `mise run build` first. The file lives in your clone, for example `C:\path\t
 1. Install Tampermonkey in Chrome (Chrome Web Store) or in Firefox Nightly (addons.mozilla.org).
 2. Chrome only: open `chrome://extensions`, click Details on Tampermonkey, turn on "Allow access to file URLs". Also turn on "Allow User Scripts" if Chrome shows that switch.
 3. Open the built file in a tab by its `file:///` address, for example `file:///C:/path/to/steam-ai-reporter/dist/userscript/steam-ai-reporter.user.js`.
-4. Tampermonkey shows an install page. Check that the name is "AI Reporter for Steam" (the script name from the first release, `userscript_name`) and that the permissions list only storage access and a menu command (no network access to other sites). Click Install.
+4. Tampermonkey shows an install page. Check that the name is "AI Reporter for Steam" (the script name from the first release) and that the permissions list only storage access and a menu command (no network access to other sites). Click Install.
 5. To update after a rebuild, open the same `file:///` address again and click Reinstall.
 
 ## Violentmonkey
@@ -38,7 +38,7 @@ Per manager and browser, note which of the five checks passed, and for each fail
 
 ## Renaming the userscript
 
-The script keeps the `@name` of its first release: "AI Reporter for Steam" in English and "Marcador de IA para Steam" in Spanish, both held in the `userscript_name` catalog key. Script managers tell installed scripts apart by name and namespace, so a renamed `@name` may install as a second script beside the old one and leave the stored settings and ignored games with the old copy. Run a spike in Tampermonkey and in Violentmonkey, in Chrome and in Firefox Nightly, before flipping:
+The script keeps the `@name` of its first release: "AI Reporter for Steam" in English and "Marcador de IA para Steam" in Spanish, both held under `userscript_name` in `src/locales/<locale>/userscript.json`, a catalog that only the userscript header reads. Script managers tell installed scripts apart by name and namespace, so a renamed `@name` may install as a second script beside the old one and leave the stored settings and ignored games with the old copy. Run a spike in Tampermonkey and in Violentmonkey, in Chrome and in Firefox Nightly, before flipping:
 
 1. Install the current build and change a setting, for example ignore one game.
 2. Build with a different `@name` and update the way users do (the update URL, or reinstall from the file).
@@ -46,7 +46,7 @@ The script keeps the `@name` of its first release: "AI Reporter for Steam" in En
 
 Flip once both managers behave:
 
-1. In `scripts/catalogs.py`, set `USERSCRIPT_NAME_KEY` to `"ext_name"`. The `@name` and `@name:es` lines then follow the product name.
-2. Delete the `userscript_name` key from `src/locales/en/messages.json` and `src/locales/es/messages.json`. The key feeds only the userscript header: it never reaches the extension or a bundle.
+1. In `scripts/build.py`, set `USERSCRIPT_NAME` to `("messages.json", "ext_name")`. The `@name` and `@name:es` lines then follow the product name.
+2. Delete `src/locales/en/userscript.json` and `src/locales/es/userscript.json`.
 3. Update every spot that names the script. In this file: the name check in step 4 of the Tampermonkey list and step 4 of "What you should see". In `docs/store/listing.mdx`: the sentence about `@name` in the first paragraph. In `docs/design/components.mdx`: the `userscript_name` row of the message table.
 4. Add a changie fragment (`mise run change-new`). If the spike showed a second script, say that the old copy needs removing and how to carry the settings over, using the backup on the settings dialog.

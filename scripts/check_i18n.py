@@ -7,7 +7,10 @@ Shipped catalogs (src/locales/<locale>/messages.json):
 - every locale has the same keys and placeholders as English (other locales may add plural
   categories such as `_few` for a base that is plural in English);
 - every English key is used: as a string in src/**/*.ts, as `__MSG_<key>__` in a manifest, or in
-  scripts/build.py or scripts/catalogs.py (the userscript header).
+  scripts/build.py (the userscript header).
+
+src/locales/<locale>/userscript.json holds the userscript name, which only scripts/build.py reads:
+it gets the same entry checks and the same parity with English.
 
 Every catalog, shipped or test-only (tests/locales/), must be valid and must not say "uses AI",
 "AI-free" or "no AI": the product reports disclosures, it does not judge games.
@@ -167,7 +170,7 @@ def corpus() -> str:
         if not path.name.endswith((".test.ts", ".gen.ts"))
     ]
     sources += sorted((ROOT / "src" / "platform").rglob("manifest.*.json"))
-    sources += [ROOT / "scripts" / "build.py", ROOT / "scripts" / "catalogs.py"]
+    sources.append(ROOT / "scripts" / "build.py")
     return "\n".join(path.read_text(encoding="utf-8") for path in sources)
 
 
@@ -179,7 +182,7 @@ def unused_problems(english: Catalog) -> list[str]:
         base = plural_base(key)
         names.add(base if base is not None and base in bases else key)
     return [
-        f"{DEFAULT_LOCALE}: {name} is not used in src/ or scripts/"
+        f"{DEFAULT_LOCALE}: {name} is not used in src/ or scripts/build.py"
         for name in sorted(names)
         if f'"{name}"' not in text and f"__MSG_{name}__" not in text
     ]
@@ -231,6 +234,11 @@ def main() -> None:
         ]
         if path.parent.name != DEFAULT_LOCALE:
             problems += parity_problems(path.parent.name, catalog, english)
+    names = {path.parent.name: load(path) for path in sorted(SHIPPED.glob("*/userscript.json"))}
+    for locale, catalog in names.items():
+        problems += entry_problems(SHIPPED / locale / "userscript.json", catalog)
+        if locale != DEFAULT_LOCALE:
+            problems += parity_problems(locale, catalog, names.get(DEFAULT_LOCALE, {}))
     for path in sorted(TEST_CATALOGS.glob("*/messages.json")):
         problems += entry_problems(path, load(path))
     problems += unused_problems(english)

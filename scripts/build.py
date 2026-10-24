@@ -17,7 +17,6 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
-from catalogs import BUILD_ONLY_KEYS, USERSCRIPT_NAME_KEY
 from gen_styles import stylesheet
 from repo import (
     DIST,
@@ -43,6 +42,9 @@ BROWSERS = ("chrome", "firefox")
 CONTENT_CSS = ("TOKENS_CSS", "PAGE_CSS")
 
 USERSCRIPT_MATCH = "https://store.steampowered.com/*"
+# The userscript @name comes from this catalog file and key. Set them to messages.json and ext_name,
+# then delete the userscript.json files, to follow the product name.
+USERSCRIPT_NAME = ("userscript.json", "userscript_name")
 USERSCRIPT_NAMESPACE = "https://github.com/jrv97/steam-ai-reporter"
 USERSCRIPT_UPDATE_BASE = f"{USERSCRIPT_NAMESPACE}/releases/latest/download"
 USERSCRIPT_GRANTS = (
@@ -83,9 +85,9 @@ def esbuild_command(bundle: Bundle, watch: bool) -> list[str]:
     return command
 
 
-def load_catalogs() -> dict[str, dict[str, object]]:
+def load_catalogs(filename: str = "messages.json") -> dict[str, dict[str, object]]:
     catalogs: dict[str, dict[str, object]] = {}
-    for path in sorted(LOCALES_DIR.glob("*/messages.json")):
+    for path in sorted(LOCALES_DIR.glob(f"*/{filename}")):
         catalogs[path.parent.name] = json_object(read_json(path), str(path))
     if DEFAULT_LOCALE not in catalogs:
         fail(f"missing the {DEFAULT_LOCALE} catalog in {LOCALES_DIR}")
@@ -101,8 +103,6 @@ def manifest_catalog(catalog: dict[str, object], locale: str) -> dict[str, objec
     """The catalog as `_locales` needs it: each message and its placeholders, no descriptions."""
     result: dict[str, object] = {}
     for key, value in catalog.items():
-        if key in BUILD_ONLY_KEYS:
-            continue
         entry = json_object(value, f"{locale} {key}")
         result[key] = {name: entry[name] for name in ("message", "placeholders") if name in entry}
     return result
@@ -148,12 +148,14 @@ def write_extension(browser: str, version: str) -> None:
 
 def userscript_header(version: str, catalogs: dict[str, dict[str, object]]) -> str:
     english = catalogs[DEFAULT_LOCALE]
+    name_file, name_key = USERSCRIPT_NAME
+    names = load_catalogs(name_file)
     fields: list[tuple[str, str]] = [
-        ("@name", message(english, USERSCRIPT_NAME_KEY, DEFAULT_LOCALE)),
+        ("@name", message(names[DEFAULT_LOCALE], name_key, DEFAULT_LOCALE)),
     ]
-    for locale, catalog in catalogs.items():
+    for locale, catalog in names.items():
         if locale != DEFAULT_LOCALE:
-            fields.append((f"@name:{locale}", message(catalog, USERSCRIPT_NAME_KEY, locale)))
+            fields.append((f"@name:{locale}", message(catalog, name_key, locale)))
     fields += [
         ("@namespace", USERSCRIPT_NAMESPACE),
         ("@version", version),

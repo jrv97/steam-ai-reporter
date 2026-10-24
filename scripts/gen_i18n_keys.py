@@ -1,8 +1,7 @@
 """Generate typed message keys from the English catalogs.
 
 For each catalog this writes a TypeScript module with:
-- `MessageParams`: every message key but the BUILD_ONLY_KEYS, mapped to the named placeholders
-  it takes;
+- `MessageParams`: every message key, mapped to the named placeholders it takes;
 - `PluralParams`: every plural base key (one with an `_other` form), mapped to its placeholders
   other than `count`, which `plural()` fills in;
 - `MessageKey` and `PluralKey`, the key unions.
@@ -15,7 +14,7 @@ Usage: gen_i18n_keys.py
 
 from pathlib import Path
 
-from catalogs import BUILD_ONLY_KEYS, DEFAULT_LOCALE, Catalog, load, plural_base, plural_bases
+from catalogs import DEFAULT_LOCALE, Catalog, load, plural_base, plural_bases
 from repo import ROOT, fail
 
 TARGETS = (
@@ -46,8 +45,6 @@ def render(catalog: Catalog, source: Path) -> str:
     messages: dict[str, tuple[str, ...]] = {}
     plurals: dict[str, tuple[str, ...]] = {}
     for key, entry in catalog.items():
-        if key in BUILD_ONLY_KEYS:
-            continue
         base = plural_base(key)
         if base is not None and base in bases:
             if key == f"{base}_other":

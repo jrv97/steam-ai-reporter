@@ -15,10 +15,6 @@
     "message": "Tag Kit for Steam settings",
     "description": "Tooltip of the extension's toolbar button, which opens the settings popup. At most 75 characters. Keep \"Tag Kit for Steam\" as in ext_name."
   },
-  "userscript_name": {
-    "message": "AI Reporter for Steam",
-    "description": "Userscript @name. Script managers may treat a renamed script as a new one, so this keeps the name of the first release. Keep as is."
-  },
   "error_unexpected": {
     "message": "Unexpected error.",
     "description": "Logged to the browser console when something fails without a more specific message. Short; developers read it, not players."
