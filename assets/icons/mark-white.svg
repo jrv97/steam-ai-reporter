@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg width="300" height="300" viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg" role="img">
-  <mask id="cut-cut" maskUnits="userSpaceOnUse" x="0" y="0" width="300" height="300">
+  <mask id="sar-mark-cut" maskUnits="userSpaceOnUse" x="0" y="0" width="300" height="300">
     <rect width="300" height="300" fill="#fff" />
     <path
       transform="translate(24 24) scale(8.667)"
@@ -25,7 +25,7 @@
       />
     </g>
   </mask>
-  <circle cx="128" cy="128" r="124" fill="#ffffff" mask="url(#cut-cut)" />
+  <circle cx="128" cy="128" r="124" fill="#ffffff" mask="url(#sar-mark-cut)" />
   <g transform="translate(134.17 134.17) scale(6.4)">
     <g
       fill="none"
