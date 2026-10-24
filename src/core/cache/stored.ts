@@ -7,8 +7,8 @@ import { UNKNOWN, type Verdict } from "../types";
 import { isStoredReason, STORED_REASONS } from "./ttl";
 
 // The stored form of one app's verdicts (`v1:a:<appid>`): the fetch time and one entry per kind.
-// Storage is untrusted: every read goes through these schemas, and anything that fails them is
-// discarded, never cast. Only the unknown reasons in `STORED_REASONS` appear here.
+// Storage is untrusted: a read that fails these schemas is discarded, never cast. Only the
+// unknown reasons in `STORED_REASONS` appear here.
 
 const SourceSchema = v.picklist(["api", "html"]);
 const TimeSchema = v.pipe(v.number(), v.finite());

@@ -82,10 +82,9 @@ const MOVES: readonly Move[] = [
 ];
 
 /**
- * Moves the v1 settings and ignore list to their v2 keys. A v1 value is converted only while its
- * v2 key is absent, so a run that finds v2 data leaves it alone and a second run changes nothing.
- * The v1 keys go only after the v2 values read back as written; when they do not, the v2 keys are
- * cleared again, the v1 data stays, and the run throws.
+ * Moves the v1 settings and ignore list to their v2 keys, converting a value only while its v2
+ * key is absent. The v1 keys go once the v2 values read back as written; if they do not, the v2
+ * keys are cleared, the v1 data stays and the run throws.
  */
 export async function migrateStorage(store: KeyValueStore): Promise<Migration> {
   const found = await store.get(MOVES.flatMap((move) => [move.from, move.to]));

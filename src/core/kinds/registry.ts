@@ -2,8 +2,8 @@ import { AI_KIND } from "./ai";
 import { KIND_IDS, type KindId } from "./id";
 import type { TagKind } from "./kind";
 
-// The one place that lists the kinds. Both literals below are checked against `KindId`, so a kind
-// added to `KIND_IDS` without a definition here fails the type check.
+// The one place that lists the kinds. Each literal here is checked against `KindId`, so a kind in
+// `KIND_IDS` without an entry fails the type check.
 const REGISTRY: Readonly<Record<KindId, TagKind>> = { ai: AI_KIND };
 
 /** Every registered kind, in `KIND_IDS` order. */
