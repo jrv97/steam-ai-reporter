@@ -6,7 +6,7 @@ import type { JsonValue } from "../json";
 import type { KeyValueStore } from "../ports";
 import {
   allowFromV1,
-  migrateOnce,
+  migrateSettings,
   migrateStorage,
   readAllowValue,
   readSettingsValue,
@@ -69,19 +69,42 @@ function loggingStore(
   };
 }
 
+/** The key lists of a store's `get` calls, in order. */
+function keysRead(log: readonly string[]): readonly string[] {
+  return log.filter((line) => line.startsWith("get ")).map((line) => line.slice("get ".length));
+}
+
 describe("migrateStorage", () => {
-  it("re-reads each key before it sets it, verifies the copies and never removes", async () => {
+  it("checks, re-checks and verifies each key on its own, and never removes", async () => {
     const log: string[] = [];
     const inner = memoryStore(new Map([["v1:settings", V1_CUSTOM], ["v1:allow", V1_ALLOW]]));
     await migrateStorage(loggingStore(inner, log));
     expect(log).toStrictEqual([
-      "get v1:settings,v2:settings,v1:allow,v2:allow",
+      "get v2:settings",
+      "get v1:settings",
       "get v2:settings",
       "set v2:settings",
+      "get v2:settings",
+      "get v2:allow",
+      "get v1:allow",
       "get v2:allow",
       "set v2:allow",
-      "get v2:settings,v2:allow",
+      "get v2:allow",
     ]);
+  });
+
+  it("reads no v1 key where v2 holds a usable value", async () => {
+    const log: string[] = [];
+    const inner = memoryStore(
+      new Map<string, JsonValue>([
+        ["v2:settings", encodeSettings(DEFAULT_SETTINGS)],
+        ["v2:allow", { all: {}, ai: {} }],
+        ["v1:settings", V1_CUSTOM],
+        ["v1:allow", V1_ALLOW],
+      ]),
+    );
+    expect(await migrateStorage(loggingStore(inner, log))).toBe("current");
+    expect(keysRead(log)).toStrictEqual(["v2:settings", "v2:allow"]);
   });
 
   it("skips a key that another context wrote after the first read", async () => {
@@ -90,7 +113,7 @@ describe("migrateStorage", () => {
     const changed = encodeSettings(withKind(DEFAULT_SETTINGS, "ai", { banner: false }));
     // The user changes the v2 settings between this run's first read and its re-read.
     const store = loggingStore(inner, log, async (call) => {
-      if (call === 2) {
+      if (call === 3) {
         await inner.set(new Map([["v2:settings", changed]]));
       }
     });
@@ -104,7 +127,7 @@ describe("migrateStorage", () => {
     const log: string[] = [];
     const inner = memoryStore(new Map([["v1:settings", V1_CUSTOM], ["v1:allow", V1_ALLOW]]));
     const store = loggingStore(inner, log, async (call) => {
-      if (call === 2) {
+      if (call === 3) {
         await migrateStorage(inner);
       }
     });
@@ -127,8 +150,9 @@ describe("migrateStorage", () => {
 });
 
 describe("readSettingsValue and readAllowValue", () => {
-  it("make one storage read when v2 data exists, v1 data too", async () => {
-    const store = countingStore(
+  it("read only the v2 key where v2 holds a usable value, v1 data too", async () => {
+    const log: string[] = [];
+    const store = loggingStore(
       memoryStore(
         new Map<string, JsonValue>([
           ["v2:settings", encodeSettings(DEFAULT_SETTINGS)],
@@ -137,17 +161,31 @@ describe("readSettingsValue and readAllowValue", () => {
           ["v1:allow", V1_ALLOW],
         ]),
       ),
+      log,
     );
     expect(await readSettingsValue(store)).toStrictEqual(encodeSettings(DEFAULT_SETTINGS));
     expect(await readAllowValue(store)).toStrictEqual({ all: {}, ai: {} });
-    expect(store.calls).toStrictEqual({ get: 2, set: 0, remove: 0, keys: 0 });
+    expect(log).toStrictEqual(["get v2:settings", "get v2:allow"]);
   });
 
-  it("make one storage read on a fresh install, and read nothing", async () => {
-    const store = countingStore(memoryStore());
+  it("read the v1 key only after v2 is absent, and read nothing on a fresh install", async () => {
+    const log: string[] = [];
+    const store = loggingStore(memoryStore(), log);
     expect(await readSettingsValue(store)).toBeUndefined();
     expect(await readAllowValue(store)).toBeUndefined();
-    expect(store.calls).toStrictEqual({ get: 2, set: 0, remove: 0, keys: 0 });
+    expect(log).toStrictEqual([
+      "get v2:settings",
+      "get v1:settings",
+      "get v2:allow",
+      "get v1:allow",
+    ]);
+  });
+
+  it("read the v1 key when v2 is unusable, and return it where v1 has nothing", async () => {
+    const log: string[] = [];
+    const store = loggingStore(memoryStore(new Map([["v2:settings", "garbage"]])), log);
+    expect(await readSettingsValue(store)).toBe("garbage");
+    expect(log).toStrictEqual(["get v2:settings", "get v1:settings"]);
   });
 
   it("migrate when only v1 data exists, and read what they wrote", async () => {
@@ -155,32 +193,50 @@ describe("readSettingsValue and readAllowValue", () => {
     expect(await readSettingsValue(store)).toStrictEqual(encodeSettings(settingsFromV1(V1_CUSTOM)));
     expect(await readAllowValue(store)).toStrictEqual(allowFromV1(V1_ALLOW));
   });
+
+  it("migrate a corrupt v2 value from v1, one key without the other", async () => {
+    const store = memoryStore(
+      new Map<string, JsonValue>([
+        ["v2:settings", "garbage"],
+        ["v1:settings", V1_CUSTOM],
+        ["v1:allow", V1_ALLOW],
+      ]),
+    );
+    expect(await readSettingsValue(store)).toStrictEqual(encodeSettings(settingsFromV1(V1_CUSTOM)));
+    expect(await stored(store, "v2:allow")).toBeUndefined();
+  });
 });
 
-describe("migrateOnce", () => {
-  it("runs once per store, however many callers ask", async () => {
+describe("migrateSettings", () => {
+  it("shares one run between callers that ask while it runs", async () => {
     const store = countingStore(memoryStore(new Map([["v1:settings", V1_CUSTOM]])));
-    const [first, second] = await Promise.all([migrateOnce(store), migrateOnce(store)]);
-    await migrateOnce(store);
+    const [first, second] = await Promise.all([migrateSettings(store), migrateSettings(store)]);
     expect([first, second]).toStrictEqual(["migrated", "migrated"]);
     expect(store.calls.set).toBe(1);
-    expect(store.calls.get).toBe(3);
+  });
+
+  it("forgets a run once it settles, so a v1 key that appears later is copied", async () => {
+    const store = memoryStore();
+    expect(await migrateSettings(store)).toBe("current");
+    await store.set(new Map([["v1:settings", V1_CUSTOM]]));
+    expect(await migrateSettings(store)).toBe("migrated");
+    expect(parseSettings(await stored(store, "v2:settings")).locale).toBe("es");
   });
 
   it("runs again for another store", async () => {
     const one = memoryStore(new Map([["v1:settings", V1_CUSTOM]]));
     const two = memoryStore(new Map([["v1:settings", V1_DEFAULTS]]));
-    await migrateOnce(one);
-    expect(await migrateOnce(two)).toBe("migrated");
+    await migrateSettings(one);
+    expect(await migrateSettings(two)).toBe("migrated");
     expect(parseSettings(await stored(two, "v2:settings"))).toStrictEqual(DEFAULT_SETTINGS);
   });
 
   it("forgets a failed run, so the next call tries again", async () => {
     const store = countingStore(memoryStore(new Map([["v1:settings", V1_CUSTOM]])));
     store.break();
-    await expect(migrateOnce(store)).rejects.toThrow();
+    await expect(migrateSettings(store)).rejects.toThrow();
     store.heal();
-    expect(await migrateOnce(store)).toBe("migrated");
+    expect(await migrateSettings(store)).toBe("migrated");
   });
 });
 

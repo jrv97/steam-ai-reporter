@@ -3,6 +3,10 @@ import { keyValueStoreContract } from "../../../tests/contracts/key-value-store.
 import { migrationFaultContract } from "../../../tests/contracts/migration-faults.contract";
 import { migrationContract } from "../../../tests/contracts/migration.contract";
 import { fakeGm, faultyGm } from "../../../tests/helpers/gm-fake";
+import type { JsonValue } from "../../core/json";
+import { createAllowList } from "../../core/settings/allow-list";
+import { DEFAULT_SETTINGS, encodeSettings } from "../../core/settings/settings";
+import { createSettingsSource } from "../../core/settings/settings-source";
 import { SETTINGS_KEY } from "../../core/storage-keys";
 import { createGmStore, createRemoteSettings, type WatchValue } from "./gm-storage";
 
@@ -12,6 +16,44 @@ migrationFaultContract(
   "createGmStore over the GM fake",
   (faults) => createGmStore(faultyGm(faults)),
 );
+
+describe("settings and the ignore list over GM storage", () => {
+  /** A GM fake that records the names `getValue` was asked for. */
+  function watched(initial: Readonly<Record<string, JsonValue>>) {
+    const gm = fakeGm();
+    const names: string[] = [];
+    const store = createGmStore({
+      getValue(name) {
+        names.push(name);
+        return gm.getValue(name);
+      },
+      setValue: (name, value) => gm.setValue(name, value),
+      deleteValue: (name) => gm.deleteValue(name),
+      listValues: () => gm.listValues(),
+    });
+    return { store, names, seed: () => store.set(new Map(Object.entries(initial))) };
+  }
+
+  it("make one getValue each once v2 data exists, and never ask for the v1 keys", async () => {
+    const { store, names, seed } = watched({
+      "v2:settings": encodeSettings(DEFAULT_SETTINGS),
+      "v2:allow": { all: {}, ai: {} },
+      "v1:settings": { badges: false },
+      "v1:allow": { "10": { name: "Old", added: 1 } },
+    });
+    await seed();
+    names.length = 0;
+    await createSettingsSource(store).read();
+    await createAllowList(store, { now: () => 0 }).list();
+    expect(names).toStrictEqual(["v2:settings", "v2:allow"]);
+  });
+
+  it("ask for the v1 key only when v2 is absent", async () => {
+    const { store, names } = watched({});
+    await createSettingsSource(store).read();
+    expect(names).toStrictEqual(["v2:settings", "v1:settings"]);
+  });
+});
 
 describe("createGmStore", () => {
   it("writes through GM.setValue once per key", async () => {

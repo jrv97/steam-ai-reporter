@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { JsonValue } from "../../src/core/json";
 import type { KeyValueStore } from "../../src/core/ports";
-import { migrateStorage } from "../../src/core/settings/migrate";
+import { allowFromV1, migrateStorage, settingsFromV1 } from "../../src/core/settings/migrate";
 import {
   DEFAULT_SETTINGS,
   encodeSettings,
@@ -179,19 +179,38 @@ export function migrationContract(name: string, make: () => KeyValueStore): void
       expect(await stored(store, "v1:settings")).toStrictEqual(V1_DEFAULTS);
     });
 
-    it("leaves a corrupt v2 value alone and keeps the v1 data", async () => {
+    it("replaces a corrupt v2 value with the v1 data and keeps the v1 keys", async () => {
+      for (const corrupt of ["garbage", 7, null, true, ["x"]]) {
+        const store = make();
+        await seed(store, {
+          "v2:settings": corrupt,
+          "v2:allow": corrupt,
+          "v1:settings": V1_CUSTOM,
+          "v1:allow": V1_ALLOW,
+        });
+        expect(await migrateStorage(store)).toBe("migrated");
+        expect(await stored(store, "v2:settings")).toStrictEqual(
+          encodeSettings(settingsFromV1(V1_CUSTOM)),
+        );
+        expect(await stored(store, "v2:allow")).toStrictEqual(allowFromV1(V1_ALLOW));
+        expect(await stored(store, "v1:settings")).toStrictEqual(V1_CUSTOM);
+        expect(await stored(store, "v1:allow")).toStrictEqual(V1_ALLOW);
+      }
+    });
+
+    it("leaves a corrupt v2 value alone when there is no v1 data to copy", async () => {
       const store = make();
-      await seed(store, {
-        "v2:settings": "garbage",
-        "v2:allow": 7,
-        "v1:settings": V1_CUSTOM,
-        "v1:allow": V1_ALLOW,
-      });
+      await seed(store, { "v2:settings": "garbage", "v2:allow": 7 });
       expect(await migrateStorage(store)).toBe("current");
       expect(await stored(store, "v2:settings")).toBe("garbage");
       expect(await stored(store, "v2:allow")).toBe(7);
-      expect(await stored(store, "v1:settings")).toStrictEqual(V1_CUSTOM);
-      expect(await stored(store, "v1:allow")).toStrictEqual(V1_ALLOW);
+    });
+
+    it("keeps a usable v2 value over any v1 value, even one that is mostly defaults", async () => {
+      const store = make();
+      await seed(store, { "v2:settings": {}, "v2:allow": {}, "v1:settings": V1_CUSTOM });
+      expect(await migrateStorage(store)).toBe("current");
+      expect(await stored(store, "v2:settings")).toStrictEqual({});
       expect(parseSettings(await stored(store, "v2:settings"))).toStrictEqual(DEFAULT_SETTINGS);
     });
 

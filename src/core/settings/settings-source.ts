@@ -1,6 +1,6 @@
 import type { KeyValueStore, SettingsSource, Unsubscribe } from "../ports";
 import { SETTINGS_KEY } from "../storage-keys";
-import { readSettingsValue } from "./migrate";
+import { migrateSettings, readSettingsValue } from "./migrate";
 import { encodeSettings, type Settings } from "./settings";
 
 /**
@@ -45,6 +45,8 @@ export function createSettingsSource(
     },
 
     async write(settings) {
+      // Never put defaults over v1 settings that were not copied: a failed copy rejects the write.
+      await migrateSettings(store);
       const value = encodeSettings(settings);
       await store.set(new Map([[SETTINGS_KEY, value]]));
       tell(value);

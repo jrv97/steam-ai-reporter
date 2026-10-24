@@ -56,11 +56,11 @@ export function migrationFaultContract(
       await expectV1Intact(store);
     });
 
-    it("throws and clears its own copies when one does not read back", async () => {
+    it("keeps the settings copy when the ignore-list copy does not read back", async () => {
       const { faults, store } = await seeded();
       faults.dropWrites.add("v2:allow");
       await expect(migrateStorage(store)).rejects.toMatchObject(MIGRATION_ERROR);
-      expect(await stored(store, "v2:settings")).toBeUndefined();
+      expect(await stored(store, "v2:settings")).toStrictEqual(SETTINGS_V2);
       expect(await stored(store, "v2:allow")).toBeUndefined();
       await expectV1Intact(store);
 
@@ -70,27 +70,34 @@ export function migrationFaultContract(
       expect(await stored(store, "v2:allow")).toStrictEqual(ALLOW_V2);
     });
 
-    it("leaves a v2 value that is not the one it wrote", async () => {
+    it("keeps the ignore-list copy when the settings copy does not read back", async () => {
       const { faults, store } = await seeded();
-      const other = { all: {}, ai: { "42": { name: "Written by another context", added: T } } };
-      faults.replaceWrites.set("v2:allow", other);
+      faults.dropWrites.add("v2:settings");
       await expect(migrateStorage(store)).rejects.toMatchObject(MIGRATION_ERROR);
-      expect(await stored(store, "v2:allow")).toStrictEqual(other);
+      expect(await stored(store, "v2:allow")).toStrictEqual(ALLOW_V2);
       expect(await stored(store, "v2:settings")).toBeUndefined();
       await expectV1Intact(store);
     });
 
-    it("reports the migration error when clearing its copies fails too", async () => {
+    it("accepts any usable v2 value on read-back, as another context may edit it", async () => {
       const { faults, store } = await seeded();
-      faults.dropWrites.add("v2:allow");
-      faults.rejectRemove = true;
+      const other = { all: {}, ai: { "42": { name: "Written by another context", added: T } } };
+      faults.replaceWrites.set("v2:allow", other);
+      expect(await migrateStorage(store)).toBe("migrated");
+      expect(await stored(store, "v2:allow")).toStrictEqual(other);
+      expect(await stored(store, "v2:settings")).toStrictEqual(SETTINGS_V2);
+    });
+
+    it("fails on an unusable value, leaves it, and replaces it from v1 next time", async () => {
+      const { faults, store } = await seeded();
+      faults.replaceWrites.set("v2:allow", "garbage");
       await expect(migrateStorage(store)).rejects.toMatchObject(MIGRATION_ERROR);
+      expect(await stored(store, "v2:allow")).toBe("garbage");
+      expect(await stored(store, "v2:settings")).toStrictEqual(SETTINGS_V2);
       await expectV1Intact(store);
 
-      faults.dropWrites.clear();
-      faults.rejectRemove = false;
+      faults.replaceWrites.clear();
       expect(await migrateStorage(store)).toBe("migrated");
-      expect(await stored(store, "v2:settings")).toStrictEqual(SETTINGS_V2);
       expect(await stored(store, "v2:allow")).toStrictEqual(ALLOW_V2);
     });
 
@@ -108,11 +115,12 @@ export function migrationFaultContract(
       expect(await stored(store, "v2:allow")).toStrictEqual(ALLOW_V2);
     });
 
-    it("keeps the v1 data when the first write rejects", async () => {
+    it("keeps the v1 data when the first write rejects, and copies the other key", async () => {
       const { faults, store } = await seeded();
       faults.rejectWrite = faults.writes + 1;
       await expect(migrateStorage(store)).rejects.toThrow();
       expect(await stored(store, "v2:settings")).toBeUndefined();
+      expect(await stored(store, "v2:allow")).toStrictEqual(ALLOW_V2);
       await expectV1Intact(store);
     });
   });

@@ -92,12 +92,24 @@ describe("createAllowList", () => {
     expect((await scoped(createAllowList(store, clock), "ai")).has(appId(10))).toBe(true);
   });
 
-  it("reads once per call and writes once per change", async () => {
-    const { allow, store } = setup();
+  it("reads only the v2 key once the list is stored, and writes once per change", async () => {
+    const { allow, store } = setup(
+      new Map<string, JsonValue>([
+        ["v2:allow", { all: {}, ai: {} }],
+        ["v1:allow", { "10": { name: "Old", added: T } }],
+      ]),
+    );
     await allow.add("ai", appId(10), "A");
-    expect(store.calls).toStrictEqual({ get: 1, set: 1, remove: 0, keys: 0 });
+    expect(store.gets).toStrictEqual([["v2:allow"]]);
+    expect(store.calls.set).toBe(1);
     await allow.list();
-    expect(store.calls.get).toBe(2);
+    expect(store.gets).toStrictEqual([["v2:allow"], ["v2:allow"]]);
+  });
+
+  it("reads the v1 key only when the v2 key is absent", async () => {
+    const { allow, store } = setup();
+    await allow.list();
+    expect(store.gets).toStrictEqual([["v2:allow"], ["v1:allow"]]);
   });
 
   describe("a v1 list", () => {
