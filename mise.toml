@@ -173,7 +173,7 @@ depends = ["build"]
 run = ["bash scripts/package.sh", "python scripts/check_bundle.py"]
 
 [tasks.canary]
-description = "Check live Steam still has the shape the detectors expect (two requests; not in ci)"
+description = "Check live Steam still has the shape the detectors expect (four requests; not in ci)"
 run = "python scripts/canary.py"
 
 [tasks.capture-fixtures]

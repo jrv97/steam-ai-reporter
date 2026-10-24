@@ -1,12 +1,13 @@
 """Check that Steam still answers in the shape the detectors rely on (live, keyless).
 
-One GetItems call for a sample of apps, then one `?l=english` app page of an app from that sample.
-Two requests in total, both without cookies, to the two Valve hosts the extension itself uses.
-The sample pins no game's data. Each field has the type the schemas expect when it is present,
-and across the sample some app shows each kind of declaration. The page is checked against what
-GetItems says about its own app. Exits non-zero, listing what changed, when an answer no longer
-has the expected shape. Not part of `ci`: it needs the network and Steam's mood. Run it before a
-release.
+One GetItems call for a sample of apps, then three `?l=english` app pages, one for each structural
+hook: the anti-cheat name line, the DRM notice with a line break and the non-kernel notice. Four
+requests in total, all without cookies, to the two Valve hosts the extension itself uses. Each
+field has the type the schemas expect when it is present, and across the sample some app shows
+each kind of declaration. A page comes from an app the sample shows that declaration for, and is
+checked against what GetItems says about its own app. Exits non-zero, listing what changed, when
+an answer no longer has the expected shape. Not part of `ci`: it needs the network and Steam's
+mood. Run it before a release.
 """
 
 import json
@@ -23,8 +24,8 @@ APP_PAGE_URL = "https://store.steampowered.com/app/{appid}/?l=english"
 USER_AGENT = "steam-ai-reporter-canary (+https://github.com/jrv97/steam-ai-reporter)"
 TIMEOUT_SECONDS = 30
 HEADING = "AI Generated Content Disclosure"
-# Apps that between them declare every kind. The first with a kernel anti-cheat and AI notes
-# lends its page. Only that order matters.
+# Apps that between them declare every kind. A page hook takes the first app that shows its
+# declaration, so only the order matters.
 SAMPLE = (1808500, 5072580, 413150, 3751950, 2807960, 730, 105600, 1245620)
 # Steam's category IDs for PvP, Online PvP, LAN PvP and Shared/Split Screen PvP.
 PVP_CATEGORY_IDS = frozenset({49, 36, 47, 37})
@@ -229,14 +230,23 @@ def getitems_problems(by_id: dict[int, dict[str, object]]) -> list[str]:
     return problems
 
 
-def pick_page_app(by_id: dict[int, dict[str, object]]) -> int:
-    """The first app with AI notes and a kernel anti-cheat, else the first with either."""
-    for wanted in ({"ai", "kernel"}, {"kernel"}, {"ai"}):
+# The structural hooks, each with the declarations of the app whose page shows it, best first.
+# The name line page also carries the AI heading when the sample has an app with both.
+PAGE_HOOKS = (
+    ("name line", ({"kernel", "ai"}, {"kernel"})),
+    ("line break", ({"drm"},)),
+    ("non-kernel notice", ({"nonkernel"},)),
+)
+
+
+def pick_page_app(by_id: dict[int, dict[str, object]], options: tuple[set[str], ...]) -> int | None:
+    """The first app of the sample whose declarations include the best option that has one."""
+    for wanted in options:
         for appid in SAMPLE:
             item = by_id.get(appid)
             if item is not None and wanted <= facts_of(item):
                 return appid
-    return SAMPLE[0]
+    return None
 
 
 class PageScan(HTMLParser):
@@ -248,15 +258,19 @@ class PageScan(HTMLParser):
         self.headings: list[str] = []
         self.kernel_sections = 0
         self.nonkernel_notices = 0
-        self.anticheat_names = 0
+        self.name_lines: list[str] = []
         self.eula_links = 0
         self.plain_notices = 0
+        self.break_notices = 0
         self.break_notices_with_markup = 0
         self._block_depth = 0
         self._in_h2 = False
         self._text = ""
         self._notice_depth = 0
         self._notice_tags: list[str] = []
+        self._in_name_line = False
+        self._in_removal_note = False
+        self._line = ""
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         ids = {value for key, value in attrs if key == "id"}
@@ -265,12 +279,18 @@ class PageScan(HTMLParser):
         self.has_app_name = self.has_app_name or "appHubAppName" in ids
         self.kernel_sections += {"anticheat_section", "DRM_notice"} <= classes
         self.nonkernel_notices += "anticheat_nonkernel_notice" in classes
-        self.anticheat_names += "anticheat_name" in classes
+        self._scan_name_line(classes)
         self.eula_links += tag == "a" and any(
             key == "href" and "/eula/" in (value or "") for key, value in attrs
         )
         self._scan_notice(tag, classes, bool(roles))
         self._scan_block(tag, ids)
+
+    def _scan_name_line(self, classes: set[str]) -> None:
+        if "anticheat_name" in classes:
+            self._in_name_line, self._line = True, ""
+        elif self._in_name_line and "anticheat_uninstalls" in classes:
+            self._in_removal_note = True
 
     def _scan_notice(self, tag: str, classes: set[str], has_role: bool) -> None:
         if self._notice_depth:
@@ -294,8 +314,16 @@ class PageScan(HTMLParser):
     def handle_endtag(self, tag: str) -> None:
         if self._notice_depth and tag == "div":
             self._notice_depth -= 1
-            if not self._notice_depth and "br" in self._notice_tags and self._notice_tags != ["br"]:
-                self.break_notices_with_markup += 1
+            if not self._notice_depth and "br" in self._notice_tags:
+                if self._notice_tags == ["br"]:
+                    self.break_notices += 1
+                else:
+                    self.break_notices_with_markup += 1
+        if tag == "span" and self._in_removal_note:
+            self._in_removal_note = False
+        elif tag == "div" and self._in_name_line:
+            self._in_name_line = False
+            self.name_lines.append(self._line.strip())
         if self._in_h2 and tag == "h2":
             self._in_h2 = False
             self.headings.append(self._text.strip())
@@ -305,11 +333,32 @@ class PageScan(HTMLParser):
     def handle_data(self, data: str) -> None:
         if self._in_h2:
             self._text += data
+        if self._in_name_line and not self._in_removal_note:
+            self._line += data
 
 
-def page_problems(where: str, scan: PageScan, facts: set[str]) -> list[str]:
+def hook_problems(where: str, scan: PageScan, hook: str, item: dict[str, object]) -> list[str]:
+    """What the page must show for the hook it was picked for, given the item of the same app."""
+    details = as_object(item.get("extra_details")) or {}
+    anticheat = as_object(details.get("anticheat")) or {}
+    if hook == "name line":
+        name = anticheat.get("name")
+        lines = [line for line in scan.name_lines if line]
+        if scan.kernel_sections == 0 or not lines:
+            return [f"{where}: no .anticheat_section.DRM_notice with a named .anticheat_name"]
+        if isinstance(name, str) and name.strip() and lines[0] != name.strip():
+            return [f"{where}: the first .anticheat_name differs from anticheat.name"]
+    elif hook == "line break" and scan.break_notices == 0:
+        return [f"{where}: no .DRM_notice made of a text, a <br> and a text"]
+    elif hook == "non-kernel notice" and (scan.nonkernel_notices == 0 or not scan.name_lines):
+        return [f"{where}: no .anticheat_nonkernel_notice with an .anticheat_name"]
+    return []
+
+
+def page_problems(where: str, scan: PageScan, hook: str, item: dict[str, object]) -> list[str]:
     """What the page must show for the declarations GetItems gave for the same app."""
-    problems: list[str] = []
+    facts = facts_of(item)
+    problems = hook_problems(where, scan, hook, item)
     if not scan.has_app_name:
         problems.append(f"{where}: #appHubAppName is missing")
     if "ai" in facts and HEADING not in scan.headings:
@@ -317,10 +366,6 @@ def page_problems(where: str, scan: PageScan, facts: set[str]) -> list[str]:
             f"{where}: no #game_area_content_descriptors block with the h2 {HEADING!r}"
             f" (found {scan.headings!r})"
         )
-    if "kernel" in facts and (scan.kernel_sections == 0 or scan.anticheat_names == 0):
-        problems.append(f"{where}: no .anticheat_section.DRM_notice with an .anticheat_name")
-    if "nonkernel" in facts and scan.nonkernel_notices == 0:
-        problems.append(f"{where}: no .anticheat_nonkernel_notice")
     if "eula" in facts and scan.eula_links == 0:
         problems.append(f"{where}: no link to /eula/")
     if "drm" in facts and scan.plain_notices == 0:
@@ -332,8 +377,10 @@ def page_problems(where: str, scan: PageScan, facts: set[str]) -> list[str]:
     return problems
 
 
-def app_page_problems(response: Response, appid: int, facts: set[str]) -> list[str]:
-    where = f"app page {appid}"
+def app_page_problems(
+    response: Response, appid: int, hook: str, item: dict[str, object]
+) -> list[str]:
+    where = f"app page {appid} ({hook})"
     if response.status != 200:
         return [f"{where}: HTTP {response.status}, expected 200"]
     match = APP_PATH.match(urllib.parse.urlparse(response.url).path)
@@ -341,20 +388,23 @@ def app_page_problems(response: Response, appid: int, facts: set[str]) -> list[s
         return [f"{where}: redirected to {response.url}, expected the app page"]
     scan = PageScan()
     scan.feed(response.body)
-    return page_problems(where, scan, facts)
+    return page_problems(where, scan, hook, item)
 
 
 def main() -> None:
     problems, by_id = parse_items(get(getitems_url(SAMPLE)))
     problems += getitems_problems(by_id)
-    appid = pick_page_app(by_id)
-    item = by_id.get(appid)
-    facts = facts_of(item) if item is not None else set()
-    problems += app_page_problems(get(APP_PAGE_URL.format(appid=appid)), appid, facts)
+    for hook, options in PAGE_HOOKS:
+        appid = pick_page_app(by_id, options)
+        item = by_id.get(appid) if appid is not None else None
+        if appid is None or item is None:
+            problems.append(f"app page ({hook}): no app in the sample shows its declaration")
+            continue
+        problems += app_page_problems(get(APP_PAGE_URL.format(appid=appid)), appid, hook, item)
     if problems:
         print("\n".join(problems))
         fail(f"{len(problems)} canary problem(s): Steam's shape may have changed")
-    print("canary: GetItems and the app page still have the expected shape")
+    print("canary: GetItems and the app pages still have the expected shape")
 
 
 if __name__ == "__main__":
