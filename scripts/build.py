@@ -18,14 +18,23 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from gen_styles import stylesheet
-from repo import DIST, ROOT, SLUG, fail, json_object, json_string, package_version, read_json
+from repo import (
+    DIST,
+    ICON_SIZES,
+    ICONS_DIR,
+    ROOT,
+    SLUG,
+    fail,
+    json_object,
+    json_string,
+    package_version,
+    read_json,
+)
 
 ESBUILD = ROOT / "node_modules" / "esbuild" / "bin" / "esbuild"
 EXTENSION_DIR = ROOT / "src" / "platform" / "extension"
 LOCALES_DIR = ROOT / "src" / "locales"
-ICONS_DIR = ROOT / "assets" / "icons"
 NOTICES = ROOT / "THIRD_PARTY_NOTICES.md"
-ICON_SIZES = (16, 32, 48, 128)
 DEFAULT_LOCALE = "en"
 BROWSERS = ("chrome", "firefox")
 # The store page stylesheet, loaded by the manifest so the content script need not adopt it.

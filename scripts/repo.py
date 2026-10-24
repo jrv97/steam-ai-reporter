@@ -10,6 +10,8 @@ ROOT = Path(__file__).resolve().parent.parent
 DIST = ROOT / "dist"
 ARTIFACTS = ROOT / "artifacts"
 SLUG = "steam-ai-reporter"
+ICONS_DIR = ROOT / "assets" / "icons"
+ICON_SIZES = (16, 32, 48, 128)
 
 
 def fail(message: str) -> NoReturn:

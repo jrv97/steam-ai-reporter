@@ -13,12 +13,10 @@ import subprocess
 import tempfile
 from pathlib import Path
 
-from repo import ROOT, fail
+from repo import ICON_SIZES, ICONS_DIR, ROOT, fail
 from run_browser import env_path
 
-ICONS_DIR = ROOT / "assets" / "icons"
 SOURCE = ICONS_DIR / "mark-purple.svg"
-SIZES = (16, 32, 48, 128)
 STORE_SIZE = 128
 STORE_PADDING = 16
 # The mark spans 4 to 285 on the master's 300 unit canvas. Cropping the view box to that span
@@ -33,6 +31,7 @@ PAGE = (
 )
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 CHROME_TIMEOUT_SECONDS = 120
+STDERR_LINES = 5
 
 
 def cropped_mark() -> str:
@@ -55,27 +54,33 @@ def render(chrome: Path, work: Path, size: int) -> Path:
     page = work / f"icon-{size}.html"
     page.write_text(PAGE.format(padding=padding, art=size - 2 * padding), encoding="utf-8")
     shot = work / f"icon-{size}.png"
-    result = subprocess.run(
-        [
-            str(chrome),
-            "--headless=new",
-            "--disable-gpu",
-            "--hide-scrollbars",
-            "--no-first-run",
-            "--force-device-scale-factor=1",
-            "--default-background-color=00000000",
-            f"--user-data-dir={work / 'profile'}",
-            f"--window-size={size},{size}",
-            f"--screenshot={shot}",
-            page.as_uri(),
-        ],
-        capture_output=True,
-        text=True,
-        timeout=CHROME_TIMEOUT_SECONDS,
-        check=False,
-    )
+    try:
+        result = subprocess.run(
+            [
+                str(chrome),
+                "--headless=new",
+                "--disable-gpu",
+                "--disable-background-networking",
+                "--hide-scrollbars",
+                "--no-first-run",
+                "--force-device-scale-factor=1",
+                "--default-background-color=00000000",
+                f"--user-data-dir={work / 'profile'}",
+                f"--window-size={size},{size}",
+                f"--screenshot={shot}",
+                page.as_uri(),
+            ],
+            capture_output=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=CHROME_TIMEOUT_SECONDS,
+            check=False,
+        )
+    except subprocess.TimeoutExpired:
+        fail(f"Chrome took over {CHROME_TIMEOUT_SECONDS} s to render the {size} px icon")
     if not shot.is_file():
-        fail(f"Chrome wrote no screenshot for {size} px (exit {result.returncode})")
+        stderr = "\n".join(result.stderr.strip().splitlines()[-STDERR_LINES:])
+        fail(f"Chrome wrote no {size} px icon (exit {result.returncode})\n{stderr}")
     if png_size(shot) != (size, size):
         fail(f"{shot.name}: expected {size}x{size}, got {png_size(shot)}")
     return shot
@@ -86,12 +91,14 @@ def main() -> None:
     if not chrome.is_file():
         fail(f"SAR_CHROME_BIN does not exist: {chrome}")
     # The profile is a throwaway folder, so a running Chrome and its profiles stay untouched.
-    with tempfile.TemporaryDirectory(prefix="sar-icons-", ignore_cleanup_errors=True) as name:
+    # Every size renders before any file in assets/icons changes.
+    with tempfile.TemporaryDirectory(prefix="sar-icons-") as name:
         work = Path(name)
         (work / "mark.svg").write_text(cropped_mark(), encoding="utf-8")
-        for size in SIZES:
+        shots = {size: render(chrome, work, size) for size in ICON_SIZES}
+        for size, shot in shots.items():
             target = ICONS_DIR / f"icon-{size}.png"
-            shutil.copyfile(render(chrome, work, size), target)
+            shutil.copyfile(shot, target)
             print(f"wrote {target.relative_to(ROOT).as_posix()}")
 
 
