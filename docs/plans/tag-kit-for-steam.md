@@ -21,7 +21,7 @@ Three PRs, each squash-merged in order, each branch based on the one below it.
 
 ## Migration
 
-Settings and the ignore list move to the per-kind shape through a versioned, idempotent migration. The v1 keys are removed only after the v2 data reads back. The verdict cache is dropped once. Extension IDs, storage keys, the `sar-` prefix and the userscript `@namespace` do not change.
+Settings and the ignore list move to the per-kind shape through a versioned, idempotent migration. The v1 keys stay untouched, and a later release removes them. The verdict cache is dropped once. Extension IDs, storage keys, the `sar-` prefix and the userscript `@namespace` do not change.
 
 ## Merge procedure
 

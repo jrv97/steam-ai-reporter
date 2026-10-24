@@ -35,7 +35,7 @@ States. Detection returns a verdict per app and per kind. The states stay disclo
 
 Wording. Each tag uses Steam's vocabulary. The box, the hover card and the accessible name carry Steam's full line ("Uses Kernel Level Anti-Cheat", "Incorporates 3rd-party DRM", "Requires 3rd-Party Account", "Requires agreement to a 3rd-party EULA", and for AI the heading "AI Generated Content Disclosure"). The chip is short: AI, Kernel AC, Anti-Cheat, DRM, Account, EULA, PvP. The Spanish catalog mirrors Steam's Spain Spanish. The hover card ends with a line that names the developer as the source. This replaces "AI use reported". Rule 4 now says a tag uses Steam's words for its kind, our own copy never says "uses AI", "AI-free" or "no AI", and the developer's text renders verbatim through `textContent`.
 
-Settings. Each tag type has its own switch, badge, banner entry and list filter (off, dim, hide; the strongest mode wins when several match). The ignore list works per game and per kind, with an "all tags" scope. Defaults: switch, badge and banner on, filter off. Existing settings and ignored games migrate to the AI kind only, and the old keys are removed once the new ones read back.
+Settings. Each tag type has its own switch, badge, banner entry and list filter (off, dim, hide; the strongest mode wins when several match). The ignore list works per game and per kind, with an "all tags" scope. Defaults: switch, badge and banner on, filter off. Existing settings and ignored games migrate to the AI kind only. The old keys stay in storage untouched, and a later release removes them.
 
 Out of scope: icons on chips, user-defined tags and the product name.
 
@@ -46,7 +46,7 @@ Out of scope: icons on chips, user-defined tags and the product name.
 - Good: the clash between "report" and Steam's flagging feature ([ADR 0008](0008-one-badge-label-ai-use-reported.mdx)) ends.
 - Bad: about 2.6k added source lines and about 40 KiB of unminified bundle. The budgets rise in the change that adds the kinds, with measured numbers.
 - Bad: Steam's lines state facts where the AI label hedged. The hover card's source line and the "reported" states carry the hedge.
-- Bad: an older version cannot read the migrated settings, because the migration removes the old keys after the new ones read back.
+- Bad: the old settings keys stay in storage until a later release removes them, and an older version would show the settings as they were before the migration.
 - Neutral: ADR 0006 and ADR 0008 are superseded when the new wording ships. The store listing, screenshots and privacy text change.
 
 ## Pros and cons of the options
