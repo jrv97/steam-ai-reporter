@@ -62,12 +62,12 @@ describe("PVP_KIND.fromGetItems", () => {
     expect(fromCategories({ feature_categoryids: [49] })).toBe(UNKNOWN.missing);
   });
 
-  it("is unknown error when the categories are malformed", () => {
+  it("is unknown malformed when the categories are malformed", () => {
     for (const categories of ["pvp", [49], { supported_player_categoryids: "49" }]) {
-      expect(fromCategories(categories)).toBe(UNKNOWN.error);
+      expect(fromCategories(categories)).toBe(UNKNOWN.malformed);
     }
-    expect(fromIds([49, "36"])).toBe(UNKNOWN.error);
-    expect(fromIds([49, null])).toBe(UNKNOWN.error);
+    expect(fromIds([49, "36"])).toBe(UNKNOWN.malformed);
+    expect(fromIds([49, null])).toBe(UNKNOWN.malformed);
   });
 
   it("is not moved by a malformed field of another kind", () => {

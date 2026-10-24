@@ -68,7 +68,7 @@ describe("AI_KIND.fromGetItems", () => {
     expect(verdict.state).toBe("not-disclosed");
   });
 
-  it("is unknown error when a field it reads is malformed", () => {
+  it("is unknown malformed when a field it reads is malformed", () => {
     const cases: readonly (readonly [Record<string, unknown>, Record<string, unknown>])[] = [
       [{ content_survey_ai_notes: 42 }, {}],
       [{ content_survey_ai_notes: "x", ai_generation_service: { name: 5 } }, {}],
@@ -76,7 +76,7 @@ describe("AI_KIND.fromGetItems", () => {
       [{ content_survey_ai_notes: "x" }, { name: 7 }],
     ];
     for (const [details, overrides] of cases) {
-      expect(fromItem(details, overrides)).toBe(UNKNOWN.error);
+      expect(fromItem(details, overrides)).toBe(UNKNOWN.malformed);
     }
   });
 

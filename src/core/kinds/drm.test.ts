@@ -42,10 +42,10 @@ describe("DRM_KIND.fromGetItems", () => {
     expect(fromDetails({ drm_activation_limit: "5 a day" }).state).toBe("not-disclosed");
   });
 
-  it("is unknown error when a field it reads is malformed, and only then", () => {
-    expect(fromDetails({ drm_third_party_type: 4 })).toBe(UNKNOWN.error);
+  it("is unknown malformed when a field it reads is malformed, and only then", () => {
+    expect(fromDetails({ drm_third_party_type: 4 })).toBe(UNKNOWN.malformed);
     expect(fromDetails({ drm_third_party_type: "Denuvo", drm_activation_limit: [] })).toBe(
-      UNKNOWN.error,
+      UNKNOWN.malformed,
     );
     expect(fromDetails({ drm_third_party_type: "Denuvo", anticheat: 5, eula: 6 }).state).toBe(
       "disclosed",

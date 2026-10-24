@@ -4,6 +4,7 @@ import { hasText } from "../detect/notes";
 import { type DisclosedBase, NOT_DISCLOSED, UNKNOWN } from "../types";
 import type { KindDefinition } from "./kind";
 import { DEFAULT_KIND_SETTINGS } from "./kind-settings";
+import { WEEK_TTL } from "./kind-ttl";
 import { storedDisclosed } from "./stored-disclosed";
 
 /**
@@ -22,7 +23,7 @@ export const DRM_KIND: KindDefinition<DrmDisclosed> = {
   fromGetItems(_item, details) {
     const { drm_third_party_type: text, drm_activation_limit: limit } = details;
     if (text === MALFORMED || limit === MALFORMED) {
-      return UNKNOWN.error;
+      return UNKNOWN.malformed;
     }
     if (text === undefined || !hasText(text)) {
       return NOT_DISCLOSED.api;
@@ -43,4 +44,5 @@ export const DRM_KIND: KindDefinition<DrmDisclosed> = {
 
   messages: { heading: "kind_drm_heading", chip: "kind_drm_chip" },
   defaults: DEFAULT_KIND_SETTINGS,
+  ttl: WEEK_TTL,
 };

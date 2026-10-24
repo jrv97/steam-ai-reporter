@@ -190,7 +190,7 @@ describe("parseGetItems with one malformed field", () => {
       }));
       const broken = KIND_IDS.filter((id) => {
         const verdict = found[id];
-        return verdict.state === "unknown" && verdict.reason === "error";
+        return verdict.state === "unknown" && verdict.reason === "malformed";
       });
       expect(broken).toStrictEqual(KIND_IDS.filter((id) => lost.includes(id)));
       expect(disclosedKinds(found)).toStrictEqual(
@@ -201,7 +201,7 @@ describe("parseGetItems with one malformed field", () => {
 
   it("costs only PvP when the categories are malformed", () => {
     const found = parse(storeItem(1, { categories: "co-op", extra_details: FULL }));
-    expect(found.pvp).toStrictEqual({ state: "unknown", reason: "error" });
+    expect(found.pvp).toStrictEqual({ state: "unknown", reason: "malformed" });
     expect(disclosedKinds(found)).toStrictEqual(["ai", "kernel", "drm", "account", "eula"]);
   });
 

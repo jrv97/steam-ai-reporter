@@ -10,14 +10,15 @@ import {
   uniformVerdicts,
 } from "../../../tests/helpers/verdicts";
 import type { JsonValue } from "../json";
-import type { AiVerdict } from "../kinds/ai";
+import { AI_KIND, type AiVerdict } from "../kinds/ai";
 import { perKind } from "../kinds/registry";
 import type { KindVerdicts } from "../kinds/verdicts";
 import { type AppId, UNKNOWN } from "../types";
-import { DISCLOSED_TTL_MS, NOT_DISCLOSED_TTL_MS, TRANSIENT_TTL_MS, UNKNOWN_TTL_MS } from "./ttl";
+import { TRANSIENT_TTL_MS, UNKNOWN_TTL_MS } from "./ttl";
 import { createVerdictCache } from "./verdict-cache";
 
 const T = 1_000_000_000_000;
+const { disclosed: DISCLOSED_TTL_MS, notDisclosed: NOT_DISCLOSED_TTL_MS } = AI_KIND.ttl;
 
 function setup(capacity?: number) {
   const store = countingStore(memoryStore());

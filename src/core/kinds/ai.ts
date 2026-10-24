@@ -6,6 +6,7 @@ import type { BareMessageKey } from "../i18n/t";
 import { type DisclosedBase, NOT_DISCLOSED, UNKNOWN, type Verdict } from "../types";
 import type { KindDefinition, KindMessages } from "./kind";
 import { DEFAULT_KIND_SETTINGS } from "./kind-settings";
+import { DAY_MS, HOUR_MS } from "./kind-ttl";
 import { storedDisclosed } from "./stored-disclosed";
 
 /** The disclosed verdict of the AI kind: the developer's notes and, when named, the service. */
@@ -41,7 +42,7 @@ function disclosureNotes(doc: Document): string | undefined {
 function fromGetItems(item: StoreItem, details: ExtraDetails, language: SteamLanguage): AiVerdict {
   const { content_survey_ai_notes: rawNotes, ai_generation_service: rawService } = details;
   if (rawNotes === MALFORMED || rawService === MALFORMED || item.name === MALFORMED) {
-    return UNKNOWN.error;
+    return UNKNOWN.malformed;
   }
   const notes = trimNotes(rawNotes ?? "");
   if (notes === "") {
@@ -114,4 +115,6 @@ export const AI_KIND: AiKind = {
   },
 
   defaults: DEFAULT_KIND_SETTINGS,
+  // A disclosure rarely goes away; a missing one can appear.
+  ttl: { disclosed: 7 * DAY_MS, notDisclosed: 12 * HOUR_MS },
 };

@@ -4,6 +4,7 @@ import { hasText } from "../detect/notes";
 import { type DisclosedBase, NOT_DISCLOSED, UNKNOWN } from "../types";
 import type { KindDefinition } from "./kind";
 import { DEFAULT_KIND_SETTINGS } from "./kind-settings";
+import { WEEK_TTL } from "./kind-ttl";
 import { storedDisclosed } from "./stored-disclosed";
 
 /**
@@ -26,7 +27,7 @@ export const KERNEL_KIND: KindDefinition<KernelDisclosed> = {
   fromGetItems(_item, details) {
     const anticheat = details.anticheat;
     if (anticheat === MALFORMED) {
-      return UNKNOWN.error;
+      return UNKNOWN.malformed;
     }
     if (anticheat?.kernel_mode !== true) {
       return NOT_DISCLOSED.api;
@@ -56,4 +57,5 @@ export const KERNEL_KIND: KindDefinition<KernelDisclosed> = {
 
   messages: { heading: "kind_kernel_heading", chip: "kind_kernel_chip" },
   defaults: DEFAULT_KIND_SETTINGS,
+  ttl: WEEK_TTL,
 };

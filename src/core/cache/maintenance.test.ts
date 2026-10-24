@@ -4,12 +4,15 @@ import { fixedClock } from "../../../tests/helpers/fixed-clock";
 import { memoryStore } from "../../../tests/helpers/memory-store";
 import { uniformVerdicts } from "../../../tests/helpers/verdicts";
 import type { JsonValue } from "../json";
+import { AI_KIND } from "../kinds/ai";
 import { CACHE_SCHEMA, META_KEY } from "../storage-keys";
 import { maintainCache } from "./maintenance";
 import { encodeVerdicts } from "./stored";
-import { DAY_MS, DISCLOSED_TTL_MS, NOT_DISCLOSED_TTL_MS } from "./ttl";
+import { DAY_MS } from "./ttl";
 
 const T = 1_000_000_000_000;
+// An app whose kinds are all in one state expires with the AI kind, the shortest-lived.
+const { disclosed: DISCLOSED_TTL_MS, notDisclosed: NOT_DISCLOSED_TTL_MS } = AI_KIND.ttl;
 const BREAKER: JsonValue = { openUntil: T + 60_000 };
 const SETTINGS: JsonValue = { badges: false };
 const ALLOW: JsonValue = { "10": { name: "Ignored", added: T } };

@@ -90,8 +90,8 @@ describe("cachedDetector", () => {
   });
 
   it("asks again about every kind when the shortest-lived one expires", async () => {
-    // Six kinds hold a seven day verdict; PvP holds a twelve hour one.
-    const verdicts = { ...ALL_DISCLOSED, pvp: NOT_DISCLOSED };
+    // Six kinds hold a seven day verdict; the AI kind holds a twelve hour one.
+    const verdicts = { ...ALL_DISCLOSED, ai: NOT_DISCLOSED };
     const inner = fakeDetector(() => verdicts);
     const clock = fixedClock(T);
     const logger = { error: vi.fn<(problem: unknown) => void>() };

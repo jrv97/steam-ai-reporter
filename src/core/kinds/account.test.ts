@@ -44,15 +44,15 @@ describe("ACCOUNT_KIND.fromGetItems", () => {
     expect(fromDetails({ user_account_third_party_link_to_steam: true })).toStrictEqual(none);
   });
 
-  it("is unknown error when a field it reads is malformed, and only then", () => {
-    expect(fromDetails({ user_account_third_party: 7 })).toBe(UNKNOWN.error);
+  it("is unknown malformed when a field it reads is malformed, and only then", () => {
+    expect(fromDetails({ user_account_third_party: 7 })).toBe(UNKNOWN.malformed);
     expect(
       fromDetails({
         user_account_third_party: "EA",
         user_account_third_party_link_to_steam: "yes",
       }),
-    ).toBe(UNKNOWN.error);
-    expect(fromDetails({ user_account_third_party_link_to_steam: 1 })).toBe(UNKNOWN.error);
+    ).toBe(UNKNOWN.malformed);
+    expect(fromDetails({ user_account_third_party_link_to_steam: 1 })).toBe(UNKNOWN.malformed);
     expect(fromDetails({ user_account_third_party: "EA", anticheat: 5 }).state).toBe("disclosed");
   });
 });

@@ -46,9 +46,9 @@ describe("ANTICHEAT_KIND.fromGetItems", () => {
     expect(fromDetails({ anticheat: { kernel_mode: true, name: "BattlEye" } })).toStrictEqual(none);
   });
 
-  it("is unknown error when the anti-cheat field is malformed", () => {
+  it("is unknown malformed when the anti-cheat field is malformed", () => {
     for (const anticheat of [0, "VAC", null, { name: {} }, { kernel_mode: 1 }]) {
-      expect(fromDetails({ anticheat })).toBe(UNKNOWN.error);
+      expect(fromDetails({ anticheat })).toBe(UNKNOWN.malformed);
     }
   });
 });
@@ -77,8 +77,8 @@ describe("the kernel and anti-cheat kinds", () => {
     expect(verdictOf(ANTICHEAT_KIND, {}).state).toBe("not-disclosed");
   });
 
-  it("are both unknown error for a malformed anti-cheat object", () => {
-    expect(verdictOf(KERNEL_KIND, { anticheat: "yes" })).toBe(UNKNOWN.error);
-    expect(verdictOf(ANTICHEAT_KIND, { anticheat: "yes" })).toBe(UNKNOWN.error);
+  it("are both unknown malformed for a malformed anti-cheat object", () => {
+    expect(verdictOf(KERNEL_KIND, { anticheat: "yes" })).toBe(UNKNOWN.malformed);
+    expect(verdictOf(ANTICHEAT_KIND, { anticheat: "yes" })).toBe(UNKNOWN.malformed);
   });
 });

@@ -49,6 +49,7 @@ function allUnknown(reason: UnknownReason): KindVerdicts {
 export const UNKNOWN_KINDS: Readonly<Record<UnknownReason, KindVerdicts>> = {
   "gated": allUnknown("gated"),
   "missing": allUnknown("missing"),
+  "malformed": allUnknown("malformed"),
   "error": allUnknown("error"),
   "rate-limited": allUnknown("rate-limited"),
 };

@@ -115,6 +115,8 @@ describe("encodeVerdicts and decodeVerdicts", () => {
       uniformVerdicts("not-disclosed"),
       uniformVerdicts("gated"),
       uniformVerdicts("missing"),
+      uniformVerdicts("malformed"),
+      { ...ALL_DISCLOSED, drm: UNKNOWN.malformed, pvp: UNKNOWN.malformed },
       { ...uniformVerdicts("not-disclosed"), ai: { state: "not-disclosed", source: "html" } },
       { ...ALL_DISCLOSED, drm: NOT_DISCLOSED, pvp: UNKNOWN.missing },
     ];
@@ -166,6 +168,14 @@ describe("encodeVerdicts and decodeVerdicts", () => {
       },
     });
     expect(JSON.stringify(stored)).not.toMatch(/undefined|null|nameToken|service|bootProtection/);
+  });
+
+  it("stores a kind whose field is malformed as such and keeps the other kinds", () => {
+    const verdicts = { ...ALL_DISCLOSED, eula: UNKNOWN.malformed };
+    expect(encodeVerdicts(verdicts, T)).toStrictEqual({
+      time: T,
+      kinds: { ...STORED_KINDS, eula: { state: "unknown", reason: "malformed" } },
+    });
   });
 
   it("does not encode an app that has a verdict living in memory only", () => {

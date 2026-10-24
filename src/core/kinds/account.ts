@@ -4,6 +4,7 @@ import { hasText } from "../detect/notes";
 import { type DisclosedBase, NOT_DISCLOSED, UNKNOWN } from "../types";
 import type { KindDefinition } from "./kind";
 import { DEFAULT_KIND_SETTINGS } from "./kind-settings";
+import { WEEK_TTL } from "./kind-ttl";
 import { storedDisclosed } from "./stored-disclosed";
 
 /**
@@ -23,7 +24,7 @@ export const ACCOUNT_KIND: KindDefinition<AccountDisclosed> = {
     const { user_account_third_party: text, user_account_third_party_link_to_steam: link } =
       details;
     if (text === MALFORMED || link === MALFORMED) {
-      return UNKNOWN.error;
+      return UNKNOWN.malformed;
     }
     if (text === undefined || !hasText(text)) {
       return NOT_DISCLOSED.api;
@@ -44,4 +45,5 @@ export const ACCOUNT_KIND: KindDefinition<AccountDisclosed> = {
 
   messages: { heading: "kind_account_heading", chip: "kind_account_chip" },
   defaults: DEFAULT_KIND_SETTINGS,
+  ttl: WEEK_TTL,
 };

@@ -4,6 +4,7 @@ import type { BareMessageKey } from "../i18n/t";
 import { type DisclosedBase, NOT_DISCLOSED, UNKNOWN } from "../types";
 import type { KindDefinition } from "./kind";
 import { DEFAULT_KIND_SETTINGS } from "./kind-settings";
+import { WEEK_TTL } from "./kind-ttl";
 import { storedDisclosed } from "./stored-disclosed";
 
 /**
@@ -39,7 +40,7 @@ export const PVP_KIND: KindDefinition<PvpDisclosed> = {
   fromGetItems(item) {
     const { categories } = item;
     if (categories === MALFORMED) {
-      return UNKNOWN.error;
+      return UNKNOWN.malformed;
     }
     const ids = categories?.supported_player_categoryids;
     if (ids === undefined) {
@@ -62,4 +63,5 @@ export const PVP_KIND: KindDefinition<PvpDisclosed> = {
 
   messages: { heading: "kind_pvp_heading", chip: "kind_pvp_chip" },
   defaults: DEFAULT_KIND_SETTINGS,
+  ttl: WEEK_TTL,
 };

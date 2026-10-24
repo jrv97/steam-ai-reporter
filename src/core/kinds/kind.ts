@@ -4,6 +4,7 @@ import type { SteamLanguage } from "../i18n/locale";
 import type { BareMessageKey } from "../i18n/t";
 import type { DisclosedBase, Verdict } from "../types";
 import type { KindSettings } from "./kind-settings";
+import type { KindTtl } from "./kind-ttl";
 import type { KINDS } from "./registry";
 
 /** The catalog keys of the words a kind uses on every surface, in Steam's vocabulary. */
@@ -43,6 +44,7 @@ export interface KindDefinition<Disclosed extends DisclosedBase> {
   readonly stored: v.GenericSchema<unknown, Disclosed>;
   readonly messages: KindMessages;
   readonly defaults: KindSettings;
+  readonly ttl: KindTtl;
 }
 
 /** Every registered kind. */

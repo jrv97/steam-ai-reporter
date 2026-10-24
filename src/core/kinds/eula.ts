@@ -3,6 +3,7 @@ import { MALFORMED } from "../detect/getitems.schema";
 import { type DisclosedBase, NOT_DISCLOSED, UNKNOWN } from "../types";
 import type { KindDefinition } from "./kind";
 import { DEFAULT_KIND_SETTINGS } from "./kind-settings";
+import { WEEK_TTL } from "./kind-ttl";
 import { storedDisclosed } from "./stored-disclosed";
 
 /** One third-party agreement: its name as typed, and a link when it is safe to show. */
@@ -56,7 +57,7 @@ export const EULA_KIND: KindDefinition<EulaDisclosed> = {
   fromGetItems(_item, details) {
     const eula = details.eula;
     if (eula === MALFORMED) {
-      return UNKNOWN.error;
+      return UNKNOWN.malformed;
     }
     if (eula === undefined || eula.length === 0) {
       return NOT_DISCLOSED.api;
@@ -78,4 +79,5 @@ export const EULA_KIND: KindDefinition<EulaDisclosed> = {
 
   messages: { heading: "kind_eula_heading", chip: "kind_eula_chip" },
   defaults: DEFAULT_KIND_SETTINGS,
+  ttl: WEEK_TTL,
 };

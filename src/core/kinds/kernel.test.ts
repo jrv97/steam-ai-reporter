@@ -75,9 +75,9 @@ describe("KERNEL_KIND.fromGetItems", () => {
     }
   });
 
-  it("is unknown error when the anti-cheat field is malformed, and only then", () => {
+  it("is unknown malformed when the anti-cheat field is malformed, and only then", () => {
     for (const anticheat of [true, "kernel", [], { kernel_mode: "true" }, { name: 3 }]) {
-      expect(fromDetails({ anticheat })).toBe(UNKNOWN.error);
+      expect(fromDetails({ anticheat })).toBe(UNKNOWN.malformed);
     }
     const others = { drm_third_party_type: 4, eula: "x", user_account_third_party: [] };
     expect(fromDetails({ ...others, anticheat: { kernel_mode: true } }).state).toBe("disclosed");

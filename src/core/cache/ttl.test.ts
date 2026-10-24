@@ -5,42 +5,56 @@ import {
   NOT_DISCLOSED,
   uniformVerdicts,
 } from "../../../tests/helpers/verdicts";
+import { AI_KIND } from "../kinds/ai";
+import { DAY_MS, HOUR_MS, WEEK_TTL } from "../kinds/kind-ttl";
 import { KINDS } from "../kinds/registry";
 import type { KindVerdicts } from "../kinds/verdicts";
 import { UNKNOWN } from "../types";
-import {
-  DAY_MS,
-  DISCLOSED_TTL_MS,
-  isFresh,
-  isStoredReason,
-  NOT_DISCLOSED_TTL_MS,
-  TRANSIENT_TTL_MS,
-  ttlMs,
-  UNKNOWN_TTL_MS,
-} from "./ttl";
+import { isFresh, isStoredReason, TRANSIENT_TTL_MS, ttlMs, UNKNOWN_TTL_MS } from "./ttl";
 
-const HOUR_MS = DAY_MS / 24;
 const T = 1_000_000_000_000;
 
+describe("kind TTLs", () => {
+  it("keep the AI notes for 7 days and a missing disclosure for 12 hours", () => {
+    expect(AI_KIND.ttl).toStrictEqual({ disclosed: 7 * DAY_MS, notDisclosed: 12 * HOUR_MS });
+  });
+
+  it("keep every other kind for 7 days, disclosed or not", () => {
+    for (const kind of KINDS) {
+      if (kind.id !== "ai") {
+        expect(kind.ttl).toBe(WEEK_TTL);
+      }
+    }
+    expect(WEEK_TTL).toStrictEqual({ disclosed: 7 * DAY_MS, notDisclosed: 7 * DAY_MS });
+  });
+});
+
 describe("ttlMs", () => {
-  it("is 7 days for disclosed, 12 hours for not disclosed, 6 hours for gated and missing", () => {
-    expect(ttlMs(disclosedVerdict())).toBe(7 * DAY_MS);
-    expect(ttlMs(NOT_DISCLOSED)).toBe(12 * HOUR_MS);
-    expect(ttlMs(UNKNOWN.gated)).toBe(6 * HOUR_MS);
-    expect(ttlMs(UNKNOWN.missing)).toBe(6 * HOUR_MS);
+  it("takes disclosed and not disclosed from the kind's TTLs", () => {
+    expect(ttlMs(AI_KIND.ttl, disclosedVerdict())).toBe(7 * DAY_MS);
+    expect(ttlMs(AI_KIND.ttl, NOT_DISCLOSED)).toBe(12 * HOUR_MS);
+    expect(ttlMs(WEEK_TTL, NOT_DISCLOSED)).toBe(7 * DAY_MS);
+  });
+
+  it("is 6 hours for gated, missing and malformed, whatever the kind", () => {
+    for (const reason of ["gated", "missing", "malformed"] as const) {
+      expect(ttlMs(AI_KIND.ttl, UNKNOWN[reason])).toBe(6 * HOUR_MS);
+      expect(ttlMs(WEEK_TTL, UNKNOWN[reason])).toBe(6 * HOUR_MS);
+    }
   });
 
   it("is short for the verdicts that are not stored", () => {
-    expect(ttlMs(UNKNOWN.error)).toBe(TRANSIENT_TTL_MS);
-    expect(ttlMs(UNKNOWN["rate-limited"])).toBe(TRANSIENT_TTL_MS);
+    expect(ttlMs(AI_KIND.ttl, UNKNOWN.error)).toBe(TRANSIENT_TTL_MS);
+    expect(ttlMs(AI_KIND.ttl, UNKNOWN["rate-limited"])).toBe(TRANSIENT_TTL_MS);
     expect(TRANSIENT_TTL_MS).toBeLessThan(UNKNOWN_TTL_MS);
   });
 });
 
 describe("isStoredReason", () => {
-  it("stores gated and missing only", () => {
+  it("stores gated, missing and malformed only", () => {
     expect(isStoredReason("gated")).toBe(true);
     expect(isStoredReason("missing")).toBe(true);
+    expect(isStoredReason("malformed")).toBe(true);
     expect(isStoredReason("error")).toBe(false);
     expect(isStoredReason("rate-limited")).toBe(false);
   });
@@ -48,10 +62,11 @@ describe("isStoredReason", () => {
 
 describe("isFresh", () => {
   const cases: readonly (readonly [string, KindVerdicts, number])[] = [
-    ["disclosed", uniformVerdicts("disclosed"), DISCLOSED_TTL_MS],
-    ["not disclosed", uniformVerdicts("not-disclosed"), NOT_DISCLOSED_TTL_MS],
+    ["disclosed", uniformVerdicts("disclosed"), 7 * DAY_MS],
+    ["not disclosed", uniformVerdicts("not-disclosed"), 12 * HOUR_MS],
     ["unknown gated", uniformVerdicts("gated"), UNKNOWN_TTL_MS],
     ["unknown missing", uniformVerdicts("missing"), UNKNOWN_TTL_MS],
+    ["unknown malformed", uniformVerdicts("malformed"), UNKNOWN_TTL_MS],
     ["unknown error", uniformVerdicts("error"), TRANSIENT_TTL_MS],
     ["unknown rate-limited", uniformVerdicts("rate-limited"), TRANSIENT_TTL_MS],
   ];
@@ -69,26 +84,51 @@ describe("isFresh", () => {
 });
 
 describe("isFresh across kinds", () => {
-  /** Every kind disclosed except `id`, which holds `verdict`. */
-  function oneKindIs(id: (typeof KINDS)[number]["id"], verdict: KindVerdicts[typeof id]) {
-    return { ...ALL_DISCLOSED, [id]: verdict };
+  const notDisclosed = uniformVerdicts("not-disclosed");
+
+  function expiresAt(verdicts: KindVerdicts, ttl: number): void {
+    expect(isFresh(verdicts, T, T + ttl - 1)).toBe(true);
+    expect(isFresh(verdicts, T, T + ttl)).toBe(false);
   }
 
-  it("expires with the kind that lives shortest, whichever kind it is", () => {
+  it("keeps the AI notes for 7 days while every other kind is not disclosed", () => {
+    expiresAt({ ...notDisclosed, ai: ALL_DISCLOSED.ai }, 7 * DAY_MS);
+  });
+
+  it("keeps a game that disclosed nothing for 12 hours, the AI kind's TTL", () => {
+    expiresAt(notDisclosed, 12 * HOUR_MS);
+  });
+
+  it("does not shorten an app because a non-AI kind is not disclosed", () => {
     for (const kind of KINDS) {
-      const notDisclosed = oneKindIs(kind.id, NOT_DISCLOSED);
-      expect(isFresh(notDisclosed, T, T + NOT_DISCLOSED_TTL_MS - 1)).toBe(true);
-      expect(isFresh(notDisclosed, T, T + NOT_DISCLOSED_TTL_MS)).toBe(false);
-      const missing = oneKindIs(kind.id, UNKNOWN.missing);
-      expect(isFresh(missing, T, T + UNKNOWN_TTL_MS - 1)).toBe(true);
-      expect(isFresh(missing, T, T + UNKNOWN_TTL_MS)).toBe(false);
-      const failed = oneKindIs(kind.id, UNKNOWN.error);
+      if (kind.id !== "ai") {
+        expiresAt({ ...ALL_DISCLOSED, [kind.id]: NOT_DISCLOSED }, 7 * DAY_MS);
+      }
+    }
+  });
+
+  it("expires with the AI kind when it is not disclosed, whatever the others are", () => {
+    expiresAt({ ...ALL_DISCLOSED, ai: NOT_DISCLOSED }, 12 * HOUR_MS);
+  });
+
+  it("expires after 6 hours when any kind is gated, missing or malformed", () => {
+    const aiNotes = { ...notDisclosed, ai: ALL_DISCLOSED.ai };
+    for (const kind of KINDS) {
+      for (const reason of ["gated", "missing", "malformed"] as const) {
+        expiresAt({ ...aiNotes, [kind.id]: UNKNOWN[reason] }, UNKNOWN_TTL_MS);
+      }
+    }
+  });
+
+  it("expires at once with a verdict that is not stored", () => {
+    for (const kind of KINDS) {
+      const failed = { ...ALL_DISCLOSED, [kind.id]: UNKNOWN.error };
+      expect(isFresh(failed, T, T + TRANSIENT_TTL_MS - 1)).toBe(true);
       expect(isFresh(failed, T, T + TRANSIENT_TTL_MS)).toBe(false);
     }
   });
 
-  it("keeps disclosed kinds for their own TTL when no kind is shorter", () => {
-    expect(isFresh(ALL_DISCLOSED, T, T + DISCLOSED_TTL_MS - 1)).toBe(true);
-    expect(isFresh(ALL_DISCLOSED, T, T + DISCLOSED_TTL_MS)).toBe(false);
+  it("keeps disclosed kinds for 7 days when no kind is shorter", () => {
+    expiresAt(ALL_DISCLOSED, 7 * DAY_MS);
   });
 });

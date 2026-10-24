@@ -211,7 +211,7 @@ describe("parseGetItems edge cases", () => {
     expect(stateOf(verdicts, 2)).toBe("unknown:missing");
   });
 
-  it("gives unknown error to an item with wrong field types, and keeps the rest", () => {
+  it("gives unknown to an item with wrong field types, and keeps the rest", () => {
     const verdicts = parse(
       appIds(1, 2, 3, 4),
       getItemsResponse([
@@ -222,7 +222,7 @@ describe("parseGetItems edge cases", () => {
       ]),
     );
     expect(stateOf(verdicts, 1)).toBe("unknown:error");
-    expect(stateOf(verdicts, 2)).toBe("unknown:error");
+    expect(stateOf(verdicts, 2)).toBe("unknown:malformed");
     expect(stateOf(verdicts, 3)).toBe("unknown:error");
     expect(stateOf(verdicts, 4)).toBe("disclosed");
   });
