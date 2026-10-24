@@ -35,7 +35,7 @@ Every implementation of a port passes the same shared contract suite, with no pe
 
 - A new store surface is a new `Placement` entry in `scan/placements.ts`, with a fixture test. The scanner is not edited.
 - A new detection source is a new `Detector` link in the chain. The chain and the scanner are not edited.
-- A new tag kind is an id in `kinds/id.ts`, a `TagKind` definition (its verdict from a GetItems item, its catalog keys, its settings defaults) and an entry in `kinds/registry.ts`. The type checker names the other spots that list every kind (`perKind`, `kindsFromGetItems`, and `cardDetails` for the hover card lines); the per-kind rules in `ui/styles.css` list each kind by hand, and `ui/styles.test.ts` fails for a kind they miss. The detectors, the chain and the cache read the registry.
+- A new tag kind is an id in `kinds/id.ts`, a `TagKind` definition (its verdict from a GetItems item, its catalog keys, its settings defaults) and an entry in `kinds/registry.ts`. The type checker names the other spots that list every kind (`perKind`, `kindsFromGetItems`, and `kindDetails` for the hover card and banner lines); the per-kind rules in `ui/styles.css` list each kind by hand, and `ui/styles.test.ts` fails for a kind they miss. The detectors, the chain and the cache read the registry.
 - A new message is a catalog key in `src/locales/`, never a literal in code or in a test.
 
 ## Style in this folder

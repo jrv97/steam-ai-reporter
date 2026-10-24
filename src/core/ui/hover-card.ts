@@ -1,8 +1,8 @@
 import { KIND_BY_ID } from "../kinds/registry";
 import { type AnyDisclosed, sameVerdicts } from "../kinds/verdicts";
 import type { MessageCatalog } from "../ports";
-import { type CardDetail, cardDetails } from "./card-details";
 import { badgesOff } from "./kind-attributes";
+import { type KindDetail, kindDetails } from "./kind-details";
 import { normalizeBreaks } from "./notes";
 
 /** The card's id, the target of `aria-describedby` while focus holds it open. */
@@ -230,11 +230,12 @@ export function createHoverCard(
   }
 
   /** One line of an entry: catalog copy, or the developer's text through `textContent`. */
-  function detailLine(detail: CardDetail): HTMLElement {
+  function detailLine(detail: KindDetail): HTMLElement {
     switch (detail.kind) {
       case "message":
         return line("sar-hovercard-detail", i18n.t(detail.key));
       case "text":
+      case "link":
         return line("sar-hovercard-detail", detail.text);
       case "quote": {
         const quote = line("sar-hovercard-notes", normalizeBreaks(detail.text));
@@ -257,7 +258,7 @@ export function createHoverCard(
     node.className = "sar-hovercard-entry";
     node.append(
       line("sar-hovercard-title", i18n.t(KIND_BY_ID[verdict.kind].messages.heading)),
-      ...cardDetails(verdict).map(detailLine),
+      ...kindDetails(verdict).map(detailLine),
     );
     return node;
   }
