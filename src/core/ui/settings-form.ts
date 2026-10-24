@@ -325,11 +325,24 @@ export async function mountSettingsForm(
   root.setAttribute("data-sar-context", context);
   root.replaceChildren(...cards, footer, live);
 
+  /** Controls stay off while the load error shows, so no save puts defaults over v1 data. */
+  const settingControls = root.querySelectorAll<HTMLInputElement | HTMLSelectElement>(
+    "[data-sar-setting]",
+  );
+  function allowChanges(allowed: boolean): void {
+    for (const control of settingControls) {
+      control.disabled = !allowed;
+    }
+  }
+
   let current: Settings = DEFAULT_SETTINGS;
+  let loadFailed = false;
   try {
     current = parseSettings(await settings.read());
   } catch {
+    loadFailed = true;
     loadError.hidden = false;
+    allowChanges(false);
   }
 
   function sync(): void {
@@ -395,6 +408,10 @@ export async function mountSettingsForm(
     }
     const field = v.safeParse(FieldSchema, target.getAttribute("data-sar-setting"));
     if (!field.success) {
+      return;
+    }
+    if (loadFailed) {
+      sync();
       return;
     }
     void save(field.output, changed(field.output, target));
@@ -501,6 +518,9 @@ export async function mountSettingsForm(
   root.addEventListener("click", onEvent);
   const unsubscribe = settings.subscribe((value) => {
     current = parseSettings(value);
+    loadFailed = false;
+    loadError.hidden = true;
+    allowChanges(true);
     sync();
   });
 

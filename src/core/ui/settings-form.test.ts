@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { countingStore } from "../../../tests/helpers/counting-store";
 import { fixedClock } from "../../../tests/helpers/fixed-clock";
 import { englishI18n } from "../../../tests/helpers/i18n";
 import { memoryStore } from "../../../tests/helpers/memory-store";
@@ -307,6 +308,73 @@ describe("mountSettingsForm", () => {
     expect(error?.hidden).toBe(false);
     expect(error?.textContent).toBe(i18n.t("error_settings_load"));
     expect(root.querySelector<HTMLInputElement>("[data-sar-setting=banner]")?.checked).toBe(true);
+  });
+
+  it("keeps the controls off after a failed load, so v1 can still migrate", async () => {
+    const inner = memoryStore(
+      new Map([["v1:settings", { badges: false, banner: true, listFilter: "hide", locale: "es" }]]),
+    );
+    const store = countingStore(inner);
+    const settings = createSettingsSource(store);
+    store.break();
+    const root = document.createElement("main");
+    document.body.append(root);
+    await mountSettingsForm(root, {
+      kind: AI_KIND,
+      i18n,
+      settings,
+      allowList: createAllowList(memoryStore(), fixedClock(0)),
+      context: "page",
+      locales: ["en", "es"],
+    });
+    const error = root.querySelector<HTMLElement>(".sar-card .sar-field-error");
+    expect(error?.hidden).toBe(false);
+    const controls = [...root.querySelectorAll<HTMLInputElement>("[data-sar-setting]")];
+    expect(controls.length).toBeGreaterThan(0);
+    expect(controls.every((control) => control.disabled)).toBe(true);
+
+    // A change event that still gets through (a script, an older browser) saves nothing.
+    const banner = root.querySelector<HTMLInputElement>("[data-sar-setting=banner]");
+    if (banner === null) {
+      throw new TypeError();
+    }
+    banner.checked = false;
+    banner.dispatchEvent(new Event("change", { bubbles: true }));
+    await Promise.resolve();
+    expect(banner.checked).toBe(true);
+    expect(store.calls.set).toBe(0);
+
+    store.heal();
+    expect(await inner.keys()).toStrictEqual(["v1:settings"]);
+    const read = parseSettings(await settings.read());
+    expect(read.kinds.ai).toStrictEqual({
+      enabled: true,
+      badge: false,
+      banner: true,
+      filter: "hide",
+    });
+    expect(read.locale).toBe("es");
+  });
+
+  it("turns the controls on again when settings arrive after a failed load", async () => {
+    const settings = createSettingsSource(memoryStore());
+    vi.spyOn(settings, "read").mockRejectedValueOnce(new Error());
+    const root = document.createElement("main");
+    document.body.append(root);
+    await mountSettingsForm(root, {
+      kind: AI_KIND,
+      i18n,
+      settings,
+      allowList: createAllowList(memoryStore(), fixedClock(0)),
+      context: "page",
+      locales: ["en"],
+    });
+    const banner = root.querySelector<HTMLInputElement>("[data-sar-setting=banner]");
+    expect(banner?.disabled).toBe(true);
+    await settings.write(withKind(DEFAULT_SETTINGS, "ai", { banner: false }));
+    expect(banner?.disabled).toBe(false);
+    expect(root.querySelector<HTMLElement>(".sar-card .sar-field-error")?.hidden).toBe(true);
+    expect(banner?.checked).toBe(false);
   });
 
   it("listens on the root only, with no per-control listeners", async () => {
