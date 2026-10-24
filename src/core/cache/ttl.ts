@@ -42,9 +42,8 @@ export function ttlMs(verdict: Verdict): number {
 }
 
 /**
- * An app's verdicts are fetched together, so they are fresh for as long as the shortest-lived one:
- * fetched at `time`, they expire at exactly that TTL. A `time` in the future (the clock moved
- * back) is stale, so a wrong clock cannot pin a verdict.
+ * An app's verdicts come from one fetch and expire with the shortest-lived one, at exactly its TTL.
+ * A fetch time in the future is stale, so a wrong clock cannot pin a verdict.
  */
 export function isFresh(verdicts: KindVerdicts, time: number, now: number): boolean {
   const age = now - time;

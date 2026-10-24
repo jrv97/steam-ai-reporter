@@ -1,8 +1,8 @@
 import { type AppId, toAppId } from "./types";
 
-// The storage layout. Settings and the ignore list are layout `v2`, which holds one entry per tag
-// kind. The verdict cache, its meta record and the breaker keep `v1`: the cache is versioned by
-// `CACHE_SCHEMA`, and the breaker owns `v1:breaker`; nothing here touches it.
+// Settings and the ignore list use layout `v2`, with one entry per tag kind. The verdict cache,
+// its meta record and the breaker keep `v1`. `CACHE_SCHEMA` versions the cache; the breaker owns
+// `v1:breaker`.
 
 /**
  * Bump to discard every cached verdict on the next start (and only verdicts). Version 2 stores
