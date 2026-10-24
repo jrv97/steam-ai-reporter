@@ -1,7 +1,10 @@
+import { pageInput } from "../../src/core/app-page";
 import { parseAppPage } from "../../src/core/detect/app-page";
 import { GETITEMS_URL, parseGetItems } from "../../src/core/detect/getitems";
+import { type PageDetails, parsePageDetails } from "../../src/core/detect/page-details";
 import { KIND_IDS } from "../../src/core/kinds/id";
-import type { KindVerdicts } from "../../src/core/kinds/verdicts";
+import { KINDS } from "../../src/core/kinds/registry";
+import type { AnyDisclosed, KindVerdicts } from "../../src/core/kinds/verdicts";
 import kinds from "../fixtures/getitems/kinds.json";
 import { appId, appIds } from "./app-ids";
 import { APP_PAGES, type AppPageName } from "./app-page";
@@ -35,4 +38,18 @@ export function pageVerdicts(name: AppPageName, id: number): KindVerdicts {
 /** The kinds a verdict list discloses, in registry order. */
 export function disclosedIds(verdicts: KindVerdicts): readonly string[] {
   return KIND_IDS.filter((id) => verdicts[id].state === "disclosed");
+}
+
+/** The disclosed verdicts of every kind, in registry order, as the banner lists them. */
+export function disclosedList(verdicts: KindVerdicts): readonly AnyDisclosed[] {
+  return KINDS.flatMap((kind) => {
+    const verdict = verdicts[kind.id];
+    return verdict.state === "disclosed" ? [verdict] : [];
+  });
+}
+
+/** What the captured app page adds to the GetItems verdicts of the same game. */
+export function capturedPageDetails(name: AppPageName, id: number): PageDetails {
+  const doc = new DOMParser().parseFromString(APP_PAGES[name], "text/html");
+  return parsePageDetails(doc, pageInput(capturedVerdicts(id)));
 }

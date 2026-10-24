@@ -171,6 +171,10 @@
     "message": "In the developer's own words:",
     "description": "In the notice on a game's store page, introduces the developer's text, which follows untranslated."
   },
+  "banner_region_label": {
+    "message": "Declared by the developer",
+    "description": "Screen reader name of the notice on a game's page when it lists more than one kind, or only notes about ignored kinds."
+  },
   "banner_expand": {
     "message": "Show full report",
     "description": "Expands the collapsed text of the notice."
@@ -185,11 +189,25 @@
   },
   "banner_ignore": {
     "message": "Ignore this game",
-    "description": "Button that stops badges and this notice for one game, in this extension only. The store has its own Ignore button; this one does not touch it."
+    "description": "Button on the notice that stops every tag and this notice for one game, in this extension only. The store has its own Ignore button; this one does not touch it."
+  },
+  "banner_ignore_kind": {
+    "message": "Ignore for this tag",
+    "description": "Button on one kind's entry in the notice. It stops that kind's badge and entry for one game, in this extension only; the game's other tags stay."
   },
   "banner_ignored": {
     "message": "Game ignored",
     "description": "Replaces the notice after \"Ignore this game\"."
+  },
+  "banner_ignored_kind": {
+    "message": "Ignored for this tag: $heading$",
+    "description": "Replaces one kind's entry in the notice after \"Ignore for this tag\". $heading$ is Steam's line for the kind.",
+    "placeholders": {
+      "heading": {
+        "content": "$1",
+        "example": "Uses Kernel Level Anti-Cheat"
+      }
+    }
   },
   "banner_undo": {
     "message": "Undo",

@@ -1,5 +1,9 @@
-import type { AiDisclosed, AiKind } from "../kinds/ai";
+import type { PageDetails } from "../detect/page-details";
+import { KIND_BY_ID } from "../kinds/registry";
+import type { AnyDisclosed } from "../kinds/verdicts";
 import type { MessageCatalog } from "../ports";
+import { ALLOW_ALL, type AllowScope, toAllowScope } from "../settings/allow-data";
+import { type KindDetail, kindDetails } from "./kind-details";
 import { normalizeBreaks } from "./notes";
 import { adoptStyles, BANNER_CSS } from "./styles";
 
@@ -12,15 +16,16 @@ const COLUMN_SELECTOR = ".game_description_column";
 /** An `aria-live` token, not copy. */
 const POLITE = "polite";
 
-const TITLE_ID = "sar-banner-title";
-const NOTES_ID = "sar-banner-notes";
+/** Link target and relation tokens, not copy. */
+const NEW_TAB = "_blank";
+const NO_REFERRER = "noopener noreferrer";
 
 /** What the banner's buttons do outside the banner. Each rejects when storage fails. */
 export interface BannerActions {
-  /** Adds the game to the allow-list. */
-  stopMarking(): Promise<void>;
-  /** Takes it off the allow-list again. */
-  markAgain(): Promise<void>;
+  /** Ignores the game in the scope: for one kind, or for all kinds. */
+  ignore(scope: AllowScope): Promise<void>;
+  /** Stops ignoring the game in the scope. */
+  restore(scope: AllowScope): Promise<void>;
 }
 
 export interface BannerOptions {
@@ -30,28 +35,31 @@ export interface BannerOptions {
   readonly overflows?: (quote: HTMLElement) => boolean;
 }
 
+/** What the banner shows for the game. */
+export interface BannerView {
+  /** The disclosed kinds listed in full, in registry order. */
+  readonly shown: readonly AnyDisclosed[];
+  /** The scopes the game is ignored in that the banner notes with an Undo. */
+  readonly ignored: readonly AllowScope[];
+  /** What only the game's own page knows. */
+  readonly details: PageDetails;
+}
+
 export interface Banner {
   /** `div.sar-banner-host`, the light-DOM element that holds the shadow root. */
   readonly host: HTMLElement;
-  /** Shows the full notice, or the one-line note for an allow-listed game. Same view: no change. */
-  show(verdict: AiDisclosed, allowed: boolean): void;
+  /** Shows the entries and the notes. Same view: no change. */
+  show(view: BannerView): void;
   /** Scrolls the banner into view and moves focus to it, for the summary row's jump. */
   reveal(): void;
 }
 
-type Variant = "full" | "ignored";
-
-const ACTIONS = ["stop", "undo", "toggle"] as const;
+const ACTIONS = ["ignore", "undo", "toggle"] as const;
 
 type Action = (typeof ACTIONS)[number];
 
 function parseAction(value: string | null): Action | undefined {
   return ACTIONS.find((action) => action === value);
-}
-
-interface Shown {
-  readonly variant: Variant;
-  readonly verdict: AiDisclosed;
 }
 
 function defaultFrame(doc: Document): (callback: () => void) => void {
@@ -69,16 +77,28 @@ function defaultOverflows(quote: HTMLElement): boolean {
   return quote.scrollHeight > quote.clientHeight;
 }
 
+/** The id of a part of an entry or note, unique in the banner. */
+function partId(scope: string, part: string): string {
+  return `sar-banner-${scope}-${part}`;
+}
+
+function sameView(a: BannerView, b: BannerView): boolean {
+  return a.details === b.details && a.shown.length === b.shown.length
+    && a.shown.every((verdict, index) => verdict === b.shown[index])
+    && a.ignored.length === b.ignored.length
+    && a.ignored.every((scope, index) => scope === b.ignored[index]);
+}
+
 /**
  * The app page banner: a store notice bubble in our hue, in a shadow root so store CSS cannot
- * reach it. It quotes the developer's notes verbatim through `textContent`, names the AI service
- * as plain text, and offers "Ignore this game"; an allow-listed game gets only a one-line
- * note with Undo. One delegated click listener on the shadow root serves every button.
+ * reach it. It lists every disclosed kind in Steam's words with the developer's own text, set
+ * verbatim through `textContent`, and offers "Ignore for this tag" on each entry and "Ignore this
+ * game" for all of them. An ignored scope becomes a one-line note with Undo. One delegated click
+ * listener on the shadow root serves every button.
  */
 export function createBanner(
   doc: Document,
   i18n: MessageCatalog,
-  kind: AiKind,
   actions: BannerActions,
   options: BannerOptions = {},
 ): Banner {
@@ -96,7 +116,7 @@ export function createBanner(
   live.setAttribute("aria-live", POLITE);
   shadow.append(box, live);
 
-  let shown: Shown | undefined;
+  let shown: BannerView | undefined;
   let pending = false;
 
   function element<K extends keyof HTMLElementTagNameMap>(
@@ -112,10 +132,18 @@ export function createBanner(
     return node;
   }
 
-  function button(className: string, action: Action, label: string): HTMLButtonElement {
+  function button(
+    className: string,
+    action: Action,
+    label: string,
+    scope?: AllowScope,
+  ): HTMLButtonElement {
     const node = element("button", className, label);
     node.type = "button";
     node.setAttribute("data-sar-action", action);
+    if (scope !== undefined) {
+      node.setAttribute("data-sar-scope", scope);
+    }
     return node;
   }
 
@@ -139,59 +167,136 @@ export function createBanner(
     }
   }
 
-  function buildFull(verdict: AiDisclosed): HTMLElement {
-    const aside = element("aside", "sar-banner");
-    aside.setAttribute("aria-labelledby", TITLE_ID);
-    aside.tabIndex = -1;
-
-    const head = element("div", "sar-banner-head");
-    const title = element("h2", "sar-banner-title", i18n.t(kind.messages.heading));
-    title.id = TITLE_ID;
-    head.append(title, button("sar-banner-action", "stop", i18n.t("banner_ignore")));
-
-    const quote = element("blockquote", "sar-banner-quote", normalizeBreaks(verdict.notes));
-    quote.id = NOTES_ID;
+  /** The developer's long text behind its source line, with a toggle once it overflows. */
+  function appendQuote(entry: HTMLElement, id: string, text: string): void {
+    const quote = element("blockquote", "sar-banner-quote", normalizeBreaks(text));
+    quote.id = id;
     quote.setAttribute("data-sar-collapsed", "true");
     const toggle = button("sar-banner-link", "toggle", i18n.t("banner_expand"));
     toggle.setAttribute("aria-expanded", String(false));
-    toggle.setAttribute("aria-controls", NOTES_ID);
+    toggle.setAttribute("aria-controls", id);
     toggle.hidden = true;
-
-    aside.append(head, element("p", "sar-banner-source", i18n.t("banner_source")), quote, toggle);
-    if (verdict.service !== undefined && verdict.service !== "") {
-      const service = element("p", "sar-banner-service", i18n.t(kind.messages.bannerService));
-      service.append(" ", element("span", "sar-banner-service-name", verdict.service));
-      aside.append(service);
-    }
-    aside.append(errorLine());
+    entry.append(element("p", "sar-banner-source", i18n.t("banner_source")), quote, toggle);
     frame(() => {
       measure(quote, toggle);
     });
-    return aside;
   }
 
-  function buildIgnored(): HTMLElement {
-    const aside = element("aside", "sar-banner");
-    aside.setAttribute("data-sar-variant", "ignored");
-    aside.setAttribute("aria-label", i18n.t(kind.messages.bannerRegion));
-    aside.tabIndex = -1;
-    aside.append(
-      element("span", "sar-banner-ignored-text", i18n.t("banner_ignored")),
-      button("sar-banner-link", "undo", i18n.t("banner_undo")),
-      errorLine(),
+  /** The developer's short text, as a link where the store hosts the agreement. */
+  function appendLink(entry: HTMLElement, text: string, url: string): void {
+    const line = element("p", "sar-banner-detail");
+    const anchor = element("a", "sar-banner-anchor", text);
+    anchor.href = url;
+    anchor.target = NEW_TAB;
+    anchor.rel = NO_REFERRER;
+    line.append(anchor);
+    entry.append(line);
+  }
+
+  function appendDetail(entry: HTMLElement, detail: KindDetail, quoteId: string): void {
+    switch (detail.kind) {
+      case "message":
+        entry.append(element("p", "sar-banner-detail", i18n.t(detail.key)));
+        break;
+      case "text":
+        entry.append(element("p", "sar-banner-detail", detail.text));
+        break;
+      case "link":
+        appendLink(entry, detail.text, detail.url);
+        break;
+      case "quote":
+        appendQuote(entry, quoteId, detail.text);
+        break;
+      case "labeled": {
+        const line = element("p", "sar-banner-service", i18n.t(detail.key));
+        line.append(" ", element("span", "sar-banner-service-name", detail.text));
+        entry.append(line);
+        break;
+      }
+    }
+  }
+
+  /** One kind: Steam's line as the heading, its own ignore button, then the details. */
+  function buildEntry(verdict: AnyDisclosed, details: PageDetails): HTMLElement {
+    const entry = element("div", "sar-banner-entry");
+    const titleId = partId(verdict.kind, "title");
+    const ignoreId = partId(verdict.kind, "ignore");
+    const heading = i18n.t(KIND_BY_ID[verdict.kind].messages.heading);
+    const title = element("h2", "sar-banner-title", heading);
+    title.id = titleId;
+    const ignore = button(
+      "sar-banner-action",
+      "ignore",
+      i18n.t("banner_ignore_kind"),
+      verdict.kind,
     );
+    ignore.id = ignoreId;
+    ignore.setAttribute("aria-labelledby", [ignoreId, titleId].join(" "));
+    const head = element("div", "sar-banner-head");
+    head.append(title, ignore);
+    entry.append(head);
+    for (const detail of kindDetails(verdict, details)) {
+      appendDetail(entry, detail, partId(verdict.kind, "notes"));
+    }
+    return entry;
+  }
+
+  /** What an ignored scope says: the whole game, or one kind by Steam's line. */
+  function noteText(scope: AllowScope): string {
+    return scope === ALLOW_ALL
+      ? i18n.t("banner_ignored")
+      : i18n.t("banner_ignored_kind", { heading: i18n.t(KIND_BY_ID[scope].messages.heading) });
+  }
+
+  function buildNote(scope: AllowScope): HTMLElement {
+    const note = element("p", "sar-banner-note");
+    const text = element("span", "sar-banner-ignored-text", noteText(scope));
+    text.id = partId(scope, "note");
+    const undo = button("sar-banner-link", "undo", i18n.t("banner_undo"), scope);
+    undo.id = partId(scope, "undo");
+    undo.setAttribute("aria-labelledby", [undo.id, text.id].join(" "));
+    note.append(text, undo);
+    return note;
+  }
+
+  function build(view: BannerView): HTMLElement {
+    const aside = element("aside", "sar-banner");
+    aside.tabIndex = -1;
+    const [only] = view.shown;
+    if (only !== undefined && view.shown.length === 1 && view.ignored.length === 0) {
+      aside.setAttribute("aria-labelledby", partId(only.kind, "title"));
+    } else {
+      aside.setAttribute("aria-label", i18n.t("banner_region_label"));
+    }
+    if (view.shown.length === 0) {
+      aside.setAttribute("data-sar-variant", "ignored");
+    } else if (view.shown.length > 1) {
+      aside.setAttribute("data-sar-entries", "many");
+    }
+    for (const verdict of view.shown) {
+      aside.append(buildEntry(verdict, view.details));
+    }
+    for (const scope of view.ignored) {
+      aside.append(buildNote(scope));
+    }
+    if (view.shown.length > 0) {
+      const foot = element("div", "sar-banner-foot");
+      foot.append(button("sar-banner-link", "ignore", i18n.t("banner_ignore"), ALLOW_ALL));
+      aside.append(foot);
+    }
+    aside.append(errorLine());
     return aside;
   }
 
-  function render(variant: Variant, verdict: AiDisclosed): void {
-    const next = variant === "full" ? buildFull(verdict) : buildIgnored();
+  function render(view: BannerView): void {
+    const next = build(view);
     box.replaceWith(next);
     box = next;
-    shown = { variant, verdict };
+    shown = view;
   }
 
   function toggleNotes(toggle: Element): void {
-    const quote = box.querySelector(".sar-banner-quote");
+    const quote = shadow.getElementById(toggle.getAttribute("aria-controls") ?? "");
     if (quote === null) {
       return;
     }
@@ -201,14 +306,26 @@ export function createBanner(
     toggle.textContent = i18n.t(expand ? "banner_collapse" : "banner_expand");
   }
 
-  async function run(action: () => Promise<void>, next: Variant): Promise<void> {
+  function control(action: Action, scope: AllowScope): HTMLElement | undefined {
+    return [...box.querySelectorAll<HTMLElement>("[data-sar-action]")].find((candidate) =>
+      candidate.getAttribute("data-sar-action") === action
+      && candidate.getAttribute("data-sar-scope") === scope
+    );
+  }
+
+  /** Undo takes the focus after an ignore, and the ignore button after an undo. */
+  function focusAfter(action: Action, scope: AllowScope): void {
+    const next = action === "undo" ? "ignore" : "undo";
+    (control(next, scope) ?? control("ignore", ALLOW_ALL) ?? box).focus();
+  }
+
+  async function run(action: Action, scope: AllowScope): Promise<void> {
     if (pending || shown === undefined) {
       return;
     }
-    const { verdict } = shown;
     pending = true;
     try {
-      await action();
+      await (action === "undo" ? actions.restore(scope) : actions.ignore(scope));
     } catch {
       const error = box.querySelector<HTMLElement>(".sar-banner-error");
       if (error !== null) {
@@ -219,53 +336,34 @@ export function createBanner(
     } finally {
       pending = false;
     }
-    if (shown.variant !== next) {
-      render(next, verdict);
-    }
-    const focus = box.querySelector<HTMLElement>(
-      `[data-sar-action="${next === "ignored" ? "undo" : "stop"}"]`,
-    );
-    focus?.focus();
+    focusAfter(action, scope);
     live.textContent = i18n.t(
-      next === "ignored" ? "notice_marking_stopped" : "notice_marking_restored",
+      action === "undo" ? "notice_marking_restored" : "notice_marking_stopped",
     );
   }
 
   shadow.addEventListener("click", (event) => {
     const target = event.target;
-    const control = target instanceof Element ? target.closest("[data-sar-action]") : null;
-    if (control === null) {
+    const clicked = target instanceof Element ? target.closest("[data-sar-action]") : null;
+    if (clicked === null) {
       return;
     }
-    const action = parseAction(control.getAttribute("data-sar-action"));
-    switch (action) {
-      case "toggle":
-        toggleNotes(control);
-        break;
-      case "stop":
-        void run(() => actions.stopMarking(), "ignored");
-        break;
-      case "undo":
-        void run(() => actions.markAgain(), "full");
-        break;
-      case undefined:
-        break;
+    const action = parseAction(clicked.getAttribute("data-sar-action"));
+    const scope = toAllowScope(clicked.getAttribute("data-sar-scope"));
+    if (action === "toggle") {
+      toggleNotes(clicked);
+    } else if (action !== undefined && scope !== undefined) {
+      void run(action, scope);
     }
   });
 
   return {
     host,
 
-    show(verdict, allowed) {
-      const variant: Variant = allowed ? "ignored" : "full";
-      const same = shown?.variant === variant
-        && (variant === "ignored"
-          || (shown.verdict.notes === verdict.notes && shown.verdict.service === verdict.service));
-      if (same) {
-        shown = { variant, verdict };
-        return;
+    show(view) {
+      if (shown === undefined || !sameView(shown, view)) {
+        render(view);
       }
-      render(variant, verdict);
     },
 
     reveal() {

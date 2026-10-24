@@ -171,6 +171,10 @@
     "message": "Citando a los desarrolladores:",
     "description": "In the notice on a game's store page, introduces the developer's text, which follows untranslated."
   },
+  "banner_region_label": {
+    "message": "Declarado por el desarrollador",
+    "description": "Screen reader name of the notice on a game's page when it lists more than one kind, or only notes about ignored kinds."
+  },
   "banner_expand": {
     "message": "Ver todo",
     "description": "Expands the collapsed text of the notice."
@@ -185,11 +189,25 @@
   },
   "banner_ignore": {
     "message": "Ignorar este juego",
-    "description": "Button that stops badges and this notice for one game, in this extension only. The store has its own Ignore button; this one does not touch it."
+    "description": "Button on the notice that stops every tag and this notice for one game, in this extension only. The store has its own Ignore button; this one does not touch it."
+  },
+  "banner_ignore_kind": {
+    "message": "Ignorar para esta etiqueta",
+    "description": "Button on one kind's entry in the notice. It stops that kind's badge and entry for one game, in this extension only; the game's other tags stay."
   },
   "banner_ignored": {
     "message": "Juego ignorado",
     "description": "Replaces the notice after \"Ignore this game\"."
+  },
+  "banner_ignored_kind": {
+    "message": "Ignorado para esta etiqueta: $heading$",
+    "description": "Replaces one kind's entry in the notice after \"Ignore for this tag\". $heading$ is Steam's line for the kind.",
+    "placeholders": {
+      "heading": {
+        "content": "$1",
+        "example": "Utiliza antitrampas a nivel de kernel"
+      }
+    }
   },
   "banner_undo": {
     "message": "Deshacer",

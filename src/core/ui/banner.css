@@ -57,10 +57,20 @@
 }
 
 .sar-banner-source,
-.sar-banner-service {
+.sar-banner-service,
+.sar-banner-detail {
   margin: var(--sar-space-1) 0 0;
   color: var(--sar-banner-fg);
   font: var(--sar-banner-meta-font);
+}
+
+/* One entry per kind. With several, the headings step down from the store's notice heading */
+.sar-banner-entry + .sar-banner-entry {
+  margin-block-start: var(--sar-space-3);
+}
+
+.sar-banner[data-sar-entries="many"] .sar-banner-title {
+  font: var(--sar-weight-light) var(--sar-size-2xl) / var(--sar-leading-2xl) var(--sar-font-page);
 }
 
 .sar-banner-quote {
@@ -127,12 +137,18 @@
   flex: none;
 }
 
+.sar-banner-anchor {
+  color: var(--sar-banner-link-color);
+  text-decoration: underline;
+}
+
 .sar-banner-quote + .sar-banner-link {
   margin-block-start: var(--sar-space-0);
 }
 
 .sar-banner-action:focus-visible,
-.sar-banner-link:focus-visible {
+.sar-banner-link:focus-visible,
+.sar-banner-anchor:focus-visible {
   outline: var(--sar-focus-width) solid var(--sar-focus-color);
   outline-offset: var(--sar-focus-offset);
 }
@@ -143,13 +159,33 @@
   font: var(--sar-banner-meta-font);
 }
 
-/* Allow-listed: the store's DRM-notice geometry in neutral, no violet. The text and the link
-   wrap inside their own boxes; an error takes its own line. */
-.sar-banner[data-sar-variant="ignored"] {
+/* A note for an ignored scope: the text and its Undo wrap inside their own boxes. In the full
+   banner it follows the entries; alone, it takes the store's DRM-notice geometry in neutral. */
+.sar-banner-note {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: var(--sar-banner-gap);
+  margin: var(--sar-space-2) 0 0;
+}
+
+.sar-banner-ignored-text {
+  flex: 1 1 0;
+  min-inline-size: 0;
+}
+
+.sar-banner-note .sar-banner-link {
+  flex: 0 1 auto;
+  max-inline-size: 50%;
+}
+
+.sar-banner-foot {
+  display: flex;
+  justify-content: flex-end;
+  margin-block-start: var(--sar-space-2);
+}
+
+.sar-banner[data-sar-variant="ignored"] {
   padding-block: var(--sar-space-1);
   padding-inline: var(--sar-space-2);
   border-radius: var(--sar-radius-xs);
@@ -158,19 +194,12 @@
   font: var(--sar-banner-note-font);
 }
 
-.sar-banner-ignored-text {
-  flex: 1 1 0;
-  min-inline-size: 0;
-}
-
-.sar-banner[data-sar-variant="ignored"] .sar-banner-link {
-  flex: 0 1 auto;
-  max-inline-size: 50%;
-}
-
-.sar-banner[data-sar-variant="ignored"] .sar-banner-error {
-  flex: 1 0 100%;
+.sar-banner[data-sar-variant="ignored"] .sar-banner-note {
   margin: 0;
+}
+
+.sar-banner[data-sar-variant="ignored"] .sar-banner-note + .sar-banner-note {
+  margin-block-start: var(--sar-space-1);
 }
 
 /* The wash disappears in forced colors; an edge keeps the banner a distinct region */
