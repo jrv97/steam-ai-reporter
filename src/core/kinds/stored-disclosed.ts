@@ -22,9 +22,8 @@ type StoredSchema<TKind extends string, TFields extends v.ObjectEntries> = v.Sch
 >;
 
 /**
- * The schema of a stored disclosed verdict of `kind`: the fields every disclosed verdict has,
- * then the kind's own `fields`. A kind lists only what its payload adds, and takes the type of
- * its disclosed verdict from the output, so a field cannot be added without being stored.
+ * The schema of a stored disclosed verdict of `kind`: the common fields, then the kind's `fields`.
+ * The verdict type is this schema's output, so a field cannot be added without being stored.
  */
 export function storedDisclosed<
   const TKind extends string,

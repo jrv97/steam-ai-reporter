@@ -14,9 +14,8 @@ export type AnyDisclosed = DisclosedOf<TagKind>;
 export type KindVerdict = Verdict<AnyDisclosed>;
 
 /**
- * What core knows about one app: a verdict for every registered kind, each with the disclosed
- * shape of its own kind. Each verdict has exactly the three states of rule 4, and a missing answer
- * is unknown, never not disclosed.
+ * What core knows about one app: a verdict for every registered kind, in the shape of that kind.
+ * A verdict has the three states of rule 4. A missing answer is unknown, never not disclosed.
  */
 export type KindVerdicts = {
   readonly [Id in KindId]: Verdict<Extract<AnyDisclosed, DisclosedBase<Id>>>;
@@ -27,8 +26,8 @@ function sitsUnderItsKind(id: KindId, verdict: KindVerdict): boolean {
 }
 
 /**
- * Whether the verdicts hold an answer for every registered kind, and a disclosed one sits in the
- * slot of its own kind, so each slot has the shape of its kind.
+ * Whether the verdicts hold an answer for every registered kind. A disclosed verdict must sit in
+ * the slot of its own kind.
  */
 export function isKindVerdicts(
   verdicts: Partial<Record<KindId, KindVerdict>>,

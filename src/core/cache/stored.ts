@@ -51,8 +51,8 @@ function decodeVerdict(kind: TagKind, stored: unknown): KindVerdict | undefined 
 }
 
 /**
- * The stored value as verdicts with their fetch time. Undefined when it is not a valid entry, or
- * when it lacks a registered kind (written before the kind existed), so that app is fetched again.
+ * The stored value as verdicts with their fetch time. Undefined when it is not a valid entry or
+ * lacks a registered kind; that app is then fetched again.
  */
 export function decodeVerdicts(stored: unknown): TimedVerdicts | undefined {
   const app = v.safeParse(StoredAppSchema, stored);

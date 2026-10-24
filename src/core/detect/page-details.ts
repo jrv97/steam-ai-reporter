@@ -1,8 +1,8 @@
 import { trimNotes } from "./notes";
 
-// What the live app page shows and GetItems omits (ADR 0010): the custom anti-cheat name, the boot
-// protection line and the DRM activation limit. Store pages are localized. Nothing here reads the
-// words of a notice, only the elements, their order and the text GetItems gave.
+// The page shows what GetItems omits (ADR 0010): a custom anti-cheat name, the boot line, the
+// DRM activation limit. Store pages are localized. Nothing here reads notice words, only
+// elements, their order and the text GetItems gave.
 
 const FEATURES = "#category_block";
 const ANTICHEAT_LINE = ".anticheat_section .anticheat_name";
@@ -40,9 +40,9 @@ function lineName(line: Element): string {
 }
 
 /**
- * The anti-cheat lines in document order, skipping empty ones. A boot protection line follows the
- * name line, so it counts only as the last of at least two lines. Without boot protection the
- * first line is the name.
+ * The anti-cheat lines in document order, without the empty ones. The boot protection line is
+ * the last of at least two lines, after the name line. Without boot protection, the first line
+ * is the name.
  */
 function anticheatDetails(features: Element, bootProtection: boolean): PageDetails {
   const names: string[] = [];
@@ -65,9 +65,9 @@ function anticheatDetails(features: Element, bootProtection: boolean): PageDetai
 }
 
 /**
- * The activation limit: the text after the one `<br>` of a plain notice made of a text, a `<br>`
- * and a text. Only a notice whose first text holds the DRM text GetItems gave can carry it, so an
- * account or DRM text with a line break of its own does not read as a limit.
+ * The limit is the text after the `<br>` in a notice of a text, a `<br>` and a text.
+ * Only a notice whose first text holds the GetItems DRM text counts. A line break in an account
+ * text then cannot read as a limit.
  */
 function activationLimit(features: Element, drmText: string | undefined): string | undefined {
   const drm = trimNotes(drmText ?? "");

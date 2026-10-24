@@ -23,8 +23,8 @@ APP_PAGE_URL = "https://store.steampowered.com/app/{appid}/?l=english"
 USER_AGENT = "steam-ai-reporter-canary (+https://github.com/jrv97/steam-ai-reporter)"
 TIMEOUT_SECONDS = 30
 HEADING = "AI Generated Content Disclosure"
-# Apps that between them declare every kind. The first one with a kernel anti-cheat and AI notes
-# lends its page, and the order is the only thing about them that matters.
+# Apps that between them declare every kind. The first with a kernel anti-cheat and AI notes
+# lends its page. Only that order matters.
 SAMPLE = (1808500, 5072580, 413150, 3751950, 2807960, 730, 105600, 1245620)
 # Steam's category IDs for PvP, Online PvP, LAN PvP and Shared/Split Screen PvP.
 PVP_CATEGORY_IDS = frozenset({49, 36, 47, 37})

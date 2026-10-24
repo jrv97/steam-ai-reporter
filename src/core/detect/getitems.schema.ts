@@ -40,17 +40,14 @@ function list<const TItem extends v.GenericSchema>(item: TItem) {
 }
 
 /**
- * A field that parses to its own value, or to `MALFORMED`. Each kind reads the fields it needs
- * and answers unknown when one is malformed, so one bad field costs only the kinds that read it.
+ * A field that parses to its own value, or to `MALFORMED`. A kind answers unknown when a field it
+ * reads is malformed. One bad field costs only the kinds that read it.
  */
 function lenient<const TSchema extends v.GenericSchema>(schema: TSchema) {
   return v.exactOptional(v.union([schema, MalformedSchema]));
 }
 
-/**
- * A field that only adds detail to a verdict: when it is malformed it reads as if it were absent,
- * and its kind stays known.
- */
+/** A field that only adds detail to a verdict. When malformed it reads as absent. */
 function droppable<const TSchema extends v.GenericSchema>(schema: TSchema) {
   return v.exactOptional(v.union([schema, DroppedSchema]));
 }
@@ -61,8 +58,8 @@ function emptyArrayAsObject(input: unknown): unknown {
 }
 
 /**
- * A readonly object schema. Unlike valibot's `object`, it takes no array for an object whose
- * keys are all missing: a list with entries in an object's place is malformed.
+ * A readonly object schema. Unlike valibot's `object`, it takes no array as an object.
+ * A list with entries in an object's place is malformed.
  */
 function record<const TEntries extends v.ObjectEntries>(entries: TEntries) {
   return v.pipe(
@@ -101,9 +98,9 @@ const CategoriesSchema = record({
 });
 
 /**
- * One store item. `id` echoes the requested ID; `appid` is 0 for invalid items and unused. The
- * name and the categories are lenient like the details; `success`, `id` and `extra_details` are
- * not, because an item without them says nothing about any kind.
+ * One store item. `id` echoes the requested ID; `appid` is 0 for invalid items and unused.
+ * The name and the categories are lenient. An item without a valid `id`, `success` or
+ * `extra_details` says nothing about any kind.
  */
 export const StoreItemSchema = v.pipe(
   v.object({

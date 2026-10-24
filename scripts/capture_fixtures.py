@@ -43,7 +43,7 @@ KINDS_DETAILS_REMOVED = (
     "legal_notice_bbcode",
     "section",
 )
-# The AI fixtures predate the tag kinds and still drop the EULA links; the kinds fixture keeps them.
+# The AI fixtures drop the EULA links; the kinds fixture keeps them.
 DETAILS_REMOVED = (*KINDS_DETAILS_REMOVED, "eula")
 
 VOID_TAGS = frozenset(
@@ -111,8 +111,8 @@ APP_PAGES = (
     AppPage("99999999-home-redirect.html", 99999999, shallow=True),
 )
 
-# The tag kinds: the apps that show each declaration, the package and bundle that carry no
-# `extra_details`, and an ID that does not exist.
+# The tag kinds: apps that show each declaration, a package and a bundle without `extra_details`,
+# and an ID that does not exist.
 KIND_APPS = (3751950, 2807960, 1808500, 813230, 730, 570, 105600, 1245620, 1172470, 271590)
 # Games that declare nothing of any kind, from 2004 to 2024.
 KIND_NOTHING = (1145360, 413150, 504230, 367520, 2379780, 620)

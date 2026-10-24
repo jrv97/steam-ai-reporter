@@ -30,9 +30,9 @@ function parseUrl(raw: string): URL | undefined {
 }
 
 /**
- * The link as `https://store.steampowered.com/eula/...`, or undefined when it is anything else:
- * another host, another scheme, credentials, a port, a path outside `/eula/`, or no absolute URL
- * at all. Steam's doubled leading slash collapses to one.
+ * The link as `https://store.steampowered.com/eula/...`, or undefined for anything else.
+ * That covers another host or scheme, credentials, a port, and a path outside `/eula/`.
+ * Steam's doubled leading slash collapses to one.
  */
 export function eulaLink(raw: string): string | undefined {
   const url = parseUrl(raw);

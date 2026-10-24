@@ -32,10 +32,9 @@ function isAppPage(finalUrl: string): boolean {
 }
 
 /**
- * The verdicts an English app page gives. `finalUrl` is where the request ended up after
- * redirects: every kind is unknown `gated` when that is not an app page, or when the page has no
- * app name (age gate, sign-in and home redirects, rq6 S2 and S7). A kind that cannot be read from
- * the page is unknown `missing`; the others read their own block.
+ * The verdicts an English app page gives. `finalUrl` is where the request ended after redirects.
+ * Every kind is unknown `gated` when that is no app page, or the page has no app name.
+ * A kind that cannot be read from the page is unknown `missing`.
  */
 export function parseAppPage(doc: Document, finalUrl: string): KindVerdicts {
   if (!isAppPage(finalUrl)) {

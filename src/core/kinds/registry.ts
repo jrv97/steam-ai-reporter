@@ -10,8 +10,8 @@ import type { TagKind } from "./kind";
 import { PVP_KIND } from "./pvp";
 
 /**
- * The one place that lists the kinds. The kind ids, the kind list, the settings defaults and every
- * per-kind record derive from it, so a new kind is one entry here and its definition.
+ * The one place that lists the kinds. The kind ids, the settings defaults and every per-kind
+ * record derive from it. A new kind is one entry here and its definition.
  */
 export const KINDS = [
   AI_KIND,

@@ -31,10 +31,8 @@ export function parseWithDefaults<TSchema extends v.GenericSchema>(
 }
 
 /**
- * The JSON form of a plain data value, or undefined when it holds something JSON cannot carry (a
- * function, a symbol, NaN). Object keys whose value is undefined are left out, like
- * `JSON.stringify` does, so an optional field that is not set costs no storage. A `__proto__` key
- * stays an own key.
+ * The JSON form of a plain data value, or undefined when JSON cannot carry it (a function, NaN).
+ * Keys whose value is undefined are left out, and a `__proto__` key stays an own key.
  */
 export function toJsonValue(value: unknown): JsonValue | undefined {
   if (value === null || typeof value === "string" || typeof value === "boolean") {

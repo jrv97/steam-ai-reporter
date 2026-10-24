@@ -226,7 +226,7 @@ describe("decodeVerdicts", () => {
     }
   });
 
-  it("discards an entry written before a kind existed or with a kind missing", () => {
+  it("discards an entry that lacks a registered kind", () => {
     expect(decodeVerdicts({ time: T, kinds: {} })).toBeUndefined();
     expect(decodeVerdicts({ time: T })).toBeUndefined();
     expect(decodeVerdicts({ time: T, kinds: { other: STORED_KINDS.ai } })).toBeUndefined();
@@ -242,7 +242,7 @@ describe("decodeVerdicts", () => {
     expect(decodeVerdicts({ state: "not-disclosed", time: T, source: "api" })).toBeUndefined();
   });
 
-  it("discards an AI entry that carries no kind, as the first layout stored it", () => {
+  it("discards an AI entry that carries no kind", () => {
     const { kind: _kind, ...legacy } = STORED_KINDS.ai;
     expect(decodeVerdicts(withEntry("ai", legacy))).toBeUndefined();
   });

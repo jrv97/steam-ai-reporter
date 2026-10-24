@@ -19,16 +19,16 @@ export interface KindMessages {
 }
 
 /**
- * One tag kind: what the extension reports about a game, with `Disclosed` as the shape of its
- * disclosed verdict. Adding a kind is writing a definition and listing it in `registry.ts`; the
- * scanner, the detector chain and the cache stay as they are.
+ * One tag kind: what the extension reports about a game. `Disclosed` is the shape of its disclosed
+ * verdict. A new kind is a definition listed in `registry.ts`; the scanner, the chain and the
+ * cache stay as they are.
  */
 export interface KindDefinition<Disclosed extends DisclosedBase> {
   /** Stable; stored in the settings and in the ignore list. */
   readonly id: Disclosed["kind"];
   /**
-   * The kind's verdict for a GetItems item and its `extra_details`: disclosed or not disclosed, or
-   * unknown when a field it reads is malformed. The language is the one the request asked for.
+   * The kind's verdict for a GetItems item and its `extra_details`. It is unknown malformed when a
+   * field it reads has the wrong shape. The language is the one the request asked for.
    */
   readonly fromGetItems: (
     item: StoreItem,
