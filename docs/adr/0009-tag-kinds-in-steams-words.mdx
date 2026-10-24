@@ -1,0 +1,67 @@
+---
+status: accepted
+date: 2026-10-24
+decision-makers: Jorge Rodriguez de la Vega
+---
+
+# Tag several kinds of store disclosure, in Steam's own words
+
+## Context and problem statement
+
+The extension marks games whose developers disclosed AI use. A Steam store page carries other developer declarations that players weigh before buying: kernel-level anti-cheat, third-party DRM, a required third-party account and a required third-party EULA. Steam's categories also say whether a game has PvP. Other extensions already mark AI use, and a tool that does one thing falls behind tools that do several.
+
+The code assumed one kind. A detection returned one verdict per app, a badge had one label, the list filter was global and the ignore list held app IDs. Rule 4 fixed the AI wording as "AI use reported". How does the product grow past AI without a rewrite per new tag?
+
+## Decision drivers
+
+- A new tag type costs a registry entry and catalog text, with no edit to the scanner or the detector chain (rule 11).
+- No new host, permission, request or stored identifier (rules 1 and 3).
+- Unknown is never shown as not disclosed, and an absent key never reads as "none" (rule 4).
+- A tag reads in the words Steam uses on the store page, in English and Spanish.
+- Players who installed for AI keep their settings.
+- The bundle and scan-time budgets stay enforced (rule 13).
+
+## Considered options
+
+1. Keep the product AI-only and publish a second extension for the other kinds.
+2. Add each new kind as a special case beside the AI code.
+3. One tag-kind model: a registry of tag types with per-kind verdicts and per-kind settings, in one extension.
+
+## Decision outcome
+
+Chosen option 3. Seven tag types ship: AI, kernel-level anti-cheat, anti-cheat, 3rd-party DRM, 3rd-party account, 3rd-party EULA and PvP.
+
+States. Detection returns a verdict per app and per kind. The states stay disclosed, not disclosed and unknown. An item without `extra_details` is unknown. An item with `extra_details` and no key for a kind is not reported. Neither state renders as "none", "DRM-free" or "no anti-cheat".
+
+Wording. Each tag uses Steam's vocabulary. The box, the hover card and the accessible name carry Steam's full line ("Uses Kernel Level Anti-Cheat", "Incorporates 3rd-party DRM", "Requires 3rd-Party Account", "Requires agreement to a 3rd-party EULA", and for AI the heading "AI Generated Content Disclosure"). The chip is short: AI, Kernel AC, Anti-Cheat, DRM, Account, EULA, PvP. The Spanish catalog mirrors Steam's Spain Spanish. The hover card ends with a line that names the developer as the source. This replaces "AI use reported". Rule 4 now says a tag uses Steam's words for its kind, our own copy never says "uses AI", "AI-free" or "no AI", and the developer's text renders verbatim through `textContent`.
+
+Settings. Each tag type has its own switch, badge, banner entry and list filter (off, dim, hide; the strongest mode wins when several match). The ignore list works per game and per kind, with an "all tags" scope. Defaults: switch, badge and banner on, filter off. Existing settings and ignored games migrate to the AI kind only, and the old keys are removed once the new ones read back.
+
+Out of scope: icons on chips, user-defined tags and the product name.
+
+### Consequences
+
+- Good: a new tag is a registry entry, catalog text and a fixture.
+- Good: one extension and one release pipeline for every tag.
+- Good: the clash between "report" and Steam's flagging feature ([ADR 0008](0008-one-badge-label-ai-use-reported.mdx)) ends.
+- Bad: about 2.6k added source lines and about 40 KiB of unminified bundle. The budgets rise in the change that adds the kinds, with measured numbers.
+- Bad: Steam's lines state facts where the AI label hedged. The hover card's source line and the "reported" states carry the hedge.
+- Bad: an older version cannot read the migrated settings, because the migration removes the old keys after the new ones read back.
+- Neutral: ADR 0006 and ADR 0008 are superseded when the new wording ships. The store listing, screenshots and privacy text change.
+
+## Pros and cons of the options
+
+### A second extension
+
+- Good: no change to the AI code.
+- Bad: two codebases, two listings, two release trains, duplicated infrastructure.
+
+### Special cases beside the AI code
+
+- Good: smallest first diff.
+- Bad: every kind edits the scanner, the chain, the cache and the settings, which breaks rule 11.
+
+### One tag-kind model
+
+- Good: tags are data, and the migration and the settings model are written once.
+- Bad: a refactor before any new tag ships.
