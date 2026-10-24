@@ -1,9 +1,10 @@
 import { trimNotes } from "./notes";
 
 // What the live app page shows and GetItems omits (ADR 0010): the custom anti-cheat name, the boot
-// protection line and the DRM activation limit. Store pages are localized, so nothing here reads
-// the words of a notice; only the elements and their order.
+// protection line and the DRM activation limit. Store pages are localized. Nothing here reads the
+// words of a notice, only the elements, their order and the text GetItems gave.
 
+const FEATURES = "#category_block";
 const ANTICHEAT_LINE = ".anticheat_section .anticheat_name";
 const NOTICE = ".DRM_notice";
 const ANTICHEAT_SECTION_CLASS = "anticheat_section";
@@ -13,10 +14,18 @@ const TEXT_NODE = 3;
 export interface PageDetails {
   /** The anti-cheat's name when it is a custom one, which GetItems leaves out. */
   readonly anticheatName?: string;
-  /** The whole boot protection line, such as its label and the requirement. */
+  /** The whole boot protection line: its label and the requirement. */
   readonly bootProtection?: string;
   /** The DRM activation limit line. */
   readonly activationLimit?: string;
+}
+
+/** What GetItems says about the game, which tells the page's lines apart. */
+export interface PageInput {
+  /** The anti-cheat declared boot protection, so its last line is the boot protection line. */
+  readonly bootProtection: boolean;
+  /** The DRM text GetItems gave, or undefined when the game declared no DRM. */
+  readonly drmText: string | undefined;
 }
 
 /** The text of an anti-cheat line without its removal note, the nested `.anticheat_uninstalls`. */
@@ -31,39 +40,47 @@ function lineName(line: Element): string {
 }
 
 /**
- * The anti-cheat lines in document order. A kernel anti-cheat with boot protection shows the name
- * line, if it has a name, and then the boot protection line, so with `bootProtection` set the last
- * line is the boot one and an earlier line is the name. Without it the first line is the name.
+ * The anti-cheat lines in document order, skipping empty ones. A boot protection line follows the
+ * name line, so it counts only as the last of at least two lines. Without boot protection the
+ * first line is the name.
  */
-function anticheatDetails(doc: Document, bootProtection: boolean): PageDetails {
+function anticheatDetails(features: Element, bootProtection: boolean): PageDetails {
   const names: string[] = [];
   const full: string[] = [];
-  for (const line of doc.querySelectorAll(ANTICHEAT_LINE)) {
+  for (const line of features.querySelectorAll(ANTICHEAT_LINE)) {
     const name = lineName(line);
     if (name !== "") {
       names.push(name);
       full.push(trimNotes(line.textContent));
     }
   }
-  const boot = bootProtection ? full.at(-1) : undefined;
-  const name = names.at(bootProtection ? -2 : 0);
+  const [first] = names;
+  const hasBootLine = bootProtection && full.length >= 2;
+  const boot = hasBootLine ? full.at(-1) : undefined;
+  const custom = bootProtection && !hasBootLine ? undefined : first;
   return {
-    ...(name === undefined ? {} : { anticheatName: name }),
+    ...(custom === undefined ? {} : { anticheatName: custom }),
     ...(boot === undefined ? {} : { bootProtection: boot }),
   };
 }
 
 /**
- * The activation limit: the text after the one `<br>` of a plain DRM notice. The notice with a
- * limit is the only one made of a text, a `<br>` and a text; the account, EULA, anti-cheat and AI
- * service notices hold links, blocks or no `<br>`.
+ * The activation limit: the text after the one `<br>` of a plain notice made of a text, a `<br>`
+ * and a text. Only a notice whose first text holds the DRM text GetItems gave can carry it, so an
+ * account or DRM text with a line break of its own does not read as a limit.
  */
-function activationLimit(doc: Document): string | undefined {
-  for (const notice of doc.querySelectorAll(NOTICE)) {
+function activationLimit(features: Element, drmText: string | undefined): string | undefined {
+  const drm = trimNotes(drmText ?? "");
+  if (drm === "") {
+    return undefined;
+  }
+  for (const notice of features.querySelectorAll(NOTICE)) {
     const lineBreak = notice.firstElementChild;
+    const before = lineBreak?.previousSibling;
     if (
       notice.children.length !== 1 || lineBreak?.tagName !== "BR"
       || notice.classList.contains(ANTICHEAT_SECTION_CLASS) || notice.hasAttribute("role")
+      || before?.nodeType !== TEXT_NODE || !(before.textContent ?? "").includes(drm)
     ) {
       continue;
     }
@@ -77,13 +94,17 @@ function activationLimit(doc: Document): string | undefined {
 }
 
 /**
- * The page-only details of the app page `doc`. `bootProtection` says the game declared boot
- * protection (its GetItems anti-cheat has the flag), which tells the boot line from the name line.
+ * The page-only details of the app page `doc`, read from its features list. A page without that
+ * list gives none.
  */
-export function parsePageDetails(doc: Document, bootProtection: boolean): PageDetails {
-  const limit = activationLimit(doc);
+export function parsePageDetails(doc: Document, input: PageInput): PageDetails {
+  const features = doc.querySelector(FEATURES);
+  if (features === null) {
+    return {};
+  }
+  const limit = activationLimit(features, input.drmText);
   return {
-    ...anticheatDetails(doc, bootProtection),
+    ...anticheatDetails(features, input.bootProtection),
     ...(limit === undefined ? {} : { activationLimit: limit }),
   };
 }
