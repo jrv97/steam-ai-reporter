@@ -26,7 +26,7 @@ Every class, attribute and custom property starts with `sar-`.
 1. **Label the report, never judge it.** A report can cover one marketing image or live generated gameplay, and some notes say AI was barely used. Attribute every fact to the developer ("reported", "named by the developer", "in the developer's own words"). No red, no warning triangles. Our own colors carry no verdict. A person's custom tag color (experimental, decision 49) is their pick for that tag, so it changes how a tag looks and never what it says.
 2. **Nothing for absence.** "Not disclosed" and "unknown" render nothing: no neutral chip, no check mark. The host's `data-sar-kinds` leaves them out.
 3. **Quote verbatim.** The developer's notes are data: set with `textContent` and `white-space: pre-line`, never translated, summarized or highlighted.
-4. **Feel native.** Look and behave as close to the store's own UI as possible: its sizes, type, neutrals, surfaces and interaction patterns, so injected UI has no seam. Model each store-page component on its closest store element (the banner on the notice bubbles, the full badge on the tag chips, the compact badge on the corner flags, the summary row on the summary box's own rows). Only the violet hue marks a component as ours, so nobody mistakes it for a store feature. A person can swap the violet for their own color per tag (experimental, decision 49); the defaults stay violet.
+4. **Feel native.** Look and behave as close to the store's own UI as possible: its sizes, type, neutrals, surfaces and interaction patterns, so injected UI has no seam. Model each store-page component on its closest store element (the banner on the notice bubbles, the full badge on the tag chips, the compact badge on the corner flags, the tag section on the store's tag row). Only the violet hue marks a component as ours, so nobody mistakes it for a store feature. A person can swap the violet for their own color per tag (experimental, decision 49); the defaults stay violet.
 5. **Never block.** No modals over store pages, no overlays over content, no focus stealing, no layout shift after a component's first paint.
 6. **Copy lives in catalogs.** Components hold message keys, never text. Leave room for translations about 40% longer than English.
 7. **Cheap at scale.** Express state with `data-sar-*` attributes and CSS, never per-node inline styles. A setting change is one attribute write per kind on the root element, and a custom color is one custom property per kind on the root element.
@@ -50,7 +50,7 @@ One dark theme. Store pages are dark, and the settings pages open from them.
 - **Text:** on the banner wash, everything is `sar-banner-fg`, the store's own bubble text color. Elsewhere, `sar-color-text-strong` for headings, `sar-color-text` for body copy, `sar-color-text-muted` for meta lines, `sar-color-text-subtle` for help and dates. Muted and subtle never go on the banner wash, and subtle never on the store's row hover.
 - **Violet is ours.** Every other hue already means something on the store: blue is links, tags and the wishlist; green is buy, discount and owned; tan is the store's own third-party notices; red is live. Violet carries no traffic-light verdict, which matters because the badge must not judge. It stays the default for every tag. A person may give a tag a color of their own (see "A tag's own color" below); that is theirs to choose and lifts the guarantees of this page for them alone.
 - **The accent scale:** `sar-accent-100` for compact badge text, `sar-accent-200` for full badge text, `sar-accent-300` for links and the focus ring, `sar-accent-400` for non-text brand fills and edges (and the full badge tint at 20%), `sar-accent-800` and `sar-accent-600` at 80% for the banner wash, `sar-accent-600` and `sar-accent-700` for solid fills with white text, `sar-accent-900` for the compact badge's dark surface.
-- **A tag's own color (experimental).** One hex color for each tag, entered on the full options page and in the userscript dialog (section 6), not in the toolbar popup. It plays the role of accent 400 and every other shade is mixed from it at a fixed share (`sar-kind-mix-*` in `tokens.css`): the full badge tint and the summary row chip (the color at 20%), their text and the hover card title (the color mixed 37% into white), the compact badge's surface (22% into black), its text (24% into white) and its edge (the color), and the banner wash (31% and 66% into black, both drawn at 80%). Switches, buttons, focus rings, the banner's text and every neutral keep their tokens. The color is used as given: nothing clamps, adjusts or checks its contrast, so a very light or very dark pick can fall below the AA and 3:1 pairs of the Contrast section for the person who picked it. Unset keeps today's violet and its guarantees. A banner with one tag takes that tag's color for the wash; a banner that lists several tags keeps the default violet. Forced colors still override it.
+- **A tag's own color (experimental).** One hex color for each tag, entered on the full options page and in the userscript dialog (section 6), not in the toolbar popup. It plays the role of accent 400 and every other shade is mixed from it at a fixed share (`sar-kind-mix-*` in `tokens.css`): the full badge tint and the chips of the Tag Kit section (the color at 20%), their text and the hover card title (the color mixed 37% into white), the compact badge's surface (22% into black), its text (24% into white) and its edge (the color), and the banner wash (31% and 66% into black, both drawn at 80%). Switches, buttons, focus rings, the banner's text and every neutral keep their tokens. The color is used as given: nothing clamps, adjusts or checks its contrast, so a very light or very dark pick can fall below the AA and 3:1 pairs of the Contrast section for the person who picked it. Unset keeps today's violet and its guarantees. A banner with one tag takes that tag's color for the wash; a banner that lists several tags keeps the default violet. Forced colors still override it.
 - **Error** is text, always with words, never a red fill: `sar-color-error` on extension pages, `sar-banner-error` inside the banner.
 - Never set a store hue (blue, green, tan, red) to a new meaning.
 
@@ -59,7 +59,7 @@ Every text pair meets WCAG 2.2 AA on the grounds its token's note names; see the
 ## Type
 
 - **Store pages:** the `page` family, which names the store's own "Motiva Sans" first. It is referenced by name only, never bundled; outside the store it falls back to Noto Sans or Arial.
-- **The summary box:** the `summary` family (Arial), like the store's own summary rows and tag chips there.
+- **The summary box and the tag section:** the `summary` family (Arial), like the store's own summary rows and tag chips there.
 - **Extension pages:** the `ext` family, a system UI stack. The store font is not available there.
 - Sizes follow the store's 11, 12, 13, 15, 18 and 24px steps, plus 14/21 for quoted notes, the size the store sets its own disclosure section in. The banner's title and meta lines are set light (300), like the store's own notices, and its notes italic, like the store's disclosure section. Use the named styles: `sar-text-badge`, `sar-text-compact`, `sar-text-compact-lg`, `sar-text-banner-title`, `sar-text-banner-meta`, `sar-text-banner-quote`, `sar-text-banner-button`, `sar-text-banner-note` on store pages; `sar-text-options-title`, `sar-text-card-title`, `sar-text-popup-caption`, `sar-text-body`, `sar-text-help` on extension pages.
 - Never shrink type to fit a translation; truncate a badge or let the block wrap.
@@ -89,7 +89,7 @@ Every text pair meets WCAG 2.2 AA on the grounds its token's note names; see the
 ## Iconography
 
 - **The mark** is a Steam badge, a ring around the Steam glyph, with a tag icon attached at its lower right: "Steam store pages, tagged". One ink per file, `sar-accent-400` in the extension icon; the tag leaves a transparent cut where it crosses the ring; no gradient, no letters. See section 14 for files, variants and sizes.
-- **No icons in components.** Badges, the summary row and the banner carry no icon, like the store's own tags, corner flags and notice bubbles. The violet hue and the wording mark them as ours. The mark appears as the extension icon and wherever that icon is shown, never inside a component. Icons on chips for the other tag kinds are a later design decision (decision 39).
+- **No icons in components.** Badges, the tag section and the banner carry no icon, like the store's own tags, corner flags and notice bubbles. The violet hue and the wording mark them as ours. The mark appears as the extension icon and wherever that icon is shown, never inside a component. Icons on chips for the other tag kinds are a later design decision (decision 39).
 - No other icon set. Platform icons and flags around our badges are the store's.
 - The extension icon holds an outlined Steam glyph (decision 40). It shows in the README logo, the store listing images, the options and popup headers and the design previews. No chip, badge, banner or hover card shows a Valve mark, and no Valve wordmark, image or font file ships anywhere.
 
@@ -97,14 +97,14 @@ Every text pair meets WCAG 2.2 AA on the grounds its token's note names; see the
 
 The state is per kind: a game can be disclosed for one kind and not disclosed or unknown for another.
 
-| Verdict of a kind | Chip | Summary row (AI) | Banner | List filter |
+| Verdict of a kind | Chip | Tag section | Banner | List filter |
 | --- | --- | --- | --- | --- |
-| Disclosed | yes | yes | an entry | dim or hide |
+| Disclosed | yes | a chip | an entry | dim or hide |
 | Disclosed, ignored for the kind or for all tags | nothing | nothing | one-line note | nothing |
 | Not disclosed | nothing | nothing | nothing | nothing |
 | Unknown | nothing | nothing | nothing | nothing |
 
-Each kind's settings (`kinds.<id>`: `enabled`, `badge`, `banner` and `filter`) gate its columns. `enabled` off removes everything for the kind, `badge` off removes its chips and, for AI, the summary row, `banner` off removes its entry and its note, and `filter` set to `off` leaves lists alone. All are on by default, except that PvP starts with `enabled` off, and the filter is `off`. The ignore list wins over every setting.
+Each kind's settings (`kinds.<id>`: `enabled`, `badge`, `banner` and `filter`) gate its columns. `enabled` off removes everything for the kind, `badge` off removes its chips, in lists and in the tag section, `banner` off removes its entry and its note, and `filter` set to `off` leaves lists alone. All are on by default, except that PvP starts with `enabled` off, and the filter is `off`. The ignore list wins over every setting.
 
 ## Shared rules
 
@@ -112,19 +112,19 @@ Each kind's settings (`kinds.<id>`: `enabled`, `badge`, `banner` and `filter`) g
 
 - Every injected element carries a class starting with `sar-`; every attribute we set on store nodes starts with `data-sar-`. The scanner skips both.
 - Hosts get `data-sar-appid`, `data-sar-kinds` and, where the placement says hiding would break the list, `data-sar-hideable="false"`. `data-sar-kinds` holds the ids of the kinds that are disclosed and not ignored for the game, in registry order and separated by spaces, and is absent when there are none. Rules match one id with `~=`. The renderers write them when the scanner marks the host and again when a verdict, the ignore list or a setting changes, and only when the value changed.
-- List filters live as attributes on `document.documentElement`, one per kind: `data-sar-filter-<kind>` (`off`, `dim`, `hide`). A kind that is switched off reads `off`. Chips and the summary row carry `data-sar-kind` with the id of their kind. A kind's badge switch is not an attribute: the chips are drawn again from the settings, which also keeps the "+N" count right. The list filter is pure CSS on top of the attributes (section 5).
+- List filters live as attributes on `document.documentElement`, one per kind: `data-sar-filter-<kind>` (`off`, `dim`, `hide`). A kind that is switched off reads `off`. Chips carry `data-sar-kind` with the id of their kind. A kind's badge switch is not an attribute: the chips are drawn again from the settings, which also keeps the "+N" count right. The list filter is pure CSS on top of the attributes (section 5).
 - Never move, wrap or restyle store nodes. The store-node changes besides the attributes above are `data-sar-anchor` on an image container that computes to `position: static`, which a CSS rule turns into `position: relative` (section 2), and a transient `aria-describedby` on a focused store link while the hover card is open (section 15).
 - DOM reads (image sizes, computed position) are batched before writes in one `requestAnimationFrame` per scan.
-- Listeners are delegated: one per root, never one per node. The summary row's jump to the banner is one such listener (section 3); the hover card's are on the document (section 15).
+- Listeners are delegated: one per root, never one per node. The tag section adds none: its chips are served by the hover card's listeners on the document (section 15).
 
 **A tag's own color**
 
-- The color is stored as `kinds.<id>.color`, a validated `#rrggbb`, and written on the root element as the custom property `--sar-kind-color-<id>`, one write per kind and none when it is unset (the property is removed). Chips, summary rows, hover card entries and the banner carry `data-sar-kind`; one rule per kind reads that kind's property into `--sar-kind-color`, and a single rule derives the shades (`--sar-tag-edge`, `-tint`, `-text`, `-light`, `-solid`, `-wash-start`, `-wash-end`) from it. Each surface reads its shade with the violet token as the fallback, so a kind with no color renders exactly as before. Custom properties inherit into the banner's and the dialog's shadow roots, so they follow a change without a redraw.
+- The color is stored as `kinds.<id>.color`, a validated `#rrggbb`, and written on the root element as the custom property `--sar-kind-color-<id>`, one write per kind and none when it is unset (the property is removed). Chips, hover card entries and the banner carry `data-sar-kind`; one rule per kind reads that kind's property into `--sar-kind-color`, and a single rule derives the shades (`--sar-tag-edge`, `-tint`, `-text`, `-light`, `-solid`, `-wash-start`, `-wash-end`) from it. Each surface reads its shade with the violet token as the fallback, so a kind with no color renders exactly as before. Custom properties inherit into the banner's and the dialog's shadow roots, so they follow a change without a redraw.
 - Only a validated `HexColor` is ever written; it never reaches CSS as typed text. Nothing is written on a chip, and a store node is never touched.
 
 **Style isolation**
 
-- Light-DOM components (both badges, the summary row and the hover card) reset with `all: unset` on themselves and their descendants, then set every property they need. Store CSS styles bare `span`, `a`, `h2` and `button` in places, and `all` leaves custom properties alone, so tokens still reach them.
+- Light-DOM components (both badges, the tag section and the hover card) reset with `all: unset` on themselves and their descendants, then set every property they need. Store CSS styles bare `span`, `a`, `h2` and `button` in places, and `all` leaves custom properties alone, so tokens still reach them.
 - The banner renders into a shadow root on a host `div.sar-banner-host`. Page CSS cannot reach it, and its CSS cannot leak. Tokens inherit into it from `:root`, and the page's "Motiva Sans" works inside it because `@font-face` is document-wide. Attach the stylesheet with `adoptedStyleSheets`; if the store's CSP or a script manager blocks that, fall back to light DOM plus the badge reset.
 - The userscript settings dialog uses the same shadow-root approach.
 
@@ -256,56 +256,61 @@ Built as a mirror of the store's own corner flags (in library, on wishlist): sol
 - No rounded corners: the store's flags are square.
 - Not bottom-left: cover art usually puts the game's logo there.
 
-## 3. Summary row
+## 3. Tag section
 
-One row in a game's summary box, directly under Publisher: the AI chip in a violet tag-styled chip that sits in the column of the Developer and Publisher values and jumps to the banner. The row stays a summary of the AI kind; the other kinds appear in the banner and in the chips on lists.
+A block on a game's own store page, directly below Steam's "Popular user-defined tags for this product:" block: a small muted heading, "Tag Kit tags for this product", and one violet chip for each kind the game discloses. It is laid out like Steam's tag row, and the heading and the hue keep it apart from the players' tags.
 
-Preview: `previews/SummaryRow.html`.
+Preview: `previews/TagSection.html`.
 
 ### When to use
 
-- On the app page of a game whose AI kind is disclosed and not ignored, while that kind's badge switch is on. Games that are ignored for AI, not disclosed or unknown get nothing.
-- Once per page, in the summary box at the top right, so the chip shows above the fold. The banner, lower down by the purchase box, still carries the developer's words.
+- On the app page of a game with a disclosed kind that is enabled, not ignored for the game (for the kind or for all tags) and has its badge switch on. These are the filters of the chips on lists. Each kind counts on its own: switching off the badge of one kind, or ignoring the game for it, removes only that chip.
+- All chips show, in registry order, and wrap to more rows. There is no "+N" chip. A game whose only declaration is kernel-level anti-cheat gets a section with one chip.
+- With no chip to show, there is no section and no heading.
+- Once per page. The banner, lower down by the purchase box, still carries the developer's words and the ignore buttons.
 
 ### What the consumer provides
 
 ```html
-<a class="sar-summary-row" data-sar-kind="ai" href="#sar-banner">
-  <span class="sar-badge" data-sar-kind="ai">
-    <span class="sar-badge-label" aria-hidden="true">t('kind_ai_chip')</span>
-    <span class="sar-vh">t('kind_chip_name', { chip, heading })</span>
+<div class="sar-tag-section" role="group" aria-labelledby="sar-tag-section-label">
+  <div class="sar-tag-section-label" id="sar-tag-section-label">t('badge_tags_title')</div>
+  <span class="sar-chips" data-sar-chips="full">
+    <span class="sar-badge" data-sar-kind="ai" tabindex="0">
+      <span class="sar-badge-label" aria-hidden="true">t('kind_ai_chip')</span>
+      <span class="sar-vh">t('kind_chip_name', { chip, heading })</span>
+    </span>
+    <!-- one chip for each further kind -->
   </span>
-</a>
+</div>
 ```
 
-- Insert it right after the last `.dev_row` in the summary box (`.glance_ctn_responsive_left`). Steam's own rows there are label and value pairs; this row has no label and puts its chip where their values start. It uses its own classes and never borrows or restyles a store node.
-- While the banner holds the AI entry, the row is a progressive link: `href="#sar-banner"` (the banner host's id), handled by one delegated click listener that calls `preventDefault`, scrolls the host into view with `block: "start"`, and focuses the banner's `aside` (`tabindex="-1"`) with `focus({ preventScroll: true })`. The URL never changes, so there is no history entry and no `#sar-banner` in links people copy. Without the script, the plain anchor still lands on the banner. Steam's own reviews row jumps to the reviews section the same way.
-- Without an AI entry in the banner (the banner is off for AI, or the page has no banner), render the row as a `div` with no `href` and `tabindex="0"`: the chip still says what it says, and the hover card (section 15) quotes the notes. With the AI entry in the banner, the row opens no hover card: the jump lands on the full notes.
+- Insert it right after the store's `.popular_tags_ctn` (the "Popular user-defined tags" block in the summary box). If the page has no such block, insert it after the last `.dev_row` (Developer or Publisher) of the summary box, and if it has neither, draw nothing. The first anchor that matches wins and the section moves there when it appears later. The class names come from the store's page as known from memory, not from a captured page (no fixture holds the summary box); the fallback keeps the section on screen if the tag block is renamed. It uses its own classes and never borrows or restyles a store node.
+- The chips are the full badge (`createChip`) in a `sar-chips` group, the same markup lists use, so the accessible name, the reset and the wrapping rule are shared. Each chip registers with the hover card with its own verdict and `ownPage` set (section 15).
+- A chip does nothing on click: no link, no jump, no listener of its own. The hover card shows the kind's lines on hover and on focus.
 
 ### Look
 
-Steam's summary box is set in Arial (13/18 values, 11/18 uppercase labels), and its tag chips are 11/19 Arial. This row matches it.
+Steam's tag row is a wrapping row of 19px chips 2px apart in Arial 11, under a small muted label. This block matches it and swaps the blue for our hue.
 
-- No label column. The row starts `sar-summary-chip-inset-inline` (35%, the share of the row the store gives its own labels) from the box's inline start and shrinks to fit the chip, so the chip shares the value edge of Developer and Publisher. The focus ring and the click target cover the chip only.
-- The chip: the full badge (`sar-badge-fg` on `sar-badge-bg`, 19px, `sar-radius-sm`), set in `sar-text-summary-tag` like the store's tag chips. A violet chip in a box of blue links is what draws the eye.
-- The chip may use the rest of the row (65%); past it the label ends in an ellipsis, and the full text stays in the DOM.
-- Interaction: a pointer cursor and no underline, like the store's own review rows, plus the shared `sar-focus-color` ring on `:focus-visible`, which the store's rows lack.
+- The heading: `sar-text-summary-tag` in `sar-color-text-muted`, with no colon and `sar-space-1` below it. The block sits `sar-space-2` below the store's tag block.
+- The chips: the full badge (`sar-badge-fg` on `sar-badge-bg`, 19px, `sar-radius-sm`), set in `sar-text-summary-tag` like the store's tag chips, `sar-space-0` (2px) apart in both directions. A chip may use the whole row; past it the label ends in an ellipsis, and the full text stays in the DOM. A long list wraps to more rows.
+- A violet chip among blue tags is what marks them as ours. The store's tag chips are blue and link to tag pages; ours show a card.
+- A focused chip takes the shared `sar-focus-color` ring on `:focus-visible`.
 
 ### Fit
 
-Measured on a 1280 by 900 window (app 1808500): the row is 18px tall, the summary box has slack, so the tag row below moves down 5px and no store tag is hidden. The worst case is a game with two review rows and a publisher name that wraps, about 36px more; the tag row would then hang past the media's bottom edge (misaligned, not clipped). If that shows up, drop the row on that page; the banner still quotes the developer.
+The label's size, color and spacing are set from the tokens, not sampled from the live label. Measure on a page with and without user tags (open questions 14 to 16 in `decisions.mdx`).
 
 ### Accessibility
 
-- The link's name is the chip text and Steam's heading, "AI: AI Generated Content Disclosure". It needs no row label: the banner it jumps to and the hover card both open with "In the developer's own words:".
-- The jump lands on the banner, and focus follows, so a keyboard or screen reader user arrives at the developer's words.
-- Without the banner entry, focus on the row opens the hover card, which describes the row while it is open.
+- The group is named by its visible heading. Each chip's name is the chip text and Steam's heading, "AI: AI Generated Content Disclosure" (PvP reads "PvP" once).
+- Each chip is focusable and opens its card on focus, which describes the chip while it is open.
 
 ### Don't
 
-- Don't add it to Steam's tag row: that row never wraps, Steam's own script hides tags that don't fit, and a chip there would read as a player-defined tag.
+- Don't add the chips to Steam's tag row: that row never wraps, Steam's own script hides tags that don't fit, and a chip there would read as a player-defined tag.
 - Don't float it over the page.
-- Don't add a warning icon; the chip is the only violet.
+- Don't add a "+N" chip or a warning icon; the chip is the only violet.
 
 ## 4. App page banner
 
@@ -360,7 +365,7 @@ The banner is a summary, one line per kind: Steam's line and its ignore button. 
 
 - Developer text is data: `textContent`, never translated, summarized or highlighted. The notes take `white-space: pre-line`.
 - The banner draws no link, so a EULA appears by its heading only; the agreement names are in the hover card.
-- The host carries `id="sar-banner"`, the target of the summary row's link, and the `aside` carries `tabindex="-1"` so focus can follow that jump.
+- The host carries `id="sar-banner"`, and the `aside` carries `tabindex="-1"` so focus can land on it when a button hides.
 - A shadow root on `div.sar-banner-host`, styles attached with `adoptedStyleSheets`. Tokens inherit from `:root`, and the page font works inside because `@font-face` is document-wide.
 
 ### Placement
@@ -801,8 +806,8 @@ Preview: `previews/HoverCard.html`.
 
 ### When to use
 
-- On a full chip, on a compact chip inside the capsule link, and on the summary row while the banner holds no AI entry. These are its triggers. The card lists all the kinds of the host's chips, including those a "+N" chip stands for.
-- Not on the summary row while the banner holds the AI entry: its click jumps to the full notes, and a card there would cover the tag row on the way to that click.
+- On a full chip, on a compact chip inside the capsule link, and on each chip of the tag section. These are its triggers. The card of a list chip lists all the kinds of the host's chips, including those a "+N" chip stands for; the card of a tag-section chip lists its own kind.
+- A tag-section chip has no click behavior, so its card never stands between the pointer and a click. The banner is not a click target for it.
 - Not on a compact chip outside a link: it keeps `pointer-events: none` (section 2) and nothing opens.
 - Not on the banner, which quotes the notes in full.
 - No buttons or links in the card, so it offers no ignore action. The banner and the settings list do.
@@ -827,7 +832,7 @@ Preview: `previews/HoverCard.html`.
 ```
 
 - One card per page, created on first use and appended to `body`. Every trigger reuses it; opening for another game refills it. One entry for each disclosed kind of the host, in registry order.
-- Triggers register with the card when they render: a `WeakMap` from trigger element to the host's disclosed verdicts, plus whether the trigger sits on the game's own page (the summary row). Nothing is set on the trigger, and no listener is added to it.
+- Triggers register with the card when they render: a `WeakMap` from trigger element to the host's disclosed verdicts, plus whether the trigger sits on the game's own page (a tag-section chip). Nothing is set on the trigger, and no listener is added to it.
 - Opening and closing run on delegated listeners on the document: `pointerover`, `pointerout`, `focusin`, `focusout`, `keydown` and `scroll`. Their number does not depend on how many chips the page holds. One `pagehide` listener on the window closes the card.
 - The lines under each heading come from `kindDetails`, the function the banner uses, without links. The AI notes go in through `textContent` with `\r\n` turned into `\n`, never translated or cut in the DOM. The service line appears only when GetItems named one (`ai_generation_service`), the name inserted as data.
 - A last line, `badge_card_declared`, says the developer, not this extension, made the declarations above.
@@ -843,13 +848,13 @@ Built like the store's game hover popup, sampled on the home page on 2026-10-21:
 - The source line, `badge_card_declared`, ends the card in `sar-hovercard-meta-font` (11/16) and `sar-color-text-muted`, like the store's release line.
 - Notes in `sar-hovercard-notes-font` (12/18 italic, like the store's own disclosure section), `sar-color-text`, `white-space: pre-line`, clamped to `sar-hovercard-notes-lines` (6) lines.
 - Service line in the meta font: label `sar-color-text-muted`, name `sar-color-text`.
-- The "more" line, `badge_card_more` in the meta font and `sar-color-text-muted`, shows only when the clamp hides text and the trigger is not on the game's own page. The app page carries Steam's own disclosure section and, when on, the banner; the summary row's card never shows the line. The full notes stay in the DOM for screen readers, and the game's store page carries them in Steam's own disclosure section.
+- The "more" line, `badge_card_more` in the meta font and `sar-color-text-muted`, shows only when the clamp hides text and the trigger is not on the game's own page. The app page carries Steam's own disclosure section and, when on, the banner; a tag-section chip's card never shows the line. The full notes stay in the DOM for screen readers, and the game's store page carries them in Steam's own disclosure section.
 - No arrow. The store's popup has a bitmap arrow toward the capsule; ours sits right under the chip, and the short gap ties it to its trigger.
 
 ### Placement
 
 - Fixed to the viewport, `sar-hovercard-offset` (8px) below the trigger. Where it would cross the bottom edge and fits above, it flips above (`data-sar-side="above"`).
-- Horizontally, a full chip and the summary row (without a banner entry) align the card's inline-start edge with their own. A compact chip aligns the inline-end edges: the card hangs back over the capsule art, away from the side where the store's popup opens. Either way the card stays one offset inside the viewport edges.
+- Horizontally, a full chip and a tag-section chip align the card's inline-start edge with their own. A compact chip aligns the inline-end edges: the card hangs back over the capsule art, away from the side where the store's popup opens. Either way the card stays one offset inside the viewport edges.
 - `z-index: sar-z-hovercard` (2100), above the store's game hover popup (1526) and the full-viewport layer that React store pages (tag hubs, categories) mount for their capsule hover (2000). The card is also a manual popover, shown again on every open, so it enters the browser's top layer after any store popover that is open; the React hover layer is one, and no z-index reaches above it. The z-index covers engines without the Popover API.
 - While the card is open, the root element carries `data-sar-hovercard="open"`, and one page rule sets the store's game hover popup (`#global_hover`) to `visibility: hidden`. On a search row the badge sits inside the row's link, so without it both would open for one pointer. Closing the card, `pagehide` and stopping remove the attribute, and the store's popup shows again while the pointer is still on the row.
 - On React store pages (tag hubs, categories) the store's hover layer covers the capsule as soon as the pointer enters it and takes the pointer, so the pointer cannot rest on the compact badge there. Focus on the capsule link still opens the card. The layer has no stable selector (a hashed class and `popover="manual"`, which our card shares), so no rule hides it.
@@ -859,14 +864,14 @@ Built like the store's game hover popup, sampled on the home page on 2026-10-21:
 
 - Pointer: opens after 150ms at rest on a trigger. A pointer crossing a grid of capsules opens nothing. Moving to another trigger while it is open switches at once.
 - The card is hoverable: leaving the trigger starts a 100ms grace, long enough for the pointer to cross onto the card, which then stays open. Leaving both, or the window, closes it. Both delays are timers in `hover-card.ts`, not tokens.
-- Keyboard: opens at once when focus lands on the summary row (without a banner entry) or on a store link that holds a chip (a search row or a capsule link). Moving focus elsewhere closes it.
+- Keyboard: opens at once when focus lands on a tag-section chip or on a store link that holds a chip (a search row or a capsule link). Moving focus elsewhere closes it.
 - `Escape` closes it, and it stays closed until the pointer leaves the trigger or focus moves.
 - Any scroll outside the card closes a card the pointer opened; a fixed card would drift away from its trigger. A card focus opened follows its trigger instead, because focus scrolls a link into view: the one delegated scroll listener queues at most one move per frame, which reads only the trigger's box, and the card closes once the trigger leaves the viewport.
 
 ### Accessibility
 
 - `role="tooltip"` on the card. While focus opened it, the focused element gets `aria-describedby="sar-hovercard"`, added to any ids already there and restored on close. On a store link this is the one store-node attribute outside `data-sar-*`, and it lasts only while the card is open.
-- The summary row is always focusable: a link with the banner on, `tabindex="0"` on the `div` without it. Keyboard users reach the notes either way.
+- A tag-section chip is focusable (`tabindex="0"`), so keyboard users reach its card.
 - Badges stay unfocusable; focus rides on the store's link around them.
 - WCAG 2.2 content on hover or focus (1.4.13): dismissible with `Escape`, hoverable, and open until the pointer or focus leaves.
 
@@ -1053,7 +1058,8 @@ WCAG 2.2 AA: 4.5:1 for text, 3:1 for non-text. Grounds are the store's own, samp
 | Full badge text `sar-accent-200` on its tint | store row hover | 5.21 |
 | Full badge text on its tint | page | 7.46 |
 | Full badge text on its tint | search row | 8.19 |
-| Summary row chip text `sar-accent-200` on its tint | page | 7.46 |
+| Tag section chip text `sar-accent-200` on its tint | page | 7.46 |
+| Tag section label `sar-color-text-muted` | page | 6.97 |
 | Compact text `sar-accent-100` on `sar-accent-900` | any art (solid) | 12.65 |
 | Compact edge `sar-accent-400` (surface 1.26) | black art | 5.91 |
 | Compact surface | white art | 16.63 |

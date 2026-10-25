@@ -11,8 +11,8 @@ export const HOVER_CARD_ID = "sar-hovercard";
 /** Set to `open` on the root element while the card shows; page CSS hides the store's hover. */
 const OPEN_MARK = "data-sar-hovercard";
 
-/** Elements that can open the card. The summary row holds a chip, so lookups climb past it. */
-const TRIGGER_SELECTOR = ".sar-summary-row, .sar-badge, .sar-compact";
+/** Elements that can open the card. */
+const TRIGGER_SELECTOR = ".sar-badge, .sar-compact";
 
 /** A pointer at rest this long opens the card; a sweep across a grid opens nothing. */
 const OPEN_DELAY = 150;
@@ -154,8 +154,8 @@ function defaultOverflows(notes: HTMLElement): boolean {
 
 /**
  * The hover card: one panel per page, built like the store's game hover popup, that lists every
- * kind of the chip or summary row under the pointer or focus: Steam's line for the kind, its
- * details and the developer's own text, then a line that names the developer as the source.
+ * kind of the chip under the pointer or focus: Steam's line for the kind, its details and the
+ * developer's own text, then a line that names the developer as the source.
  * Triggers register in a `WeakMap`; six delegated listeners on the document serve every trigger
  * on the page. The card closes on `pagehide`.
  */
@@ -406,16 +406,10 @@ export function createHoverCard(
     });
   }
 
-  /** The registered trigger at or around an element, climbing past the summary row's chip. */
+  /** The registered trigger at or around an element. */
   function triggerAt(element: Element): Element | undefined {
-    let node = element.closest(TRIGGER_SELECTOR);
-    while (node !== null) {
-      if (bindings.has(node)) {
-        return node;
-      }
-      node = node.parentElement?.closest(TRIGGER_SELECTOR) ?? null;
-    }
-    return undefined;
+    const node = element.closest(TRIGGER_SELECTOR);
+    return node !== null && bindings.has(node) ? node : undefined;
   }
 
   /** A focused store link that holds a badge: a search row or a capsule link. */

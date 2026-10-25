@@ -1,6 +1,5 @@
 import type { SteamLanguage } from "./i18n/locale";
 import type { IgnoredGames } from "./ignored";
-import { AI_KIND } from "./kinds/ai";
 import type { KindId } from "./kinds/id";
 import { effectiveSettings } from "./kinds/kind-settings";
 import { KINDS, perKind } from "./kinds/registry";
@@ -137,7 +136,7 @@ export interface AppPage {
 }
 
 /**
- * Draws the game's own page: the banner with an entry per disclosed kind and the AI summary row.
+ * Draws the game's own page: the banner with an entry per disclosed kind and the tag section.
  * An English page draws at once from its own document; Steam's data for the game, which arrives
  * later and from the cache when it can, fills in the other kinds and draws again.
  */
@@ -161,7 +160,7 @@ export function startAppPage(
     };
   }
 
-  const ui = createAppPageUi(doc, i18n, AI_KIND, {
+  const ui = createAppPageUi(doc, i18n, {
     async ignore(scope) {
       await deps.allowList.add(scope, id, appName(doc, known, id));
       deps.ignored[scope].add(id);

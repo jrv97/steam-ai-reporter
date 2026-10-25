@@ -189,6 +189,10 @@
     "message": "El texto completo está en la página del juego.",
     "description": "In that panel, shown when it cuts a long developer text short."
   },
+  "badge_tags_title": {
+    "message": "Etiquetas de Tag Kit para este producto",
+    "description": "Small label above the chips this extension adds to a game's own store page, right under Steam's \"Popular user-defined tags for this product:\" block. It names the chips as ours, apart from the players' tags. Keep \"Tag Kit\" as is. No colon."
+  },
   "banner_source": {
     "message": "Citando a los desarrolladores:",
     "description": "In the notice on a game's store page, introduces the developer's text, which follows untranslated."

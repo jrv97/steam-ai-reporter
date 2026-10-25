@@ -73,9 +73,17 @@ function createChipElement(
   return chip;
 }
 
-/** The full badge's chip, the store's tag-chip shape in our hue. The summary row reuses it. */
+/** The full badge's chip, the store's tag-chip shape in our hue. The tag section reuses it. */
 export function createChip(doc: Document, i18n: MessageCatalog, kind: TagKind): HTMLElement {
   return createChipElement(doc, chipText(i18n, kind), "sar-badge", "sar-badge-label", kind.id);
+}
+
+/** The `span.sar-chips` that holds chips of one size, so a row or a section places them as one. */
+export function createChipGroup(doc: Document, size: BadgeSlot["kind"]): HTMLElement {
+  const group = doc.createElement("span");
+  group.className = "sar-chips";
+  group.setAttribute("data-sar-chips", size);
+  return group;
 }
 
 interface Drawn {
@@ -122,9 +130,7 @@ export function createBadgeRenderer(
   }
 
   function build(slot: BadgeSlot, present: readonly AnyDisclosed[], maxChips: number): HTMLElement {
-    const group = doc.createElement("span");
-    group.className = "sar-chips";
-    group.setAttribute("data-sar-chips", slot.kind);
+    const group = createChipGroup(doc, slot.kind);
     for (const verdict of present.slice(0, maxChips)) {
       group.append(chipFor(slot, texts[verdict.kind], verdict.kind));
     }

@@ -1,5 +1,5 @@
 /*
- * Store page rules: badges, the summary row and the list filter, in the light DOM. Lifted from
+ * Store page rules: badges, the tag section and the list filter, in the light DOM. Lifted from
  * docs/design/reference.css (components.mdx sections 1, 2, 3 and 5). Values come only from the
  * tokens in docs/design/tokens.css, which load first; scripts/gen_styles.py turns this file into
  * PAGE_CSS.
@@ -13,8 +13,8 @@
 .sar-badge *,
 .sar-compact,
 .sar-compact *,
-.sar-summary-row,
-.sar-summary-row *,
+.sar-tag-section,
+.sar-tag-section *,
 .sar-hovercard,
 .sar-hovercard * {
   all: unset;
@@ -148,35 +148,29 @@
   font: var(--sar-compact-font-lg);
 }
 
-/* Summary row: the chip alone in the game's summary box, under Publisher. The inset skips the
-   store's label column, so the chip starts where the Developer and Publisher values start. */
+/* Tag section: under the store's user-defined tags on the app page. The label is small and muted
+   like the store's tags label; the chips are the full badge in the store's tag font, 2px apart,
+   and wrap to more rows. */
 
-.sar-summary-row {
-  display: flex;
-  align-items: center;
-  inline-size: fit-content;
-  min-block-size: var(--sar-badge-height);
-  margin-inline-start: var(--sar-summary-chip-inset-inline);
-  white-space: nowrap;
+.sar-tag-section {
+  display: block;
+  margin-block-start: var(--sar-space-2);
 }
 
-a.sar-summary-row {
-  cursor: pointer;
-}
-
-.sar-summary-row:focus-visible {
-  outline: var(--sar-focus-width) solid var(--sar-focus-color);
-  outline-offset: var(--sar-focus-offset);
-}
-
-.sar-summary-row .sar-badge {
-  flex: 0 1 auto;
-  max-inline-size: 100%;
+.sar-tag-section-label {
+  display: block;
+  margin-block-end: var(--sar-space-1);
+  color: var(--sar-color-text-muted);
   font: var(--sar-summary-tag-font);
 }
 
-a.sar-summary-row .sar-badge {
-  cursor: pointer;
+.sar-tag-section .sar-badge {
+  font: var(--sar-summary-tag-font);
+}
+
+.sar-tag-section .sar-badge:focus-visible {
+  outline: var(--sar-focus-width) solid var(--sar-focus-color);
+  outline-offset: var(--sar-focus-offset);
 }
 
 /* Hover card: the store's game hover popup in our type. One per page, fixed to the viewport;

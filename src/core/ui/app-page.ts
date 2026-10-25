@@ -1,5 +1,4 @@
 import type { KindId } from "../kinds/id";
-import type { TagKind } from "../kinds/kind";
 import { KINDS } from "../kinds/registry";
 import type { AnyDisclosed, KindVerdicts } from "../kinds/verdicts";
 import type { MessageCatalog } from "../ports";
@@ -13,14 +12,14 @@ import {
   placeBanner,
 } from "./banner";
 import type { CardTriggers } from "./hover-card";
-import { createSummaryRow, placeSummaryRow } from "./summary-row";
+import { createTagSection } from "./tag-section";
 
 /** What the app page shows for its own game. */
 export interface AppPageView {
   readonly verdicts: KindVerdicts;
   /** Per scope: the game is on the ignore list there. */
   readonly ignored: Readonly<Record<AllowScope, boolean>>;
-  /** Per kind: its badge switch is on, which the summary row follows. */
+  /** Per kind: its badge switch is on, which the tag section follows. */
   readonly badge: Readonly<Record<KindId, boolean>>;
   /**
    * Per kind: its entry may show in the banner (the kind is enabled and its banner setting is on).
@@ -29,21 +28,15 @@ export interface AppPageView {
   readonly banner: Readonly<Record<KindId, boolean>>;
 }
 
-/** The game's own page: the banner above the purchase box and the summary row. */
+/** The game's own page: the banner above the purchase box and the tag section. */
 export interface AppPageUi {
   /** Idempotent: an unchanged view changes nothing; a node a store re-render dropped returns. */
   render(view: AppPageView): void;
 }
 
 export interface AppPageOptions extends BannerOptions {
-  /** Opens on the summary row; without one the row shows no notes. */
+  /** Opens on the tag section's chips; without one they show no notes. */
   readonly card?: CardTriggers;
-}
-
-interface Row {
-  readonly element: HTMLElement;
-  readonly verdict: AnyDisclosed;
-  readonly linked: boolean;
 }
 
 /**
@@ -75,63 +68,49 @@ function bannerView(view: AppPageView): BannerView | undefined {
     : { shown, ignored };
 }
 
-/** The verdict the summary row stands for: disclosed, with its badge on, and not ignored. */
-function summaryVerdict(view: AppPageView, kind: TagKind): AnyDisclosed | undefined {
-  const verdict = view.verdicts[kind.id];
-  const ignored = view.ignored[ALLOW_ALL] || view.ignored[kind.id];
-  return verdict.state === "disclosed" && view.badge[kind.id] && !ignored ? verdict : undefined;
+/**
+ * The verdicts the tag section shows, in registry order: each disclosed kind with its badge on
+ * that is not ignored for the game.
+ */
+function tagVerdicts(view: AppPageView): readonly AnyDisclosed[] {
+  const shown: AnyDisclosed[] = [];
+  for (const kind of KINDS) {
+    const verdict = view.verdicts[kind.id];
+    const ignored = view.ignored[ALLOW_ALL] || view.ignored[kind.id];
+    if (verdict.state === "disclosed" && view.badge[kind.id] && !ignored) {
+      shown.push(verdict);
+    }
+  }
+  return shown;
 }
 
 /**
- * Renders the app page per components.mdx ("What renders for each state"). The summary row stands
- * for one kind, `summary`, while that kind is disclosed, badged and not ignored.
+ * Renders the app page per components.mdx ("What renders for each state"): the banner, and the
+ * tag section under the store's user-defined tags with one chip for each shown kind.
  */
 export function createAppPageUi(
   doc: Document,
   i18n: MessageCatalog,
-  summary: TagKind,
   actions: BannerActions,
   options: AppPageOptions = {},
 ): AppPageUi {
   let banner: Banner | undefined;
-  let row: Row | undefined;
+  const section = createTagSection(doc, i18n, options.card);
 
-  /** Whether the banner is on the page and holds the summary kind's entry. */
-  function renderBanner(shown: BannerView | undefined): boolean {
+  function renderBanner(shown: BannerView | undefined): void {
     if (shown === undefined) {
       banner?.host.remove();
-      return false;
+      return;
     }
     banner ??= createBanner(doc, i18n, actions, options);
     banner.show(shown);
-    return placeBanner(doc, banner.host) && shown.shown.some((entry) => entry.kind === summary.id);
-  }
-
-  function removeRow(): void {
-    row?.element.remove();
-    row = undefined;
+    placeBanner(doc, banner.host);
   }
 
   return {
     render(view) {
-      const linked = renderBanner(bannerView(view));
-      const verdict = summaryVerdict(view, summary);
-      if (verdict === undefined) {
-        removeRow();
-        return;
-      }
-      if (
-        row !== undefined && row.element.isConnected && row.verdict === verdict
-        && row.linked === linked
-      ) {
-        return;
-      }
-      removeRow();
-      const jump = linked ? () => banner?.reveal() : undefined;
-      const element = createSummaryRow(doc, i18n, summary, verdict, jump, options.card);
-      if (placeSummaryRow(doc, element)) {
-        row = { element, verdict, linked };
-      }
+      renderBanner(bannerView(view));
+      section.render(tagVerdicts(view));
     },
   };
 }
