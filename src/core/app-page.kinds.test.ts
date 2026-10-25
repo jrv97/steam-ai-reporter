@@ -2,7 +2,7 @@
 import * as v from "valibot";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import kindItems from "../../tests/fixtures/getitems/kinds.json";
-import { APP_PAGES } from "../../tests/helpers/app-page";
+import { APP_PAGES, withDescriptionColumn } from "../../tests/helpers/app-page";
 import { clearRoot } from "../../tests/helpers/dom";
 import { fakeHttp } from "../../tests/helpers/fake-http";
 import { fixedClock } from "../../tests/helpers/fixed-clock";
@@ -37,7 +37,7 @@ const headings = () =>
 const control = (selector: string) => banner()?.querySelector<HTMLElement>(selector);
 
 async function startOnDrmPage() {
-  loadPage(APP_PAGES["3751950-drm-account-eula.html"]);
+  loadPage(withDescriptionColumn(APP_PAGES["3751950-drm-account-eula.html"]));
   document.documentElement.lang = "en";
   const store = memoryStore();
   const settings = createSettingsSource(store);

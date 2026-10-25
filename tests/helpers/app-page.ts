@@ -32,3 +32,14 @@ export const APP_PAGES = {
 } as const;
 
 export type AppPageName = keyof typeof APP_PAGES;
+
+const DESCRIPTION_COLUMN =
+  '<div class="game_description_column"><div id="game_area_purchase"></div></div>';
+
+/**
+ * The page with the store's description column added, where the banner goes. The pages of the tag
+ * kinds hold only the title, the app name and the features list.
+ */
+export function withDescriptionColumn(html: string): string {
+  return html.replace("</body>", `${DESCRIPTION_COLUMN}</body>`);
+}

@@ -1,7 +1,7 @@
 // @vitest-environment-options {"url":"https://store.steampowered.com/app/2807960/"}
 import { afterEach, describe, expect, it, vi } from "vitest";
 import kindItems from "../../tests/fixtures/getitems/kinds.json";
-import { APP_PAGES } from "../../tests/helpers/app-page";
+import { APP_PAGES, withDescriptionColumn } from "../../tests/helpers/app-page";
 import { clearRoot } from "../../tests/helpers/dom";
 import { fakeHttp } from "../../tests/helpers/fake-http";
 import { fixedClock } from "../../tests/helpers/fixed-clock";
@@ -29,7 +29,7 @@ afterEach(() => {
 
 describe("start on the app page of a kernel anti-cheat", () => {
   it("names the anti-cheat and gives the boot protection line the page shows", async () => {
-    loadPage(APP_PAGES["2807960-kernel-boot-protection.html"]);
+    loadPage(withDescriptionColumn(APP_PAGES["2807960-kernel-boot-protection.html"]));
     document.documentElement.lang = "en";
     const store = memoryStore();
     app = await start({
