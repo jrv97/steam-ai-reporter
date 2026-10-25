@@ -155,7 +155,7 @@
     "placeholders": {
       "chip": {
         "content": "$1",
-        "example": "Kernel AC"
+        "example": "KLAC"
       },
       "heading": {
         "content": "$2",
