@@ -1,7 +1,7 @@
 ---
 title: AI Reporter for Steam UI components (v1)
 status: draft
-updated: 2026-10-22
+updated: 2026-10-25
 ---
 
 # AI Reporter for Steam UI components (v1)
@@ -17,27 +17,27 @@ Component specs for everything the extension and the userscript inject into stor
 - `assets/icons/`: the extension icon (section 14).
 - `docs/design/decisions.mdx`: why each choice was made, and what is still open.
 
-AI Reporter for Steam labels games on the Steam store whose developers filled in Steam's AI content disclosure, and quotes what they wrote. It ships as a browser extension and a userscript. Its UI lives in two places: small pieces injected into store pages (badges, a banner, a list filter) and its own settings pages (options page, toolbar popup, userscript dialog). This system covers both.
+AI Reporter for Steam tags games on the Steam store whose developers declared something players weigh before buying: AI use, kernel-level or other anti-cheat, third-party DRM, a required third-party account or a third-party EULA. It also tags games with a PvP mode, from Steam's own categories. Each tag is written in Steam's words, and the developer's text is quoted as written. It ships as a browser extension and a userscript. Its UI lives in two places: small pieces injected into store pages (chips, a banner, a hover card, a list filter) and its own settings pages (options page, toolbar popup, userscript dialog). This system covers both.
 
 Every class, attribute and custom property starts with `sar-`.
 
 ## Principles
 
 1. **Label the report, never judge it.** A report can cover one marketing image or live generated gameplay, and some notes say AI was barely used. Attribute every fact to the developer ("reported", "named by the developer", "in the developer's own words"). No red, no warning triangles.
-2. **Nothing for absence.** "Not disclosed" and "unknown" render nothing: no neutral badge, no check mark. Only `data-sar-state` on the host records them.
+2. **Nothing for absence.** "Not disclosed" and "unknown" render nothing: no neutral chip, no check mark. The host's `data-sar-kinds` leaves them out.
 3. **Quote verbatim.** The developer's notes are data: set with `textContent` and `white-space: pre-line`, never translated, summarized or highlighted.
 4. **Feel native.** Look and behave as close to the store's own UI as possible: its sizes, type, neutrals, surfaces and interaction patterns, so injected UI has no seam. Model each store-page component on its closest store element (the banner on the notice bubbles, the full badge on the tag chips, the compact badge on the corner flags, the summary row on the summary box's own rows). Only the violet hue marks a component as ours, so nobody mistakes it for a store feature.
 5. **Never block.** No modals over store pages, no overlays over content, no focus stealing, no layout shift after a component's first paint.
 6. **Copy lives in catalogs.** Components hold message keys, never text. Leave room for translations about 40% longer than English.
-7. **Cheap at scale.** Express state with `data-sar-*` attributes and CSS, never per-node inline styles. A setting change is one attribute write on the root element.
+7. **Cheap at scale.** Express state with `data-sar-*` attributes and CSS, never per-node inline styles. A setting change is one attribute write per kind on the root element.
 
 ## Voice and copy
 
-- Say "report" or "reported". Never "uses AI", "AI-free" or "no AI", in any locale; the copy test fails the build on them.
-- Plain, short, sentence case: "AI use reported", "Ignore this game", "Show full report".
-- One label names the verdict everywhere: "AI use reported" on both badges, the summary row chip, the hover card title and the banner heading.
-- Name the developer as the source: "In the developer's own words:", "AI service named by the developer:".
-- The opt-out label is "Ignore this game". The store has its own Ignore button just above; ours only affects this extension.
+- Use Steam's words for each tag: its own line for the kind ("Uses Kernel Level Anti-Cheat", "Incorporates 3rd-party DRM", "Requires 3rd-Party Account", "Requires agreement to a 3rd-party EULA", "PvP") and, for AI, Steam's heading "AI Generated Content Disclosure". Spanish follows Steam's Spain Spanish. Our own copy never says "uses AI", "AI-free" or "no AI", in any locale; the copy test fails the build on them.
+- Plain, short, sentence case: "Ignore this game", "Ignore for this tag", "Show full report".
+- One line names a tag everywhere: Steam's line is the hover card entry title, the banner entry heading, the settings section title and the start of the chip's accessible name. The chip itself is short: AI, Kernel AC, Anti-Cheat, DRM, Account, EULA, PvP.
+- Name the developer as the source: "In the developer's own words:", "AI service named by the developer:", "Declared by the developer on the store page".
+- The opt-out labels are "Ignore for this tag" and "Ignore this game" (every tag). The store has its own Ignore button just above; ours only affects this extension.
 - Settings speak about games, not switches: the list filter reads "Show", "Dim", "Hide".
 - No exclamation marks, no emoji, no em dashes.
 - The full catalog, with translator notes, is in the Messages section.
@@ -94,22 +94,24 @@ Every text pair meets WCAG 2.2 AA on the grounds its token's note names; see the
 
 ## What renders for each state
 
-| Verdict | Full badge | Compact badge | Summary row | Banner | List filter |
-| --- | --- | --- | --- | --- | --- |
-| Disclosed | yes | yes | yes | full banner | dim or hide |
-| Disclosed, allow-listed | nothing | nothing | nothing | one-line note | nothing |
-| Not disclosed | nothing | nothing | nothing | nothing | nothing |
-| Unknown | nothing | nothing | nothing | nothing | nothing |
+The state is per kind: a game can be disclosed for one kind and not disclosed or unknown for another.
 
-Settings gate each column: `badges` off removes both badges and the summary row, `banner` off removes the banner and its note, `listFilter: "off"` leaves lists alone. The allow-list wins over every setting.
+| Verdict of a kind | Chip | Summary row (AI) | Banner | List filter |
+| --- | --- | --- | --- | --- |
+| Disclosed | yes | yes | an entry | dim or hide |
+| Disclosed, ignored for the kind or for all tags | nothing | nothing | one-line note | nothing |
+| Not disclosed | nothing | nothing | nothing | nothing |
+| Unknown | nothing | nothing | nothing | nothing |
+
+Each kind's settings (`kinds.<id>`: `enabled`, `badge`, `banner` and `filter`) gate its columns. `enabled` off removes everything for the kind, `badge` off removes its chips and, for AI, the summary row, `banner` off removes its entry and its note, and `filter` set to `off` leaves lists alone. All are on by default and the filter is `off`. The ignore list wins over every setting.
 
 ## Shared rules
 
 **DOM ownership and state**
 
 - Every injected element carries a class starting with `sar-`; every attribute we set on store nodes starts with `data-sar-`. The scanner skips both.
-- Hosts get `data-sar-appid` and `data-sar-state` (`disclosed`, `not-disclosed`, `unknown`, `allowed`), plus `data-sar-hideable="false"` where the placement says hiding would break the list. These are written once, when the scanner marks the host.
-- Settings live as attributes on `document.documentElement`: `data-sar-filter` (`off`, `dim`, `hide`) and `data-sar-badges` (`on`, `off`). The list filter and the live badge switch are pure CSS on top of them (sections 1, 2, 3 and 5).
+- Hosts get `data-sar-appid`, `data-sar-kinds` and, where the placement says hiding would break the list, `data-sar-hideable="false"`. `data-sar-kinds` holds the ids of the kinds that are disclosed and not ignored for the game, in registry order and separated by spaces, and is absent when there are none. Rules match one id with `~=`. The renderers write them when the scanner marks the host and again when a verdict, the ignore list or a setting changes, and only when the value changed.
+- Settings live as attributes on `document.documentElement`, one pair per kind: `data-sar-filter-<kind>` (`off`, `dim`, `hide`) and `data-sar-badges-<kind>` (`on`, `off`). A kind that is switched off reads `off` in both. Chips and the summary row carry `data-sar-kind` with the id of their kind, so one rule per kind switches its chips off. The list filter and the live badge switch are pure CSS on top of them (sections 1, 2, 3 and 5).
 - Never move, wrap or restyle store nodes. The store-node changes besides the attributes above are `data-sar-anchor` on an image container that computes to `position: static`, which a CSS rule turns into `position: relative` (section 2), and a transient `aria-describedby` on a focused store link while the hover card is open (section 15).
 - DOM reads (image sizes, computed position) are batched before writes in one `requestAnimationFrame` per scan.
 - Listeners are delegated: one per root, never one per node. The summary row's jump to the banner is one such listener (section 3); the hover card's are on the document (section 15).
@@ -123,32 +125,38 @@ Settings gate each column: `badges` off removes both badges and the summary row,
 **i18n**
 
 - Every visible string, `title`, `aria-label` and live-region message comes from `t(key, params)`. CSS carries no copy (no `content:` strings), and `options.html` carries `data-i18n` keys only.
-- Data is never translated and never goes through the catalog: the developer's notes, the named AI service, game names and app IDs.
+- Data is never translated and never goes through the catalog: the developer's text, the AI service they named, the names Steam lists, game names and app IDs.
 - Dates use `Intl.DateTimeFormat(locale, { dateStyle: "medium" })`. Plurals use `_one` and `_other` keys chosen with `Intl.PluralRules`. Language names in the language picker use `Intl.DisplayNames`, each in its own language, not catalog entries.
 - Uppercase is CSS (`text-transform`), never catalog text, so it follows the page's `lang`.
 - Sizing for longer translations is checked in the previews with Spanish copy and with labels up to three times the English length.
 
 ## 1. Full badge
 
-The text badge that labels a disclosed game on rows with room for words: search results, wishlist rows and DLC rows.
+The text chips that label a game's kinds on rows with room for words: search results, wishlist rows and DLC rows.
 
 Preview: `previews/Badge.html`.
 
 ### When to use
 
-- Only for a host whose `data-sar-state` is `disclosed`. Not disclosed, unknown and allow-listed hosts get nothing: no neutral badge, no check mark.
-- One full badge per host. A host with a full badge gets no compact badge.
+- One chip for each kind that is disclosed, enabled, has its badge switch on and is not ignored for the game. Not disclosed, unknown and ignored kinds get nothing: no neutral chip, no check mark.
+- The chips of a host sit in one group, in registry order. A placement shows at most its `maxChips` (3 on rows with room, 2 on capsule overlays and search suggestions), and one "+N" chip stands for the rest.
+- A host with full chips gets no compact badge.
 
 ### What the consumer provides
 
 ```html
-<span class="sar-badge">
-  <span class="sar-badge-label">t('badge_label')</span>
+<span class="sar-chips" data-sar-chips="full">
+  <span class="sar-badge" data-sar-kind="drm">
+    <span class="sar-badge-label" aria-hidden="true">t('kind_drm_chip')</span>
+    <span class="sar-vh">t('kind_chip_name', { chip, heading })</span>
+  </span>
 </span>
 ```
 
-- The label from `badge_label` ("AI use reported") as real text.
-- The badge registers with the hover card (section 15), which shows the developer's notes on hover or focus. No `title`.
+- The short text from `kind_<id>_chip` as real text, hidden from screen readers.
+- A visually hidden name: the chip text, then Steam's line for the kind (`kind_chip_name`), such as "DRM: Incorporates 3rd-party DRM".
+- The "+N" chip (`kind_chip_more`) carries no kind. Its name reads "+2: more tags" (`kind_chip_more_name`).
+- Each chip registers with the hover card (section 15), which lists every kind of the host on hover or focus. No `title`.
 
 ### Look
 
@@ -157,26 +165,27 @@ Built like the store's own tag chips, in our hue.
 - `sar-badge-height` (19px) tall, `sar-badge-pad-inline` (7px), `sar-radius-sm`, no border.
 - Label in `sar-text-badge` (11/19 regular, the page font rather than the chips' Arial, because the badge sits in Motiva rows), `sar-badge-fg` on `sar-badge-bg`.
 - No icon. The violet hue and the wording set it apart from the store's blue tags, and it never sits in the store's tag row.
-- Capped at `sar-badge-max-inline-size` (180px). English needs about 90px in the store font (about 76px of text plus padding), so a translation can run about twice as long before it truncates; longer labels end in an ellipsis and keep the full text in the DOM.
+- Capped at `sar-badge-max-inline-size` (180px). A longer translation ends in an ellipsis and keeps its full name in the DOM.
+- The group sets its chips `sar-space-0` (2px) apart, like the store's own tag chips.
 
 ### Placement
 
-- Search rows: directly after the title, with `margin-inline-start: sar-space-2`, keeping its full size. The title line clips with `overflow: hidden`, so on a disclosed row it becomes a flex row: the title shrinks and ends in an ellipsis, and the badge stays visible. The platform icons below keep their place.
+- Search rows: directly after the title, with `margin-inline-start: sar-space-2`, keeping their full size. The title line clips with `overflow: hidden`, so on a row with chips it becomes a flex row: the title shrinks and ends in an ellipsis, and the chips stay visible. The platform icons below keep their place.
 - Wishlist rows: directly after the title element, `margin-inline-start: sar-space-2`. The exact anchor is unverified until the surface spike.
-- DLC rows on an app page: the last child of the name (`.game_area_dlc_name`), so the badge follows the name text. The row is a flex row that spreads name and price apart, so a badge between them would float mid-row at a different spot on each row. On a disclosed row the name becomes a flex row: its trailing space drops, and `margin-inline-start: sar-space-2` is the whole gap, as on search rows. A long name wraps beside the badge.
-- A row placement picks the slot: `after` makes the badge the anchor's next sibling, `end` its last child.
+- DLC rows on an app page: the last child of the name (`.game_area_dlc_name`), so the chips follow the name text. The row is a flex row that spreads name and price apart, so chips between them would float mid-row at a different spot on each row. On a row with chips the name becomes a flex row: its trailing space drops, and `margin-inline-start: sar-space-2` is the whole gap, as on search rows. A long name wraps beside the badge.
+- A row placement picks the slot: `after` makes the group the anchor's next sibling, `end` its last child.
 - Any other row: after the title, never before it, so titles stay aligned.
 
 ### States
 
 - Default only; its look does not change on hover. The row's own hover shows through the tint and the label still clears 5.21:1. Resting on it opens the hover card.
-- `[data-sar-badges="off"]` on the root hides every badge in one style pass.
-- Inside a dimmed host it dims with the host.
+- `[data-sar-badges-<kind>="off"]` on the root hides that kind's chips in one style pass.
+- Inside a dimmed host they dim with the host.
 
 ### Accessibility
 
-- The label is real text, read as part of the row link even when truncated.
-- No `role`, no `tabindex`: the badge rides inside the store's own link.
+- The accessible name is the chip text followed by Steam's line for the kind, read as part of the row link. The short text itself is `aria-hidden`.
+- No `role`, no `tabindex`: the chips ride inside the store's own link.
 
 ### Don't
 
@@ -191,19 +200,22 @@ Preview: `previews/CompactBadge.html`.
 
 ### When to use
 
-- A disclosed host whose capsule image is at least 180px wide and 32px tall. Smaller images get nothing on the image; a row-shaped host still gets the full badge.
-- One compact badge per host, never alongside a full badge.
+- A host with a kind to show whose capsule image is at least 180px wide and 32px tall. Smaller images get nothing on the image; a row-shaped host still gets full chips.
+- One chip per kind in one group, at most two, then a "+N" chip. Never alongside full chips on the same host.
 
 ### What the consumer provides
 
 ```html
-<span class="sar-compact" data-sar-size="text" data-sar-in-link="true">
-  <span class="sar-compact-label">t('badge_label')</span>
+<span class="sar-chips" data-sar-chips="compact">
+  <span class="sar-compact" data-sar-kind="drm" data-sar-size="text" data-sar-in-link="true">
+    <span class="sar-compact-label" aria-hidden="true">t('kind_drm_chip')</span>
+    <span class="sar-vh">t('kind_chip_name', { chip, heading })</span>
+  </span>
 </span>
 ```
 
-- `data-sar-size`, set once at placement from the measured image box (batched read, `getBoundingClientRect`). No container queries: they would change how store containers size themselves.
-- `data-sar-in-link="true"` only when `badge.closest("a")` is the capsule link. The badge registers with the hover card either way; outside a link no pointer reaches it.
+- `data-sar-size` on each chip, set at placement from the measured image box (batched read, `getBoundingClientRect`). No container queries: they would change how store containers size themselves.
+- `data-sar-in-link="true"` only when the group's `closest("a")` is the capsule link. The chips register with the hover card either way; outside a link no pointer reaches them.
 - `data-sar-anchor` on the image container if it computes to `position: static`; the stylesheet turns it into `position: relative`. Never an inline style.
 
 ### Size tiers
@@ -224,8 +236,8 @@ Built as a mirror of the store's own corner flags (in library, on wishlist): sol
 - Unlike the store's mid-tone flags, the surface is dark (accent 900) and keeps an edge. Together they give every kind of art a boundary at 3:1 or more: the edge against black (5.91:1), the surface against white (16.63:1), mid grey (4.21:1) and violet (3.34:1).
 - Block-start, inline-end corner (top right in English), mirroring the store's flags, which sit top-left. The store also owns the bottom edge (prices).
 - `z-index: sar-z-badge`: over the art, the corner flags and the microtrailer video that home capsules play on hover, under the store's hover popups.
-- Maximum inline size is the image width; past it the label ends in an ellipsis. The badge carries the same label as the full badge: in the Arial fallback, English is about 87px wide in the `text` tier and 98px in the `large` tier. On a 184px capsule beside a 64px store flag that leaves 33px between them; the Spanish label (about 111px) leaves 9px. Because the badge shares the flags' row, a longer translation on a small capsule can reach a store flag; see the open questions.
-- On home capsules, the store's options arrow (`.ds_options`, z-index 15) appears in the same corner on hover and covers about 39px of the badge's inline end; the store control stays on top on purpose, and at rest the badge is clear.
+- Maximum inline size is the image width; past it the chips shrink and their text ends in an ellipsis. Two chips can take more room than the one label did before, and the badges share the store flags' row, so a longer translation on a small capsule can reach a store flag; see the open questions.
+- On home capsules, the store's options arrow (`.ds_options`, z-index 15) appears in the same corner on hover and covers about 39px of the group's inline end; the store control stays on top on purpose, and at rest the chips are clear.
 
 ### Pointer and accessibility
 
@@ -240,28 +252,29 @@ Built as a mirror of the store's own corner flags (in library, on wishlist): sol
 
 ## 3. Summary row
 
-One row in a game's summary box, directly under Publisher: the badge label in a violet tag-styled chip that sits in the column of the Developer and Publisher values and jumps to the banner.
+One row in a game's summary box, directly under Publisher: the AI chip in a violet tag-styled chip that sits in the column of the Developer and Publisher values and jumps to the banner. The row stays a summary of the AI kind; the other kinds appear in the banner and in the chips on lists.
 
 Preview: `previews/SummaryRow.html`.
 
 ### When to use
 
-- On the app page of a disclosed game while the `badges` setting is on. Allow-listed, not-disclosed and unknown games get nothing.
-- Once per page, in the summary box at the top right, so the label shows above the fold. The banner, lower down by the purchase box, still carries the developer's words.
+- On the app page of a game whose AI kind is disclosed and not ignored, while that kind's badge switch is on (`data-sar-badges-ai`). Games that are ignored for AI, not disclosed or unknown get nothing.
+- Once per page, in the summary box at the top right, so the chip shows above the fold. The banner, lower down by the purchase box, still carries the developer's words.
 
 ### What the consumer provides
 
 ```html
-<a class="sar-summary-row" href="#sar-banner">
-  <span class="sar-badge">
-    <span class="sar-badge-label">t('badge_label')</span>
+<a class="sar-summary-row" data-sar-kind="ai" href="#sar-banner">
+  <span class="sar-badge" data-sar-kind="ai">
+    <span class="sar-badge-label" aria-hidden="true">t('kind_ai_chip')</span>
+    <span class="sar-vh">t('kind_chip_name', { chip, heading })</span>
   </span>
 </a>
 ```
 
 - Insert it right after the last `.dev_row` in the summary box (`.glance_ctn_responsive_left`). Steam's own rows there are label and value pairs; this row has no label and puts its chip where their values start. It uses its own classes and never borrows or restyles a store node.
-- With the banner on, the row is a progressive link: `href="#sar-banner"` (the banner host's id), handled by one delegated click listener that calls `preventDefault`, scrolls the host into view with `block: "start"`, and focuses the banner's `aside` (`tabindex="-1"`) with `focus({ preventScroll: true })`. The URL never changes, so there is no history entry and no `#sar-banner` in links people copy. Without the script, the plain anchor still lands on the banner. Steam's own reviews row jumps to the reviews section the same way.
-- With the banner off, render the row as a `div` with no `href` and `tabindex="0"`: the chip still says what it says, and the hover card (section 15) quotes the notes. With the banner on, the row opens no hover card: the jump lands on the full notes.
+- While the banner holds the AI entry, the row is a progressive link: `href="#sar-banner"` (the banner host's id), handled by one delegated click listener that calls `preventDefault`, scrolls the host into view with `block: "start"`, and focuses the banner's `aside` (`tabindex="-1"`) with `focus({ preventScroll: true })`. The URL never changes, so there is no history entry and no `#sar-banner` in links people copy. Without the script, the plain anchor still lands on the banner. Steam's own reviews row jumps to the reviews section the same way.
+- Without an AI entry in the banner (the banner is off for AI, or the page has no banner), render the row as a `div` with no `href` and `tabindex="0"`: the chip still says what it says, and the hover card (section 15) quotes the notes. With the AI entry in the banner, the row opens no hover card: the jump lands on the full notes.
 
 ### Look
 
@@ -278,9 +291,9 @@ Measured on a 1280 by 900 window (app 1808500): the row is 18px tall, the summar
 
 ### Accessibility
 
-- The link's name is the chip text, "AI use reported". It needs no row label: the banner it jumps to and the hover card both open with "In the developer's own words:".
+- The link's name is the chip text and Steam's heading, "AI: AI Generated Content Disclosure". It needs no row label: the banner it jumps to and the hover card both open with "In the developer's own words:".
 - The jump lands on the banner, and focus follows, so a keyboard or screen reader user arrives at the developer's words.
-- With the banner off, focus on the row opens the hover card, which describes the row while it is open.
+- Without the banner entry, focus on the row opens the hover card, which describes the row while it is open.
 
 ### Don't
 
@@ -290,38 +303,71 @@ Measured on a 1280 by 900 window (app 1808500): the row is 18px tall, the summar
 
 ## 4. App page banner
 
-A non-blocking notice on a game's own store page that quotes the developer's report verbatim, placed above the purchase box and built like the store's own notice bubbles.
+A non-blocking notice on a game's own store page that lists every kind the developer declared, in Steam's words, and quotes the developer's text as written. It sits above the purchase box and is built like the store's own notice bubbles.
 
 Preview: `previews/Banner.html`.
 
 ### When to use
 
-- On the app page of a disclosed game, once per page view, while the `banner` setting is on. An allow-listed game gets the one-line note instead.
+- On the app page of a game with at least one disclosed kind that is enabled and has its banner switch on, once per page view. One banner holds every such kind, in registry order.
+- A kind the game is ignored for is not listed. It becomes a one-line note with Undo. A game ignored for all tags gets one such note and nothing else.
 - Never as a modal or overlay, never over content, never stealing focus.
 
 ### What the consumer provides
 
 ```html
-<div class="sar-banner-host">
+<div class="sar-banner-host" id="sar-banner">
   #shadow-root
-  <aside class="sar-banner" aria-labelledby="sar-banner-title">
-    <div class="sar-banner-head">
-      <h2 class="sar-banner-title" id="sar-banner-title">t('badge_label')</h2>
-      <button class="sar-banner-action" type="button">t('banner_ignore')</button>
+  <aside class="sar-banner" aria-labelledby="sar-banner-drm-title" tabindex="-1">
+    <div class="sar-banner-entry">
+      <div class="sar-banner-head">
+        <h2 class="sar-banner-title" id="sar-banner-drm-title">t('kind_drm_heading')</h2>
+        <button class="sar-banner-action" id="sar-banner-drm-ignore" type="button"
+                data-sar-action="ignore" data-sar-scope="drm"
+                aria-labelledby="sar-banner-drm-ignore sar-banner-drm-title">t('banner_ignore_kind')</button>
+      </div>
+      <p class="sar-banner-detail">text the developer typed</p>
+      <p class="sar-banner-detail"><a class="sar-banner-anchor" href="https://store.steampowered.com/eula/..."
+         target="_blank" rel="noopener noreferrer">agreement name</a></p>
     </div>
-    <p class="sar-banner-source">t('banner_source')</p>
-    <blockquote class="sar-banner-quote" id="sar-banner-notes" data-sar-collapsed="true">notes</blockquote>
-    <button class="sar-banner-link" type="button" aria-expanded="false"
-            aria-controls="sar-banner-notes">t('banner_expand')</button>
-    <p class="sar-banner-service">t('banner_service_label') <span class="sar-banner-service-name">name</span></p>
+    <div class="sar-banner-entry">
+      <!-- AI: its heading, then the developer's own words -->
+      <p class="sar-banner-source">t('banner_source')</p>
+      <blockquote class="sar-banner-quote" id="sar-banner-ai-notes" data-sar-collapsed="true">notes</blockquote>
+      <button class="sar-banner-link" type="button" aria-expanded="false"
+              aria-controls="sar-banner-ai-notes" data-sar-action="toggle">t('banner_expand')</button>
+      <p class="sar-banner-service">t('badge_card_service_label') <span class="sar-banner-service-name">name</span></p>
+    </div>
+    <p class="sar-banner-note">
+      <span class="sar-banner-ignored-text" id="sar-banner-kernel-note">t('banner_ignored_kind', { heading })</span>
+      <button class="sar-banner-link" id="sar-banner-kernel-undo" type="button"
+              data-sar-action="undo" data-sar-scope="kernel"
+              aria-labelledby="sar-banner-kernel-undo sar-banner-kernel-note">t('banner_undo')</button>
+    </p>
+    <div class="sar-banner-foot">
+      <button class="sar-banner-link" type="button" data-sar-action="ignore" data-sar-scope="all">t('banner_ignore')</button>
+    </div>
     <p class="sar-banner-error" role="alert" hidden>t('error_allow_list_save')</p>
-    <div class="sar-vh" aria-live="polite"></div>
   </aside>
+  <div class="sar-vh" aria-live="polite"></div>
 </div>
 ```
 
-- The notes as data: `textContent`, `white-space: pre-line`, never translated, summarized or highlighted.
-- The named AI service as plain text, never a link. No service: omit the line.
+What each kind puts under its heading:
+
+| Kind | Lines |
+| --- | --- |
+| AI | "In the developer's own words:", the notes (collapsed at 3 lines), then the AI service the developer named, when there is one |
+| Kernel-level anti-cheat | The anti-cheat's name (Steam's vendor name, else the custom name from the game's page), Steam's note when it needs manual removal after uninstall, and the boot protection line (the page's own line, else Steam's) |
+| Anti-cheat | Its name, the same way |
+| 3rd-party DRM | The developer's DRM text, then the activation limit when there is one (the page's line, else the one Steam sent) |
+| 3rd-party account | The developer's account text, and Steam's note when the account links to a Steam account |
+| 3rd-party EULA | The name of every agreement, as a link to the store's EULA page when the data layer validated one |
+| PvP | Steam's names of the categories that matched |
+
+- Developer text and the names Steam lists are data: `textContent`, never translated, summarized or highlighted. The notes take `white-space: pre-line`.
+- A EULA link exists only for a `https://store.steampowered.com/eula/...` address (the data layer collapses Steam's doubled slash). It opens in a new tab with `rel="noopener noreferrer"`. Any other address leaves the name as plain text.
+- The page's own details (the custom anti-cheat name, the boot protection line, the DRM activation limit) are read from the page the visitor is on by `parsePageDetails`, with structural selectors only: no request, and never the words of a notice. A page without them leaves the entries as GetItems gave them.
 - The host carries `id="sar-banner"`, the target of the summary row's link, and the `aside` carries `tabindex="-1"` so focus can follow that jump.
 - A shadow root on `div.sar-banner-host`, styles attached with `adoptedStyleSheets`. Tokens inherit from `:root`, and the page font works inside because `@font-face` is document-wide.
 
@@ -336,33 +382,35 @@ Modeled on the store's per-app notice bubbles (the DLC notice sits in the same s
 - Background `sar-banner-bg`: a 135 degree wash from `sar-banner-wash-start` at 10% to `sar-banner-wash-end` at 100% (accent 800 to accent 600, both at 80%), the DLC bubble's recipe in our hue.
 - No border, no radius, no shadow.
 - Padding `sar-space-2` at block-start, `sar-space-3` at block-end, `sar-space-4` inline. `sar-space-4` below: the store's own 2px would glue the banner to the purchase box and read as part of the offer.
-- All text in `sar-banner-fg`. Title `sar-text-banner-title` (24/30 light). Source and service lines `sar-text-banner-meta` (13/19 light). Notes `sar-text-banner-quote` (14/21, italic like the notes in the store's own disclosure section).
-- "Ignore this game" matches the store's outlined buttons right below the banner ("Compare Editions", "Browse all"): `sar-text-banner-button` (11/14 regular, the store's size) in `sar-banner-button-fg`, `sar-banner-button-pad-block` (2px) and `sar-banner-button-pad-inline` (15px), a 1px `sar-banner-button-border` (white at 40%), `sar-radius-sm`, a `sar-banner-button-bg-hover` wash on hover. It stays at least `sar-control-height-xs` (24px) tall for the target size (WCAG 2.5.8), where the store's buttons are 22px.
-- "Show full report" and "Undo" are the store's underlined in-bubble links, in `sar-banner-link-color`, as `button` elements with a 24px minimum target.
+- All text in `sar-banner-fg`. Heading `sar-text-banner-title` (24/30 light) when the banner holds one entry. With two or more, the headings step down to 18/23 light (`sar-size-2xl`) and the entries sit `sar-space-3` apart. Detail, source and service lines `sar-text-banner-meta` (13/19 light). Notes `sar-text-banner-quote` (14/21, italic like the notes in the store's own disclosure section).
+- "Ignore for this tag" matches the store's outlined buttons right below the banner ("Compare Editions", "Browse all"): `sar-text-banner-button` (11/14 regular, the store's size) in `sar-banner-button-fg`, `sar-banner-button-pad-block` (2px) and `sar-banner-button-pad-inline` (15px), a 1px `sar-banner-button-border` (white at 40%), `sar-radius-sm`, a `sar-banner-button-bg-hover` wash on hover. It stays at least `sar-control-height-xs` (24px) tall for the target size (WCAG 2.5.8), where the store's buttons are 22px. It sits at inline-end of its entry's heading.
+- "Ignore this game", "Show full report" and "Undo" are the store's underlined in-bubble links, in `sar-banner-link-color`, as `button` elements with a 24px minimum target. "Ignore this game" stands alone at inline-end under the last entry. A EULA link looks the same, as an anchor.
 - Errors in `sar-banner-error`, never `sar-color-error` (4.21:1 on the bright end).
 - Never `sar-color-text-muted` or `sar-color-text-subtle` on the wash.
 
 ### States
 
-- **Collapsed** (default when long): the quote clamps to `sar-banner-quote-lines` (3). Measure in the next frame; if it does not overflow, drop `data-sar-collapsed` and omit the link.
+- **Collapsed** (default when the AI notes are long): the quote clamps to `sar-banner-quote-lines` (3). Measure in the next frame; if it does not overflow, drop `data-sar-collapsed` and omit the link.
 - **Expanded:** the link reads `banner_collapse` with `aria-expanded="true"`. No animation; not remembered across pages.
-- **Allow-listed** (`data-sar-variant="ignored"`): the store's DRM-notice geometry in neutral, no violet. One line: `banner_ignored` in `sar-text-banner-note` and `sar-color-text-muted`, and an Undo link, on `sar-banner-note-bg` with `sar-radius-xs`, `sar-space-1` by `sar-space-2` padding, labelled by `banner_region_label`.
+- **A kind ignored:** its entry gives way to one line in the banner's own type, `banner_ignored_kind` and an Undo link, after the entries that remain.
+- **Only notes left** (`data-sar-variant="ignored"`): the store's DRM-notice geometry in neutral, no violet. The note lines (`banner_ignored` for all tags, one `banner_ignored_kind` for each kind) in `sar-text-banner-note` and `sar-color-text-muted`, each with an Undo link, on `sar-banner-note-bg` with `sar-radius-xs`, `sar-space-1` by `sar-space-2` padding, labelled by `banner_region_label`.
 - **Storage error:** the banner stays as it was and shows `error_allow_list_save` until the next successful action.
-- **Setting turned off:** remove the host. Turned on: re-render from cache, no new request.
+- **Setting turned off:** the kind's entry and note leave, and the host leaves when nothing is left. Turned on: re-render from the known verdicts, no new request.
 
 ### Behavior
 
-- "Ignore this game" adds the app ID (with the name and today's date) to the allow-list and swaps in the one-line note; focus moves to Undo. It never calls the store's own ignore feature.
-- "Undo" restores the full banner, collapsed; focus returns to "Ignore this game".
+- "Ignore for this tag" adds the app ID (with the name and today's date) to that kind's list and swaps its entry for the note; focus moves to the note's Undo. "Ignore this game" adds the app ID to the list for all tags, and every entry gives way to one note. Neither calls the store's own ignore feature.
+- "Undo" removes the app ID from that list again and restores the entries. Focus returns to the ignore button of the same scope, or to "Ignore this game" after an undo for all tags.
+- Chips on the game's capsules follow the same lists, so they leave and return with the entries.
 - The polite live region announces `notice_marking_stopped` or `notice_marking_restored`.
 
 ### Longer translations
 
-The head wraps: the title takes `flex: 1 1 12em` and wraps first (at 24px a longer translation, such as Spanish, already wraps at 616px), then the button moves to its own line at inline-end. The button and links wrap their own text. In the one-line note the text and the link wrap inside their own boxes.
+The head wraps: the heading takes `flex: 1 1 12em` and wraps first (at 24px a longer translation, such as Spanish, already wraps at 616px), then the button moves to its own line at inline-end. The buttons and links wrap their own text. In a note the text and the link wrap inside their own boxes.
 
 ### Accessibility
 
-An `aside` landmark labelled by its `h2`. The notes are a `blockquote`; the source line names the speaker. No `lang` on the quote, since the developer's language is unknown. Every control is a real `button` with visible text. In forced colors the wash disappears, so the banner gets a `CanvasText` edge.
+An `aside` landmark. With one entry and no note it is labelled by that entry's `h2`; otherwise by `banner_region_label`. Every entry has its own `h2`. Each "Ignore for this tag" button takes its name from its text and the entry's heading, and each Undo from its text and its note, so no two buttons share a name. The notes are a `blockquote`; the source line names the speaker. No `lang` on the quote, since the developer's language is unknown. Every control is a real `button` with visible text. In forced colors the wash disappears, so the banner gets a `CanvasText` edge.
 
 ### Check
 
@@ -370,30 +418,32 @@ A game with DLC can also carry a report, so this banner may stack with the store
 
 ## 5. Dim and hide (list filter)
 
-The opt-in dim or hide mode for lists, written as pure CSS on two attributes so a setting change is one write, however many games a page holds.
+The opt-in dim or hide mode for lists, one per kind, written as pure CSS on attributes so a setting change is one write per kind, however many games a page holds.
 
 Preview: `previews/ListFilter.html`.
 
 ### What the consumer provides
 
-- On `document.documentElement`: `data-sar-filter="off" | "dim" | "hide"` (default `off`).
-- On each host, written once by the scanner: `data-sar-state` (`disclosed`, `not-disclosed`, `unknown`, `allowed`) and, where hiding would break a virtualized or carousel list, `data-sar-hideable="false"`.
+- On `document.documentElement`, for each kind: `data-sar-filter-<kind>="off" | "dim" | "hide"` (default `off`).
+- On each host, written by the renderer: `data-sar-kinds` (the ids of the kinds that are disclosed and not ignored for the game, separated by spaces) and, where hiding would break a virtualized or carousel list, `data-sar-hideable="false"`.
 
 No classes, no inline styles, no per-node writes when the mode changes.
 
 ### Behavior
 
-- `off`: lists unchanged; badges only.
-- `dim`: disclosed hosts get `filter: opacity(sar-dim-opacity)` (0.4). `:hover` and `:focus-within` restore full opacity on that one host with a `sar-duration-fast` fade in and a snap back.
-- `hide`: disclosed hosts get `display: none`. Hosts marked `data-sar-hideable="false"` dim instead.
-- Allowed, not-disclosed and unknown hosts never match.
+- `off`: lists unchanged; chips only.
+- `dim`: hosts that carry the kind get `filter: opacity(sar-dim-opacity)` (0.4). `:hover` and `:focus-within` restore full opacity on that one host with a `sar-duration-fast` fade in and a snap back.
+- `hide`: hosts that carry the kind get `display: none`. Hosts marked `data-sar-hideable="false"` dim instead.
+- Several kinds on one host: the strongest mode wins (hide over dim over off). No rule is needed for it: a hidden host ignores a dim, and a host that cannot hide dims for either mode.
+- A kind that is not disclosed, unknown or ignored for the game is absent from `data-sar-kinds`, so it never matches. A kind that is switched off writes `off` for its filter.
 
 ```css
-[data-sar-filter="dim"] [data-sar-state="disclosed"],
-[data-sar-filter="hide"] [data-sar-state="disclosed"][data-sar-hideable="false"] {
+/* One pair of rules for each kind; drm shown */
+[data-sar-filter-drm="dim"] [data-sar-kinds~="drm"],
+[data-sar-filter-drm="hide"] [data-sar-kinds~="drm"][data-sar-hideable="false"] {
   filter: opacity(var(--sar-dim-opacity)) !important;
 }
-[data-sar-filter="hide"] [data-sar-state="disclosed"]:not([data-sar-hideable="false"]) {
+[data-sar-filter-drm="hide"] [data-sar-kinds~="drm"]:not([data-sar-hideable="false"]) {
   display: none !important;
 }
 ```
@@ -403,13 +453,14 @@ No classes, no inline styles, no per-node writes when the mode changes.
 - A filter opacity only. It multiplies with the store's own `opacity`, while the `opacity` property would replace it: the home page's main carousel hides its other slides with `opacity: 0`, and an `opacity` dim made them show through. It costs one effect per dimmed host, as `opacity` does. Other filters such as grayscale cost more; a sale page holds hundreds of capsules, so profile before adding one.
 - No transition on a mode change, so every host flips in one style pass.
 - `!important` is required: store rows set `display` inline or with higher specificity.
-- The store's own ignored state is 0.3. Ours is 0.4, and the badge on the host names the reason.
+- The rules list each kind by hand, because no selector joins an attribute on the root element with one on a host. `ui/styles.test.ts` fails for a kind they miss.
+- The store's own ignored state is 0.3. Ours is 0.4, and the chips on the host name the reason.
 - Dimmed content is inactive UI: exempt from contrast minimums, never the only route to information.
 - Known gap: the filter can apply after first paint, because the content script runs at `document_idle`.
 
 ## 6. Options page and action popup
 
-The settings form, rendered as the full options page (`data-sar-context="page"`) and as the toolbar popup (`data-sar-context="popup"`), dark only.
+The settings form, rendered as the full options page (`data-sar-context="page"`) and as the toolbar popup (`data-sar-context="popup"`), dark only. The stored settings are `locale`, `debug` and, for each kind, `kinds.<id>.enabled`, `kinds.<id>.badge`, `kinds.<id>.banner` and `kinds.<id>.filter`.
 
 Preview: `previews/OptionsPage.html`.
 
@@ -422,7 +473,7 @@ Preview: `previews/OptionsPage.html`.
 ### Layout
 
 - Page: centered, `sar-options-max-width` (640px), `sar-space-4` padding, `sar-color-bg-panel`, `color-scheme: dark`.
-- Popup: `sar-popup-width` (360px), `sar-space-3` padding, short labels where a key exists. Sections are flat, not cards: no fill, radius or inline padding, `sar-space-2` above and below, and a 1px `sar-color-divider` line between them. Section titles become captions in `sar-text-popup-caption` (11/16 medium, uppercase) and `sar-color-text-subtle`, like the store's own section labels. Rows take `sar-space-1` padding, the segmented control takes `sar-control-height-xs` (24px, the store's smallest control), and the allow-list scrolls inside 240px. An empty allow-list is left out of the popup; the full page keeps its empty state.
+- Popup: `sar-popup-width` (360px), `sar-space-3` padding, short labels where a key exists. With a section for each of seven kinds the popup is tall and scrolls. Sections are flat, not cards: no fill, radius or inline padding, `sar-space-2` above and below, and a 1px `sar-color-divider` line between them. Section titles become captions in `sar-text-popup-caption` (11/16 medium, uppercase) and `sar-color-text-subtle`, like the store's own section labels. Rows take `sar-space-1` padding, the segmented control takes `sar-control-height-xs` (24px, the store's smallest control), and the allow-list scrolls inside 240px. An empty allow-list is left out of the popup; the full page keeps its empty state.
 - Font: the `ext` family (a system stack). The store font is not loaded on extension pages and none is bundled.
 - Type on the full page: field labels, help and error lines in `sar-text-body` (13/18). The popup keeps help and error lines in `sar-text-help` (12/16).
 - On the full page, sections are `.sar-card`: `sar-color-bg-raised`, `sar-radius-md`, `sar-space-3` padding, `sar-space-2` apart, titled in `sar-text-card-title` with `sar-space-2` below the title.
@@ -431,17 +482,16 @@ Preview: `previews/OptionsPage.html`.
 ### Sections, in order
 
 1. Header.
-2. On store pages: Switch `options_badges` (popup `options_badges_short`), Switch `options_banner`, each with help.
-3. In lists: a stacked SegmentedControl, Show, Dim, Hide (values `off`, `dim`, `hide`); the help follows the selection.
-4. Language (page only): a stacked Select, `Automatic` first, then each shipped locale named in its own language through `Intl.DisplayNames`.
-5. Games you ignored: the AllowList, newest first. Left out of the popup while it is empty.
-6. Backup (page only): the Backup card, to download a file and restore from one.
-7. Privacy (page only): four bullets.
-8. Footer: `options_unaffiliated` in `sar-text-help`, subtle. The popup uses `options_unaffiliated_short` and adds an `options_all_settings` link.
+2. One section for each tag kind, in registry order, titled with Steam's line for the kind (`kind_<id>_heading`). It holds the master switch `options_kind_enabled` (`kinds.<id>.enabled`), then the switches `options_badges` (popup `options_badges_short`; `badge`) and `options_banner` (`banner`), then a stacked SegmentedControl with Show, Dim and Hide (`filter`; values `off`, `dim`, `hide`; label `options_filter_label`; the help follows the selection). Each switch has help. While the master switch is off, the other three are hidden and their stored values stay.
+3. Language (page only): a stacked Select, `Automatic` first, then each shipped locale named in its own language through `Intl.DisplayNames`.
+4. Games you ignored: the AllowList, in groups. All tags comes first, then each kind in registry order, each group titled with its scope's name and listing its games newest first. Left out of the popup while it is empty.
+5. Backup (page only): the Backup card, to download a file and restore from one.
+6. Privacy (page only): four bullets.
+7. Footer: `options_unaffiliated` in `sar-text-help`, subtle. The popup uses `options_unaffiliated_short` and adds an `options_all_settings` link.
 
 ### Behavior
 
-- Every change applies at once through the settings port; there is no save button. A polite live region announces `notice_settings_saved`.
+- Every change applies at once through the settings port; there is no save button. It is a patch of the fields the control names, applied to the settings stored at that moment, so a page that holds older settings never overwrites another kind's values. A polite live region announces `notice_settings_saved`.
 - A failed write reverts the control and shows `error_settings_save` under it in `.sar-field-error` (`role="alert"`).
 - A failed read shows the defaults with `error_settings_load` at the top of the first card.
 
@@ -482,7 +532,7 @@ The label column is `minmax(0, 1fr)` and wraps; the switch keeps its own column,
 
 ## 8. Segmented control
 
-A three-way choice built from a fieldset of radios, used for the list filter (Show, Dim, Hide).
+A three-way choice built from a fieldset of radios, used for each kind's list filter (Show, Dim, Hide). Each kind has its own fieldset, and its radios share a name that no other kind uses.
 
 Preview: `previews/SegmentedControl.html`.
 
@@ -577,35 +627,41 @@ Preview: `previews/Button.html`.
 
 ## 11. Allow-list
 
-The list of games the person ignored, newest first, each with a way to stop ignoring it.
+The list of games the person ignored, in groups by scope: all tags first, then each kind in registry order. Within a group the newest comes first, and each game has a way to stop ignoring it.
 
 Preview: `previews/AllowList.html`.
 
 ### What the consumer provides
 
 ```html
-<ul class="sar-allow-list">
-  <li class="sar-allow-item">
-    <div>
-      <a class="sar-allow-name" href="/app/APPID">game name</a>
-      <span class="sar-allow-meta">t('options_allow_since', { date })</span>
-    </div>
-    <button class="sar-button" type="button"
-            aria-label="t('options_allow_restore_label', { name })">t('options_allow_restore')</button>
-  </li>
-</ul>
+<div class="sar-allow-group" role="group" aria-labelledby="scope-title">
+  <h3 class="sar-allow-scope" id="scope-title">scope name</h3>
+  <ul class="sar-allow-list">
+    <li class="sar-allow-item">
+      <div>
+        <a class="sar-allow-name" href="/app/APPID">game name</a>
+        <span class="sar-allow-meta">t('options_allow_since', { date })</span>
+      </div>
+      <button class="sar-button" type="button" data-sar-restore="APPID" data-sar-scope="drm"
+              aria-label="t('options_allow_restore_label', { name, scope })">t('options_allow_restore')</button>
+    </li>
+  </ul>
+</div>
 ```
 
+- The scope's name: `options_allow_scope_all` for all tags, else Steam's line for the kind. A group with no game is left out.
 - The game name as data, untranslated, linked to its store page.
 - The date formatted with `Intl.DateTimeFormat(locale, { dateStyle: "medium" })`.
 - Empty: `<p class="sar-empty">t('options_allow_empty', { action })</p>`, where `action` is the "Ignore this game" label.
 - A failed removal shows `error_allow_list_save` under that item.
+- One game can sit in several groups; stopping to ignore it in one leaves the others.
 
 ### Look
 
 - Items are a grid: name and date keep at least 40% of the row, the button wraps its text in the rest. `sar-color-divider` between items.
+- The scope's name is a small heading in `sar-color-text-strong` above its list; groups sit `sar-space-3` apart.
 - The name ends in an ellipsis; the date is `sar-text-help` in `sar-color-text-subtle`.
-- In the popup the list scrolls inside 240px, rows take `sar-space-1` padding, and the whole section is left out while the list is empty. When the last game is marked again there, focus moves to the "In lists" caption.
+- In the popup the lists scroll inside 240px, rows take `sar-space-1` padding, and the whole section is left out while there is no game. When the last game is removed there, focus moves to the section above.
 
 ## 12. Backup
 
@@ -745,51 +801,61 @@ magick -background none -density 384 icon.svg -filter Lanczos -resize 96x96 -gra
 
 ## 15. Hover card
 
-The developer's report in a small dark panel that opens when a pointer rests on a badge, or when keyboard focus reaches one. It is built like the store's own game hover popup (`#global_hover`, the panel with title, release date, description, reviews and tags next to a capsule). Badges carry no `title`; the card is their only tooltip.
+A small dark panel that lists every kind of the host under the pointer or focus, each in Steam's words with the developer's own text, and opens when a pointer rests on a chip, or when keyboard focus reaches one. It is built like the store's own game hover popup (`#global_hover`, the panel with title, release date, description, reviews and tags next to a capsule). Chips carry no `title`; the card is their only tooltip.
 
 Preview: `previews/HoverCard.html`.
 
 ### When to use
 
-- On the full badge, on a compact badge inside the capsule link, and on the summary row while the banner is off. These are its triggers.
-- Not on the summary row while the banner is on: its click jumps to the full notes, and a card there would cover the tag row on the way to that click.
-- Not on a compact badge outside a link: it keeps `pointer-events: none` (section 2) and nothing opens.
+- On a full chip, on a compact chip inside the capsule link, and on the summary row while the banner holds no AI entry. These are its triggers. The card lists all the kinds of the host's chips, including those a "+N" chip stands for.
+- Not on the summary row while the banner holds the AI entry: its click jumps to the full notes, and a card there would cover the tag row on the way to that click.
+- Not on a compact chip outside a link: it keeps `pointer-events: none` (section 2) and nothing opens.
 - Not on the banner, which quotes the notes in full.
+- No buttons or links in the card, so it offers no ignore action. The banner and the settings list do.
 
 ### What the consumer provides
 
 ```html
 <div class="sar-hovercard" id="sar-hovercard" role="tooltip" popover="manual" data-sar-side="below" hidden>
-  <p class="sar-hovercard-title">t('badge_label')</p>
-  <p class="sar-hovercard-source">t('badge_card_source')</p>
-  <p class="sar-hovercard-notes">notes, verbatim</p>
-  <p class="sar-hovercard-service">t('badge_card_service_label') <span class="sar-hovercard-service-name">service</span></p>
+  <div class="sar-hovercard-entry">
+    <p class="sar-hovercard-title">t('kind_ai_heading')</p>
+    <p class="sar-hovercard-notes">notes, verbatim</p>
+    <p class="sar-hovercard-service">t('badge_card_service_label') <span class="sar-hovercard-service-name">service</span></p>
+  </div>
+  <div class="sar-hovercard-entry">
+    <p class="sar-hovercard-title">t('kind_kernel_heading')</p>
+    <p class="sar-hovercard-detail">the anti-cheat's name</p>
+    <p class="sar-hovercard-detail">t('kind_kernel_uninstall')</p>
+  </div>
   <p class="sar-hovercard-more" hidden>t('badge_card_more')</p>
+  <p class="sar-hovercard-source">t('badge_card_declared')</p>
 </div>
 ```
 
-- One card per page, created on first use and appended to `body`. Every trigger reuses it; opening for another game refills it.
-- Triggers register with the card when they render: a `WeakMap` from trigger element to verdict, plus whether the trigger sits on the game's own page (the summary row). Nothing is set on the trigger, and no listener is added to it.
-- Opening and closing run on delegated listeners on the document: `pointerover`, `pointerout`, `focusin`, `focusout`, `keydown` and `scroll`. Their number does not depend on how many badges the page holds. One `pagehide` listener on the window closes the card.
-- The notes go in through `textContent` with `\r\n` turned into `\n`, never translated or cut in the DOM. The service line appears only when GetItems named one (`ai_generation_service`), the name inserted as data.
-- No request: the card shows the verdict the badge was drawn from.
+- One card per page, created on first use and appended to `body`. Every trigger reuses it; opening for another game refills it. One entry for each disclosed kind of the host, in registry order.
+- Triggers register with the card when they render: a `WeakMap` from trigger element to the host's disclosed verdicts, plus whether the trigger sits on the game's own page (the summary row). Nothing is set on the trigger, and no listener is added to it.
+- Opening and closing run on delegated listeners on the document: `pointerover`, `pointerout`, `focusin`, `focusout`, `keydown` and `scroll`. Their number does not depend on how many chips the page holds. One `pagehide` listener on the window closes the card.
+- The lines under each heading come from `kindDetails`, the function the banner uses, without the page's own details and without links. The AI notes go in through `textContent` with `\r\n` turned into `\n`, never translated or cut in the DOM. The service line appears only when GetItems named one (`ai_generation_service`), the name inserted as data.
+- A last line, `badge_card_declared`, says the developer, not this extension, made the declarations above.
+- No request: the card shows the verdicts the chips were drawn from.
 
 ### Look
 
 Built like the store's game hover popup, sampled on the home page on 2026-10-21: a `#344352` panel, no radius, a 20px black shadow at 50%, 16px of padding, 306px wide, set in the page font.
 
 - Surface `sar-hovercard-bg` with `sar-hovercard-shadow`, padding `sar-hovercard-pad`, inline size `sar-hovercard-inline-size`, capped at the viewport width less two offsets.
-- Title in `sar-hovercard-title-font` (15/17, like the store's game name there), `sar-badge-fg`. The violet title is what marks the card as ours.
-- Source line in `sar-hovercard-meta-font` (11/16), `sar-color-text-muted`, like the store's release line.
+- Each entry's title is Steam's line for the kind, in `sar-hovercard-title-font` (15/17, like the store's game name there), `sar-badge-fg`. The violet title is what marks the card as ours. Entries sit `sar-space-2` apart.
+- Detail lines (names, Steam's notes, category names) in `sar-hovercard-meta-font` (11/16) and `sar-color-text`.
+- The source line, `badge_card_declared`, ends the card in `sar-hovercard-meta-font` (11/16) and `sar-color-text-muted`, like the store's release line.
 - Notes in `sar-hovercard-notes-font` (12/18 italic, like the store's own disclosure section), `sar-color-text`, `white-space: pre-line`, clamped to `sar-hovercard-notes-lines` (6) lines.
 - Service line in the meta font: label `sar-color-text-muted`, name `sar-color-text`.
 - The "more" line, `badge_card_more` in the meta font and `sar-color-text-muted`, shows only when the clamp hides text and the trigger is not on the game's own page. The app page carries Steam's own disclosure section and, when on, the banner; the summary row's card never shows the line. The full notes stay in the DOM for screen readers, and the game's store page carries them in Steam's own disclosure section.
-- No arrow. The store's popup has a bitmap arrow toward the capsule; ours sits right under the badge, and the short gap ties it to its trigger.
+- No arrow. The store's popup has a bitmap arrow toward the capsule; ours sits right under the chip, and the short gap ties it to its trigger.
 
 ### Placement
 
 - Fixed to the viewport, `sar-hovercard-offset` (8px) below the trigger. Where it would cross the bottom edge and fits above, it flips above (`data-sar-side="above"`).
-- Horizontally, the full badge and the summary row (banner off) align the card's inline-start edge with their own. A compact badge aligns the inline-end edges: the card hangs back over the capsule art, away from the side where the store's popup opens. Either way the card stays one offset inside the viewport edges.
+- Horizontally, a full chip and the summary row (without a banner entry) align the card's inline-start edge with their own. A compact chip aligns the inline-end edges: the card hangs back over the capsule art, away from the side where the store's popup opens. Either way the card stays one offset inside the viewport edges.
 - `z-index: sar-z-hovercard` (2100), above the store's game hover popup (1526) and the full-viewport layer that React store pages (tag hubs, categories) mount for their capsule hover (2000). The card is also a manual popover, shown again on every open, so it enters the browser's top layer after any store popover that is open; the React hover layer is one, and no z-index reaches above it. The z-index covers engines without the Popover API.
 - While the card is open, the root element carries `data-sar-hovercard="open"`, and one page rule sets the store's game hover popup (`#global_hover`) to `visibility: hidden`. On a search row the badge sits inside the row's link, so without it both would open for one pointer. Closing the card, `pagehide` and stopping remove the attribute, and the store's popup shows again while the pointer is still on the row.
 - On React store pages (tag hubs, categories) the store's hover layer covers the capsule as soon as the pointer enters it and takes the pointer, so the pointer cannot rest on the compact badge there. Focus on the capsule link still opens the card. The layer has no stable selector (a hashed class and `popover="manual"`, which our card shares), so no rule hides it.
@@ -799,10 +865,10 @@ Built like the store's game hover popup, sampled on the home page on 2026-10-21:
 
 - Pointer: opens after 150ms at rest on a trigger. A pointer crossing a grid of capsules opens nothing. Moving to another trigger while it is open switches at once.
 - The card is hoverable: leaving the trigger starts a 100ms grace, long enough for the pointer to cross onto the card, which then stays open. Leaving both, or the window, closes it. Both delays are timers in `hover-card.ts`, not tokens.
-- Keyboard: opens at once when focus lands on the summary row (banner off) or on a store link that holds a badge (a search row or a capsule link). Moving focus elsewhere closes it.
+- Keyboard: opens at once when focus lands on the summary row (without a banner entry) or on a store link that holds a chip (a search row or a capsule link). Moving focus elsewhere closes it.
 - `Escape` closes it, and it stays closed until the pointer leaves the trigger or focus moves.
 - Any scroll outside the card closes a card the pointer opened; a fixed card would drift away from its trigger. A card focus opened follows its trigger instead, because focus scrolls a link into view: the one delegated scroll listener queues at most one move per frame, which reads only the trigger's box, and the card closes once the trigger leaves the viewport.
-- `[data-sar-badges="off"]` hides it, like every badge.
+- `[data-sar-badges-<kind>="off"]` on the root keeps a chip of that kind from opening it, like every badge switch.
 
 ### Accessibility
 
@@ -828,31 +894,60 @@ Every string the UI shows, as keys for `src/locales/en/messages.json`. Keys are 
 
 For every translator:
 
-- The product shows what developers reported. Say "report" or "reported"; never say a game "uses" AI.
-- The badge label shows on one line on rows and images and truncates past about 40% longer than English. Shorter is better.
-- The developer's notes, game names and service names are never part of a message; they are inserted as data.
+- Each tag has Steam's own line for its kind. Use the wording Steam shows in your language, as Steam writes it ("Uses Kernel Level Anti-Cheat"). Never say a game "uses AI", is "AI-free" or has "no AI" in your own words.
+- A chip's text shows on one line on rows and images and truncates past about 40% longer than English. Shorter is better.
+- The developer's text, the names Steam lists, game names and service names are never part of a message; they are inserted as data.
+
+### `kind_`
+
+| Key | English | Note |
+| --- | --- | --- |
+| `kind_ai_heading` | AI Generated Content Disclosure | Steam's heading of the block where a developer describes generative AI use. Titles the AI entry in the hover card, the banner and the settings, and begins the chip's accessible name. |
+| `kind_ai_chip` | AI | Short chip. A few characters. |
+| `kind_kernel_heading` | Uses Kernel Level Anti-Cheat | Steam's own line for a kernel-level anti-cheat. |
+| `kind_kernel_chip` | Kernel AC | Short chip. |
+| `kind_kernel_uninstall` | Requires manual removal after game uninstall | Steam's note when the anti-cheat stays after uninstall. |
+| `kind_kernel_boot` | Boot Protection - Requires both Secure Boot & TPM 2.0 | Steam's note when the game needs boot protection. Keep the hyphen. |
+| `kind_anticheat_heading` | Uses Anti-Cheat Software | Steam's own line for anti-cheat that is not kernel level. |
+| `kind_anticheat_chip` | Anti-Cheat | Short chip. |
+| `kind_drm_heading` | Incorporates 3rd-party DRM | Steam's own line. The DRM the developer named follows, untranslated. |
+| `kind_drm_chip` | DRM | Short chip. |
+| `kind_account_heading` | Requires 3rd-Party Account | Steam's own line. The account the developer named follows, untranslated. |
+| `kind_account_chip` | Account | Short chip. |
+| `kind_account_links` | (Supports Linking to Steam Account) | Steam's note when the account links to a Steam account. |
+| `kind_eula_heading` | Requires agreement to a 3rd-party EULA | Steam's own line. The agreement names follow, untranslated. |
+| `kind_eula_chip` | EULA | Short chip. Use the abbreviation Steam uses in your language. |
+| `kind_pvp_heading` | PvP | Title of the PvP entry. Use Steam's abbreviation. |
+| `kind_pvp_chip` | PvP | Short chip. |
+| `kind_pvp_category_pvp` | PvP | Steam's category name. |
+| `kind_pvp_category_online` | Online PvP | Steam's category name. |
+| `kind_pvp_category_lan` | LAN PvP | Steam's category name. |
+| `kind_pvp_category_split` | Shared/Split Screen PvP | Steam's category name. |
+| `kind_chip_name` | `$chip$`: `$heading$` | Accessible name of a chip: the chip text, then Steam's line. |
+| `kind_chip_more` | +`$count$` | Chip that stands for the kinds that do not fit. |
+| `kind_chip_more_name` | more tags | After the chip text, names the hidden chips for screen readers. |
 
 ### `badge_`
 
 | Key | English | Note |
 | --- | --- | --- |
-| `badge_label` | AI use reported | The one label: search and wishlist rows, game images, the summary row chip, and the hover card and banner headings. One line on rows and images; truncates past about 22 characters. Say that the use was reported; never say the game uses AI. |
-| `badge_card_source` | In the developer's own words: | Introduces the developer's text, which follows untranslated. |
-| `badge_card_service_label` | AI service named by the developer: | Precedes a product name inserted as data. |
-| `badge_card_more` | The full text is on the game's store page. | Shown when the panel cuts a long text short, never on the game's own page. |
+| `badge_card_declared` | Declared by the developer on the store page | Last line of the hover card. It says the developer, not this extension, made the declarations above. |
+| `badge_card_service_label` | AI service named by the developer: | Precedes a product name inserted as data. Used by the card and the banner. |
+| `badge_card_more` | The full text is on the game's store page. | Shown when the card cuts a long text short, never on the game's own page. |
 
 ### `banner_`
 
 | Key | English | Note |
 | --- | --- | --- |
 | `banner_source` | In the developer's own words: | Introduces the developer's text, which follows untranslated. |
+| `banner_region_label` | Declared by the developer | Screen reader name of the banner when it lists several kinds, or only notes. |
 | `banner_expand` | Show full report | Expands the collapsed text. |
 | `banner_collapse` | Show less | Collapses it again. |
-| `banner_service_label` | AI service named by the developer: | Precedes a product name inserted as data. |
-| `banner_ignore` | Ignore this game | The store has its own Ignore button; this one only stops badges and this notice for one game in this extension. |
-| `banner_ignored` | Game ignored | Replaces the notice after the action above. |
+| `banner_ignore` | Ignore this game | Stops every tag and the banner for one game, in this extension. The store has its own Ignore button. |
+| `banner_ignore_kind` | Ignore for this tag | On one entry: stops that tag for one game. The other tags stay. |
+| `banner_ignored` | Game ignored | Replaces the banner after "Ignore this game". |
+| `banner_ignored_kind` | Ignored for this tag: `$heading$` | Replaces one entry after "Ignore for this tag". `heading` is Steam's line for the kind. |
 | `banner_undo` | Undo | Reverses the action above. |
-| `banner_region_label` | AI use report | Screen reader name for the one-line note. |
 
 ### `notice_`
 
@@ -884,14 +979,14 @@ For every translator:
 | Key | English | Note |
 | --- | --- | --- |
 | `options_version` | Version `$version$` | Under the product name. |
-| `options_section_store` | On store pages | Section heading. |
-| `options_badges` | Badges on games that report AI use | Switch label. |
-| `options_badges_short` | Badges | The same switch in the popup. |
-| `options_badges_help` | Adds "`$label$`" to search and wishlist rows and to game images. | `label` is the badge label. |
-| `options_banner` | Banner on game pages | Switch label. |
-| `options_banner_help` | Shows the developer's report above the purchase box. | Help under the switch. |
-| `options_section_lists` | In lists | Section heading. |
-| `options_filter_label` | Games that report AI use | Label of a three-way choice. |
+| `options_kind_enabled` | Use this tag | Master switch of one tag. Its section is titled with Steam's line for the tag. |
+| `options_kind_enabled_help` | Off removes its badges, its entry in the banner and its list filter. | Help under the master switch. |
+| `options_badges` | Badge on games | Switch label of one tag's badge. |
+| `options_badges_short` | Badge | The same switch in the popup. |
+| `options_badges_help` | Adds "`$label$`" to search and wishlist rows and to game images. | `label` is the kind's chip text. |
+| `options_banner` | Entry in the banner on game pages | Switch label of one tag's entry. |
+| `options_banner_help` | Shows what the developer declared above the purchase box. | Help under the switch. |
+| `options_filter_label` | Games with this tag | Label of a three-way choice. |
 | `options_filter_off` | Show | Leave these games as they are. |
 | `options_filter_dim` | Dim | Fade these games. |
 | `options_filter_hide` | Hide | Remove these games from lists. |
@@ -904,8 +999,9 @@ For every translator:
 | `options_language_help` | Automatic follows the store page's language when a translation exists, and English otherwise. | Help under the picker. |
 | `options_section_allow` | Games you ignored | Section heading. |
 | `options_allow_since` | Since `$date$` | `date` is already formatted for the locale. |
+| `options_allow_scope_all` | All tags | Heading of the games ignored for every tag. The games ignored for one tag sit under Steam's line for it. |
 | `options_allow_restore` | Stop ignoring | Button next to a game. |
-| `options_allow_restore_label` | Stop ignoring `$name$` | Screen reader name of that button; `name` is untranslated. |
+| `options_allow_restore_label` | Stop ignoring `$name$` (`$scope$`) | Screen reader name of that button; `name` is untranslated and `scope` is the scope's name. |
 | `options_allow_empty` | None yet. Use "`$action$`" on a game page. | `action` is the "Ignore this game" label. |
 | `options_section_privacy` | Privacy | Section heading. |
 | `options_privacy_storage` | Settings and results stay in this browser. | Privacy bullet. |
