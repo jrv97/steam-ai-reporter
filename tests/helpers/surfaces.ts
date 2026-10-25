@@ -36,6 +36,26 @@ export function setBody(markup: string): void {
   document.body.replaceChildren(...nodes(markup));
 }
 
+/** A search row like the captured ones, for app `id`. */
+export function searchRow(id: number): HTMLElement {
+  const row = document.createElement("a");
+  row.className = "search_result_row";
+  row.href = `https://store.steampowered.com/app/${String(id)}/Game/`;
+  row.dataset["dsAppid"] = String(id);
+  row.append(
+    ...nodes(
+      `<div class="search_capsule"><img></div><div class="search_name">`
+        + `<span class="title"></span></div><div class="search_platforms"></div>`,
+    ),
+  );
+  return row;
+}
+
+/** A bfcache page transition; happy-dom's `PageTransitionEvent` is a plain `Event`. */
+export function pageTransition(type: "pagehide" | "pageshow"): Event {
+  return Object.assign(new Event(type), { persisted: true });
+}
+
 /** The element `selector` matches, failing the test when there is none. */
 export function the(selector: string, root: ParentNode = document): Element {
   const element = root.querySelector(selector);
