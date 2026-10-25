@@ -7,8 +7,7 @@ import {
   type KindVerdicts,
   UNKNOWN_KINDS,
 } from "../kinds/verdicts";
-import type { Http, HttpResult } from "../ports";
-import type { Detector } from "../ports";
+import type { Detector, Http, HttpResult } from "../ports";
 import { type AppId, UNKNOWN } from "../types";
 import { trimNotes } from "./notes";
 
