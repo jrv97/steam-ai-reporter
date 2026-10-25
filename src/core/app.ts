@@ -30,6 +30,7 @@ import { createAllowList } from "./settings/allow-list";
 import { DEFAULT_SETTINGS, parseSettings, type Settings } from "./settings/settings";
 import { createBadgeRenderer } from "./ui/badge";
 import { createCapsuleUi } from "./ui/capsules";
+import { createHiddenNotice } from "./ui/hidden-notice";
 import { createHoverCard } from "./ui/hover-card";
 import { applyKindSettings } from "./ui/kind-attributes";
 import { createHostKindsRenderer } from "./ui/list-filter";
@@ -112,10 +113,10 @@ const SHOWS_BANNER = (settings: KindSettings): boolean => settings.banner;
 
 /**
  * Starts Tag Kit for Steam on one store page: settings, locale and logger, cache upkeep, the
- * detector stack, the allow-list, the page stylesheet, the scanner with its renderers, and the app
- * page's banner. Settings changes from any tab re-render at once: badges, the list filter and the
- * tag colors are one root attribute or custom property each, the banner is drawn again from the
- * known verdicts.
+ * detector stack, the allow-list, the page stylesheet, the scanner with its renderers, the hidden
+ * results notice and the app page's banner. Settings changes from any tab re-render at once:
+ * badges, the list filter and the tag colors are one root attribute or custom property each, the
+ * banner is drawn again from the known verdicts.
  */
 export async function start(deps: AppDeps): Promise<App> {
   const { document: doc, store, clock } = deps;
@@ -161,8 +162,10 @@ export async function start(deps: AppDeps): Promise<App> {
     isBadged: (forKind) => effectiveSettings(settings.kinds[forKind]).badge,
   });
   const scanner = createScanner({ document: doc, renderer: capsules });
+  const notice = createHiddenNotice({ document: doc, i18n });
 
   scanner.start();
+  notice.start();
 
   let appPage: AppPage | undefined;
   const unsubscribe: Unsubscribe = deps.settings.subscribe((value) => {
@@ -198,6 +201,7 @@ export async function start(deps: AppDeps): Promise<App> {
     stop() {
       scanner.stop();
       capsules.stop();
+      notice.stop();
       card.stop();
       appPage?.stop();
       unsubscribe();

@@ -1,0 +1,3 @@
+kind: Added
+body: On search results, when a tag's list filter is set to Hide, one line above the results now says how many results Tag Kit hid there, with a button that shows them again, dimmed, on that page only, and hides them again. The count follows new results as you scroll and any change to your settings or ignored games, and the button never changes your settings; reloading the page hides the results again.
+time: 2026-10-25T17:15:00.000000+02:00

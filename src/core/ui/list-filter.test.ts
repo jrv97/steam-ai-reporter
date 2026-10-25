@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { clearRoot } from "../../../tests/helpers/dom";
 import { hostView, type HostViewOptions } from "../../../tests/helpers/host-view";
-import { strongestFilter } from "../../../tests/helpers/settings";
+import { applyFilters, strongestFilter } from "../../../tests/helpers/settings";
 import {
   disclosedKinds,
   disclosedVerdict,
@@ -12,6 +12,7 @@ import { KIND_IDS, type KindId } from "../kinds/id";
 import { LIST_FILTERS, type ListFilter } from "../kinds/kind-settings";
 import { perKind } from "../kinds/registry";
 import { UNKNOWN } from "../types";
+import { REVEAL_ATTRIBUTE } from "./hidden-notice";
 import { applyKindSettings } from "./kind-attributes";
 import { createHostKindsRenderer } from "./list-filter";
 import { adoptStyles, PAGE_CSS, TOKENS_CSS } from "./styles";
@@ -96,10 +97,7 @@ describe("createHostKindsRenderer", () => {
 describe("the list filter styles", () => {
   function filters(modes: Partial<Record<KindId, ListFilter>>): void {
     adoptStyles(document, TOKENS_CSS + PAGE_CSS);
-    applyKindSettings(
-      document.documentElement,
-      perKind((kind) => ({ ...kind.defaults, enabled: true, filter: modes[kind.id] ?? "off" })),
-    );
+    applyFilters(modes);
   }
 
   /** The style of a host that carries `carried`, drawn the way the renderer draws it. */
@@ -130,6 +128,13 @@ describe("the list filter styles", () => {
     expect([hidden(shown), dimmed(shown)]).toEqual([true, false]);
     expect([hidden(fixed), dimmed(fixed)]).toEqual([false, true]);
     expect(hidden(carrying(others(id)))).toBe(false);
+  });
+
+  // happy-dom matches no complex selector inside :is(); styles.test.ts checks the dim rule.
+  it.each(KIND_IDS)("%s hides nothing while the page shows hidden results", (id) => {
+    filters({ [id]: "hide" });
+    document.documentElement.setAttribute(REVEAL_ATTRIBUTE, String(true));
+    expect(hidden(carrying([id]))).toBe(false);
   });
 
   it("leaves hosts alone while every filter is off", () => {

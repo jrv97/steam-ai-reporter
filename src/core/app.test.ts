@@ -102,6 +102,20 @@ describe("start on the search page", () => {
     expect(other === null ? "" : getComputedStyle(other).display).not.toBe("none");
   });
 
+  it("counts the hidden row and shows it again without touching the settings", async () => {
+    const { settings, store } = await startOnSearch();
+    await writeSettings(settings, withKind(DEFAULT_SETTINGS, "ai", { filter: "hide" }));
+    const stored = await store.get([SETTINGS_KEY]);
+    const line = () => document.querySelector(".sar-list-notice-text")?.textContent;
+    await expect.poll(line).toBe(i18n.plural("notice_list_hidden", 1));
+
+    document.querySelector<HTMLButtonElement>(".sar-list-notice-button")?.click();
+    const disclosed = row(DISCLOSED);
+    expect(disclosed === null ? "" : getComputedStyle(disclosed).display).not.toBe("none");
+    expect(line()).toBe(i18n.plural("notice_list_revealed", 1));
+    expect(await store.get([SETTINGS_KEY])).toStrictEqual(stored);
+  });
+
   describe("with a game that discloses several kinds", () => {
     // ARC Raiders' item (AI notes, a kernel anti-cheat, a EULA and PvP) replaces the disclosed
     // row's item: the route keeps the last item of an ID.
