@@ -69,6 +69,8 @@ A host with several kinds takes the strongest filter without a rule for it: a hi
 
 ### What an app is related to
 
+The banner adds a closed `details` per game that lists its creators, one row per name and role (`BannerView.creators`), and a note with Undo for each creator ignored for a tag the banner lists (`creatorNotes`). `BannerActions` gains `ignoreCreator` and `restoreCreator`; the app page wires them to `lists.creators[role]` and tells the capsule UI to draw again. The settings form draws its three ignore cards (games, developers, publishers) from one `AllowSpec` each.
+
 `KindVerdicts` is one verdict per kind plus `Relations`, which no verdict reads and the ignore lists follow.
 
 - `parent`: the DLC's base game, a branded `AppId` read from GetItems `related_items.parent_appid` (`getitems.schema.ts`, droppable, so a missing or malformed value is no parent).

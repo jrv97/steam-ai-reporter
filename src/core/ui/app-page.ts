@@ -6,9 +6,11 @@ import { ALLOW_ALL, type AllowScope } from "../settings/allow-data";
 import {
   type Banner,
   type BannerActions,
+  type BannerCreator,
   type BannerOptions,
   type BannerView,
   createBanner,
+  type CreatorNote,
   placeBanner,
 } from "./banner";
 import type { CardTriggers } from "./hover-card";
@@ -25,6 +27,8 @@ export interface AppPageView {
    * silences gets no banner entry and no note, since its Undo would be on the other game's page.
    */
   readonly suppressed: Readonly<Record<KindId, boolean>>;
+  /** The game's developers and publishers, a row per name and role, and where each is ignored. */
+  readonly creators: readonly BannerCreator[];
   /** Per kind: its badge switch is on, which the tag section follows. */
   readonly badge: Readonly<Record<KindId, boolean>>;
   /**
@@ -47,18 +51,21 @@ export interface AppPageOptions extends BannerOptions {
 
 /**
  * What the banner shows: an entry for each disclosed kind the settings allow, a note for each
- * kind the game is ignored for, or one note for all kinds. A kind only the base game of a DLC is
- * ignored for shows nothing. Undefined when there is nothing.
+ * kind the game is ignored for, or one note for all kinds, and a note for each developer or
+ * publisher ignored for a kind the banner would list, or for all kinds. A kind only the base game
+ * of a DLC is ignored for shows nothing. Undefined when there is nothing.
  */
 function bannerView(view: AppPageView): BannerView | undefined {
   const shown: AnyDisclosed[] = [];
   const ignored: AllowScope[] = [];
+  const listed = new Set<KindId>();
   let silenced = false;
   for (const kind of KINDS) {
     const verdict = view.verdicts[kind.id];
     if (verdict.state !== "disclosed" || !view.banner[kind.id]) {
       continue;
     }
+    listed.add(kind.id);
     if (view.ignored[ALLOW_ALL]) {
       silenced = true;
     } else if (view.ignored[kind.id]) {
@@ -70,9 +77,14 @@ function bannerView(view: AppPageView): BannerView | undefined {
   if (silenced) {
     ignored.push(ALLOW_ALL);
   }
-  return shown.length + ignored.length === 0
+  const creatorNotes: CreatorNote[] = view.creators.flatMap((row) =>
+    row.ignored
+      .filter(({ scope }) => scope === ALLOW_ALL ? listed.size > 0 : listed.has(scope))
+      .map(({ scope, key }) => ({ role: row.role, creator: row.creator, key, scope }))
+  );
+  return shown.length + ignored.length + creatorNotes.length === 0
     ? undefined
-    : { shown, ignored };
+    : { shown, ignored, creators: view.creators, creatorNotes };
 }
 
 /**

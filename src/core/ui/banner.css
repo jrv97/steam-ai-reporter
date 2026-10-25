@@ -145,7 +145,8 @@
 }
 
 .sar-banner-action:focus-visible,
-.sar-banner-link:focus-visible {
+.sar-banner-link:focus-visible,
+.sar-banner-creators-toggle:focus-visible {
   outline: var(--sar-focus-width) solid var(--sar-focus-color);
   outline-offset: var(--sar-focus-offset);
 }
@@ -174,6 +175,49 @@
 .sar-banner-note .sar-banner-link {
   flex: 0 1 auto;
   max-inline-size: 50%;
+}
+
+/* The closed section that ignores a developer or publisher: a link-style summary, then a row for
+   each name and role with a link-style button for each tag and one for all tags */
+.sar-banner-creators {
+  margin-block-start: var(--sar-space-2);
+}
+
+.sar-banner-creators-toggle {
+  display: list-item;
+  min-block-size: 24px;
+  color: var(--sar-banner-link-color);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.sar-banner-creator-list {
+  margin: var(--sar-space-1) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sar-banner-creator {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sar-space-1) var(--sar-banner-gap);
+  padding-block: var(--sar-space-1);
+}
+
+.sar-banner-creator-label {
+  flex: 1 1 12em;
+  min-inline-size: 0;
+}
+
+.sar-banner-creator-role {
+  color: var(--sar-color-text-muted);
+}
+
+.sar-banner-creator-actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--sar-space-1) var(--sar-banner-gap);
 }
 
 .sar-banner-foot {

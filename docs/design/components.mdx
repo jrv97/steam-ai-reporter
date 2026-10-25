@@ -324,6 +324,7 @@ Preview: `previews/Banner.html`.
 
 - On the app page of a game with at least one disclosed kind that is enabled and has its banner switch on, once per page view. One banner holds every such kind, in registry order.
 - A kind the game is ignored for is not listed. It becomes a one-line note with Undo. A game ignored for all tags gets one such note and nothing else.
+- Below the entries sits a closed section, "Ignore a developer or publisher", with a row for each of the game's developers and publishers (see "Ignoring a developer or publisher" below). A tag a creator is ignored for becomes a note with Undo.
 - A kind the game's base game is ignored for (the game is a DLC) is not listed and gets no note, since its Undo would belong to the other game's page. A DLC page whose every kind is silenced this way has no banner. "Ignore this game" on a DLC page still ignores that DLC only.
 - Never as a modal or overlay, never over content, never stealing focus.
 
@@ -402,6 +403,14 @@ Modeled on the store's per-app notice bubbles (the DLC notice sits in the same s
 - "Ignore for this tag" adds the app ID (with the name and today's date) to that kind's list and swaps its entry for the note; focus moves to the note's Undo. "Ignore this game" adds the app ID to the list for all tags, and every entry gives way to one note. Neither calls the store's own ignore feature.
 - "Undo" removes the app ID from that list again and restores the entries. Focus returns to the ignore button of the same scope, or to "Ignore this game" after an undo for all tags.
 - Chips on the game's capsules follow the same lists, so they leave and return with the entries.
+
+#### Ignoring a developer or publisher
+
+A native `details` under the entries, closed on every load (decision 13) and open across a redraw, with `banner_creators_toggle` as its `summary`. It lists one row per name and role from `basic_info`: the name, as text, then the role in muted text (`banner_role_developer`, `banner_role_publisher`), then a link-style button for each tag the banner lists that the creator is not yet ignored for (`banner_ignore_creator_kind`, with the tag's short label) and `banner_ignore_creator_all`. A company that develops and publishes has a row for each role, and each row ignores that role only. A button is named by its text and the row's name and role. A creator without a clan ID is keyed by its name (`n:<name>`), one with an ID by `c:<id>`.
+
+A tag silenced through a creator is a note with Undo (`banner_ignored_creator_kind`), and a creator ignored for all tags is one note (`banner_ignored_creator`), after the game's own notes. A creator note shows only while the banner would list a tag it covers. After an ignore focus lands on the note's Undo, after an Undo on the button it brought back (the summary when none is left). The polite live region announces `notice_creator_stopped`, `notice_creator_stopped_kind`, `notice_creator_restored` or `notice_creator_restored_kind`. A failed save shows `error_creator_list_save` in the error line.
+
+The two lists are shown in the options page, the popup and the userscript dialog as "Developers you ignored" and "Publishers you ignored", after "Games you ignored", with the same groups and "Stop ignoring" button. The popup leaves out an empty card, and an empty card on the page reads `options_allow_empty` with the section's label as the action.
 
 #### Ignored through a base game
 

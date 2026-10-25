@@ -55,6 +55,7 @@ Nothing to adopt. valibot parses the answer, the disclosure is a native `details
 - Bad: a name is weaker than an ID. Two companies with the same name share one entry, and a renamed studio stops matching its old entry, so its tag shows again. The settings list shows the name, so the person can see what they ignored.
 - Bad: every cached app is fetched again once after the update (`CACHE_SCHEMA` 4).
 - Bad: ignoring a large publisher hides a lot. That is the request, and the list makes it undoable.
+- Bad: the bundles grow. `content.js` goes from 169,265 to 186,313 bytes, `options.js` from 118,688 to 126,147 and the userscript from 232,227 to 251,440. The userscript passed its 236 KiB budget, so the budgets rise to 192, 130 and 256 KiB with this measurement.
 - Neutral: if Valve drops `basic_info`, creator ignores stop matching and nothing else changes. The canary checks that a sample carries developer or publisher names.
 
 ## Pros and cons of the options

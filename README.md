@@ -30,7 +30,7 @@ Once I got that working in place, I thought "why not also flag all the other ann
 - Opens a card on hover or keyboard focus that lists every tag in Steam's words and ends with a line naming the developer as the source.
 - Shows a non-blocking banner on the app page that lists each tag the developer declared and quotes the developer's AI report verbatim.
 - Gives each tag its own switch, badge, banner entry and list filter (Show, Dim or Hide). Filters start on Show, and the strongest filter wins when a game carries several tags. The PvP tag starts switched off.
-- Lets you ignore a game you consider a false flag, for one tag or for all tags. Its DLC follow it.
+- Lets you ignore a game you consider a false flag, for one tag or for all tags. Its DLC follow it. You can also ignore a developer or a publisher, apart by role, from the banner, and undo it in the settings.
 
 Each tag follows Steam's own words:
 

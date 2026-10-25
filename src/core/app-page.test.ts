@@ -3,6 +3,7 @@ import * as v from "valibot";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import mixedStates from "../../tests/fixtures/getitems/mixed-states.json";
 import { APP_PAGES } from "../../tests/helpers/app-page";
+import { basicInfo } from "../../tests/helpers/creators";
 import { clearRoot } from "../../tests/helpers/dom";
 import { fakeHttp, type Route } from "../../tests/helpers/fake-http";
 import { fixedClock } from "../../tests/helpers/fixed-clock";
@@ -12,12 +13,13 @@ import { memoryStore } from "../../tests/helpers/memory-store";
 import { withKind, writeSettings } from "../../tests/helpers/settings";
 import { loadPage } from "../../tests/helpers/surfaces";
 import { type App, start } from "./app";
+import type { CreatorRole } from "./creator";
 import { GETITEMS_URL } from "./detect/getitems";
 import type { JsonValue } from "./json";
 import type { Http } from "./ports";
 import { DEFAULT_SETTINGS, encodeSettings } from "./settings/settings";
 import { createSettingsSource } from "./settings/settings-source";
-import { ALLOW_KEY, SETTINGS_KEY } from "./storage-keys";
+import { ALLOW_KEY, CREATOR_ALLOW_KEYS, SETTINGS_KEY } from "./storage-keys";
 import { adoptPageStyles } from "./ui/styles";
 
 const i18n = englishI18n();
@@ -35,6 +37,8 @@ const AllowSchema = v.object({
   all: v.record(v.string(), v.unknown()),
   ai: v.record(v.string(), v.unknown()),
 });
+
+const CreatorAllowSchema = v.optional(v.record(v.string(), v.record(v.string(), v.unknown())), {});
 
 const banner = () => document.getElementById("sar-banner")?.shadowRoot ?? null;
 const control = (selector: string) => banner()?.querySelector<HTMLElement>(selector);
@@ -79,7 +83,13 @@ async function startOnAiPage(options: StartOptions = {}) {
     addPageStyles: adoptPageStyles,
   });
   const stored = async () => v.parse(AllowSchema, (await store.get([ALLOW_KEY])).get(ALLOW_KEY));
-  return { http: { calls: requested }, settings, stored, release };
+  /** The keys of a role's ignore list in a scope; none while the list was never written. */
+  const storedCreators = async (role: CreatorRole, scope: string) => {
+    const key = CREATOR_ALLOW_KEYS[role];
+    const lists = v.parse(CreatorAllowSchema, (await store.get([key])).get(key));
+    return Object.keys(lists[scope] ?? {});
+  };
+  return { http: { calls: requested }, settings, stored, storedCreators, release };
 }
 
 describe("start on an English app page", () => {
@@ -160,6 +170,71 @@ describe("start on an English app page", () => {
     );
     expect(Object.keys((await stored()).all)).toEqual(["5072580"]);
     expect(Object.keys((await stored()).ai)).toEqual([]);
+  });
+
+  describe("with a developer and a publisher", () => {
+    // The open page's item names Dev Studio (clan 7) and Big Publisher (no clan ID).
+    const studio = {
+      ...itemAs(mixedStates, 5072580, 5072580),
+      ...basicInfo({ developers: [["Dev Studio", 7]], publishers: ["Big Publisher"] }),
+    };
+    const rows = () => [...(banner()?.querySelectorAll(".sar-banner-creator") ?? [])];
+    const ignoreButton = (row: number, scope: string) =>
+      rows()[row]?.querySelector<HTMLElement>(`button[data-sar-scope="${scope}"]`);
+
+    it("lists them once Steam's data arrives, and not before", async () => {
+      const { release } = await startOnAiPage({ route: getItemsRoute([studio]), held: true });
+      expect(banner()?.querySelector("details")).toBeNull();
+      release();
+      await expect.poll(() => rows().length).toBe(2);
+      expect(rows().map((row) => row.querySelector(".sar-banner-creator-name")?.textContent))
+        .toEqual(["Dev Studio", "Big Publisher"]);
+    });
+
+    it("ignores the developer for AI by clan ID and brings it back with Undo", async () => {
+      const { storedCreators } = await startOnAiPage({ route: getItemsRoute([studio]) });
+      await expect.poll(() => rows().length).toBe(2);
+
+      ignoreButton(0, "ai")?.click();
+      await expect.poll(() => control('[data-sar-action="undo-creator"]')).not.toBeNull();
+      expect(await storedCreators("developer", "ai")).toEqual(["c:7"]);
+      expect(await storedCreators("publisher", "ai")).toEqual([]);
+      expect(headings()).toEqual([]);
+      expect(control(".sar-banner-ignored-text")?.textContent).toBe(
+        i18n.t("banner_ignored_creator_kind", {
+          name: "Dev Studio",
+          role: i18n.t("banner_role_developer"),
+          heading: i18n.t("kind_ai_heading"),
+        }),
+      );
+
+      control('[data-sar-action="undo-creator"]')?.click();
+      await expect.poll(() => headings()).toEqual([i18n.t("kind_ai_heading")]);
+      expect(await storedCreators("developer", "ai")).toEqual([]);
+    });
+
+    it("ignores the publisher for all tags by name when Steam sends no clan ID", async () => {
+      const { storedCreators } = await startOnAiPage({ route: getItemsRoute([studio]) });
+      await expect.poll(() => rows().length).toBe(2);
+
+      ignoreButton(1, "all")?.click();
+      await expect.poll(() => control('[data-sar-action="undo-creator"]')).not.toBeNull();
+      expect(await storedCreators("publisher", "all")).toEqual(["n:Big Publisher"]);
+      expect(await storedCreators("developer", "all")).toEqual([]);
+    });
+
+    it("applies a stored developer ignore at once, with its note and Undo", async () => {
+      const initial = new Map<string, JsonValue>([
+        [CREATOR_ALLOW_KEYS.developer, {
+          all: {},
+          ai: { "c:7": { name: "Dev Studio", added: 0 } },
+        }],
+      ]);
+      await startOnAiPage({ route: getItemsRoute([studio]), initial });
+      await expect.poll(() => control('[data-sar-action="undo-creator"]')).not.toBeNull();
+      expect(headings()).toEqual([]);
+      expect(document.querySelector(".sar-tag-section")).toBeNull();
+    });
   });
 
   describe("on the page of a DLC", () => {

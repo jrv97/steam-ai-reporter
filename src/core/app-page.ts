@@ -1,5 +1,6 @@
+import { type Creator, CREATOR_ROLES, type CreatorKey, type CreatorRole } from "./creator";
 import type { SteamLanguage } from "./i18n/locale";
-import { type Ignored, isIgnored } from "./ignored";
+import { type Ignored, type IgnoreLists, isIgnored } from "./ignored";
 import type { KindId } from "./kinds/id";
 import { effectiveSettings } from "./kinds/kind-settings";
 import { KINDS, perKind } from "./kinds/registry";
@@ -12,11 +13,11 @@ import {
 } from "./kinds/verdicts";
 import type { Logger } from "./log";
 import type { Detector, MessageCatalog } from "./ports";
-import { perScope } from "./settings/allow-data";
-import type { AllowList } from "./settings/allow-list";
+import { ALLOW_SCOPES, type AllowScope, perScope } from "./settings/allow-data";
 import type { Settings } from "./settings/settings";
 import type { AppId } from "./types";
 import { type AppPageView, createAppPageUi } from "./ui/app-page";
+import type { BannerCreator } from "./ui/banner";
 import type { CardTriggers } from "./ui/hover-card";
 
 /** The store app page name element, the fallback when the verdict carries no name. */
@@ -121,10 +122,14 @@ export interface AppPageDeps {
   readonly live: KindVerdicts | undefined;
   /** What the user ignored, kept current by the banner's buttons. */
   readonly ignored: Ignored;
-  readonly allowList: AllowList;
+  /** The stored lists behind `ignored`. */
+  readonly lists: IgnoreLists;
   readonly settings: () => Settings;
-  /** Called after the banner ignores or restores the game, so the capsules draw again. */
-  readonly onAllowChange: (id: AppId) => void;
+  /**
+   * Called after the banner ignores or restores something, so the capsules draw again: the
+   * game's ID after a change to the game, none after a change to a developer or publisher.
+   */
+  readonly onAllowChange: (id?: AppId) => void;
   readonly card: CardTriggers;
   readonly logger: Pick<Logger, "debug" | "error">;
 }
@@ -152,10 +157,25 @@ export function startAppPage(
   let known: KindVerdicts = live ?? UNKNOWN_KINDS.missing;
   let stopped = false;
 
+  /** The game's developers and publishers, with the scopes each is ignored in for its role. */
+  function creatorRows(): readonly BannerCreator[] {
+    return CREATOR_ROLES.flatMap((role) =>
+      (known.creators?.[role] ?? []).map((creator) => ({
+        role,
+        creator,
+        ignored: ALLOW_SCOPES.flatMap((scope) => {
+          const key = creator.keys.find((each) => deps.ignored.creators[role][scope].has(each));
+          return key === undefined ? [] : [{ scope, key }];
+        }),
+      }))
+    );
+  }
+
   function view(): AppPageView {
     const { kinds } = deps.settings();
     return {
       verdicts: known,
+      creators: creatorRows(),
       ignored: perScope((scope) => deps.ignored.games[scope].has(id)),
       suppressed: perKind((kind) => isIgnored(deps.ignored, id, kind.id, known)),
       badge: perKind((kind) => effectiveSettings(kinds[kind.id]).badge),
@@ -165,15 +185,27 @@ export function startAppPage(
 
   const ui = createAppPageUi(doc, i18n, {
     async ignore(scope) {
-      await deps.allowList.add(scope, id, appName(doc, known, id));
+      await deps.lists.games.add(scope, id, appName(doc, known, id));
       deps.ignored.games[scope].add(id);
       deps.onAllowChange(id);
       render();
     },
     async restore(scope) {
-      await deps.allowList.remove(scope, id);
+      await deps.lists.games.remove(scope, id);
       deps.ignored.games[scope].delete(id);
       deps.onAllowChange(id);
+      render();
+    },
+    async ignoreCreator(role: CreatorRole, creator: Creator, scope: AllowScope) {
+      await deps.lists.creators[role].add(scope, creator.key, creator.name);
+      deps.ignored.creators[role][scope].add(creator.key);
+      deps.onAllowChange();
+      render();
+    },
+    async restoreCreator(role: CreatorRole, key: CreatorKey, scope: AllowScope) {
+      await deps.lists.creators[role].remove(scope, key);
+      deps.ignored.creators[role][scope].delete(key);
+      deps.onAllowChange();
       render();
     },
   }, { card: deps.card });

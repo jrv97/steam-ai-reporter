@@ -183,10 +183,10 @@ export async function start(deps: AppDeps): Promise<App> {
       detectors,
       live,
       ignored,
-      allowList: lists.games,
+      lists,
       settings: () => settings,
       onAllowChange: (id) => {
-        capsules.refresh(new Set([id]));
+        capsules.refresh(id === undefined ? undefined : new Set([id]));
       },
       card,
       logger,

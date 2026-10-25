@@ -231,6 +231,70 @@
       }
     }
   },
+  "banner_ignored_creator": {
+    "message": "Games by $name$ ($role$) ignored",
+    "description": "Note on the notice, with an Undo button, once a developer or publisher is ignored for every tag. $name$ is the name Steam shows, untranslated, and $role$ is developer or publisher.",
+    "placeholders": {
+      "name": {
+        "content": "$1",
+        "example": "Valve"
+      },
+      "role": {
+        "content": "$2",
+        "example": "Developer"
+      }
+    }
+  },
+  "banner_ignored_creator_kind": {
+    "message": "Ignored for games by $name$ ($role$): $heading$",
+    "description": "Note on the notice, with an Undo button, once a developer or publisher is ignored for one tag. $name$ is the name Steam shows, untranslated, $role$ is developer or publisher and $heading$ is Steam's line for the tag.",
+    "placeholders": {
+      "name": {
+        "content": "$1",
+        "example": "Valve"
+      },
+      "role": {
+        "content": "$2",
+        "example": "Developer"
+      },
+      "heading": {
+        "content": "$3",
+        "example": "Uses Kernel Level Anti-Cheat"
+      }
+    }
+  },
+  "notice_creator_stopped": {
+    "message": "Games by $name$ ($role$) will be ignored",
+    "description": "Screen reader announcement after ignoring a developer or publisher for every tag. $name$ is the name Steam shows, untranslated, and $role$ is developer or publisher.",
+    "placeholders": {
+      "name": {
+        "content": "$1",
+        "example": "Valve"
+      },
+      "role": {
+        "content": "$2",
+        "example": "Developer"
+      }
+    }
+  },
+  "notice_creator_stopped_kind": {
+    "message": "Games by $name$ ($role$) will be ignored for $heading$",
+    "description": "Screen reader announcement after ignoring a developer or publisher for one tag. $name$ is the name Steam shows, untranslated, $role$ is developer or publisher and $heading$ is Steam's line for the tag.",
+    "placeholders": {
+      "name": {
+        "content": "$1",
+        "example": "Valve"
+      },
+      "role": {
+        "content": "$2",
+        "example": "Developer"
+      },
+      "heading": {
+        "content": "$3",
+        "example": "Uses Kernel Level Anti-Cheat"
+      }
+    }
+  },
   "banner_undo": {
     "message": "Undo",
     "description": "Reverses \"Ignore this game\"."
@@ -498,6 +562,20 @@
   "banner_creators_toggle": {
     "message": "Ignore a developer or publisher",
     "description": "Label of the closed section at the foot of the notice that lists the game's developers and publishers, each with buttons that ignore it in this extension only. The settings name it when the list of ignored developers or publishers is empty."
+  },
+  "banner_ignore_creator_kind": {
+    "message": "Ignore $chip$",
+    "description": "Button in the closed section of the notice that ignores one developer or publisher for one tag, in this extension only. $chip$ is the tag's short label. A screen reader adds the name and role of the developer or publisher after it.",
+    "placeholders": {
+      "chip": {
+        "content": "$1",
+        "example": "KLAC"
+      }
+    }
+  },
+  "banner_ignore_creator_all": {
+    "message": "Ignore all tags",
+    "description": "Button in the closed section of the notice that ignores one developer or publisher for every tag, in this extension only. A screen reader adds the name and role of the developer or publisher after it."
   },
   "options_section_privacy": {
     "message": "Privacy",
