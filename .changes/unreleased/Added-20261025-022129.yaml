@@ -1,0 +1,3 @@
+kind: Added
+body: Each tag's settings section can be closed and opened again, in the toolbar popup, on the settings page and in the userscript dialog. A closed section still shows the tag's name and whether the tag is on or off, and the extension remembers which sections you closed.
+time: 2026-10-25T02:21:29.0000000+00:00

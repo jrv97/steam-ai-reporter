@@ -1,8 +1,8 @@
 import { type AppId, toAppId } from "./types";
 
-// Settings and the ignore list use layout `v2`, with one entry per tag kind. The verdict cache,
-// its meta record and the breaker keep `v1`. `CACHE_SCHEMA` versions the cache; the breaker owns
-// `v1:breaker`.
+// Settings and the ignore list use layout `v2`, with one entry per tag kind, and so does the small
+// record of which settings sections are open. The verdict cache, its meta record and the breaker
+// keep `v1`. `CACHE_SCHEMA` versions the cache; the breaker owns `v1:breaker`.
 
 /**
  * Bump to discard every cached verdict on the next start (and only verdicts). Version 2 stores
@@ -14,6 +14,8 @@ const VERDICT_PREFIX = "v1:a:";
 
 export const SETTINGS_KEY = "v2:settings";
 export const ALLOW_KEY = "v2:allow";
+/** Which settings sections the user closed or opened again; interface state, not a setting. */
+export const SECTION_STATE_KEY = "v2:ui";
 export const META_KEY = "v1:meta";
 
 /** The layout `v1` keys of settings and the ignore list; only the migration reads them. */

@@ -4,6 +4,7 @@ import { SHIPPED_CATALOGS } from "../../core/i18n/shipped";
 import { type ConsoleSink, createLogger } from "../../core/log";
 import { createAllowList } from "../../core/settings/allow-list";
 import { createSettingsSource } from "../../core/settings/settings-source";
+import { createSectionState } from "../../core/ui/section-state";
 import { adoptPageStyles, PAGE_CSS, TOKENS_CSS } from "../../core/ui/styles";
 import { createGmStore, createRemoteSettings, type GmStorage, type WatchValue } from "./gm-storage";
 import { currentI18n } from "./locale";
@@ -58,6 +59,7 @@ export async function startUserscript(env: UserscriptEnv): Promise<App | undefin
         catalogs: SHIPPED_CATALOGS,
         settings,
         allowList: createAllowList(store, clock),
+        sectionState: createSectionState(store),
         live: remote !== undefined,
       });
     })().catch((problem: unknown) => {

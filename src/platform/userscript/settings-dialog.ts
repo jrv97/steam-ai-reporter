@@ -2,6 +2,7 @@ import type { Catalogs } from "../../core/i18n/catalog";
 import type { I18n } from "../../core/i18n/t";
 import type { AllowList } from "../../core/settings/allow-list";
 import type { StoredSettings } from "../../core/settings/settings-source";
+import type { SectionState } from "../../core/ui/section-state";
 import { mountSettingsForm } from "../../core/ui/settings-form";
 import { adoptStyles, DIALOG_CSS } from "../../core/ui/styles";
 
@@ -11,6 +12,7 @@ export interface SettingsDialogDeps {
   readonly catalogs: Catalogs;
   readonly settings: StoredSettings;
   readonly allowList: AllowList;
+  readonly sectionState: SectionState;
   /** False when the manager cannot tell other tabs about a change, so it applies on reload. */
   readonly live: boolean;
 }
@@ -70,6 +72,7 @@ export async function openSettingsDialog(deps: SettingsDialogDeps): Promise<void
     i18n,
     settings: deps.settings,
     allowList: deps.allowList,
+    sectionState: deps.sectionState,
     context: "popup",
     locales: Object.keys(deps.catalogs),
   });
