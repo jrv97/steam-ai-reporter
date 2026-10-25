@@ -103,7 +103,7 @@ The state is per kind: a game can be disclosed for one kind and not disclosed or
 | Not disclosed | nothing | nothing | nothing | nothing |
 | Unknown | nothing | nothing | nothing | nothing |
 
-Each kind's settings (`kinds.<id>`: `enabled`, `badge`, `banner` and `filter`) gate its columns. `enabled` off removes everything for the kind, `badge` off removes its chips and, for AI, the summary row, `banner` off removes its entry and its note, and `filter` set to `off` leaves lists alone. All are on by default and the filter is `off`. The ignore list wins over every setting.
+Each kind's settings (`kinds.<id>`: `enabled`, `badge`, `banner` and `filter`) gate its columns. `enabled` off removes everything for the kind, `badge` off removes its chips and, for AI, the summary row, `banner` off removes its entry and its note, and `filter` set to `off` leaves lists alone. All are on by default, except that PvP starts with `enabled` off, and the filter is `off`. The ignore list wins over every setting.
 
 ## Shared rules
 
@@ -111,7 +111,7 @@ Each kind's settings (`kinds.<id>`: `enabled`, `badge`, `banner` and `filter`) g
 
 - Every injected element carries a class starting with `sar-`; every attribute we set on store nodes starts with `data-sar-`. The scanner skips both.
 - Hosts get `data-sar-appid`, `data-sar-kinds` and, where the placement says hiding would break the list, `data-sar-hideable="false"`. `data-sar-kinds` holds the ids of the kinds that are disclosed and not ignored for the game, in registry order and separated by spaces, and is absent when there are none. Rules match one id with `~=`. The renderers write them when the scanner marks the host and again when a verdict, the ignore list or a setting changes, and only when the value changed.
-- Settings live as attributes on `document.documentElement`, one pair per kind: `data-sar-filter-<kind>` (`off`, `dim`, `hide`) and `data-sar-badges-<kind>` (`on`, `off`). A kind that is switched off reads `off` in both. Chips and the summary row carry `data-sar-kind` with the id of their kind, so one rule per kind switches its chips off. The list filter and the live badge switch are pure CSS on top of them (sections 1, 2, 3 and 5).
+- List filters live as attributes on `document.documentElement`, one per kind: `data-sar-filter-<kind>` (`off`, `dim`, `hide`). A kind that is switched off reads `off`. Chips and the summary row carry `data-sar-kind` with the id of their kind. A kind's badge switch is not an attribute: the chips are drawn again from the settings, which also keeps the "+N" count right. The list filter is pure CSS on top of the attributes (section 5).
 - Never move, wrap or restyle store nodes. The store-node changes besides the attributes above are `data-sar-anchor` on an image container that computes to `position: static`, which a CSS rule turns into `position: relative` (section 2), and a transient `aria-describedby` on a focused store link while the hover card is open (section 15).
 - DOM reads (image sizes, computed position) are batched before writes in one `requestAnimationFrame` per scan.
 - Listeners are delegated: one per root, never one per node. The summary row's jump to the banner is one such listener (section 3); the hover card's are on the document (section 15).
@@ -179,7 +179,7 @@ Built like the store's own tag chips, in our hue.
 ### States
 
 - Default only; its look does not change on hover. The row's own hover shows through the tint and the label still clears 5.21:1. Resting on it opens the hover card.
-- `[data-sar-badges-<kind>="off"]` on the root hides that kind's chips in one style pass.
+- A kind whose badge switch is off draws no chip; the chips are drawn again when the setting changes.
 - Inside a dimmed host they dim with the host.
 
 ### Accessibility
@@ -258,7 +258,7 @@ Preview: `previews/SummaryRow.html`.
 
 ### When to use
 
-- On the app page of a game whose AI kind is disclosed and not ignored, while that kind's badge switch is on (`data-sar-badges-ai`). Games that are ignored for AI, not disclosed or unknown get nothing.
+- On the app page of a game whose AI kind is disclosed and not ignored, while that kind's badge switch is on. Games that are ignored for AI, not disclosed or unknown get nothing.
 - Once per page, in the summary box at the top right, so the chip shows above the fold. The banner, lower down by the purchase box, still carries the developer's words.
 
 ### What the consumer provides
@@ -326,9 +326,6 @@ Preview: `previews/Banner.html`.
                 data-sar-action="ignore" data-sar-scope="drm"
                 aria-labelledby="sar-banner-drm-ignore sar-banner-drm-title">t('banner_ignore_kind')</button>
       </div>
-      <p class="sar-banner-detail">text the developer typed</p>
-      <p class="sar-banner-detail"><a class="sar-banner-anchor" href="https://store.steampowered.com/eula/..."
-         target="_blank" rel="noopener noreferrer">agreement name</a></p>
     </div>
     <div class="sar-banner-entry">
       <!-- AI: its heading, then the developer's own words -->
@@ -353,21 +350,10 @@ Preview: `previews/Banner.html`.
 </div>
 ```
 
-What each kind puts under its heading:
+The banner is a summary, one line per kind: Steam's line and its ignore button. Steam's own boxes on the page and the hover card already show each kind's short lines, so the banner does not repeat them. Only the AI kind adds the developer's own words: "In the developer's own words:", the notes (collapsed at 3 lines) and the AI service the developer named, when there is one.
 
-| Kind | Lines |
-| --- | --- |
-| AI | "In the developer's own words:", the notes (collapsed at 3 lines), then the AI service the developer named, when there is one |
-| Kernel-level anti-cheat | The anti-cheat's name (Steam's vendor name, else the custom name from the game's page), Steam's note when it needs manual removal after uninstall, and the boot protection line (the page's own line, else Steam's) |
-| Anti-cheat | Its name, the same way |
-| 3rd-party DRM | The developer's DRM text, then the activation limit when there is one (the page's line, else the one Steam sent) |
-| 3rd-party account | The developer's account text, and Steam's note when the account links to a Steam account |
-| 3rd-party EULA | The name of every agreement, as a link to the store's EULA page when the data layer validated one |
-| PvP | Steam's names of the categories that matched |
-
-- Developer text and the names Steam lists are data: `textContent`, never translated, summarized or highlighted. The notes take `white-space: pre-line`.
-- A EULA link exists only for a `https://store.steampowered.com/eula/...` address (the data layer collapses Steam's doubled slash). It opens in a new tab with `rel="noopener noreferrer"`. Any other address leaves the name as plain text.
-- The page's own details (the custom anti-cheat name, the boot protection line, the DRM activation limit) are read from the page the visitor is on by `parsePageDetails`, with structural selectors only: no request, and never the words of a notice. A page without them leaves the entries as GetItems gave them.
+- Developer text is data: `textContent`, never translated, summarized or highlighted. The notes take `white-space: pre-line`.
+- The banner draws no link, so a EULA appears by its heading only; the agreement names are in the hover card.
 - The host carries `id="sar-banner"`, the target of the summary row's link, and the `aside` carries `tabindex="-1"` so focus can follow that jump.
 - A shadow root on `div.sar-banner-host`, styles attached with `adoptedStyleSheets`. Tokens inherit from `:root`, and the page font works inside because `@font-face` is document-wide.
 
@@ -482,7 +468,7 @@ Preview: `previews/OptionsPage.html`.
 ### Sections, in order
 
 1. Header.
-2. One section for each tag kind, in registry order, titled with Steam's line for the kind (`kind_<id>_heading`). It holds the master switch `options_kind_enabled` (`kinds.<id>.enabled`), then the switches `options_badges` (popup `options_badges_short`; `badge`) and `options_banner` (`banner`), then a stacked SegmentedControl with Show, Dim and Hide (`filter`; values `off`, `dim`, `hide`; label `options_filter_label`; the help follows the selection). Each switch has help. While the master switch is off, the other three are hidden and their stored values stay.
+2. One section for each tag kind, in registry order (PvP starts switched off, the other kinds on), titled with Steam's line for the kind (`kind_<id>_heading`). It holds the master switch `options_kind_enabled` (`kinds.<id>.enabled`), then the switches `options_badges` (popup `options_badges_short`; `badge`) and `options_banner` (`banner`), then a stacked SegmentedControl with Show, Dim and Hide (`filter`; values `off`, `dim`, `hide`; label `options_filter_label`; the help follows the selection). Each switch has help. While the master switch is off, the other three are hidden and their stored values stay.
 3. Language (page only): a stacked Select, `Automatic` first, then each shipped locale named in its own language through `Intl.DisplayNames`.
 4. Games you ignored: the AllowList, in groups. All tags comes first, then each kind in registry order, each group titled with its scope's name and listing its games newest first. Left out of the popup while it is empty.
 5. Backup (page only): the Backup card, to download a file and restore from one.
@@ -835,7 +821,7 @@ Preview: `previews/HoverCard.html`.
 - One card per page, created on first use and appended to `body`. Every trigger reuses it; opening for another game refills it. One entry for each disclosed kind of the host, in registry order.
 - Triggers register with the card when they render: a `WeakMap` from trigger element to the host's disclosed verdicts, plus whether the trigger sits on the game's own page (the summary row). Nothing is set on the trigger, and no listener is added to it.
 - Opening and closing run on delegated listeners on the document: `pointerover`, `pointerout`, `focusin`, `focusout`, `keydown` and `scroll`. Their number does not depend on how many chips the page holds. One `pagehide` listener on the window closes the card.
-- The lines under each heading come from `kindDetails`, the function the banner uses, without the page's own details and without links. The AI notes go in through `textContent` with `\r\n` turned into `\n`, never translated or cut in the DOM. The service line appears only when GetItems named one (`ai_generation_service`), the name inserted as data.
+- The lines under each heading come from `kindDetails`, the function the banner uses, without links. The AI notes go in through `textContent` with `\r\n` turned into `\n`, never translated or cut in the DOM. The service line appears only when GetItems named one (`ai_generation_service`), the name inserted as data.
 - A last line, `badge_card_declared`, says the developer, not this extension, made the declarations above.
 - No request: the card shows the verdicts the chips were drawn from.
 
@@ -868,7 +854,6 @@ Built like the store's game hover popup, sampled on the home page on 2026-10-21:
 - Keyboard: opens at once when focus lands on the summary row (without a banner entry) or on a store link that holds a chip (a search row or a capsule link). Moving focus elsewhere closes it.
 - `Escape` closes it, and it stays closed until the pointer leaves the trigger or focus moves.
 - Any scroll outside the card closes a card the pointer opened; a fixed card would drift away from its trigger. A card focus opened follows its trigger instead, because focus scrolls a link into view: the one delegated scroll listener queues at most one move per frame, which reads only the trigger's box, and the card closes once the trigger leaves the viewport.
-- `[data-sar-badges-<kind>="off"]` on the root keeps a chip of that kind from opening it, like every badge switch.
 
 ### Accessibility
 
