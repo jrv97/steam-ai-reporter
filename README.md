@@ -11,7 +11,7 @@
 
 A browser extension for Chromium-based browsers and Firefox, and a userscript (Tampermonkey and Violentmonkey) that tag items on the Steam store with what Valve's own data says about them: AI Generated Content Disclosure, Anti-Cheat (Kernel Level flagged separately), 3rd-party DRM, 3rd-Party Account, 3rd-party EULA and PvP (friend request).
 
-> Status: [releases](https://github.com/jrv97/steam-ai-reporter/releases) are on GitHub. The store links below are placeholders.
+> Status: [releases](https://github.com/jrv97/steam-ai-reporter/releases) are on GitHub. The Firefox link below is a placeholder.
 
 The extension only reads what Steam's store data and developers report there, and sends no reports anywhere.
 
@@ -82,9 +82,16 @@ The toolbar popup holds the same per-tag switches and list filters and the games
 
 ## Install
 
-- Chrome Web Store: link to follow.
+- [Chrome Web Store](https://chromewebstore.google.com/detail/ai-reporter-for-steam/jpbjlfnkdmmdccfiocblhkjdejaihnkp).
 - Firefox Add-ons (AMO): link to follow.
 - Userscript: open [steam-ai-reporter.user.js](https://github.com/jrv97/steam-ai-reporter/releases/latest/download/steam-ai-reporter.user.js) from the latest release in Tampermonkey or Violentmonkey.
+
+## Feedback
+
+- [Report a bug](https://github.com/jrv97/steam-ai-reporter/issues/new?template=bug_report.yml)
+- [Request a feature](https://github.com/jrv97/steam-ai-reporter/issues/new?template=feature_request.yml)
+- [Request a language or fix a translation](https://github.com/jrv97/steam-ai-reporter/issues/new?template=translation.yml)
+- [Send quick anonymous feedback](https://forms.gle/Fo652zzyFWUQn2qK9)
 
 ## Privacy
 
