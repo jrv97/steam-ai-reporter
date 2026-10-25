@@ -1,0 +1,85 @@
+---
+status: accepted
+date: 2026-10-25
+decision-makers: Jorge Rodriguez de la Vega
+---
+
+# Ignore games by developer or publisher, keyed on the clan ID or else the name
+
+## Context and problem statement
+
+The ignore list is per game. A person who does not want the AI tag on any game from one studio has to ignore each game, and every new release brings it back. Users of the prior-art extensions ask for the same thing (AI warning for Steam issue 12, Augmented Steam issue 1822). The same studio often develops one game and publishes another, and the two roles are different decisions: avoiding a publisher's catalog says nothing about the studios it signs.
+
+[ADR 0001](0001-detect-disclosure-via-getitems.mdx) pins the request to `data_request.include_extra_details`. That answer has no developer or publisher. What should identify a creator, and where does the extension learn it?
+
+## Decision drivers
+
+- No extra request, no new host, no new permission (rules 1, 3 and 13).
+- An identity that survives renames and does not merge two companies.
+- Works on every surface that already shows a tag, including search rows and wishlist, not only the game's own page.
+- Keeps rule 4: ignoring is the person's choice, never a verdict.
+- Small code: the existing ignore list, its settings card and its predicate are reused.
+
+## Considered options
+
+1. `include_basic_info` in the same GetItems request; key on `creator_clan_account_id` when Steam sends one, else on the exact name (chosen).
+2. The same request, keyed on the name only.
+3. The same request, keyed on the clan ID only.
+4. Read creator IDs from the page (`data-ds-crtrids` on search rows, developer links on app pages).
+5. One list for both roles.
+
+## Decision outcome
+
+Chosen option 1, with one list per role.
+
+- Request: `getItemsUrl` adds `include_basic_info: true`. Each item then carries `basic_info.developers[]` and `basic_info.publishers[]`, entries of `{ name, creator_clan_account_id? }`. One request per batch of up to 50 IDs stays. `planBatches` measures its overhead from the URL, so the added flag is counted.
+- Live capture (2026-10-25): Counter-Strike 2 gives Valve with clan ID 4, Cyberpunk 2077 gives CD PROJEKT RED with 32989758, and ARC Raiders gives Embark Studios with a name and no clan ID in either role. A key that needs the ID would leave ARC Raiders without a control, so the name is the fallback.
+- Creator key: a branded string, `c:<clan id>` when Steam sends an ID, else `n:<name>`. The name is compared as Steam sends it: no case folding and no trimming, so the key and the displayed name are the same text. A creator carries its keys (the clan key first, then the name key), and Ignore stores the first.
+- Match: a game is ignored when any of its developers has a key in the developer list, or any of its publishers has a key in the publisher list, for the kind or for all kinds. A creator with both an ID and a name matches on either key. An entry stored by name keeps matching by name if Steam later adds an ID. Roles stay apart: a studio ignored as a developer is not ignored as a publisher.
+- Parsing: an entry without a usable name is dropped on its own, an invalid clan ID reads as absent, duplicates by key collapse, and at most 8 creators per role are kept. A bad `basic_info` reads as no creators and never costs the item its verdicts.
+- Storage: two sibling keys, `v2:allow-developers` and `v2:allow-publishers`, each shaped like `v2:allow` (an object per scope, each entry `{ name, added }`, keyed by the creator key). A missing key is an empty list, so there is no migration, and an older build ignores keys it does not know instead of rewriting them.
+- Cache: the verdicts of an app carry `developers` and `publishers`, stored as `{ name, clan? }`. `CACHE_SCHEMA` goes from 3 to 4, so an entry cached without creators is fetched again once.
+- One predicate stays: `isIgnored(ignored, id, kind, related)` decides for the chips, the hover card, the list filter, the tag section and the banner. A DLC uses its own creators and, as before, its base game's ignore.
+- Banner: a closed `details` under "Ignore this game" lists one row per creator and role, each with a button per shown tag and one for all tags. An ignored creator becomes a note with Undo. Settings gets one card per role, with Stop ignoring.
+
+### Library check (rule 12)
+
+Nothing to adopt. valibot parses the answer, the disclosure is a native `details`, and storage is the existing key-value port.
+
+### Consequences
+
+- Good: no new host or permission, and still one request per 50 IDs.
+- Good: every surface follows through the existing predicate, and a studio's next release is covered the day it ships.
+- Good: creators without a clan ID are still covered.
+- Bad: the payload grows on every batch. `basic_info` also brings `short_description`, which the extension does not read. The size is unmeasured. The maintainer decides what growth is acceptable from a capture with and without the flag; this ADR sets no number.
+- Bad: a name is weaker than an ID. Two companies with the same name share one entry, and a renamed studio stops matching its old entry, so its tag shows again. The settings list shows the name, so the person can see what they ignored.
+- Bad: every cached app is fetched again once after the update (`CACHE_SCHEMA` 4).
+- Bad: ignoring a large publisher hides a lot. That is the request, and the list makes it undoable.
+- Neutral: if Valve drops `basic_info`, creator ignores stop matching and nothing else changes. The canary checks that a sample carries developer or publisher names.
+
+## Pros and cons of the options
+
+### 1. Clan ID, else name
+
+- Good: exact where Steam gives an ID, and still works where it does not.
+- Bad: two key kinds and one more branch in the match.
+
+### 2. Name only
+
+- Good: one kind of key.
+- Bad: collisions and renames for every creator, including those that have an ID.
+
+### 3. Clan ID only
+
+- Good: exact and simplest.
+- Bad: no control for creators without an ID, ARC Raiders among them.
+
+### 4. Read the page
+
+- Good: no change to the request.
+- Bad: only the classic list rows carry creator IDs. The React surfaces and the app page link vanity URLs, so each surface would need its own extraction (against rule 11).
+
+### 5. One list for both roles
+
+- Good: half the UI.
+- Bad: it merges two decisions, avoiding a catalog and avoiding the studios it signs.
