@@ -58,14 +58,16 @@
   --sar-tag-solid: color-mix(in srgb, var(--sar-kind-color) var(--sar-kind-mix-solid), black);
   --sar-tag-wash-start: color-mix(
     in srgb,
-    color-mix(in srgb, var(--sar-kind-color) var(--sar-kind-mix-wash-start), black)
-      var(--sar-kind-mix-wash-alpha),
+    color-mix(in srgb, var(--sar-kind-color) var(--sar-kind-mix-wash-start), black) var(
+      --sar-kind-mix-wash-alpha
+    ),
     transparent
   );
   --sar-tag-wash-end: color-mix(
     in srgb,
-    color-mix(in srgb, var(--sar-kind-color) var(--sar-kind-mix-wash-end), black)
-      var(--sar-kind-mix-wash-alpha),
+    color-mix(in srgb, var(--sar-kind-color) var(--sar-kind-mix-wash-end), black) var(
+      --sar-kind-mix-wash-alpha
+    ),
     transparent
   );
 }
