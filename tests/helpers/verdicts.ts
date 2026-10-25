@@ -2,13 +2,19 @@ import type { AccountDisclosed } from "../../src/core/kinds/account";
 import type { AiDisclosed, AiVerdict } from "../../src/core/kinds/ai";
 import type { AnticheatDisclosed } from "../../src/core/kinds/anticheat";
 import type { DrmDisclosed } from "../../src/core/kinds/drm";
-import type { EulaDisclosed } from "../../src/core/kinds/eula";
+import { type EulaDisclosed, eulaLink, type EulaUrl } from "../../src/core/kinds/eula";
 import type { KindId } from "../../src/core/kinds/id";
 import type { KernelDisclosed } from "../../src/core/kinds/kernel";
 import type { PvpDisclosed } from "../../src/core/kinds/pvp";
 import { perKind } from "../../src/core/kinds/registry";
 import { type KindVerdicts, UNKNOWN_KINDS } from "../../src/core/kinds/verdicts";
 import type { NotDisclosedVerdict, UnknownReason } from "../../src/core/types";
+
+/** The link of a EULA entry, when the address is one the store hosts. */
+function linked(address: string): { readonly url?: EulaUrl; } {
+  const url = eulaLink(address);
+  return url === undefined ? {} : { url };
+}
 
 /** A disclosed verdict with the optional fields filled in; override what a test cares about. */
 export function disclosedVerdict(overrides: Partial<AiDisclosed> = {}): AiDisclosed {
@@ -79,7 +85,7 @@ export const FULL_DISCLOSED: FullDisclosed = {
     kind: "eula",
     source: "api",
     items: [
-      { name: "Game EULA", url: "https://store.steampowered.com/eula/1_eula_0" },
+      { name: "Game EULA", ...linked("https://store.steampowered.com/eula/1_eula_0") },
       { name: "Publisher terms" },
     ],
   },
