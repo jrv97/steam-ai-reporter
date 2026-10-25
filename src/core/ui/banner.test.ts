@@ -402,7 +402,11 @@ describe("ignoring from the banner", () => {
       expect(root.querySelector('[data-sar-action="undo"][data-sar-scope="drm"]')).not.toBeNull();
     });
     expect(root.activeElement).toBe(query(root, '[data-sar-action="undo"]'));
-    expect(query(root, "[aria-live]").textContent).toBe(i18n.t("notice_marking_stopped"));
+    await vi.waitFor(() => {
+      expect(query(root, "[aria-live]").textContent).toBe(
+        i18n.t("notice_marking_stopped_kind", { heading: heading(shown[0] ?? disclosedVerdict()) }),
+      );
+    });
     expect(texts(root, "h2")).toEqual(withoutDrm(shown).map(heading));
   });
 
@@ -418,6 +422,9 @@ describe("ignoring from the banner", () => {
       expect(query(root, "aside").getAttribute("data-sar-variant")).toBe("ignored");
     });
     expect(root.activeElement).toBe(query(root, '[data-sar-action="undo"]'));
+    await vi.waitFor(() => {
+      expect(query(root, "[aria-live]").textContent).toBe(i18n.t("notice_marking_stopped"));
+    });
   });
 
   it("undoes an ignored kind and puts focus on its ignore button again", async () => {
@@ -434,7 +441,11 @@ describe("ignoring from the banner", () => {
       expect(texts(root, "h2")).toHaveLength(3);
     });
     expect(root.activeElement).toBe(query(root, '.sar-banner-action[data-sar-scope="drm"]'));
-    expect(query(root, "[aria-live]").textContent).toBe(i18n.t("notice_marking_restored"));
+    await vi.waitFor(() => {
+      expect(query(root, "[aria-live]").textContent).toBe(
+        i18n.t("notice_marking_restored_kind", { heading: i18n.t("kind_drm_heading") }),
+      );
+    });
   });
 
   it("undoes an ignore for all tags and focuses the ignore link", async () => {

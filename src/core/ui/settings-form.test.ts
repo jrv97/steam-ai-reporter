@@ -222,7 +222,9 @@ describe("changing a setting", () => {
     await vi.waitFor(async () => {
       expect(parseSettings(await settings.read()).kinds.kernel.filter).toBe("dim");
     });
-    expect(control("[aria-live]").textContent).toBe(i18n.t("notice_settings_saved"));
+    await vi.waitFor(() => {
+      expect(control("[aria-live]").textContent).toBe(i18n.t("notice_settings_saved"));
+    });
     expect(
       input("kernel", "filter", "dim").closest(".sar-field")?.querySelector(".sar-field-help")
         ?.textContent,
@@ -617,7 +619,42 @@ describe("the ignored games", () => {
     expect(document.activeElement).toBe(
       control('[data-sar-restore="10"][data-sar-scope="kernel"]'),
     );
-    expect(control("[aria-live]").textContent).toBe(i18n.t("notice_marking_restored"));
+    await vi.waitFor(() => {
+      expect(control("[aria-live]").textContent).toBe(
+        i18n.t("notice_marking_restored_kind", { heading: heading("ai") }),
+      );
+    });
+  });
+
+  it("says a game is no longer ignored for all tags when that was the scope", async () => {
+    const { control } = await setup();
+    control('[data-sar-restore="40"][data-sar-scope="all"]').click();
+    await vi.waitFor(() => {
+      expect(control("[aria-live]").textContent).toBe(i18n.t("notice_marking_restored"));
+    });
+  });
+
+  it("says that the list could not be read, not that nothing is ignored", async () => {
+    for (const context of ["page", "popup"] as const) {
+      const root = document.createElement("main");
+      document.body.append(root);
+      const allowList = createAllowList(memoryStore(), fixedClock(0));
+      vi.spyOn(allowList, "list").mockRejectedValue(new Error());
+      await mountSettingsForm(root, {
+        i18n,
+        settings: createSettingsSource(memoryStore()),
+        allowList,
+        context,
+        locales: ["en"],
+      });
+      const section = [...root.querySelectorAll<HTMLElement>("section.sar-card")].find((card) =>
+        card.querySelector(".sar-card-title")?.textContent === i18n.t("options_section_allow")
+      );
+      expect(section?.hidden).toBe(false);
+      expect(section?.textContent).toContain(i18n.t("error_allow_list_load"));
+      expect(root.querySelector(".sar-empty")).toBeNull();
+      root.remove();
+    }
   });
 
   it("stops ignoring a game for all tags and leaves the tags it is ignored for", async () => {
@@ -714,21 +751,6 @@ describe("the ignored games", () => {
     await allowList.add("pvp", appId(50), "Fifty");
     await form.refreshAllowList();
     expect(root.querySelectorAll(".sar-allow-scope")).toHaveLength(5);
-  });
-
-  it("shows an empty list when the stored one cannot be read", async () => {
-    const root = document.createElement("main");
-    document.body.append(root);
-    const allowList = createAllowList(memoryStore(), fixedClock(0));
-    vi.spyOn(allowList, "list").mockRejectedValue(new Error());
-    await mountSettingsForm(root, {
-      i18n,
-      settings: createSettingsSource(memoryStore()),
-      allowList,
-      context: "page",
-      locales: ["en"],
-    });
-    expect(root.querySelector(".sar-empty")).not.toBeNull();
   });
 });
 

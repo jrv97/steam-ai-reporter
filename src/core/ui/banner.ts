@@ -2,6 +2,7 @@ import { KIND_BY_ID } from "../kinds/registry";
 import type { AnyDisclosed } from "../kinds/verdicts";
 import type { MessageCatalog } from "../ports";
 import { ALLOW_ALL, type AllowScope, toAllowScope } from "../settings/allow-data";
+import { announce, POLITE } from "./announce";
 import { type KindDetail, kindDetails } from "./kind-details";
 import { normalizeBreaks } from "./notes";
 import { adoptStyles, BANNER_CSS } from "./styles";
@@ -11,9 +12,6 @@ export const BANNER_ID = "sar-banner";
 
 /** The store's left description column; the banner goes first in it, above the purchase box. */
 const COLUMN_SELECTOR = ".game_description_column";
-
-/** An `aria-live` token, not copy. */
-const POLITE = "polite";
 
 /** What the banner's buttons do outside the banner. Each rejects when storage fails. */
 export interface BannerActions {
@@ -290,6 +288,18 @@ export function createBanner(
     );
   }
 
+  /** What a screen reader hears after an ignore or an undo: for all tags, or for one tag. */
+  function announcement(action: Action, scope: AllowScope): string {
+    const restoring = action === "undo";
+    if (scope === ALLOW_ALL) {
+      return i18n.t(restoring ? "notice_marking_restored" : "notice_marking_stopped");
+    }
+    const heading = i18n.t(KIND_BY_ID[scope].messages.heading);
+    return restoring
+      ? i18n.t("notice_marking_restored_kind", { heading })
+      : i18n.t("notice_marking_stopped_kind", { heading });
+  }
+
   /** Undo takes the focus after an ignore, and the ignore button after an undo. */
   function focusAfter(action: Action, scope: AllowScope): void {
     const next = action === "undo" ? "ignore" : "undo";
@@ -314,9 +324,7 @@ export function createBanner(
       pending = false;
     }
     focusAfter(action, scope);
-    live.textContent = i18n.t(
-      action === "undo" ? "notice_marking_restored" : "notice_marking_stopped",
-    );
+    announce(doc, live, announcement(action, scope));
   }
 
   shadow.addEventListener("click", (event) => {

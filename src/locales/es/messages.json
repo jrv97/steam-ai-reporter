@@ -235,9 +235,29 @@
     "message": "Este juego será ignorado",
     "description": "Screen reader announcement after \"Ignore this game\"."
   },
+  "notice_marking_stopped_kind": {
+    "message": "Este juego será ignorado para $heading$",
+    "description": "Screen reader announcement after \"Ignore for this tag\". $heading$ is Steam's line for the tag.",
+    "placeholders": {
+      "heading": {
+        "content": "$1",
+        "example": "Utiliza antitrampas a nivel de kernel"
+      }
+    }
+  },
   "notice_marking_restored": {
     "message": "Este juego ya no será ignorado",
     "description": "Screen reader announcement after \"Undo\" or \"Stop ignoring\"."
+  },
+  "notice_marking_restored_kind": {
+    "message": "Este juego ya no será ignorado para $heading$",
+    "description": "Screen reader announcement after \"Undo\" or \"Stop ignoring\" for one tag. $heading$ is Steam's line for the tag.",
+    "placeholders": {
+      "heading": {
+        "content": "$1",
+        "example": "Utiliza antitrampas a nivel de kernel"
+      }
+    }
   },
   "notice_settings_saved": {
     "message": "Guardado.",
@@ -254,6 +274,10 @@
   "error_allow_list_save": {
     "message": "No se pudo actualizar este juego. Inténtalo de nuevo.",
     "description": "After \"Ignore this game\", \"Undo\" or \"Stop ignoring\" fails to save."
+  },
+  "error_allow_list_load": {
+    "message": "No se pudieron cargar los juegos que ignoraste. Inténtalo más tarde.",
+    "description": "Shown in the list of ignored games in the settings when the stored list cannot be read."
   },
   "options_version": {
     "message": "Versión $version$",

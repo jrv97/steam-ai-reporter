@@ -235,9 +235,29 @@
     "message": "This game will be ignored",
     "description": "Screen reader announcement after \"Ignore this game\"."
   },
+  "notice_marking_stopped_kind": {
+    "message": "This game will be ignored for $heading$",
+    "description": "Screen reader announcement after \"Ignore for this tag\". $heading$ is Steam's line for the tag.",
+    "placeholders": {
+      "heading": {
+        "content": "$1",
+        "example": "Uses Kernel Level Anti-Cheat"
+      }
+    }
+  },
   "notice_marking_restored": {
     "message": "This game is no longer ignored",
     "description": "Screen reader announcement after \"Undo\" or \"Stop ignoring\"."
+  },
+  "notice_marking_restored_kind": {
+    "message": "This game is no longer ignored for $heading$",
+    "description": "Screen reader announcement after \"Undo\" or \"Stop ignoring\" for one tag. $heading$ is Steam's line for the tag.",
+    "placeholders": {
+      "heading": {
+        "content": "$1",
+        "example": "Uses Kernel Level Anti-Cheat"
+      }
+    }
   },
   "notice_settings_saved": {
     "message": "Saved.",
@@ -254,6 +274,10 @@
   "error_allow_list_save": {
     "message": "Could not update this game. Try again.",
     "description": "After \"Ignore this game\", \"Undo\" or \"Stop ignoring\" fails to save."
+  },
+  "error_allow_list_load": {
+    "message": "Could not load the games you ignored. Try again later.",
+    "description": "Shown in the list of ignored games in the settings when the stored list cannot be read."
   },
   "options_version": {
     "message": "Version $version$",

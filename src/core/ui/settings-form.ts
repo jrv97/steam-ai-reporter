@@ -11,7 +11,6 @@ import {
   type AllowEntries,
   type AllowEntry,
   type AllowScope,
-  perScope,
   toAllowScope,
 } from "../settings/allow-data";
 import type { AllowList } from "../settings/allow-list";
@@ -25,6 +24,7 @@ import {
 } from "../settings/settings";
 import type { StoredSettings } from "../settings/settings-source";
 import { type AppId, toAppId } from "../types";
+import { announce, POLITE } from "./announce";
 import { adoptStyles, SETTINGS_CSS, TOKENS_CSS } from "./styles";
 
 /** The full options page, or the short toolbar popup (no language picker, no privacy card). */
@@ -57,9 +57,6 @@ export interface SettingsForm {
   /** Stops listening and empties the root. */
   destroy(): void;
 }
-
-/** An `aria-live` token, not copy. */
-const POLITE = "polite";
 
 const STORE_APP_URL = "https://store.steampowered.com/app/";
 
@@ -98,9 +95,6 @@ interface KindControls {
   readonly radios: ReadonlyMap<ListFilter, HTMLInputElement>;
   readonly filterHelp: HTMLElement;
 }
-
-/** What the form shows while the ignore list cannot be read. */
-const ALLOW_NONE: AllowEntries = perScope(() => new Map());
 
 let mounts = 0;
 
@@ -473,7 +467,7 @@ export async function mountSettingsForm(
     if (error !== undefined) {
       error.hidden = true;
     }
-    live.textContent = i18n.t("notice_settings_saved");
+    announce(doc, live, i18n.t("notice_settings_saved"));
   }
 
   function onChange(target: EventTarget | null): void {
@@ -559,14 +553,23 @@ export async function mountSettingsForm(
     allowBody.replaceChildren(...listed.map((each) => allowGroup(each, entries[each])));
   }
 
+  /** A list that cannot be read says so, in both contexts; the next refresh tries again. */
+  function renderAllowError(): void {
+    allow.hidden = false;
+    const error = element("p", "sar-field-error", i18n.t("error_allow_list_load"));
+    error.setAttribute("role", "alert");
+    allowBody.replaceChildren(error);
+  }
+
   async function refreshAllowList(): Promise<void> {
-    let entries: AllowEntries | undefined;
+    let entries: AllowEntries;
     try {
       entries = await allowList.list();
     } catch {
-      // Shown as empty; the next refresh tries again.
+      renderAllowError();
+      return;
     }
-    renderAllowList(entries ?? ALLOW_NONE);
+    renderAllowList(entries);
   }
 
   /** The button that stops ignoring a game in a scope, once the list is drawn again. */
@@ -599,7 +602,13 @@ export async function mountSettingsForm(
     const focus = restoreButton(nextScope, nextId)
       ?? section?.querySelector<HTMLElement>(".sar-card-title");
     focus?.focus();
-    live.textContent = i18n.t("notice_marking_restored");
+    announce(
+      doc,
+      live,
+      of === ALLOW_ALL
+        ? i18n.t("notice_marking_restored")
+        : i18n.t("notice_marking_restored_kind", { heading: scopeName(of) }),
+    );
   }
 
   function onClick(target: EventTarget | null): void {
