@@ -48,6 +48,39 @@
             <span class="sar-field-label">Show in the banner</span>
             <input class="sar-toggle" type="checkbox" role="switch" checked>
           </label>
+          <div class="sar-field sar-color" data-sar-layout="stacked">
+            <label class="sar-field-label" for="o-ai-color">Badge color (experimental)</label>
+            <div class="sar-color-entry">
+              <span class="sar-color-swatch" aria-hidden="true"></span>
+              <input class="sar-input" id="o-ai-color" type="text" autocomplete="off"
+                spellcheck="false" placeholder="Default" aria-describedby="o-ai-color-help">
+            </div>
+            <span class="sar-field-help" id="o-ai-color-help">Type a hex code such as #8f73f3, with
+              or without the #. Colors this tag's badge, its entry in the banner and its card.
+              Contrast is not checked, so a very light or very dark color can be hard to read. Leave
+              it empty for the default violet.</span>
+          </div>
+          <div class="sar-field sar-color" data-sar-layout="stacked">
+            <label class="sar-field-label" for="o-ai-color-set">Badge color (experimental)</label>
+            <div class="sar-color-entry">
+              <span class="sar-color-swatch" aria-hidden="true"
+                style="--sar-tag-edge: #e8590c"></span>
+              <input class="sar-input" id="o-ai-color-set" type="text" autocomplete="off"
+                spellcheck="false" placeholder="Default" value="#e8590c">
+              <button class="sar-button" type="button">Reset</button>
+            </div>
+          </div>
+          <div class="sar-field sar-color" data-sar-layout="stacked">
+            <label class="sar-field-label" for="o-ai-color-bad">Badge color (experimental)</label>
+            <div class="sar-color-entry">
+              <span class="sar-color-swatch" aria-hidden="true"></span>
+              <input class="sar-input" id="o-ai-color-bad" type="text" autocomplete="off"
+                spellcheck="false" placeholder="Default" value="#12" aria-invalid="true"
+                aria-describedby="o-ai-color-bad-error">
+            </div>
+            <p class="sar-field-error" id="o-ai-color-bad-error" role="alert">Not a color. Type
+              three or six hex digits, such as #8f73f3.</p>
+          </div>
           <div class="sar-field" data-sar-layout="stacked">
             <span class="sar-field-label" id="o-filter">In lists</span>
             <fieldset class="sar-segment" aria-labelledby="o-filter">

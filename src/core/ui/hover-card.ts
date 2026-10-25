@@ -1,6 +1,7 @@
 import { KIND_BY_ID } from "../kinds/registry";
 import { type AnyDisclosed, sameVerdicts } from "../kinds/verdicts";
 import type { MessageCatalog } from "../ports";
+import { KIND_ATTRIBUTE } from "./kind-attributes";
 import { type KindDetail, kindDetails } from "./kind-details";
 import { normalizeBreaks } from "./notes";
 
@@ -256,6 +257,7 @@ export function createHoverCard(
     const heading = i18n.t(KIND_BY_ID[verdict.kind].messages.heading);
     const node = doc.createElement("div");
     node.className = "sar-hovercard-entry";
+    node.setAttribute(KIND_ATTRIBUTE, verdict.kind);
     node.append(
       line("sar-hovercard-title", heading),
       ...kindDetails(verdict)

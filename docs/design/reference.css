@@ -759,9 +759,51 @@ a.sar-summary-row .sar-badge {
   font: inherit;
 }
 
+/* A tag's color field (experimental): the swatch, the hex text and Reset in one row. In the app
+   the swatch reads the kind's color; a preview sets it by hand. */
+.sar-color-entry {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sar-space-2);
+}
+
+.sar-color-swatch {
+  flex: none;
+  inline-size: var(--sar-control-height-sm);
+  block-size: var(--sar-control-height-sm);
+  border: 1px solid var(--sar-color-border);
+  border-radius: var(--sar-radius-sm);
+  background: var(--sar-tag-edge, var(--sar-accent-400));
+  forced-color-adjust: none;
+}
+
+.sar-input {
+  box-sizing: border-box;
+  inline-size: var(--sar-color-input-inline-size);
+  min-inline-size: 0;
+  min-block-size: var(--sar-control-height-sm);
+  padding-inline: var(--sar-space-2);
+  border: 1px solid var(--sar-color-border);
+  border-radius: var(--sar-radius-sm);
+  background: var(--sar-color-bg-sunken);
+  color: var(--sar-color-text);
+  font: inherit;
+}
+
+.sar-input::placeholder {
+  color: var(--sar-color-text-subtle);
+  opacity: 1;
+}
+
+.sar-input[aria-invalid="true"] {
+  border-color: var(--sar-color-error);
+}
+
 .sar-toggle:focus-visible,
 .sar-segment input:focus-visible + label,
 .sar-select:focus-visible,
+.sar-input:focus-visible,
 .sar-button:focus-visible,
 .sar-card-summary:focus-visible,
 .sar-options a:focus-visible {

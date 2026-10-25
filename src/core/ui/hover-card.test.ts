@@ -503,6 +503,15 @@ describe("createHoverCard", () => {
       expect(shown()?.querySelectorAll(".sar-hovercard-title")).toHaveLength(KIND_IDS.length);
     });
 
+    it("marks each entry with its kind, so a custom color reaches its title", () => {
+      open(disclosedOf(FULL_DISCLOSED));
+      const kinds = [...(shown()?.querySelectorAll(".sar-hovercard-entry") ?? [])].map((entry) =>
+        entry.getAttribute("data-sar-kind")
+      );
+      expect(kinds).toEqual([...KIND_IDS]);
+      expect(shown()?.querySelector(".sar-hovercard-title")?.hasAttribute("style")).toBe(false);
+    });
+
     // The details of each kind, from the batch captured for the tag kinds and from its pages.
     const CASES: readonly (readonly [string, KindVerdicts, readonly (readonly string[])[]])[] = [
       ["DRM, a linkable account and a EULA (3751950)", capturedVerdicts(3751950), [

@@ -1,18 +1,30 @@
 import { describe, expect, it } from "vitest";
 import { KIND_IDS } from "../kinds/id";
 import { PLACEMENTS } from "../scan/placements";
+import { colorProperty } from "./kind-attributes";
 import { adoptStyles, BANNER_CSS, DIALOG_CSS, PAGE_CSS, SETTINGS_CSS, TOKENS_CSS } from "./styles";
 
 const RULES = { PAGE_CSS, BANNER_CSS, SETTINGS_CSS, DIALOG_CSS };
-const DEFINED = new Set(
-  [...TOKENS_CSS.matchAll(/(--sar-[a-z0-9-]+)\s*:/g)].map((match) => match[1]),
-);
+
+/** The custom properties a text declares. */
+function declared(css: string): ReadonlySet<string | undefined> {
+  return new Set([...css.matchAll(/(--sar-[a-z0-9-]+)\s*:/g)].map((match) => match[1]));
+}
+
+const DEFINED = declared(TOKENS_CSS);
+/** What the app writes on the root element, so no stylesheet declares it. */
+const WRITTEN = new Set(KIND_IDS.map(colorProperty));
 
 describe("generated stylesheets", () => {
+  // A name is defined by tokens.css, by the app (a tag's color) or by the sheet itself (the shades
+  // it derives from that color). A fallback counts as a use.
   it.each(Object.entries(RULES))("%s uses only tokens that tokens.css defines", (_name, css) => {
-    const used = [...css.matchAll(/var\((--sar-[a-z0-9-]+)\)/g)].map((match) => match[1]);
+    const own = declared(css);
+    const used = [...css.matchAll(/var\((--sar-[a-z0-9-]+)[,)]/g)].map((match) => match[1]);
     expect(used.length).toBeGreaterThan(0);
-    expect(used.filter((name) => !DEFINED.has(name))).toEqual([]);
+    expect(
+      used.filter((name) => !DEFINED.has(name) && !own.has(name) && !WRITTEN.has(name ?? "")),
+    ).toEqual([]);
   });
 
   it.each(Object.entries({ TOKENS_CSS, ...RULES }))("%s carries no comments", (_name, css) => {
@@ -106,6 +118,77 @@ describe("the per-kind page rules", () => {
     expect(PAGE_CSS).not.toContain("data-sar-state");
     expect(PAGE_CSS).not.toContain("data-sar-badges");
     expect(PAGE_CSS).not.toMatch(/data-sar-filter=/);
+  });
+});
+
+describe("the tag color rules", () => {
+  const COLORED = { PAGE_CSS, BANNER_CSS, SETTINGS_CSS };
+  const rule = (css: string, selector: string) =>
+    rulesOf(css).find((each) => each.selectors.includes(selector));
+  /** The body of the rule written as `selector {`, not of a list that also names the selector. */
+  const block = (css: string, selector: string) => {
+    const start = css.indexOf(`\n${selector} {`);
+    return css.slice(start, css.indexOf("}", start));
+  };
+
+  // A custom property name cannot be built from an attribute, so each kind has its own rule.
+  describe.each(Object.entries(COLORED))("%s", (_name, css) => {
+    it.each(KIND_IDS)("reads the color of %s from its root property", (id) => {
+      const own = rulesOf(css).filter((each) => each.selectors.includes(`[data-sar-kind="${id}"]`));
+      expect(own).toHaveLength(1);
+      expect(own[0]?.body.trim()).toBe(`--sar-kind-color: var(${colorProperty(id)});`);
+    });
+
+    it("derives every shade from that one color", () => {
+      const shades = rule(css, "[data-sar-kind]")?.body ?? "";
+      for (const shade of ["edge", "tint", "text", "light", "solid", "wash-start", "wash-end"]) {
+        const derived = new RegExp(`--sar-tag-${shade}:[^;]*var\\(--sar-kind-color\\)`);
+        expect(shades, shade).toMatch(derived);
+      }
+    });
+  });
+
+  it("lists no kind outside the registry", () => {
+    for (const css of Object.values(COLORED)) {
+      const listed = rulesOf(css).flatMap((each) => each.selectors).filter((selector) =>
+        selector.startsWith('[data-sar-kind="')
+      );
+      expect(listed).toHaveLength(KIND_IDS.length);
+    }
+  });
+
+  it("reads each surface through its shade, falling back to the violet tokens", () => {
+    expect(block(PAGE_CSS, ".sar-badge")).toContain(
+      "background: var(--sar-tag-tint, var(--sar-badge-bg))",
+    );
+    expect(block(PAGE_CSS, ".sar-badge")).toContain(
+      "color: var(--sar-tag-text, var(--sar-badge-fg))",
+    );
+    const compact = block(PAGE_CSS, ".sar-compact");
+    expect(compact).toContain("background: var(--sar-tag-solid, var(--sar-compact-bg))");
+    expect(compact).toContain("color: var(--sar-tag-light, var(--sar-compact-fg))");
+    expect(compact).toContain("1px solid var(--sar-tag-edge, var(--sar-compact-border))");
+    expect(block(PAGE_CSS, ".sar-hovercard-title")).toContain(
+      "color: var(--sar-tag-text, var(--sar-badge-fg))",
+    );
+    const banner = block(BANNER_CSS, ".sar-banner");
+    expect(banner).toContain("var(--sar-tag-wash-start, var(--sar-banner-wash-start))");
+    expect(banner).toContain("var(--sar-tag-wash-end, var(--sar-banner-wash-end))");
+  });
+
+  it("keeps the wash the shape of the violet wash", () => {
+    const token = /--sar-banner-bg:\s*linear-gradient\(\s*(\d+deg),[^%]*?(\d+%),[^%]*?(\d+%)\s*\)/;
+    const [, angle, from, to] = token.exec(TOKENS_CSS) ?? [];
+    const banner = block(BANNER_CSS, ".sar-banner");
+    expect(banner).toContain(`linear-gradient(\n    ${angle},`);
+    expect(banner).toContain(`var(--sar-banner-wash-start)) ${from}`);
+    expect(banner).toContain(`var(--sar-banner-wash-end)) ${to}`);
+  });
+
+  it("leaves forced colors in charge of the badges", () => {
+    expect(PAGE_CSS.lastIndexOf("background: Canvas")).toBeGreaterThan(
+      PAGE_CSS.indexOf("var(--sar-tag-tint"),
+    );
   });
 });
 

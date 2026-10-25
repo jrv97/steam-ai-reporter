@@ -22,7 +22,11 @@
   padding-inline: var(--sar-banner-pad-inline);
   border: 0;
   border-radius: 0;
-  background: var(--sar-banner-bg);
+  background: linear-gradient(
+    135deg,
+    var(--sar-tag-wash-start, var(--sar-banner-wash-start)) 10%,
+    var(--sar-tag-wash-end, var(--sar-banner-wash-end)) 100%
+  );
   box-shadow: none;
   color: var(--sar-banner-fg);
   font: var(--sar-banner-meta-font);

@@ -23,13 +23,13 @@ Every class, attribute and custom property starts with `sar-`.
 
 ## Principles
 
-1. **Label the report, never judge it.** A report can cover one marketing image or live generated gameplay, and some notes say AI was barely used. Attribute every fact to the developer ("reported", "named by the developer", "in the developer's own words"). No red, no warning triangles.
+1. **Label the report, never judge it.** A report can cover one marketing image or live generated gameplay, and some notes say AI was barely used. Attribute every fact to the developer ("reported", "named by the developer", "in the developer's own words"). No red, no warning triangles. Our own colors carry no verdict. A person's custom tag color (experimental, decision 49) is their pick for that tag, so it changes how a tag looks and never what it says.
 2. **Nothing for absence.** "Not disclosed" and "unknown" render nothing: no neutral chip, no check mark. The host's `data-sar-kinds` leaves them out.
 3. **Quote verbatim.** The developer's notes are data: set with `textContent` and `white-space: pre-line`, never translated, summarized or highlighted.
-4. **Feel native.** Look and behave as close to the store's own UI as possible: its sizes, type, neutrals, surfaces and interaction patterns, so injected UI has no seam. Model each store-page component on its closest store element (the banner on the notice bubbles, the full badge on the tag chips, the compact badge on the corner flags, the summary row on the summary box's own rows). Only the violet hue marks a component as ours, so nobody mistakes it for a store feature.
+4. **Feel native.** Look and behave as close to the store's own UI as possible: its sizes, type, neutrals, surfaces and interaction patterns, so injected UI has no seam. Model each store-page component on its closest store element (the banner on the notice bubbles, the full badge on the tag chips, the compact badge on the corner flags, the summary row on the summary box's own rows). Only the violet hue marks a component as ours, so nobody mistakes it for a store feature. A person can swap the violet for their own color per tag (experimental, decision 49); the defaults stay violet.
 5. **Never block.** No modals over store pages, no overlays over content, no focus stealing, no layout shift after a component's first paint.
 6. **Copy lives in catalogs.** Components hold message keys, never text. Leave room for translations about 40% longer than English.
-7. **Cheap at scale.** Express state with `data-sar-*` attributes and CSS, never per-node inline styles. A setting change is one attribute write per kind on the root element.
+7. **Cheap at scale.** Express state with `data-sar-*` attributes and CSS, never per-node inline styles. A setting change is one attribute write per kind on the root element, and a custom color is one custom property per kind on the root element.
 
 ## Voice and copy
 
@@ -48,8 +48,9 @@ One dark theme. Store pages are dark, and the settings pages open from them.
 
 - **Neutrals are sampled.** `sar-color-bg-page`, `sar-color-bg-page-deep` and `sar-color-bg-row` are the store's own grounds: our components sit on them and never paint them. `sar-color-bg-panel`, `sar-color-bg-raised` and `sar-color-bg-sunken` are the settings pages' surfaces.
 - **Text:** on the banner wash, everything is `sar-banner-fg`, the store's own bubble text color. Elsewhere, `sar-color-text-strong` for headings, `sar-color-text` for body copy, `sar-color-text-muted` for meta lines, `sar-color-text-subtle` for help and dates. Muted and subtle never go on the banner wash, and subtle never on the store's row hover.
-- **Violet is ours.** Every other hue already means something on the store: blue is links, tags and the wishlist; green is buy, discount and owned; tan is the store's own third-party notices; red is live. Violet carries no traffic-light verdict, which matters because the badge must not judge.
+- **Violet is ours.** Every other hue already means something on the store: blue is links, tags and the wishlist; green is buy, discount and owned; tan is the store's own third-party notices; red is live. Violet carries no traffic-light verdict, which matters because the badge must not judge. It stays the default for every tag. A person may give a tag a color of their own (see "A tag's own color" below); that is theirs to choose and lifts the guarantees of this page for them alone.
 - **The accent scale:** `sar-accent-100` for compact badge text, `sar-accent-200` for full badge text, `sar-accent-300` for links and the focus ring, `sar-accent-400` for non-text brand fills and edges (and the full badge tint at 20%), `sar-accent-800` and `sar-accent-600` at 80% for the banner wash, `sar-accent-600` and `sar-accent-700` for solid fills with white text, `sar-accent-900` for the compact badge's dark surface.
+- **A tag's own color (experimental).** One hex color for each tag, entered on the full options page and in the userscript dialog (section 6), not in the toolbar popup. It plays the role of accent 400 and every other shade is mixed from it at a fixed share (`sar-kind-mix-*` in `tokens.css`): the full badge tint and the summary row chip (the color at 20%), their text and the hover card title (the color mixed 37% into white), the compact badge's surface (22% into black), its text (24% into white) and its edge (the color), and the banner wash (31% and 66% into black, both drawn at 80%). Switches, buttons, focus rings, the banner's text and every neutral keep their tokens. The color is used as given: nothing clamps, adjusts or checks its contrast, so a very light or very dark pick can fall below the AA and 3:1 pairs of the Contrast section for the person who picked it. Unset keeps today's violet and its guarantees. A banner with one tag takes that tag's color for the wash; a banner that lists several tags keeps the default violet. Forced colors still override it.
 - **Error** is text, always with words, never a red fill: `sar-color-error` on extension pages, `sar-banner-error` inside the banner.
 - Never set a store hue (blue, green, tan, red) to a new meaning.
 
@@ -115,6 +116,11 @@ Each kind's settings (`kinds.<id>`: `enabled`, `badge`, `banner` and `filter`) g
 - Never move, wrap or restyle store nodes. The store-node changes besides the attributes above are `data-sar-anchor` on an image container that computes to `position: static`, which a CSS rule turns into `position: relative` (section 2), and a transient `aria-describedby` on a focused store link while the hover card is open (section 15).
 - DOM reads (image sizes, computed position) are batched before writes in one `requestAnimationFrame` per scan.
 - Listeners are delegated: one per root, never one per node. The summary row's jump to the banner is one such listener (section 3); the hover card's are on the document (section 15).
+
+**A tag's own color**
+
+- The color is stored as `kinds.<id>.color`, a validated `#rrggbb`, and written on the root element as the custom property `--sar-kind-color-<id>`, one write per kind and none when it is unset (the property is removed). Chips, summary rows, hover card entries and the banner carry `data-sar-kind`; one rule per kind reads that kind's property into `--sar-kind-color`, and a single rule derives the shades (`--sar-tag-edge`, `-tint`, `-text`, `-light`, `-solid`, `-wash-start`, `-wash-end`) from it. Each surface reads its shade with the violet token as the fallback, so a kind with no color renders exactly as before. Custom properties inherit into the banner's and the dialog's shadow roots, so they follow a change without a redraw.
+- Only a validated `HexColor` is ever written; it never reaches CSS as typed text. Nothing is written on a chip, and a store node is never touched.
 
 **Style isolation**
 
@@ -446,7 +452,7 @@ No classes, no inline styles, no per-node writes when the mode changes.
 
 ## 6. Options page and action popup
 
-The settings form, rendered as the full options page (`data-sar-context="page"`) and as the toolbar popup (`data-sar-context="popup"`), dark only. The stored settings are `locale`, `debug` and, for each kind, `kinds.<id>.enabled`, `kinds.<id>.badge`, `kinds.<id>.banner` and `kinds.<id>.filter`.
+The settings form, rendered as the full options page (`data-sar-context="page"`) and as the toolbar popup (`data-sar-context="popup"`), dark only. The stored settings are `locale`, `debug` and, for each kind, `kinds.<id>.enabled`, `kinds.<id>.badge`, `kinds.<id>.banner`, `kinds.<id>.filter` and, when the person set one, `kinds.<id>.color`.
 
 Preview: `previews/OptionsPage.html`.
 
@@ -454,6 +460,7 @@ Preview: `previews/OptionsPage.html`.
 
 - `options.html` with structure and `data-i18n` keys only; every string from the catalog.
 - The context attribute on `.sar-options`. The userscript mounts the same form in its settings dialog.
+- Whether to show the color fields (`colors`). It is a capability apart from the context, so the dialog keeps the popup layout and still gets them: the full page and the dialog pass it, the toolbar popup does not.
 - The version from `package.json` for `options_version`.
 
 ### Layout
@@ -469,7 +476,7 @@ Preview: `previews/OptionsPage.html`.
 ### Sections, in order
 
 1. Header.
-2. One section for each tag kind, in registry order (PvP starts switched off, the other kinds on), titled with Steam's line for the kind (`kind_<id>_heading`). It holds the master switch `options_kind_enabled` (`kinds.<id>.enabled`), then the switches `options_badges` (popup `options_badges_short`; `badge`) and `options_banner` (`banner`), then a stacked SegmentedControl with Show, Dim and Hide (`filter`; values `off`, `dim`, `hide`; label `options_filter_label`; the help follows the selection). Each switch has help. While the master switch is off, the other three are hidden and their stored values stay. The summary shows the title and the master switch's state; the master switch and the rest sit in the body, one open away.
+2. One section for each tag kind, in registry order (PvP starts switched off, the other kinds on), titled with Steam's line for the kind (`kind_<id>_heading`). It holds the master switch `options_kind_enabled` (`kinds.<id>.enabled`), then the switches `options_badges` (popup `options_badges_short`; `badge`) and `options_banner` (`banner`), then, on the full page and in the userscript dialog only, the color field (below), then a stacked SegmentedControl with Show, Dim and Hide (`filter`; values `off`, `dim`, `hide`; label `options_filter_label`; the help follows the selection). Each switch has help. While the master switch is off, the other three are hidden and their stored values stay. The summary shows the title and the master switch's state; the master switch and the rest sit in the body, one open away.
 3. Language (page only): a stacked Select, `Automatic` first, then each shipped locale named in its own language through `Intl.DisplayNames`.
 4. Games you ignored: the AllowList, in groups. All tags comes first, then each kind in registry order, each group titled with its scope's name and listing its games newest first. Left out of the popup while it is empty.
 5. Backup (page only): the Backup card, to download a file and restore from one.
@@ -482,6 +489,16 @@ Preview: `previews/OptionsPage.html`.
 - A failed write reverts the control and shows `error_settings_save` under it in `.sar-field-error` (`role="alert"`).
 - A failed read shows the defaults with `error_settings_load` above the first section, outside every `details`, so a closed section cannot hide it.
 - A section starts open. Closing or opening one is remembered for that section alone, in the `v2:ui` record (`{ "open": { "<id>": false } }`, only sections the person has toggled), so the popup, the full page and the userscript dialog agree. It is interface state, not a setting, and it is not in the backup. A record that cannot be read or has bad entries leaves the section open; a write that fails loses only the memory of the choice, with no error shown. One listener on the form's root, in the capture phase, hears every section's `toggle` event, because `toggle` does not bubble.
+
+### The color field (experimental)
+
+One stacked field in each tag's options, after the banner switch and before the list filter, where the form has color fields. It sets `kinds.<id>.color`.
+
+- Label `options_color_label`, "Badge color (experimental)", on a `label` for the text box, so the visible text and the accessible name are the same words. The word "experimental" stays in every locale.
+- A row of a swatch (`sar-control-height-sm` square, `sar-color-border` edge, decorative, `aria-hidden`), a plain text box and a Reset button. No native color picker, no sliders. The text box is `sar-color-input-inline-size` wide, shows `options_color_placeholder` ("Default") while empty, and reads `#rgb` or `#rrggbb`, with or without the `#`, in any case. A valid value is saved as lowercase `#rrggbb` and shown back in that form. The typed hex is the visible readout, so the swatch is never the only cue.
+- The swatch shows the picked color, or the default violet while the box is empty. Reset (`options_color_reset`, with the screen reader name `options_color_reset_label` that begins with its text) shows only while a color is set, clears it and returns focus to the text box. Emptying the box does the same.
+- Live validation: on every keystroke, text that is not a color shows `options_color_invalid` (`role="alert"`, the box gets `aria-invalid` and a `sar-color-error` edge) and a text that reads shows at once on the swatch and the page, unsaved. The value is saved when the edit is committed (Enter or leaving the box), one patch of the `color` field. Invalid text is never saved and stays as typed until fixed. A failed save reverts the field and shows `error_settings_save`.
+- Help `options_color_help` always says that contrast is not checked.
 
 ### Longer translations
 
@@ -659,7 +676,7 @@ Preview: `previews/Backup.html`.
 
 ### What a backup holds
 
-- Settings: badges, banner, list filter, language.
+- Settings: badges, banner, list filter, tag colors, language.
 - Games you ignored, with their names and dates.
 - Lookup history: every game already checked, marked or not, with when it was checked, so a restored history still expires on its usual schedule.
 
@@ -751,7 +768,7 @@ The userscript's settings, opened from the script manager's menu: the one modal 
 
 - A menu command `userscript_menu_settings` registered with `GM.registerMenuCommand`.
 - A native `dialog` in a shadow root on `div.sar-dialog-host`, opened with `showModal()`. `Escape` and a `userscript_close` text button close it; focus returns to the page.
-- Content: the popup layout (OptionsPage, `data-sar-context="popup"`) plus the language and backup cards, 400px wide, titled with `ext_name`, set in the `page` family because the store font is available there.
+- Content: the popup layout (OptionsPage, `data-sar-context="popup"`) with the color fields of section 6 (the toolbar popup has none) plus the language and backup cards, 400px wide, titled with `ext_name`, set in the `page` family because the store font is available there.
 - When `GM_addValueChangeListener` is missing, `userscript_reload_note` under the controls.
 
 ### Status
@@ -969,6 +986,12 @@ For every translator:
 | `options_filter_off_help` | Lists stay as they are, apart from badges. | Help for "Show". |
 | `options_filter_dim_help` | Fades these games in lists. Hover to see one clearly. | Help for "Dim". |
 | `options_filter_hide_help` | Removes these games from lists. Where hiding would break a list, they are dimmed instead. | Help for "Hide". |
+| `options_color_label` | Badge color (experimental) | Label of a text field for a tag's hex color. It colors the tag's badge, its entry in the banner and its hover card. "(experimental)" stays in the label. |
+| `options_color_placeholder` | Default | Shown in the empty color field: the tag keeps the default violet. |
+| `options_color_help` | Type a hex code such as `#8f73f3`, with or without the `#`. Colors this tag's badge, its entry in the banner and its card. Contrast is not checked, so a very light or very dark color can be hard to read. Leave it empty for the default violet. | Help under the color field. Keep the example code. |
+| `options_color_invalid` | Not a color. Type three or six hex digits, such as `#8f73f3`. | Error under the color field while the text is no hex color. |
+| `options_color_reset` | Reset | Button that clears the tag's color. |
+| `options_color_reset_label` | Reset the badge color (experimental) of `$heading$` | Screen reader name of Reset; starts with its visible word. `heading` is Steam's line for the tag. |
 | `options_section_language` | Language | Section heading. |
 | `options_language_label` | Language of this extension | Label of the picker. |
 | `options_language_auto` | Automatic | First picker entry. |
@@ -1069,6 +1092,7 @@ WCAG 2.2 AA: 4.5:1 for text, 3:1 for non-text. Grounds are the store's own, samp
 - `sar-color-text-subtle` only on page, row, panel, raised and sunken. On the store's row hover it is 3.32:1.
 - `sar-accent-300` as link text only on solid grounds. On the store's row hover it is 4.45:1, so links there use `sar-accent-200`.
 - The compact badge's surface stays at accent 900. A mid-tone flag color such as accent 700 would leave mid grey art with no boundary at 3:1 (surface 2.54, edge 1.11) and violet art at 2.01.
+- None of this holds for a tag the person gave a color of their own (experimental): the tint, text, edge, surface and wash are mixed from the picked color, and nothing checks or adjusts them. The defaults keep every pair above; decision 49.
 - The switch's off track is 1.55:1 against raised; its `sar-toggle-track-off-border` edge carries the 3:1.
 
 ### The mark on browser toolbars

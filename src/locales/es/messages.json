@@ -343,6 +343,36 @@
     "message": "Quita estos juegos de las listas. Si ocultarlos rompiese una lista, entonces se atenuarán.",
     "description": "Help for \"Hide\"."
   },
+  "options_color_label": {
+    "message": "Color del marcador (experimental)",
+    "description": "Label of a text field where the person types a hex color for one tag. It colors the tag's badge, its entry in the banner and its hover card, so use the same word as the badge switch. \"(experimental)\" marks the setting as unfinished; keep it in the label."
+  },
+  "options_color_placeholder": {
+    "message": "Predeterminado",
+    "description": "Shown inside the empty color field: no custom color is set, so the tag keeps the extension's default violet. One word."
+  },
+  "options_color_help": {
+    "message": "Escribe un código hexadecimal como #8f73f3, con o sin la #. Da color al marcador de esta etiqueta, a su entrada en el aviso y a su tarjeta. No se comprueba el contraste, así que un color muy claro o muy oscuro puede ser difícil de leer. Déjalo vacío para usar el violeta predeterminado.",
+    "description": "Help under the color field. Keep the example code as it is. It must say that contrast is not checked."
+  },
+  "options_color_invalid": {
+    "message": "No es un color. Escribe tres o seis dígitos hexadecimales, como #8f73f3.",
+    "description": "Error under the color field while the text is not a hex color. Keep the example code as it is."
+  },
+  "options_color_reset": {
+    "message": "Restablecer",
+    "description": "Button that clears a tag's custom color and goes back to the default violet. One word."
+  },
+  "options_color_reset_label": {
+    "message": "Restablecer el color del marcador (experimental) de $heading$",
+    "description": "Screen reader name of the Reset button next to a color field. Starts with the button's visible word. $heading$ is Steam's own line for the tag.",
+    "placeholders": {
+      "heading": {
+        "content": "$1",
+        "example": "Utiliza antitrampas a nivel de kernel"
+      }
+    }
+  },
   "options_section_language": {
     "message": "Idioma",
     "description": "Section heading in the settings."

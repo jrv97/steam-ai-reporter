@@ -113,8 +113,9 @@ const SHOWS_BANNER = (settings: KindSettings): boolean => settings.banner;
 /**
  * Starts Tag Kit for Steam on one store page: settings, locale and logger, cache upkeep, the
  * detector stack, the allow-list, the page stylesheet, the scanner with its renderers, and the app
- * page's banner. Settings changes from any tab re-render at once: badges and the list filter are
- * one root attribute each, the banner is drawn again from the known verdicts.
+ * page's banner. Settings changes from any tab re-render at once: badges, the list filter and the
+ * tag colors are one root attribute or custom property each, the banner is drawn again from the
+ * known verdicts.
  */
 export async function start(deps: AppDeps): Promise<App> {
   const { document: doc, store, clock } = deps;

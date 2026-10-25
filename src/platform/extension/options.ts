@@ -69,6 +69,7 @@ async function main(): Promise<void> {
     allowList,
     sectionState: createSectionState(store),
     context,
+    colors: context === "page",
     locales: Object.keys(catalogs),
     header: { version: extensionVersion(), iconUrl: extensionUrl(ICONS[context]) },
     ...(context === "popup" ? { allSettingsUrl: extensionUrl(OPTIONS_PAGE) } : {}),

@@ -6,6 +6,7 @@ import { memoryStore } from "../../../tests/helpers/memory-store";
 import { withKind, writeSettings } from "../../../tests/helpers/settings";
 import { SHIPPED_CATALOGS } from "../i18n/shipped";
 import { createI18n } from "../i18n/t";
+import { toHexColor } from "../kinds/color";
 import type { KindId } from "../kinds/id";
 import { LIST_FILTERS } from "../kinds/kind-settings";
 import { KIND_BY_ID, KINDS } from "../kinds/registry";
@@ -45,6 +46,7 @@ async function setup(
   context: SettingsContext = "page",
   sectionStore: KeyValueStore = memoryStore(),
   sectionState: SectionState = createSectionState(sectionStore),
+  colors: boolean = context === "page",
 ) {
   const clock = fixedClock(Date.UTC(2026, 9, 1));
   const store = memoryStore();
@@ -65,6 +67,7 @@ async function setup(
     allowList,
     sectionState,
     context,
+    colors,
     locales: ["en", "es"],
   });
   const control = (selector: string): HTMLElement => {
@@ -132,14 +135,22 @@ describe("the section of each tag", () => {
     expect(titles.slice(0, 2)).toEqual([i18n.t("kind_ai_heading"), i18n.t("kind_kernel_heading")]);
   });
 
-  it("holds a master switch, a badge, a banner entry and a list filter in each", async () => {
+  it("holds a master switch, a badge, a banner entry, a color and a filter in each", async () => {
     const { card } = await setup();
     for (const kind of KINDS) {
       const section = card(kind.id);
       const settings = [...section.querySelectorAll("[data-sar-setting]")].map((control) =>
         control.getAttribute("data-sar-setting")
       );
-      expect(settings).toEqual(["enabled", "badge", "banner", "filter", "filter", "filter"]);
+      expect(settings).toEqual([
+        "enabled",
+        "badge",
+        "banner",
+        "color",
+        "filter",
+        "filter",
+        "filter",
+      ]);
       expect(
         [...section.querySelectorAll("[data-sar-setting]")].every((control) =>
           control.getAttribute("data-sar-for") === kind.id
@@ -336,6 +347,212 @@ describe("changing a setting", () => {
   });
 });
 
+/** Types into a color field as a person does: each key is an input event, leaving is a change. */
+function typeColor(field: HTMLInputElement, text: string): void {
+  field.value = text;
+  field.dispatchEvent(new Event("input", { bubbles: true }));
+  change(field);
+}
+
+describe("the color field", () => {
+  const colorOf = (root: HTMLElement, id: KindId) =>
+    root.style.getPropertyValue(`--sar-kind-color-${id}`);
+  const storedColor = async (settings: { read(): Promise<unknown>; }, id: KindId) =>
+    parseSettings(await settings.read()).kinds[id].color;
+
+  it("is on the full page and in the dialog, and not in the popup", async () => {
+    const page = await setup("page");
+    expect(page.root.querySelectorAll("[data-sar-setting=color]")).toHaveLength(KINDS.length);
+    page.form.destroy();
+    const popup = await setup("popup");
+    expect(popup.root.querySelector("[data-sar-setting=color]")).toBeNull();
+    expect(popup.root.querySelector("[data-sar-color-reset]")).toBeNull();
+    popup.form.destroy();
+    const dialog = await setup("popup", memoryStore(), undefined, true);
+    expect(dialog.root.querySelectorAll("[data-sar-setting=color]")).toHaveLength(KINDS.length);
+    expect(dialog.root.getAttribute("data-sar-context")).toBe("popup");
+  });
+
+  it("is labelled with the catalog text, which calls the setting experimental", async () => {
+    const { root, input } = await setup();
+    const field = input("ai", "color");
+    const label = root.querySelector(`label[for="${field.id}"]`);
+    expect(label?.textContent).toBe(i18n.t("options_color_label"));
+    for (const locale of Object.keys(SHIPPED_CATALOGS)) {
+      const label = createI18n(SHIPPED_CATALOGS, locale).t("options_color_label");
+      expect(label, locale).toMatch(/\(experimental\)$/);
+    }
+    expect(field.placeholder).toBe(i18n.t("options_color_placeholder"));
+  });
+
+  it("starts empty with no color set, and shows a stored color in its normal form", async () => {
+    const { root, settings, input, card } = await setup();
+    expect(input("ai", "color").value).toBe("");
+    expect(colorOf(root, "ai")).toBe("");
+    expect(card("ai").querySelector<HTMLElement>("[data-sar-color-reset]")?.hidden).toBe(true);
+    await settings.patch({ kinds: { ai: { color: toHexColor("ABC") } } });
+    expect(input("ai", "color").value).toBe("#aabbcc");
+    expect(colorOf(root, "ai")).toBe("#aabbcc");
+    expect(card("ai").querySelector<HTMLElement>("[data-sar-color-reset]")?.hidden).toBe(false);
+    expect(colorOf(root, "drm")).toBe("");
+  });
+
+  it.each([
+    ["#8F73F3", "#8f73f3"],
+    ["8f73f3", "#8f73f3"],
+    ["#F0a", "#ff00aa"],
+    ["  0f0  ", "#00ff00"],
+  ])("saves %s as %s, in one patch of that field", async (typed, stored) => {
+    const { root, settings, input } = await setup();
+    const patch = vi.spyOn(settings, "patch");
+    typeColor(input("kernel", "color"), typed);
+    await vi.waitFor(async () => {
+      expect(await storedColor(settings, "kernel")).toBe(stored);
+    });
+    expect(patch).toHaveBeenCalledTimes(1);
+    expect(patch).toHaveBeenCalledWith({ kinds: { kernel: { color: stored } } });
+    expect(input("kernel", "color").value).toBe(stored);
+    expect(colorOf(root, "kernel")).toBe(stored);
+    expect(await storedColor(settings, "ai")).toBeUndefined();
+    expect(input("kernel", "color").getAttribute("aria-invalid")).toBe("false");
+  });
+
+  it("shows the color while it is typed and saves it when the change is committed", async () => {
+    const { root, settings, input } = await setup();
+    const patch = vi.spyOn(settings, "patch");
+    const field = input("eula", "color");
+    field.value = "#123456";
+    field.dispatchEvent(new Event("input", { bubbles: true }));
+    expect(colorOf(root, "eula")).toBe("#123456");
+    expect(patch).not.toHaveBeenCalled();
+    change(field);
+    await vi.waitFor(() => {
+      expect(patch).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  it("says so at once for text that is no color, and saves nothing", async () => {
+    const { root, settings, card, input } = await setup();
+    const patch = vi.spyOn(settings, "patch");
+    const field = input("drm", "color");
+    const error = card("drm").querySelector<HTMLElement>(`#${field.id}-invalid`);
+    expect(error?.hidden).toBe(true);
+    for (const text of ["#12", "#12345", "ggg", "red", "#1234567", "rgb(1,2,3)", "url(x)"]) {
+      typeColor(field, text);
+      expect(error?.hidden, text).toBe(false);
+      expect(error?.textContent).toBe(i18n.t("options_color_invalid"));
+      expect(field.getAttribute("aria-invalid")).toBe("true");
+      expect(field.getAttribute("aria-describedby")).toContain(error?.id);
+    }
+    expect(patch).not.toHaveBeenCalled();
+    expect(colorOf(root, "drm")).toBe("");
+    expect(field.value).toBe("url(x)");
+    typeColor(field, "#abc");
+    expect(error?.hidden).toBe(true);
+    expect(field.getAttribute("aria-invalid")).toBe("false");
+  });
+
+  it("keeps text being fixed when another control saves", async () => {
+    const { input } = await setup();
+    const field = input("drm", "color");
+    typeColor(field, "#12");
+    const badge = input("ai", "badge");
+    badge.checked = false;
+    change(badge);
+    await vi.waitFor(() => {
+      expect(input("ai", "badge").checked).toBe(false);
+    });
+    expect(field.value).toBe("#12");
+  });
+
+  it("clears the color when the text is emptied", async () => {
+    const { root, settings, input } = await setup();
+    await settings.patch({ kinds: { pvp: { color: toHexColor("#112233") } } });
+    typeColor(input("pvp", "color"), "  ");
+    await vi.waitFor(async () => {
+      expect(await storedColor(settings, "pvp")).toBeUndefined();
+    });
+    expect(colorOf(root, "pvp")).toBe("");
+    expect(input("pvp", "color").value).toBe("");
+  });
+
+  it("resets from the Reset button, whose accessible name starts with its text", async () => {
+    const { root, settings, card, input } = await setup();
+    await settings.patch({ kinds: { account: { color: toHexColor("#445566") } } });
+    const reset = card("account").querySelector<HTMLElement>("[data-sar-color-reset]");
+    expect(reset?.textContent).toBe(i18n.t("options_color_reset"));
+    expect(reset?.getAttribute("aria-label")).toBe(
+      i18n.t("options_color_reset_label", { heading: heading("account") }),
+    );
+    expect(reset?.getAttribute("aria-label")?.startsWith(reset.textContent)).toBe(true);
+    typeColor(input("account", "color"), "#12");
+    reset?.click();
+    await vi.waitFor(async () => {
+      expect(await storedColor(settings, "account")).toBeUndefined();
+    });
+    expect(colorOf(root, "account")).toBe("");
+    expect(input("account", "color").value).toBe("");
+    expect(input("account", "color").getAttribute("aria-invalid")).toBe("false");
+    expect(reset?.hidden).toBe(true);
+  });
+
+  it("applies the stored colors when it opens and follows another tab", async () => {
+    const { root, settings, input } = await setup();
+    const store = memoryStore();
+    const other = createSettingsSource(store);
+    await other.patch({ kinds: { ai: { color: toHexColor("#010203") } } });
+    const second = document.createElement("main");
+    document.body.append(second);
+    await mountSettingsForm(second, {
+      i18n,
+      settings: other,
+      allowList: createAllowList(memoryStore(), fixedClock(0)),
+      sectionState: createSectionState(memoryStore()),
+      context: "page",
+      colors: true,
+      locales: ["en"],
+    });
+    expect(second.style.getPropertyValue("--sar-kind-color-ai")).toBe("#010203");
+    await settings.patch({ kinds: { ai: { color: toHexColor("#0a0b0c") } } });
+    expect(input("ai", "color").value).toBe("#0a0b0c");
+    expect(colorOf(root, "ai")).toBe("#0a0b0c");
+  });
+
+  it("restores the stored color when the save fails", async () => {
+    const { root, settings, card, input } = await setup();
+    vi.spyOn(settings, "patch").mockRejectedValue(new Error());
+    typeColor(input("ai", "color"), "#abcdef");
+    const failure = card("ai").querySelector<HTMLElement>(
+      ".sar-color > .sar-field-error:not([id])",
+    );
+    await vi.waitFor(() => {
+      expect(failure?.hidden).toBe(false);
+    });
+    expect(failure?.textContent).toBe(i18n.t("error_settings_save"));
+    expect(colorOf(root, "ai")).toBe("");
+    expect(input("ai", "color").value).toBe("");
+  });
+
+  it("is disabled while the settings could not be read", async () => {
+    const store = memoryStore();
+    const settings = createSettingsSource(store);
+    vi.spyOn(settings, "read").mockRejectedValue(new Error());
+    const root = document.createElement("main");
+    document.body.append(root);
+    await mountSettingsForm(root, {
+      i18n,
+      settings,
+      allowList: createAllowList(memoryStore(), fixedClock(0)),
+      sectionState: createSectionState(memoryStore()),
+      context: "page",
+      colors: true,
+      locales: ["en"],
+    });
+    const field = root.querySelector<HTMLInputElement>("[data-sar-setting=color]");
+    expect(field?.disabled).toBe(true);
+  });
+});
+
 describe("two forms over one store", () => {
   /** A form that is its own tab: its own settings source over the shared store. */
   async function tab(store: ReturnType<typeof memoryStore>) {
@@ -348,6 +565,7 @@ describe("two forms over one store", () => {
       allowList: createAllowList(store, fixedClock(0)),
       sectionState: createSectionState(memoryStore()),
       context: "page",
+      colors: true,
       locales: ["en"],
     });
     const input = (id: KindId, field: string): HTMLInputElement => {
@@ -470,6 +688,7 @@ describe("the page around the sections", () => {
       allowList: createAllowList(memoryStore(), fixedClock(0)),
       sectionState: createSectionState(memoryStore()),
       context: "popup",
+      colors: false,
       locales: ["en"],
       header: { version: "2026.10.20", iconUrl: "icons/icon-32.png" },
       allSettingsUrl: "options.html",
@@ -504,6 +723,7 @@ describe("the page around the sections", () => {
       allowList: createAllowList(memoryStore(), fixedClock(0)),
       sectionState: createSectionState(memoryStore()),
       context: "page",
+      colors: true,
       locales: ["en", "es"],
     });
     const titles = kindTitles(root);
@@ -672,6 +892,7 @@ describe("the ignored games", () => {
         allowList,
         sectionState: createSectionState(memoryStore()),
         context,
+        colors: context === "page",
         locales: ["en"],
       });
       const section = [...root.querySelectorAll<HTMLElement>("section.sar-card")].find((card) =>
@@ -792,6 +1013,7 @@ describe("a failed read of the settings", () => {
       allowList: createAllowList(memoryStore(), fixedClock(0)),
       sectionState: createSectionState(memoryStore()),
       context: "page",
+      colors: true,
       locales: ["en"],
     });
     // Above the cards, so a closed section cannot hide it
@@ -821,6 +1043,7 @@ describe("a failed read of the settings", () => {
       allowList: createAllowList(memoryStore(), fixedClock(0)),
       sectionState: createSectionState(memoryStore()),
       context: "page",
+      colors: true,
       locales: ["en", "es"],
     });
     const error = root.querySelector<HTMLElement>(":scope > .sar-field-error");
@@ -863,6 +1086,7 @@ describe("a failed read of the settings", () => {
       allowList: createAllowList(memoryStore(), fixedClock(0)),
       sectionState: createSectionState(memoryStore()),
       context: "page",
+      colors: true,
       locales: ["en"],
     });
     const banner = root.querySelector<HTMLInputElement>("[data-sar-setting=banner]");
