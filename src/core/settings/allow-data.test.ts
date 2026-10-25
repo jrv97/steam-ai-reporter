@@ -6,6 +6,7 @@ import {
   ALLOW_SCOPES,
   decodeAllow,
   decodeAllowScope,
+  decodeScope,
   encodeAllow,
   perScope,
   toAllowScope,
@@ -49,6 +50,24 @@ describe("decodeAllowScope", () => {
     for (const stored of [undefined, null, "x", 3, true]) {
       expect(decodeAllowScope(stored)).toStrictEqual(new Map());
     }
+  });
+});
+
+describe("decodeScope", () => {
+  const tagged = (text: string) => (text.startsWith("t:") ? text.slice(2) : undefined);
+
+  it("keeps the entries whose key the parser reads, under the key it returns", () => {
+    expect(decodeScope({ "t:a": ENTRY, "b": ENTRY, "t:c": 7 }, tagged)).toStrictEqual(
+      new Map([["a", ENTRY]]),
+    );
+  });
+
+  it("is written back under the text of the key", () => {
+    const entries = {
+      ...perScope(() => new Map<string, typeof ENTRY>()),
+      ai: new Map([["t:a", ENTRY]]),
+    };
+    expect(encodeAllow(entries)).toMatchObject({ ai: { "t:a": ENTRY } });
   });
 });
 
