@@ -157,7 +157,7 @@ export async function start(deps: AppDeps): Promise<App> {
     document: doc,
     detector: detectors.detector,
     renderers: [createHostKindsRenderer(), createBadgeRenderer(doc, i18n, card)],
-    isAllowed: (id, forKind, parent) => isIgnored(ignored, id, forKind, parent),
+    isAllowed: (id, forKind, related) => isIgnored(ignored, id, forKind, related),
     isBadged: (forKind) => effectiveSettings(settings.kinds[forKind]).badge,
   });
   const scanner = createScanner({ document: doc, renderer: capsules });

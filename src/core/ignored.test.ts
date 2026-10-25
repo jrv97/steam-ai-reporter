@@ -1,10 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
 import { appId } from "../../tests/helpers/app-ids";
 import { fixedClock } from "../../tests/helpers/fixed-clock";
+import { ignoredGames } from "../../tests/helpers/ignored";
 import { memoryStore } from "../../tests/helpers/memory-store";
 import { isIgnored, loadIgnored } from "./ignored";
-import { KIND_IDS } from "./kinds/id";
-import { ALLOW_ALL, perScope } from "./settings/allow-data";
+import type { KindId } from "./kinds/id";
+import { ALLOW_ALL, type AllowScope } from "./settings/allow-data";
 import { createAllowList } from "./settings/allow-list";
 
 const quiet = { error: vi.fn() };
@@ -33,87 +34,41 @@ describe("loadIgnored", () => {
 });
 
 describe("isIgnored", () => {
-  const ignored = perScope(() => new Set<ReturnType<typeof appId>>());
-  ignored.kernel.add(appId(1));
-  ignored[ALLOW_ALL].add(appId(2));
+  const BASE = 100;
+  const DLC = 101;
 
-  it("ignores a game for the kinds it was ignored for", () => {
-    expect(isIgnored(ignored, appId(1), "kernel")).toBe(true);
-    expect(isIgnored(ignored, appId(1), "ai")).toBe(false);
-  });
+  type Listed = Partial<Record<AllowScope, readonly number[]>>;
 
-  it("ignores a game ignored for all kinds in every kind", () => {
-    expect(isIgnored(ignored, appId(2), "ai")).toBe(true);
-    expect(isIgnored(ignored, appId(2), "pvp")).toBe(true);
-  });
-
-  it("ignores no other game", () => {
-    expect(isIgnored(ignored, appId(3), "kernel")).toBe(false);
-  });
-});
-
-describe("isIgnored for a DLC", () => {
-  const BASE = appId(100);
-  const DLC = appId(101);
-  const fresh = () => perScope(() => new Set<ReturnType<typeof appId>>());
-
-  it("follows a base game ignored for one kind, in that kind only", () => {
-    const ignored = fresh();
-    ignored.ai.add(BASE);
-    expect(isIgnored(ignored, DLC, "ai", BASE)).toBe(true);
-    expect(isIgnored(ignored, DLC, "pvp", BASE)).toBe(false);
-    expect(isIgnored(ignored, DLC, "kernel", BASE)).toBe(false);
-  });
-
-  it("follows a base game ignored for all kinds, in every kind", () => {
-    const ignored = fresh();
-    ignored[ALLOW_ALL].add(BASE);
-    for (const kind of KIND_IDS) {
-      expect(isIgnored(ignored, DLC, kind, BASE)).toBe(true);
-    }
-  });
-
-  it("behaves as before when the base game is not known", () => {
-    const ignored = fresh();
-    ignored[ALLOW_ALL].add(BASE);
-    ignored.ai.add(BASE);
-    expect(isIgnored(ignored, DLC, "ai")).toBe(false);
-    expect(isIgnored(ignored, DLC, "ai", undefined)).toBe(false);
-    expect(isIgnored(ignored, BASE, "ai")).toBe(true);
-  });
-
-  it("stays shown while its base game is not ignored", () => {
-    const ignored = fresh();
-    ignored.ai.add(appId(999));
-    expect(isIgnored(ignored, DLC, "ai", BASE)).toBe(false);
-  });
-
-  it("ignores a DLC on its own entry, with or without a base game", () => {
-    const ignored = fresh();
-    ignored.pvp.add(DLC);
-    expect(isIgnored(ignored, DLC, "pvp")).toBe(true);
-    expect(isIgnored(ignored, DLC, "pvp", BASE)).toBe(true);
-    expect(isIgnored(ignored, DLC, "ai", BASE)).toBe(false);
-    expect(isIgnored(ignored, BASE, "pvp")).toBe(false);
-  });
-
-  it("does not ignore the base game because a DLC is ignored", () => {
-    const ignored = fresh();
-    ignored[ALLOW_ALL].add(DLC);
-    expect(isIgnored(ignored, BASE, "ai")).toBe(false);
-  });
-
-  it("shows the DLC again after the base game stops being ignored", () => {
-    const ignored = fresh();
-    ignored.ai.add(BASE);
-    expect(isIgnored(ignored, DLC, "ai", BASE)).toBe(true);
-    ignored.ai.delete(BASE);
-    expect(isIgnored(ignored, DLC, "ai", BASE)).toBe(false);
-  });
-
-  it("looks one level up only", () => {
-    const ignored = fresh();
-    ignored.ai.add(BASE);
-    expect(isIgnored(ignored, appId(102), "ai", DLC)).toBe(false);
+  it.each<[string, Listed, number, KindId, number | undefined, boolean]>([
+    ["a game for the kind it was ignored for", { kernel: [1] }, 1, "kernel", undefined, true],
+    ["a game for another kind", { kernel: [1] }, 1, "ai", undefined, false],
+    ["a game ignored for all kinds, in any kind", { [ALLOW_ALL]: [2] }, 2, "pvp", undefined, true],
+    ["another game", { kernel: [1] }, 3, "kernel", undefined, false],
+    ["a DLC, through its base game ignored for the kind", { ai: [BASE] }, DLC, "ai", BASE, true],
+    ["a DLC in another kind than its base game's", { ai: [BASE] }, DLC, "pvp", BASE, false],
+    [
+      "a DLC, through its base game ignored for all",
+      { [ALLOW_ALL]: [BASE] },
+      DLC,
+      "drm",
+      BASE,
+      true,
+    ],
+    [
+      "a DLC whose base game is not known",
+      { [ALLOW_ALL]: [BASE], ai: [BASE] },
+      DLC,
+      "ai",
+      undefined,
+      false,
+    ],
+    ["a DLC whose base game is not ignored", { ai: [999] }, DLC, "ai", BASE, false],
+    ["a DLC on its own entry", { pvp: [DLC] }, DLC, "pvp", BASE, true],
+    ["a DLC on its own entry, in another kind", { pvp: [DLC] }, DLC, "ai", BASE, false],
+    ["a base game whose DLC is ignored", { [ALLOW_ALL]: [DLC] }, BASE, "ai", undefined, false],
+    ["a DLC of a DLC, which looks one level up only", { ai: [BASE] }, 102, "ai", DLC, false],
+  ])("decides for %s", (_name, listed, id, kind, parent, expected) => {
+    const related = parent === undefined ? {} : { parent: appId(parent) };
+    expect(isIgnored(ignoredGames(listed), appId(id), kind, related)).toBe(expected);
   });
 });

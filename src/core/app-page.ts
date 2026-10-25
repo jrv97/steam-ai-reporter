@@ -8,7 +8,7 @@ import {
   type KindVerdict,
   type KindVerdicts,
   UNKNOWN_KINDS,
-  withParent,
+  withRelations,
 } from "./kinds/verdicts";
 import type { Logger } from "./log";
 import type { Detector, MessageCatalog } from "./ports";
@@ -64,7 +64,7 @@ function mergeKind(
 /**
  * The verdicts of an English page read from its own document, merged with Steam's data for the
  * game. Only a kind that can be read from the page (`fromAppPage`) takes the page into account.
- * The base game of a DLC comes from the data alone, as the page does not carry it.
+ * What the app is related to comes from the data alone, as the page does not carry it.
  */
 export function mergeVerdicts(
   page: KindVerdicts,
@@ -77,7 +77,7 @@ export function mergeVerdicts(
       ? data[kind.id]
       : mergeKind(kind.id, page[kind.id], data[kind.id], disagree);
   }
-  return isKindVerdicts(merged) ? withParent(merged, data.parent) : data;
+  return isKindVerdicts(merged) ? withRelations(merged, data) : data;
 }
 
 /**
@@ -157,7 +157,7 @@ export function startAppPage(
     return {
       verdicts: known,
       ignored: perScope((scope) => deps.ignored[scope].has(id)),
-      suppressed: perKind((kind) => isIgnored(deps.ignored, id, kind.id, known.parent)),
+      suppressed: perKind((kind) => isIgnored(deps.ignored, id, kind.id, known)),
       badge: perKind((kind) => effectiveSettings(kinds[kind.id]).badge),
       banner: perKind((kind) => effectiveSettings(kinds[kind.id]).banner),
     };

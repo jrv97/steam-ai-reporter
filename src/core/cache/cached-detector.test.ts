@@ -12,7 +12,7 @@ import {
   NOT_DISCLOSED,
 } from "../../../tests/helpers/verdicts";
 import type { AiVerdict } from "../kinds/ai";
-import { withParent } from "../kinds/verdicts";
+import { withRelations } from "../kinds/verdicts";
 import type { Detector } from "../ports";
 import { type AppId, UNKNOWN } from "../types";
 import { cachedDetector } from "./cached-detector";
@@ -60,7 +60,7 @@ describe("cachedDetector", () => {
   });
 
   it("keeps the base game of a DLC from the first answer on, with one request", async () => {
-    const dlc = withParent(aiVerdicts(disclosedVerdict()), appId(1808500));
+    const dlc = withRelations(aiVerdicts(disclosedVerdict()), { parent: appId(1808500) });
     const inner = fakeDetector(() => dlc);
     const store = memoryStore();
     const logger = { error: vi.fn<(problem: unknown) => void>() };

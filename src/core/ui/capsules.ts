@@ -1,6 +1,6 @@
 import type { KindId } from "../kinds/id";
 import { KINDS, perKind } from "../kinds/registry";
-import type { KindVerdicts } from "../kinds/verdicts";
+import type { KindVerdicts, Relations } from "../kinds/verdicts";
 import type { Detector } from "../ports";
 import { HOST_APPID } from "../scan/marks";
 import type { RowPlacement } from "../scan/placements";
@@ -51,11 +51,8 @@ export interface CapsuleUiOptions {
   readonly detector: Detector;
   /** Drawn in order for every host: state marks, badges. */
   readonly renderers: readonly HostRenderer[];
-  /**
-   * Whether the game is ignored for the kind now. `parent` is the game's base game when it is a
-   * DLC and Valve's data named one.
-   */
-  readonly isAllowed: (id: AppId, kind: KindId, parent: AppId | undefined) => boolean;
+  /** Whether the game is ignored for the kind now, given what Valve's data relates it to. */
+  readonly isAllowed: (id: AppId, kind: KindId, related: Relations) => boolean;
   /** Whether the kind's badges show now, by its settings. */
   readonly isBadged: (kind: KindId) => boolean;
   /** Schedules a read-then-write pass; `requestAnimationFrame` by default. */
@@ -203,7 +200,7 @@ export function createCapsuleUi(options: CapsuleUiOptions): CapsuleUi {
       }
       let shows = false;
       for (const kind of KINDS) {
-        allowed[kind.id] = isAllowed(host.appId, kind.id, verdicts.parent);
+        allowed[kind.id] = isAllowed(host.appId, kind.id, verdicts);
         badged[kind.id] = isBadged(kind.id);
         shows ||= verdicts[kind.id].state === "disclosed" && !allowed[kind.id]
           && badged[kind.id];

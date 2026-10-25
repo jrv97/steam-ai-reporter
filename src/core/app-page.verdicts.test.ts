@@ -7,7 +7,7 @@ import { aiVerdicts, disclosedVerdict, NOT_DISCLOSED } from "../../tests/helpers
 import { mergeVerdicts, translatedVerdicts } from "./app-page";
 import { parseAppPage } from "./detect/app-page";
 import { KINDS } from "./kinds/registry";
-import { UNKNOWN_KINDS, withParent } from "./kinds/verdicts";
+import { UNKNOWN_KINDS, withRelations } from "./kinds/verdicts";
 import { UNKNOWN } from "./types";
 
 const ID = appId(5072580);
@@ -91,7 +91,7 @@ describe("mergeVerdicts", () => {
   });
 
   it("takes the base game of a DLC from Steam's data, as the page does not carry it", () => {
-    const data = withParent(capturedVerdicts(1808500), appId(1808500));
+    const data = withRelations(capturedVerdicts(1808500), { parent: appId(1808500) });
     const merged = mergeVerdicts(pageOf("5072580-ai-first.html"), data, none);
     expect(merged.parent).toBe(1808500);
     expect(mergeVerdicts(pageOf("413150-no-block.html"), data, none).parent).toBe(1808500);
@@ -126,7 +126,7 @@ describe("translatedVerdicts", () => {
   });
 
   it("keeps the base game of a DLC when the notes are asked for again", async () => {
-    const stored = withParent(capturedVerdicts(1808500), appId(1000));
+    const stored = withRelations(capturedVerdicts(1808500), { parent: appId(1000) });
     const fresh = disclosedVerdict({ language: "german", notes: "Deutsche Hinweise." });
     const getItems = fakeDetector(() => aiVerdicts(fresh));
     expect((await translatedVerdicts(ID, "german", stored, getItems)).parent).toBe(1000);

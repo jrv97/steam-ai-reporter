@@ -12,7 +12,7 @@ import {
 import type { JsonValue } from "../json";
 import { AI_KIND, type AiVerdict } from "../kinds/ai";
 import { perKind } from "../kinds/registry";
-import { type KindVerdicts, withParent } from "../kinds/verdicts";
+import { type KindVerdicts, withRelations } from "../kinds/verdicts";
 import { type AppId, UNKNOWN } from "../types";
 import { TRANSIENT_TTL_MS, UNKNOWN_TTL_MS } from "./ttl";
 import { createVerdictCache } from "./verdict-cache";
@@ -43,7 +43,7 @@ describe("VerdictCache", () => {
 
   it("keeps the base game of a DLC in memory and for another tab", async () => {
     const { cache, another, store } = setup();
-    const verdicts = withParent(aiVerdicts(disclosedVerdict()), appId(1808500));
+    const verdicts = withRelations(aiVerdicts(disclosedVerdict()), { parent: appId(1808500) });
     await cache.save(new Map([[appId(5201760), verdicts]]));
     expect((await cache.lookup(appIds(5201760))).get(appId(5201760))?.parent).toBe(1808500);
     const tab = another();

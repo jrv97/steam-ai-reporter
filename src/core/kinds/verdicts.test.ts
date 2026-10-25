@@ -11,7 +11,7 @@ import {
   kindsFromGetItems,
   sameVerdicts,
   UNKNOWN_KINDS,
-  withParent,
+  withRelations,
 } from "./verdicts";
 
 const REASONS: readonly UnknownReason[] = ["gated", "missing", "error", "rate-limited"];
@@ -27,13 +27,14 @@ describe("UNKNOWN_KINDS", () => {
   });
 });
 
-describe("withParent", () => {
-  it("returns the same verdicts when there is no base game", () => {
-    expect(withParent(FULL_DISCLOSED, undefined)).toBe(FULL_DISCLOSED);
+describe("withRelations", () => {
+  it("returns the same verdicts when there is nothing related", () => {
+    expect(withRelations(FULL_DISCLOSED, {})).toBe(FULL_DISCLOSED);
+    expect(withRelations(FULL_DISCLOSED, { parent: undefined })).toBe(FULL_DISCLOSED);
   });
 
   it("adds the base game without touching the shared objects or the verdicts", () => {
-    const dlc = withParent(UNKNOWN_KINDS.missing, appId(7));
+    const dlc = withRelations(UNKNOWN_KINDS.missing, { parent: appId(7) });
     expect(dlc.parent).toBe(7);
     expect(UNKNOWN_KINDS.missing).not.toHaveProperty("parent");
     for (const id of KIND_IDS) {

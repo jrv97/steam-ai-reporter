@@ -3,7 +3,12 @@ import { type JsonValue, toJsonValue } from "../json";
 import type { KindId } from "../kinds/id";
 import type { TagKind } from "../kinds/kind";
 import { KINDS } from "../kinds/registry";
-import { isKindVerdicts, type KindVerdict, type KindVerdicts, withParent } from "../kinds/verdicts";
+import {
+  isKindVerdicts,
+  type KindVerdict,
+  type KindVerdicts,
+  withRelations,
+} from "../kinds/verdicts";
 import { AppIdSchema, NOT_DISCLOSED, UNKNOWN, VerdictSourceSchema } from "../types";
 import { isStoredReason, STORED_REASONS } from "./ttl";
 
@@ -72,7 +77,7 @@ export function decodeVerdicts(stored: unknown): TimedVerdicts | undefined {
     verdicts[kind.id] = verdict;
   }
   return isKindVerdicts(verdicts)
-    ? { verdicts: withParent(verdicts, app.output.parent), time: app.output.time }
+    ? { verdicts: withRelations(verdicts, { parent: app.output.parent }), time: app.output.time }
     : undefined;
 }
 

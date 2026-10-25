@@ -10,7 +10,7 @@ import {
 import type { AiVerdict } from "../kinds/ai";
 import { KIND_IDS } from "../kinds/id";
 import { perKind } from "../kinds/registry";
-import { type KindVerdicts, UNKNOWN_KINDS, withParent } from "../kinds/verdicts";
+import { type KindVerdicts, UNKNOWN_KINDS, withRelations } from "../kinds/verdicts";
 import { NOT_DISCLOSED as NOT_DISCLOSED_VERDICT, UNKNOWN } from "../types";
 import { decodeVerdicts, encodeVerdicts } from "./stored";
 
@@ -211,12 +211,16 @@ describe("encodeVerdicts and decodeVerdicts", () => {
 
 describe("the base game of a DLC in storage", () => {
   const parent = appId(1808500);
-  const dlc = withParent(FULL_DISCLOSED, parent);
+  const dlc = withRelations(FULL_DISCLOSED, { parent });
   const stored = { time: T, kinds: STORED_KINDS };
 
   it("round trips the parent with the verdicts", () => {
     expect(decodeVerdicts(encodeVerdicts(dlc, T))).toStrictEqual({ verdicts: dlc, time: T });
-    expect(decodeVerdicts(encodeVerdicts(withParent(uniformVerdicts("not-disclosed"), parent), T)))
+    expect(
+      decodeVerdicts(
+        encodeVerdicts(withRelations(uniformVerdicts("not-disclosed"), { parent }), T),
+      ),
+    )
       .toMatchObject({ verdicts: { parent } });
   });
 

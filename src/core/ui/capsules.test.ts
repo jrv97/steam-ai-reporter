@@ -9,7 +9,7 @@ import {
 import { isIgnored } from "../ignored";
 import type { AiVerdict } from "../kinds/ai";
 import { KIND_IDS, type KindId } from "../kinds/id";
-import type { KindVerdicts } from "../kinds/verdicts";
+import type { KindVerdicts, Relations } from "../kinds/verdicts";
 import type { Detector } from "../ports";
 import { GENERIC, type Placement, type RowPlacement } from "../scan/placements";
 import type { CapsuleHost } from "../scan/renderer";
@@ -44,8 +44,7 @@ function setup(
   /** Kinds whose badges are off in the settings. */
   unbadged: ReadonlySet<KindId> = new Set(),
   /** What decides whether a game is ignored; the set of `allowed` IDs by default. */
-  isAllowed: (id: AppId, kind: KindId, parent: AppId | undefined) => boolean = (id) =>
-    allowed.has(id),
+  isAllowed: (id: AppId, kind: KindId, related: Relations) => boolean = (id) => allowed.has(id),
 ) {
   const detect = vi.fn((ids: readonly AppId[]) =>
     Promise.resolve(
@@ -322,13 +321,12 @@ describe("createCapsuleUi", () => {
     function ignoring(setupList: (ignored: ReturnType<typeof lists>) => void) {
       const ignored = lists();
       setupList(ignored);
-      return (id: AppId, kind: KindId, parent: AppId | undefined) =>
-        isIgnored(ignored, id, kind, parent);
+      return (id: AppId, kind: KindId, related: Relations) => isIgnored(ignored, id, kind, related);
     }
     const lists = () => perScope(() => new Set<AppId>());
 
     it("asks whether the game is ignored with the base game Steam named", async () => {
-      const asked = vi.fn((_id: AppId, _kind: KindId, _parent: AppId | undefined) => false);
+      const asked = vi.fn((_id: AppId, _kind: KindId, _related: Relations) => false);
       const { ui, flush } = setup(
         new Map([[DLC, disclosedVerdict()]]),
         new Set(),
@@ -338,7 +336,7 @@ describe("createCapsuleUi", () => {
       );
       ui.render({ found: [host(5201760)], changed: [] });
       await flush();
-      expect(asked).toHaveBeenCalledWith(DLC, "ai", BASE);
+      expect(asked).toHaveBeenCalledWith(DLC, "ai", expect.objectContaining({ parent: BASE }));
       expect(asked).toHaveBeenCalledTimes(KIND_IDS.length);
     });
 
@@ -380,7 +378,7 @@ describe("createCapsuleUi", () => {
         new Set(),
         { parent: BASE },
         new Set(),
-        (id, kind, parent) => isIgnored(ignored, id, kind, parent),
+        (id, kind, related) => isIgnored(ignored, id, kind, related),
       );
       ui.render({ found: [host(5201760)], changed: [] });
       await flush();
