@@ -24,6 +24,7 @@ from pathlib import Path
 
 import cws
 from calver import next_version, parse, release_tags, utc_today
+from notes import AMO_LIMIT, fit
 from repo import (
     ARTIFACTS,
     EXTENSION_TARGETS,
@@ -361,7 +362,9 @@ def amo() -> None:
         unpacked, metadata = Path(folder) / "gecko", Path(folder) / "amo-metadata.json"
         with zipfile.ZipFile(archive) as files:
             files.extractall(unpacked)
-        notes = {"version": {"release_notes": {"en-US": release_notes(version)}}}
+        link = f"Full notes: https://github.com/{env('GH_REPO')}/releases/tag/{version}"
+        text = fit(release_notes(version), AMO_LIMIT, link)
+        notes = {"version": {"release_notes": {"en-US": text}}}
         metadata.write_text(json.dumps(notes, indent=2), encoding="utf-8")
         sign = {
             "--channel": "listed",
