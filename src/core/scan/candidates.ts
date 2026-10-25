@@ -5,7 +5,8 @@ import { SAR_NODE } from "./marks";
 // Elements that name an app (rq6, S5): classic surfaces put a `data-ds-appid` on the capsule
 // itself; React surfaces carry only `/app/<id>` links.
 
-const DATA_APPID = "data-ds-appid";
+/** The attribute Steam puts on a classic capsule or row, the store's own mark of an item. */
+export const DATA_APPID = "data-ds-appid";
 
 /** Capsules that say their app ID in a `data-ds-appid`. A comma list is a package or bundle. */
 export const DATA_CANDIDATE = `[${DATA_APPID}]`;

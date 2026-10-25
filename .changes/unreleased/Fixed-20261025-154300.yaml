@@ -1,0 +1,3 @@
+kind: Fixed
+body: On a package page (a store address that starts with /sub/), the tag badge now sits on the included game in "Items included in this package" instead of on the package's title image at the top, and a dimmed tag list filter dims only that game's row instead of the whole content column.
+time: 2026-10-25T15:43:00.000000+02:00
