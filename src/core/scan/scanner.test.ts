@@ -1,11 +1,15 @@
 // @vitest-environment-options {"url":"https://store.steampowered.com/search/?term=roguelike"}
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { countDomWork, type DomWork } from "../../../tests/helpers/dom-work";
+import { hostView } from "../../../tests/helpers/host-view";
+import { PACKAGE_PATH, packagePage } from "../../../tests/helpers/package-page";
 import {
   type RecordingRenderer,
   recordingRenderer,
 } from "../../../tests/helpers/recording-renderer";
 import { loadPage, nodes, setBody, SURFACES, the } from "../../../tests/helpers/surfaces";
+import { disclosedKinds } from "../../../tests/helpers/verdicts";
+import { createHostKindsRenderer } from "../ui/list-filter";
 import { HOST_APPID, HOST_HIDEABLE, HOST_KINDS } from "./marks";
 import type { CapsuleHost } from "./renderer";
 import { createScanner, DEBOUNCE_MS, type Scanner, type ScanReport } from "./scanner";
@@ -321,6 +325,70 @@ describe("host rule", () => {
     the(".CapsuleImageCtn", panel).append(image);
     await settle();
     expect(found()).toHaveLength(1);
+  });
+});
+
+describe("package page", () => {
+  const ROW = ".tab_item[data-ds-appid]";
+  const OUTSIDE = [
+    "div.leftcol",
+    "div.page_content",
+    "#package_header_container",
+    "img.package_header",
+  ];
+
+  /** What the DRM list filter on dim would dim: the rule `[data-sar-filter-drm="dim"] ...`. */
+  function dimmed(): readonly Element[] {
+    document.documentElement.setAttribute("data-sar-filter-drm", "dim");
+    return [
+      ...document.querySelectorAll(`[data-sar-filter-drm="dim"] [data-sar-kinds~="drm"]`),
+    ];
+  }
+
+  it("one included game: the row is the host and its capsule image the anchor", async () => {
+    history.replaceState(null, "", PACKAGE_PATH);
+    setBody(packagePage([4115450]));
+    await startScanner();
+    expect(hostElements()).toStrictEqual([the(ROW)]);
+    expect(mapping()).toStrictEqual([[4115450, "generic"]]);
+    expect(found()[0]?.anchor).toBe(the(".tab_item_cap"));
+    expect(the(".tab_item_cap").contains(the("img.tab_item_cap_img"))).toBe(true);
+    expect(the(ROW).getAttribute(HOST_APPID)).toBe("4115450");
+    for (const selector of OUTSIDE) {
+      expect(the(selector).hasAttribute(HOST_APPID)).toBe(false);
+      expect(the(selector).hasAttribute(HOST_KINDS)).toBe(false);
+    }
+  });
+
+  it("with the DRM filter on dim, only the included game's row dims", async () => {
+    history.replaceState(null, "", PACKAGE_PATH);
+    setBody(packagePage([4115450]));
+    await startScanner();
+    const kindsRenderer = createHostKindsRenderer();
+    for (const host of found()) {
+      kindsRenderer.render(hostView(host.element, { verdicts: disclosedKinds(["drm"]) }));
+    }
+    expect(dimmed()).toStrictEqual([the(ROW)]);
+    for (const selector of OUTSIDE) {
+      expect(the(selector).hasAttribute(HOST_KINDS)).toBe(false);
+    }
+  });
+
+  it("two included games: two row hosts, nothing around them", async () => {
+    history.replaceState(null, "", PACKAGE_PATH);
+    setBody(packagePage([4115450, 1091500]));
+    await startScanner();
+    expect(hostElements()).toStrictEqual([...document.querySelectorAll(ROW)]);
+    expect(mapping()).toStrictEqual([
+      [4115450, "generic"],
+      [1091500, "generic"],
+    ]);
+    for (const host of found()) {
+      expect(host.anchor).toBe(the(".tab_item_cap", host.element));
+    }
+    for (const selector of OUTSIDE) {
+      expect(the(selector).hasAttribute(HOST_APPID)).toBe(false);
+    }
   });
 });
 

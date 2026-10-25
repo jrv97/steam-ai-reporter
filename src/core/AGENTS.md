@@ -34,6 +34,7 @@ Every implementation of a port passes the same shared contract suite, with no pe
 ## Extending without editing
 
 - A new store surface is a new `Placement` entry in `scan/placements.ts`, with a fixture test. The scanner is not edited.
+- A host never grows past an element the store marks as an item (`data-ds-appid`). A link's host climbs to the lowest image ancestor and at most `MAX_JOIN_LEVELS` more, and stops at the first such element, so on a package page (`/sub/<id>/`, where nothing else names an app) the host is the included game's row and not the column around the package header.
 - A new detection source is a new `Detector` link in the chain. The chain and the scanner are not edited.
 - A new message is a catalog key in `src/locales/`, never a literal in code or in a test.
 

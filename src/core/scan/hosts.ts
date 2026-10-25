@@ -1,13 +1,19 @@
 import type { AppId } from "../types";
-import { DATA_CANDIDATE, type Naming, uniformNaming } from "./candidates";
+import { DATA_APPID, DATA_CANDIDATE, type Naming, uniformNaming } from "./candidates";
 import { firstImage } from "./image";
 
 // The host rule rq6 (S5) chose on the tag hub: the lowest image-bearing ancestor that names one
-// app, then a short climb that joins image and title blocks that are siblings.
+// app, then a short climb that joins image and title blocks that are siblings. The climb never
+// grows past an element the store itself marks as an item (a `data-ds-appid`): on a package page
+// nothing else names an app, so without that stop it would climb from one included game's row to
+// the whole column around the package header and the purchase boxes.
 
 /** How far above a link its capsule image may sit (the link itself is level 0). */
 export const MAX_IMAGE_LEVELS = 8;
-/** How many more levels a host may climb while everything inside still names its app. */
+/**
+ * How many more levels a host may climb while everything inside still names its app. The climb
+ * ends at the first element with a `data-ds-appid`, which is the item and the largest a host gets.
+ */
 export const MAX_JOIN_LEVELS = 3;
 
 /** Finds capsule hosts during one scan. Its memos live as long as the scan; never keep one. */
@@ -67,7 +73,7 @@ export function createHostFinder(document: Document): HostFinder {
       if (naming(host) !== appId) {
         return undefined;
       }
-      for (let level = 0; level < MAX_JOIN_LEVELS; level++) {
+      for (let level = 0; level < MAX_JOIN_LEVELS && !host.hasAttribute(DATA_APPID); level++) {
         const parent = parentOf(host);
         if (parent === undefined || naming(parent) !== appId) {
           break;
