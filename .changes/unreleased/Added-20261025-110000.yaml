@@ -1,3 +1,0 @@
-kind: Added
-body: Each tag can take a badge color of your choice, as an experimental setting on the settings page and in the userscript dialog. Type a hex code such as #8f73f3 and it colors that tag's badge, its chip in the game's tag section, its card and the banner on the game's page, at once and without reloading. Reset goes back to the default violet. The extension uses the color as you gave it and does not check contrast, so a very light or very dark color can be hard to read; the default colors are unchanged.
-time: 2026-10-25T11:00:00.0000000+02:00

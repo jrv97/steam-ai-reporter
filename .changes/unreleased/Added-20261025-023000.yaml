@@ -1,3 +1,0 @@
-kind: Added
-body: Each tag has its own settings section with a switch for the tag, its badge, its entry in the banner and a list filter (Show, Dim or Hide) for the games that carry it. When one game carries several tags, the strongest filter wins. You can ignore a game for one tag or for all tags from the banner, and the list of ignored games in settings shows each game under the scope you ignored it for, each with its own Stop ignoring button.
-time: 2026-10-25T02:30:00.0000000+02:00
