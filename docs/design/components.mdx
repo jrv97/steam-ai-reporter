@@ -114,7 +114,7 @@ Each kind's settings (`kinds.<id>`: `enabled`, `badge`, `banner` and `filter`) g
 
 - Every injected element carries a class starting with `sar-`; every attribute we set on store nodes starts with `data-sar-`. The scanner skips both.
 - Hosts get `data-sar-appid`, `data-sar-kinds` and, where the placement says hiding would break the list, `data-sar-hideable="false"`. `data-sar-kinds` holds the ids of the kinds that are disclosed and not ignored for the game, in registry order and separated by spaces, and is absent when there are none. Rules match one id with `~=`. The renderers write them when the scanner marks the host and again when a verdict, the ignore list or a setting changes, and only when the value changed.
-- List filters live as attributes on `document.documentElement`, one per kind: `data-sar-filter-<kind>` (`off`, `dim`, `hide`). A kind that is switched off reads `off`. Chips carry `data-sar-kind` with the id of their kind. A kind's badge switch is not an attribute: the chips are drawn again from the settings, which also keeps the "+N" count right. The list filter is pure CSS on top of the attributes (section 5).
+- List filters live as attributes on `document.documentElement`, one per kind: `data-sar-filter-<kind>` (`off`, `dim`, `hide`). While the hidden results notice shows what Hide removed, the root also carries `data-sar-reveal` (section 16); nothing stores it. A kind that is switched off reads `off`. Chips carry `data-sar-kind` with the id of their kind. A kind's badge switch is not an attribute: the chips are drawn again from the settings, which also keeps the "+N" count right. The list filter is pure CSS on top of the attributes (section 5).
 - Never move, wrap or restyle store nodes. The store-node changes besides the attributes above are `data-sar-anchor` on an image container that computes to `position: static`, which a CSS rule turns into `position: relative` (section 2), and a transient `aria-describedby` on a focused store link while the hover card is open (section 15).
 - DOM reads (image sizes, computed position) are batched before writes in one `requestAnimationFrame` per scan.
 - Listeners are delegated: one per root, never one per node. The tag section adds none: its chips are served by the hover card's listeners on the document (section 15).
@@ -437,17 +437,19 @@ No classes, no inline styles, no per-node writes when the mode changes.
 
 - `off`: lists unchanged; chips only.
 - `dim`: hosts that carry the kind get `filter: opacity(sar-dim-opacity)` (0.4). `:hover` and `:focus-within` restore full opacity on that one host with a `sar-duration-fast` fade in and a snap back.
-- `hide`: hosts that carry the kind get `display: none`. Hosts marked `data-sar-hideable="false"` dim instead.
+- `hide`: hosts that carry the kind get `display: none`. Hosts marked `data-sar-hideable="false"` dim instead, as does every host while the root carries `data-sar-reveal`, which the hidden results notice sets for one page (section 16).
 - Several kinds on one host: the strongest mode wins (hide over dim over off). No rule is needed for it: a hidden host ignores a dim, and a host that cannot hide dims for either mode.
 - A kind that is not disclosed, unknown or ignored for the game is absent from `data-sar-kinds`, so it never matches. A kind that is switched off writes `off` for its filter.
 
 ```css
 /* One pair of rules for each kind; drm shown */
 [data-sar-filter-drm="dim"] [data-sar-kinds~="drm"],
-[data-sar-filter-drm="hide"] [data-sar-kinds~="drm"][data-sar-hideable="false"] {
+[data-sar-filter-drm="hide"]
+  [data-sar-kinds~="drm"]:is([data-sar-hideable="false"], [data-sar-reveal] *) {
   filter: opacity(var(--sar-dim-opacity)) !important;
 }
-[data-sar-filter-drm="hide"] [data-sar-kinds~="drm"]:not([data-sar-hideable="false"]) {
+[data-sar-filter-drm="hide"]:not([data-sar-reveal])
+  [data-sar-kinds~="drm"]:not([data-sar-hideable="false"]) {
   display: none !important;
 }
 ```
@@ -893,6 +895,45 @@ Built like the store's game hover popup, sampled on the home page on 2026-10-21:
 - Don't fetch anything to fill it.
 - Don't add per-badge listeners or a card per badge.
 
+## 16. Hidden results notice
+
+One line above a list that says how many results the list filter hid there, with a button that shows them on this page and hides them again. The setting stays as it is.
+
+### When to use
+
+- On a list surface named in `LIST_PLACEMENTS` (`scan/placements.ts`): search results first. A new surface is one entry, the selector of the element that holds its hosts.
+- Only while at least one host in that list is hidden: a kind on `hide`, the host carries it and the host can hide. A host that dims instead does not count.
+
+### What the consumer provides
+
+- The marks of section 5: `data-sar-filter-<kind>` on the root element, `data-sar-kinds` and `data-sar-hideable` on the hosts. The notice writes no host and reads no setting.
+- The count, from the plural keys `notice_list_hidden` and `notice_list_revealed`, and the button text from `notice_list_show` and `notice_list_hide`.
+
+### Look
+
+- The banner's ignored note in neutral: `sar-banner-note-bg`, `sar-color-text-muted`, `sar-banner-note-font`, `sar-radius-xs`, 8px inline padding and 4px below it. No violet: the line reports what the extension did, not a tag.
+- The button is the banner's in-bubble link: underlined `sar-banner-link-color` text, 24px tall at least.
+- It goes right before the list element, under the store's sort bar, and wraps to two lines before it truncates.
+- Light DOM with the badge reset, like the other page components.
+
+### Behavior
+
+- A click sets `data-sar-reveal` on the root element: the hide rules skip it and those hosts dim (section 5). The line becomes "Tag Kit is showing 3 hidden results." and the button "Hide them". The next click removes it.
+- Nothing is stored. A reload, a new list element from the store, `pagehide`, stopping, or the count reaching zero ends the reveal.
+- The count is one `querySelectorAll` over the list in one animation frame after a mutation that can change it: a `data-sar-kinds` write, a root filter write or a marked host leaving the page. One `MutationObserver` serves it and disconnects on `pagehide`; a page without a list surface gets no observer.
+
+### Accessibility
+
+- A real `button`, reached by Tab and pressed with Enter or Space. Its name is its text, and `aria-describedby` points at the line.
+- A polite live region inside the notice repeats the line once it has held for one second, and a burst of new rows is announced once.
+- The shared focus ring on `:focus-visible`. In forced colors the notice gets a `CanvasText` edge, and the underline still marks the button.
+
+### Don't
+
+- Don't name tags or verdicts in the line: it counts results only.
+- Don't write the reveal to settings or storage.
+- Don't scan for the count; read the marks the renderers wrote.
+
 ## Message catalog
 
 Every string the UI shows, as keys for `src/locales/en/messages.json`. Keys are snake_case, grouped by prefix. Placeholders use the Chrome form `$name$`. The note under each seeds the message's `description` for translators.
@@ -961,6 +1002,10 @@ For every translator:
 | `notice_marking_stopped` | This game will be ignored | Screen reader announcement. |
 | `notice_marking_restored` | This game is no longer ignored | Screen reader announcement. |
 | `notice_settings_saved` | Saved. | Screen reader announcement after a setting changes. |
+| `notice_list_hidden_one`, `_other` | Tag Kit hid `$count$` result(s). | Line above a list when Hide removed some of its results. Names the number only. |
+| `notice_list_revealed_one`, `_other` | Tag Kit is showing `$count$` hidden result(s). | Replaces the line after "Show them"; the results show again, dimmed, on this page only. |
+| `notice_list_show_one`, `_other` | Show it / Show them | Button after the line. Changes no setting. |
+| `notice_list_hide_one`, `_other` | Hide it / Hide them | Button after the revealed line. |
 | `notice_backup_downloaded` | Backup downloaded. | Screen reader announcement after the file is saved. |
 | `notice_backup_restored` | Backup restored. | Shown under the backup buttons and announced after a restore. |
 

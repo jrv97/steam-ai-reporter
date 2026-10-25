@@ -34,6 +34,7 @@ Every implementation of a port passes the same shared contract suite, with no pe
 ## Extending without editing
 
 - A new store surface is a new `Placement` entry in `scan/placements.ts`, with a fixture test. The scanner is not edited.
+- A new list for the hidden results notice (`ui/hidden-notice.ts`) is a `ListPlacement` entry in `LIST_PLACEMENTS`, the selector of the element that holds its hosts. The notice counts the marks below with one query per change and never scans.
 - A host never grows past an element the store marks as an item (`data-ds-appid`). A link's host climbs to the lowest image ancestor and at most `MAX_JOIN_LEVELS` more, and stops at the first such element, so on a package page (`/sub/<id>/`, where nothing else names an app) the host is the included game's row and not the column around the package header.
 - A new detection source is a new `Detector` link in the chain. The chain and the scanner are not edited.
 - A new message is a catalog key in `src/locales/`, never a literal in code or in a test.
@@ -62,6 +63,7 @@ Every attribute core writes on a store node starts with `data-sar-`. The scheme 
 | Each host with a kind  | `data-sar-kinds`            | The ids of the kinds that are disclosed and not ignored for the game, in registry order, separated by spaces. Absent when there is none. Rules match one id with `~=`. |
 | Hosts that cannot hide | `data-sar-hideable="false"` | Hiding would break the list, so hide dims instead.                                                                                                                     |
 | The root element       | `data-sar-filter-<kind>`    | The kind's list filter that takes effect: `off`, `dim` or `hide`.                                                                                                      |
+| The root element       | `data-sar-reveal`           | Set while the hidden results notice shows what Hide removed, on this page only; never stored. The hide rules skip it and those hosts dim.                              |
 | The root element       | `--sar-kind-color-<kind>`   | The kind's custom color, a validated `#rrggbb`, in the root's `style`. Removed when unset.                                                                             |
 | A chip                 | `data-sar-kind`             | The id of the kind it shows. A hover card entry and a banner with one tag carry it too, so the color rules reach them.                                                 |
 
