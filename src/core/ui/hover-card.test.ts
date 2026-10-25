@@ -527,7 +527,7 @@ describe("createHoverCard", () => {
           [heading("kernel"), i18n.t("kind_kernel_boot")],
           [heading("account"), "EA Account linking required", i18n.t("kind_account_links")],
           [heading("eula"), ...eulaNames(capturedVerdicts(2807960))],
-          [heading("pvp"), i18n.t("kind_pvp_category_pvp"), i18n.t("kind_pvp_category_online")],
+          [heading("pvp"), i18n.t("kind_pvp_category_online")],
         ],
       ],
       [
@@ -537,7 +537,7 @@ describe("createHoverCard", () => {
           [heading("ai"), notesOf(capturedVerdicts(1808500))],
           [heading("kernel"), "Denuvo", i18n.t("kind_kernel_uninstall")],
           [heading("eula"), ...eulaNames(capturedVerdicts(1808500))],
-          [heading("pvp"), i18n.t("kind_pvp_category_pvp"), i18n.t("kind_pvp_category_online")],
+          [heading("pvp"), i18n.t("kind_pvp_category_online")],
         ],
       ],
       ["a named anti-cheat that is not kernel level (730)", capturedVerdicts(730), [
@@ -545,7 +545,7 @@ describe("createHoverCard", () => {
       ]],
       ["two EULAs (1245620)", capturedVerdicts(1245620), [
         [heading("eula"), ...eulaNames(capturedVerdicts(1245620))],
-        [heading("pvp"), i18n.t("kind_pvp_category_pvp"), i18n.t("kind_pvp_category_online")],
+        [heading("pvp"), i18n.t("kind_pvp_category_online")],
       ]],
       [
         "a named kernel anti-cheat that stays behind, an account and a EULA (1172470)",
@@ -554,7 +554,7 @@ describe("createHoverCard", () => {
           [heading("kernel"), "Easy Anti-Cheat", i18n.t("kind_kernel_uninstall")],
           [heading("account"), "EA Account", i18n.t("kind_account_links")],
           [heading("eula"), ...eulaNames(capturedVerdicts(1172470))],
-          [heading("pvp"), i18n.t("kind_pvp_category_pvp"), i18n.t("kind_pvp_category_online")],
+          [heading("pvp"), i18n.t("kind_pvp_category_online")],
         ],
       ],
       [

@@ -32,7 +32,9 @@ interface ChipText {
 
 function chipText(i18n: MessageCatalog, kind: TagKind): ChipText {
   const label = i18n.t(kind.messages.chip);
-  const name = i18n.t("kind_chip_name", { chip: label, heading: i18n.t(kind.messages.heading) });
+  const heading = i18n.t(kind.messages.heading);
+  // PvP reads the same as its heading, so its name is that word once, not "PvP: PvP".
+  const name = label === heading ? label : i18n.t("kind_chip_name", { chip: label, heading });
   return { label, name };
 }
 

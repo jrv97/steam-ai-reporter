@@ -252,12 +252,16 @@ export function createHoverCard(
     }
   }
 
+  /** A kind's entry. A line that only repeats the heading, as PvP does, is left out. */
   function entry(verdict: AnyDisclosed): HTMLElement {
+    const heading = i18n.t(KIND_BY_ID[verdict.kind].messages.heading);
     const node = doc.createElement("div");
     node.className = "sar-hovercard-entry";
     node.append(
-      line("sar-hovercard-title", i18n.t(KIND_BY_ID[verdict.kind].messages.heading)),
-      ...kindDetails(verdict).map(detailLine),
+      line("sar-hovercard-title", heading),
+      ...kindDetails(verdict)
+        .filter((detail) => !(detail.kind === "message" && i18n.t(detail.key) === heading))
+        .map(detailLine),
     );
     return node;
   }

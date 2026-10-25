@@ -56,8 +56,10 @@ describe("createBadgeRenderer", () => {
   const i18n = englishI18n();
   const chip = (id: KindId) => i18n.t(KIND_BY_ID[id].messages.chip);
   // The accessible name starts with the visible chip text, then Steam's full line.
-  const nameOf = (id: KindId) =>
-    i18n.t("kind_chip_name", { chip: chip(id), heading: i18n.t(KIND_BY_ID[id].messages.heading) });
+  const nameOf = (id: KindId) => {
+    const heading = i18n.t(KIND_BY_ID[id].messages.heading);
+    return chip(id) === heading ? heading : i18n.t("kind_chip_name", { chip: chip(id), heading });
+  };
   const AI_NAME = nameOf("ai");
   const MANY: readonly KindId[] = ["ai", "kernel", "drm", "eula", "pvp"];
 
@@ -108,14 +110,25 @@ describe("createBadgeRenderer", () => {
     expect(badge === null ? undefined : bound.get(badge)).toEqual([verdict]);
   });
 
-  it.each(KIND_IDS)("gives the %s chip an accessible name that starts with its text", (id) => {
+  it.each(KIND_IDS.filter((id) => id !== "pvp"))(
+    "gives the %s chip an accessible name that starts with its text",
+    (id) => {
+      const { host, title } = capsule();
+      renderer.render(view(host, full(title), { verdicts: disclosedKinds([id]) }));
+      const [label, name] = texts(chipsIn(host)[0] ?? host);
+      expect(label).toBe(chip(id));
+      expect(name).toBe(nameOf(id));
+      expect(name?.startsWith(`${label ?? ""}: `)).toBe(true);
+      expect(name).toContain(i18n.t(KIND_BY_ID[id].messages.heading));
+    },
+  );
+
+  it("gives the PvP chip the name PvP once, not PvP: PvP", () => {
     const { host, title } = capsule();
-    renderer.render(view(host, full(title), { verdicts: disclosedKinds([id]) }));
+    renderer.render(view(host, full(title), { verdicts: disclosedKinds(["pvp"]) }));
     const [label, name] = texts(chipsIn(host)[0] ?? host);
-    expect(label).toBe(chip(id));
-    expect(name).toBe(nameOf(id));
-    expect(name?.startsWith(`${label ?? ""}: `)).toBe(true);
-    expect(name).toContain(i18n.t(KIND_BY_ID[id].messages.heading));
+    expect(label).toBe(i18n.t("kind_pvp_chip"));
+    expect(name).toBe(i18n.t("kind_pvp_heading"));
   });
 
   it("draws one chip per disclosed kind, in registry order, whatever the data order", () => {
