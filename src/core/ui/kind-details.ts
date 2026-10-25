@@ -1,7 +1,5 @@
-import type { PageDetails } from "../detect/page-details";
 import type { BareMessageKey } from "../i18n/t";
 import { eulaLink } from "../kinds/eula";
-import type { KernelDisclosed } from "../kinds/kernel";
 import { pvpCategoryMessage } from "../kinds/pvp";
 import type { AnyDisclosed } from "../kinds/verdicts";
 
@@ -32,31 +30,13 @@ function present(value: string | undefined): value is string {
   return value !== undefined && value !== "";
 }
 
-/** A line for the first of the candidates that has text, or none. */
-function firstText(...candidates: readonly (string | undefined)[]): readonly KindDetail[] {
-  const first = candidates.find(present);
-  return first === undefined ? [] : [text(first)];
+/** A line for the name when there is one. */
+function named(name: string | undefined): readonly KindDetail[] {
+  return present(name) ? [text(name)] : [];
 }
 
-/** The page's own boot protection line, else Steam's note when the game declared the need. */
-function bootProtection(verdict: KernelDisclosed, page: PageDetails): readonly KindDetail[] {
-  if (present(page.bootProtection)) {
-    return [text(page.bootProtection)];
-  }
-  return verdict.bootProtection === undefined ? [] : [message("kind_kernel_boot")];
-}
-
-const NO_PAGE_DETAILS: PageDetails = {};
-
-/**
- * The lines a surface shows under a disclosed kind's heading. `page` holds what only the game's
- * own page knows, and the hover card has none. A new kind adds a case here and nowhere else in
- * the card or the banner.
- */
-export function kindDetails(
-  verdict: AnyDisclosed,
-  page: PageDetails = NO_PAGE_DETAILS,
-): readonly KindDetail[] {
+/** The lines a surface shows under a disclosed kind's heading. A new kind adds a case here. */
+export function kindDetails(verdict: AnyDisclosed): readonly KindDetail[] {
   switch (verdict.kind) {
     case "ai":
       return [
@@ -65,14 +45,14 @@ export function kindDetails(
       ];
     case "kernel":
       return [
-        ...firstText(verdict.name, page.anticheatName),
+        ...named(verdict.name),
         ...(verdict.uninstallsCompletely ? [] : [message("kind_kernel_uninstall")]),
-        ...bootProtection(verdict, page),
+        ...(verdict.bootProtection === undefined ? [] : [message("kind_kernel_boot")]),
       ];
     case "anticheat":
-      return firstText(verdict.name, page.anticheatName);
+      return named(verdict.name);
     case "drm":
-      return [text(verdict.text), ...firstText(page.activationLimit, verdict.activationLimit)];
+      return [text(verdict.text), ...named(verdict.activationLimit)];
     case "account":
       return [text(verdict.text), ...(verdict.linksToSteam ? [message("kind_account_links")] : [])];
     case "eula":

@@ -1,5 +1,4 @@
 import { parseLiveAppPage } from "./detect/app-page";
-import { type PageInput, parsePageDetails } from "./detect/page-details";
 import type { SteamLanguage } from "./i18n/locale";
 import type { IgnoredGames } from "./ignored";
 import { AI_KIND, type AiVerdict } from "./kinds/ai";
@@ -63,15 +62,6 @@ export async function pageVerdicts(
   return fresh?.state === "disclosed" ? { ...detected, ai: fresh } : detected;
 }
 
-/** What the data layer says that tells the page's lines apart (see `parsePageDetails`). */
-export function pageInput(verdicts: KindVerdicts): PageInput {
-  const { kernel, drm } = verdicts;
-  return {
-    bootProtection: kernel.state === "disclosed" && kernel.bootProtection !== undefined,
-    drmText: drm.state === "disclosed" ? drm.text : undefined,
-  };
-}
-
 function appName(doc: Document, verdicts: KindVerdicts, id: AppId): string {
   const { ai } = verdicts;
   const fromVerdict = ai.state === "disclosed" ? ai.name : undefined;
@@ -103,13 +93,11 @@ export async function startAppPage(
   context: AppPageContext,
 ): Promise<() => void> {
   const known = await pageVerdicts(doc, id, language, detectors);
-  const details = parsePageDetails(doc, pageInput(known));
 
   function view(): AppPageView {
     const { kinds } = context.settings();
     return {
       verdicts: known,
-      details,
       ignored: perScope((scope) => context.ignored[scope].has(id)),
       banner: perKind((kind) => effectiveSettings(kinds[kind.id]).banner),
     };

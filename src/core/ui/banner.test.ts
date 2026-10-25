@@ -1,14 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { APP_PAGES } from "../../../tests/helpers/app-page";
 import { setBody } from "../../../tests/helpers/dom";
-import {
-  capturedPageDetails,
-  capturedVerdicts,
-  disclosedList,
-} from "../../../tests/helpers/fixture-verdicts";
+import { capturedVerdicts, disclosedList } from "../../../tests/helpers/fixture-verdicts";
 import { englishI18n } from "../../../tests/helpers/i18n";
 import { disclosedVerdict, FULL_DISCLOSED } from "../../../tests/helpers/verdicts";
-import type { PageDetails } from "../detect/page-details";
 import { SHIPPED_CATALOGS } from "../i18n/shipped";
 import { createI18n } from "../i18n/t";
 import { KIND_BY_ID } from "../kinds/registry";
@@ -34,7 +29,7 @@ const ignoredKind = (kind: "drm" | "pvp") =>
   i18n.t("banner_ignored_kind", { heading: i18n.t(KIND_BY_ID[kind].messages.heading) });
 
 function view(shown: readonly AnyDisclosed[], extra: Partial<BannerView> = {}): BannerView {
-  return { shown, ignored: [], details: {}, ...extra };
+  return { shown, ignored: [], ...extra };
 }
 
 interface Pending {
@@ -204,12 +199,11 @@ describe("createBanner", () => {
   it("does not rebuild for the same view", () => {
     const { banner, root } = setup();
     const verdict = disclosedVerdict();
-    const details: PageDetails = {};
-    banner.show({ shown: [verdict], ignored: [], details });
+    banner.show({ shown: [verdict], ignored: [] });
     const aside = query(root, "aside");
-    banner.show({ shown: [verdict], ignored: [], details });
+    banner.show({ shown: [verdict], ignored: [] });
     expect(query(root, "aside")).toBe(aside);
-    banner.show({ shown: [verdict], ignored: ["ai"], details });
+    banner.show({ shown: [verdict], ignored: ["ai"] });
     expect(query(root, "aside")).not.toBe(aside);
   });
 
@@ -233,8 +227,7 @@ describe("the entries of the captured games", () => {
   it("lists DRM, the account and the EULA of a game, each under Steam's line", () => {
     const { banner, root } = setup();
     const shown = disclosedList(capturedVerdicts(3751950));
-    const details = capturedPageDetails("3751950-drm-account-eula.html", 3751950);
-    banner.show(view(shown, { details }));
+    banner.show(view(shown));
 
     expect(texts(root, "h2")).toEqual(shown.map(heading));
     expect(texts(root, "h2")).toEqual([
@@ -244,7 +237,6 @@ describe("the entries of the captured games", () => {
     ]);
     const lines = texts(root, ".sar-banner-detail");
     expect(lines).toContain("Denuvo Anti-tamper");
-    expect(lines).toContain("5 a day machine activation limit");
     expect(lines).toContain("Ubisoft Account");
     expect(lines).toContain(i18n.t("kind_account_links"));
   });
@@ -279,25 +271,7 @@ describe("the entries of the captured games", () => {
     expect(texts(root, ".sar-banner-detail")).toEqual(["Bad", "Plain"]);
   });
 
-  it("shows a kernel anti-cheat with the name and the boot protection line of its page", () => {
-    const { banner, root } = setup();
-    const shown = disclosedList(capturedVerdicts(2807960));
-    const details = capturedPageDetails("2807960-kernel-boot-protection.html", 2807960);
-    banner.show(view(shown, { details }));
-    expect(texts(root, "h2")).toEqual([
-      i18n.t("kind_kernel_heading"),
-      i18n.t("kind_account_heading"),
-      i18n.t("kind_eula_heading"),
-      i18n.t("kind_pvp_heading"),
-    ]);
-    const lines = texts(root, ".sar-banner-detail");
-    expect(details.anticheatName).toBeDefined();
-    expect(details.bootProtection).toBeDefined();
-    expect(lines).toContain(details.anticheatName);
-    expect(lines).toContain(details.bootProtection);
-  });
-
-  it("shows Steam's boot protection line when the page gives none", () => {
+  it("shows Steam's boot protection line of a kernel anti-cheat", () => {
     const { banner, root } = setup();
     banner.show(view(disclosedList(capturedVerdicts(2807960))));
     expect(texts(root, ".sar-banner-detail")).toContain(i18n.t("kind_kernel_boot"));

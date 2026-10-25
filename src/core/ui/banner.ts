@@ -1,4 +1,3 @@
-import type { PageDetails } from "../detect/page-details";
 import { KIND_BY_ID } from "../kinds/registry";
 import type { AnyDisclosed } from "../kinds/verdicts";
 import type { MessageCatalog } from "../ports";
@@ -41,8 +40,6 @@ export interface BannerView {
   readonly shown: readonly AnyDisclosed[];
   /** The scopes the game is ignored in that the banner notes with an Undo. */
   readonly ignored: readonly AllowScope[];
-  /** What only the game's own page knows. */
-  readonly details: PageDetails;
 }
 
 export interface Banner {
@@ -83,7 +80,7 @@ function partId(scope: string, part: string): string {
 }
 
 function sameView(a: BannerView, b: BannerView): boolean {
-  return a.details === b.details && a.shown.length === b.shown.length
+  return a.shown.length === b.shown.length
     && a.shown.every((verdict, index) => verdict === b.shown[index])
     && a.ignored.length === b.ignored.length
     && a.ignored.every((scope, index) => scope === b.ignored[index]);
@@ -215,7 +212,7 @@ export function createBanner(
   }
 
   /** One kind: Steam's line as the heading, its own ignore button, then the details. */
-  function buildEntry(verdict: AnyDisclosed, details: PageDetails): HTMLElement {
+  function buildEntry(verdict: AnyDisclosed): HTMLElement {
     const entry = element("div", "sar-banner-entry");
     const titleId = partId(verdict.kind, "title");
     const ignoreId = partId(verdict.kind, "ignore");
@@ -233,7 +230,7 @@ export function createBanner(
     const head = element("div", "sar-banner-head");
     head.append(title, ignore);
     entry.append(head);
-    for (const detail of kindDetails(verdict, details)) {
+    for (const detail of kindDetails(verdict)) {
       appendDetail(entry, detail, partId(verdict.kind, "notes"));
     }
     return entry;
@@ -272,7 +269,7 @@ export function createBanner(
       aside.setAttribute("data-sar-entries", "many");
     }
     for (const verdict of view.shown) {
-      aside.append(buildEntry(verdict, view.details));
+      aside.append(buildEntry(verdict));
     }
     for (const scope of view.ignored) {
       aside.append(buildNote(scope));

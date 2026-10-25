@@ -1,7 +1,5 @@
-import { pageInput } from "../../src/core/app-page";
 import { parseAppPage } from "../../src/core/detect/app-page";
 import { GETITEMS_URL, parseGetItems } from "../../src/core/detect/getitems";
-import { type PageDetails, parsePageDetails } from "../../src/core/detect/page-details";
 import { KIND_IDS } from "../../src/core/kinds/id";
 import { KINDS } from "../../src/core/kinds/registry";
 import type { AnyDisclosed, KindVerdicts } from "../../src/core/kinds/verdicts";
@@ -46,10 +44,4 @@ export function disclosedList(verdicts: KindVerdicts): readonly AnyDisclosed[] {
     const verdict = verdicts[kind.id];
     return verdict.state === "disclosed" ? [verdict] : [];
   });
-}
-
-/** What the captured app page adds to the GetItems verdicts of the same game. */
-export function capturedPageDetails(name: AppPageName, id: number): PageDetails {
-  const doc = new DOMParser().parseFromString(APP_PAGES[name], "text/html");
-  return parsePageDetails(doc, pageInput(capturedVerdicts(id)));
 }

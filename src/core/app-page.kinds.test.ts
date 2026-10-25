@@ -16,7 +16,7 @@ import { createSettingsSource } from "./settings/settings-source";
 import { ALLOW_KEY } from "./storage-keys";
 import { adoptPageStyles } from "./ui/styles";
 
-// Game 3751950 declares DRM (with an activation limit only its page shows), a third-party
+// Game 3751950 declares DRM, a third-party
 // account and a EULA, and no AI. Its English page can answer none of them: they come from GetItems.
 
 const i18n = englishI18n();
@@ -68,16 +68,6 @@ describe("start on an English app page of a game with no AI", () => {
       i18n.t("kind_eula_heading"),
     ]);
     expect(document.querySelector(".sar-summary-row")).toBeNull();
-  });
-
-  it("adds what only the page shows: the DRM activation limit", async () => {
-    await startOnDrmPage();
-
-    const lines = [...(banner()?.querySelectorAll(".sar-banner-detail") ?? [])].map((line) =>
-      line.textContent
-    );
-    expect(lines).toContain("Denuvo Anti-tamper");
-    expect(lines).toContain("5 a day machine activation limit");
   });
 
   it("links the EULA to the store page", async () => {

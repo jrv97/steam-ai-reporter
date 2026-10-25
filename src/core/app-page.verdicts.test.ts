@@ -6,7 +6,7 @@ import { fakeDetector } from "../../tests/helpers/fake-detector";
 import { capturedVerdicts } from "../../tests/helpers/fixture-verdicts";
 import { loadPage } from "../../tests/helpers/surfaces";
 import { aiVerdicts, disclosedVerdict } from "../../tests/helpers/verdicts";
-import { pageInput, pageVerdicts } from "./app-page";
+import { pageVerdicts } from "./app-page";
 import type { KindVerdicts } from "./kinds/verdicts";
 import { UNKNOWN_KINDS } from "./kinds/verdicts";
 
@@ -134,26 +134,5 @@ describe("pageVerdicts on a page in another language", () => {
     };
 
     expect(await pageVerdicts(document, ID, "german", found)).toBe(stored);
-  });
-});
-
-describe("pageInput", () => {
-  it("tells whether the anti-cheat declared boot protection, and the DRM text", () => {
-    const boot = capturedVerdicts(2807960);
-    expect(pageInput(boot)).toEqual({ bootProtection: true, drmText: undefined });
-    const drm = capturedVerdicts(3751950);
-    expect(pageInput(drm)).toEqual({ bootProtection: false, drmText: "Denuvo Anti-tamper" });
-  });
-
-  it("reads a game that declared neither as none", () => {
-    expect(pageInput(capturedVerdicts(813230))).toEqual({
-      bootProtection: false,
-      drmText: undefined,
-    });
-    expect(pageInput(UNKNOWN_KINDS.error)).toEqual({ bootProtection: false, drmText: undefined });
-  });
-
-  it("does not take a plain kernel anti-cheat for boot protection", () => {
-    expect(pageInput(capturedVerdicts(1172470)).bootProtection).toBe(false);
   });
 });

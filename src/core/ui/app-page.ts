@@ -1,4 +1,3 @@
-import type { PageDetails } from "../detect/page-details";
 import type { KindId } from "../kinds/id";
 import type { TagKind } from "../kinds/kind";
 import { KINDS } from "../kinds/registry";
@@ -19,8 +18,6 @@ import { createSummaryRow, placeSummaryRow } from "./summary-row";
 /** What the app page shows for its own game. */
 export interface AppPageView {
   readonly verdicts: KindVerdicts;
-  /** What only the game's own page knows, for the banner's entries. */
-  readonly details: PageDetails;
   /** Per scope: the game is on the ignore list there. */
   readonly ignored: Readonly<Record<AllowScope, boolean>>;
   /**
@@ -73,7 +70,7 @@ function bannerView(view: AppPageView): BannerView | undefined {
   }
   return shown.length + ignored.length === 0
     ? undefined
-    : { shown, ignored, details: view.details };
+    : { shown, ignored };
 }
 
 /** The verdict the summary row stands for, when it is disclosed and the game is not ignored. */

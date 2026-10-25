@@ -3,7 +3,6 @@ import { setBody } from "../../../tests/helpers/dom";
 import { capturedVerdicts } from "../../../tests/helpers/fixture-verdicts";
 import { englishI18n } from "../../../tests/helpers/i18n";
 import { aiVerdicts, disclosedVerdict, NOT_DISCLOSED } from "../../../tests/helpers/verdicts";
-import type { PageDetails } from "../detect/page-details";
 import { AI_KIND, type AiVerdict } from "../kinds/ai";
 import type { KindId } from "../kinds/id";
 import { perKind } from "../kinds/registry";
@@ -47,14 +46,12 @@ interface ViewOptions {
   readonly ignored?: readonly AllowScope[];
   /** Kinds whose banner entry is switched off. */
   readonly bannerOff?: readonly KindId[];
-  readonly details?: PageDetails;
 }
 
 function view(options: ViewOptions = {}): AppPageView {
-  const { verdict = disclosedVerdict(), ignored = [], bannerOff = [], details = {} } = options;
+  const { verdict = disclosedVerdict(), ignored = [], bannerOff = [] } = options;
   return {
     verdicts: options.verdicts ?? aiVerdicts(verdict),
-    details,
     ignored: perScope((scope) => ignored.includes(scope)),
     banner: perKind((kind) => !bannerOff.includes(kind.id)),
   };
@@ -137,12 +134,6 @@ describe("createAppPageUi", () => {
       i18n.t("kind_eula_heading"),
     ]);
     expect(summaryRow()).toBeNull();
-  });
-
-  it("hands the page's details to the entries", () => {
-    const details: PageDetails = { activationLimit: "9 per week" };
-    setup().render(view({ verdicts: capturedVerdicts(3751950), details }));
-    expect(bannerRoot()?.textContent).toContain("9 per week");
   });
 
   it("shows a game ignored for all tags only the note, with no summary row", () => {
