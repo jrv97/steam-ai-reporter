@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { detectorContract } from "../../../tests/contracts/detector.contract";
+import dlc from "../../../tests/fixtures/getitems/dlc-parent.json";
 import empty from "../../../tests/fixtures/getitems/empty-response.json";
 import german from "../../../tests/fixtures/getitems/german-context.json";
 import mixed from "../../../tests/fixtures/getitems/mixed-states.json";
@@ -139,6 +140,42 @@ describe("parseGetItems over the captured fixtures", () => {
     );
     const contextless: Reply = { body: JSON.stringify(empty), headers: { "x-eresult": "8" } };
     expect(stateOf(parse(appIds(413150), contextless), 413150)).toBe("unknown:error");
+  });
+});
+
+describe("parseGetItems and the base game of a DLC", () => {
+  const dlcId = appId(5201760);
+
+  it("keeps the parent of the captured DLC next to its verdicts (dlc-parent.json)", () => {
+    const found = parse([dlcId], getItemsResponse(fixtureItems(dlc))).get(dlcId);
+    expect(found?.parent).toBe(1808500);
+    expect(found?.ai.state).toBe("disclosed");
+  });
+
+  it("gives an item with no parent, or a parent it cannot read, no parent key", () => {
+    const items = [
+      storeItem(1),
+      storeItem(2, { related_items: { parent_appid: "x" } }),
+      storeItem(3, { related_items: 7 }),
+    ];
+    const found = parse(appIds(1, 2, 3), getItemsResponse(items));
+    for (const id of appIds(1, 2, 3)) {
+      expect(found.get(id)).not.toHaveProperty("parent");
+      expect(found.get(id)?.ai.state).toBe("not-disclosed");
+    }
+  });
+
+  it("gives the unknown verdicts of an item without details no parent", () => {
+    const item = storeItem(4, { extra_details: undefined, related_items: { parent_appid: 9 } });
+    const found = parse(appIds(4), getItemsResponse([item])).get(appId(4));
+    expect(found).toBe(UNKNOWN_KINDS.missing);
+  });
+
+  it("reads the parents of a mixed batch by their own ids", () => {
+    const items = [storeItem(1, { related_items: { parent_appid: 9 } }), storeItem(2)];
+    const found = parse(appIds(1, 2), getItemsResponse(items));
+    expect(found.get(appId(1))?.parent).toBe(9);
+    expect(found.get(appId(2))?.parent).toBeUndefined();
   });
 });
 

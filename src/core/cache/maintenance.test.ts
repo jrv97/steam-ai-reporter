@@ -77,6 +77,19 @@ describe("maintainCache: schema reset", () => {
     expect(await run()).toBe("skipped");
   });
 
+  it("drops the verdicts stored before the base game of a DLC was kept, once", async () => {
+    // Version 2 entries lack `parent`, so a cached DLC would never learn its base game.
+    const { store, run } = setup([
+      [META_KEY, { schema: 2, sweptAt: T }],
+      ["v1:a:5201760", verdict("disclosed", T)],
+      ...others,
+    ]);
+    expect(CACHE_SCHEMA).toBeGreaterThan(2);
+    expect(await run()).toBe("reset");
+    expect(await keysOf(store)).toStrictEqual(["v1:allow", "v1:breaker", META_KEY, "v1:settings"]);
+    expect(await run()).toBe("skipped");
+  });
+
   it("clears the verdicts of a newer schema too, after a downgrade", async () => {
     const { store, run } = setup([
       [META_KEY, { schema: CACHE_SCHEMA + 1, sweptAt: T }],

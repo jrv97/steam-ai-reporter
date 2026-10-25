@@ -65,7 +65,11 @@ Every attribute core writes on a store node starts with `data-sar-`. The scheme 
 | The root element       | `--sar-kind-color-<kind>`   | The kind's custom color, a validated `#rrggbb`, in the root's `style`. Removed when unset.                                                                             |
 | A chip                 | `data-sar-kind`             | The id of the kind it shows. A hover card entry and a banner with one tag carry it too, so the color rules reach them.                                                 |
 
-A host with several kinds takes the strongest filter without a rule for it: a hidden host ignores a dim, and a host that cannot hide dims for either mode. A kind the game is ignored for is left out of `data-sar-kinds` and gets no chip, so it counts as absent.
+A host with several kinds takes the strongest filter without a rule for it: a hidden host ignores a dim, and a host that cannot hide dims for either mode. A kind the game is ignored for is left out of `data-sar-kinds` and gets no chip, so it counts as absent. For a DLC, "ignored for the game" includes its base game: see "The base game of a DLC" below.
+
+### The base game of a DLC
+
+`KindVerdicts` is one verdict per kind plus an optional `parent`: the DLC's base game, a branded `AppId` read from GetItems `related_items.parent_appid` (`getitems.schema.ts`, droppable, so a missing or malformed value is no parent), set by `withParent` and stored with the cached verdict (`cache/stored.ts`; a change to what is stored bumps `CACHE_SCHEMA`). Ignoring is decided in one place, `isIgnored(ignored, id, kind, parent)` in `ignored.ts`: true when the app or its parent is on the list of the kind or of all kinds. Every surface calls it with the `parent` of the verdicts it holds (the capsule UI's `isAllowed`, the app page's `suppressed` per kind); none reads the sets itself. No list of DLC is kept, and the ignored games list never holds a DLC the person did not ignore. A detector that cannot know the parent (the app page) leaves it out, and the app then behaves as if it had none.
 
 ## Style in this folder
 

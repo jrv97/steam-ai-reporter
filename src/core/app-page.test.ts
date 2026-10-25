@@ -162,6 +162,61 @@ describe("start on an English app page", () => {
     expect(Object.keys((await stored()).ai)).toEqual([]);
   });
 
+  describe("on the page of a DLC", () => {
+    const BASE = "1938090";
+    // The open page (5072580) is a DLC of 1938090: Steam's data names its base game.
+    const dlc = {
+      ...itemAs(mixedStates, 5072580, 5072580),
+      type: 4,
+      related_items: { parent_appid: Number(BASE) },
+    };
+    const ignoredFor = (kind: string): ReadonlyMap<string, JsonValue> =>
+      new Map<string, JsonValue>([
+        [ALLOW_KEY, { all: {}, [kind]: { [BASE]: { name: "Base game", added: 0 } } }],
+      ]);
+
+    it("shows the banner of a kind when its base game is not ignored for it", async () => {
+      await startOnAiPage({ route: getItemsRoute([dlc]), initial: ignoredFor("kernel") });
+      await expect.poll(() => banner()?.querySelector(".sar-banner-service")).not.toBeNull();
+      expect(headings()).toEqual([i18n.t("kind_ai_heading")]);
+    });
+
+    it("takes the banner entry and its note away once Steam names the base game", async () => {
+      const { release } = await startOnAiPage({
+        route: getItemsRoute([dlc]),
+        initial: ignoredFor("ai"),
+        held: true,
+      });
+      // The page's own disclosure draws first; the base game is not known until the answer.
+      expect(headings()).toEqual([i18n.t("kind_ai_heading")]);
+      release();
+      await expect.poll(() => document.getElementById("sar-banner")).toBeNull();
+    });
+
+    it("takes the banner away for a base game ignored for all tags", async () => {
+      const { release } = await startOnAiPage({
+        route: getItemsRoute([dlc]),
+        initial: ignoredFor("all"),
+        held: true,
+      });
+      release();
+      await expect.poll(() => document.getElementById("sar-banner")).toBeNull();
+    });
+
+    it("still ignores the DLC itself, never the base game, from its own page", async () => {
+      const { stored } = await startOnAiPage({
+        route: getItemsRoute([dlc]),
+        initial: ignoredFor("kernel"),
+      });
+      await expect.poll(() => banner()?.querySelector(".sar-banner-service")).not.toBeNull();
+      control('.sar-banner-foot [data-sar-action="ignore"]')?.click();
+      await expect.poll(() => control(".sar-banner-ignored-text")?.textContent).toBe(
+        i18n.t("banner_ignored"),
+      );
+      expect(Object.keys((await stored()).all)).toEqual(["5072580"]);
+    });
+  });
+
   it("follows the banner setting of the kind", async () => {
     const { settings } = await startOnAiPage();
 

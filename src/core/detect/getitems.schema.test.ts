@@ -1,5 +1,6 @@
 import * as v from "valibot";
 import { describe, expect, it } from "vitest";
+import dlc from "../../../tests/fixtures/getitems/dlc-parent.json";
 import kinds from "../../../tests/fixtures/getitems/kinds.json";
 import { fixtureItems, storeItem } from "../../../tests/helpers/getitems";
 import { parseJson } from "../json";
@@ -69,6 +70,48 @@ describe("StoreItemSchema over the captured kinds", () => {
     expect(items.get(320795)?.extra_details).toBeUndefined();
     expect(items.get(320795)?.categories).toBeDefined();
     expect(items.get(1)?.categories).toBeUndefined();
+  });
+});
+
+describe("StoreItemSchema related_items", () => {
+  const parentOf = (item: unknown) => parse(item).related_items?.parent_appid;
+
+  it("reads the base game of the captured DLC as an app ID", () => {
+    const [item] = fixtureItems(dlc);
+    expect(parentOf(item)).toBe(1808500);
+    expect(parse(item).extra_details?.content_survey_ai_notes).toContain("procedural-");
+  });
+
+  it("leaves the parent out when the item has none", () => {
+    expect(parse(storeItem(1)).related_items).toBeUndefined();
+    expect(parentOf(storeItem(1, { related_items: {} }))).toBeUndefined();
+    expect(parentOf(storeItem(1, { related_items: [] }))).toBeUndefined();
+    expect(parentOf(storeItem(1, { related_items: { demo_appid: 5 } }))).toBeUndefined();
+  });
+
+  it.each([
+    ["a string", "1808500"],
+    ["zero", 0],
+    ["a negative number", -4],
+    ["a fraction", 1.5],
+    ["a number past 32 bits", 2 ** 32],
+    ["null", null],
+    ["a list", [1808500]],
+  ])("reads %s as no parent and keeps the item", (_name, value) => {
+    const item = parse(storeItem(1, { related_items: { parent_appid: value } }));
+    expect(item.related_items?.parent_appid).toBeUndefined();
+    expect(item.extra_details).toBeDefined();
+  });
+
+  it.each([
+    ["a string", "x"],
+    ["a number", 3],
+    ["a list of entries", [1]],
+    ["null", null],
+  ])("reads related_items that is %s as absent and keeps the item", (_name, value) => {
+    const item = parse(storeItem(1, { related_items: value }));
+    expect(item.related_items).toBeUndefined();
+    expect(item.id).toBe(1);
   });
 });
 

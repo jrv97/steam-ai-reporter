@@ -12,6 +12,7 @@ import {
   NOT_DISCLOSED,
 } from "../../../tests/helpers/verdicts";
 import type { AiVerdict } from "../kinds/ai";
+import { withParent } from "../kinds/verdicts";
 import type { Detector } from "../ports";
 import { type AppId, UNKNOWN } from "../types";
 import { cachedDetector } from "./cached-detector";
@@ -56,6 +57,19 @@ describe("cachedDetector", () => {
     expect(second).toStrictEqual(first);
     expect(inner.calls).toStrictEqual([[10, 20]]);
     expect(store.calls.set).toBe(1);
+  });
+
+  it("keeps the base game of a DLC from the first answer on, with one request", async () => {
+    const dlc = withParent(aiVerdicts(disclosedVerdict()), appId(1808500));
+    const inner = fakeDetector(() => dlc);
+    const store = memoryStore();
+    const logger = { error: vi.fn<(problem: unknown) => void>() };
+    const tab = () => cachedDetector(inner, createVerdictCache(store, fixedClock(T)), logger);
+    const first = await tab().detect(appIds(5201760));
+    const second = await tab().detect(appIds(5201760));
+    expect(first.get(appId(5201760))?.parent).toBe(1808500);
+    expect(second.get(appId(5201760))?.parent).toBe(1808500);
+    expect(inner.calls).toStrictEqual([[5201760]]);
   });
 
   it("asks the inner detector only about the IDs the cache lacks", async () => {

@@ -182,6 +182,77 @@ describe("start on the search page", () => {
     });
   });
 
+  describe("with a DLC row of a game the user ignored", () => {
+    const BASE = "1808500";
+    // The disclosed row is a DLC of ARC Raiders: Steam's item names the base game, as the
+    // captured DLC does (dlc-parent.json). Nothing lists the DLC.
+    const dlc = [
+      ...fixtureItems(searchItems),
+      {
+        ...itemAs(kindItems, 1808500, Number(DISCLOSED)),
+        related_items: { parent_appid: 1808500 },
+      },
+    ];
+    const chips = () =>
+      Array.from(
+        row(DISCLOSED)?.querySelectorAll(".sar-chips > .sar-badge") ?? [],
+        (element) => element.querySelector(".sar-badge-label")?.textContent,
+      );
+    const chip = (id: KindId) => i18n.t(KIND_BY_ID[id].messages.chip);
+    const ignoring = (scope: string): Map<string, JsonValue> =>
+      new Map<string, JsonValue>([
+        [ALLOW_KEY, { all: {}, [scope]: { [BASE]: { name: "Base game", added: NOW } } }],
+      ]);
+
+    it("draws every chip while the base game is not ignored", async () => {
+      const { http } = await startOnSearch(new Map(), dlc);
+      await drawn(http);
+      expect(row(DISCLOSED)?.getAttribute("data-sar-kinds")).toBe("ai kernel eula pvp");
+      expect(chips()).toEqual([chip("ai"), chip("kernel"), chip("eula")]);
+    });
+
+    it("drops the chip and the list mark of the kind the base game is ignored for", async () => {
+      const { http } = await startOnSearch(ignoring("ai"), dlc);
+      await drawn(http);
+      expect(http.calls).toHaveLength(1);
+      expect(row(DISCLOSED)?.getAttribute("data-sar-kinds")).toBe("kernel eula pvp");
+      expect(chips()).toEqual([chip("kernel"), chip("eula")]);
+    });
+
+    it("marks nothing for a base game ignored for all kinds", async () => {
+      const { http } = await startOnSearch(ignoring("all"), dlc);
+      await drawn(http);
+      expect(row(DISCLOSED)?.hasAttribute("data-sar-kinds")).toBe(false);
+      expect(document.querySelector(".sar-badge")).toBeNull();
+    });
+
+    it("leaves the row when the kind that would hide it is ignored for its base game", async () => {
+      const hide = withKind(DEFAULT_SETTINGS, "ai", { filter: "hide" });
+      const initial = ignoring("ai").set(SETTINGS_KEY, encodeSettings(hide));
+      const { http } = await startOnSearch(initial, dlc);
+      await drawn(http);
+      expect(rootMark("data-sar-filter-ai")).toBe("hide");
+      expect(getComputedStyle(row(DISCLOSED) ?? document.body).display).not.toBe("none");
+    });
+
+    it("hides the row when the kind is not ignored, so the mark is what decides", async () => {
+      const hide = withKind(DEFAULT_SETTINGS, "ai", { filter: "hide" });
+      const initial = new Map<string, JsonValue>([[SETTINGS_KEY, encodeSettings(hide)]]);
+      const { http } = await startOnSearch(initial, dlc);
+      await drawn(http);
+      expect(getComputedStyle(row(DISCLOSED) ?? document.body).display).toBe("none");
+    });
+
+    it("draws a DLC whose own entry is ignored without touching its base game", async () => {
+      const own = new Map<string, JsonValue>([
+        [ALLOW_KEY, { all: {}, ai: { [DISCLOSED]: { name: "Ignored", added: NOW } } }],
+      ]);
+      const { http } = await startOnSearch(own, dlc);
+      await drawn(http);
+      expect(row(DISCLOSED)?.getAttribute("data-sar-kinds")).toBe("kernel eula pvp");
+    });
+  });
+
   it("marks nothing for an allow-listed game, in lists or on badges", async () => {
     const { http } = await startOnSearch(
       new Map<string, JsonValue>([

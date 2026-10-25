@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { appId } from "../../../tests/helpers/app-ids";
 import {
   aiVerdicts,
   disclosedVerdict,
@@ -9,7 +10,7 @@ import {
 import type { AiVerdict } from "../kinds/ai";
 import { KIND_IDS } from "../kinds/id";
 import { perKind } from "../kinds/registry";
-import { type KindVerdicts, UNKNOWN_KINDS } from "../kinds/verdicts";
+import { type KindVerdicts, UNKNOWN_KINDS, withParent } from "../kinds/verdicts";
 import { NOT_DISCLOSED as NOT_DISCLOSED_VERDICT, UNKNOWN } from "../types";
 import { decodeVerdicts, encodeVerdicts } from "./stored";
 
@@ -205,6 +206,45 @@ describe("encodeVerdicts and decodeVerdicts", () => {
     for (const id of KIND_IDS) {
       expect(decoded?.verdicts[id]).toBe(UNKNOWN.gated);
     }
+  });
+});
+
+describe("the base game of a DLC in storage", () => {
+  const parent = appId(1808500);
+  const dlc = withParent(FULL_DISCLOSED, parent);
+  const stored = { time: T, kinds: STORED_KINDS };
+
+  it("round trips the parent with the verdicts", () => {
+    expect(decodeVerdicts(encodeVerdicts(dlc, T))).toStrictEqual({ verdicts: dlc, time: T });
+    expect(decodeVerdicts(encodeVerdicts(withParent(uniformVerdicts("not-disclosed"), parent), T)))
+      .toMatchObject({ verdicts: { parent } });
+  });
+
+  it("stores the parent as a number beside the kinds, and nothing for an app without one", () => {
+    expect(encodeVerdicts(dlc, T)).toMatchObject({ time: T, parent: 1808500 });
+    expect(encodeVerdicts(FULL_DISCLOSED, T)).not.toHaveProperty("parent");
+    expect(encodeVerdicts(uniformVerdicts("missing"), T)).not.toHaveProperty("parent");
+  });
+
+  it("reads an entry stored before the field existed as an app with no parent", () => {
+    const decoded = decodeVerdicts(stored);
+    expect(decoded?.verdicts).toStrictEqual(FULL_DISCLOSED);
+    expect(decoded?.verdicts).not.toHaveProperty("parent");
+  });
+
+  it("reads the parent of a stored entry", () => {
+    expect(decodeVerdicts({ ...stored, parent: 1808500 })?.verdicts.parent).toBe(1808500);
+  });
+
+  it.each([
+    ["a string", "1808500"],
+    ["zero", 0],
+    ["a negative number", -1],
+    ["a fraction", 2.5],
+    ["null", null],
+    ["a list", [1808500]],
+  ])("discards an entry whose parent is %s, so the app is fetched again", (_name, value) => {
+    expect(decodeVerdicts({ ...stored, parent: value })).toBeUndefined();
   });
 });
 

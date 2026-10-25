@@ -17,8 +17,14 @@ import { createTagSection } from "./tag-section";
 /** What the app page shows for its own game. */
 export interface AppPageView {
   readonly verdicts: KindVerdicts;
-  /** Per scope: the game is on the ignore list there. */
+  /** Per scope: the game itself is on the ignore list there. */
   readonly ignored: Readonly<Record<AllowScope, boolean>>;
+  /**
+   * Per kind: nothing shows for the kind, because the game, or the base game of a DLC, is ignored
+   * for it or for all kinds (`isIgnored`). It includes `ignored`; a kind only the base game
+   * silences gets no banner entry and no note, since its Undo would be on the other game's page.
+   */
+  readonly suppressed: Readonly<Record<KindId, boolean>>;
   /** Per kind: its badge switch is on, which the tag section follows. */
   readonly badge: Readonly<Record<KindId, boolean>>;
   /**
@@ -41,7 +47,8 @@ export interface AppPageOptions extends BannerOptions {
 
 /**
  * What the banner shows: an entry for each disclosed kind the settings allow, a note for each
- * kind the game is ignored for, or one note for all kinds. Undefined when there is nothing.
+ * kind the game is ignored for, or one note for all kinds. A kind only the base game of a DLC is
+ * ignored for shows nothing. Undefined when there is nothing.
  */
 function bannerView(view: AppPageView): BannerView | undefined {
   const shown: AnyDisclosed[] = [];
@@ -56,7 +63,7 @@ function bannerView(view: AppPageView): BannerView | undefined {
       silenced = true;
     } else if (view.ignored[kind.id]) {
       ignored.push(kind.id);
-    } else {
+    } else if (!view.suppressed[kind.id]) {
       shown.push(verdict);
     }
   }
@@ -70,14 +77,13 @@ function bannerView(view: AppPageView): BannerView | undefined {
 
 /**
  * The verdicts the tag section shows, in registry order: each disclosed kind with its badge on
- * that is not ignored for the game.
+ * that is not ignored for the game or, for a DLC, for its base game.
  */
 function tagVerdicts(view: AppPageView): readonly AnyDisclosed[] {
   const shown: AnyDisclosed[] = [];
   for (const kind of KINDS) {
     const verdict = view.verdicts[kind.id];
-    const ignored = view.ignored[ALLOW_ALL] || view.ignored[kind.id];
-    if (verdict.state === "disclosed" && view.badge[kind.id] && !ignored) {
+    if (verdict.state === "disclosed" && view.badge[kind.id] && !view.suppressed[kind.id]) {
       shown.push(verdict);
     }
   }

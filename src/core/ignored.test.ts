@@ -3,6 +3,7 @@ import { appId } from "../../tests/helpers/app-ids";
 import { fixedClock } from "../../tests/helpers/fixed-clock";
 import { memoryStore } from "../../tests/helpers/memory-store";
 import { isIgnored, loadIgnored } from "./ignored";
+import { KIND_IDS } from "./kinds/id";
 import { ALLOW_ALL, perScope } from "./settings/allow-data";
 import { createAllowList } from "./settings/allow-list";
 
@@ -48,5 +49,71 @@ describe("isIgnored", () => {
 
   it("ignores no other game", () => {
     expect(isIgnored(ignored, appId(3), "kernel")).toBe(false);
+  });
+});
+
+describe("isIgnored for a DLC", () => {
+  const BASE = appId(100);
+  const DLC = appId(101);
+  const fresh = () => perScope(() => new Set<ReturnType<typeof appId>>());
+
+  it("follows a base game ignored for one kind, in that kind only", () => {
+    const ignored = fresh();
+    ignored.ai.add(BASE);
+    expect(isIgnored(ignored, DLC, "ai", BASE)).toBe(true);
+    expect(isIgnored(ignored, DLC, "pvp", BASE)).toBe(false);
+    expect(isIgnored(ignored, DLC, "kernel", BASE)).toBe(false);
+  });
+
+  it("follows a base game ignored for all kinds, in every kind", () => {
+    const ignored = fresh();
+    ignored[ALLOW_ALL].add(BASE);
+    for (const kind of KIND_IDS) {
+      expect(isIgnored(ignored, DLC, kind, BASE)).toBe(true);
+    }
+  });
+
+  it("behaves as before when the base game is not known", () => {
+    const ignored = fresh();
+    ignored[ALLOW_ALL].add(BASE);
+    ignored.ai.add(BASE);
+    expect(isIgnored(ignored, DLC, "ai")).toBe(false);
+    expect(isIgnored(ignored, DLC, "ai", undefined)).toBe(false);
+    expect(isIgnored(ignored, BASE, "ai")).toBe(true);
+  });
+
+  it("stays shown while its base game is not ignored", () => {
+    const ignored = fresh();
+    ignored.ai.add(appId(999));
+    expect(isIgnored(ignored, DLC, "ai", BASE)).toBe(false);
+  });
+
+  it("ignores a DLC on its own entry, with or without a base game", () => {
+    const ignored = fresh();
+    ignored.pvp.add(DLC);
+    expect(isIgnored(ignored, DLC, "pvp")).toBe(true);
+    expect(isIgnored(ignored, DLC, "pvp", BASE)).toBe(true);
+    expect(isIgnored(ignored, DLC, "ai", BASE)).toBe(false);
+    expect(isIgnored(ignored, BASE, "pvp")).toBe(false);
+  });
+
+  it("does not ignore the base game because a DLC is ignored", () => {
+    const ignored = fresh();
+    ignored[ALLOW_ALL].add(DLC);
+    expect(isIgnored(ignored, BASE, "ai")).toBe(false);
+  });
+
+  it("shows the DLC again after the base game stops being ignored", () => {
+    const ignored = fresh();
+    ignored.ai.add(BASE);
+    expect(isIgnored(ignored, DLC, "ai", BASE)).toBe(true);
+    ignored.ai.delete(BASE);
+    expect(isIgnored(ignored, DLC, "ai", BASE)).toBe(false);
+  });
+
+  it("looks one level up only", () => {
+    const ignored = fresh();
+    ignored.ai.add(BASE);
+    expect(isIgnored(ignored, appId(102), "ai", DLC)).toBe(false);
   });
 });

@@ -33,7 +33,8 @@ USER_AGENT = "steam-ai-reporter-fixtures (+https://github.com/jrv97/steam-ai-rep
 TIMEOUT_SECONDS = 30
 SPACING_SECONDS = 1.0
 
-ITEM_REMOVED = ("related_items", "best_purchase_option")
+# `related_items` stays: the schema reads `related_items.parent_appid` of a DLC (decision 51).
+ITEM_REMOVED = ("best_purchase_option",)
 KINDS_DETAILS_REMOVED = (
     "system_requirements",
     "early_access",

@@ -104,6 +104,8 @@ The state is per kind: a game can be disclosed for one kind and not disclosed or
 | Not disclosed | nothing | nothing | nothing | nothing |
 | Unknown | nothing | nothing | nothing | nothing |
 
+A DLC follows its base game's ignore list. A kind disclosed on a DLC whose base game is ignored for that kind, or for all tags, renders as the "ignored" row above, except in the banner of the DLC's own page, which shows neither an entry nor a note for it (see "Ignored through a base game" below). Everything else about the state is per kind, as above.
+
 Each kind's settings (`kinds.<id>`: `enabled`, `badge`, `banner` and `filter`) gate its columns. `enabled` off removes everything for the kind, `badge` off removes its chips, in lists and in the tag section, `banner` off removes its entry and its note, and `filter` set to `off` leaves lists alone. All are on by default, except that PvP starts with `enabled` off, and the filter is `off`. The ignore list wins over every setting.
 
 ## Shared rules
@@ -322,6 +324,7 @@ Preview: `previews/Banner.html`.
 
 - On the app page of a game with at least one disclosed kind that is enabled and has its banner switch on, once per page view. One banner holds every such kind, in registry order.
 - A kind the game is ignored for is not listed. It becomes a one-line note with Undo. A game ignored for all tags gets one such note and nothing else.
+- A kind the game's base game is ignored for (the game is a DLC) is not listed and gets no note, since its Undo would belong to the other game's page. A DLC page whose every kind is silenced this way has no banner. "Ignore this game" on a DLC page still ignores that DLC only.
 - Never as a modal or overlay, never over content, never stealing focus.
 
 ### What the consumer provides
@@ -399,6 +402,10 @@ Modeled on the store's per-app notice bubbles (the DLC notice sits in the same s
 - "Ignore for this tag" adds the app ID (with the name and today's date) to that kind's list and swaps its entry for the note; focus moves to the note's Undo. "Ignore this game" adds the app ID to the list for all tags, and every entry gives way to one note. Neither calls the store's own ignore feature.
 - "Undo" removes the app ID from that list again and restores the entries. Focus returns to the ignore button of the same scope, or to "Ignore this game" after an undo for all tags.
 - Chips on the game's capsules follow the same lists, so they leave and return with the entries.
+
+#### Ignored through a base game
+
+A DLC is ignored for a kind when its own app ID or its base game's app ID is on that kind's list or on the list for all tags. The base game is `related_items.parent_appid` of the DLC's GetItems item, kept with the cached verdict as `parent`; no list of DLC is stored, so a DLC released tomorrow follows at once. `isIgnored` (`src/core/ignored.ts`) is the only place that decides; the chips, the `data-sar-kinds` mark (so the dim and hide filters), the hover card and the app page's banner and tag section all ask it. The "Games you ignored" list is keyed by the games the person ignored, so a DLC never appears in it, and "Stop ignoring" on the base game brings the DLC back. A parent that is not known (not fetched yet, no parent, a source that does not carry it) leaves the game on its own entries. The relation is one level.
 - The polite live region announces `notice_marking_stopped` or `notice_marking_restored`.
 
 ### Longer translations
