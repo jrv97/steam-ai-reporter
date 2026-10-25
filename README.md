@@ -9,7 +9,7 @@
 
 # Tag Kit for Steam
 
-A browser extension for Chromium-based browsers and Firefox, and a userscript for Tampermonkey and Violentmonkey, that tag items on the Steam store with what Steam's own store data says about them: AI Generated Content Disclosure, anti-cheat (Kernel Level Anti-Cheat first), 3rd-party DRM, 3rd-Party Account, 3rd-party EULA and PvP.
+A browser extension for Chromium-based browsers and Firefox, and a userscript (Tampermonkey and Violentmonkey) that tag items on the Steam store with what Valve's own data says about them: AI Generated Content Disclosure, Anti-Cheat (Kernel Level flagged separately), 3rd-party DRM, 3rd-Party Account, 3rd-party EULA and PvP (friend request).
 
 > Status: [releases](https://github.com/jrv97/steam-ai-reporter/releases) are on GitHub. The store links below are placeholders.
 
@@ -21,7 +21,7 @@ Steam Next Fest is, I kid you not, one of my favorite times of the year. I try t
 
 I couldn't find an extension that covered every corner of the store and let me preview and review what a developer reported right from the list, without opening the game's page. So I built one. I know this is "querer ponerle puertas al campo" (trying to put doors on an open field), but it's the best I can do, and more importantly, it's fun :)
 
-If you browse the store the same way, I hope you find it useful too.
+Once I got that working in place, I thought "why not also flag all the other annoying stuff I keep checking manually like KLAC and 3rd-party accounts?". If you browse the store the same way, I hope you find it useful too :)
 
 ## What it does
 
@@ -164,22 +164,6 @@ No code is copied from any of these projects. Ideas that shaped this one are cre
 - [Augmented Steam](https://github.com/IsThereAnyDeal/AugmentedSteam): ideas only (handling both classic and React store pages, one module per feature, and the request for a dismissible banner). It is GPL-3.0 licensed, and nothing from it is used in any form.
 - [Slop-Inator](https://github.com/Dysnomia-Studio/slopinator) by Dysnomia Studio: listed for comparison. It shaped no part of this project.
 - [Enhanced Steam](https://github.com/jshackles/Enhanced_Steam) by Jason Shackles: listed for comparison. Its development ended in 2019, and Augmented Steam continues from it. It is GPL-3.0 licensed, and nothing from it is used in any form.
-
-### How they compare
-
-The cells follow each project's own README, release notes or issue tracker. "Not stated" marks a topic the source leaves out, and the project may still cover it.
-
-| Project                                                                                         | AI disclosure                                     | Filtering                                        | Other store data                                                               |
-| ----------------------------------------------------------------------------------------------- | ------------------------------------------------- | ------------------------------------------------ | ------------------------------------------------------------------------------ |
-| Tag Kit for Steam                                                                               | Badge, hover card, app page banner                | Show, Dim or Hide per tag                        | Anti-cheat, 3rd-party DRM, account, EULA, PvP                                  |
-| [AI warning for Steam](https://github.com/seeeeew/aiwarningforsteam)                            | Popup on store pages                              | Blur or hide in search                           | Not stated                                                                     |
-| [Slop-Inator](https://github.com/Dysnomia-Studio/slopinator)                                    | Badges on search pages, sale pages (experimental) | Not stated                                       | Not stated                                                                     |
-| [AI Generated Content Filter for Steam](https://github.com/SoBloxsy/AI-Content-Hider-for-Steam) | Disclosure shown on store and search pages        | Not stated                                       | Not stated                                                                     |
-| [Steam AI Games Indicator](https://github.com/Pierre-Demessence/SteamAIGamesIndicator)          | Banner on game pages, badge on tiles              | Hide toggle in search                            | Not stated                                                                     |
-| [Augmented Steam](https://github.com/IsThereAnyDeal/AugmentedSteam)                             | Not stated                                        | Search by review count, score, Early Access      | 3rd-party DRM warning setting, highlights for owned, wishlisted, ignored games |
-| [Enhanced Steam](https://github.com/jshackles/Enhanced_Steam)                                   | Not stated                                        | Hide Early Access games on home and search pages | 3rd-party DRM warnings, highlights for owned, wishlisted, coupon items         |
-
-Tag Kit for Steam has no Early Access handling and no highlighting of owned or wishlisted games. Slop-Inator and Steam AI Games Indicator keep lists of known games in their repositories. Tag Kit for Steam reads each game's data from Valve's servers and ships no list.
 
 ## How it was built
 
