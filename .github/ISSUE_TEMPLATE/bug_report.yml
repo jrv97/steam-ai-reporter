@@ -1,0 +1,64 @@
+name: Bug report
+description: Report a missing, wrong or misplaced tag
+labels: [bug]
+body:
+  - type: input
+    id: url
+    attributes:
+      label: Steam URL
+      description: Paste the store page, search page or other affected URL.
+    validations:
+      required: true
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Which tag or part of the extension?
+      options:
+        - AI Generated Content Disclosure
+        - Kernel Level Anti-Cheat
+        - Anti-Cheat Software
+        - 3rd-party DRM
+        - 3rd-Party Account
+        - 3rd-party EULA
+        - PvP
+        - Settings or interface
+        - Other
+    validations:
+      required: true
+  - type: dropdown
+    id: browser
+    attributes:
+      label: Where do you run it?
+      options:
+        - Chrome
+        - Edge
+        - Another Chromium browser
+        - Firefox
+        - Userscript in Tampermonkey
+        - Userscript in Violentmonkey
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Extension or userscript version
+      description: Shown on the browser's extensions page or in the userscript header.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: What happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: extra
+    attributes:
+      label: Screenshots or console errors

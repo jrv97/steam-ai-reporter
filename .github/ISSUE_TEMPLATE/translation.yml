@@ -1,0 +1,38 @@
+name: Translation or language support
+description: Request a new language or report a missing or incorrect translation
+labels: [translation]
+body:
+  - type: dropdown
+    id: request_type
+    attributes:
+      label: Request type
+      options:
+        - Request a new language
+        - Report a missing translation
+        - Report an incorrect translation
+        - Improve an existing translation
+    validations:
+      required: true
+  - type: input
+    id: language
+    attributes:
+      label: Language and locale
+      description: For example Spanish (es-ES), German (de-DE) or Brazilian Portuguese (pt-BR).
+    validations:
+      required: true
+  - type: textarea
+    id: missing_text
+    attributes:
+      label: Missing or incorrect text
+      description: Paste the English text and, if you have one, your suggested translation.
+  - type: input
+    id: steam_url
+    attributes:
+      label: Steam URL or screenshot
+      description: >-
+        Useful when the text is Steam's own wording for a tag, such as AI Generated Content
+        Disclosure.
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
