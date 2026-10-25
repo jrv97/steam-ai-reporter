@@ -1,9 +1,10 @@
 import type { JsonValue } from "../json";
+import type { KindVerdicts } from "../kinds/verdicts";
 import type { Clock, KeyValueStore } from "../ports";
 import { verdictKey } from "../storage-keys";
-import type { AppId, Verdict } from "../types";
+import type { AppId } from "../types";
 import { Lru, MEMORY_CAPACITY } from "./lru";
-import { decodeVerdict, encodeVerdict, type TimedVerdict } from "./stored";
+import { decodeVerdicts, encodeVerdicts, type TimedVerdicts } from "./stored";
 import { isFresh } from "./ttl";
 
 /**
@@ -13,9 +14,9 @@ import { isFresh } from "./ttl";
  */
 export interface VerdictCache {
   /** The fresh verdicts among `ids`: one storage read for the IDs memory does not hold. */
-  lookup(ids: readonly AppId[]): Promise<ReadonlyMap<AppId, Verdict>>;
+  lookup(ids: readonly AppId[]): Promise<ReadonlyMap<AppId, KindVerdicts>>;
   /** Remembers the verdicts now: one storage write for the ones that are stored. */
-  save(verdicts: ReadonlyMap<AppId, Verdict>): Promise<void>;
+  save(verdicts: ReadonlyMap<AppId, KindVerdicts>): Promise<void>;
 }
 
 export function createVerdictCache(
@@ -23,17 +24,17 @@ export function createVerdictCache(
   clock: Clock,
   capacity: number = MEMORY_CAPACITY,
 ): VerdictCache {
-  const memory = new Lru<AppId, TimedVerdict>(capacity);
+  const memory = new Lru<AppId, TimedVerdicts>(capacity);
 
   return {
     async lookup(ids) {
       const now = clock.now();
-      const found = new Map<AppId, Verdict>();
+      const found = new Map<AppId, KindVerdicts>();
       const unseen = new Set<AppId>();
       for (const id of ids) {
         const held = memory.get(id);
-        if (held !== undefined && isFresh(held.verdict, held.time, now)) {
-          found.set(id, held.verdict);
+        if (held !== undefined && isFresh(held.verdicts, held.time, now)) {
+          found.set(id, held.verdicts);
         } else {
           memory.delete(id);
           unseen.add(id);
@@ -44,10 +45,10 @@ export function createVerdictCache(
       }
       const stored = await store.get([...unseen].map(verdictKey));
       for (const id of unseen) {
-        const entry = decodeVerdict(stored.get(verdictKey(id)));
-        if (entry !== undefined && isFresh(entry.verdict, entry.time, now)) {
+        const entry = decodeVerdicts(stored.get(verdictKey(id)));
+        if (entry !== undefined && isFresh(entry.verdicts, entry.time, now)) {
           memory.set(id, entry);
-          found.set(id, entry.verdict);
+          found.set(id, entry.verdicts);
         }
       }
       return found;
@@ -56,9 +57,9 @@ export function createVerdictCache(
     async save(verdicts) {
       const now = clock.now();
       const entries = new Map<string, JsonValue>();
-      for (const [id, verdict] of verdicts) {
-        memory.set(id, { verdict, time: now });
-        const value = encodeVerdict(verdict, now);
+      for (const [id, found] of verdicts) {
+        memory.set(id, { verdicts: found, time: now });
+        const value = encodeVerdicts(found, now);
         if (value !== undefined) {
           entries.set(verdictKey(id), value);
         }

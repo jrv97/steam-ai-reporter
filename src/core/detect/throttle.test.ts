@@ -6,8 +6,8 @@ import { getItemsRequest, getItemsRoute, storeItem } from "../../../tests/helper
 import { memoryStore } from "../../../tests/helpers/memory-store";
 import { recordingLogger } from "../../../tests/helpers/recording-logger";
 import { T0, useTimerClock } from "../../../tests/helpers/timer-clock";
+import { UNKNOWN_KINDS } from "../kinds/verdicts";
 import type { Clock, Http, KeyValueStore } from "../ports";
-import { UNKNOWN } from "../types";
 import { API_BREAKER_KEY, type Breaker, createBreaker } from "./breaker";
 import { createGetItemsDetector, GETITEMS_URL } from "./getitems";
 import { createThrottledHttp } from "./throttle";
@@ -138,7 +138,9 @@ describe("GetItems through the throttle", () => {
     expect(sent.map(({ at }) => at)).toStrictEqual([0, 1_000, 2_000]);
     expect(inner.maxInFlight).toBe(1);
     expect(verdicts.size).toBe(120);
-    expect([...verdicts.values()].every((verdict) => verdict.state === "not-disclosed")).toBe(true);
+    expect([...verdicts.values()].every((verdict) => verdict.ai.state === "not-disclosed")).toBe(
+      true,
+    );
   });
 
   it.each<[string, Reply]>([
@@ -153,11 +155,11 @@ describe("GetItems through the throttle", () => {
     for (const [id, verdict] of verdicts) {
       // The batch that tripped is `rate-limited` (429) or `error` (TypeError); the rest were held.
       if (!first.has(id)) {
-        expect(verdict).toBe(UNKNOWN["rate-limited"]);
+        expect(verdict).toBe(UNKNOWN_KINDS["rate-limited"]);
       }
     }
     expect(await after(50_000, detector.detect(ids.slice(0, 1)))).toStrictEqual(
-      new Map([[ids[0], UNKNOWN["rate-limited"]]]),
+      new Map([[ids[0], UNKNOWN_KINDS["rate-limited"]]]),
     );
     expect(sent).toHaveLength(1);
   });

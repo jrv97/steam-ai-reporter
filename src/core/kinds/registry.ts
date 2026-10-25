@@ -1,0 +1,31 @@
+import type { ExtraDetails } from "../detect/getitems.schema";
+import type { SteamLanguage } from "../i18n/locale";
+import type { Verdict } from "../types";
+import { AI_KIND } from "./ai";
+import { KIND_IDS, type KindId } from "./id";
+import type { TagKind } from "./kind";
+
+// The one place that lists the kinds. Each literal here is checked against `KindId`, so a kind in
+// `KIND_IDS` without an entry fails the type check.
+const REGISTRY: Readonly<Record<KindId, TagKind>> = { ai: AI_KIND };
+
+/** Every registered kind, in `KIND_IDS` order. */
+export const KINDS: readonly TagKind[] = KIND_IDS.map((id) => REGISTRY[id]);
+
+export function kindOf(id: KindId): TagKind {
+  return REGISTRY[id];
+}
+
+/** One `make(kind)` result for each registered kind, keyed by kind id. */
+export function perKind<T>(make: (kind: TagKind) => T): Readonly<Record<KindId, T>> {
+  return { ai: make(REGISTRY.ai) };
+}
+
+/** Every kind's verdict for a GetItems item with `extra_details`. */
+export function kindsFromGetItems(
+  details: ExtraDetails,
+  name: string | undefined,
+  language: SteamLanguage,
+): Readonly<Record<KindId, Verdict>> {
+  return { ai: REGISTRY.ai.fromGetItems(details, name, language) };
+}

@@ -1,5 +1,6 @@
+import type { KindVerdicts } from "../kinds/verdicts";
 import type { Logger } from "../log";
-import type { AppId, Detector, Verdict } from "../types";
+import type { AppId, Detector } from "../types";
 import type { VerdictCache } from "./verdict-cache";
 
 /**
@@ -16,14 +17,16 @@ export function cachedDetector(
   return {
     async detect(ids) {
       const distinct = [...new Set(ids)];
-      const verdicts = new Map<AppId, Verdict>(await lookupQuietly(cache, distinct, logger));
+      const verdicts = new Map<AppId, KindVerdicts>(
+        await lookupQuietly(cache, distinct, logger),
+      );
       const misses = distinct.filter((id) => !verdicts.has(id));
       if (misses.length === 0) {
         return verdicts;
       }
       const fetched = await inner.detect(misses);
-      for (const [id, verdict] of fetched) {
-        verdicts.set(id, verdict);
+      for (const [id, found] of fetched) {
+        verdicts.set(id, found);
       }
       await cache.save(fetched).catch((problem: unknown) => {
         logger.error(problem);
@@ -37,7 +40,7 @@ async function lookupQuietly(
   cache: VerdictCache,
   ids: readonly AppId[],
   logger: Pick<Logger, "error">,
-): Promise<ReadonlyMap<AppId, Verdict>> {
+): Promise<ReadonlyMap<AppId, KindVerdicts>> {
   try {
     return await cache.lookup(ids);
   } catch (problem) {

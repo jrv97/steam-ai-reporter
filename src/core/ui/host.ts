@@ -1,3 +1,5 @@
+import type { KindId } from "../kinds/id";
+import type { KindVerdicts } from "../kinds/verdicts";
 import type { HostState } from "../scan/marks";
 import type { Verdict } from "../types";
 
@@ -20,9 +22,9 @@ export type BadgeSlot =
 /** What the renderers need to know about one capsule host. */
 export interface HostView {
   readonly host: Element;
-  readonly verdict: Verdict;
-  /** The game is on the allow-list: nothing marks it, in lists or on badges. */
-  readonly allowed: boolean;
+  readonly verdicts: KindVerdicts;
+  /** Per kind: the game is on the allow-list, so nothing marks it, in lists or on badges. */
+  readonly allowed: Readonly<Record<KindId, boolean>>;
   /** Where the badge goes; undefined when the placement shows none (a thumbnail too small). */
   readonly slot: BadgeSlot | undefined;
   /** False where hiding would break the list (virtualized, carousel); hide then dims. */

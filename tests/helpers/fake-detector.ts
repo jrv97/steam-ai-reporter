@@ -1,4 +1,5 @@
-import type { AppId, Detector, Verdict } from "../../src/core/types";
+import type { KindVerdicts } from "../../src/core/kinds/verdicts";
+import type { AppId, Detector } from "../../src/core/types";
 
 export interface FakeDetector extends Detector {
   /** The IDs of every `detect` call, in order. */
@@ -6,17 +7,17 @@ export interface FakeDetector extends Detector {
 }
 
 /**
- * A `Detector` that answers each ID with `verdictFor(id)` on a later microtask, so calls that are
+ * A `Detector` that answers each ID with `verdictsFor(id)` on a later microtask, so calls that are
  * not awaited overlap, and records what it was asked.
  */
-export function fakeDetector(verdictFor: (id: AppId) => Verdict): FakeDetector {
+export function fakeDetector(verdictsFor: (id: AppId) => KindVerdicts): FakeDetector {
   const calls: (readonly AppId[])[] = [];
   return {
     calls,
     async detect(ids) {
       calls.push(ids);
       await Promise.resolve();
-      return new Map([...new Set(ids)].map((id): [AppId, Verdict] => [id, verdictFor(id)]));
+      return new Map([...new Set(ids)].map((id): [AppId, KindVerdicts] => [id, verdictsFor(id)]));
     },
   };
 }

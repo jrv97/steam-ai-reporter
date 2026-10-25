@@ -1,3 +1,4 @@
+import type { TagKind } from "../kinds/kind";
 import type { MessageCatalog } from "../ports";
 import type { DisclosedVerdict } from "../types";
 import { normalizeBreaks } from "./notes";
@@ -67,10 +68,10 @@ export function placeCard(
 /** Elements register here as they render; the card looks them up when an event reaches them. */
 export interface CardTriggers {
   /**
-   * Makes the element open the card with this verdict. Sets nothing on it. `ownPage` marks a
-   * trigger on the game's own store page, where the card does not point to that page.
+   * Makes the element open the card with this kind's verdict. Sets nothing on it. `ownPage` marks
+   * a trigger on the game's own store page, where the card does not point to that page.
    */
-  bind(trigger: Element, verdict: DisclosedVerdict, ownPage?: boolean): void;
+  bind(trigger: Element, kind: TagKind, verdict: DisclosedVerdict, ownPage?: boolean): void;
 }
 
 export interface HoverCard extends CardTriggers {
@@ -108,6 +109,7 @@ interface Placed {
 }
 
 interface Binding {
+  readonly kind: TagKind;
   readonly verdict: DisclosedVerdict;
   readonly ownPage: boolean;
 }
@@ -223,7 +225,7 @@ export function createHoverCard(
   }
 
   /** Rebuilds the shown card for another verdict; the same verdict keeps what is there. */
-  function fill(target: Card, { verdict, ownPage }: Binding): void {
+  function fill(target: Card, { kind, verdict, ownPage }: Binding): void {
     if (filled === verdict) {
       target.more.hidden = ownPage || !clamped;
       return;
@@ -231,12 +233,12 @@ export function createHoverCard(
     filled = verdict;
     target.notes.textContent = normalizeBreaks(verdict.notes);
     const parts: HTMLElement[] = [
-      line("sar-hovercard-title", i18n.t("badge_label")),
+      line("sar-hovercard-title", i18n.t(kind.messages.label)),
       line("sar-hovercard-source", i18n.t("badge_card_source")),
       target.notes,
     ];
     if (verdict.service !== undefined && verdict.service !== "") {
-      const service = line("sar-hovercard-service", i18n.t("badge_card_service_label"));
+      const service = line("sar-hovercard-service", i18n.t(kind.messages.cardService));
       const name = doc.createElement("span");
       name.className = "sar-hovercard-service-name";
       name.textContent = verdict.service;
@@ -514,8 +516,8 @@ export function createHoverCard(
   view?.addEventListener("pagehide", close);
 
   return {
-    bind(trigger, verdict, ownPage = false) {
-      bindings.set(trigger, { verdict, ownPage });
+    bind(trigger, kind, verdict, ownPage = false) {
+      bindings.set(trigger, { kind, verdict, ownPage });
     },
     stop() {
       close();

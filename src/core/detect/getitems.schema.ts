@@ -50,3 +50,4 @@ export const StoreItemIdSchema = v.object({ id: AppIdSchema });
 
 export type GetItemsEnvelope = v.InferOutput<typeof GetItemsEnvelopeSchema>;
 export type StoreItem = v.InferOutput<typeof StoreItemSchema>;
+export type ExtraDetails = v.InferOutput<typeof ExtraDetailsSchema>;

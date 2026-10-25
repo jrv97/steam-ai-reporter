@@ -1,3 +1,4 @@
+import type { TagKind } from "../kinds/kind";
 import type { MessageCatalog } from "../ports";
 import type { DisclosedVerdict } from "../types";
 import { createChip } from "./badge";
@@ -16,13 +17,14 @@ const DEV_ROW_SELECTOR = ".glance_ctn_responsive_left .dev_row";
 export function createSummaryRow(
   doc: Document,
   i18n: MessageCatalog,
+  kind: TagKind,
   verdict: DisclosedVerdict,
   jump: (() => void) | undefined,
   card?: CardTriggers,
 ): HTMLElement {
   const row = doc.createElement(jump === undefined ? "div" : "a");
   row.className = "sar-summary-row";
-  row.append(createChip(doc, i18n.t("badge_label")));
+  row.append(createChip(doc, i18n.t(kind.messages.label)));
   if (jump !== undefined) {
     row.setAttribute("href", `#${BANNER_ID}`);
     row.addEventListener("click", (event) => {
@@ -31,7 +33,7 @@ export function createSummaryRow(
     });
   } else {
     row.tabIndex = 0;
-    card?.bind(row, verdict, true);
+    card?.bind(row, kind, verdict, true);
   }
   return row;
 }

@@ -1,5 +1,6 @@
 import { type JsonValue, parseJson } from "../../src/core/json";
 import type { GmStorage } from "../../src/platform/userscript/gm-storage";
+import { failsWrite, type StorageFaults, storedValue } from "./storage-faults";
 
 export interface FakeGm extends GmStorage {
   /** The `GM.setValue` calls, in order. */
@@ -32,5 +33,23 @@ export function fakeGm(): FakeGm {
     listValues() {
       return Promise.resolve([...values.keys()]);
     },
+  };
+}
+
+/** A GM fake that injects the given faults. Each `setValue` is one write, as in the managers. */
+export function faultyGm(faults: StorageFaults): GmStorage {
+  const inner = fakeGm();
+  return {
+    getValue: (name) => inner.getValue(name),
+    setValue(name, value) {
+      if (failsWrite(faults)) {
+        return Promise.reject(new Error());
+      }
+      const stored = storedValue(faults, name, value);
+      return stored === undefined ? Promise.resolve() : inner.setValue(name, stored);
+    },
+    deleteValue: (name) =>
+      faults.rejectRemove ? Promise.reject(new Error()) : inner.deleteValue(name),
+    listValues: () => inner.listValues(),
   };
 }

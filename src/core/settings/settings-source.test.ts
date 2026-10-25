@@ -1,10 +1,16 @@
 import { describe, expect, it, vi } from "vitest";
 import { countingStore } from "../../../tests/helpers/counting-store";
 import { memoryStore } from "../../../tests/helpers/memory-store";
-import { DEFAULT_SETTINGS, parseSettings, type Settings } from "./settings";
+import {
+  DEFAULT_SETTINGS,
+  encodeSettings,
+  parseSettings,
+  type Settings,
+  withKind,
+} from "./settings";
 import { createSettingsSource, type RemoteSettingsChanges } from "./settings-source";
 
-const DIMMED: Settings = { ...DEFAULT_SETTINGS, listFilter: "dim" };
+const DIMMED: Settings = withKind(DEFAULT_SETTINGS, "ai", { filter: "dim" });
 
 /** A platform change event that the test can fire, and that counts its subscribers. */
 function remoteEvents() {
@@ -43,10 +49,53 @@ describe("createSettingsSource", () => {
     expect(parseSettings(await createSettingsSource(store).read())).toStrictEqual(DIMMED);
   });
 
-  it("writes with one storage call", async () => {
-    const store = countingStore(memoryStore());
+  it("reads with one storage call and writes with one once settings are stored", async () => {
+    const store = countingStore(memoryStore(new Map([["v2:settings", encodeSettings(DIMMED)]])));
+    const source = createSettingsSource(store);
+    await source.read();
+    expect(store.calls).toStrictEqual({ get: 1, set: 0, remove: 0, keys: 0 });
+    await source.write(DEFAULT_SETTINGS);
+    expect(store.calls.set).toBe(1);
+  });
+
+  it("rejects a write while v1 settings cannot be copied, and writes nothing", async () => {
+    const inner = memoryStore(new Map([["v1:settings", { badges: false }]]));
+    const store = countingStore(inner);
+    const source = createSettingsSource(store);
+    store.break();
+    await expect(source.write(DEFAULT_SETTINGS)).rejects.toThrow();
+    store.heal();
+    expect(await inner.keys()).toStrictEqual(["v1:settings"]);
+    expect(parseSettings(await source.read()).kinds.ai.badge).toBe(false);
+  });
+
+  it("stores the settings under the v2 key", async () => {
+    const store = memoryStore();
     await createSettingsSource(store).write(DIMMED);
-    expect(store.calls).toStrictEqual({ get: 0, set: 1, remove: 0, keys: 0 });
+    expect([...(await store.keys())]).toStrictEqual(["v2:settings"]);
+  });
+
+  it("copies v1 settings to the v2 key on the first read", async () => {
+    const store = memoryStore(
+      new Map([["v1:settings", { badges: false, banner: true, listFilter: "hide", locale: "es" }]]),
+    );
+    const source = createSettingsSource(store);
+    const expected = withKind(
+      { ...DEFAULT_SETTINGS, locale: "es" },
+      "ai",
+      { badge: false, filter: "hide" },
+    );
+    expect(parseSettings(await source.read())).toStrictEqual(expected);
+    expect([...(await store.keys())].toSorted()).toStrictEqual(["v1:settings", "v2:settings"]);
+  });
+
+  it("reads again after a migration that failed, instead of remembering the failure", async () => {
+    const store = countingStore(memoryStore(new Map([["v1:settings", { badges: false }]])));
+    const source = createSettingsSource(store);
+    store.break();
+    await expect(source.read()).rejects.toBeInstanceOf(Error);
+    store.heal();
+    expect(parseSettings(await source.read()).kinds.ai.badge).toBe(false);
   });
 
   it("tells subscribers about this context's writes, once per change", async () => {
@@ -76,9 +125,12 @@ describe("createSettingsSource", () => {
     const source = createSettingsSource(memoryStore(), events.remote);
     const listener = vi.fn<(value: unknown) => void>();
     source.subscribe(listener);
-    events.fire({ listFilter: "hide" });
+    events.fire({ kinds: { ai: { filter: "hide" } } });
     events.fire("garbage");
-    expect(listener.mock.calls).toStrictEqual([[{ listFilter: "hide" }], ["garbage"]]);
+    expect(listener.mock.calls).toStrictEqual([
+      [{ kinds: { ai: { filter: "hide" } } }],
+      ["garbage"],
+    ]);
   });
 
   it("does not tell twice when the platform echoes this context's own write", async () => {

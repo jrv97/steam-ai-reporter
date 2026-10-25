@@ -1,11 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { disclosedVerdict, NOT_DISCLOSED } from "../../../tests/helpers/verdicts";
+import { aiVerdicts, disclosedVerdict, NOT_DISCLOSED } from "../../../tests/helpers/verdicts";
+import { UNKNOWN_KINDS } from "../kinds/verdicts";
 import { UNKNOWN, type Verdict } from "../types";
-import { decodeVerdict, encodeVerdict } from "./stored";
+import { decodeVerdicts, encodeVerdicts } from "./stored";
 
 const T = 1_000_000_000_000;
 
-describe("encodeVerdict and decodeVerdict", () => {
+describe("encodeVerdicts and decodeVerdicts", () => {
   it("round trip every stored verdict", () => {
     const verdicts: readonly Verdict[] = [
       disclosedVerdict(),
@@ -15,21 +16,35 @@ describe("encodeVerdict and decodeVerdict", () => {
       UNKNOWN.gated,
       UNKNOWN.missing,
     ];
-    for (const verdict of verdicts) {
-      expect(decodeVerdict(encodeVerdict(verdict, T))).toStrictEqual({ verdict, time: T });
+    for (const ai of verdicts) {
+      expect(decodeVerdicts(encodeVerdicts(aiVerdicts(ai), T))).toStrictEqual({
+        verdicts: aiVerdicts(ai),
+        time: T,
+      });
     }
+  });
+
+  it("stores the fetch time once and one entry for each kind", () => {
+    expect(encodeVerdicts(aiVerdicts(NOT_DISCLOSED), T)).toStrictEqual({
+      time: T,
+      kinds: { ai: { state: "not-disclosed", source: "api" } },
+    });
   });
 
   it("keeps the notes language, service and name, and leaves them out when absent", () => {
     const withAll = disclosedVerdict({ language: "spanish", service: "Suno", name: "Juego" });
-    expect(encodeVerdict(withAll, T)).toStrictEqual({
-      state: "disclosed",
+    expect(encodeVerdicts(aiVerdicts(withAll), T)).toStrictEqual({
       time: T,
-      notes: withAll.notes,
-      language: "spanish",
-      service: "Suno",
-      name: "Juego",
-      source: "api",
+      kinds: {
+        ai: {
+          state: "disclosed",
+          notes: withAll.notes,
+          language: "spanish",
+          service: "Suno",
+          name: "Juego",
+          source: "api",
+        },
+      },
     });
     const bare: Verdict = {
       state: "disclosed",
@@ -37,76 +52,93 @@ describe("encodeVerdict and decodeVerdict", () => {
       language: "english",
       source: "api",
     };
-    expect(encodeVerdict(bare, T)).toStrictEqual({
-      state: "disclosed",
+    expect(encodeVerdicts(aiVerdicts(bare), T)).toStrictEqual({
       time: T,
-      notes: "x",
-      language: "english",
-      source: "api",
+      kinds: { ai: { state: "disclosed", notes: "x", language: "english", source: "api" } },
     });
   });
 
-  it("does not encode the verdicts that live in memory only", () => {
-    expect(encodeVerdict(UNKNOWN.error, T)).toBeUndefined();
-    expect(encodeVerdict(UNKNOWN["rate-limited"], T)).toBeUndefined();
+  it("does not encode an app that has a verdict living in memory only", () => {
+    expect(encodeVerdicts(UNKNOWN_KINDS.error, T)).toBeUndefined();
+    expect(encodeVerdicts(UNKNOWN_KINDS["rate-limited"], T)).toBeUndefined();
+    expect(encodeVerdicts(aiVerdicts(UNKNOWN.error), T)).toBeUndefined();
   });
 
   it("shares the unknown verdict objects", () => {
-    expect(decodeVerdict(encodeVerdict(UNKNOWN.gated, T))?.verdict).toBe(UNKNOWN.gated);
+    const decoded = decodeVerdicts(encodeVerdicts(UNKNOWN_KINDS.gated, T));
+    expect(decoded?.verdicts.ai).toBe(UNKNOWN.gated);
   });
 });
 
-describe("decodeVerdict", () => {
+describe("decodeVerdicts", () => {
   const valid = {
-    state: "disclosed",
     time: T,
-    notes: "text",
-    language: "english",
-    source: "api",
+    kinds: { ai: { state: "disclosed", notes: "text", language: "english", source: "api" } },
   };
 
+  function withAi(ai: unknown, time: unknown = T): unknown {
+    return { time, kinds: { ai } };
+  }
+
+  const withoutTime = { kinds: { ai: valid.kinds.ai } };
+
   it("accepts the valid shape", () => {
-    expect(decodeVerdict(valid)?.verdict.state).toBe("disclosed");
+    expect(decodeVerdicts(valid)?.verdicts.ai.state).toBe("disclosed");
+    expect(decodeVerdicts(valid)?.time).toBe(T);
   });
 
   it("discards values of the wrong type", () => {
     for (const stored of [undefined, null, 7, "disclosed", true, [], [valid]]) {
-      expect(decodeVerdict(stored)).toBeUndefined();
+      expect(decodeVerdicts(stored)).toBeUndefined();
     }
   });
 
-  it("discards old-schema and malformed entries instead of casting them", () => {
+  it("discards an entry written before the kind existed or with a kind missing", () => {
+    expect(decodeVerdicts({ time: T, kinds: {} })).toBeUndefined();
+    expect(decodeVerdicts({ time: T })).toBeUndefined();
+    expect(decodeVerdicts({ time: T, kinds: { other: valid.kinds.ai } })).toBeUndefined();
+  });
+
+  it("discards the v1 shape, which kept one verdict flat under the key", () => {
+    const v1 = { state: "disclosed", time: T, notes: "text", language: "english", source: "api" };
+    expect(decodeVerdicts(v1)).toBeUndefined();
+    expect(decodeVerdicts({ state: "not-disclosed", time: T, source: "api" })).toBeUndefined();
+  });
+
+  it("discards malformed entries instead of casting them", () => {
+    const ai = valid.kinds.ai;
     const bad: readonly unknown[] = [
-      { s: "d", t: T, n: "text" },
-      { ...valid, state: "maybe" },
-      { ...valid, state: undefined },
-      { ...valid, time: "yesterday" },
-      { ...valid, time: Number.NaN },
-      { ...valid, time: undefined },
-      { ...valid, notes: "" },
-      { ...valid, notes: 5 },
-      { ...valid, language: "klingon" },
-      { ...valid, language: undefined },
-      { ...valid, source: "guess" },
-      { ...valid, service: 3 },
-      { ...valid, name: null },
-      { state: "not-disclosed", time: T },
-      { state: "unknown", time: T, reason: "error" },
-      { state: "unknown", time: T, reason: "rate-limited" },
-      { state: "unknown", time: T },
+      withAi({ ...ai, state: "maybe" }),
+      withAi({ ...ai, state: undefined }),
+      withAi(ai, "yesterday"),
+      withAi(ai, Number.NaN),
+      withoutTime,
+      withAi({ ...ai, notes: "" }),
+      withAi({ ...ai, notes: 5 }),
+      withAi({ ...ai, language: "klingon" }),
+      withAi({ ...ai, language: undefined }),
+      withAi({ ...ai, source: "guess" }),
+      withAi({ ...ai, service: 3 }),
+      withAi({ ...ai, name: null }),
+      withAi({ state: "not-disclosed" }),
+      withAi({ state: "unknown", reason: "error" }),
+      withAi({ state: "unknown", reason: "rate-limited" }),
+      withAi({ state: "unknown" }),
+      withAi(null),
     ];
     for (const stored of bad) {
-      expect(decodeVerdict(stored)).toBeUndefined();
+      expect(decodeVerdicts(stored)).toBeUndefined();
     }
   });
 
-  it("drops unknown keys", () => {
-    const decoded = decodeVerdict({ ...valid, extra: "x" });
-    expect(decoded?.verdict).toStrictEqual({
-      state: "disclosed",
-      notes: "text",
-      language: "english",
-      source: "api",
+  it("drops unknown keys and kinds", () => {
+    const decoded = decodeVerdicts({
+      time: T,
+      extra: "x",
+      kinds: { ai: { ...valid.kinds.ai, extra: "x" }, other: { state: "unknown" } },
     });
+    expect(decoded?.verdicts).toStrictEqual(
+      aiVerdicts({ state: "disclosed", notes: "text", language: "english", source: "api" }),
+    );
   });
 });

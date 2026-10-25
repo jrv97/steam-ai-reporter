@@ -1,7 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { hostView, type HostViewOptions } from "../../../tests/helpers/host-view";
 import { disclosedVerdict, NOT_DISCLOSED } from "../../../tests/helpers/verdicts";
+import { AI_KIND } from "../kinds/ai";
 import { UNKNOWN } from "../types";
-import type { HostView } from "./host";
 import { applyListFilter, createHostStateRenderer } from "./list-filter";
 import { adoptStyles, PAGE_CSS, TOKENS_CSS } from "./styles";
 
@@ -11,15 +12,8 @@ function host(): HTMLElement {
   return element;
 }
 
-function view(element: Element, overrides: Partial<HostView> = {}): HostView {
-  return {
-    host: element,
-    verdict: disclosedVerdict(),
-    allowed: false,
-    slot: undefined,
-    hideable: true,
-    ...overrides,
-  };
+function view(element: Element, options: HostViewOptions = {}) {
+  return hostView(element, options);
 }
 
 afterEach(() => {
@@ -28,7 +22,7 @@ afterEach(() => {
 });
 
 describe("createHostStateRenderer", () => {
-  const renderer = createHostStateRenderer();
+  const renderer = createHostStateRenderer(AI_KIND);
 
   it.each(
     [
@@ -71,7 +65,7 @@ describe("applyListFilter", () => {
   function styled(filter: "off" | "dim" | "hide") {
     adoptStyles(document, TOKENS_CSS + PAGE_CSS);
     applyListFilter(document.documentElement, filter);
-    const renderer = createHostStateRenderer();
+    const renderer = createHostStateRenderer(AI_KIND);
     const [disclosed, fixed, other] = [host(), host(), host()];
     renderer.render(view(disclosed));
     renderer.render(view(fixed, { hideable: false }));
@@ -95,7 +89,7 @@ describe("applyListFilter", () => {
     applyListFilter(document.documentElement, "dim");
     const slide = host();
     slide.setAttribute("style", "opacity: 0");
-    createHostStateRenderer().render(view(slide, { hideable: false }));
+    createHostStateRenderer(AI_KIND).render(view(slide, { hideable: false }));
     expect(getComputedStyle(slide).opacity).toBe("0");
     expect(getComputedStyle(slide).filter).toBe("opacity(0.4)");
   });

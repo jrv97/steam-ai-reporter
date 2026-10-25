@@ -1,7 +1,8 @@
-import { type AppId, type Detector, UNKNOWN, type Verdict } from "../types";
+import { type KindVerdicts, UNKNOWN_KINDS } from "../kinds/verdicts";
+import type { AppId, Detector } from "../types";
 import { settle } from "./settle";
 
-type Answer = Promise<ReadonlyMap<AppId, Verdict>>;
+type Answer = Promise<ReadonlyMap<AppId, KindVerdicts>>;
 
 /** The IDs asked for in the current tick, and the one call that will answer them. */
 interface Tick {
@@ -54,14 +55,16 @@ export function createDedupingDetector(inner: Detector): Detector {
     async detect(ids) {
       const distinct = [...new Set(ids)];
       const answers = new Set(distinct.map(answerFor));
-      const found = new Map<AppId, Verdict>();
+      const found = new Map<AppId, KindVerdicts>();
       for (const verdicts of await Promise.all(answers)) {
         for (const [id, verdict] of verdicts) {
           found.set(id, verdict);
         }
       }
       // A shared call may also hold other callers' IDs; answer only the requested ones.
-      return new Map(distinct.map((id): [AppId, Verdict] => [id, found.get(id) ?? UNKNOWN.error]));
+      return new Map(
+        distinct.map((id): [AppId, KindVerdicts] => [id, found.get(id) ?? UNKNOWN_KINDS.error]),
+      );
     },
   };
 }

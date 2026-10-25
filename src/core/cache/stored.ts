@@ -1,12 +1,15 @@
 import * as v from "valibot";
 import { SteamLanguageSchema } from "../i18n/locale";
 import type { JsonValue } from "../json";
+import type { KindId } from "../kinds/id";
+import { KINDS } from "../kinds/registry";
+import { type KindVerdicts, UNKNOWN_KINDS } from "../kinds/verdicts";
 import { UNKNOWN, type Verdict } from "../types";
 import { isStoredReason, STORED_REASONS } from "./ttl";
 
-// The stored form of one verdict (`v1:a:<appid>`). Storage is untrusted: every read goes through
-// `StoredVerdictSchema`, and anything that fails it is discarded, never cast. Only the unknown
-// reasons in `STORED_REASONS` appear here.
+// The stored form of one app's verdicts (`v1:a:<appid>`): the fetch time and one entry per kind.
+// Storage is untrusted: a read that fails these schemas is discarded, never cast. Only the
+// unknown reasons in `STORED_REASONS` appear here.
 
 const SourceSchema = v.picklist(["api", "html"]);
 const TimeSchema = v.pipe(v.number(), v.finite());
@@ -14,29 +17,29 @@ const TimeSchema = v.pipe(v.number(), v.finite());
 const StoredVerdictSchema = v.variant("state", [
   v.object({
     state: v.literal("disclosed"),
-    time: TimeSchema,
     notes: v.pipe(v.string(), v.minLength(1)),
     language: SteamLanguageSchema,
     service: v.exactOptional(v.string()),
     name: v.exactOptional(v.string()),
     source: SourceSchema,
   }),
-  v.object({ state: v.literal("not-disclosed"), time: TimeSchema, source: SourceSchema }),
-  v.object({
-    state: v.literal("unknown"),
-    time: TimeSchema,
-    reason: v.picklist(STORED_REASONS),
-  }),
+  v.object({ state: v.literal("not-disclosed"), source: SourceSchema }),
+  v.object({ state: v.literal("unknown"), reason: v.picklist(STORED_REASONS) }),
 ]);
 
-/** A verdict and the time (ms since the epoch) it was fetched. */
-export interface TimedVerdict {
-  readonly verdict: Verdict;
+/** The entries stay `unknown` here and are validated kind by kind. */
+const StoredAppSchema = v.object({
+  time: TimeSchema,
+  kinds: v.record(v.string(), v.unknown()),
+});
+
+/** An app's verdicts and the time (ms since the epoch) they were fetched. */
+export interface TimedVerdicts {
+  readonly verdicts: KindVerdicts;
   readonly time: number;
 }
 
-/** The stored value as a verdict with its fetch time; undefined when it is not a valid entry. */
-export function decodeVerdict(stored: unknown): TimedVerdict | undefined {
+function decodeVerdict(stored: unknown): Verdict | undefined {
   const result = v.safeParse(StoredVerdictSchema, stored);
   if (!result.success) {
     return undefined;
@@ -45,35 +48,47 @@ export function decodeVerdict(stored: unknown): TimedVerdict | undefined {
   switch (entry.state) {
     case "disclosed":
       return {
-        time: entry.time,
-        verdict: {
-          state: "disclosed",
-          notes: entry.notes,
-          language: entry.language,
-          source: entry.source,
-          ...(entry.service === undefined ? {} : { service: entry.service }),
-          ...(entry.name === undefined ? {} : { name: entry.name }),
-        },
+        state: "disclosed",
+        notes: entry.notes,
+        language: entry.language,
+        source: entry.source,
+        ...(entry.service === undefined ? {} : { service: entry.service }),
+        ...(entry.name === undefined ? {} : { name: entry.name }),
       };
     case "not-disclosed":
-      return { time: entry.time, verdict: { state: "not-disclosed", source: entry.source } };
+      return { state: "not-disclosed", source: entry.source };
     case "unknown":
-      return { time: entry.time, verdict: UNKNOWN[entry.reason] };
+      return UNKNOWN[entry.reason];
     default:
       return entry satisfies never;
   }
 }
 
 /**
- * The stored value for a verdict fetched at `time`; undefined for a verdict that is never
- * persisted (`error`, `rate-limited`).
+ * The stored value as verdicts with their fetch time. Undefined when it is not a valid entry, or
+ * when it lacks a registered kind (written before the kind existed), so that app is fetched again.
  */
-export function encodeVerdict(verdict: Verdict, time: number): JsonValue | undefined {
+export function decodeVerdicts(stored: unknown): TimedVerdicts | undefined {
+  const app = v.safeParse(StoredAppSchema, stored);
+  if (!app.success) {
+    return undefined;
+  }
+  const verdicts: Record<KindId, Verdict> = { ...UNKNOWN_KINDS.missing };
+  for (const kind of KINDS) {
+    const verdict = decodeVerdict(app.output.kinds[kind.id]);
+    if (verdict === undefined) {
+      return undefined;
+    }
+    verdicts[kind.id] = verdict;
+  }
+  return { verdicts, time: app.output.time };
+}
+
+function encodeVerdict(verdict: Verdict): JsonValue | undefined {
   switch (verdict.state) {
     case "disclosed":
       return {
         state: "disclosed",
-        time,
         notes: verdict.notes,
         language: verdict.language,
         source: verdict.source,
@@ -81,12 +96,28 @@ export function encodeVerdict(verdict: Verdict, time: number): JsonValue | undef
         ...(verdict.name === undefined ? {} : { name: verdict.name }),
       };
     case "not-disclosed":
-      return { state: "not-disclosed", time, source: verdict.source };
+      return { state: "not-disclosed", source: verdict.source };
     case "unknown":
       return isStoredReason(verdict.reason)
-        ? { state: "unknown", time, reason: verdict.reason }
+        ? { state: "unknown", reason: verdict.reason }
         : undefined;
     default:
       return verdict satisfies never;
   }
+}
+
+/**
+ * The stored value for verdicts fetched at `time`. Undefined when any kind holds a verdict that
+ * is never persisted (`error`, `rate-limited`): the app is then asked about again as a whole.
+ */
+export function encodeVerdicts(verdicts: KindVerdicts, time: number): JsonValue | undefined {
+  const kinds: Record<string, JsonValue> = {};
+  for (const kind of KINDS) {
+    const entry = encodeVerdict(verdicts[kind.id]);
+    if (entry === undefined) {
+      return undefined;
+    }
+    kinds[kind.id] = entry;
+  }
+  return { time, kinds };
 }

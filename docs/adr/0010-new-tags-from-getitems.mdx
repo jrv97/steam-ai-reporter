@@ -1,0 +1,60 @@
+---
+status: accepted
+date: 2026-10-24
+decision-makers: Jorge Rodriguez de la Vega
+---
+
+# Read the new tag types from GetItems, store categories and the live page
+
+## Context and problem statement
+
+[ADR 0001](0001-detect-disclosure-via-getitems.mdx) chose `GetItems` for AI disclosure. Five new tag types need data, within rule 1 (Valve hosts only, no seed lists) and rule 3 (no new permissions). Where does each kind live? The research is in `docs/research/steam-store-disclosure-kinds.md`.
+
+## Decision drivers
+
+- No extra request for items the extension fetches, in batches of up to 50 IDs (rule 13).
+- Valve hosts only, credentials omitted.
+- Values that do not change with the store language.
+- Honest about what is declared and what is missing.
+
+## Considered options
+
+1. `GetItems` `extra_details` and `categories`, plus the live app page for page-only detail.
+2. Parse each game's store page.
+3. Community datasets (AreWeAntiCheatYet, PCGamingWiki), bundled or fetched.
+4. `appdetails`.
+
+## Decision outcome
+
+Chosen option 1. The `GetItems` request that returns the AI notes also returns `anticheat` (`kernel_mode`, `name`, `boot_protection`), `drm_third_party_type`, `user_account_third_party`, `eula[]` and `categories.supported_player_categoryids`. Their values are language-neutral. PvP is any of Steam's category IDs 49, 36, 47 and 37, held as constants. The live app page adds what `GetItems` omits, the custom anti-cheat name and the DRM activation limit. It is read from the page the visitor is on, with structural selectors and never with notice text.
+
+Every field is declared by the developer and nothing is detected, so an absent key stays "not reported". The EULA link is shown only when it is a `store.steampowered.com` `/eula/` path, with the double slash normalized.
+
+### Consequences
+
+- Good: no new host, permission or request.
+- Good: detection does not depend on the store language.
+- Bad: declared, not detected. Counter-Strike 2 and Dota 2 carry no PvP category, and Elden Ring carries no anti-cheat key. The tags say what the store page says.
+- Bad: Valve can change the fields without notice. The canary script gains checks for them.
+
+## Pros and cons of the options
+
+### GetItems, categories and the live page
+
+- Good: one request, language-neutral, no new host.
+- Bad: two fields exist only on the page.
+
+### Parse each game's store page
+
+- Good: complete detail.
+- Bad: one request per game, text that changes per language, rate limits.
+
+### Community datasets
+
+- Good: covers some games Steam's fields miss.
+- Bad: not Valve hosts, and seed lists are banned (rule 1). No kernel field, and a Linux-compatibility focus.
+
+### appdetails
+
+- Good: has the DRM and account notices.
+- Bad: one app per call, no anti-cheat and no EULA.

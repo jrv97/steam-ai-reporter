@@ -3,6 +3,7 @@ import { APP_PAGES } from "../../../tests/helpers/app-page";
 import { setBody } from "../../../tests/helpers/dom";
 import { englishI18n } from "../../../tests/helpers/i18n";
 import { disclosedVerdict } from "../../../tests/helpers/verdicts";
+import { AI_KIND } from "../kinds/ai";
 import { type BannerActions, type BannerOptions, createBanner, placeBanner } from "./banner";
 
 const i18n = englishI18n();
@@ -31,7 +32,7 @@ function manualActions(): BannerActions & { readonly calls: Pending[]; } {
 function setup(options: BannerOptions = {}, actions: BannerActions = manualActions()) {
   setBody('<div class="game_description_column"><div id="game_area_purchase"></div></div>');
   const frames: (() => void)[] = [];
-  const banner = createBanner(document, i18n, actions, {
+  const banner = createBanner(document, i18n, AI_KIND, actions, {
     frame: (callback) => frames.push(callback),
     ...options,
   });
@@ -180,7 +181,7 @@ describe("createBanner", () => {
 describe("placeBanner", () => {
   it("puts the banner first in the description column, above the purchase box", () => {
     setBody(APP_PAGES["5072580-ai-first.html"]);
-    const banner = createBanner(document, i18n, manualActions());
+    const banner = createBanner(document, i18n, AI_KIND, manualActions());
     expect(placeBanner(document, banner.host)).toBe(true);
     const column = document.querySelector(".game_description_column");
     expect(column?.firstElementChild).toBe(banner.host);
@@ -189,7 +190,7 @@ describe("placeBanner", () => {
 
   it("reports a page without the column", () => {
     setBody("<div></div>");
-    const banner = createBanner(document, i18n, manualActions());
+    const banner = createBanner(document, i18n, AI_KIND, manualActions());
     expect(placeBanner(document, banner.host)).toBe(false);
     expect(banner.host.isConnected).toBe(false);
   });

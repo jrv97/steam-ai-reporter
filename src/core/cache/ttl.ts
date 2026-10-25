@@ -1,3 +1,5 @@
+import { KINDS } from "../kinds/registry";
+import type { KindVerdicts } from "../kinds/verdicts";
 import type { UnknownReason, Verdict } from "../types";
 
 const HOUR_MS = 3_600_000;
@@ -25,7 +27,7 @@ export function isStoredReason(reason: UnknownReason): reason is StoredReason {
   return reason === "gated" || reason === "missing";
 }
 
-/** How long a verdict stays fresh. */
+/** How long one verdict stays fresh. */
 export function ttlMs(verdict: Verdict): number {
   switch (verdict.state) {
     case "disclosed":
@@ -40,10 +42,18 @@ export function ttlMs(verdict: Verdict): number {
 }
 
 /**
- * A verdict fetched at `time` is fresh for `ttlMs(verdict)`: at exactly the TTL it is expired. A
- * `time` in the future (the clock moved back) is stale, so a wrong clock cannot pin a verdict.
+ * An app's verdicts come from one fetch and expire with the shortest-lived one, at exactly its TTL.
+ * A fetch time in the future is stale, so a wrong clock cannot pin a verdict.
  */
-export function isFresh(verdict: Verdict, time: number, now: number): boolean {
+export function isFresh(verdicts: KindVerdicts, time: number, now: number): boolean {
   const age = now - time;
-  return age >= 0 && age < ttlMs(verdict);
+  if (age < 0) {
+    return false;
+  }
+  for (const kind of KINDS) {
+    if (age >= ttlMs(verdicts[kind.id])) {
+      return false;
+    }
+  }
+  return true;
 }

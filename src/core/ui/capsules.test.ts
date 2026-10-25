@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { setBody } from "../../../tests/helpers/dom";
-import { disclosedVerdict, NOT_DISCLOSED } from "../../../tests/helpers/verdicts";
+import { aiVerdicts, disclosedVerdict, NOT_DISCLOSED } from "../../../tests/helpers/verdicts";
+import { KIND_IDS } from "../kinds/id";
 import { GENERIC, type Placement, type RowPlacement } from "../scan/placements";
 import type { CapsuleHost } from "../scan/renderer";
 import { type AppId, type Detector, toAppId, type Verdict } from "../types";
@@ -29,7 +30,7 @@ function setup(verdicts: ReadonlyMap<AppId, Verdict>, allowed = new Set<AppId>()
     Promise.resolve(
       new Map(ids.flatMap((id) => {
         const verdict = verdicts.get(id);
-        return verdict === undefined ? [] : [[id, verdict] as const];
+        return verdict === undefined ? [] : [[id, aiVerdicts(verdict)] as const];
       })),
     )
   );
@@ -41,7 +42,7 @@ function setup(verdicts: ReadonlyMap<AppId, Verdict>, allowed = new Set<AppId>()
   const ui = createCapsuleUi({
     document,
     detector,
-    renderers: [{ render: (view) => views.push(view) }],
+    renderers: [{ render: (view) => views.push({ ...view, allowed: { ...view.allowed } }) }],
     isAllowed: (id) => allowed.has(id),
     frame: (callback) => frames.push(callback),
     watchSize: (onSized): SizeWatch => {
@@ -184,6 +185,15 @@ describe("createCapsuleUi", () => {
     expect(views).toHaveLength(2);
   });
 
+  it("gives the renderers a verdict and an allow-list flag for every kind", async () => {
+    const id = appId(9);
+    const { ui, views, flush } = setup(new Map([[id, disclosedVerdict()]]));
+    ui.render({ found: [host(9)], changed: [] });
+    await flush();
+    expect(Object.keys(views[0]?.verdicts ?? {})).toStrictEqual([...KIND_IDS]);
+    expect(Object.keys(views[0]?.allowed ?? {})).toStrictEqual([...KIND_IDS]);
+  });
+
   it("redraws the hosts of an app after an allow-list change", async () => {
     const id = appId(11);
     const allowed = new Set<AppId>();
@@ -193,7 +203,7 @@ describe("createCapsuleUi", () => {
     allowed.add(id);
     ui.refresh(new Set([id]));
     await flush();
-    expect(views.map((view) => view.allowed)).toEqual([false, true]);
+    expect(views.map((view) => view.allowed.ai)).toEqual([false, true]);
     ui.refresh(new Set([appId(12)]));
     await flush();
     expect(views).toHaveLength(2);
