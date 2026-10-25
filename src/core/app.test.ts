@@ -93,9 +93,7 @@ describe("start on the search page", () => {
       withKind(DEFAULT_SETTINGS, "ai", { filter: "hide", badge: false }),
     );
     expect(rootMark("data-sar-filter-ai")).toBe("hide");
-    expect(rootMark("data-sar-badges-ai")).toBe("off");
     expect(rootMark("data-sar-filter-kernel")).toBe("off");
-    expect(rootMark("data-sar-badges-kernel")).toBe("on");
     const disclosed = row(DISCLOSED);
     const other = row(String(SEARCH_IDS[0]));
     expect(disclosed === null ? "" : getComputedStyle(disclosed).display).toBe("none");
@@ -135,7 +133,6 @@ describe("start on the search page", () => {
       const { http, settings } = await startOnSearch(pvpOn(), several);
       await drawn(http);
       await writeSettings(settings, withKind(withPvp, "kernel", { badge: false }));
-      expect(rootMark("data-sar-badges-kernel")).toBe("off");
       await expect.poll(() => chips()).toEqual([
         chip("ai"),
         chip("eula"),
@@ -212,10 +209,11 @@ describe("start on the search page", () => {
       settings,
       withKind(DEFAULT_SETTINGS, "ai", { enabled: false, filter: "hide" }),
     );
-    expect(rootMark("data-sar-badges-ai")).toBe("off");
     expect(rootMark("data-sar-filter-ai")).toBe("off");
+    await expect.poll(() => document.querySelectorAll(".sar-badge").length).toBe(0);
     await writeSettings(settings, DEFAULT_SETTINGS);
-    expect(rootMark("data-sar-badges-ai")).toBe("on");
+    expect(rootMark("data-sar-filter-ai")).toBe("off");
+    await expect.poll(() => document.querySelectorAll(".sar-badge").length).toBe(1);
   });
 
   it("logs a settings read that fails and starts on the defaults", async () => {
@@ -255,7 +253,6 @@ describe("start on the search page", () => {
     await drawn(http);
     expect(row(DISCLOSED)?.hasAttribute("data-sar-kinds")).toBe(false);
     expect(rootMark("data-sar-filter-ai")).toBe("dim");
-    expect(rootMark("data-sar-badges-ai")).toBe("off");
     expect(rootMark("data-sar-filter-kernel")).toBe("off");
     const keys = await store.keys();
     expect(keys).toContain("v2:settings");

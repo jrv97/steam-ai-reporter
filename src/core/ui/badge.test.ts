@@ -3,9 +3,9 @@ import { setBody } from "../../../tests/helpers/dom";
 import { hostView, type HostViewOptions } from "../../../tests/helpers/host-view";
 import { englishI18n } from "../../../tests/helpers/i18n";
 import {
-  ALL_DISCLOSED,
   disclosedKinds,
   disclosedVerdict,
+  FULL_DISCLOSED,
   NOT_DISCLOSED,
 } from "../../../tests/helpers/verdicts";
 import { KIND_IDS, type KindId } from "../kinds/id";
@@ -142,8 +142,8 @@ describe("createBadgeRenderer", () => {
 
   it("binds every chip to the verdicts of all the kinds shown", () => {
     const { host, title } = capsule();
-    renderer.render(view(host, full(title), { verdicts: ALL_DISCLOSED, maxChips: 7 }));
-    const expected = KIND_IDS.map((id) => ALL_DISCLOSED[id]);
+    renderer.render(view(host, full(title), { verdicts: FULL_DISCLOSED, maxChips: 7 }));
+    const expected = KIND_IDS.map((id) => FULL_DISCLOSED[id]);
     expect(chipsIn(host)).toHaveLength(KIND_IDS.length);
     for (const element of chipsIn(host)) {
       expect(bound.get(element)).toEqual(expected);
@@ -307,13 +307,6 @@ describe("createBadgeRenderer", () => {
     const { host } = capsule();
     renderer.render(view(host, undefined));
     expect(host.querySelector(".sar-chips, .sar-badge, .sar-compact")).toBeNull();
-  });
-
-  it("covers only the kinds it is given", () => {
-    const { host, title } = capsule();
-    const onlyAi = createBadgeRenderer(document, i18n, { bind: () => undefined }, [KIND_BY_ID.ai]);
-    onlyAi.render(view(host, full(title), { verdicts: ALL_DISCLOSED }));
-    expect(kindsOf(host)).toEqual(["ai"]);
   });
 });
 

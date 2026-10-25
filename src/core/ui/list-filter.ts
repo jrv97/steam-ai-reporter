@@ -1,4 +1,3 @@
-import type { TagKind } from "../kinds/kind";
 import { KINDS } from "../kinds/registry";
 import { HOST_HIDEABLE, HOST_KINDS } from "../scan/marks";
 import type { HostRenderer } from "./host";
@@ -11,11 +10,11 @@ import { setAttributeOnce } from "./kind-attributes";
  * the root's per-kind filters into dim or hide on these hosts (`applyKindSettings`). Writes only
  * what changed, so a rescan or a setting change causes no mutation churn.
  */
-export function createHostKindsRenderer(kinds: readonly TagKind[] = KINDS): HostRenderer {
+export function createHostKindsRenderer(): HostRenderer {
   return {
     render({ host, verdicts, allowed, hideable }) {
       let present = "";
-      for (const kind of kinds) {
+      for (const kind of KINDS) {
         if (verdicts[kind.id].state === "disclosed" && !allowed[kind.id]) {
           present = present === "" ? kind.id : `${present} ${kind.id}`;
         }

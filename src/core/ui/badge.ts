@@ -108,7 +108,6 @@ export function createBadgeRenderer(
   doc: Document,
   i18n: MessageCatalog,
   card: CardTriggers,
-  kinds: readonly TagKind[] = KINDS,
 ): HostRenderer {
   const drawn = new WeakMap<Element, Drawn>();
   const texts = perKind((kind) => chipText(i18n, kind));
@@ -154,7 +153,7 @@ export function createBadgeRenderer(
   return {
     render({ host, verdicts, allowed, badged, slot, maxChips }) {
       let present: AnyDisclosed[] | undefined;
-      for (const kind of kinds) {
+      for (const kind of KINDS) {
         const verdict = verdicts[kind.id];
         if (verdict.state === "disclosed" && !allowed[kind.id] && badged[kind.id]) {
           (present ??= []).push(verdict);

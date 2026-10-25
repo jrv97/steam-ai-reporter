@@ -46,13 +46,16 @@ interface ViewOptions {
   readonly ignored?: readonly AllowScope[];
   /** Kinds whose banner entry is switched off. */
   readonly bannerOff?: readonly KindId[];
+  /** Kinds whose badge is switched off. */
+  readonly badgeOff?: readonly KindId[];
 }
 
 function view(options: ViewOptions = {}): AppPageView {
-  const { verdict = disclosedVerdict(), ignored = [], bannerOff = [] } = options;
+  const { verdict = disclosedVerdict(), ignored = [], bannerOff = [], badgeOff = [] } = options;
   return {
     verdicts: options.verdicts ?? aiVerdicts(verdict),
     ignored: perScope((scope) => ignored.includes(scope)),
+    badge: perKind((kind) => !badgeOff.includes(kind.id)),
     banner: perKind((kind) => !bannerOff.includes(kind.id)),
   };
 }
@@ -155,6 +158,22 @@ describe("createAppPageUi", () => {
     expect(notes()).toEqual([
       i18n.t("banner_ignored_kind", { heading: i18n.t("kind_ai_heading") }),
     ]);
+  });
+
+  it("drops the summary row when the AI badge is off, and keeps the banner entry", () => {
+    const ui = setup();
+    ui.render(view());
+    expect(summaryRow()).not.toBeNull();
+    ui.render(view({ badgeOff: ["ai"] }));
+    expect(summaryRow()).toBeNull();
+    expect(headings()).toEqual([i18n.t("kind_ai_heading")]);
+    ui.render(view());
+    expect(summaryRow()).not.toBeNull();
+  });
+
+  it("keeps the summary row when another kind's badge is off", () => {
+    setup().render(view({ badgeOff: ["drm", "pvp"] }));
+    expect(summaryRow()).not.toBeNull();
   });
 
   it("keeps the summary row when another kind is ignored", () => {

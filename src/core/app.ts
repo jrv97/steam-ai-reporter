@@ -20,7 +20,7 @@ import {
 import { SHIPPED_CATALOGS } from "./i18n/shipped";
 import { createI18n } from "./i18n/t";
 import { isIgnored, loadIgnored } from "./ignored";
-import { effectiveSettings, showsBadge } from "./kinds/kind-settings";
+import { effectiveSettings, type KindSettings } from "./kinds/kind-settings";
 import { KINDS } from "./kinds/registry";
 import { type ConsoleSink, createLogger, type Logger } from "./log";
 import type { Clock, Http, KeyValueStore, SettingsSource, Unsubscribe } from "./ports";
@@ -96,20 +96,19 @@ function createDetector(
   return { getItems, detector: cachedDetector(chain, createVerdictCache(store, clock), logger) };
 }
 
-/** Whether some kind's badges show in one settings and not in the other. */
-function badgesChanged(before: Settings, after: Settings): boolean {
+/** Whether some kind's setting, as it takes effect, differs between two settings. */
+function changed(
+  before: Settings,
+  after: Settings,
+  pick: (settings: KindSettings) => boolean,
+): boolean {
   return KINDS.some((kind) =>
-    showsBadge(before.kinds[kind.id]) !== showsBadge(after.kinds[kind.id])
+    pick(effectiveSettings(before.kinds[kind.id])) !== pick(effectiveSettings(after.kinds[kind.id]))
   );
 }
 
-/** Whether some kind's banner entry shows in one settings and not in the other. */
-function bannersChanged(before: Settings, after: Settings): boolean {
-  return KINDS.some((kind) =>
-    effectiveSettings(before.kinds[kind.id]).banner
-      !== effectiveSettings(after.kinds[kind.id]).banner
-  );
-}
+const SHOWS_BADGE = (settings: KindSettings): boolean => settings.badge;
+const SHOWS_BANNER = (settings: KindSettings): boolean => settings.banner;
 
 /**
  * Starts AI Reporter for Steam on one store page: settings, locale and logger, cache upkeep, the
@@ -156,10 +155,9 @@ export async function start(deps: AppDeps): Promise<App> {
   const capsules = createCapsuleUi({
     document: doc,
     detector: detectors.detector,
-    kinds: KINDS,
     renderers: [createHostKindsRenderer(), createBadgeRenderer(doc, i18n, card)],
     isAllowed: (id, forKind) => isIgnored(ignored, id, forKind),
-    isBadged: (forKind) => showsBadge(settings.kinds[forKind]),
+    isBadged: (forKind) => effectiveSettings(settings.kinds[forKind]).badge,
   });
   const scanner = createScanner({ document: doc, renderer: capsules });
 
@@ -170,10 +168,11 @@ export async function start(deps: AppDeps): Promise<App> {
     const before = settings;
     settings = parseSettings(value);
     applyKindSettings(root, settings.kinds);
-    if (badgesChanged(before, settings)) {
+    const badges = changed(before, settings, SHOWS_BADGE);
+    if (badges) {
       capsules.refresh();
     }
-    if (bannersChanged(before, settings)) {
+    if (badges || changed(before, settings, SHOWS_BANNER)) {
       appPage?.render();
     }
   });

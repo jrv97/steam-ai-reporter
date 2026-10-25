@@ -33,24 +33,79 @@ describe("generated stylesheets", () => {
   });
 });
 
+/** One CSS rule: its selectors, whitespace squeezed, and its declarations. */
+interface Rule {
+  readonly selectors: readonly string[];
+  readonly body: string;
+}
+
+function rulesOf(css: string): readonly Rule[] {
+  return [...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)].map(([, head = "", body = ""]) => ({
+    // A comma inside parentheses, as in :is(:hover, :focus-within), does not end a selector.
+    selectors: head.split(/,(?![^()]*\))/).map((selector) => selector.trim().replace(/\s+/g, " "))
+      .filter((selector) => selector !== ""),
+    body,
+  }));
+}
+
+/** The filter selectors of the rules that declare `declaration`, in the order written. */
+function filterSelectors(declaration: string): readonly string[] {
+  return rulesOf(PAGE_CSS)
+    .filter((rule) => rule.body.includes(declaration))
+    .flatMap((rule) => rule.selectors)
+    .filter((selector) => selector.startsWith("[data-sar-filter-"));
+}
+
 describe("the per-kind page rules", () => {
   // The rules list every kind, because no selector can join an attribute on the root element with
-  // one on a host. A kind missing from a list fails here instead of silently never matching.
-  it.each(KIND_IDS)("%s has a rule for its filters, its badges and its hosts", (id) => {
-    expect(PAGE_CSS).toContain(`[data-sar-filter-${id}="dim"] [data-sar-kinds~="${id}"]`);
-    expect(PAGE_CSS).toContain(`[data-sar-filter-${id}="hide"] [data-sar-kinds~="${id}"]`);
-    expect(PAGE_CSS).toContain(`[data-sar-badges-${id}="off"] [data-sar-kind="${id}"]`);
+  // one on a host. A kind missing from a group fails here instead of silently never matching.
+  const dim = (id: string) => `[data-sar-filter-${id}="dim"] [data-sar-kinds~="${id}"]`;
+  const hold = (id: string) =>
+    `[data-sar-filter-${id}="hide"] [data-sar-kinds~="${id}"][data-sar-hideable="false"]`;
+  const hide = (id: string) =>
+    `[data-sar-filter-${id}="hide"] [data-sar-kinds~="${id}"]:not([data-sar-hideable="false"])`;
+  const HOVER = ":is(:hover, :focus-within)";
+
+  const GROUPS = [
+    {
+      name: "dims a host",
+      declaration: "filter: opacity(var(--sar-dim-opacity)) !important",
+      selectors: (id: string) => [dim(id), hold(id)],
+    },
+    {
+      name: "restores a hovered or focused host",
+      declaration: "filter: none !important",
+      selectors: (id: string) => [`${dim(id)}${HOVER}`, `${hold(id)}${HOVER}`],
+    },
+    {
+      name: "hides a host",
+      declaration: "display: none !important",
+      selectors: (id: string) => [hide(id)],
+    },
+  ];
+
+  it.each(KIND_IDS)("%s appears exactly once in each filter rule group", (id) => {
+    for (const group of GROUPS) {
+      const declared = filterSelectors(group.declaration);
+      for (const selector of group.selectors(id)) {
+        expect(declared.filter((each) => each === selector), `${group.name}: ${selector}`)
+          .toHaveLength(1);
+      }
+    }
+  });
+
+  it("lists no kind twice and no kind outside the registry in a group", () => {
+    for (const group of GROUPS) {
+      const declared = filterSelectors(group.declaration);
+      expect(new Set(declared).size).toBe(declared.length);
+      expect(declared, group.name).toHaveLength(KIND_IDS.length * group.selectors("x").length);
+    }
   });
 
   it("matches no global state, filter or badge attribute", () => {
     expect(PAGE_CSS).not.toContain("data-sar-state");
-    expect(PAGE_CSS).not.toMatch(/data-sar-(filter|badges)=/);
-  });
-
-  it("states each kind once per rule", () => {
-    for (const id of KIND_IDS) {
-      expect(PAGE_CSS.split(`[data-sar-badges-${id}="off"]`)).toHaveLength(2);
-    }
+    expect(PAGE_CSS).not.toContain("data-sar-badges");
+    expect(PAGE_CSS).not.toMatch(/data-sar-filter=/);
   });
 });
 

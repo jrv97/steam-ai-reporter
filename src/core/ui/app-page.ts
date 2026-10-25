@@ -20,6 +20,8 @@ export interface AppPageView {
   readonly verdicts: KindVerdicts;
   /** Per scope: the game is on the ignore list there. */
   readonly ignored: Readonly<Record<AllowScope, boolean>>;
+  /** Per kind: its badge switch is on, which the summary row follows. */
+  readonly badge: Readonly<Record<KindId, boolean>>;
   /**
    * Per kind: its entry may show in the banner (the kind is enabled and its banner setting is on).
    * Each kind's badge switch is a root attribute (`applyKindSettings`).
@@ -73,16 +75,16 @@ function bannerView(view: AppPageView): BannerView | undefined {
     : { shown, ignored };
 }
 
-/** The verdict the summary row stands for, when it is disclosed and the game is not ignored. */
+/** The verdict the summary row stands for: disclosed, with its badge on, and not ignored. */
 function summaryVerdict(view: AppPageView, kind: TagKind): AnyDisclosed | undefined {
   const verdict = view.verdicts[kind.id];
   const ignored = view.ignored[ALLOW_ALL] || view.ignored[kind.id];
-  return verdict.state === "disclosed" && !ignored ? verdict : undefined;
+  return verdict.state === "disclosed" && view.badge[kind.id] && !ignored ? verdict : undefined;
 }
 
 /**
  * Renders the app page per components.mdx ("What renders for each state"). The summary row stands
- * for one kind, `summary`, while that kind is disclosed and not ignored.
+ * for one kind, `summary`, while that kind is disclosed, badged and not ignored.
  */
 export function createAppPageUi(
   doc: Document,

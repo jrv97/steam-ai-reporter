@@ -1,7 +1,7 @@
 import * as v from "valibot";
 import { describe, expect, it } from "vitest";
 import { parsedItem } from "../../../tests/helpers/getitems";
-import { ALL_DISCLOSED, FULL_DISCLOSED } from "../../../tests/helpers/verdicts";
+import { FULL_DISCLOSED } from "../../../tests/helpers/verdicts";
 import { UNKNOWN, type UnknownReason } from "../types";
 import { KIND_IDS } from "./id";
 import { KINDS } from "./registry";
@@ -43,20 +43,20 @@ describe("isKindVerdicts", () => {
   });
 
   it("accepts a disclosed verdict in the slot of its own kind", () => {
-    expect(isKindVerdicts(ALL_DISCLOSED)).toBe(true);
+    expect(isKindVerdicts(FULL_DISCLOSED)).toBe(true);
   });
 
   it("rejects a disclosed verdict in the slot of another kind", () => {
-    expect(isKindVerdicts({ ...ALL_DISCLOSED, kernel: ALL_DISCLOSED.anticheat })).toBe(false);
-    expect(isKindVerdicts({ ...ALL_DISCLOSED, ai: ALL_DISCLOSED.pvp })).toBe(false);
+    expect(isKindVerdicts({ ...FULL_DISCLOSED, kernel: FULL_DISCLOSED.anticheat })).toBe(false);
+    expect(isKindVerdicts({ ...FULL_DISCLOSED, ai: FULL_DISCLOSED.pvp })).toBe(false);
   });
 });
 
 describe("a disclosed verdict", () => {
   it("names the kind it sits under, and is read back by that kind's schema", () => {
     for (const kind of KINDS) {
-      const verdict = ALL_DISCLOSED[kind.id];
-      expect(verdict.state === "disclosed" ? verdict.kind : undefined).toBe(kind.id);
+      const verdict = FULL_DISCLOSED[kind.id];
+      expect(verdict.kind).toBe(kind.id);
       expect(v.safeParse(kind.stored, verdict).success).toBe(true);
     }
   });

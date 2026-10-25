@@ -1,6 +1,5 @@
 import type { KindId } from "../kinds/id";
-import type { TagKind } from "../kinds/kind";
-import { perKind } from "../kinds/registry";
+import { KINDS, perKind } from "../kinds/registry";
 import type { KindVerdicts } from "../kinds/verdicts";
 import { HOST_APPID } from "../scan/marks";
 import type { RowPlacement } from "../scan/placements";
@@ -49,12 +48,10 @@ export interface CapsuleUiOptions {
   readonly detector: Detector;
   /** Drawn in order for every host: state marks, badges. */
   readonly renderers: readonly HostRenderer[];
-  /** The kinds the renderers draw; a host with a disclosure in none of them gets no badge slot. */
-  readonly kinds: readonly TagKind[];
   /** Whether the game is on the allow-list for the kind now. */
   readonly isAllowed: (id: AppId, kind: KindId) => boolean;
-  /** Whether the kind's badges show now, by its settings. Every kind's do by default. */
-  readonly isBadged?: (kind: KindId) => boolean;
+  /** Whether the kind's badges show now, by its settings. */
+  readonly isBadged: (kind: KindId) => boolean;
   /** Schedules a read-then-write pass; `requestAnimationFrame` by default. */
   readonly frame?: (callback: () => void) => void;
   /** Watches image boxes that had no size when drawn; one `ResizeObserver` by default. */
@@ -107,8 +104,7 @@ const NO_SLOT: SlotRead = { slot: undefined, markAnchor: false, unsized: false }
  * badge fits. Showing a hidden tab changes no node the scanner sees, and tabs fade in.
  */
 export function createCapsuleUi(options: CapsuleUiOptions): CapsuleUi {
-  const { document: doc, detector, renderers, kinds, isAllowed } = options;
-  const isBadged = options.isBadged ?? (() => true);
+  const { document: doc, detector, renderers, isAllowed, isBadged } = options;
   const frame = options.frame ?? ((callback: () => void) => {
     const view = doc.defaultView;
     if (view === null) {
@@ -188,7 +184,7 @@ export function createCapsuleUi(options: CapsuleUiOptions): CapsuleUi {
         continue;
       }
       let shows = false;
-      for (const kind of kinds) {
+      for (const kind of KINDS) {
         allowed[kind.id] = isAllowed(host.appId, kind.id);
         badged[kind.id] = isBadged(kind.id);
         shows ||= verdicts[kind.id].state === "disclosed" && !allowed[kind.id]

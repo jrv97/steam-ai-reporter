@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   aiVerdicts,
-  ALL_DISCLOSED,
   disclosedVerdict,
+  FULL_DISCLOSED,
   NOT_DISCLOSED,
   uniformVerdicts,
 } from "../../../tests/helpers/verdicts";
@@ -15,7 +15,7 @@ import { decodeVerdicts, encodeVerdicts } from "./stored";
 
 const T = 1_000_000_000_000;
 
-/** The stored form of `ALL_DISCLOSED`: a disclosed entry is the verdict itself. */
+/** The stored form of `FULL_DISCLOSED`: a disclosed entry is the verdict itself. */
 const STORED_KINDS = {
   ai: {
     state: "disclosed",
@@ -116,9 +116,9 @@ describe("encodeVerdicts and decodeVerdicts", () => {
       uniformVerdicts("gated"),
       uniformVerdicts("missing"),
       uniformVerdicts("malformed"),
-      { ...ALL_DISCLOSED, drm: UNKNOWN.malformed, pvp: UNKNOWN.malformed },
+      { ...FULL_DISCLOSED, drm: UNKNOWN.malformed, pvp: UNKNOWN.malformed },
       { ...uniformVerdicts("not-disclosed"), ai: { state: "not-disclosed", source: "html" } },
-      { ...ALL_DISCLOSED, drm: NOT_DISCLOSED, pvp: UNKNOWN.missing },
+      { ...FULL_DISCLOSED, drm: NOT_DISCLOSED, pvp: UNKNOWN.missing },
     ];
     for (const verdicts of all) {
       expect(decodeVerdicts(encodeVerdicts(verdicts, T))).toStrictEqual({ verdicts, time: T });
@@ -140,7 +140,7 @@ describe("encodeVerdicts and decodeVerdicts", () => {
   });
 
   it("stores a disclosed verdict as itself, and the unknown ones as their reason", () => {
-    expect(encodeVerdicts(ALL_DISCLOSED, T)).toStrictEqual({ time: T, kinds: STORED_KINDS });
+    expect(encodeVerdicts(FULL_DISCLOSED, T)).toStrictEqual({ time: T, kinds: STORED_KINDS });
     expect(encodeVerdicts(uniformVerdicts("gated"), T)).toStrictEqual({
       time: T,
       kinds: perKind(() => ({ state: "unknown", reason: "gated" })),
@@ -171,7 +171,7 @@ describe("encodeVerdicts and decodeVerdicts", () => {
   });
 
   it("stores a kind whose field is malformed as such and keeps the other kinds", () => {
-    const verdicts = { ...ALL_DISCLOSED, eula: UNKNOWN.malformed };
+    const verdicts = { ...FULL_DISCLOSED, eula: UNKNOWN.malformed };
     expect(encodeVerdicts(verdicts, T)).toStrictEqual({
       time: T,
       kinds: { ...STORED_KINDS, eula: { state: "unknown", reason: "malformed" } },
@@ -182,8 +182,8 @@ describe("encodeVerdicts and decodeVerdicts", () => {
     expect(encodeVerdicts(UNKNOWN_KINDS.error, T)).toBeUndefined();
     expect(encodeVerdicts(UNKNOWN_KINDS["rate-limited"], T)).toBeUndefined();
     expect(encodeVerdicts(aiVerdicts(UNKNOWN.error), T)).toBeUndefined();
-    expect(encodeVerdicts({ ...ALL_DISCLOSED, pvp: UNKNOWN.error }, T)).toBeUndefined();
-    expect(encodeVerdicts({ ...ALL_DISCLOSED, drm: UNKNOWN["rate-limited"] }, T)).toBeUndefined();
+    expect(encodeVerdicts({ ...FULL_DISCLOSED, pvp: UNKNOWN.error }, T)).toBeUndefined();
+    expect(encodeVerdicts({ ...FULL_DISCLOSED, drm: UNKNOWN["rate-limited"] }, T)).toBeUndefined();
   });
 
   it("shares the not disclosed verdict objects", () => {
@@ -217,7 +217,7 @@ describe("decodeVerdicts", () => {
   }
 
   it("accepts the valid shape", () => {
-    expect(decodeVerdicts(valid)).toStrictEqual({ verdicts: ALL_DISCLOSED, time: T });
+    expect(decodeVerdicts(valid)).toStrictEqual({ verdicts: FULL_DISCLOSED, time: T });
   });
 
   it("discards values of the wrong type", () => {
@@ -331,7 +331,7 @@ describe("decodeVerdicts", () => {
       },
     });
     expect(decoded?.verdicts).toStrictEqual({
-      ...ALL_DISCLOSED,
+      ...FULL_DISCLOSED,
       eula: { state: "disclosed", kind: "eula", source: "api", items: [{ name: "Game terms" }] },
     });
   });

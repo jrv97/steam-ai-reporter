@@ -26,18 +26,6 @@
   position: relative;
 }
 
-/* One kind's badges turned off while the page is open: one attribute write per kind on the root
-   element. Chips and the summary row carry data-sar-kind. */
-[data-sar-badges-ai="off"] [data-sar-kind="ai"],
-[data-sar-badges-kernel="off"] [data-sar-kind="kernel"],
-[data-sar-badges-anticheat="off"] [data-sar-kind="anticheat"],
-[data-sar-badges-drm="off"] [data-sar-kind="drm"],
-[data-sar-badges-account="off"] [data-sar-kind="account"],
-[data-sar-badges-eula="off"] [data-sar-kind="eula"],
-[data-sar-badges-pvp="off"] [data-sar-kind="pvp"] {
-  display: none !important;
-}
-
 /* A host's chips: one group per host, so a row or an image overlay places them as one. The
    store's own tag chips sit 2px apart. */
 

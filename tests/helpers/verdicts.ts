@@ -86,15 +86,12 @@ export const FULL_DISCLOSED: FullDisclosed = {
   pvp: { state: "disclosed", kind: "pvp", source: "api", categoryIds: [49, 36] },
 };
 
-/** Every kind disclosed, with every field of its payload set. */
-export const ALL_DISCLOSED: KindVerdicts = FULL_DISCLOSED;
-
 /** Every kind in the same state, so a test sees the TTL or the storage of that state alone. */
 export function uniformVerdicts(
   state: "disclosed" | "not-disclosed" | UnknownReason,
 ): KindVerdicts {
   if (state === "disclosed") {
-    return ALL_DISCLOSED;
+    return FULL_DISCLOSED;
   }
   return state === "not-disclosed" ? perKind(() => NOT_DISCLOSED) : UNKNOWN_KINDS[state];
 }
@@ -103,12 +100,12 @@ export function uniformVerdicts(
 export function disclosedKinds(kinds: readonly KindId[]): KindVerdicts {
   const pick = <T>(id: KindId, verdict: T) => kinds.includes(id) ? verdict : NOT_DISCLOSED;
   return {
-    ai: pick("ai", ALL_DISCLOSED.ai),
-    kernel: pick("kernel", ALL_DISCLOSED.kernel),
-    anticheat: pick("anticheat", ALL_DISCLOSED.anticheat),
-    drm: pick("drm", ALL_DISCLOSED.drm),
-    account: pick("account", ALL_DISCLOSED.account),
-    eula: pick("eula", ALL_DISCLOSED.eula),
-    pvp: pick("pvp", ALL_DISCLOSED.pvp),
+    ai: pick("ai", FULL_DISCLOSED.ai),
+    kernel: pick("kernel", FULL_DISCLOSED.kernel),
+    anticheat: pick("anticheat", FULL_DISCLOSED.anticheat),
+    drm: pick("drm", FULL_DISCLOSED.drm),
+    account: pick("account", FULL_DISCLOSED.account),
+    eula: pick("eula", FULL_DISCLOSED.eula),
+    pvp: pick("pvp", FULL_DISCLOSED.pvp),
   };
 }

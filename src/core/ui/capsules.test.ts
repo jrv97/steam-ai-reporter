@@ -2,14 +2,12 @@ import { describe, expect, it, vi } from "vitest";
 import { setBody } from "../../../tests/helpers/dom";
 import {
   aiVerdicts,
-  ALL_DISCLOSED,
   disclosedVerdict,
+  FULL_DISCLOSED,
   NOT_DISCLOSED,
 } from "../../../tests/helpers/verdicts";
-import { AI_KIND, type AiVerdict } from "../kinds/ai";
+import type { AiVerdict } from "../kinds/ai";
 import { KIND_IDS, type KindId } from "../kinds/id";
-import type { TagKind } from "../kinds/kind";
-import { KINDS } from "../kinds/registry";
 import type { KindVerdicts } from "../kinds/verdicts";
 import { GENERIC, type Placement, type RowPlacement } from "../scan/placements";
 import type { CapsuleHost } from "../scan/renderer";
@@ -38,7 +36,6 @@ function appId(value: number): AppId {
 function setup(
   verdicts: ReadonlyMap<AppId, AiVerdict>,
   allowed = new Set<AppId>(),
-  kinds: readonly TagKind[] = KINDS,
   /** Verdicts of kinds other than the AI kind, for every app. */
   others: Partial<KindVerdicts> = {},
   /** Kinds whose badges are off in the settings. */
@@ -64,7 +61,6 @@ function setup(
       render: (view) =>
         views.push({ ...view, allowed: { ...view.allowed }, badged: { ...view.badged } }),
     }],
-    kinds,
     isAllowed: (id) => allowed.has(id),
     isBadged: (kind) => !unbadged.has(kind),
     frame: (callback) => frames.push(callback),
@@ -111,26 +107,16 @@ describe("createCapsuleUi", () => {
     expect(views[0]?.hideable).toBe(false);
   });
 
-  it("gives a host no slot when it is disclosed in none of the kinds it draws", async () => {
-    const id = appId(5);
-    const { ui, views, flush } = setup(new Map([[id, disclosedVerdict()]]), new Set(), []);
-    ui.render({ found: [host(5)], changed: [] });
-    await flush();
-    expect(views).toHaveLength(1);
-    expect(views[0]?.slot).toBeUndefined();
-  });
-
-  it("gives a host a slot for a disclosure in any kind it draws, no other", async () => {
+  it("gives a host a slot for a disclosure in any kind, whichever it is", async () => {
     const id = appId(4);
-    const pvpOnly = { pvp: ALL_DISCLOSED.pvp };
-    const every = setup(new Map([[id, NOT_DISCLOSED]]), new Set(), undefined, pvpOnly);
-    every.ui.render({ found: [host(4)], changed: [] });
-    await every.flush();
-    expect(every.views[0]?.slot).toMatchObject({ kind: "full" });
-    const aiOnly = setup(new Map([[id, NOT_DISCLOSED]]), new Set(), [AI_KIND], pvpOnly);
-    aiOnly.ui.render({ found: [host(4)], changed: [] });
-    await aiOnly.flush();
-    expect(aiOnly.views[0]?.slot).toBeUndefined();
+    const pvpOnly = setup(new Map([[id, NOT_DISCLOSED]]), new Set(), { pvp: FULL_DISCLOSED.pvp });
+    pvpOnly.ui.render({ found: [host(4)], changed: [] });
+    await pvpOnly.flush();
+    expect(pvpOnly.views[0]?.slot).toMatchObject({ kind: "full" });
+    const none = setup(new Map([[id, NOT_DISCLOSED]]));
+    none.ui.render({ found: [host(4)], changed: [] });
+    await none.flush();
+    expect(none.views[0]?.slot).toBeUndefined();
   });
 
   it("passes the chip allowance and the badge settings to the renderers", async () => {
@@ -138,7 +124,6 @@ describe("createCapsuleUi", () => {
     const { ui, views, flush } = setup(
       new Map([[id, disclosedVerdict()]]),
       new Set(),
-      undefined,
       {},
       new Set<KindId>(["drm", "pvp"]),
     );
@@ -153,15 +138,14 @@ describe("createCapsuleUi", () => {
     const aiOff = setup(
       new Map([[id, disclosedVerdict()]]),
       new Set(),
-      undefined,
       {},
       new Set<KindId>(["ai"]),
     );
     aiOff.ui.render({ found: [host(2)], changed: [] });
     await aiOff.flush();
     expect(aiOff.views[0]?.slot).toBeUndefined();
-    const withPvp = setup(new Map([[id, disclosedVerdict()]]), new Set(), undefined, {
-      pvp: ALL_DISCLOSED.pvp,
+    const withPvp = setup(new Map([[id, disclosedVerdict()]]), new Set(), {
+      pvp: FULL_DISCLOSED.pvp,
     }, new Set<KindId>(["ai"]));
     withPvp.ui.render({ found: [host(2)], changed: [] });
     await withPvp.flush();

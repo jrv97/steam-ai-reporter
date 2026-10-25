@@ -6,21 +6,6 @@ export const LIST_FILTERS = ["off", "dim", "hide"] as const;
 
 export type ListFilter = (typeof LIST_FILTERS)[number];
 
-/**
- * The mode that wins when several kinds match one host: hide over dim over off. `LIST_FILTERS`
- * runs from the weakest mode to the strongest. The style rules reach the same result, because a
- * hidden host ignores a dim and a host that cannot hide dims for both.
- */
-export function strongestFilter(modes: Iterable<ListFilter>): ListFilter {
-  let strongest: ListFilter = "off";
-  for (const mode of modes) {
-    if (LIST_FILTERS.indexOf(mode) > LIST_FILTERS.indexOf(strongest)) {
-      strongest = mode;
-    }
-  }
-  return strongest;
-}
-
 /** The user's settings for one tag kind. */
 export interface KindSettings {
   /** Master switch: a disabled kind draws no badge, banner or filter. */
@@ -70,11 +55,6 @@ export function encodeKindSettings(settings: KindSettings): JsonValue {
     filter: settings.filter,
   };
   return stored;
-}
-
-/** Whether the kind's badges show: the kind is enabled and its badge setting is on. */
-export function showsBadge(settings: KindSettings): boolean {
-  return settings.enabled && settings.badge;
 }
 
 /** The settings that take effect: a disabled kind shows no badge or banner and filters nothing. */

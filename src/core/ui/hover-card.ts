@@ -1,7 +1,6 @@
 import { KIND_BY_ID } from "../kinds/registry";
 import { type AnyDisclosed, sameVerdicts } from "../kinds/verdicts";
 import type { MessageCatalog } from "../ports";
-import { badgesOff } from "./kind-attributes";
 import { type KindDetail, kindDetails } from "./kind-details";
 import { normalizeBreaks } from "./notes";
 
@@ -335,10 +334,7 @@ export function createHoverCard(
 
   function show(trigger: Element, via: Via, focused?: Element): void {
     const binding = bindings.get(trigger);
-    if (
-      binding === undefined || binding.entries.length === 0 || !trigger.isConnected
-      || badgesOff(doc.documentElement, trigger)
-    ) {
+    if (binding === undefined || binding.entries.length === 0 || !trigger.isConnected) {
       close();
       return;
     }

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
-  ALL_DISCLOSED,
   disclosedVerdict,
+  FULL_DISCLOSED,
   NOT_DISCLOSED,
   uniformVerdicts,
 } from "../../../tests/helpers/verdicts";
@@ -92,7 +92,7 @@ describe("isFresh across kinds", () => {
   }
 
   it("keeps the AI notes for 7 days while every other kind is not disclosed", () => {
-    expiresAt({ ...notDisclosed, ai: ALL_DISCLOSED.ai }, 7 * DAY_MS);
+    expiresAt({ ...notDisclosed, ai: FULL_DISCLOSED.ai }, 7 * DAY_MS);
   });
 
   it("keeps a game that disclosed nothing for 12 hours, the AI kind's TTL", () => {
@@ -102,17 +102,17 @@ describe("isFresh across kinds", () => {
   it("does not shorten an app because a non-AI kind is not disclosed", () => {
     for (const kind of KINDS) {
       if (kind.id !== "ai") {
-        expiresAt({ ...ALL_DISCLOSED, [kind.id]: NOT_DISCLOSED }, 7 * DAY_MS);
+        expiresAt({ ...FULL_DISCLOSED, [kind.id]: NOT_DISCLOSED }, 7 * DAY_MS);
       }
     }
   });
 
   it("expires with the AI kind when it is not disclosed, whatever the others are", () => {
-    expiresAt({ ...ALL_DISCLOSED, ai: NOT_DISCLOSED }, 12 * HOUR_MS);
+    expiresAt({ ...FULL_DISCLOSED, ai: NOT_DISCLOSED }, 12 * HOUR_MS);
   });
 
   it("expires after 6 hours when any kind is gated, missing or malformed", () => {
-    const aiNotes = { ...notDisclosed, ai: ALL_DISCLOSED.ai };
+    const aiNotes = { ...notDisclosed, ai: FULL_DISCLOSED.ai };
     for (const kind of KINDS) {
       for (const reason of ["gated", "missing", "malformed"] as const) {
         expiresAt({ ...aiNotes, [kind.id]: UNKNOWN[reason] }, UNKNOWN_TTL_MS);
@@ -122,13 +122,13 @@ describe("isFresh across kinds", () => {
 
   it("expires at once with a verdict that is not stored", () => {
     for (const kind of KINDS) {
-      const failed = { ...ALL_DISCLOSED, [kind.id]: UNKNOWN.error };
+      const failed = { ...FULL_DISCLOSED, [kind.id]: UNKNOWN.error };
       expect(isFresh(failed, T, T + TRANSIENT_TTL_MS - 1)).toBe(true);
       expect(isFresh(failed, T, T + TRANSIENT_TTL_MS)).toBe(false);
     }
   });
 
   it("keeps disclosed kinds for 7 days when no kind is shorter", () => {
-    expiresAt(ALL_DISCLOSED, 7 * DAY_MS);
+    expiresAt(FULL_DISCLOSED, 7 * DAY_MS);
   });
 });

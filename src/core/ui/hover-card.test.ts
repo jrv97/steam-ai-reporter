@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { setBody } from "../../../tests/helpers/dom";
 import { capturedVerdicts, pageVerdicts } from "../../../tests/helpers/fixture-verdicts";
 import { englishI18n } from "../../../tests/helpers/i18n";
-import { ALL_DISCLOSED, disclosedVerdict, FULL_DISCLOSED } from "../../../tests/helpers/verdicts";
+import { disclosedVerdict, FULL_DISCLOSED } from "../../../tests/helpers/verdicts";
 import { KIND_IDS, type KindId } from "../kinds/id";
 import { KIND_BY_ID } from "../kinds/registry";
 import type { AnyDisclosed, KindVerdicts } from "../kinds/verdicts";
@@ -135,7 +135,6 @@ describe("createHoverCard", () => {
   afterEach(() => {
     card?.stop();
     card = undefined;
-    document.documentElement.removeAttribute("data-sar-badges-ai");
     Reflect.deleteProperty(document.documentElement, "clientWidth");
     Reflect.deleteProperty(document.documentElement, "clientHeight");
   });
@@ -442,15 +441,6 @@ describe("createHoverCard", () => {
     expect(shown()).toBeNull();
   });
 
-  it("opens nothing while badges are turned off", () => {
-    const { badge } = page();
-    document.documentElement.setAttribute("data-sar-badges-ai", "off");
-    start().bind(badge, [disclosedVerdict()]);
-    pointerOver(badge);
-    flush();
-    expect(shown()).toBeNull();
-  });
-
   it("opens nothing for an unbound element and removes the card on stop", () => {
     const { badge, other } = page();
     const hover = start();
@@ -506,7 +496,7 @@ describe("createHoverCard", () => {
     }
 
     it("lists every kind in the order given, then names the developer as the source", () => {
-      open(disclosedOf(ALL_DISCLOSED));
+      open(disclosedOf(FULL_DISCLOSED));
       expect(entries().map(([title]) => title)).toEqual(KIND_IDS.map(heading));
       expect(shown()?.children).toHaveLength(KIND_IDS.length + 2);
       expect(shown()?.lastElementChild?.textContent).toBe(i18n.t("badge_card_declared"));
@@ -598,7 +588,7 @@ describe("createHoverCard", () => {
       second.className = "sar-badge";
       other.append(second);
       const hover = start();
-      const first = disclosedOf(ALL_DISCLOSED).slice(0, 2);
+      const first = disclosedOf(FULL_DISCLOSED).slice(0, 2);
       hover.bind(badge, first);
       hover.bind(second, [...first]);
       pointerOver(badge);
@@ -606,7 +596,7 @@ describe("createHoverCard", () => {
       const node = shown()?.firstElementChild;
       pointerOver(second);
       expect(shown()?.firstElementChild).toBe(node);
-      hover.bind(second, disclosedOf(ALL_DISCLOSED).slice(2, 3));
+      hover.bind(second, disclosedOf(FULL_DISCLOSED).slice(2, 3));
       pointerOver(badge);
       pointerOver(second);
       expect(entries()).toEqual([[heading("anticheat"), FULL_DISCLOSED.anticheat.name]]);
@@ -619,7 +609,7 @@ describe("createHoverCard", () => {
 
     it("shows the long-text line when any quote is clamped", () => {
       overflowing = true;
-      open(disclosedOf(ALL_DISCLOSED));
+      open(disclosedOf(FULL_DISCLOSED));
       expect(shown()?.querySelector<HTMLElement>(".sar-hovercard-more")?.hidden).toBe(false);
     });
   });

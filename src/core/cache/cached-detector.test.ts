@@ -7,8 +7,8 @@ import { fixedClock } from "../../../tests/helpers/fixed-clock";
 import { memoryStore } from "../../../tests/helpers/memory-store";
 import {
   aiVerdicts,
-  ALL_DISCLOSED,
   disclosedVerdict,
+  FULL_DISCLOSED,
   NOT_DISCLOSED,
 } from "../../../tests/helpers/verdicts";
 import type { AiVerdict } from "../kinds/ai";
@@ -91,7 +91,7 @@ describe("cachedDetector", () => {
 
   it("asks again about every kind when the shortest-lived one expires", async () => {
     // Six kinds hold a seven day verdict; the AI kind holds a twelve hour one.
-    const verdicts = { ...ALL_DISCLOSED, ai: NOT_DISCLOSED };
+    const verdicts = { ...FULL_DISCLOSED, ai: NOT_DISCLOSED };
     const inner = fakeDetector(() => verdicts);
     const clock = fixedClock(T);
     const logger = { error: vi.fn<(problem: unknown) => void>() };

@@ -42,7 +42,6 @@ afterEach(() => {
   app = undefined;
   document.querySelector(".sar-dialog-host")?.remove();
   document.documentElement.removeAttribute("data-sar-filter");
-  document.documentElement.removeAttribute("data-sar-badges");
 });
 
 describe("startUserscript", () => {

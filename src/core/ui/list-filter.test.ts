@@ -1,15 +1,15 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { clearRoot } from "../../../tests/helpers/dom";
 import { hostView, type HostViewOptions } from "../../../tests/helpers/host-view";
+import { strongestFilter } from "../../../tests/helpers/settings";
 import {
-  ALL_DISCLOSED,
   disclosedKinds,
   disclosedVerdict,
+  FULL_DISCLOSED,
   NOT_DISCLOSED,
 } from "../../../tests/helpers/verdicts";
-import { AI_KIND } from "../kinds/ai";
 import { KIND_IDS, type KindId } from "../kinds/id";
-import { LIST_FILTERS, type ListFilter, strongestFilter } from "../kinds/kind-settings";
+import { LIST_FILTERS, type ListFilter } from "../kinds/kind-settings";
 import { perKind } from "../kinds/registry";
 import { UNKNOWN } from "../types";
 import { applyKindSettings } from "./kind-attributes";
@@ -40,7 +40,7 @@ describe("createHostKindsRenderer", () => {
 
   it("lists every disclosed kind in registry order", () => {
     const element = host();
-    renderer.render(view(element, { verdicts: ALL_DISCLOSED }));
+    renderer.render(view(element, { verdicts: FULL_DISCLOSED }));
     expect(kinds(element)).toBe(ALL_KINDS);
   });
 
@@ -59,7 +59,7 @@ describe("createHostKindsRenderer", () => {
     const [none, unknown, ignored] = [host(), host(), host()];
     renderer.render(view(none, { verdict: NOT_DISCLOSED }));
     renderer.render(view(unknown, { verdict: UNKNOWN.gated }));
-    renderer.render(view(ignored, { verdicts: ALL_DISCLOSED, allowed: true }));
+    renderer.render(view(ignored, { verdicts: FULL_DISCLOSED, allowed: true }));
     expect([none, unknown, ignored].map((element) => element.hasAttribute("data-sar-kinds")))
       .toEqual([false, false, false]);
   });
@@ -72,12 +72,6 @@ describe("createHostKindsRenderer", () => {
     expect(kinds(element)).toBe("eula");
     renderer.render(view(element, { verdicts: disclosedKinds([]) }));
     expect(element.hasAttribute("data-sar-kinds")).toBe(false);
-  });
-
-  it("covers only the kinds it is given", () => {
-    const element = host();
-    createHostKindsRenderer([AI_KIND]).render(view(element, { verdicts: ALL_DISCLOSED }));
-    expect(kinds(element)).toBe("ai");
   });
 
   it("marks hosts that must not be hidden, and clears the mark", () => {

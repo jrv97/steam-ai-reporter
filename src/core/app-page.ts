@@ -156,6 +156,7 @@ export function startAppPage(
     return {
       verdicts: known,
       ignored: perScope((scope) => deps.ignored[scope].has(id)),
+      badge: perKind((kind) => effectiveSettings(kinds[kind.id]).badge),
       banner: perKind((kind) => effectiveSettings(kinds[kind.id]).banner),
     };
   }

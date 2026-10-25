@@ -1,5 +1,9 @@
 import type { KindId } from "../../src/core/kinds/id";
-import type { KindSettings } from "../../src/core/kinds/kind-settings";
+import {
+  type KindSettings,
+  LIST_FILTERS,
+  type ListFilter,
+} from "../../src/core/kinds/kind-settings";
 import { KINDS } from "../../src/core/kinds/registry";
 import { applyPatch, type Settings, type SettingsPatch } from "../../src/core/settings/settings";
 import type { StoredSettings } from "../../src/core/settings/settings-source";
@@ -21,4 +25,19 @@ function wholePatch(settings: Settings): SettingsPatch {
 /** Stores exactly these settings, telling the source's subscribers, as another tab's save does. */
 export function writeSettings(source: StoredSettings, settings: Settings): Promise<Settings> {
   return source.patch(wholePatch(settings));
+}
+
+/**
+ * The mode that wins when several kinds match one host: hide over dim over off. The style rules
+ * reach the same result without a function, because a hidden host ignores a dim and a host that
+ * cannot hide dims for both, so tests use this as their oracle.
+ */
+export function strongestFilter(modes: Iterable<ListFilter>): ListFilter {
+  let strongest: ListFilter = "off";
+  for (const mode of modes) {
+    if (LIST_FILTERS.indexOf(mode) > LIST_FILTERS.indexOf(strongest)) {
+      strongest = mode;
+    }
+  }
+  return strongest;
 }

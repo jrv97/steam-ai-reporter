@@ -5,7 +5,6 @@ import {
   type KindSettings,
   LIST_FILTERS,
   parseKindSettings,
-  strongestFilter,
 } from "./kind-settings";
 
 const DEFAULTS: KindSettings = { enabled: true, badge: true, banner: true, filter: "off" };
@@ -13,38 +12,6 @@ const DEFAULTS: KindSettings = { enabled: true, badge: true, banner: true, filte
 describe("LIST_FILTERS", () => {
   it("lists the three filters in the order the settings show them", () => {
     expect(LIST_FILTERS).toStrictEqual(["off", "dim", "hide"]);
-  });
-});
-
-describe("strongestFilter", () => {
-  it("is off for no kind at all", () => {
-    expect(strongestFilter([])).toBe("off");
-  });
-
-  it.each(LIST_FILTERS)("is %s for a single %s", (mode) => {
-    expect(strongestFilter([mode])).toBe(mode);
-  });
-
-  const PAIRS = LIST_FILTERS.flatMap((a, ai) =>
-    LIST_FILTERS.map((b, bi) => [a, b, ai, bi] as const)
-  );
-
-  it.each(PAIRS)("picks the stronger of %s and %s", (a, b, ai, bi) => {
-    expect(strongestFilter([a, b])).toBe(LIST_FILTERS[Math.max(ai, bi)]);
-  });
-
-  it("lets hide win over dim and off whatever the order", () => {
-    expect(strongestFilter(["dim", "hide", "off"])).toBe("hide");
-    expect(strongestFilter(["off", "dim", "hide"])).toBe("hide");
-    expect(strongestFilter(["hide", "off", "dim"])).toBe("hide");
-  });
-
-  it("lets dim win over off", () => {
-    expect(strongestFilter(["off", "off", "dim", "off"])).toBe("dim");
-  });
-
-  it("takes any iterable", () => {
-    expect(strongestFilter(new Set<"off" | "dim" | "hide">(["dim", "off"]))).toBe("dim");
   });
 });
 
