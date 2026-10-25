@@ -2,7 +2,7 @@ import { parseLiveAppPage } from "./detect/app-page";
 import { type PageInput, parsePageDetails } from "./detect/page-details";
 import type { SteamLanguage } from "./i18n/locale";
 import type { IgnoredGames } from "./ignored";
-import { AI_KIND } from "./kinds/ai";
+import { AI_KIND, type AiVerdict } from "./kinds/ai";
 import { effectiveSettings } from "./kinds/kind-settings";
 import { perKind } from "./kinds/registry";
 import { type KindVerdicts, UNKNOWN_KINDS } from "./kinds/verdicts";
@@ -32,6 +32,14 @@ function needsTranslation(verdicts: KindVerdicts, language: SteamLanguage): bool
   return ai.state === "disclosed" && ai.source === "api" && ai.language !== language;
 }
 
+/** The page's AI verdict, plus the service name that only GetItems has, when both disclose. */
+function pageAi(live: AiVerdict, detected: AiVerdict): AiVerdict {
+  return live.state === "disclosed" && detected.state === "disclosed"
+      && detected.service !== undefined
+    ? { ...live, service: detected.service }
+    : live;
+}
+
 /**
  * The verdicts for the app page the visitor is on. An English page gives the AI verdict itself and
  * the detector gives the other kinds. Another language takes every kind from the detector, and
@@ -46,7 +54,7 @@ export async function pageVerdicts(
   const live = parseLiveAppPage(doc, doc.URL);
   const detected = (await detectors.detector.detect([id])).get(id) ?? UNKNOWN_KINDS.missing;
   if (live !== undefined) {
-    return { ...detected, ai: live.ai };
+    return { ...detected, ai: pageAi(live.ai, detected.ai) };
   }
   if (!needsTranslation(detected, language)) {
     return detected;

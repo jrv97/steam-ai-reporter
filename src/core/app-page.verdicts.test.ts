@@ -36,6 +36,24 @@ describe("pageVerdicts on an English page", () => {
     expect(found.getItems.calls).toEqual([]);
   });
 
+  it("adds the AI service GetItems named to the notes the page gave", async () => {
+    loadPage(APP_PAGES["5072580-ai-first.html"]);
+    document.documentElement.lang = "en";
+    const named = aiVerdicts(disclosedVerdict({ service: "Midjourney" }));
+    const { service: _service, ...plain } = disclosedVerdict();
+    const unnamed = aiVerdicts(plain);
+
+    const withService = await pageVerdicts(document, ID, "english", detectors(named));
+    const without = await pageVerdicts(document, ID, "english", detectors(unnamed));
+
+    expect(withService.ai).toMatchObject({
+      state: "disclosed",
+      source: "html",
+      service: "Midjourney",
+    });
+    expect(without.ai).not.toHaveProperty("service");
+  });
+
   it("keeps the kinds the detector found for a game whose page has no AI block", async () => {
     loadPage(APP_PAGES["3751950-drm-account-eula.html"]);
     document.documentElement.lang = "en";
