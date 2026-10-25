@@ -7,9 +7,10 @@ import { type AppId, toAppId } from "./types";
 /**
  * Bump to discard every cached verdict on the next start (and only verdicts). Version 2 stores
  * one entry per tag kind in each verdict. Version 3 adds the base game of a DLC, which an older
- * entry lacks, so a DLC cached before would never learn its parent.
+ * entry lacks, so a DLC cached before would never learn its parent. Version 4 adds the developers
+ * and publishers, which an older entry lacks for the same reason.
  */
-export const CACHE_SCHEMA = 3;
+export const CACHE_SCHEMA = 4;
 
 const VERDICT_PREFIX = "v1:a:";
 

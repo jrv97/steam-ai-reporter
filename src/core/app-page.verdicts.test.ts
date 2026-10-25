@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { appId } from "../../tests/helpers/app-ids";
 import { APP_PAGES } from "../../tests/helpers/app-page";
+import { creatorsFor } from "../../tests/helpers/creators";
 import { fakeDetector } from "../../tests/helpers/fake-detector";
 import { capturedVerdicts } from "../../tests/helpers/fixture-verdicts";
 import { aiVerdicts, disclosedVerdict, NOT_DISCLOSED } from "../../tests/helpers/verdicts";
@@ -90,13 +91,15 @@ describe("mergeVerdicts", () => {
     expect(mergeVerdicts(page, data, none).kernel).toBe(data.kernel);
   });
 
-  it("takes the base game of a DLC from Steam's data, as the page does not carry it", () => {
-    const data = withRelations(capturedVerdicts(1808500), { parent: appId(1808500) });
+  it("takes the base game and the creators from Steam's data, not the page", () => {
+    const related = { parent: appId(1808500), creators: creatorsFor({ developers: ["Embark"] }) };
+    const data = withRelations(capturedVerdicts(1808500), related);
     const merged = mergeVerdicts(pageOf("5072580-ai-first.html"), data, none);
-    expect(merged.parent).toBe(1808500);
-    expect(mergeVerdicts(pageOf("413150-no-block.html"), data, none).parent).toBe(1808500);
-    expect(mergeVerdicts(pageOf("413150-no-block.html"), capturedVerdicts(813230), none))
-      .not.toHaveProperty("parent");
+    expect(merged).toMatchObject(related);
+    expect(mergeVerdicts(pageOf("413150-no-block.html"), data, none)).toMatchObject(related);
+    const alone = mergeVerdicts(pageOf("413150-no-block.html"), capturedVerdicts(813230), none);
+    expect(alone).not.toHaveProperty("parent");
+    expect(alone).not.toHaveProperty("creators");
   });
 
   it("holds a verdict for every kind", () => {

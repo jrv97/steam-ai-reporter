@@ -1,4 +1,5 @@
 import * as v from "valibot";
+import { ClanIdSchema, type Creator, makeCreators } from "../creator";
 import { type JsonValue, toJsonValue } from "../json";
 import type { KindId } from "../kinds/id";
 import type { TagKind } from "../kinds/kind";
@@ -12,9 +13,10 @@ import {
 import { AppIdSchema, NOT_DISCLOSED, UNKNOWN, VerdictSourceSchema } from "../types";
 import { isStoredReason, STORED_REASONS } from "./ttl";
 
-// An app is stored as `v1:a:<appid>`: its fetch time, one entry per kind and, for a DLC, its base
-// game. A disclosed entry is the verdict, read back with its kind's schema. Storage is untrusted,
-// so a read that fails is discarded, and the app is fetched again.
+// An app is stored as `v1:a:<appid>`: its fetch time, one entry per kind and, when known, its base
+// game and its developers and publishers. A disclosed entry is the verdict, read back with its
+// kind's schema. Storage is untrusted, so a read that fails is discarded, and the app is fetched
+// again.
 
 const TimeSchema = v.pipe(v.number(), v.finite());
 
@@ -23,14 +25,21 @@ const StoredOtherSchema = v.variant("state", [
   v.object({ state: v.literal("unknown"), reason: v.picklist(STORED_REASONS) }),
 ]);
 
+const StoredCreatorsSchema = v.exactOptional(
+  v.array(v.object({ name: v.string(), clan: v.exactOptional(ClanIdSchema) })),
+);
+
 /**
  * The entries stay `unknown` here and are validated kind by kind. `parent` is the base game of a
- * DLC; an entry whose `parent` is not an app ID is invalid, so that app is fetched again.
+ * DLC; an entry whose `parent` is not an app ID, or whose creators are not a list of named
+ * entries, is invalid, so that app is fetched again.
  */
 const StoredAppSchema = v.object({
   time: TimeSchema,
   kinds: v.record(v.string(), v.unknown()),
   parent: v.exactOptional(AppIdSchema),
+  developers: StoredCreatorsSchema,
+  publishers: StoredCreatorsSchema,
 });
 
 /** An app's verdicts and the time (ms since the epoch) they were fetched. */
@@ -76,9 +85,16 @@ export function decodeVerdicts(stored: unknown): TimedVerdicts | undefined {
     }
     verdicts[kind.id] = verdict;
   }
-  return isKindVerdicts(verdicts)
-    ? { verdicts: withRelations(verdicts, { parent: app.output.parent }), time: app.output.time }
-    : undefined;
+  if (!isKindVerdicts(verdicts)) {
+    return undefined;
+  }
+  const { parent, developers = [], publishers = [], time } = app.output;
+  const creators = { developer: makeCreators(developers), publisher: makeCreators(publishers) };
+  return { verdicts: withRelations(verdicts, { parent, creators }), time };
+}
+
+function encodeCreators(creators: readonly Creator[]): JsonValue {
+  return creators.map(({ name, clan }) => clan === undefined ? { name } : { name, clan });
 }
 
 function encodeVerdict(verdict: KindVerdict): JsonValue | undefined {
@@ -109,5 +125,16 @@ export function encodeVerdicts(verdicts: KindVerdicts, time: number): JsonValue 
     }
     kinds[kind.id] = entry;
   }
-  return verdicts.parent === undefined ? { time, kinds } : { time, kinds, parent: verdicts.parent };
+  const { parent, creators } = verdicts;
+  return {
+    time,
+    kinds,
+    ...(parent === undefined ? {} : { parent }),
+    ...(creators === undefined
+      ? {}
+      : {
+        developers: encodeCreators(creators.developer),
+        publishers: encodeCreators(creators.publisher),
+      }),
+  };
 }

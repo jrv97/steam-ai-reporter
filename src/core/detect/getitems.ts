@@ -1,15 +1,18 @@
 import * as v from "valibot";
+import { makeCreators } from "../creator";
 import type { SteamLanguage } from "../i18n/locale";
 import { parseJson } from "../json";
 import {
   kindsFromGetItems,
   type KindVerdicts,
+  type Relations,
   UNKNOWN_KINDS,
   withRelations,
 } from "../kinds/verdicts";
 import type { Detector, Http, HttpResponse, HttpResult } from "../ports";
 import type { AppId, UnknownReason } from "../types";
 import {
+  type BasicInfo,
   type GetItemsEnvelope,
   GetItemsEnvelopeSchema,
   type StoreItem,
@@ -50,7 +53,7 @@ export function getItemsUrl(ids: readonly AppId[], language: SteamLanguage): str
   const input = {
     ids: ids.map((appid) => ({ appid })),
     context: { language, country_code: COUNTRY_CODE },
-    data_request: { include_extra_details: true },
+    data_request: { include_extra_details: true, include_basic_info: true },
   };
   return `${GETITEMS_URL}?input_json=${encodeURIComponent(JSON.stringify(input))}`;
 }
@@ -133,6 +136,15 @@ function batchItems(result: HttpResult): BatchItems {
   }
 }
 
+function creatorsOf(info: BasicInfo | undefined): Relations["creators"] {
+  return info === undefined
+    ? undefined
+    : {
+      developer: makeCreators(info.developers ?? []),
+      publisher: makeCreators(info.publishers ?? []),
+    };
+}
+
 /**
  * Every kind's verdict for one item, with what it is related to; unknown `missing` when the item
  * has no usable details.
@@ -144,6 +156,7 @@ function itemVerdicts(item: StoreItem, language: SteamLanguage): KindVerdicts {
   }
   return withRelations(kindsFromGetItems(item, details, language), {
     parent: item.related_items?.parent_appid,
+    creators: creatorsOf(item.basic_info),
   });
 }
 

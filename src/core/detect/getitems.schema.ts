@@ -1,4 +1,5 @@
 import * as v from "valibot";
+import { ClanIdSchema, type CreatorInput } from "../creator";
 import { AppIdSchema } from "../types";
 
 // Schemas for the IStoreBrowseService/GetItems answer (ADR 0001, rq6 S2). They name only the
@@ -104,9 +105,33 @@ const CategoriesSchema = record({
 const RelatedItemsSchema = record({ parent_appid: droppable(AppIdSchema) });
 
 /**
+ * One developer or publisher. An entry that is not an object with a name reads as absent, and a
+ * clan ID that is not an ID reads as none. Steam sends the clan ID for some creators only.
+ */
+const CreatorEntrySchema = v.pipe(
+  record({ name: v.string(), creator_clan_account_id: droppable(ClanIdSchema) }),
+  v.transform((entry): CreatorInput => ({
+    name: entry.name,
+    clan: entry.creator_clan_account_id,
+  })),
+);
+
+const CreatorListSchema = v.pipe(
+  list(v.union([CreatorEntrySchema, DroppedSchema])),
+  v.transform((entries) => entries.filter((entry) => entry !== undefined)),
+  v.readonly(),
+);
+
+/** The developers and publishers (`include_basic_info`). The ignore lists follow them. */
+const BasicInfoSchema = record({
+  developers: droppable(CreatorListSchema),
+  publishers: droppable(CreatorListSchema),
+});
+
+/**
  * One store item. `id` echoes the requested ID; `appid` is 0 for invalid items and unused.
- * The name and the categories are lenient, and `related_items` is droppable. An item without a
- * valid `id`, `success` or `extra_details` says nothing about any kind.
+ * The name and the categories are lenient, and `related_items` and `basic_info` are droppable.
+ * An item without a valid `id`, `success` or `extra_details` says nothing about any kind.
  */
 export const StoreItemSchema = v.pipe(
   v.object({
@@ -115,6 +140,7 @@ export const StoreItemSchema = v.pipe(
     name: lenient(TextSchema),
     categories: lenient(CategoriesSchema),
     related_items: droppable(RelatedItemsSchema),
+    basic_info: droppable(BasicInfoSchema),
     extra_details: v.exactOptional(ExtraDetailsSchema),
   }),
   v.readonly(),
@@ -129,3 +155,4 @@ export const StoreItemIdSchema = v.object({ id: AppIdSchema });
 export type GetItemsEnvelope = v.InferOutput<typeof GetItemsEnvelopeSchema>;
 export type StoreItem = v.InferOutput<typeof StoreItemSchema>;
 export type ExtraDetails = v.InferOutput<typeof ExtraDetailsSchema>;
+export type BasicInfo = v.InferOutput<typeof BasicInfoSchema>;

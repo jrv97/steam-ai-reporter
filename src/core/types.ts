@@ -3,17 +3,19 @@ import * as v from "valibot";
 /** Steam app IDs are unsigned 32-bit integers; 0 is what GetItems reports for an invalid item. */
 const MAX_APP_ID = 0xffff_ffff;
 
-/**
- * A Steam app ID. The brand is applied only by this schema, so every `AppId` in core was checked
- * to be an integer in 1 to 2^32 - 1. Other schemas (GetItems `id`, stored verdicts) reuse it.
- */
-export const AppIdSchema = v.pipe(
+/** An integer in 1 to 2^32 - 1, the range of Steam's unsigned 32-bit IDs. */
+export const Uint32IdSchema = v.pipe(
   v.number(),
   v.integer(),
   v.minValue(1),
   v.maxValue(MAX_APP_ID),
-  v.brand("AppId"),
 );
+
+/**
+ * A Steam app ID. The brand is applied only by this schema, so every `AppId` in core was checked
+ * to be an integer in 1 to 2^32 - 1. Other schemas (GetItems `id`, stored verdicts) reuse it.
+ */
+export const AppIdSchema = v.pipe(Uint32IdSchema, v.brand("AppId"));
 
 export type AppId = v.InferOutput<typeof AppIdSchema>;
 

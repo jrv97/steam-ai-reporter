@@ -1,3 +1,4 @@
+import { type Creator, CREATOR_ROLES, type CreatorRole } from "../creator";
 import type { ExtraDetails, StoreItem } from "../detect/getitems.schema";
 import type { SteamLanguage } from "../i18n/locale";
 import {
@@ -27,6 +28,8 @@ export type KindVerdict = Verdict<AnyDisclosed>;
 export interface Relations {
   /** The base game of a DLC, from `related_items.parent_appid`. */
   readonly parent?: AppId;
+  /** The developers and publishers, from `basic_info`; absent when there are none. */
+  readonly creators?: Readonly<Record<CreatorRole, readonly Creator[]>>;
 }
 
 /** A verdict for every registered kind, in the shape of that kind. */
@@ -46,7 +49,16 @@ export type FoundRelations = { readonly [Key in keyof Relations]?: Relations[Key
 
 /** The verdicts with the relations of `from` added; the same object when there are none. */
 export function withRelations(verdicts: KindVerdicts, from: FoundRelations): KindVerdicts {
-  return from.parent === undefined ? verdicts : { ...verdicts, parent: from.parent };
+  const { parent, creators } = from;
+  const named = creators !== undefined && CREATOR_ROLES.some((role) => creators[role].length > 0);
+  if (parent === undefined && !named) {
+    return verdicts;
+  }
+  return {
+    ...verdicts,
+    ...(parent === undefined ? {} : { parent }),
+    ...(named ? { creators } : {}),
+  };
 }
 
 function sitsUnderItsKind(id: KindId, verdict: KindVerdict): boolean {

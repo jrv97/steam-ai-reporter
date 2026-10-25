@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { detectorContract } from "../../../tests/contracts/detector.contract";
 import { appId, appIds } from "../../../tests/helpers/app-ids";
 import { countingStore } from "../../../tests/helpers/counting-store";
+import { creatorsFor } from "../../../tests/helpers/creators";
 import { fakeDetector } from "../../../tests/helpers/fake-detector";
 import { fixedClock } from "../../../tests/helpers/fixed-clock";
 import { memoryStore } from "../../../tests/helpers/memory-store";
@@ -59,16 +60,19 @@ describe("cachedDetector", () => {
     expect(store.calls.set).toBe(1);
   });
 
-  it("keeps the base game of a DLC from the first answer on, with one request", async () => {
-    const dlc = withRelations(aiVerdicts(disclosedVerdict()), { parent: appId(1808500) });
+  it("keeps the base game and creators from the first answer on, with one request", async () => {
+    const dlc = withRelations(aiVerdicts(disclosedVerdict()), {
+      parent: appId(1808500),
+      creators: creatorsFor({ developers: ["Embark Studios"] }),
+    });
     const inner = fakeDetector(() => dlc);
     const store = memoryStore();
     const logger = { error: vi.fn<(problem: unknown) => void>() };
     const tab = () => cachedDetector(inner, createVerdictCache(store, fixedClock(T)), logger);
     const first = await tab().detect(appIds(5201760));
     const second = await tab().detect(appIds(5201760));
-    expect(first.get(appId(5201760))?.parent).toBe(1808500);
-    expect(second.get(appId(5201760))?.parent).toBe(1808500);
+    expect(first.get(appId(5201760))).toStrictEqual(dlc);
+    expect(second.get(appId(5201760))).toStrictEqual(dlc);
     expect(inner.calls).toStrictEqual([[5201760]]);
   });
 

@@ -35,6 +35,8 @@ SPACING_SECONDS = 1.0
 
 # `related_items` stays: the schema reads `related_items.parent_appid` of a DLC (decision 51).
 ITEM_REMOVED = ("best_purchase_option",)
+# `basic_info` keeps only the creators the ignore lists follow (ADR 0013); its descriptions go.
+BASIC_INFO_KEPT = ("developers", "publishers")
 KINDS_DETAILS_REMOVED = (
     "system_requirements",
     "early_access",
@@ -281,7 +283,7 @@ def getitems_url(ids: list[dict[str, int]], language: str, country: str) -> str:
     request = {
         "ids": ids,
         "context": {"language": language, "country_code": country},
-        "data_request": {"include_extra_details": True},
+        "data_request": {"include_extra_details": True, "include_basic_info": True},
     }
     return f"{GETITEMS_URL}?input_json={urllib.parse.quote(json.dumps(request), safe='')}"
 
@@ -290,6 +292,9 @@ def trim_item(entry: object, removed: tuple[str, ...]) -> object:
     if not isinstance(entry, dict):
         return entry
     item = {key: value for key, value in entry.items() if key not in ITEM_REMOVED}
+    basic_info = item.get("basic_info")
+    if isinstance(basic_info, dict):
+        item["basic_info"] = {k: v for k, v in basic_info.items() if k in BASIC_INFO_KEPT}
     details = item.get("extra_details")
     if isinstance(details, dict):
         item["extra_details"] = {k: v for k, v in details.items() if k not in removed}
