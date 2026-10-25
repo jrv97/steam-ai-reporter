@@ -19,14 +19,14 @@ decision-makers: Jorge Rodriguez de la Vega
 
 ## Considered options
 
-1. `GetItems` `extra_details` and `categories`, plus the live app page for page-only detail.
+1. `GetItems` `extra_details` and `categories`.
 2. Parse each game's store page.
 3. Community datasets (AreWeAntiCheatYet, PCGamingWiki), bundled or fetched.
 4. `appdetails`.
 
 ## Decision outcome
 
-Chosen option 1. The `GetItems` request that returns the AI notes also returns `anticheat` (`kernel_mode`, `name`, `boot_protection`), `drm_third_party_type`, `user_account_third_party`, `eula[]` and `categories.supported_player_categoryids`. Their values are language-neutral. PvP is any of Steam's category IDs 49, 36, 47 and 37, held as constants. The live app page adds what `GetItems` omits, the custom anti-cheat name and the DRM activation limit. It is read from the page the visitor is on, with structural selectors and never with notice text.
+Chosen option 1. The `GetItems` request that returns the AI notes also returns `anticheat` (`kernel_mode`, `name`, `boot_protection`), `drm_third_party_type`, `user_account_third_party`, `eula[]` and `categories.supported_player_categoryids`. Their values are language-neutral. PvP is any of Steam's category IDs 49, 36, 47 and 37, held as constants.
 
 Every field is declared by the developer and nothing is detected, so an absent key stays "not reported". The EULA link is shown only when it is a `store.steampowered.com` `/eula/` path, with the double slash normalized.
 
@@ -42,7 +42,6 @@ Every field is declared by the developer and nothing is detected, so an absent k
 ### GetItems, categories and the live page
 
 - Good: one request, language-neutral, no new host.
-- Bad: two fields exist only on the page.
 
 ### Parse each game's store page
 

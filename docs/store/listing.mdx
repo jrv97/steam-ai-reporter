@@ -1,6 +1,6 @@
 # Store listing copy
 
-Source text for the Chrome Web Store and addons.mozilla.org (AMO) listings of "AI Reporter for Steam" (short name "AI Reporter"). The listing text is English; the extension also ships a Spanish catalog (name "Marcador de IA para Steam", short name "Marcador IA"). The userscript has no store listing; its text is the `@description` in the userscript header, which comes from the same message catalog as the manifests.
+Source text for the Chrome Web Store and addons.mozilla.org (AMO) listings of "Tag Kit for Steam" (short name "Tag Kit"). The listing text is English; the extension also ships a Spanish catalog (name "Tag Kit para Steam", short name "Tag Kit"). The userscript has no store listing; its text is the `@description` in the userscript header, which comes from the same message catalog as the manifests. Its `@name` stays "AI Reporter for Steam" for now; see [Renaming the userscript](../testing/userscript-install.mdx#renaming-the-userscript).
 
 Wording follows the project's semantics rule: a badge says "AI use reported". Nothing here says a game "uses AI" or is "AI-free", because developers report their AI use themselves.
 
@@ -8,48 +8,58 @@ Limits to respect when pasting: the Chrome name is at most 75 characters and the
 
 ## Name
 
-AI Reporter for Steam
+Tag Kit for Steam
 
-Short name: AI Reporter
+Short name: Tag Kit
 
 ## Summary (manifest description, 132 characters at most)
 
-Labels Steam games whose developers report generative AI use, in their own words.
+Tags Steam games: AI Generated Content Disclosure, Anti-Cheat (kernel level first), 3rd-party DRM, account and EULA, and PvP.
 
 ## Short description for AMO (250 characters at most)
 
-Marks Steam store items whose developers reported generative AI use in Steam's own AI content disclosure. It only reads what developers report on Steam and sends no reports anywhere. Not affiliated with Valve.
+Tags Steam store items: AI Generated Content Disclosure, Anti-Cheat (Kernel Level first), 3rd-party DRM, 3rd-Party Account, 3rd-party EULA and PvP. It reads only what Steam reports and sends no reports anywhere. Not affiliated with Valve.
 
 ## Detailed description
 
-AI Reporter for Steam marks items on the Steam store whose developers filled in Steam's AI Generated Content Disclosure.
+Tag Kit for Steam tags items on the Steam store: AI Generated Content Disclosure, Kernel Level Anti-Cheat and Anti-Cheat Software, 3rd-party DRM, 3rd-Party Account, 3rd-party EULA and PvP.
 
-It only reads what developers report on Steam. It sends no reports, collects nothing and has no server of its own.
+It only reads what Steam's store data and developers report there. It sends no reports, collects nothing and has no server of its own.
 
 What it does:
 
-- Adds an "AI use reported" badge to capsules and rows in search, wishlist, home, tag and category hubs, sale pages, developer pages and search suggestions.
-- On a game's page, shows a banner that quotes the developer's report word for word.
+- Adds a badge to capsules and rows in search, wishlist, home, tag and category hubs, sale pages, developer pages and search suggestions for items that carry one of those tags. The AI tag reads "AI use reported".
+- On a game's page, shows a banner that quotes the developer's AI report word for word.
 - Optionally dims or hides those items in lists. This is off by default.
 - Lets you ignore a game you consider a false flag, with a per-game allow-list.
 
-What the badge means: the developer reported generative AI use in Steam's AI content disclosure. It is self-reported. The badge does not say how much AI a game uses, and a game without a badge is not guaranteed to be free of AI, because developers may not have reported anything, and Steam may not have the information for every item.
+What each tag means, in Steam's words:
 
-Privacy: nothing is collected. To check the items on the page you are viewing, their app IDs go to Valve's own hosts that your browser uses (api.steampowered.com and store.steampowered.com), without cookies. Verdicts and your settings stay in your browser. The full policy is in PRIVACY.md in the project repository.
+- AI Generated Content Disclosure: the developer reported generative AI use. The badge reads "AI use reported".
+- Kernel Level Anti-Cheat: the game's anti-cheat runs at the kernel level.
+- Anti-Cheat Software: the game uses anti-cheat software.
+- 3rd-party DRM: the game uses DRM from a third party.
+- 3rd-Party Account: the game needs an account with a third party.
+- 3rd-party EULA: the game needs agreement to a third party's EULA.
+- PvP: the game has player-versus-player play.
+
+The AI tag is self-reported. It does not say how much AI a game uses, and a game without a badge is not guaranteed to be free of AI, because developers may not have reported anything, and Steam may not have the information for every item.
+
+Privacy: nothing is collected. To check the items on the page you are viewing, their app IDs go to Valve's own hosts that your browser uses (api.steampowered.com and store.steampowered.com), without cookies. Results and your settings stay in your browser. The full policy is in PRIVACY.md in the project repository.
 
 Open source (MIT). Source and build steps: https://github.com/jrv97/steam-ai-reporter
 
-AI Reporter for Steam is an independent project. It is not affiliated with, endorsed by or sponsored by Valve Corporation. Steam and the Steam logo are trademarks of Valve Corporation.
+Tag Kit for Steam is an independent project. It is not affiliated with, endorsed by or sponsored by Valve Corporation. Steam and the Steam logo are trademarks of Valve Corporation.
 
 ## Single-purpose statement (Chrome Web Store)
 
-AI Reporter for Steam has one purpose: to show, on Steam store pages, which items have a developer's report of generative AI use, by marking those items and quoting the report.
+Tag Kit for Steam has one purpose: to show, on Steam store pages, which items carry tags for AI content disclosure, anti-cheat, 3rd-party DRM, account and EULA, and PvP, by marking those items.
 
 ## Permission justifications
 
 The extension asks for one permission and no host permissions. It has no background script.
 
-- `storage`: keeps the cache of verdicts (an app is not requested again until its entry expires), your settings, the per-game allow-list, and a small record used to back off if Steam is limiting requests. All of it stays on your device in the extension's local storage.
+- `storage`: keeps the cache of results (an app is not requested again until its entry expires), your settings, the per-game allow-list, and a small record used to back off if Steam is limiting requests. All of it stays on your device in the extension's local storage.
 - Site access (content script matches `https://store.steampowered.com/*`): the content script runs only on the Steam store, because that is where the items to mark are. Its requests to `api.steampowered.com` and `store.steampowered.com` are made from the store page's own origin, so no `host_permissions` entry is needed. Both are Valve hosts the user is already on, and every request is made with `credentials: "omit"`.
 - Remote code: none. No `eval`, no remote scripts and no remote selectors. The bundles in the package are not minified and are built from the public source.
 
@@ -59,7 +69,7 @@ These match PRIVACY.md.
 
 - Does it collect or transmit user data to the developer or any third party? No. There is no analytics, no telemetry, no account and no server of the developer.
 - Does it send any data off the device? Only app IDs of the items on the page being viewed, to Valve's own hosts `api.steampowered.com` (GetItems, in batches of up to 50) and `store.steampowered.com` (a few app pages as a fallback), without cookies. Valve sees the IP address and the app IDs, as for any store request.
-- What is stored locally? Verdicts per app ID (state, check time, the developer's report text and language, the name of a named AI service if any, the game's name), the settings, the allow-list, and a back-off record. In `storage.local`.
+- What is stored locally? Results per app ID (which tags the store data gives the item, check time, the developer's AI report text and language, the name of a named AI service if any, the game's name), the settings, the allow-list, and a back-off record. In `storage.local`.
 - Does it read the Steam account, wishlist contents, library, cookies or browsing history? No.
 - Is data sold or used for purposes unrelated to the single purpose? No.
 - Chrome Web Store data usage categories: none are collected. Certify the three limited-use statements (not sold, not used for unrelated purposes, not used for creditworthiness or lending).

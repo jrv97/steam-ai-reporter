@@ -1,0 +1,39 @@
+---
+status: accepted
+date: 2026-10-25
+decision-makers: Jorge Rodriguez de la Vega
+---
+
+# Name the product "Tag Kit for Steam"
+
+## Context and problem statement
+
+The product marks seven kinds of store disclosure ([ADR 0009](0009-tag-kinds-in-steams-words.mdx)). "AI Reporter for Steam" names one of them. What should the product be called?
+
+## Decision drivers
+
+- The name says what the product does.
+- No Steam extension already uses it.
+- It keeps the "for Steam" shape, so it does not suggest that Valve makes or endorses it. Valve's branding page bars implied endorsement, and the Chrome Web Store impersonation policy says the same.
+- The GitHub slug is free, and the Spanish form is natural.
+
+## Considered options
+
+1. Tag Kit for Steam
+2. Fine Print for Steam
+3. Asterisk for Steam
+4. Caveat for Steam
+5. Steam Tagging Kit, or Steam AIO Tagger
+6. Keep "AI Reporter for Steam"
+
+## Decision outcome
+
+Chosen option 1. The short name is "Tag Kit" and the Spanish name is "Tag Kit para Steam". A search of the Chrome Web Store on 2026-10-25 and a search of AMO found no extension called Tag Kit, and the GitHub slug `tag-kit-for-steam` and its domains are free. A Swift library on GitHub is also called TagKit and is unrelated. Fine Print has several same-name extensions on the Chrome Web Store, Asterisk collides with phone-system tools and a Steam game, and Steam Tagging Kit puts "Steam" first, which Valve's branding page discourages.
+
+The `sar-` prefix, storage keys, extension IDs and the userscript `@namespace` keep their names. The userscript `@name` stays until a test shows how Tampermonkey and Violentmonkey treat a renamed script. `THIRD_PARTY_NOTICES.md` now lists third-party artwork as well as dependencies, and rule 6 says so.
+
+### Consequences
+
+- Good: one name for all seven tags.
+- Bad: the store listings, screenshots and privacy text change, and the repository slug becomes `tag-kit-for-steam`. The repository's OIDC `sub` claim names the repository, so the workload identity binding ([ADR 0007](0007-chrome-web-store-workload-identity.mdx)) must change after the rename. The GCP project ID cannot change.
+- Neutral: the name lives in four catalog keys per locale.

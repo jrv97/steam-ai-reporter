@@ -1,12 +1,12 @@
 ---
-title: AI Reporter for Steam UI components (v1)
+title: Tag Kit for Steam UI components (v1)
 status: draft
 updated: 2026-10-25
 ---
 
-# AI Reporter for Steam UI components (v1)
+# Tag Kit for Steam UI components (v1)
 
-Component specs for everything the extension and the userscript inject into store pages or own outright. This folder mirrors the published design system (https://claude.ai/artifact/3xsXmaA5vjofhEWkL8nYsQ, private to the owner's account): change one, then sync the other. The UI step of `docs/plans/steam-ai-reporter-v1.md` (step 10) builds from this file, and the i18n step (step 4) authors `src/locales/en/messages.json` from the message catalog at the end.
+Component specs for everything the extension and the userscript inject into store pages or own outright. This folder mirrors the published design system (https://claude.ai/artifact/3xsXmaA5vjofhEWkL8nYsQ, private to the account that published it): change one, then sync the other. The UI step of `docs/plans/steam-ai-reporter-v1.md` (step 10) builds from this file, and the i18n step (step 4) authors `src/locales/en/messages.json` from the message catalog at the end.
 
 **Files**
 
@@ -17,7 +17,7 @@ Component specs for everything the extension and the userscript inject into stor
 - `assets/icons/`: the extension icon (section 14).
 - `docs/design/decisions.mdx`: why each choice was made, and what is still open.
 
-AI Reporter for Steam tags games on the Steam store whose developers declared something players weigh before buying: AI use, kernel-level or other anti-cheat, third-party DRM, a required third-party account or a third-party EULA. It also tags games with a PvP mode, from Steam's own categories. Each tag is written in Steam's words, and the developer's text is quoted as written. It ships as a browser extension and a userscript. Its UI lives in two places: small pieces injected into store pages (chips, a banner, a hover card, a list filter) and its own settings pages (options page, toolbar popup, userscript dialog). This system covers both.
+Tag Kit for Steam tags games on the Steam store whose developers declared something players weigh before buying: AI use, kernel-level or other anti-cheat, third-party DRM, a required third-party account or a third-party EULA. It also tags games with a PvP mode, from Steam's own categories. Each tag is written in Steam's words, and the developer's text is quoted as written. It ships as a browser extension and a userscript. Its UI lives in two places: small pieces injected into store pages (chips, a banner, a hover card, a list filter) and its own settings pages (options page, toolbar popup, userscript dialog). This system covers both.
 
 Every class, attribute and custom property starts with `sar-`.
 
@@ -87,10 +87,10 @@ Every text pair meets WCAG 2.2 AA on the grounds its token's note names; see the
 
 ## Iconography
 
-- **The mark** is a label tag pointing toward inline-end with a four-point spark on its visual center: "a label about AI", not "an AI tool". One flat `sar-accent-400` fill with a white spark; no outline, no gradient, no letters. See the Icon asset group for files and sizes.
-- **No icons in components.** Badges, the summary row and the banner carry no icon, like the store's own tags, corner flags and notice bubbles. The violet hue and the wording mark them as ours. The spark appears only in the extension icon.
+- **The mark** is a Steam badge, a ring around the Steam glyph, with a tag icon attached at its lower right: "Steam store pages, tagged". One ink per file, `sar-accent-400` in the extension icon; the tag leaves a transparent cut where it crosses the ring; no gradient, no letters. See section 14 for files, variants and sizes.
+- **No icons in components.** Badges, the summary row and the banner carry no icon, like the store's own tags, corner flags and notice bubbles. The violet hue and the wording mark them as ours. The mark appears as the extension icon and wherever that icon is shown, never inside a component. Icons on chips for the other tag kinds are a later design decision (decision 39).
 - No other icon set. Platform icons and flags around our badges are the store's.
-- No Valve logo, wordmark, icon, image or font file appears anywhere.
+- The extension icon holds an outlined Steam glyph (decision 40). It shows in the README logo, the store listing images, the options and popup headers and the design previews. No chip, badge, banner or hover card shows a Valve mark, and no Valve wordmark, image or font file ships anywhere.
 
 ## What renders for each state
 
@@ -661,7 +661,7 @@ Preview: `previews/Backup.html`.
 - Games you ignored, with their names and dates.
 - Lookup history: every game already checked, marked or not, with when it was checked, so a restored history still expires on its usual schedule.
 
-One JSON file named `ai-reporter-backup-YYYY-MM-DD.json`, with a format version. Its schema lives with the storage code. Nothing else goes in: no cookies, no account data, nothing from the store.
+One JSON file named `ai-reporter-backup-YYYY-MM-DD.json`, with a format version. The `ai-reporter-` prefix is a deliberate technical identifier that stays when the product name changes, like the `sar-` prefix. Its schema lives with the storage code. Nothing else goes in: no cookies, no account data, nothing from the store.
 
 ### Where it appears
 
@@ -760,30 +760,19 @@ Specified only. No dialog rules exist yet, so this card has no preview.
 
 Files in `assets/icons/`.
 
-The extension's mark: a label tag in `sar-accent-400` holding a white four-point spark. Drawn for this project; nothing from Valve or any prior-art extension.
+The extension's mark: a Steam badge (a ring around the Steam glyph) with a tag icon attached at its lower right, decided on 2026-10-24 (decisions 36 to 40). The tag is derived from Lucide's `tags` icon and the glyph from Simple Icons' Steam icon (CC0). Lucide is ISC licensed; the icons it derives from Feather carry a separate MIT notice, and `tags` is not one of them. The Steam logo is Valve's trademark. The notices ship in `THIRD_PARTY_NOTICES.md`.
 
-- `icon.svg`: the master on a 128 grid, full bleed. Renders the 32 and 48px PNGs.
-- `icon-16.svg`: hand-hinted for 16px, snapped to the pixel grid, with a fuller spark so it reads as a star, not a plus.
-- `icon-16.png`, `icon-32.png`, `icon-48.png`: toolbar and extension-management sizes, full bleed.
+- `mark.svg`: the master, 300 by 300, one ink in `currentColor`, which a page can theme. Every other file derives from it. The SVG files carry no `role`: each consumer adds its own role and name.
+- `mark-purple.svg`: the master in `#8f73f3` (`sar-accent-400`). The extension icon, the store listings, the README logo and the design previews' headers.
+- `mark-white.svg` and `mark-black.svg`: single-ink copies for grounds that cannot take purple, such as a monochrome toolbar or a listing banner. `mise run icons` generates all three color files from the master, and a test keeps them equal to it.
+- `icon-16.png`, `icon-32.png`, `icon-48.png`: toolbar and extension-management sizes, rendered from `mark-purple.svg`, full bleed.
 - `icon-128.png`: store and install-dialog size, the artwork at 96px centered in 128px with 16px of transparent padding.
 
-Use the PNG nearest the display size; the options header shows `icon-48.png` at 32px, the popup `icon-32.png`. Never recolor, outline, add a gradient or put letters on it. Two inks only: `#8f73f3` and `#ffffff`.
+The ring is as thick as the tag's stroke: 20 units on the 300 unit canvas. The tag sits clear of the ring behind a transparent cut 8 units wide. The artwork spans 4 to 285 of the canvas, and the full bleed renders crop to that span.
 
-Regenerate the PNGs with ImageMagick 7 and librsvg, in the icons folder:
+Use the PNG nearest the display size; the options header shows `icon-48.png` at 32px, the popup `icon-32.png`. The 16 and 32px renders are interim until hand-hinted reduced versions replace them: an `icon-16.svg` or `icon-32.svg` in the folder is rendered in place of the mark and never overwritten. One ink per file; never add a gradient, a second color or letters.
 
-```sh
-magick -background none -density 96 icon-16.svg -strip PNG32:icon-16.png
-magick -background none -density 384 icon.svg -filter Lanczos -resize 32x32 -strip PNG32:icon-32.png
-magick -background none -density 384 icon.svg -filter Lanczos -resize 48x48 -strip PNG32:icon-48.png
-magick -background none -density 384 icon.svg -filter Lanczos -resize 96x96 -gravity center -extent 128x128 -strip PNG32:icon-128.png
-```
-
-### Glyph
-
-`glyph.svg`: the spark from the extension icon, alone, on a `0 0 10 10` view box, path `M5 0Q5.7 4.3 10 5Q5.7 5.7 5 10Q4.3 5.7 0 5Q4.3 4.3 5 0Z`.
-
-- Not used by any component: badges, the summary row and the banner carry no icon (decision 30). Kept as a reference for the mark.
-- Single ink, `currentColor`. Shown as an image it renders black, so its tile here looks dark.
+Regenerate the color files and the PNGs with `mise run icons`. It runs `scripts/render_icons.py`, which paints `mark-purple.svg` with headless Chrome (`SAR_CHROME_BIN`) into a page of exactly each size on a transparent ground.
 
 ## 15. Hover card
 
@@ -1014,15 +1003,16 @@ For every translator:
 
 | Key | English | Note |
 | --- | --- | --- |
-| `ext_name` | AI Reporter for Steam | Manifest `name`, userscript `@name`, the settings heading. The brand: keep "AI Reporter" as is and translate only "for". At most 75 characters (Chrome limit). |
-| `ext_short_name` | AI Reporter | Manifest `short_name`, where space is tight. The brand, kept as is. At most 12 characters (Chrome recommendation). |
-| `ext_description` | Labels Steam games whose developers report generative AI use, in their own words. | Manifest and userscript description. At most 132 characters; the English is 81. |
-| `ext_action_title` | AI Reporter settings | Toolbar button tooltip. Keep "AI Reporter" as is. |
+| `ext_name` | Tag Kit for Steam | Manifest `name` and the settings heading. The brand: keep "Tag Kit" as is and translate only "for". At most 75 characters (Chrome limit). |
+| `ext_short_name` | Tag Kit | Manifest `short_name`, where space is tight. The brand, kept as is. At most 12 characters (Chrome recommendation). |
+| `ext_description` | Tags Steam games: AI Generated Content Disclosure, Anti-Cheat (kernel level first), 3rd-party DRM, account and EULA, and PvP. | Manifest and userscript description. At most 132 characters; the English is 125. Name each tag as Steam's own store does in that language. |
+| `ext_action_title` | Tag Kit for Steam settings | Toolbar button tooltip. Keep "Tag Kit for Steam" as in `ext_name`. |
 
 ### `userscript_`
 
 | Key | English | Note |
 | --- | --- | --- |
+| `userscript_name` | AI Reporter for Steam | Userscript `@name`, kept from the first release. Lives in `userscript.json`, which only the userscript header reads. Keep as is. See [Renaming the userscript](../testing/userscript-install.mdx#renaming-the-userscript). |
 | `userscript_menu_settings` | Settings | Entry in the script manager's menu. |
 | `userscript_close` | Close | Closes the settings dialog. |
 | `userscript_reload_note` | Changes apply on the next page load. | Shown when the manager cannot apply settings live. |
@@ -1081,4 +1071,4 @@ WCAG 2.2 AA: 4.5:1 for text, 3:1 for non-text. Grounds are the store's own, samp
 
 ### The mark on browser toolbars
 
-The icon's `sar-accent-400` fill against toolbar grounds: Chrome light `#ffffff` 3.55, Chrome light toolbar `#f1f3f4` 3.19, Chrome dark `#202124` 4.53, Chrome dark toolbar `#3c3c3c` 3.11, Firefox dark `#2b2a33` 3.99, Firefox light `#f9f9fb` 3.38. The white spark on the fill is 3.55.
+The icon's `sar-accent-400` ink against toolbar grounds: Chrome light `#ffffff` 3.55, Chrome light toolbar `#f1f3f4` 3.19, Chrome dark `#202124` 4.53, Chrome dark toolbar `#3c3c3c` 3.11, Firefox dark `#2b2a33` 3.99, Firefox light `#f9f9fb` 3.38. Chrome light hover grounds fall below 3:1: `#e8eaed` 2.95 and `#dadce0` 2.59. The ink stays purple; re-sample the toolbar colors before submission.

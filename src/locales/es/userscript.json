@@ -1,0 +1,6 @@
+{
+  "userscript_name": {
+    "message": "Marcador de IA para Steam",
+    "description": "Userscript @name, which only the userscript header reads. Script managers may treat a renamed script as a new one, so this keeps the name of the first release. Keep as is."
+  }
+}

@@ -1,9 +1,10 @@
 """Build every target into dist/ with one esbuild call each.
 
 Targets: the Chrome and Firefox extensions (dist/chrome, dist/firefox: the manifest, the content
-script and its stylesheet, the options page, the catalogs and the icons), the userscript
-(dist/userscript) and the dev-only injection bundle (dist/dev, never packaged). The userscript
-header goes in through `--banner:js` on the userscript call only. Bundles are never minified.
+script and its stylesheet, the options page, the catalogs, the icons and the third-party notices),
+the userscript (dist/userscript) and the dev-only injection bundle (dist/dev, never packaged). The
+userscript header goes in through `--banner:js` on the userscript call only. Bundles are never
+minified.
 
 Usage: build.py [--watch]
 """
@@ -17,19 +18,33 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from gen_styles import stylesheet
-from repo import DIST, ROOT, SLUG, fail, json_object, json_string, package_version, read_json
+from repo import (
+    DIST,
+    ICON_SIZES,
+    ICONS_DIR,
+    ROOT,
+    SLUG,
+    fail,
+    json_object,
+    json_string,
+    package_version,
+    read_json,
+    valibot_notice,
+)
 
 ESBUILD = ROOT / "node_modules" / "esbuild" / "bin" / "esbuild"
 EXTENSION_DIR = ROOT / "src" / "platform" / "extension"
 LOCALES_DIR = ROOT / "src" / "locales"
-ICONS_DIR = ROOT / "assets" / "icons"
-ICON_SIZES = (16, 32, 48, 128)
+NOTICES = ROOT / "THIRD_PARTY_NOTICES.md"
 DEFAULT_LOCALE = "en"
 BROWSERS = ("chrome", "firefox")
 # The store page stylesheet, loaded by the manifest so the content script need not adopt it.
 CONTENT_CSS = ("TOKENS_CSS", "PAGE_CSS")
 
 USERSCRIPT_MATCH = "https://store.steampowered.com/*"
+# The userscript @name comes from this catalog file and key. Set them to messages.json and ext_name,
+# then delete the userscript.json files, to follow the product name.
+USERSCRIPT_NAME = ("userscript.json", "userscript_name")
 USERSCRIPT_NAMESPACE = "https://github.com/jrv97/steam-ai-reporter"
 USERSCRIPT_UPDATE_BASE = f"{USERSCRIPT_NAMESPACE}/releases/latest/download"
 USERSCRIPT_GRANTS = (
@@ -70,9 +85,9 @@ def esbuild_command(bundle: Bundle, watch: bool) -> list[str]:
     return command
 
 
-def load_catalogs() -> dict[str, dict[str, object]]:
+def load_catalogs(filename: str = "messages.json") -> dict[str, dict[str, object]]:
     catalogs: dict[str, dict[str, object]] = {}
-    for path in sorted(LOCALES_DIR.glob("*/messages.json")):
+    for path in sorted(LOCALES_DIR.glob(f"*/{filename}")):
         catalogs[path.parent.name] = json_object(read_json(path), str(path))
     if DEFAULT_LOCALE not in catalogs:
         fail(f"missing the {DEFAULT_LOCALE} catalog in {LOCALES_DIR}")
@@ -119,6 +134,7 @@ def write_extension(browser: str, version: str) -> None:
     write_text(out / "manifest.json", json.dumps(manifest, indent=2, ensure_ascii=False) + "\n")
     write_text(out / "content.css", "".join(stylesheet(name) for name in CONTENT_CSS))
     shutil.copyfile(EXTENSION_DIR / "options.html", out / "options.html")
+    shutil.copyfile(NOTICES, out / NOTICES.name)
     for locale, catalog in load_catalogs().items():
         write_text(
             out / "_locales" / locale / "messages.json",
@@ -132,12 +148,14 @@ def write_extension(browser: str, version: str) -> None:
 
 def userscript_header(version: str, catalogs: dict[str, dict[str, object]]) -> str:
     english = catalogs[DEFAULT_LOCALE]
+    name_file, name_key = USERSCRIPT_NAME
+    names = load_catalogs(name_file)
     fields: list[tuple[str, str]] = [
-        ("@name", message(english, "ext_name", DEFAULT_LOCALE)),
+        ("@name", message(names[DEFAULT_LOCALE], name_key, DEFAULT_LOCALE)),
     ]
-    for locale, catalog in catalogs.items():
+    for locale, catalog in names.items():
         if locale != DEFAULT_LOCALE:
-            fields.append((f"@name:{locale}", message(catalog, "ext_name", locale)))
+            fields.append((f"@name:{locale}", message(catalog, name_key, locale)))
     fields += [
         ("@namespace", USERSCRIPT_NAMESPACE),
         ("@version", version),
@@ -172,7 +190,7 @@ def bundles(header: str) -> list[Bundle]:
         Bundle(
             "src/platform/userscript/main.ts",
             DIST / "userscript" / f"{SLUG}.user.js",
-            banner=header,
+            banner=f"{header}\n{valibot_notice()}",
         )
     )
     result.append(Bundle("src/platform/dev/inject.ts", DIST / "dev" / "inject.js"))

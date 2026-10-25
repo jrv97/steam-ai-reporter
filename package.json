@@ -2,7 +2,7 @@
   "name": "steam-ai-reporter",
   "version": "2026.10.22",
   "private": true,
-  "description": "Marks Steam store items whose developers reported generative AI use.",
+  "description": "Tags Steam items: AI disclosure, anti-cheat, 3rd-party DRM, account, EULA, PvP.",
   "license": "MIT",
   "type": "module",
   "dependencies": {

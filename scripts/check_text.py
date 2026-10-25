@@ -33,7 +33,7 @@ WIDTH_SUFFIXES = {
     ".html",
     ".json",
 }
-CATALOG = re.compile(r"(^|/)locales/(?P<lang>[^/]+)/messages\.json$")
+CATALOG = re.compile(r"(^|/)locales/(?P<lang>[^/]+)/(messages|userscript)\.json$")
 DASH = re.compile(r"(?:^|\s)--(?:\s|$)")
 INLINE_CODE = re.compile(r"`[^`]*`")
 

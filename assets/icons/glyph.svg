@@ -1,7 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10" width="10" height="10">
-  <!--
-    Badge glyph: the spark from icon.svg alone. Badges inline this path with
-    fill="currentColor" and aria-hidden="true".
-  -->
-  <path fill="currentColor" d="M5 0Q5.7 4.3 10 5Q5.7 5.7 5 10Q4.3 5.7 0 5Q4.3 4.3 5 0Z" />
-</svg>

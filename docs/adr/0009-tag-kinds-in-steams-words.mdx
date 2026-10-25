@@ -14,7 +14,7 @@ The code assumed one kind. A detection returned one verdict per app, a badge had
 
 ## Decision drivers
 
-- A new tag type costs a registry entry and catalog text, with no edit to the scanner or the detector chain (rule 11).
+- A new tag type costs one definition, one registry line, catalog text and a fixture, with no edit to the scanner or the detector chain (rule 11).
 - No new host, permission, request or stored identifier (rules 1 and 3).
 - Unknown is never shown as not disclosed, and an absent key never reads as "none" (rule 4).
 - A tag reads in the words Steam uses on the store page, in English and Spanish.
@@ -41,7 +41,7 @@ Out of scope: icons on chips, user-defined tags and the product name.
 
 ### Consequences
 
-- Good: a new tag is a registry entry, catalog text and a fixture.
+- Good: a new tag is one definition, one registry line, catalog text and a fixture.
 - Good: one extension and one release pipeline for every tag.
 - Good: the clash between "report" and Steam's flagging feature ([ADR 0008](0008-one-badge-label-ai-use-reported.mdx)) ends.
 - Bad: about 2.6k added source lines and about 40 KiB of unminified bundle. The budgets rise in the change that adds the kinds, with measured numbers.

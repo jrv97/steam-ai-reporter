@@ -9,6 +9,9 @@ Shipped catalogs (src/locales/<locale>/messages.json):
 - every English key is used: as a string in src/**/*.ts, as `__MSG_<key>__` in a manifest, or in
   scripts/build.py (the userscript header).
 
+src/locales/<locale>/userscript.json holds the userscript name, which only scripts/build.py reads:
+it gets the same entry checks and the same parity with English.
+
 Every catalog, shipped or test-only (tests/locales/), must be valid and must not say "uses AI",
 "AI-free" or "no AI": the product reports disclosures, it does not judge games.
 
@@ -19,7 +22,9 @@ catalog text when, trimmed, it either
 - shares MIN_SHARED or more characters with the text between a message's placeholders: it
   contains that text, or is a piece of it.
 Shorter shared text is a word that also occurs inside identifiers and header names ("Settings" in
-`parseSettings`), so only a whole-message match catches the short messages. tests/locales/ and
+`parseSettings`), so only a whole-message match catches the short messages. A literal that is one of
+DETECTION_CONSTANTS, Steam's own page text that a detector matches (rule 9), skips the shared-text
+match, so a message may quote it. A message that equals it still matches. tests/locales/ and
 tests/fixtures/ hold their own catalogs and captured Steam pages, so they are not scanned.
 
 The literal-flow rules (no hardcoded copy in code sinks) live in lint/restricted-syntax.mjs.
@@ -66,6 +71,7 @@ FORBIDDEN = re.compile(r"\buses AI\b|\bAI-free\b|\bno AI\b", re.IGNORECASE)
 DETECTION_CONSTANTS = frozenset({"AI Generated Content Disclosure"})
 
 MIN_SHARED = 12
+DETECTION_CONSTANTS = frozenset({"AI Generated Content Disclosure"})
 MIN_WILDCARD_TEXT = 4
 SOURCE_ROOTS = ("src", "tests")
 SOURCE_SUFFIXES = {".ts", ".mts", ".js", ".mjs"}
@@ -99,7 +105,7 @@ class CopyIndex:
         for part in parts:
             text = part.strip()
             found.update(self.whole.get(text, ()))
-            if len(text) >= MIN_SHARED:
+            if len(text) >= MIN_SHARED and text not in DETECTION_CONSTANTS:
                 found.update(ref for shared, ref in self.shared if shared in text or text in shared)
         whole = EXPRESSION.join(parts).strip()
         found.update(ref for pattern, ref in self.patterns if pattern.fullmatch(whole))
@@ -228,6 +234,11 @@ def main() -> None:
         ]
         if path.parent.name != DEFAULT_LOCALE:
             problems += parity_problems(path.parent.name, catalog, english)
+    names = {path.parent.name: load(path) for path in sorted(SHIPPED.glob("*/userscript.json"))}
+    for locale, catalog in names.items():
+        problems += entry_problems(SHIPPED / locale / "userscript.json", catalog)
+        if locale != DEFAULT_LOCALE:
+            problems += parity_problems(locale, catalog, names.get(DEFAULT_LOCALE, {}))
     for path in sorted(TEST_CATALOGS.glob("*/messages.json")):
         problems += entry_problems(path, load(path))
     problems += unused_problems(english)
