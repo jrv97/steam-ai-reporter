@@ -70,17 +70,6 @@ describe("start on an English app page of a game with no AI", () => {
     expect(document.querySelector(".sar-summary-row")).toBeNull();
   });
 
-  it("links the EULA to the store page", async () => {
-    await startOnDrmPage();
-
-    const anchor = banner()?.querySelector("a");
-    expect(anchor?.textContent).toBe("Assassin's Creed Black Flag Resynced EULA");
-    expect(anchor?.getAttribute("href")).toBe(
-      "https://store.steampowered.com/eula/3751950_eula_0",
-    );
-    expect(anchor?.getAttribute("rel")).toBe("noopener noreferrer");
-  });
-
   it("ignores one kind from its entry and leaves the others", async () => {
     const { ignored } = await startOnDrmPage();
 

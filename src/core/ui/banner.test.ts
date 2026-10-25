@@ -3,7 +3,7 @@ import { APP_PAGES } from "../../../tests/helpers/app-page";
 import { setBody } from "../../../tests/helpers/dom";
 import { capturedVerdicts, disclosedList } from "../../../tests/helpers/fixture-verdicts";
 import { englishI18n } from "../../../tests/helpers/i18n";
-import { disclosedVerdict, FULL_DISCLOSED } from "../../../tests/helpers/verdicts";
+import { disclosedVerdict } from "../../../tests/helpers/verdicts";
 import { SHIPPED_CATALOGS } from "../i18n/shipped";
 import { createI18n } from "../i18n/t";
 import { KIND_BY_ID } from "../kinds/registry";
@@ -131,20 +131,6 @@ describe("createBanner", () => {
     expect(root.querySelector("img")).toBeNull();
   });
 
-  it("renders every developer text through textContent, never as markup", () => {
-    const { banner, root } = setup();
-    const markup = "<b>Denuvo</b>";
-    banner.show(view([
-      { ...FULL_DISCLOSED.drm, text: markup, activationLimit: "<i>5</i>" },
-      { ...FULL_DISCLOSED.account, text: markup },
-      { ...FULL_DISCLOSED.eula, items: [{ name: markup }] },
-      { ...FULL_DISCLOSED.anticheat, name: markup },
-    ]));
-    expect(root.querySelector("b, i")).toBeNull();
-    expect(texts(root, ".sar-banner-detail")).toContain(markup);
-    expect(texts(root, ".sar-banner-detail")).toContain("<i>5</i>");
-  });
-
   it("uses catalog copy and the developer as the source", () => {
     const { banner, root } = setup();
     banner.show(view([disclosedVerdict()]));
@@ -224,7 +210,7 @@ describe("createBanner", () => {
 });
 
 describe("the entries of the captured games", () => {
-  it("lists DRM, the account and the EULA of a game, each under Steam's line", () => {
+  it("lists DRM, the account and the EULA of a game, each as Steam's line", () => {
     const { banner, root } = setup();
     const shown = disclosedList(capturedVerdicts(3751950));
     banner.show(view(shown));
@@ -235,72 +221,29 @@ describe("the entries of the captured games", () => {
       i18n.t("kind_account_heading"),
       i18n.t("kind_eula_heading"),
     ]);
-    const lines = texts(root, ".sar-banner-detail");
-    expect(lines).toContain("Denuvo Anti-tamper");
-    expect(lines).toContain("Ubisoft Account");
-    expect(lines).toContain(i18n.t("kind_account_links"));
   });
 
-  it("links a EULA to the store page only, in a new tab without an opener", () => {
+  it("leaves the short lines of a kind to Steam's own boxes and the hover card", () => {
     const { banner, root } = setup();
-    banner.show(view(disclosedList(capturedVerdicts(1245620))));
-    const anchors = [...root.querySelectorAll("a")];
-    expect(anchors.map((anchor) => anchor.textContent)).toEqual([
-      "ELDEN RING EULA",
-      "ELDEN RING EULA (JP)",
-    ]);
-    expect(anchors.map((anchor) => anchor.getAttribute("href"))).toEqual([
-      "https://store.steampowered.com/eula/1245620_eula_0",
-      "https://store.steampowered.com/eula/1245620_eula_1",
-    ]);
-    for (const anchor of anchors) {
-      expect(anchor.getAttribute("target")).toBe("_blank");
-      expect(anchor.getAttribute("rel")).toBe("noopener noreferrer");
-    }
+    banner.show(view(disclosedList(capturedVerdicts(3751950))));
+    expect(root.querySelector("a, blockquote, .sar-banner-service")).toBeNull();
+    expect(root.textContent).not.toContain("Denuvo Anti-tamper");
+    expect(root.textContent).not.toContain("Ubisoft Account");
+    expect(root.textContent).not.toContain(i18n.t("kind_account_links"));
   });
 
-  it("shows the name of a EULA without a validated link as plain text", () => {
-    const { banner, root } = setup();
-    banner.show(view([
-      {
-        ...FULL_DISCLOSED.eula,
-        items: [{ name: "Bad", url: "javascript:alert(1)" }, { name: "Plain" }],
-      },
-    ]));
-    expect(root.querySelector("a")).toBeNull();
-    expect(texts(root, ".sar-banner-detail")).toEqual(["Bad", "Plain"]);
-  });
-
-  it("shows Steam's boot protection line of a kernel anti-cheat", () => {
-    const { banner, root } = setup();
-    banner.show(view(disclosedList(capturedVerdicts(2807960))));
-    expect(texts(root, ".sar-banner-detail")).toContain(i18n.t("kind_kernel_boot"));
-  });
-
-  it("shows the vendor and the removal note of a kernel anti-cheat", () => {
-    const { banner, root } = setup();
-    banner.show(view(disclosedList(capturedVerdicts(1172470))));
-    const lines = texts(root, ".sar-banner-detail");
-    expect(lines).toContain("Easy Anti-Cheat");
-    expect(lines).toContain(i18n.t("kind_kernel_uninstall"));
-  });
-
-  it("shows the anti-cheat that is not kernel level by its name", () => {
-    const { banner, root } = setup();
-    banner.show(view(disclosedList(capturedVerdicts(730))));
-    expect(texts(root, "h2")).toEqual([i18n.t("kind_anticheat_heading")]);
-    expect(texts(root, ".sar-banner-detail")).toEqual(["VAC (Valve Anti-Cheat)"]);
-  });
-
-  it("shows the PvP categories of a game by Steam's names", () => {
-    const { banner, root } = setup();
-    banner.show(view(disclosedList(capturedVerdicts(105600))));
-    expect(texts(root, "h2")).toEqual([i18n.t("kind_pvp_heading")]);
-    expect(texts(root, ".sar-banner-detail")).toEqual([
-      i18n.t("kind_pvp_category_pvp"),
-      i18n.t("kind_pvp_category_online"),
-    ]);
-  });
+  it.each([2807960, 1172470, 730, 105600, 1245620])(
+    "gives each kind of game %i one line: its heading and its ignore button",
+    (id) => {
+      const { banner, root } = setup();
+      const shown = disclosedList(capturedVerdicts(id));
+      banner.show(view(shown));
+      expect(texts(root, "h2")).toEqual(shown.map(heading));
+      expect(root.querySelectorAll(".sar-banner-entry")).toHaveLength(shown.length);
+      expect(root.querySelectorAll(".sar-banner-action")).toHaveLength(shown.length);
+      expect(root.querySelector("p:not(.sar-banner-error)")).toBeNull();
+    },
+  );
 
   it("quotes the AI notes of a game that also declares an anti-cheat and a EULA", () => {
     const { banner, root } = setup();
@@ -314,7 +257,15 @@ describe("the entries of the captured games", () => {
     ]);
     const [ai] = shown;
     expect(ai?.kind).toBe("ai");
-    expect(query(root, "blockquote").textContent).toBe(ai?.kind === "ai" ? ai.notes : "");
+    expect(texts(root, "blockquote")).toEqual([ai?.kind === "ai" ? ai.notes : ""]);
+  });
+
+  it("gives a quote an id of its own", () => {
+    const { banner, root } = setup();
+    banner.show(view([disclosedVerdict()]));
+    const quote = query(root, "blockquote");
+    expect(query(root, '[data-sar-action="toggle"]').getAttribute("aria-controls")).toBe(quote.id);
+    expect(root.querySelectorAll(`[id="${quote.id}"]`)).toHaveLength(1);
   });
 });
 

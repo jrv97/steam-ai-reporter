@@ -56,21 +56,10 @@ describe("kindDetails", () => {
     ]);
   });
 
-  it("lists every EULA by name, with a link where the store hosts one", () => {
+  it("lists every EULA by name", () => {
     expect(kindDetails(eula)).toEqual([
-      { kind: "link", text: "Game EULA", url: "https://store.steampowered.com/eula/1_eula_0" },
+      { kind: "text", text: "Game EULA" },
       { kind: "text", text: "Publisher terms" },
-    ]);
-  });
-
-  it.each([
-    "javascript:alert(1)",
-    "https://example.com/eula/1",
-    "https://store.steampowered.com/app/1",
-    "//store.steampowered.com/eula/1",
-  ])("keeps only the name of a EULA whose link is %s", (url) => {
-    expect(kindDetails({ ...eula, items: [{ name: "Terms", url }] })).toEqual([
-      { kind: "text", text: "Terms" },
     ]);
   });
 

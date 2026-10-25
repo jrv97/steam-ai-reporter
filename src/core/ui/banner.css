@@ -57,8 +57,7 @@
 }
 
 .sar-banner-source,
-.sar-banner-service,
-.sar-banner-detail {
+.sar-banner-service {
   margin: var(--sar-space-1) 0 0;
   color: var(--sar-banner-fg);
   font: var(--sar-banner-meta-font);
@@ -137,18 +136,12 @@
   flex: none;
 }
 
-.sar-banner-anchor {
-  color: var(--sar-banner-link-color);
-  text-decoration: underline;
-}
-
 .sar-banner-quote + .sar-banner-link {
   margin-block-start: var(--sar-space-0);
 }
 
 .sar-banner-action:focus-visible,
-.sar-banner-link:focus-visible,
-.sar-banner-anchor:focus-visible {
+.sar-banner-link:focus-visible {
   outline: var(--sar-focus-width) solid var(--sar-focus-color);
   outline-offset: var(--sar-focus-offset);
 }

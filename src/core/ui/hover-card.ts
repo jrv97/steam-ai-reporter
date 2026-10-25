@@ -235,7 +235,6 @@ export function createHoverCard(
       case "message":
         return line("sar-hovercard-detail", i18n.t(detail.key));
       case "text":
-      case "link":
         return line("sar-hovercard-detail", detail.text);
       case "quote": {
         const quote = line("sar-hovercard-notes", normalizeBreaks(detail.text));

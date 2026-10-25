@@ -15,10 +15,6 @@ const COLUMN_SELECTOR = ".game_description_column";
 /** An `aria-live` token, not copy. */
 const POLITE = "polite";
 
-/** Link target and relation tokens, not copy. */
-const NEW_TAB = "_blank";
-const NO_REFERRER = "noopener noreferrer";
-
 /** What the banner's buttons do outside the banner. Each rejects when storage fails. */
 export interface BannerActions {
   /** Ignores the game in the scope: for one kind, or for all kinds. */
@@ -79,6 +75,16 @@ function partId(scope: string, part: string): string {
   return `sar-banner-${scope}-${part}`;
 }
 
+/**
+ * The developer's own long text and what labels it. Steam's short lines for a kind stay in
+ * Steam's own boxes on the page and in the hover card.
+ */
+type DeveloperText = Extract<KindDetail, { readonly kind: "quote" | "labeled"; }>;
+
+function isDeveloperText(detail: KindDetail): detail is DeveloperText {
+  return detail.kind === "quote" || detail.kind === "labeled";
+}
+
 function sameView(a: BannerView, b: BannerView): boolean {
   return a.shown.length === b.shown.length
     && a.shown.every((verdict, index) => verdict === b.shown[index])
@@ -88,8 +94,8 @@ function sameView(a: BannerView, b: BannerView): boolean {
 
 /**
  * The app page banner, in a shadow root so store CSS cannot reach it. It lists each disclosed kind
- * in Steam's words with the developer's text set through `textContent`. An ignored scope becomes
- * a note with Undo; one delegated click listener serves every button.
+ * as Steam's line with an ignore button; the AI kind adds the developer's text, set through
+ * `textContent`. An ignored scope becomes a note with Undo; one delegated listener serves clicks.
  */
 export function createBanner(
   doc: Document,
@@ -177,41 +183,17 @@ export function createBanner(
     });
   }
 
-  /** The developer's short text, as a link where the store hosts the agreement. */
-  function appendLink(entry: HTMLElement, text: string, url: string): void {
-    const line = element("p", "sar-banner-detail");
-    const anchor = element("a", "sar-banner-anchor", text);
-    anchor.href = url;
-    anchor.target = NEW_TAB;
-    anchor.rel = NO_REFERRER;
-    line.append(anchor);
+  function appendDetail(entry: HTMLElement, detail: DeveloperText, quoteId: string): void {
+    if (detail.kind === "quote") {
+      appendQuote(entry, quoteId, detail.text);
+      return;
+    }
+    const line = element("p", "sar-banner-service", i18n.t(detail.key));
+    line.append(" ", element("span", "sar-banner-service-name", detail.text));
     entry.append(line);
   }
 
-  function appendDetail(entry: HTMLElement, detail: KindDetail, quoteId: string): void {
-    switch (detail.kind) {
-      case "message":
-        entry.append(element("p", "sar-banner-detail", i18n.t(detail.key)));
-        break;
-      case "text":
-        entry.append(element("p", "sar-banner-detail", detail.text));
-        break;
-      case "link":
-        appendLink(entry, detail.text, detail.url);
-        break;
-      case "quote":
-        appendQuote(entry, quoteId, detail.text);
-        break;
-      case "labeled": {
-        const line = element("p", "sar-banner-service", i18n.t(detail.key));
-        line.append(" ", element("span", "sar-banner-service-name", detail.text));
-        entry.append(line);
-        break;
-      }
-    }
-  }
-
-  /** One kind: Steam's line as the heading, its own ignore button, then the details. */
+  /** One kind: Steam's line as the heading and its own ignore button, then the developer's text. */
   function buildEntry(verdict: AnyDisclosed): HTMLElement {
     const entry = element("div", "sar-banner-entry");
     const titleId = partId(verdict.kind, "title");
@@ -230,8 +212,8 @@ export function createBanner(
     const head = element("div", "sar-banner-head");
     head.append(title, ignore);
     entry.append(head);
-    for (const detail of kindDetails(verdict)) {
-      appendDetail(entry, detail, partId(verdict.kind, "notes"));
+    for (const [index, detail] of kindDetails(verdict).filter(isDeveloperText).entries()) {
+      appendDetail(entry, detail, `${partId(verdict.kind, "notes")}-${String(index)}`);
     }
     return entry;
   }
