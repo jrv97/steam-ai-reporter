@@ -78,7 +78,7 @@
     "description": "Steam's own line for a game whose anti-cheat runs at kernel level. It titles the entry in the hover card and begins the screen reader name of the chip. Use the wording Steam shows in this language."
   },
   "kind_kernel_chip": {
-    "message": "Kernel AC",
+    "message": "KLAC",
     "description": "Short chip for a game with kernel level anti-cheat. Keep it short; it sits in a row and over game images."
   },
   "kind_kernel_uninstall": {
@@ -155,7 +155,7 @@
     "placeholders": {
       "chip": {
         "content": "$1",
-        "example": "Kernel AC"
+        "example": "KLAC"
       },
       "heading": {
         "content": "$2",
