@@ -1,7 +1,7 @@
 import * as v from "valibot";
 import type { SteamLanguage } from "../i18n/locale";
 import { parseJson } from "../json";
-import { kindsFromGetItems, type KindVerdicts, UNKNOWN_KINDS } from "../kinds/verdicts";
+import { kindsFromGetItems, type KindVerdicts, UNKNOWN_KINDS, withParent } from "../kinds/verdicts";
 import type { Detector, Http, HttpResponse, HttpResult } from "../ports";
 import type { AppId, UnknownReason } from "../types";
 import {
@@ -128,13 +128,16 @@ function batchItems(result: HttpResult): BatchItems {
   }
 }
 
-/** Every kind's verdict for one item; unknown `missing` when the item has no usable details. */
+/**
+ * Every kind's verdict for one item, with the base game of a DLC; unknown `missing` when the item
+ * has no usable details.
+ */
 function itemVerdicts(item: StoreItem, language: SteamLanguage): KindVerdicts {
   const details = item.extra_details;
   if (item.success !== ERESULT_OK || details === undefined) {
     return UNKNOWN_KINDS.missing;
   }
-  return kindsFromGetItems(item, details, language);
+  return withParent(kindsFromGetItems(item, details, language), item.related_items?.parent_appid);
 }
 
 /**

@@ -98,9 +98,15 @@ const CategoriesSchema = record({
 });
 
 /**
+ * The base game a DLC belongs to (`parent_appid`). It only adds detail, so a value that is not an
+ * app ID, or an item that is not a DLC, reads as no parent and never costs the item its verdicts.
+ */
+const RelatedItemsSchema = record({ parent_appid: droppable(AppIdSchema) });
+
+/**
  * One store item. `id` echoes the requested ID; `appid` is 0 for invalid items and unused.
- * The name and the categories are lenient. An item without a valid `id`, `success` or
- * `extra_details` says nothing about any kind.
+ * The name and the categories are lenient, and `related_items` is droppable. An item without a
+ * valid `id`, `success` or `extra_details` says nothing about any kind.
  */
 export const StoreItemSchema = v.pipe(
   v.object({
@@ -108,6 +114,7 @@ export const StoreItemSchema = v.pipe(
     success: v.number(),
     name: lenient(TextSchema),
     categories: lenient(CategoriesSchema),
+    related_items: droppable(RelatedItemsSchema),
     extra_details: v.exactOptional(ExtraDetailsSchema),
   }),
   v.readonly(),

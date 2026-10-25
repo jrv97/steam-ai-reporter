@@ -47,6 +47,8 @@ interface ViewOptions {
   readonly verdict?: AiVerdict;
   readonly verdicts?: KindVerdicts;
   readonly ignored?: readonly AllowScope[];
+  /** The scopes the base game of a DLC is ignored in, which silence the kinds they cover. */
+  readonly baseIgnored?: readonly AllowScope[];
   /** Kinds whose banner entry is switched off. */
   readonly bannerOff?: readonly KindId[];
   /** Kinds whose badge is switched off. */
@@ -55,9 +57,13 @@ interface ViewOptions {
 
 function view(options: ViewOptions = {}): AppPageView {
   const { verdict = disclosedVerdict(), ignored = [], bannerOff = [], badgeOff = [] } = options;
+  const { baseIgnored = [] } = options;
+  const covers = (scopes: readonly AllowScope[], kind: KindId) =>
+    scopes.includes("all") || scopes.includes(kind);
   return {
     verdicts: options.verdicts ?? aiVerdicts(verdict),
     ignored: perScope((scope) => ignored.includes(scope)),
+    suppressed: perKind((kind) => covers(ignored, kind.id) || covers(baseIgnored, kind.id)),
     badge: perKind((kind) => !badgeOff.includes(kind.id)),
     banner: perKind((kind) => !bannerOff.includes(kind.id)),
   };
@@ -177,6 +183,35 @@ describe("createAppPageUi", () => {
     expect(notes()).toEqual([
       i18n.t("banner_ignored_kind", { heading: i18n.t("kind_ai_heading") }),
     ]);
+  });
+
+  it("shows a DLC of a base game ignored for one kind its other entries, with no note", () => {
+    setup().render(view({ verdicts: capturedVerdicts(1808500), baseIgnored: ["ai"] }));
+    expect(chipKinds()).toEqual(["kernel", "eula", "pvp"]);
+    expect(headings()).toEqual([
+      i18n.t("kind_kernel_heading"),
+      i18n.t("kind_eula_heading"),
+      i18n.t("kind_pvp_heading"),
+    ]);
+    expect(notes()).toEqual([]);
+  });
+
+  it("shows a DLC of a base game ignored for all tags no banner and no section", () => {
+    setup().render(view({ verdicts: capturedVerdicts(1808500), baseIgnored: ["all"] }));
+    expect(bannerHost()).toBeNull();
+    expect(section()).toBeNull();
+    expect(document.body.innerHTML).toBe(PAGE);
+  });
+
+  it("keeps the note and Undo of a DLC ignored on its own beside a base game that is too", () => {
+    setup().render(
+      view({ verdicts: capturedVerdicts(1808500), ignored: ["ai"], baseIgnored: ["ai", "pvp"] }),
+    );
+    expect(chipKinds()).toEqual(["kernel", "eula"]);
+    expect(notes()).toEqual([
+      i18n.t("banner_ignored_kind", { heading: i18n.t("kind_ai_heading") }),
+    ]);
+    expect(headings()).toEqual([i18n.t("kind_kernel_heading"), i18n.t("kind_eula_heading")]);
   });
 
   it("drops only the chip of a kind whose badge is off, and keeps its banner entry", () => {

@@ -21,7 +21,10 @@ export type BadgeSlot =
 export interface HostView {
   readonly host: Element;
   readonly verdicts: KindVerdicts;
-  /** Per kind: the game is on the allow-list, so nothing marks it, in lists or on badges. */
+  /**
+   * Per kind: the game, or the base game of a DLC, is on the allow-list, so nothing marks it, in
+   * lists or on badges.
+   */
   readonly allowed: Readonly<Record<KindId, boolean>>;
   /** Per kind: the kind's badge shows, by its settings. Ignored games and other states aside. */
   readonly badged: Readonly<Record<KindId, boolean>>;

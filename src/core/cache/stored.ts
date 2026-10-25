@@ -3,13 +3,13 @@ import { type JsonValue, toJsonValue } from "../json";
 import type { KindId } from "../kinds/id";
 import type { TagKind } from "../kinds/kind";
 import { KINDS } from "../kinds/registry";
-import { isKindVerdicts, type KindVerdict, type KindVerdicts } from "../kinds/verdicts";
-import { NOT_DISCLOSED, UNKNOWN, VerdictSourceSchema } from "../types";
+import { isKindVerdicts, type KindVerdict, type KindVerdicts, withParent } from "../kinds/verdicts";
+import { AppIdSchema, NOT_DISCLOSED, UNKNOWN, VerdictSourceSchema } from "../types";
 import { isStoredReason, STORED_REASONS } from "./ttl";
 
-// An app is stored as `v1:a:<appid>`: its fetch time and one entry per kind. A disclosed entry is
-// the verdict, read back with its kind's schema. Storage is untrusted, so a read that fails is
-// discarded.
+// An app is stored as `v1:a:<appid>`: its fetch time, one entry per kind and, for a DLC, its base
+// game. A disclosed entry is the verdict, read back with its kind's schema. Storage is untrusted,
+// so a read that fails is discarded, and the app is fetched again.
 
 const TimeSchema = v.pipe(v.number(), v.finite());
 
@@ -18,10 +18,14 @@ const StoredOtherSchema = v.variant("state", [
   v.object({ state: v.literal("unknown"), reason: v.picklist(STORED_REASONS) }),
 ]);
 
-/** The entries stay `unknown` here and are validated kind by kind. */
+/**
+ * The entries stay `unknown` here and are validated kind by kind. `parent` is the base game of a
+ * DLC; an entry whose `parent` is not an app ID is invalid, so that app is fetched again.
+ */
 const StoredAppSchema = v.object({
   time: TimeSchema,
   kinds: v.record(v.string(), v.unknown()),
+  parent: v.exactOptional(AppIdSchema),
 });
 
 /** An app's verdicts and the time (ms since the epoch) they were fetched. */
@@ -67,7 +71,9 @@ export function decodeVerdicts(stored: unknown): TimedVerdicts | undefined {
     }
     verdicts[kind.id] = verdict;
   }
-  return isKindVerdicts(verdicts) ? { verdicts, time: app.output.time } : undefined;
+  return isKindVerdicts(verdicts)
+    ? { verdicts: withParent(verdicts, app.output.parent), time: app.output.time }
+    : undefined;
 }
 
 function encodeVerdict(verdict: KindVerdict): JsonValue | undefined {
@@ -98,5 +104,5 @@ export function encodeVerdicts(verdicts: KindVerdicts, time: number): JsonValue 
     }
     kinds[kind.id] = entry;
   }
-  return { time, kinds };
+  return verdicts.parent === undefined ? { time, kinds } : { time, kinds, parent: verdicts.parent };
 }

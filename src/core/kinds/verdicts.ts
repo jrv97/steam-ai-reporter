@@ -1,6 +1,12 @@
 import type { ExtraDetails, StoreItem } from "../detect/getitems.schema";
 import type { SteamLanguage } from "../i18n/locale";
-import { type DisclosedBase, UNKNOWN, type UnknownReason, type Verdict } from "../types";
+import {
+  type AppId,
+  type DisclosedBase,
+  UNKNOWN,
+  type UnknownReason,
+  type Verdict,
+} from "../types";
 import type { KindId } from "./id";
 import type { KindDefinition, TagKind } from "./kind";
 import { holdsEveryKind, KINDS, perKind } from "./registry";
@@ -14,12 +20,30 @@ export type AnyDisclosed = DisclosedOf<TagKind>;
 export type KindVerdict = Verdict<AnyDisclosed>;
 
 /**
- * What core knows about one app: a verdict for every registered kind, in the shape of that kind.
- * A verdict has the three states of rule 4. A missing answer is unknown, never not disclosed.
+ * The base game of a DLC, from Valve's `related_items.parent_appid`. Absent when the app has none,
+ * when Valve did not send one and when the answer came from a source that does not know it (the
+ * app page). The ignore list follows it (`isIgnored`); no verdict reads it.
  */
-export type KindVerdicts = {
+export interface BaseGame {
+  readonly parent?: AppId;
+}
+
+/** A verdict for every registered kind, in the shape of that kind. */
+type PerKindVerdicts = {
   readonly [Id in KindId]: Verdict<Extract<AnyDisclosed, DisclosedBase<Id>>>;
 };
+
+/**
+ * What core knows about one app: a verdict for every registered kind, in the shape of that kind,
+ * and the base game when it is a DLC. A verdict has the three states of rule 4. A missing answer
+ * is unknown, never not disclosed.
+ */
+export type KindVerdicts = PerKindVerdicts & BaseGame;
+
+/** The verdicts with `parent` as the base game; the same object when there is none to add. */
+export function withParent(verdicts: KindVerdicts, parent: AppId | undefined): KindVerdicts {
+  return parent === undefined ? verdicts : { ...verdicts, parent };
+}
 
 function sitsUnderItsKind(id: KindId, verdict: KindVerdict): boolean {
   return verdict.state !== "disclosed" || verdict.kind === id;

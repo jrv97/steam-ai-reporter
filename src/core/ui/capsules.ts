@@ -51,8 +51,11 @@ export interface CapsuleUiOptions {
   readonly detector: Detector;
   /** Drawn in order for every host: state marks, badges. */
   readonly renderers: readonly HostRenderer[];
-  /** Whether the game is on the allow-list for the kind now. */
-  readonly isAllowed: (id: AppId, kind: KindId) => boolean;
+  /**
+   * Whether the game is ignored for the kind now. `parent` is the game's base game when it is a
+   * DLC and Valve's data named one.
+   */
+  readonly isAllowed: (id: AppId, kind: KindId, parent: AppId | undefined) => boolean;
   /** Whether the kind's badges show now, by its settings. */
   readonly isBadged: (kind: KindId) => boolean;
   /** Schedules a read-then-write pass; `requestAnimationFrame` by default. */
@@ -63,7 +66,10 @@ export interface CapsuleUiOptions {
 
 /** The scanner's renderer, plus a way to draw known hosts again after a change. */
 export interface CapsuleUi extends CapsuleRenderer {
-  /** Draws every known host again, or only those of `ids`, as after an allow-list change. */
+  /**
+   * Draws every known host again, or only those of `ids` and the DLC whose base game is in `ids`,
+   * as after an allow-list change.
+   */
   refresh(ids?: ReadonlySet<AppId>): void;
   /** Stops watching image boxes and listening for `pagehide`. */
   stop(): void;
@@ -197,7 +203,7 @@ export function createCapsuleUi(options: CapsuleUiOptions): CapsuleUi {
       }
       let shows = false;
       for (const kind of KINDS) {
-        allowed[kind.id] = isAllowed(host.appId, kind.id);
+        allowed[kind.id] = isAllowed(host.appId, kind.id, verdicts.parent);
         badged[kind.id] = isBadged(kind.id);
         shows ||= verdicts[kind.id].state === "disclosed" && !allowed[kind.id]
           && badged[kind.id];
@@ -228,6 +234,12 @@ export function createCapsuleUi(options: CapsuleUiOptions): CapsuleUi {
         renderer.render(view);
       }
     }
+  }
+
+  /** Whether the host shows one of `ids` or a DLC of one of them. */
+  function concerns(ids: ReadonlySet<AppId>, record: HostRecord): boolean {
+    const parent = record.verdicts?.parent;
+    return ids.has(record.host.appId) || (parent !== undefined && ids.has(parent));
   }
 
   function queue(record: HostRecord): void {
@@ -277,7 +289,7 @@ export function createCapsuleUi(options: CapsuleUiOptions): CapsuleUi {
     refresh(ids) {
       for (const element of doc.querySelectorAll(`[${HOST_APPID}]`)) {
         const record = records.get(element);
-        if (record?.verdicts !== undefined && (ids === undefined || ids.has(record.host.appId))) {
+        if (record?.verdicts !== undefined && (ids === undefined || concerns(ids, record))) {
           queue(record);
         }
       }

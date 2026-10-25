@@ -1,11 +1,18 @@
 import * as v from "valibot";
 import { describe, expect, it } from "vitest";
+import { appId } from "../../../tests/helpers/app-ids";
 import { parsedItem } from "../../../tests/helpers/getitems";
 import { FULL_DISCLOSED } from "../../../tests/helpers/verdicts";
 import { UNKNOWN, type UnknownReason } from "../types";
 import { KIND_IDS } from "./id";
 import { KINDS } from "./registry";
-import { isKindVerdicts, kindsFromGetItems, sameVerdicts, UNKNOWN_KINDS } from "./verdicts";
+import {
+  isKindVerdicts,
+  kindsFromGetItems,
+  sameVerdicts,
+  UNKNOWN_KINDS,
+  withParent,
+} from "./verdicts";
 
 const REASONS: readonly UnknownReason[] = ["gated", "missing", "error", "rate-limited"];
 
@@ -17,6 +24,22 @@ describe("UNKNOWN_KINDS", () => {
         expect(UNKNOWN_KINDS[reason][id]).toBe(UNKNOWN[reason]);
       }
     }
+  });
+});
+
+describe("withParent", () => {
+  it("returns the same verdicts when there is no base game", () => {
+    expect(withParent(FULL_DISCLOSED, undefined)).toBe(FULL_DISCLOSED);
+  });
+
+  it("adds the base game without touching the shared objects or the verdicts", () => {
+    const dlc = withParent(UNKNOWN_KINDS.missing, appId(7));
+    expect(dlc.parent).toBe(7);
+    expect(UNKNOWN_KINDS.missing).not.toHaveProperty("parent");
+    for (const id of KIND_IDS) {
+      expect(dlc[id]).toBe(UNKNOWN_KINDS.missing[id]);
+    }
+    expect(isKindVerdicts(dlc)).toBe(true);
   });
 });
 

@@ -1,5 +1,5 @@
 import type { SteamLanguage } from "./i18n/locale";
-import type { IgnoredGames } from "./ignored";
+import { type IgnoredGames, isIgnored } from "./ignored";
 import type { KindId } from "./kinds/id";
 import { effectiveSettings } from "./kinds/kind-settings";
 import { KINDS, perKind } from "./kinds/registry";
@@ -8,6 +8,7 @@ import {
   type KindVerdict,
   type KindVerdicts,
   UNKNOWN_KINDS,
+  withParent,
 } from "./kinds/verdicts";
 import type { Logger } from "./log";
 import type { Detector, MessageCatalog } from "./ports";
@@ -63,6 +64,7 @@ function mergeKind(
 /**
  * The verdicts of an English page read from its own document, merged with Steam's data for the
  * game. Only a kind that can be read from the page (`fromAppPage`) takes the page into account.
+ * The base game of a DLC comes from the data alone, as the page does not carry it.
  */
 export function mergeVerdicts(
   page: KindVerdicts,
@@ -75,7 +77,7 @@ export function mergeVerdicts(
       ? data[kind.id]
       : mergeKind(kind.id, page[kind.id], data[kind.id], disagree);
   }
-  return isKindVerdicts(merged) ? merged : data;
+  return isKindVerdicts(merged) ? withParent(merged, data.parent) : data;
 }
 
 /**
@@ -155,6 +157,7 @@ export function startAppPage(
     return {
       verdicts: known,
       ignored: perScope((scope) => deps.ignored[scope].has(id)),
+      suppressed: perKind((kind) => isIgnored(deps.ignored, id, kind.id, known.parent)),
       badge: perKind((kind) => effectiveSettings(kinds[kind.id]).badge),
       banner: perKind((kind) => effectiveSettings(kinds[kind.id]).banner),
     };

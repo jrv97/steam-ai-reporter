@@ -7,7 +7,7 @@ import { aiVerdicts, disclosedVerdict, NOT_DISCLOSED } from "../../tests/helpers
 import { mergeVerdicts, translatedVerdicts } from "./app-page";
 import { parseAppPage } from "./detect/app-page";
 import { KINDS } from "./kinds/registry";
-import { UNKNOWN_KINDS } from "./kinds/verdicts";
+import { UNKNOWN_KINDS, withParent } from "./kinds/verdicts";
 import { UNKNOWN } from "./types";
 
 const ID = appId(5072580);
@@ -90,6 +90,15 @@ describe("mergeVerdicts", () => {
     expect(mergeVerdicts(page, data, none).kernel).toBe(data.kernel);
   });
 
+  it("takes the base game of a DLC from Steam's data, as the page does not carry it", () => {
+    const data = withParent(capturedVerdicts(1808500), appId(1808500));
+    const merged = mergeVerdicts(pageOf("5072580-ai-first.html"), data, none);
+    expect(merged.parent).toBe(1808500);
+    expect(mergeVerdicts(pageOf("413150-no-block.html"), data, none).parent).toBe(1808500);
+    expect(mergeVerdicts(pageOf("413150-no-block.html"), capturedVerdicts(813230), none))
+      .not.toHaveProperty("parent");
+  });
+
   it("holds a verdict for every kind", () => {
     const merged = mergeVerdicts(UNKNOWN_KINDS.missing, UNKNOWN_KINDS.error, none);
     expect(Object.keys(merged)).toStrictEqual(KINDS.map((kind) => kind.id));
@@ -114,6 +123,13 @@ describe("translatedVerdicts", () => {
     expect(verdicts.ai).toBe(fresh);
     expect(verdicts.kernel).toBe(stored.kernel);
     expect(getItems.calls).toEqual([[ID]]);
+  });
+
+  it("keeps the base game of a DLC when the notes are asked for again", async () => {
+    const stored = withParent(capturedVerdicts(1808500), appId(1000));
+    const fresh = disclosedVerdict({ language: "german", notes: "Deutsche Hinweise." });
+    const getItems = fakeDetector(() => aiVerdicts(fresh));
+    expect((await translatedVerdicts(ID, "german", stored, getItems)).parent).toBe(1000);
   });
 
   it("keeps the stored verdicts when the second answer is no disclosure", async () => {

@@ -6,12 +6,14 @@ import {
   FULL_DISCLOSED,
   NOT_DISCLOSED,
 } from "../../../tests/helpers/verdicts";
+import { isIgnored } from "../ignored";
 import type { AiVerdict } from "../kinds/ai";
 import { KIND_IDS, type KindId } from "../kinds/id";
 import type { KindVerdicts } from "../kinds/verdicts";
 import type { Detector } from "../ports";
 import { GENERIC, type Placement, type RowPlacement } from "../scan/placements";
 import type { CapsuleHost } from "../scan/renderer";
+import { perScope } from "../settings/allow-data";
 import { type AppId, toAppId } from "../types";
 import { createCapsuleUi, type SizeWatch } from "./capsules";
 import type { HostView } from "./host";
@@ -41,6 +43,9 @@ function setup(
   others: Partial<KindVerdicts> = {},
   /** Kinds whose badges are off in the settings. */
   unbadged: ReadonlySet<KindId> = new Set(),
+  /** What decides whether a game is ignored; the set of `allowed` IDs by default. */
+  isAllowed: (id: AppId, kind: KindId, parent: AppId | undefined) => boolean = (id) =>
+    allowed.has(id),
 ) {
   const detect = vi.fn((ids: readonly AppId[]) =>
     Promise.resolve(
@@ -63,7 +68,7 @@ function setup(
       render: (view) =>
         views.push({ ...view, allowed: { ...view.allowed }, badged: { ...view.badged } }),
     }],
-    isAllowed: (id) => allowed.has(id),
+    isAllowed,
     isBadged: (kind) => !unbadged.has(kind),
     frame: (callback) => frames.push(callback),
     watchSize: (onSized): SizeWatch => {
@@ -307,5 +312,101 @@ describe("createCapsuleUi", () => {
     ui.refresh(new Set([appId(12)]));
     await flush();
     expect(views).toHaveLength(2);
+  });
+
+  describe("for a DLC", () => {
+    const BASE = appId(1808500);
+    const DLC = appId(5201760);
+
+    /** The real predicate over an ignore list, as the composition root wires it. */
+    function ignoring(setupList: (ignored: ReturnType<typeof lists>) => void) {
+      const ignored = lists();
+      setupList(ignored);
+      return (id: AppId, kind: KindId, parent: AppId | undefined) =>
+        isIgnored(ignored, id, kind, parent);
+    }
+    const lists = () => perScope(() => new Set<AppId>());
+
+    it("asks whether the game is ignored with the base game Steam named", async () => {
+      const asked = vi.fn((_id: AppId, _kind: KindId, _parent: AppId | undefined) => false);
+      const { ui, flush } = setup(
+        new Map([[DLC, disclosedVerdict()]]),
+        new Set(),
+        { parent: BASE },
+        new Set(),
+        asked,
+      );
+      ui.render({ found: [host(5201760)], changed: [] });
+      await flush();
+      expect(asked).toHaveBeenCalledWith(DLC, "ai", BASE);
+      expect(asked).toHaveBeenCalledTimes(KIND_IDS.length);
+    });
+
+    it("flags a DLC of a base game ignored for one kind in that kind only", async () => {
+      const isAllowed = ignoring((ignored) => ignored.ai.add(BASE));
+      const { ui, views, flush } = setup(
+        new Map([[DLC, disclosedVerdict()]]),
+        new Set(),
+        { parent: BASE, pvp: FULL_DISCLOSED.pvp },
+        new Set(),
+        isAllowed,
+      );
+      ui.render({ found: [host(5201760)], changed: [] });
+      await flush();
+      expect(views[0]?.allowed.ai).toBe(true);
+      expect(views[0]?.allowed.pvp).toBe(false);
+      expect(views[0]?.slot).toMatchObject({ kind: "full" });
+    });
+
+    it("gives a DLC whose only disclosure is ignored through its base game no slot", async () => {
+      const isAllowed = ignoring((ignored) => ignored.all.add(BASE));
+      const { ui, views, flush } = setup(
+        new Map([[DLC, disclosedVerdict()]]),
+        new Set(),
+        { parent: BASE },
+        new Set(),
+        isAllowed,
+      );
+      ui.render({ found: [host(5201760)], changed: [] });
+      await flush();
+      expect(views[0]?.slot).toBeUndefined();
+      expect(KIND_IDS.every((kind) => views[0]?.allowed[kind] === true)).toBe(true);
+    });
+
+    it("draws the DLC again when its base game is ignored or restored, and only then", async () => {
+      const ignored = lists();
+      const { ui, views, flush } = setup(
+        new Map([[DLC, disclosedVerdict()]]),
+        new Set(),
+        { parent: BASE },
+        new Set(),
+        (id, kind, parent) => isIgnored(ignored, id, kind, parent),
+      );
+      ui.render({ found: [host(5201760)], changed: [] });
+      await flush();
+      ignored.ai.add(BASE);
+      ui.refresh(new Set([BASE]));
+      await flush();
+      ui.refresh(new Set([appId(12)]));
+      await flush();
+      ignored.ai.delete(BASE);
+      ui.refresh(new Set([BASE]));
+      await flush();
+      expect(views.map((view) => view.allowed.ai)).toEqual([false, true, false]);
+    });
+
+    it("leaves a DLC with no known base game on its own entries", async () => {
+      const isAllowed = ignoring((ignored) => ignored.all.add(BASE));
+      const { ui, views, flush } = setup(
+        new Map([[DLC, disclosedVerdict()]]),
+        new Set(),
+        {},
+        new Set(),
+        isAllowed,
+      );
+      ui.render({ found: [host(5201760)], changed: [] });
+      await flush();
+      expect(views[0]?.allowed.ai).toBe(false);
+    });
   });
 });
