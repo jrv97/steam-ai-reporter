@@ -1,8 +1,8 @@
 import { type App, start } from "../../core/app";
 import { createFetchHttp, type Fetch } from "../../core/http";
 import { SHIPPED_CATALOGS } from "../../core/i18n/shipped";
+import { createIgnoreLists } from "../../core/ignored";
 import { type ConsoleSink, createLogger } from "../../core/log";
-import { createAllowList } from "../../core/settings/allow-list";
 import { createSettingsSource } from "../../core/settings/settings-source";
 import { createSectionState } from "../../core/ui/section-state";
 import { adoptPageStyles, PAGE_CSS, TOKENS_CSS } from "../../core/ui/styles";
@@ -58,7 +58,7 @@ export async function startUserscript(env: UserscriptEnv): Promise<App | undefin
         i18n: await currentI18n(doc, settings, SHIPPED_CATALOGS, browserLang),
         catalogs: SHIPPED_CATALOGS,
         settings,
-        allowList: createAllowList(store, clock),
+        lists: createIgnoreLists(store, clock),
         sectionState: createSectionState(store),
         live: remote !== undefined,
       });

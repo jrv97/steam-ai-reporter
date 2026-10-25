@@ -2,9 +2,9 @@ import * as v from "valibot";
 import { resolveLocale } from "../../core/i18n/locale";
 import { SHIPPED_CATALOGS } from "../../core/i18n/shipped";
 import { type BareMessageKey, createI18n, type I18n } from "../../core/i18n/t";
-import { createAllowList } from "../../core/settings/allow-list";
+import { createIgnoreLists } from "../../core/ignored";
 import { AUTO_LOCALE, parseSettings } from "../../core/settings/settings";
-import { ALLOW_KEY } from "../../core/storage-keys";
+import { ALLOW_KEY, CREATOR_ALLOW_KEYS } from "../../core/storage-keys";
 import { createSectionState } from "../../core/ui/section-state";
 import { mountSettingsForm, type SettingsContext } from "../../core/ui/settings-form";
 import { extensionUrl, extensionVersion, localStorageArea, onLocalChanged } from "./ext";
@@ -47,7 +47,7 @@ async function main(): Promise<void> {
   const context = pageContext();
   const store = createExtensionStore(localStorageArea);
   const settings = createExtensionSettings(store, onLocalChanged);
-  const allowList = createAllowList(store, { now: () => Date.now() });
+  const lists = createIgnoreLists(store, { now: () => Date.now() });
   const catalogs = SHIPPED_CATALOGS;
 
   let setting: string = AUTO_LOCALE;
@@ -66,7 +66,7 @@ async function main(): Promise<void> {
   const form = await mountSettingsForm(document.body, {
     i18n,
     settings,
-    allowList,
+    lists,
     sectionState: createSectionState(store),
     context,
     colors: context === "page",
@@ -82,9 +82,10 @@ async function main(): Promise<void> {
     }
   });
 
-  // A game stopped or marked again on a store page shows up here at once.
+  // A game, developer or publisher ignored or restored on a store page shows up here at once.
+  const listKeys = [ALLOW_KEY, ...Object.values(CREATOR_ALLOW_KEYS)];
   onLocalChanged((changes) => {
-    if (changes[ALLOW_KEY] !== undefined) {
+    if (listKeys.some((key) => changes[key] !== undefined)) {
       void form.refreshAllowList();
     }
   });
