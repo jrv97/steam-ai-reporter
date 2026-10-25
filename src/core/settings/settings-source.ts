@@ -21,9 +21,8 @@ export interface StoredSettings extends SettingsSource {
   /** Replaces the stored settings and tells this context's subscribers. */
   write(settings: Settings): Promise<void>;
   /**
-   * Reads the stored settings at the moment of the call, replaces the fields of `patch` and writes
-   * the result, which it returns. A page that holds older settings changes only what it names.
-   * Patches from one context run one after another; two tabs at once can still lose one.
+   * Replaces the fields of `patch` in the settings stored now, writes them and returns them.
+   * Patches from one context run in turn; two tabs at once can still lose one.
    */
   patch(patch: SettingsPatch): Promise<Settings>;
 }

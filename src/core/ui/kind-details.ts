@@ -49,11 +49,9 @@ function bootProtection(verdict: KernelDisclosed, page: PageDetails): readonly K
 const NO_PAGE_DETAILS: PageDetails = {};
 
 /**
- * What a surface says about a disclosed verdict under the kind's heading: the developer's own
- * text, the names Steam lists, and Steam's notes. `page` holds what only the game's own page
- * knows (the custom anti-cheat name, the boot protection line, the DRM activation limit); the
- * hover card has none. This is the one place that knows each kind's details, so a new kind adds a
- * case here and nothing else in the card or the banner.
+ * The lines a surface shows under a disclosed kind's heading. `page` holds what only the game's
+ * own page knows, and the hover card has none. A new kind adds a case here and nowhere else in
+ * the card or the banner.
  */
 export function kindDetails(
   verdict: AnyDisclosed,

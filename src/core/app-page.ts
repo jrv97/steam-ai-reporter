@@ -33,11 +33,9 @@ function needsTranslation(verdicts: KindVerdicts, language: SteamLanguage): bool
 }
 
 /**
- * The verdicts for the app page the user is on. An English page gives the AI kind's verdict
- * itself, with no request, and every other kind comes from the detector, because the page text
- * holds nothing the other kinds can be read from. Another language takes every kind from the
- * detector; a cached disclosure in another language than the page's is fetched again for this one
- * app, so the banner quotes the developer's own translation.
+ * The verdicts for the app page the visitor is on. An English page gives the AI verdict itself and
+ * the detector gives the other kinds. Another language takes every kind from the detector, and
+ * fetches the AI notes again when the cached ones are in a different language.
  */
 export async function pageVerdicts(
   doc: Document,
@@ -85,10 +83,8 @@ export interface AppPageContext {
 }
 
 /**
- * Draws the game's own page: the banner with one entry per disclosed kind, the page's details
- * for those entries, and the summary row for the AI kind. The banner's buttons ignore the game
- * for one kind or for all of them. Returns the function that draws again from the known verdicts
- * and the current settings.
+ * Draws the game's own page: the banner with an entry per disclosed kind, using the page's own
+ * details, and the AI summary row. Returns the function that draws again from the known verdicts.
  */
 export async function startAppPage(
   doc: Document,

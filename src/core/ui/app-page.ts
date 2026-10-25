@@ -48,9 +48,8 @@ interface Row {
 }
 
 /**
- * What the banner shows: an entry for each disclosed kind that its settings allow and the game is
- * not ignored for, a note for each ignored kind, or one note when the game is ignored for all
- * kinds. Undefined when there is nothing to show.
+ * What the banner shows: an entry for each disclosed kind the settings allow, a note for each
+ * kind the game is ignored for, or one note for all kinds. Undefined when there is nothing.
  */
 function bannerView(view: AppPageView): BannerView | undefined {
   const shown: AnyDisclosed[] = [];
@@ -85,9 +84,8 @@ function summaryVerdict(view: AppPageView, kind: TagKind): AnyDisclosed | undefi
 }
 
 /**
- * Renders the app page per components.mdx ("What renders for each state"): the banner lists every
- * disclosed kind its settings allow, and notes the ones the game is ignored for. The summary row
- * stands for one kind, `summary`: it shows while that kind is disclosed and not ignored.
+ * Renders the app page per components.mdx ("What renders for each state"). The summary row stands
+ * for one kind, `summary`, while that kind is disclosed and not ignored.
  */
 export function createAppPageUi(
   doc: Document,

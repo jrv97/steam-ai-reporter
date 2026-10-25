@@ -135,11 +135,9 @@ function errorKey(field: Field, kind?: KindId): string {
 }
 
 /**
- * Mounts the settings and the ignored games into `root`: the options page, the toolbar popup or
- * the userscript dialog. A section for each tag kind holds its switch, badge, banner entry and
- * list filter. Every change applies at once through the settings port, as a patch of what is
- * stored at that moment; there is no save button. One delegated listener per event type on the
- * root serves every control (rule 13).
+ * Mounts the settings and the ignored games into `root`: the options page, the popup or the
+ * userscript dialog. Each change is a patch of the stored settings, applied at once. One
+ * delegated listener per event type on the root serves every control (rule 13).
  */
 export async function mountSettingsForm(
   root: HTMLElement,

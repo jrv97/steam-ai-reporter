@@ -10,7 +10,7 @@ import { KIND_ATTRIBUTE } from "./kind-attributes";
 const DEV_ROW_SELECTOR = ".glance_ctn_responsive_left .dev_row";
 
 /**
- * The summary box row: the badge label's chip alone, in the column of the store's Developer and
+ * The summary box row: the kind's chip alone, in the column of the store's Developer and
  * Publisher values. With the banner on it is a link to the banner, and `jump` handles the click
  * (scroll and focus, no history entry); without the banner it is a focusable row that opens the
  * hover card, when one is given. The row is its own root, with one listener.

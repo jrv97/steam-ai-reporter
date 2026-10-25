@@ -90,11 +90,9 @@ function sameView(a: BannerView, b: BannerView): boolean {
 }
 
 /**
- * The app page banner: a store notice bubble in our hue, in a shadow root so store CSS cannot
- * reach it. It lists every disclosed kind in Steam's words with the developer's own text, set
- * verbatim through `textContent`, and offers "Ignore for this tag" on each entry and "Ignore this
- * game" for all of them. An ignored scope becomes a one-line note with Undo. One delegated click
- * listener on the shadow root serves every button.
+ * The app page banner, in a shadow root so store CSS cannot reach it. It lists each disclosed kind
+ * in Steam's words with the developer's text set through `textContent`. An ignored scope becomes
+ * a note with Undo; one delegated click listener serves every button.
  */
 export function createBanner(
   doc: Document,
