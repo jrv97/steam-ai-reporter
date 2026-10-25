@@ -1,3 +1,3 @@
 kind: Changed
-body: Settings and the list of ignored games now live in a per-category layout, so more kinds of store reports can be added later. The first start after the update copies your badge, banner, list filter and language settings and your ignored games over, and clears the stored lookup results once, so each game is checked again as you browse. Nothing changes in what you see.
+body: Settings and the list of ignored games now live in a per-tag layout, so more kinds of store declarations can be added later. The first start after the update copies your badge, banner, list filter and language settings and your ignored games to the AI tag, and clears the stored lookup results once, so each game is checked again as you browse. Your old settings stay in storage as they were.
 time: 2026-10-24T23:00:00.0000000+02:00

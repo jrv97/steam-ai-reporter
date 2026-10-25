@@ -2,17 +2,25 @@ import { describe, expect, it, vi } from "vitest";
 import { detectorContract } from "../../../tests/contracts/detector.contract";
 import { appId, appIds } from "../../../tests/helpers/app-ids";
 import { countingStore } from "../../../tests/helpers/counting-store";
+import { fakeDetector } from "../../../tests/helpers/fake-detector";
 import { fixedClock } from "../../../tests/helpers/fixed-clock";
 import { memoryStore } from "../../../tests/helpers/memory-store";
-import { aiVerdicts, disclosedVerdict, NOT_DISCLOSED } from "../../../tests/helpers/verdicts";
-import { type AppId, type Detector, UNKNOWN, type Verdict } from "../types";
+import {
+  aiVerdicts,
+  disclosedVerdict,
+  FULL_DISCLOSED,
+  NOT_DISCLOSED,
+} from "../../../tests/helpers/verdicts";
+import type { AiVerdict } from "../kinds/ai";
+import type { Detector } from "../ports";
+import { type AppId, UNKNOWN } from "../types";
 import { cachedDetector } from "./cached-detector";
 import { createVerdictCache } from "./verdict-cache";
 
 const T = 1_000_000_000_000;
 
 /** A detector that answers from a table (not disclosed by default) and records its calls. */
-function stubDetector(table: ReadonlyMap<AppId, Verdict> = new Map()) {
+function stubDetector(table: ReadonlyMap<AppId, AiVerdict> = new Map()) {
   const calls: (readonly AppId[])[] = [];
   const detector: Detector = {
     detect(ids) {
@@ -25,7 +33,11 @@ function stubDetector(table: ReadonlyMap<AppId, Verdict> = new Map()) {
   return { detector, calls };
 }
 
-function setup(table?: ReadonlyMap<AppId, Verdict>) {
+function memoryCountingStore() {
+  return countingStore(memoryStore());
+}
+
+function setup(table?: ReadonlyMap<AppId, AiVerdict>) {
   const store = countingStore(memoryStore());
   const clock = fixedClock(T);
   const logger = { error: vi.fn<(problem: unknown) => void>() };
@@ -74,6 +86,26 @@ describe("cachedDetector", () => {
     const { detector, inner, clock } = setup();
     await detector.detect(appIds(1));
     clock.advance(12 * 3_600_000);
+    await detector.detect(appIds(1));
+    expect(inner.calls).toHaveLength(2);
+  });
+
+  it("asks again about every kind when the shortest-lived one expires", async () => {
+    // Six kinds hold a seven day verdict; the AI kind holds a twelve hour one.
+    const verdicts = { ...FULL_DISCLOSED, ai: NOT_DISCLOSED };
+    const inner = fakeDetector(() => verdicts);
+    const clock = fixedClock(T);
+    const logger = { error: vi.fn<(problem: unknown) => void>() };
+    const detector = cachedDetector(
+      inner,
+      createVerdictCache(memoryCountingStore(), clock),
+      logger,
+    );
+    await detector.detect(appIds(1));
+    clock.advance(12 * 3_600_000 - 1);
+    expect(await detector.detect(appIds(1))).toStrictEqual(new Map([[appId(1), verdicts]]));
+    expect(inner.calls).toHaveLength(1);
+    clock.advance(1);
     await detector.detect(appIds(1));
     expect(inner.calls).toHaveLength(2);
   });

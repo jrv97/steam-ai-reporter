@@ -5,10 +5,14 @@ import { fixedClock } from "../../../tests/helpers/fixed-clock";
 import { memoryStore } from "../../../tests/helpers/memory-store";
 import type { JsonValue } from "../json";
 import type { AppId } from "../types";
-import type { AllowEntry, AllowScope } from "./allow-data";
+import { type AllowEntry, type AllowScope, perScope } from "./allow-data";
 import { createAllowList } from "./allow-list";
 
 const T = 1_000_000_000_000;
+/** The stored ignore list with no game in any scope. */
+const NO_GAMES = perScope(() => ({}));
+/** The ignored games of every scope, none. */
+const NO_ENTRIES = perScope(() => new Map());
 
 function setup(initial: ReadonlyMap<string, JsonValue> = new Map()) {
   const store = countingStore(memoryStore(initial));
@@ -24,9 +28,41 @@ async function scoped(
   return (await allow.list())[scope];
 }
 
+describe("two quick changes", () => {
+  it("both apply when two games stop being ignored at once", async () => {
+    const { allow } = setup();
+    await allow.add("drm", appId(1), "One");
+    await allow.add("drm", appId(2), "Two");
+    await allow.add("drm", appId(3), "Three");
+    await Promise.all([allow.remove("drm", appId(1)), allow.remove("drm", appId(2))]);
+    expect([...(await scoped(allow, "drm")).keys()]).toEqual([3]);
+  });
+
+  it("keep every game added at once, in two scopes", async () => {
+    const { allow } = setup();
+    await Promise.all([
+      allow.add("drm", appId(1), "One"),
+      allow.add("eula", appId(1), "One"),
+      allow.add("all", appId(2), "Two"),
+    ]);
+    const listed = await allow.list();
+    expect([listed.drm.size, listed.eula.size, listed.all.size]).toEqual([1, 1, 1]);
+  });
+
+  it("run the next change after one that failed", async () => {
+    const { allow, store } = setup();
+    store.break();
+    const failed = allow.add("drm", appId(1), "One");
+    await expect(failed).rejects.toBeInstanceOf(Error);
+    store.heal();
+    await allow.add("drm", appId(2), "Two");
+    expect([...(await scoped(allow, "drm")).keys()]).toEqual([2]);
+  });
+});
+
 describe("createAllowList", () => {
   it("starts empty in every scope", async () => {
-    expect(await setup().allow.list()).toStrictEqual({ all: new Map(), ai: new Map() });
+    expect(await setup().allow.list()).toStrictEqual(NO_ENTRIES);
   });
 
   it("adds a game with its name and the time it was added", async () => {
@@ -56,7 +92,7 @@ describe("createAllowList", () => {
     const { allow, store } = setup();
     await allow.add("ai", appId(10), "Counter-Strike");
     expect(await store.get(["v2:allow"])).toStrictEqual(
-      new Map([["v2:allow", { all: {}, ai: { "10": { name: "Counter-Strike", added: T } } }]]),
+      new Map([["v2:allow", { ...NO_GAMES, ai: { "10": { name: "Counter-Strike", added: T } } }]]),
     );
   });
 
@@ -124,7 +160,10 @@ describe("createAllowList", () => {
         new Map([[10, V1["10"]], [20, V1["20"]]]),
       );
       expect(await scoped(allow, "all")).toStrictEqual(new Map());
-      expect((await store.get(["v2:allow"])).get("v2:allow")).toStrictEqual({ all: {}, ai: V1 });
+      expect((await store.get(["v2:allow"])).get("v2:allow")).toStrictEqual({
+        ...NO_GAMES,
+        ai: V1,
+      });
       expect((await store.get(["v1:allow"])).get("v1:allow")).toStrictEqual(V1);
     });
 
@@ -159,7 +198,7 @@ describe("createAllowList", () => {
     it("discards a value that is not an object", async () => {
       for (const stored of ["x", 3, null, true, [["10", { name: "A", added: T }]]]) {
         const { allow } = setup(new Map([["v2:allow", stored]]));
-        expect(await allow.list()).toStrictEqual({ all: new Map(), ai: new Map() });
+        expect(await allow.list()).toStrictEqual(NO_ENTRIES);
       }
     });
 
@@ -203,7 +242,7 @@ describe("createAllowList", () => {
       const { allow } = setup(
         new Map<string, JsonValue>([["v2:allow", { future: { "10": { name: "A", added: T } } }]]),
       );
-      expect(await allow.list()).toStrictEqual({ all: new Map(), ai: new Map() });
+      expect(await allow.list()).toStrictEqual(NO_ENTRIES);
     });
 
     it("repairs the stored object on the next change", async () => {
@@ -218,7 +257,7 @@ describe("createAllowList", () => {
         new Map([[
           "v2:allow",
           {
-            all: {},
+            ...NO_GAMES,
             ai: { "10": { name: "Good", added: T }, "30": { name: "New", added: T } },
           },
         ]]),

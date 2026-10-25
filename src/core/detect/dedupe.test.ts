@@ -6,7 +6,8 @@ import { fakeHttp } from "../../../tests/helpers/fake-http";
 import { getItemsRequest, getItemsRoute, storeItem } from "../../../tests/helpers/getitems";
 import { aiVerdicts } from "../../../tests/helpers/verdicts";
 import { type KindVerdicts, UNKNOWN_KINDS } from "../kinds/verdicts";
-import type { AppId, Detector } from "../types";
+import type { Detector } from "../ports";
+import type { AppId } from "../types";
 import { createDedupingDetector } from "./dedupe";
 import { createGetItemsDetector } from "./getitems";
 
@@ -49,7 +50,7 @@ describe("createDedupingDetector", () => {
       detector.detect(appIds(413150)),
     ]);
     expect(http.calls).toHaveLength(1);
-    expect(first).toStrictEqual(new Map([[appId(413150), NOT_DISCLOSED]]));
+    expect(first.get(appId(413150))?.ai).toStrictEqual({ state: "not-disclosed", source: "api" });
     expect(second).toStrictEqual(first);
   });
 

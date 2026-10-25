@@ -137,6 +137,15 @@
   border-block-start: 1px solid var(--sar-color-divider);
 }
 
+/* A tag's switches below its master switch: one divider above them, then the usual ones */
+.sar-kind-options {
+  border-block-start: 1px solid var(--sar-color-divider);
+}
+
+.sar-kind-options > .sar-field:first-child {
+  border-block-start: 0;
+}
+
 .sar-field-label {
   color: var(--sar-color-text);
 }
@@ -301,6 +310,17 @@
   margin: 0;
   padding: 0;
   list-style: none;
+}
+
+/* The games of one scope sit under its name: all tags, or one tag's line */
+.sar-allow-group + .sar-allow-group {
+  margin-block-start: var(--sar-space-3);
+}
+
+.sar-allow-scope {
+  margin: 0;
+  color: var(--sar-color-text-strong);
+  font: var(--sar-weight-medium) var(--sar-size-md) / var(--sar-leading-md) var(--sar-font-ext);
 }
 
 .sar-options[data-sar-context="popup"] .sar-allow-list {

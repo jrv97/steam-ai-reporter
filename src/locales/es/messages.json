@@ -43,13 +43,143 @@
       }
     }
   },
-  "badge_label": {
-    "message": "Uso de IA declarado",
-    "description": "The one label for a game whose developer reported generative AI use on Steam's form. It shows on search and wishlist rows, over game images, in a chip in the game's summary box, and as the heading of the hover card and of the notice on the game's page; screen readers read it too. Say that the use was reported; never say the game uses AI. On rows and images it stays on one line and truncates past about 22 characters, so keep it short."
+  "notice_page_disagrees": {
+    "message": "La página de la tienda dice $page$ y los datos de Steam dicen $data$ para la etiqueta $kind$ de la aplicación $app$.",
+    "description": "Logged to the browser console in debug mode when the open game's page and the data Steam returns for it give different answers for one tag. $kind$ is the tag id and $page$ and $data$ are verdict states; keep them as they are.",
+    "placeholders": {
+      "kind": {
+        "content": "$1",
+        "example": "drm"
+      },
+      "app": {
+        "content": "$2",
+        "example": "1808500"
+      },
+      "page": {
+        "content": "$3",
+        "example": "not-disclosed"
+      },
+      "data": {
+        "content": "$4",
+        "example": "disclosed"
+      }
+    }
   },
-  "badge_card_source": {
-    "message": "Citando a los desarrolladores:",
-    "description": "In the hover card on a badge, introduces the developer's text, which follows untranslated."
+  "kind_ai_heading": {
+    "message": "Información sobre contenido generado por IA",
+    "description": "Steam's own heading of the block where a developer describes generative AI use. It titles the AI entry in the hover card, begins the screen reader name of the AI chip and heads the notice on the game's page. Use the wording Steam shows in this language."
+  },
+  "kind_ai_chip": {
+    "message": "IA",
+    "description": "Short chip for a game whose developer filled in Steam's AI disclosure. Keep it to a few characters; it sits in a row and over game images."
+  },
+  "kind_kernel_heading": {
+    "message": "Utiliza antitrampas a nivel de kernel",
+    "description": "Steam's own line for a game whose anti-cheat runs at kernel level. It titles the entry in the hover card and begins the screen reader name of the chip. Use the wording Steam shows in this language."
+  },
+  "kind_kernel_chip": {
+    "message": "Kernel",
+    "description": "Short chip for a game with kernel level anti-cheat. Keep it short; it sits in a row and over game images."
+  },
+  "kind_kernel_uninstall": {
+    "message": "Debe eliminarse a mano después de desinstalar el juego",
+    "description": "Steam's own note in the hover card when a kernel level anti-cheat stays on the computer after the game is uninstalled."
+  },
+  "kind_kernel_boot": {
+    "message": "Protección de arranque - Requiere tanto arranque seguro como TPM 2.0",
+    "description": "Steam's own note in the hover card when the game needs boot protection. Use the wording Steam shows in this language; keep the hyphen between the two parts."
+  },
+  "kind_anticheat_heading": {
+    "message": "Utiliza software antitrampas",
+    "description": "Steam's own line for a game with anti-cheat software that does not run at kernel level. It titles the entry in the hover card and begins the screen reader name of the chip. Use the wording Steam shows in this language."
+  },
+  "kind_anticheat_chip": {
+    "message": "Antitrampas",
+    "description": "Short chip for a game with anti-cheat software. Keep it short; it sits in a row and over game images."
+  },
+  "kind_drm_heading": {
+    "message": "DRM de terceros",
+    "description": "Steam's own line for a game whose developer declared third-party DRM. It titles the entry in the hover card and begins the screen reader name of the chip; the DRM the developer named follows in the card, untranslated."
+  },
+  "kind_drm_chip": {
+    "message": "DRM",
+    "description": "Short chip for a game with third-party DRM. Keep it short; it sits in a row and over game images."
+  },
+  "kind_account_heading": {
+    "message": "Requiere una cuenta de terceros",
+    "description": "Steam's own line for a game that needs an account with another company. It titles the entry in the hover card and begins the screen reader name of the chip; the account the developer named follows in the card, untranslated."
+  },
+  "kind_account_chip": {
+    "message": "Cuenta",
+    "description": "Short chip for a game that requires a third-party account. Keep it short; it sits in a row and over game images."
+  },
+  "kind_account_links": {
+    "message": "(permite la vinculación a una cuenta de Steam)",
+    "description": "Steam's own note in the hover card, under the third-party account, when that account can be linked to the player's Steam account."
+  },
+  "kind_eula_heading": {
+    "message": "Es necesario aceptar un ALUF de terceros",
+    "description": "Steam's own line for a game that makes the player accept an end user license agreement of another company. It titles the entry in the hover card and begins the screen reader name of the chip; the agreement names follow in the card, untranslated."
+  },
+  "kind_eula_chip": {
+    "message": "ALUF",
+    "description": "Short chip for a game with a third-party end user license agreement. Use the abbreviation Steam uses in this language; it sits in a row and over game images."
+  },
+  "kind_pvp_heading": {
+    "message": "JcJ",
+    "description": "Title of the PvP entry in the hover card and start of the screen reader name of the chip. Use the abbreviation Steam uses in this language for player versus player."
+  },
+  "kind_pvp_chip": {
+    "message": "JcJ",
+    "description": "Short chip for a game with a player versus player mode, as its Steam categories say. Use the abbreviation Steam uses in this language."
+  },
+  "kind_pvp_category_pvp": {
+    "message": "JcJ",
+    "description": "Steam's category name for player versus player, listed in the hover card."
+  },
+  "kind_pvp_category_online": {
+    "message": "JcJ en línea",
+    "description": "Steam's category name for online player versus player, listed in the hover card."
+  },
+  "kind_pvp_category_lan": {
+    "message": "JcJ en LAN",
+    "description": "Steam's category name for player versus player over a local network, listed in the hover card."
+  },
+  "kind_pvp_category_split": {
+    "message": "JcJ a pantalla (com)partida",
+    "description": "Steam's category name for player versus player on one shared or split screen, listed in the hover card."
+  },
+  "kind_chip_name": {
+    "message": "$chip$: $heading$",
+    "description": "Screen reader name of a chip: the visible chip text, then Steam's full line for the kind. $chip$ is the chip text and $heading$ the full line.",
+    "placeholders": {
+      "chip": {
+        "content": "$1",
+        "example": "Kernel AC"
+      },
+      "heading": {
+        "content": "$2",
+        "example": "Uses Kernel Level Anti-Cheat"
+      }
+    }
+  },
+  "kind_chip_more": {
+    "message": "+$count$",
+    "description": "Chip that stands for the kinds that do not fit beside the other chips. $count$ is how many kinds it stands for.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "2"
+      }
+    }
+  },
+  "kind_chip_more_name": {
+    "message": "más etiquetas",
+    "description": "After the chip text, names the hidden chips for screen readers, as in \"+2: more tags\"."
+  },
+  "badge_card_declared": {
+    "message": "Declarado por el desarrollador en la página de la tienda",
+    "description": "Last line of the hover card. It says the developer, not this extension, made the declarations above."
   },
   "badge_card_service_label": {
     "message": "Servicios de IA que cita el desarrollador:",
@@ -63,6 +193,10 @@
     "message": "Citando a los desarrolladores:",
     "description": "In the notice on a game's store page, introduces the developer's text, which follows untranslated."
   },
+  "banner_region_label": {
+    "message": "Declarado por el desarrollador",
+    "description": "Screen reader name of the notice on a game's page when it lists more than one kind, or only notes about ignored kinds."
+  },
   "banner_expand": {
     "message": "Ver todo",
     "description": "Expands the collapsed text of the notice."
@@ -71,33 +205,59 @@
     "message": "Ver menos",
     "description": "Collapses the text of the notice again."
   },
-  "banner_service_label": {
-    "message": "Servicios de IA que cita el desarrollador:",
-    "description": "Precedes a product name inserted as data, untranslated."
-  },
   "banner_ignore": {
     "message": "Ignorar este juego",
-    "description": "Button that stops badges and this notice for one game, in this extension only. The store has its own Ignore button; this one does not touch it."
+    "description": "Button on the notice that stops every tag and this notice for one game, in this extension only. The store has its own Ignore button; this one does not touch it."
+  },
+  "banner_ignore_kind": {
+    "message": "Ignorar para esta etiqueta",
+    "description": "Button on one kind's entry in the notice. It stops that kind's badge and entry for one game, in this extension only; the game's other tags stay."
   },
   "banner_ignored": {
     "message": "Juego ignorado",
     "description": "Replaces the notice after \"Ignore this game\"."
   },
+  "banner_ignored_kind": {
+    "message": "Ignorado para esta etiqueta: $heading$",
+    "description": "Replaces one kind's entry in the notice after \"Ignore for this tag\". $heading$ is Steam's line for the kind.",
+    "placeholders": {
+      "heading": {
+        "content": "$1",
+        "example": "Utiliza antitrampas a nivel de kernel"
+      }
+    }
+  },
   "banner_undo": {
     "message": "Deshacer",
     "description": "Reverses \"Ignore this game\"."
-  },
-  "banner_region_label": {
-    "message": "Declaración de uso de IA",
-    "description": "Screen reader name for the one-line note shown instead of the notice."
   },
   "notice_marking_stopped": {
     "message": "Este juego será ignorado",
     "description": "Screen reader announcement after \"Ignore this game\"."
   },
+  "notice_marking_stopped_kind": {
+    "message": "Este juego será ignorado para $heading$",
+    "description": "Screen reader announcement after \"Ignore for this tag\". $heading$ is Steam's line for the tag.",
+    "placeholders": {
+      "heading": {
+        "content": "$1",
+        "example": "Utiliza antitrampas a nivel de kernel"
+      }
+    }
+  },
   "notice_marking_restored": {
     "message": "Este juego ya no será ignorado",
     "description": "Screen reader announcement after \"Undo\" or \"Stop ignoring\"."
+  },
+  "notice_marking_restored_kind": {
+    "message": "Este juego ya no será ignorado para $heading$",
+    "description": "Screen reader announcement after \"Undo\" or \"Stop ignoring\" for one tag. $heading$ is Steam's line for the tag.",
+    "placeholders": {
+      "heading": {
+        "content": "$1",
+        "example": "Utiliza antitrampas a nivel de kernel"
+      }
+    }
   },
   "notice_settings_saved": {
     "message": "Guardado.",
@@ -115,6 +275,10 @@
     "message": "No se pudo actualizar este juego. Inténtalo de nuevo.",
     "description": "After \"Ignore this game\", \"Undo\" or \"Stop ignoring\" fails to save."
   },
+  "error_allow_list_load": {
+    "message": "No se pudieron cargar los juegos que ignoraste. Inténtalo más tarde.",
+    "description": "Shown in the list of ignored games in the settings when the stored list cannot be read."
+  },
   "options_version": {
     "message": "Versión $version$",
     "description": "Under the product name at the top of the settings page and popup. $version$ is the release version, such as 2026.10.20; keep it as is.",
@@ -125,16 +289,12 @@
       }
     }
   },
-  "options_section_store": {
-    "message": "En las páginas de juegos",
-    "description": "Section heading in the settings."
-  },
   "options_badges": {
-    "message": "Marcadores en los juegos que declaran usar IA",
-    "description": "Switch label."
+    "message": "Marcador en los juegos",
+    "description": "Switch label of one tag's badge."
   },
   "options_badges_short": {
-    "message": "Marcadores",
+    "message": "Marcador",
     "description": "The same switch in the toolbar popup, where space is tight."
   },
   "options_badges_help": {
@@ -143,24 +303,20 @@
     "placeholders": {
       "label": {
         "content": "$1",
-        "example": "AI use reported"
+        "example": "AI"
       }
     }
   },
   "options_banner": {
-    "message": "Aviso en páginas de juegos",
-    "description": "Switch label."
+    "message": "Entrada en el aviso de las páginas de juegos",
+    "description": "Switch label of one tag's entry in the notice on a game's page."
   },
   "options_banner_help": {
-    "message": "Muestra la declaración del desarrollador encima del botón de compra.",
+    "message": "Muestra lo que declaró el desarrollador encima del botón de compra.",
     "description": "Help under the banner switch."
   },
-  "options_section_lists": {
-    "message": "En las listas",
-    "description": "Section heading in the settings."
-  },
   "options_filter_label": {
-    "message": "Juegos que declaran usar IA",
+    "message": "Juegos con esta etiqueta",
     "description": "Label of a three-way choice: show, dim or hide these games in lists."
   },
   "options_filter_off": {
@@ -217,17 +373,25 @@
       }
     }
   },
+  "options_allow_scope_all": {
+    "message": "Todas las etiquetas",
+    "description": "Heading of the games ignored for every tag, in the list of ignored games. The games ignored for one tag sit under Steam's line for that tag."
+  },
   "options_allow_restore": {
     "message": "Dejar de ignorar",
     "description": "Button next to a game you ignored."
   },
   "options_allow_restore_label": {
-    "message": "Dejar de ignorar $name$",
-    "description": "Screen reader name of the \"Stop ignoring\" button; $name$ is the game's name, untranslated.",
+    "message": "Dejar de ignorar $name$ ($scope$)",
+    "description": "Screen reader name of the \"Stop ignoring\" button; $name$ is the game's name, untranslated, and $scope$ names the tag it was ignored for, or all tags.",
     "placeholders": {
       "name": {
         "content": "$1",
         "example": "Fixture Game"
+      },
+      "scope": {
+        "content": "$2",
+        "example": "Todas las etiquetas"
       }
     }
   },
@@ -272,6 +436,14 @@
   "options_all_settings": {
     "message": "Configuración completa",
     "description": "Link in the toolbar popup footer that opens the full settings page in a tab."
+  },
+  "options_kind_enabled": {
+    "message": "Usar esta etiqueta",
+    "description": "Master switch of one tag in the settings. Its section is titled with Steam's line for the tag."
+  },
+  "options_kind_enabled_help": {
+    "message": "Si la desactivas, se quitan sus marcadores, su entrada en el aviso y su filtro de listas.",
+    "description": "Help under the master switch of one tag."
   },
   "userscript_menu_settings": {
     "message": "Configuración",

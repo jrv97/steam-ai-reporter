@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
+import { LIST_FILTERS } from "../../src/core/kinds/kind-settings";
 import { httpContract } from "../contracts/http.contract";
 import { keyValueStoreContract } from "../contracts/key-value-store.contract";
 import { fakeHttp } from "./fake-http";
 import { fixedClock } from "./fixed-clock";
 import { memoryStore } from "./memory-store";
+import { strongestFilter } from "./settings";
 
 keyValueStoreContract("memoryStore", () => memoryStore());
 httpContract("fakeHttp", fakeHttp);
@@ -40,5 +42,22 @@ describe("fixedClock", () => {
     expect(clock.now()).toBe(1_500);
     clock.set(10);
     expect(clock.now()).toBe(10);
+  });
+});
+
+describe("strongestFilter", () => {
+  it("is off for no kind at all", () => {
+    expect(strongestFilter([])).toBe("off");
+  });
+
+  it.each(LIST_FILTERS)("is %s for a single %s", (mode) => {
+    expect(strongestFilter([mode])).toBe(mode);
+  });
+
+  it("lets hide win over dim over off, whatever the order", () => {
+    expect(strongestFilter(["dim", "hide", "off"])).toBe("hide");
+    expect(strongestFilter(["hide", "off", "dim"])).toBe("hide");
+    expect(strongestFilter(["off", "off", "dim", "off"])).toBe("dim");
+    expect(strongestFilter(new Set<"off" | "dim" | "hide">(["dim", "off"]))).toBe("dim");
   });
 });

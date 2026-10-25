@@ -1,7 +1,14 @@
 import * as v from "valibot";
 import { GETITEMS_URL } from "../../src/core/detect/getitems";
+import {
+  type ExtraDetails,
+  type StoreItem,
+  StoreItemSchema,
+} from "../../src/core/detect/getitems.schema";
+import type { SteamLanguage } from "../../src/core/i18n/locale";
 import { parseJson } from "../../src/core/json";
-import { type AppId, AppIdSchema } from "../../src/core/types";
+import type { KindDefinition } from "../../src/core/kinds/kind";
+import { type AppId, AppIdSchema, type DisclosedBase, type Verdict } from "../../src/core/types";
 import type { Reply, Route } from "./fake-http";
 
 /** A plain store item as GetItems returns it: listed, `success: 1`, no AI notes. */
@@ -114,4 +121,53 @@ const FixtureSchema = v.object({
 /** The `store_items` of a GetItems fixture. */
 export function fixtureItems(fixture: unknown): readonly unknown[] {
   return v.parse(FixtureSchema, fixture).response.store_items ?? [];
+}
+
+/** A store item and its extra details, as the schema parses them. */
+export interface ParsedItem {
+  readonly item: StoreItem;
+  readonly details: ExtraDetails;
+}
+
+/**
+ * Parses a plain store item with these extra details through the real schema, after a JSON round
+ * trip like a response body, so a kind sees what it sees in production. `overrides` replace item
+ * keys such as `name` or `categories`; an undefined value leaves the key out.
+ */
+export function parsedItem(
+  details: Readonly<Record<string, unknown>> = {},
+  overrides: Readonly<Record<string, unknown>> = {},
+): ParsedItem {
+  const body = JSON.stringify(storeItem(1, { extra_details: details, ...overrides }));
+  const item = v.parse(StoreItemSchema, parseJson(body));
+  if (item.extra_details === undefined) {
+    throw new TypeError();
+  }
+  return { item, details: item.extra_details };
+}
+
+/** What a kind answers for a store item with these extra details (see `parsedItem`). */
+export function verdictOf<Disclosed extends DisclosedBase>(
+  kind: KindDefinition<Disclosed>,
+  details: Readonly<Record<string, unknown>> = {},
+  overrides: Readonly<Record<string, unknown>> = {},
+  language: SteamLanguage = "english",
+): Verdict<Disclosed> {
+  const parsed = parsedItem(details, overrides);
+  return kind.fromGetItems(parsed.item, parsed.details, language);
+}
+
+const ItemRecordSchema = v.record(v.string(), v.unknown());
+
+/**
+ * The item of a GetItems fixture for the app `from`, as another app: the same name, categories
+ * and extra details under the ID `to`. Throws when the fixture has no such item.
+ */
+export function itemAs(
+  fixture: unknown,
+  from: number,
+  to: number,
+): Readonly<Record<string, unknown>> {
+  const found = fixtureItems(fixture).find((item) => v.parse(ItemIdSchema, item).id === from);
+  return { ...v.parse(ItemRecordSchema, found), id: to, appid: to };
 }

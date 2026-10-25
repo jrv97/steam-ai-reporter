@@ -5,9 +5,10 @@ import { fakeFetch } from "../../../tests/helpers/fake-http";
 import { fixtureItems, getItemsRoute } from "../../../tests/helpers/getitems";
 import { fakeGm } from "../../../tests/helpers/gm-fake";
 import { englishI18n } from "../../../tests/helpers/i18n";
+import { withKind } from "../../../tests/helpers/settings";
 import { loadPage, SURFACES } from "../../../tests/helpers/surfaces";
 import type { App } from "../../core/app";
-import { DEFAULT_SETTINGS, encodeSettings, withKind } from "../../core/settings/settings";
+import { DEFAULT_SETTINGS, encodeSettings } from "../../core/settings/settings";
 import { SETTINGS_KEY } from "../../core/storage-keys";
 import { startUserscript, type UserscriptEnv } from "./userscript";
 
@@ -41,7 +42,6 @@ afterEach(() => {
   app = undefined;
   document.querySelector(".sar-dialog-host")?.remove();
   document.documentElement.removeAttribute("data-sar-filter");
-  document.documentElement.removeAttribute("data-sar-badges");
 });
 
 describe("startUserscript", () => {
@@ -95,10 +95,11 @@ describe("startUserscript", () => {
       },
     });
     app = await startUserscript(env);
-    expect(document.documentElement.getAttribute("data-sar-filter")).toBe("off");
+    expect(document.documentElement.getAttribute("data-sar-filter-ai")).toBe("off");
 
     notify(encodeSettings(withKind(DEFAULT_SETTINGS, "ai", { filter: "hide" })));
-    expect(document.documentElement.getAttribute("data-sar-filter")).toBe("hide");
+    expect(document.documentElement.getAttribute("data-sar-filter-ai")).toBe("hide");
+    expect(document.documentElement.getAttribute("data-sar-filter-drm")).toBe("off");
   });
 
   it("starts on stored settings", async () => {
@@ -109,6 +110,6 @@ describe("startUserscript", () => {
     );
     app = await startUserscript(env);
 
-    expect(document.documentElement.getAttribute("data-sar-filter")).toBe("dim");
+    expect(document.documentElement.getAttribute("data-sar-filter-ai")).toBe("dim");
   });
 });

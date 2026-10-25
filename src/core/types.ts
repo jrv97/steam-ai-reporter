@@ -1,6 +1,4 @@
 import * as v from "valibot";
-import type { SteamLanguage } from "./i18n/locale";
-import type { KindVerdicts } from "./kinds/verdicts";
 
 /** Steam app IDs are unsigned 32-bit integers; 0 is what GetItems reports for an invalid item. */
 const MAX_APP_ID = 0xffff_ffff;
@@ -26,25 +24,26 @@ export function toAppId(value: unknown): AppId | undefined {
 }
 
 /** Where a known verdict came from: the GetItems API or the English app page (HTML fallback). */
-export type VerdictSource = "api" | "html";
+export const VerdictSourceSchema = v.picklist(["api", "html"]);
+
+export type VerdictSource = v.InferOutput<typeof VerdictSourceSchema>;
 
 /**
  * Why a verdict is unknown. `gated`: the app page hid the store content (age gate, sign-in,
- * redirect). `missing`: Steam returned no usable item. `error`: the request or its answer was
- * broken. `rate-limited`: a breaker held the request back. Unknown is never shown as not disclosed.
+ * redirect). `missing`: Steam returned no usable item. `malformed`: a field the kind reads came in
+ * the wrong shape. `error`: the request or its answer was broken. `rate-limited`: a breaker held
+ * the request back. Unknown is never shown as not disclosed.
  */
-export type UnknownReason = "gated" | "missing" | "error" | "rate-limited";
+export type UnknownReason = "gated" | "missing" | "malformed" | "error" | "rate-limited";
 
-export interface DisclosedVerdict {
+/**
+ * What every disclosed verdict carries. A tag kind adds its own fields (see `kinds/`): the
+ * developer's text, the named product, the matching categories.
+ */
+export interface DisclosedBase<Kind extends string = string> {
   readonly state: "disclosed";
-  /** The developer's text, trimmed of outer whitespace and zero-width characters only. */
-  readonly notes: string;
-  /** The Steam language the notes were requested in; Steam answers in English when untranslated. */
-  readonly language: SteamLanguage;
-  /** `ai_generation_service.name`, when the developer named one. */
-  readonly service?: string;
-  /** The app's store name, for the allow-list. */
-  readonly name?: string;
+  /** The id of the tag kind the developer disclosed. */
+  readonly kind: Kind;
   readonly source: VerdictSource;
 }
 
@@ -62,18 +61,22 @@ export interface UnknownVerdict {
 export const UNKNOWN: Readonly<Record<UnknownReason, UnknownVerdict>> = {
   "gated": { state: "unknown", reason: "gated" },
   "missing": { state: "unknown", reason: "missing" },
+  "malformed": { state: "unknown", reason: "malformed" },
   "error": { state: "unknown", reason: "error" },
   "rate-limited": { state: "unknown", reason: "rate-limited" },
 };
 
-/** What core knows about one app for one tag kind. Exactly three states (rule 4). */
-export type Verdict = DisclosedVerdict | NotDisclosedVerdict | UnknownVerdict;
+/** One shared object per source, so a not disclosed verdict costs no allocation. */
+export const NOT_DISCLOSED: Readonly<Record<VerdictSource, NotDisclosedVerdict>> = {
+  api: { state: "not-disclosed", source: "api" },
+  html: { state: "not-disclosed", source: "html" },
+};
 
 /**
- * One source of verdicts: GetItems, the HTML fallback, or a chain or decorator of them. Its
- * contract (tests/contracts/detector.contract.ts): it never rejects, and the result holds exactly
- * one `KindVerdicts` per distinct requested ID, with `unknown` for anything it could not settle.
+ * What core knows about one app for one tag kind. Exactly three states (rule 4). `Disclosed` is
+ * the disclosed shape of one kind; without it the verdict is the shape every kind shares.
  */
-export interface Detector {
-  detect(ids: readonly AppId[]): Promise<ReadonlyMap<AppId, KindVerdicts>>;
-}
+export type Verdict<Disclosed extends DisclosedBase = DisclosedBase> =
+  | Disclosed
+  | NotDisclosedVerdict
+  | UnknownVerdict;

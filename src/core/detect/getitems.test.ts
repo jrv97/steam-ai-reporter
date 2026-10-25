@@ -67,6 +67,7 @@ describe("parseGetItems over the captured fixtures", () => {
     expect(notesOf(verdicts, 5072580)).toMatch(/^Generative AI is used in both pre-generated/);
     expect(verdicts.get(appId(5072580))?.ai).toStrictEqual({
       state: "disclosed",
+      kind: "ai",
       notes: notesOf(verdicts, 5072580),
       language: "english",
       service: "OpenAI API",
@@ -76,6 +77,7 @@ describe("parseGetItems over the captured fixtures", () => {
     expect(notesOf(verdicts, 1808500)).toMatch(/^During the development process/);
     expect(verdicts.get(appId(1808500))?.ai).toStrictEqual({
       state: "disclosed",
+      kind: "ai",
       notes: notesOf(verdicts, 1808500),
       language: "english",
       name: "ARC Raiders",
@@ -176,6 +178,7 @@ describe("parseGetItems edge cases", () => {
     expect(named?.state === "disclosed" ? named.service : undefined).toBe("Midjourney");
     expect(verdicts.get(appId(2))?.ai).toStrictEqual({
       state: "disclosed",
+      kind: "ai",
       notes: "notes",
       language: "english",
       source: "api",
@@ -208,7 +211,7 @@ describe("parseGetItems edge cases", () => {
     expect(stateOf(verdicts, 2)).toBe("unknown:missing");
   });
 
-  it("gives unknown error to an item with wrong field types, and keeps the rest", () => {
+  it("gives unknown to an item with wrong field types, and keeps the rest", () => {
     const verdicts = parse(
       appIds(1, 2, 3, 4),
       getItemsResponse([
@@ -219,7 +222,7 @@ describe("parseGetItems edge cases", () => {
       ]),
     );
     expect(stateOf(verdicts, 1)).toBe("unknown:error");
-    expect(stateOf(verdicts, 2)).toBe("unknown:error");
+    expect(stateOf(verdicts, 2)).toBe("unknown:malformed");
     expect(stateOf(verdicts, 3)).toBe("unknown:error");
     expect(stateOf(verdicts, 4)).toBe("disclosed");
   });

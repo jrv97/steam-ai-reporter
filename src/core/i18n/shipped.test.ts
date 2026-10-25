@@ -25,12 +25,22 @@ describe("shipped catalogs", () => {
     expect(Object.keys(es).sort()).toEqual(Object.keys(en).sort());
   });
 
+  it("gives Spanish the same placeholders as English for every message", () => {
+    const names = (entry: { readonly message: string; }) =>
+      [...entry.message.matchAll(new RegExp(PLACEHOLDER, "g"))].map(([name]) => name.toLowerCase())
+        .sort();
+    for (const [key, entry] of Object.entries(en)) {
+      expect(names(shipped("es")[key] ?? { message: "" }), key).toEqual(names(entry));
+    }
+  });
+
   it("loads the Spanish messages", () => {
     const spanish = createI18n(SHIPPED_CATALOGS, "es");
     expect(spanish.locale).toBe("es");
     expect(spanish.t("banner_ignore")).toBe(es.banner_ignore.message);
-    expect(spanish.t("options_allow_restore_label", { name: "Fixture Game" })).toBe(
-      substitute(es.options_allow_restore_label.message, { name: "Fixture Game" }),
+    const restore = { name: "Fixture Game", scope: spanish.t("options_allow_scope_all") };
+    expect(spanish.t("options_allow_restore_label", restore)).toBe(
+      substitute(es.options_allow_restore_label.message, restore),
     );
     expect(spanish.t("options_allow_empty", { action: spanish.t("banner_ignore") })).toBe(
       substitute(es.options_allow_empty.message, { action: es.banner_ignore.message }),
@@ -58,9 +68,9 @@ describe("shipped catalogs", () => {
   });
 
   it("falls back to English for a key the Spanish catalog lacks", () => {
-    const partial = { en: shipped("en"), es: { badge_label: shipped("es")["badge_label"] } };
+    const partial = { en: shipped("en"), es: { kind_ai_chip: shipped("es")["kind_ai_chip"] } };
     const spanish = createI18n(partial, "es");
-    expect(spanish.t("badge_label")).toBe(es.badge_label.message);
+    expect(spanish.t("kind_ai_chip")).toBe(es.kind_ai_chip.message);
     expect(spanish.t("banner_ignore")).toBe(en.banner_ignore.message);
   });
 });

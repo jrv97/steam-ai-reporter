@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import type { JsonValue } from "../../src/core/json";
+import { perKind } from "../../src/core/kinds/registry";
 import type { KeyValueStore } from "../../src/core/ports";
+import { perScope } from "../../src/core/settings/allow-data";
 import { migrateStorage } from "../../src/core/settings/migrate";
 import { noFaults, type StorageFaults } from "../helpers/storage-faults";
 
@@ -16,9 +18,16 @@ const V1_ALLOW: JsonValue = { "1808500": { name: "ARC Raiders", added: T } };
 const SETTINGS_V2 = {
   locale: "es",
   debug: true,
-  kinds: { ai: { enabled: true, badge: false, banner: true, filter: "hide" } },
+  kinds: {
+    ...perKind(() => ({ enabled: true, badge: true, banner: true, filter: "off" })),
+    pvp: { enabled: false, badge: true, banner: true, filter: "off" },
+    ai: { enabled: true, badge: false, banner: true, filter: "hide" },
+  },
 };
-const ALLOW_V2 = { all: {}, ai: { "1808500": { name: "ARC Raiders", added: T } } };
+const ALLOW_V2 = {
+  ...perScope(() => ({})),
+  ai: { "1808500": { name: "ARC Raiders", added: T } },
+};
 
 const MIGRATION_ERROR = { code: "error_settings_load" };
 

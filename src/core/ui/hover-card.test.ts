@@ -1,8 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { setBody } from "../../../tests/helpers/dom";
+import { capturedVerdicts, pageVerdicts } from "../../../tests/helpers/fixture-verdicts";
 import { englishI18n } from "../../../tests/helpers/i18n";
-import { disclosedVerdict } from "../../../tests/helpers/verdicts";
-import { AI_KIND } from "../kinds/ai";
+import { disclosedVerdict, FULL_DISCLOSED } from "../../../tests/helpers/verdicts";
+import { KIND_IDS, type KindId } from "../kinds/id";
+import { KIND_BY_ID } from "../kinds/registry";
+import type { AnyDisclosed, KindVerdicts } from "../kinds/verdicts";
 import { createHoverCard, HOVER_CARD_ID, type HoverCard, placeCard } from "./hover-card";
 import { adoptPageStyles } from "./styles";
 
@@ -91,10 +94,11 @@ describe("createHoverCard", () => {
   }
 
   function page(): { link: HTMLAnchorElement; badge: HTMLElement; other: HTMLElement; } {
-    const label = i18n.t("badge_label");
+    const label = i18n.t("kind_ai_chip");
     setBody(`
       <a class="row" href="/app/10/"><span class="title">Game</span>
-      <span class="sar-badge"><span class="sar-badge-label">${label}</span></span></a>
+      <span class="sar-badge" data-sar-kind="ai">
+      <span class="sar-badge-label">${label}</span></span></a>
       <a class="other" href="/app/20/">Other</a>`);
     const link = document.querySelector<HTMLAnchorElement>(".row");
     const badge = document.querySelector<HTMLElement>(".sar-badge");
@@ -131,26 +135,24 @@ describe("createHoverCard", () => {
   afterEach(() => {
     card?.stop();
     card = undefined;
-    document.documentElement.removeAttribute("data-sar-badges");
     Reflect.deleteProperty(document.documentElement, "clientWidth");
     Reflect.deleteProperty(document.documentElement, "clientHeight");
   });
 
   it("opens after the pointer rests on a badge and quotes the notes verbatim", () => {
     const { badge } = page();
-    start().bind(
-      badge,
-      AI_KIND,
+    start().bind(badge, [
       disclosedVerdict({ notes: "Line one\r\nLine two", service: "Midjourney" }),
-    );
+    ]);
     pointerOver(badge.firstElementChild ?? badge);
     expect(shown()).toBeNull();
     flush();
     const node = shown();
     expect(node?.getAttribute("role")).toBe("tooltip");
-    expect(node?.querySelector(".sar-hovercard-title")?.textContent).toBe(i18n.t("badge_label"));
-    expect(node?.querySelector(".sar-hovercard-source")?.textContent)
-      .toBe(i18n.t("badge_card_source"));
+    expect(node?.querySelector(".sar-hovercard-title")?.textContent)
+      .toBe(i18n.t("kind_ai_heading"));
+    expect(node?.lastElementChild?.className).toBe("sar-hovercard-source");
+    expect(node?.lastElementChild?.textContent).toBe(i18n.t("badge_card_declared"));
     expect(node?.querySelector(".sar-hovercard-notes")?.textContent).toBe("Line one\nLine two");
     expect(node?.querySelector(".sar-hovercard-service")?.textContent)
       .toBe(`${i18n.t("badge_card_service_label")} Midjourney`);
@@ -170,8 +172,8 @@ describe("createHoverCard", () => {
       second.className = "sar-badge";
       other.append(second);
       const hover = start();
-      hover.bind(badge, AI_KIND, disclosedVerdict());
-      hover.bind(second, AI_KIND, disclosedVerdict());
+      hover.bind(badge, [disclosedVerdict()]);
+      hover.bind(second, [disclosedVerdict()]);
       pointerOver(badge);
       flush();
       pointerOver(second);
@@ -189,7 +191,7 @@ describe("createHoverCard", () => {
   it("keeps a closed card hidden through the reset, which unsets the popover's own rules", () => {
     adoptPageStyles(document);
     const { badge, other } = page();
-    start().bind(badge, AI_KIND, disclosedVerdict());
+    start().bind(badge, [disclosedVerdict()]);
     pointerOver(badge);
     flush();
     const node = document.getElementById(HOVER_CARD_ID);
@@ -208,7 +210,7 @@ describe("createHoverCard", () => {
     storeHover.id = "global_hover";
     document.body.append(storeHover);
     expect(getComputedStyle(storeHover).visibility).not.toBe("hidden");
-    start().bind(badge, AI_KIND, disclosedVerdict());
+    start().bind(badge, [disclosedVerdict()]);
     pointerOver(badge);
     flush();
     expect(document.documentElement.getAttribute("data-sar-hovercard")).toBe("open");
@@ -221,7 +223,7 @@ describe("createHoverCard", () => {
   it("clears the root mark on Escape, on pagehide and on stop", () => {
     const { badge, other } = page();
     const hover = start();
-    hover.bind(badge, AI_KIND, disclosedVerdict());
+    hover.bind(badge, [disclosedVerdict()]);
     const marked = () => document.documentElement.hasAttribute("data-sar-hovercard");
     const reopen = () => {
       pointerOver(other);
@@ -242,7 +244,7 @@ describe("createHoverCard", () => {
 
   it("renders notes with markup as plain text", () => {
     const { badge } = page();
-    start().bind(badge, AI_KIND, disclosedVerdict({ notes: XSS, service: XSS }));
+    start().bind(badge, [disclosedVerdict({ notes: XSS, service: XSS })]);
     pointerOver(badge);
     flush();
     expect(shown()?.querySelector(".sar-hovercard-notes")?.textContent).toBe(XSS);
@@ -253,7 +255,7 @@ describe("createHoverCard", () => {
   it("leaves out the service line when the developer named none", () => {
     const { badge } = page();
     const { service: _service, ...unnamed } = disclosedVerdict();
-    start().bind(badge, AI_KIND, unnamed);
+    start().bind(badge, [unnamed]);
     pointerOver(badge);
     flush();
     expect(shown()?.querySelector(".sar-hovercard-service")).toBeNull();
@@ -263,7 +265,7 @@ describe("createHoverCard", () => {
     const { badge, other } = page();
     const hover = start();
     overflowing = true;
-    hover.bind(badge, AI_KIND, disclosedVerdict({ notes: "word ".repeat(400) }));
+    hover.bind(badge, [disclosedVerdict({ notes: "word ".repeat(400) })]);
     pointerOver(badge);
     flush();
     const more = shown()?.querySelector<HTMLElement>(".sar-hovercard-more");
@@ -275,7 +277,7 @@ describe("createHoverCard", () => {
     const second = document.createElement("span");
     second.className = "sar-badge";
     other.append(second);
-    hover.bind(second, AI_KIND, disclosedVerdict({ notes: "Short." }));
+    hover.bind(second, [disclosedVerdict({ notes: "Short." })]);
     pointerOver(second);
     expect(shown()?.querySelector<HTMLElement>(".sar-hovercard-more")?.hidden).toBe(true);
   });
@@ -285,7 +287,7 @@ describe("createHoverCard", () => {
     const hover = start();
     overflowing = true;
     const verdict = disclosedVerdict({ notes: "word ".repeat(400) });
-    hover.bind(badge, AI_KIND, verdict, true);
+    hover.bind(badge, [verdict], true);
     pointerOver(badge);
     flush();
     expect(shown()?.querySelector<HTMLElement>(".sar-hovercard-more")?.hidden).toBe(true);
@@ -293,7 +295,7 @@ describe("createHoverCard", () => {
     const capsule = document.createElement("span");
     capsule.className = "sar-compact";
     other.append(capsule);
-    hover.bind(capsule, AI_KIND, verdict);
+    hover.bind(capsule, [verdict]);
     pointerOver(capsule);
     expect(shown()?.querySelector<HTMLElement>(".sar-hovercard-more")?.hidden).toBe(false);
   });
@@ -303,7 +305,7 @@ describe("createHoverCard", () => {
     setBody(Array.from({ length: 200 }, () => '<span class="sar-badge">AI</span>').join(""));
     const hover = start();
     for (const badge of document.querySelectorAll(".sar-badge")) {
-      hover.bind(badge, AI_KIND, disclosedVerdict());
+      hover.bind(badge, [disclosedVerdict()]);
     }
     pointerOver(document.querySelectorAll(".sar-badge")[150] ?? document.body);
     flush();
@@ -315,7 +317,7 @@ describe("createHoverCard", () => {
 
   it("stays open while the pointer crosses onto the card, and closes after leaving both", () => {
     const { badge, other } = page();
-    start().bind(badge, AI_KIND, disclosedVerdict());
+    start().bind(badge, [disclosedVerdict()]);
     pointerOver(badge);
     flush();
     const node = shown();
@@ -333,7 +335,7 @@ describe("createHoverCard", () => {
 
   it("opens nothing when the pointer only passes over a badge", () => {
     const { badge, other } = page();
-    start().bind(badge, AI_KIND, disclosedVerdict());
+    start().bind(badge, [disclosedVerdict()]);
     pointerOver(badge);
     pointerOver(other);
     flush();
@@ -345,7 +347,7 @@ describe("createHoverCard", () => {
     const badge = link.querySelector(".sar-badge");
     link.setAttribute("aria-describedby", STORE_NOTE_ID);
     if (badge !== null) {
-      start().bind(badge, AI_KIND, disclosedVerdict());
+      start().bind(badge, [disclosedVerdict()]);
     }
     focusIn(link);
     expect(shown()).not.toBeNull();
@@ -356,9 +358,37 @@ describe("createHoverCard", () => {
     expect(link.getAttribute("aria-describedby")).toBe(STORE_NOTE_ID);
   });
 
+  it("describes a focused link when the pointer opens the card over it, and lets go", () => {
+    const { link, badge, other } = page();
+    start().bind(badge, [disclosedVerdict()]);
+    link.focus();
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+    expect(shown()).toBeNull();
+    pointerOver(other);
+    pointerOver(badge);
+    flush();
+    expect(shown()).not.toBeNull();
+    expect(link.getAttribute("aria-describedby")).toBe(HOVER_CARD_ID);
+    pointerOver(other);
+    flush();
+    expect(shown()).toBeNull();
+    expect(link.hasAttribute("aria-describedby")).toBe(false);
+  });
+
+  it("describes nothing when the pointer opens the card and no link holds focus", () => {
+    const { link, badge, other } = page();
+    start().bind(badge, [disclosedVerdict()]);
+    other.focus();
+    pointerOver(badge);
+    flush();
+    expect(shown()).not.toBeNull();
+    expect(link.hasAttribute("aria-describedby")).toBe(false);
+    expect(other.hasAttribute("aria-describedby")).toBe(false);
+  });
+
   it("closes on Escape and stays closed until the pointer leaves the badge", () => {
     const { badge, other } = page();
-    start().bind(badge, AI_KIND, disclosedVerdict());
+    start().bind(badge, [disclosedVerdict()]);
     pointerOver(badge);
     flush();
     document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
@@ -375,7 +405,7 @@ describe("createHoverCard", () => {
   it("moves a focus-opened card with its link, once per frame, through a scroll", () => {
     const { link, badge } = page();
     layout(badge, 300);
-    start().bind(badge, AI_KIND, disclosedVerdict());
+    start().bind(badge, [disclosedVerdict()]);
     focusIn(link);
     layout(badge, 100);
     const moved = vi.spyOn(badge, "getBoundingClientRect");
@@ -393,7 +423,7 @@ describe("createHoverCard", () => {
   it("closes a focus-opened card once its link leaves the viewport", () => {
     const { link, badge } = page();
     layout(badge, 300);
-    start().bind(badge, AI_KIND, disclosedVerdict());
+    start().bind(badge, [disclosedVerdict()]);
     focusIn(link);
     layout(badge, -50);
     document.dispatchEvent(new Event("scroll"));
@@ -404,19 +434,10 @@ describe("createHoverCard", () => {
 
   it("closes on a page scroll", () => {
     const { badge } = page();
-    start().bind(badge, AI_KIND, disclosedVerdict());
+    start().bind(badge, [disclosedVerdict()]);
     pointerOver(badge);
     flush();
     document.dispatchEvent(new Event("scroll"));
-    expect(shown()).toBeNull();
-  });
-
-  it("opens nothing while badges are turned off", () => {
-    const { badge } = page();
-    document.documentElement.setAttribute("data-sar-badges", "off");
-    start().bind(badge, AI_KIND, disclosedVerdict());
-    pointerOver(badge);
-    flush();
     expect(shown()).toBeNull();
   });
 
@@ -426,7 +447,7 @@ describe("createHoverCard", () => {
     pointerOver(badge);
     flush();
     expect(shown()).toBeNull();
-    hover.bind(badge, AI_KIND, disclosedVerdict());
+    hover.bind(badge, [disclosedVerdict()]);
     pointerOver(badge);
     flush();
     hover.stop();
@@ -435,5 +456,161 @@ describe("createHoverCard", () => {
     pointerOver(badge);
     flush();
     expect(document.getElementById(HOVER_CARD_ID)).toBeNull();
+  });
+
+  describe("with several kinds", () => {
+    /** Each entry's title and details, as the card shows them. */
+    function entries(): string[][] {
+      const node = shown();
+      return Array.from(
+        node?.querySelectorAll(".sar-hovercard-entry") ?? [],
+        (entry) => Array.from(entry.children, (line) => line.textContent),
+      );
+    }
+
+    function open(verdicts: readonly AnyDisclosed[], ownPage = false): void {
+      const { badge } = page();
+      start().bind(badge, verdicts, ownPage);
+      pointerOver(badge);
+      flush();
+    }
+
+    /** The disclosed verdicts of an app, in registry order. */
+    function disclosedOf(verdicts: KindVerdicts): AnyDisclosed[] {
+      return KIND_IDS.flatMap((id) => {
+        const verdict = verdicts[id];
+        return verdict.state === "disclosed" ? [verdict] : [];
+      });
+    }
+
+    const heading = (id: KindId) => i18n.t(KIND_BY_ID[id].messages.heading);
+
+    function notesOf(verdicts: KindVerdicts): string {
+      const { ai } = verdicts;
+      return ai.state === "disclosed" ? ai.notes : "";
+    }
+
+    function eulaNames(verdicts: KindVerdicts): string[] {
+      const { eula } = verdicts;
+      return eula.state === "disclosed" ? eula.items.map((item) => item.name) : [];
+    }
+
+    it("lists every kind in the order given, then names the developer as the source", () => {
+      open(disclosedOf(FULL_DISCLOSED));
+      expect(entries().map(([title]) => title)).toEqual(KIND_IDS.map(heading));
+      expect(shown()?.children).toHaveLength(KIND_IDS.length + 2);
+      expect(shown()?.lastElementChild?.textContent).toBe(i18n.t("badge_card_declared"));
+      expect(shown()?.querySelectorAll(".sar-hovercard-title")).toHaveLength(KIND_IDS.length);
+    });
+
+    // The details of each kind, from the batch captured for the tag kinds and from its pages.
+    const CASES: readonly (readonly [string, KindVerdicts, readonly (readonly string[])[]])[] = [
+      ["DRM, a linkable account and a EULA (3751950)", capturedVerdicts(3751950), [
+        [heading("drm"), "Denuvo Anti-tamper"],
+        [heading("account"), "Ubisoft Account", i18n.t("kind_account_links")],
+        [heading("eula"), ...eulaNames(capturedVerdicts(3751950))],
+      ]],
+      [
+        "kernel anti-cheat with boot protection and no vendor (2807960)",
+        capturedVerdicts(2807960),
+        [
+          [heading("kernel"), i18n.t("kind_kernel_boot")],
+          [heading("account"), "EA Account linking required", i18n.t("kind_account_links")],
+          [heading("eula"), ...eulaNames(capturedVerdicts(2807960))],
+          [heading("pvp"), i18n.t("kind_pvp_category_online")],
+        ],
+      ],
+      [
+        "AI notes, a named kernel anti-cheat that stays behind, PvP (1808500)",
+        capturedVerdicts(1808500),
+        [
+          [heading("ai"), notesOf(capturedVerdicts(1808500))],
+          [heading("kernel"), "Denuvo", i18n.t("kind_kernel_uninstall")],
+          [heading("eula"), ...eulaNames(capturedVerdicts(1808500))],
+          [heading("pvp"), i18n.t("kind_pvp_category_online")],
+        ],
+      ],
+      ["a named anti-cheat that is not kernel level (730)", capturedVerdicts(730), [
+        [heading("anticheat"), "VAC (Valve Anti-Cheat)"],
+      ]],
+      ["two EULAs (1245620)", capturedVerdicts(1245620), [
+        [heading("eula"), ...eulaNames(capturedVerdicts(1245620))],
+        [heading("pvp"), i18n.t("kind_pvp_category_online")],
+      ]],
+      [
+        "a named kernel anti-cheat that stays behind, an account and a EULA (1172470)",
+        capturedVerdicts(1172470),
+        [
+          [heading("kernel"), "Easy Anti-Cheat", i18n.t("kind_kernel_uninstall")],
+          [heading("account"), "EA Account", i18n.t("kind_account_links")],
+          [heading("eula"), ...eulaNames(capturedVerdicts(1172470))],
+          [heading("pvp"), i18n.t("kind_pvp_category_online")],
+        ],
+      ],
+      [
+        "the AI notes read from a captured app page (5072580)",
+        pageVerdicts("5072580-ai-first.html", 5072580),
+        [[heading("ai"), notesOf(pageVerdicts("5072580-ai-first.html", 5072580))]],
+      ],
+    ];
+
+    it.each(CASES)(
+      "shows Steam's lines and the developer's text for %s",
+      (_name, verdicts, lines) => {
+        open(disclosedOf(verdicts));
+        expect(entries()).toEqual(lines);
+      },
+    );
+
+    it("sets the developer's text as text for every kind", () => {
+      const markup = [
+        { ...FULL_DISCLOSED.drm, text: XSS },
+        { ...FULL_DISCLOSED.account, text: XSS },
+        { ...FULL_DISCLOSED.eula, items: [{ name: XSS }] },
+        { ...FULL_DISCLOSED.anticheat, name: XSS },
+        { ...FULL_DISCLOSED.kernel, name: XSS },
+      ];
+      open(markup);
+      expect(document.querySelector(".sar-hovercard img")).toBeNull();
+      expect(entries().map((lines) => lines[1])).toEqual([XSS, XSS, XSS, XSS, XSS]);
+    });
+
+    it("leaves out the details the data does not carry", () => {
+      const { name: _kernelName, bootProtection: _boot, ...kernel } = FULL_DISCLOSED.kernel;
+      const { name: _anticheatName, ...anticheat } = FULL_DISCLOSED.anticheat;
+      open([kernel, anticheat, { ...FULL_DISCLOSED.pvp, categoryIds: [1234] }]);
+      expect(entries()).toEqual([[heading("kernel")], [heading("anticheat")], [heading("pvp")]]);
+    });
+
+    it("refills the card for other kinds and keeps it for the same verdicts", () => {
+      const { badge, other } = page();
+      const second = document.createElement("span");
+      second.className = "sar-badge";
+      other.append(second);
+      const hover = start();
+      const first = disclosedOf(FULL_DISCLOSED).slice(0, 2);
+      hover.bind(badge, first);
+      hover.bind(second, [...first]);
+      pointerOver(badge);
+      flush();
+      const node = shown()?.firstElementChild;
+      pointerOver(second);
+      expect(shown()?.firstElementChild).toBe(node);
+      hover.bind(second, disclosedOf(FULL_DISCLOSED).slice(2, 3));
+      pointerOver(badge);
+      pointerOver(second);
+      expect(entries()).toEqual([[heading("anticheat"), FULL_DISCLOSED.anticheat.name]]);
+    });
+
+    it("opens nothing for a trigger bound to no kind", () => {
+      open([]);
+      expect(shown()).toBeNull();
+    });
+
+    it("shows the long-text line when any quote is clamped", () => {
+      overflowing = true;
+      open(disclosedOf(FULL_DISCLOSED));
+      expect(shown()?.querySelector<HTMLElement>(".sar-hovercard-more")?.hidden).toBe(false);
+    });
   });
 });

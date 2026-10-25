@@ -1,15 +1,16 @@
 import type { TagKind } from "../kinds/kind";
+import type { AnyDisclosed } from "../kinds/verdicts";
 import type { MessageCatalog } from "../ports";
-import type { DisclosedVerdict } from "../types";
 import { createChip } from "./badge";
 import { BANNER_ID } from "./banner";
 import type { CardTriggers } from "./hover-card";
+import { KIND_ATTRIBUTE } from "./kind-attributes";
 
 /** The store's own label and value rows in the summary box (Developer, Publisher). */
 const DEV_ROW_SELECTOR = ".glance_ctn_responsive_left .dev_row";
 
 /**
- * The summary box row: the badge label's chip alone, in the column of the store's Developer and
+ * The summary box row: the kind's chip alone, in the column of the store's Developer and
  * Publisher values. With the banner on it is a link to the banner, and `jump` handles the click
  * (scroll and focus, no history entry); without the banner it is a focusable row that opens the
  * hover card, when one is given. The row is its own root, with one listener.
@@ -18,13 +19,14 @@ export function createSummaryRow(
   doc: Document,
   i18n: MessageCatalog,
   kind: TagKind,
-  verdict: DisclosedVerdict,
+  verdict: AnyDisclosed,
   jump: (() => void) | undefined,
   card?: CardTriggers,
 ): HTMLElement {
   const row = doc.createElement(jump === undefined ? "div" : "a");
   row.className = "sar-summary-row";
-  row.append(createChip(doc, i18n.t(kind.messages.label)));
+  row.setAttribute(KIND_ATTRIBUTE, kind.id);
+  row.append(createChip(doc, i18n, kind));
   if (jump !== undefined) {
     row.setAttribute("href", `#${BANNER_ID}`);
     row.addEventListener("click", (event) => {
@@ -33,7 +35,7 @@ export function createSummaryRow(
     });
   } else {
     row.tabIndex = 0;
-    card?.bind(row, kind, verdict, true);
+    card?.bind(row, [verdict], true);
   }
   return row;
 }

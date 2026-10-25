@@ -8,6 +8,23 @@ function isBlank(text: string, index: number): boolean {
   return BLANK.test(text.charAt(index));
 }
 
+/** Whether the text holds anything but blanks, so a developer's blank field says nothing. */
+export function hasText(text: string): boolean {
+  return trimNotes(text) !== "";
+}
+
+/** `{ [key]: text }` when the text has content, else `{}`, to spread into a verdict. */
+export function optionalText<const TKey extends string>(
+  key: TKey,
+  text: string | undefined,
+): Partial<Record<TKey, string>> {
+  const fields: Partial<Record<TKey, string>> = {};
+  if (text !== undefined && hasText(text)) {
+    fields[key] = text;
+  }
+  return fields;
+}
+
 /**
  * Developer notes without leading or trailing blanks; inner text, line breaks included, stays
  * verbatim. An empty result means the developer disclosed nothing. Linear in the text length.

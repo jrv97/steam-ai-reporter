@@ -3,6 +3,8 @@ import { detectorContract } from "../../../tests/contracts/detector.contract";
 import { appId, appIds } from "../../../tests/helpers/app-ids";
 import { APP_PAGES, type AppPageName } from "../../../tests/helpers/app-page";
 import { fakeHttp, type Reply } from "../../../tests/helpers/fake-http";
+import type { AiVerdict } from "../kinds/ai";
+import { KINDS } from "../kinds/registry";
 import { UNKNOWN_KINDS } from "../kinds/verdicts";
 import { UNKNOWN, type Verdict } from "../types";
 import { createAppPageDetector, parseAppPage, parseLiveAppPage } from "./app-page";
@@ -15,13 +17,13 @@ function doc(html: string): Document {
   return new DOMParser().parseFromString(html, "text/html");
 }
 
-function parseFixture(name: AppPageName, url: string): Verdict {
-  return parseAppPage(doc(fixture(name)), url);
+function parseFixture(name: AppPageName, url: string): AiVerdict {
+  return parseAppPage(doc(fixture(name)), url).ai;
 }
 
 const APP = (id: number): string => `https://store.steampowered.com/app/${id}/?l=english`;
 
-function notesOf(verdict: Verdict): string | undefined {
+function notesOf(verdict: AiVerdict): string | undefined {
   return verdict.state === "disclosed" ? verdict.notes : undefined;
 }
 
@@ -97,7 +99,7 @@ describe("parseAppPage over the captured fixtures", () => {
   });
 
   it("is unknown gated when the app name is missing", () => {
-    expect(parseAppPage(doc("<html><body></body></html>"), APP(1))).toBe(UNKNOWN.gated);
+    expect(parseAppPage(doc("<html><body></body></html>"), APP(1))).toBe(UNKNOWN_KINDS.gated);
   });
 });
 
@@ -154,11 +156,31 @@ describe("createAppPageDetector", () => {
     ]);
   });
 
+  it("answers the open page from its document and requests the others", async () => {
+    const http = fakeHttp(fixtureRoutes);
+    const open = { id: aiId, verdicts: UNKNOWN_KINDS.error };
+    const found = await createAppPageDetector(http, open).detect(appIds(5072580, 413150));
+    expect(found.get(aiId)).toBe(open.verdicts);
+    expect(found.get(appId(413150))?.ai.state).toBe("not-disclosed");
+    expect(http.calls).toStrictEqual([APP(413150)]);
+  });
+
   it("answers the AI kind only: the other kinds stay unknown", async () => {
     const { detector: d } = detector(fixtureRoutes);
     const found = await d.detect(appIds(5072580, 413150, 99999999));
     expect(found.get(aiId)?.ai.state).toBe("disclosed");
+    for (const kind of KINDS) {
+      if (kind.id !== "ai") {
+        expect(found.get(aiId)?.[kind.id]).toBe(UNKNOWN.missing);
+        expect(found.get(appId(413150))?.[kind.id]).toBe(UNKNOWN.missing);
+      }
+    }
     expect(found.get(appId(99999999))).toStrictEqual(UNKNOWN_KINDS.gated);
+  });
+
+  it("reads the page only for the kinds that declare it", () => {
+    const readers = KINDS.filter((kind) => kind.fromAppPage !== undefined);
+    expect(readers.map((kind) => kind.id)).toStrictEqual(["ai"]);
   });
 
   it("maps failures to unknown, never to not disclosed", async () => {

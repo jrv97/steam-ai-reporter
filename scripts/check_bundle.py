@@ -9,9 +9,10 @@
   name in the bundle has an @grant and every @grant is used; no userscript header in any other
   bundle.
 - No eval( or new Function in any bundle (rule 2); no URL outside the two Valve hosts.
-- Size budgets: content.js at most 139 KB, the userscript at most 184 KB, unminified (rule 13).
-  Each is the measured size plus about 15% headroom; raise one only with a measurement. Every
-  shipped catalog is inlined, so each added locale costs about 5 KB in both.
+- Size budgets: content.js at most 183 KB, options.js at most 114 KB and the userscript at most
+  236 KB, unminified (rule 13). Each is the measured size plus about 15% headroom; raise one only
+  with a measurement. Every shipped catalog is inlined, so each added locale costs about 5 KB in
+  each of them.
 - The STEAM_API_KEY value, when set, appears nowhere in dist/ or artifacts/ (rule 16).
 - The dev injection bundle is never packaged into artifacts/, and when artifacts/ exists it holds
   exactly the five release artifacts, with a manifest at the root of each extension zip. The source
@@ -28,9 +29,11 @@ from repo import ARTIFACTS, DIST, SLUG, fail, json_object, json_string, package_
 
 KIB = 1024
 BUDGETS = {
-    DIST / "chrome" / "content.js": 139 * KIB,
-    DIST / "firefox" / "content.js": 139 * KIB,
-    DIST / "userscript" / f"{SLUG}.user.js": 184 * KIB,
+    DIST / "chrome" / "content.js": 183 * KIB,
+    DIST / "firefox" / "content.js": 183 * KIB,
+    DIST / "chrome" / "options.js": 114 * KIB,
+    DIST / "firefox" / "options.js": 114 * KIB,
+    DIST / "userscript" / f"{SLUG}.user.js": 236 * KIB,
 }
 STORE_MATCH = ["https://store.steampowered.com/*"]
 RELEASE_BASE = "https://github.com/jrv97/steam-ai-reporter/releases/latest/download"

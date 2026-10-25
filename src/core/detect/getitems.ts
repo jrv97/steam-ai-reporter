@@ -1,10 +1,9 @@
 import * as v from "valibot";
 import type { SteamLanguage } from "../i18n/locale";
 import { parseJson } from "../json";
-import { kindsFromGetItems } from "../kinds/registry";
-import { type KindVerdicts, UNKNOWN_KINDS } from "../kinds/verdicts";
-import type { Http, HttpResponse, HttpResult } from "../ports";
-import type { AppId, Detector, UnknownReason } from "../types";
+import { kindsFromGetItems, type KindVerdicts, UNKNOWN_KINDS } from "../kinds/verdicts";
+import type { Detector, Http, HttpResponse, HttpResult } from "../ports";
+import type { AppId, UnknownReason } from "../types";
 import {
   type GetItemsEnvelope,
   GetItemsEnvelopeSchema,
@@ -135,7 +134,7 @@ function itemVerdicts(item: StoreItem, language: SteamLanguage): KindVerdicts {
   if (item.success !== ERESULT_OK || details === undefined) {
     return UNKNOWN_KINDS.missing;
   }
-  return kindsFromGetItems(details, item.name, language);
+  return kindsFromGetItems(item, details, language);
 }
 
 /**

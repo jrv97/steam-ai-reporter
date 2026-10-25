@@ -240,6 +240,8 @@
   --sar-badge-height: 19px;
   /* Full badge cap. English needs about 90px; past the cap the label ends in an ellipsis. */
   --sar-badge-max-inline-size: 180px;
+  /* A row title keeps room for about this much before its chips wrap to a second line. */
+  --sar-row-title-basis: 8em;
   /* Summary row chip offset from the row's inline start: the share of the row the store gives its
      own labels, so the chip lines up with the Developer and Publisher values. */
   --sar-summary-chip-inset-inline: 35%;
@@ -333,6 +335,8 @@
   --sar-banner-quote-lines: 3;
   /* Hover card notes clamp after this many lines (108px); a line then points to the store page. */
   --sar-hovercard-notes-lines: 6;
+  /* Each short detail line of the hover card (a name, a DRM text) clamps after this many lines. */
+  --sar-hovercard-detail-lines: 2;
 
   /* Font families: referenced by name only, never bundled */
 

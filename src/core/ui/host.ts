@@ -1,7 +1,5 @@
 import type { KindId } from "../kinds/id";
 import type { KindVerdicts } from "../kinds/verdicts";
-import type { HostState } from "../scan/marks";
-import type { Verdict } from "../types";
 
 /** The tier of a compact badge, from the measured image box (see `compactSize`). */
 export type CompactSize = "text" | "large";
@@ -25,6 +23,10 @@ export interface HostView {
   readonly verdicts: KindVerdicts;
   /** Per kind: the game is on the allow-list, so nothing marks it, in lists or on badges. */
   readonly allowed: Readonly<Record<KindId, boolean>>;
+  /** Per kind: the kind's badge shows, by its settings. Ignored games and other states aside. */
+  readonly badged: Readonly<Record<KindId, boolean>>;
+  /** How many chips the placement shows before the "+N" chip. */
+  readonly maxChips: number;
   /** Where the badge goes; undefined when the placement shows none (a thumbnail too small). */
   readonly slot: BadgeSlot | undefined;
   /** False where hiding would break the list (virtualized, carousel); hide then dims. */
@@ -37,9 +39,4 @@ export interface HostView {
  */
 export interface HostRenderer {
   render(view: HostView): void;
-}
-
-/** A host's `data-sar-state` once its verdict is known; `allowed` wins over the verdict. */
-export function hostState(verdict: Verdict, allowed: boolean): Exclude<HostState, "pending"> {
-  return allowed ? "allowed" : verdict.state;
 }

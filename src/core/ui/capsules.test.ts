@@ -1,10 +1,18 @@
 import { describe, expect, it, vi } from "vitest";
 import { setBody } from "../../../tests/helpers/dom";
-import { aiVerdicts, disclosedVerdict, NOT_DISCLOSED } from "../../../tests/helpers/verdicts";
-import { KIND_IDS } from "../kinds/id";
+import {
+  aiVerdicts,
+  disclosedVerdict,
+  FULL_DISCLOSED,
+  NOT_DISCLOSED,
+} from "../../../tests/helpers/verdicts";
+import type { AiVerdict } from "../kinds/ai";
+import { KIND_IDS, type KindId } from "../kinds/id";
+import type { KindVerdicts } from "../kinds/verdicts";
+import type { Detector } from "../ports";
 import { GENERIC, type Placement, type RowPlacement } from "../scan/placements";
 import type { CapsuleHost } from "../scan/renderer";
-import { type AppId, type Detector, toAppId, type Verdict } from "../types";
+import { type AppId, toAppId } from "../types";
 import { createCapsuleUi, type SizeWatch } from "./capsules";
 import type { HostView } from "./host";
 
@@ -12,6 +20,7 @@ const ROW: RowPlacement = {
   id: "row",
   host: "*",
   hideable: false,
+  maxChips: 3,
   badge: "full",
   slot: "after",
   anchor: (host) => host.firstElementChild ?? undefined,
@@ -25,12 +34,19 @@ function appId(value: number): AppId {
   return id;
 }
 
-function setup(verdicts: ReadonlyMap<AppId, Verdict>, allowed = new Set<AppId>()) {
+function setup(
+  verdicts: ReadonlyMap<AppId, AiVerdict>,
+  allowed = new Set<AppId>(),
+  /** Verdicts of kinds other than the AI kind, for every app. */
+  others: Partial<KindVerdicts> = {},
+  /** Kinds whose badges are off in the settings. */
+  unbadged: ReadonlySet<KindId> = new Set(),
+) {
   const detect = vi.fn((ids: readonly AppId[]) =>
     Promise.resolve(
       new Map(ids.flatMap((id) => {
         const verdict = verdicts.get(id);
-        return verdict === undefined ? [] : [[id, aiVerdicts(verdict)] as const];
+        return verdict === undefined ? [] : [[id, { ...aiVerdicts(verdict), ...others }] as const];
       })),
     )
   );
@@ -38,16 +54,28 @@ function setup(verdicts: ReadonlyMap<AppId, Verdict>, allowed = new Set<AppId>()
   const views: HostView[] = [];
   const frames: (() => void)[] = [];
   const watched = new Set<Element>();
+  let disconnects = 0;
   let reportSized: (elements: readonly Element[]) => void = () => undefined;
   const ui = createCapsuleUi({
     document,
     detector,
-    renderers: [{ render: (view) => views.push({ ...view, allowed: { ...view.allowed } }) }],
+    renderers: [{
+      render: (view) =>
+        views.push({ ...view, allowed: { ...view.allowed }, badged: { ...view.badged } }),
+    }],
     isAllowed: (id) => allowed.has(id),
+    isBadged: (kind) => !unbadged.has(kind),
     frame: (callback) => frames.push(callback),
     watchSize: (onSized): SizeWatch => {
       reportSized = onSized;
-      return { observe: (element) => watched.add(element), unobserve: (e) => watched.delete(e) };
+      return {
+        observe: (element) => watched.add(element),
+        unobserve: (e) => watched.delete(e),
+        disconnect: () => {
+          disconnects += 1;
+          watched.clear();
+        },
+      };
     },
   });
   const flush = async () => {
@@ -60,7 +88,7 @@ function setup(verdicts: ReadonlyMap<AppId, Verdict>, allowed = new Set<AppId>()
   const sized = (elements: readonly Element[]) => {
     reportSized(elements);
   };
-  return { ui, detect, views, flush, watched, sized };
+  return { ui, detect, views, flush, watched, sized, disconnects: () => disconnects };
 }
 
 function host(id: number, placement: Placement = ROW): CapsuleHost {
@@ -86,6 +114,51 @@ describe("createCapsuleUi", () => {
     expect(views).toHaveLength(1);
     expect(views[0]?.slot).toEqual({ kind: "full", anchor: found.anchor, position: "afterend" });
     expect(views[0]?.hideable).toBe(false);
+  });
+
+  it("gives a host a slot for a disclosure in any kind, whichever it is", async () => {
+    const id = appId(4);
+    const pvpOnly = setup(new Map([[id, NOT_DISCLOSED]]), new Set(), { pvp: FULL_DISCLOSED.pvp });
+    pvpOnly.ui.render({ found: [host(4)], changed: [] });
+    await pvpOnly.flush();
+    expect(pvpOnly.views[0]?.slot).toMatchObject({ kind: "full" });
+    const none = setup(new Map([[id, NOT_DISCLOSED]]));
+    none.ui.render({ found: [host(4)], changed: [] });
+    await none.flush();
+    expect(none.views[0]?.slot).toBeUndefined();
+  });
+
+  it("passes the chip allowance and the badge settings to the renderers", async () => {
+    const id = appId(3);
+    const { ui, views, flush } = setup(
+      new Map([[id, disclosedVerdict()]]),
+      new Set(),
+      {},
+      new Set<KindId>(["drm", "pvp"]),
+    );
+    ui.render({ found: [host(3, { ...ROW, maxChips: 2 })], changed: [] });
+    await flush();
+    expect(views[0]?.maxChips).toBe(2);
+    expect(KIND_IDS.filter((kind) => views[0]?.badged[kind] === false)).toEqual(["drm", "pvp"]);
+  });
+
+  it("gives a host no slot when the only kind it discloses has its badges off", async () => {
+    const id = appId(2);
+    const aiOff = setup(
+      new Map([[id, disclosedVerdict()]]),
+      new Set(),
+      {},
+      new Set<KindId>(["ai"]),
+    );
+    aiOff.ui.render({ found: [host(2)], changed: [] });
+    await aiOff.flush();
+    expect(aiOff.views[0]?.slot).toBeUndefined();
+    const withPvp = setup(new Map([[id, disclosedVerdict()]]), new Set(), {
+      pvp: FULL_DISCLOSED.pvp,
+    }, new Set<KindId>(["ai"]));
+    withPvp.ui.render({ found: [host(2)], changed: [] });
+    await withPvp.flush();
+    expect(withPvp.views[0]?.slot).toMatchObject({ kind: "full" });
   });
 
   it("draws a full badge of an end slot as the anchor's last child", async () => {
@@ -152,9 +225,36 @@ describe("createCapsuleUi", () => {
     expect(detect).toHaveBeenCalledTimes(1);
   });
 
+  it("lets go of the size watch on pagehide and starts a new one when needed", async () => {
+    const id = appId(16);
+    const { ui, flush, watched, disconnects } = setup(new Map([[id, disclosedVerdict()]]));
+    const found = host(16, {
+      ...GENERIC,
+      anchor: (element) => element.querySelector(".art") ?? undefined,
+    });
+    vi.spyOn(found.anchor, "getBoundingClientRect").mockReturnValue(new DOMRect(0, 0, 0, 0));
+    ui.render({ found: [found], changed: [] });
+    await flush();
+    expect(watched.size).toBe(1);
+    window.dispatchEvent(new Event("pagehide"));
+    expect(disconnects()).toBe(1);
+    expect(watched.size).toBe(0);
+    ui.refresh();
+    await flush();
+    expect([...watched]).toEqual([found.anchor]);
+  });
+
+  it("stops listening for pagehide when stopped", () => {
+    const { ui, disconnects } = setup(new Map());
+    ui.stop();
+    expect(disconnects()).toBe(0);
+    window.dispatchEvent(new Event("pagehide"));
+    expect(disconnects()).toBe(0);
+  });
+
   it("does not watch a small image that has a size, nor a host without a badge", async () => {
     const { ui, flush, watched } = setup(
-      new Map<AppId, Verdict>([[appId(14), disclosedVerdict()], [appId(15), NOT_DISCLOSED]]),
+      new Map<AppId, AiVerdict>([[appId(14), disclosedVerdict()], [appId(15), NOT_DISCLOSED]]),
     );
     const small = host(14, {
       ...GENERIC,

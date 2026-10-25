@@ -1,6 +1,7 @@
 import { KINDS } from "../kinds/registry";
 import { type KindVerdicts, UNKNOWN_KINDS } from "../kinds/verdicts";
-import type { AppId, Detector } from "../types";
+import type { Detector } from "../ports";
+import type { AppId } from "../types";
 import { settle } from "./settle";
 
 /** Only Steam having no usable item, so that no kind has an answer, is worth a second source. */

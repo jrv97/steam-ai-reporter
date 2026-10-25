@@ -1,7 +1,8 @@
+import { type AppPage, startAppPage } from "./app-page";
 import { cachedDetector } from "./cache/cached-detector";
 import { maintainCache } from "./cache/maintenance";
 import { createVerdictCache } from "./cache/verdict-cache";
-import { createAppPageDetector, parseLiveAppPage } from "./detect/app-page";
+import { createAppPageDetector, type OpenPage, parseLiveAppPage } from "./detect/app-page";
 import { API_BREAKER_KEY, createBreaker, HTML_BREAKER_KEY } from "./detect/breaker";
 import { createBudgetDetector } from "./detect/budget";
 import { createChainDetector } from "./detect/chain";
@@ -17,26 +18,21 @@ import {
   steamLanguage,
 } from "./i18n/locale";
 import { SHIPPED_CATALOGS } from "./i18n/shipped";
-import { createI18n, type I18n } from "./i18n/t";
-import { AI_KIND } from "./kinds/ai";
-import type { KindId } from "./kinds/id";
-import type { TagKind } from "./kinds/kind";
-import { effectiveSettings } from "./kinds/kind-settings";
-import { KINDS, perKind } from "./kinds/registry";
-import { type KindVerdicts, UNKNOWN_KINDS } from "./kinds/verdicts";
+import { createI18n } from "./i18n/t";
+import { isIgnored, loadIgnored } from "./ignored";
+import { effectiveSettings, type KindSettings } from "./kinds/kind-settings";
+import { KINDS } from "./kinds/registry";
 import { type ConsoleSink, createLogger, type Logger } from "./log";
 import type { Clock, Http, KeyValueStore, SettingsSource, Unsubscribe } from "./ports";
 import { appIdFromHref } from "./scan/appid";
 import { createScanner } from "./scan/scanner";
-import { ALLOW_ALL, type AllowScope, perScope } from "./settings/allow-data";
-import { type AllowList, createAllowList } from "./settings/allow-list";
+import { createAllowList } from "./settings/allow-list";
 import { DEFAULT_SETTINGS, parseSettings, type Settings } from "./settings/settings";
-import type { AppId, Detector, Verdict } from "./types";
-import { createAppPageUi } from "./ui/app-page";
-import { applyBadgeSetting, createBadgeRenderer } from "./ui/badge";
+import { createBadgeRenderer } from "./ui/badge";
 import { createCapsuleUi } from "./ui/capsules";
-import { type CardTriggers, createHoverCard } from "./ui/hover-card";
-import { applyListFilter, createHostStateRenderer } from "./ui/list-filter";
+import { createHoverCard } from "./ui/hover-card";
+import { applyKindSettings } from "./ui/kind-attributes";
+import { createHostKindsRenderer } from "./ui/list-filter";
 
 /** What a composition root hands to core: the ports, already built for its platform. */
 export interface AppDeps {
@@ -65,9 +61,6 @@ export interface App {
   stop(): void;
 }
 
-/** The store app page name element, the fallback when the verdict carries no name. */
-const APP_NAME_SELECTOR = "#appHubAppName";
-
 /** The stored settings, or the defaults and the failure to read them. */
 interface SettingsRead {
   readonly settings: Settings;
@@ -88,119 +81,40 @@ async function readSettings(source: SettingsSource): Promise<SettingsRead> {
  * unknown, the English app page within a per-page budget. Each host has its own throttle and
  * breaker.
  */
-function createDetector(deps: AppDeps, logger: Logger, language: SteamLanguage) {
+function createDetector(
+  deps: AppDeps,
+  logger: Logger,
+  language: SteamLanguage,
+  open: OpenPage | undefined,
+) {
   const { http, store, clock } = deps;
   const throttled = (key: string) =>
     createThrottledHttp({ http, clock, breaker: createBreaker({ store, clock, logger, key }) });
   const getItems = createGetItemsDetector({ http: throttled(API_BREAKER_KEY), language });
-  const appPage = createBudgetDetector(createAppPageDetector(throttled(HTML_BREAKER_KEY)));
+  const appPage = createBudgetDetector(createAppPageDetector(throttled(HTML_BREAKER_KEY), open));
   const chain = createDedupingDetector(createChainDetector([getItems, appPage]));
   return { getItems, detector: cachedDetector(chain, createVerdictCache(store, clock), logger) };
 }
 
-/** Whether a kind holds a disclosure from the API in another language than the page's. */
-function needsTranslation(verdicts: KindVerdicts, language: SteamLanguage): boolean {
-  return KINDS.some((kind) => {
-    const verdict = verdicts[kind.id];
-    return verdict.state === "disclosed" && verdict.source === "api"
-      && verdict.language !== language;
-  });
+/** Whether some kind's setting, as it takes effect, differs between two settings. */
+function changed(
+  before: Settings,
+  after: Settings,
+  pick: (settings: KindSettings) => boolean,
+): boolean {
+  return KINDS.some((kind) =>
+    pick(effectiveSettings(before.kinds[kind.id])) !== pick(effectiveSettings(after.kinds[kind.id]))
+  );
 }
 
-/**
- * The verdicts for the app page the user is on: read from the page itself when it is English (no
- * request), else from the detector. A cached disclosure in another language than the page's is
- * fetched again for this one app, so the banner quotes the developer's own translation.
- */
-async function pageVerdicts(
-  doc: Document,
-  id: AppId,
-  language: SteamLanguage,
-  detectors: { readonly getItems: Detector; readonly detector: Detector; },
-): Promise<KindVerdicts> {
-  const live = parseLiveAppPage(doc, doc.URL);
-  if (live !== undefined) {
-    return live;
-  }
-  const verdicts = (await detectors.detector.detect([id])).get(id) ?? UNKNOWN_KINDS.missing;
-  if (!needsTranslation(verdicts, language)) {
-    return verdicts;
-  }
-  const translated = (await detectors.getItems.detect([id])).get(id);
-  return perKind((kind) => {
-    const fresh = translated?.[kind.id];
-    return fresh?.state === "disclosed" ? fresh : verdicts[kind.id];
-  });
-}
-
-/** The games the user ignored, in page memory: one set of app IDs per scope. */
-type IgnoredGames = Readonly<Record<AllowScope, Set<AppId>>>;
-
-async function loadIgnored(allowList: AllowList, logger: Logger): Promise<IgnoredGames> {
-  try {
-    const entries = await allowList.list();
-    return perScope((scope) => new Set(entries[scope].keys()));
-  } catch (problem) {
-    logger.error(problem);
-    return perScope(() => new Set());
-  }
-}
-
-/** Whether the game is ignored for the kind, on its own or for all kinds. */
-function isIgnored(ignored: IgnoredGames, id: AppId, kind: KindId): boolean {
-  return ignored[ALLOW_ALL].has(id) || ignored[kind].has(id);
-}
-
-function appName(doc: Document, verdict: Verdict, id: AppId): string {
-  const fromVerdict = verdict.state === "disclosed" ? verdict.name : undefined;
-  const fromPage = doc.querySelector(APP_NAME_SELECTOR)?.textContent.trim();
-  return fromVerdict ?? (fromPage === undefined || fromPage === "" ? String(id) : fromPage);
-}
-
-/** The app page for one kind: its banner and summary row, wired to the allow-list. */
-async function startAppPage(
-  doc: Document,
-  id: AppId,
-  i18n: I18n,
-  kind: TagKind,
-  verdicts: Promise<KindVerdicts>,
-  context: {
-    readonly ignored: IgnoredGames;
-    readonly allowList: AllowList;
-    readonly settings: () => Settings;
-    readonly onAllowChange: (id: AppId) => void;
-    readonly card: CardTriggers;
-  },
-): Promise<() => void> {
-  const known = await verdicts;
-  const ui = createAppPageUi(doc, i18n, kind, {
-    async stopMarking() {
-      await context.allowList.add(kind.id, id, appName(doc, known[kind.id], id));
-      context.ignored[kind.id].add(id);
-      context.onAllowChange(id);
-    },
-    async markAgain() {
-      await context.allowList.remove(kind.id, id);
-      context.ignored[kind.id].delete(id);
-      context.onAllowChange(id);
-    },
-  }, { card: context.card });
-  const render = (): void => {
-    ui.render({
-      verdicts: known,
-      allowed: isIgnored(context.ignored, id, kind.id),
-      banner: effectiveSettings(context.settings().kinds[kind.id]).banner,
-    });
-  };
-  render();
-  return render;
-}
+const SHOWS_BADGE = (settings: KindSettings): boolean => settings.badge;
+const SHOWS_BANNER = (settings: KindSettings): boolean => settings.banner;
 
 /**
  * Starts AI Reporter for Steam on one store page: settings, locale and logger, cache upkeep, the
  * detector stack, the allow-list, the page stylesheet, the scanner with its renderers, and the app
  * page's banner. Settings changes from any tab re-render at once: badges and the list filter are
- * one root attribute each, the banner is drawn again from the known verdict.
+ * one root attribute each, the banner is drawn again from the known verdicts.
  */
 export async function start(deps: AppDeps): Promise<App> {
   const { document: doc, store, clock } = deps;
@@ -224,64 +138,67 @@ export async function start(deps: AppDeps): Promise<App> {
   });
 
   const language = steamLanguage(root.lang) ?? DEFAULT_STEAM_LANGUAGE;
-  const detectors = createDetector(deps, logger, language);
+  const pageId = appIdFromHref(doc.URL, doc.URL);
+  // An English app page holds its own verdicts, so nothing fetches the page that is open.
+  const live = pageId === undefined ? undefined : parseLiveAppPage(doc, doc.URL);
+  const open = pageId === undefined || live === undefined
+    ? undefined
+    : { id: pageId, verdicts: live };
+  const detectors = createDetector(deps, logger, language, open);
   const allowList = createAllowList(store, clock);
   const ignored = await loadIgnored(allowList, logger);
 
-  // The page surfaces (badge, banner, list filter) show the AI kind.
-  const kind = AI_KIND;
-  const shown = effectiveSettings(settings.kinds[kind.id]);
   deps.addPageStyles(doc);
-  applyBadgeSetting(root, shown.badge);
-  applyListFilter(root, shown.filter);
+  applyKindSettings(root, settings.kinds);
 
   const card = createHoverCard(doc, i18n);
   const capsules = createCapsuleUi({
     document: doc,
     detector: detectors.detector,
-    renderers: [createHostStateRenderer(kind), createBadgeRenderer(doc, i18n, card, kind)],
+    renderers: [createHostKindsRenderer(), createBadgeRenderer(doc, i18n, card)],
     isAllowed: (id, forKind) => isIgnored(ignored, id, forKind),
+    isBadged: (forKind) => effectiveSettings(settings.kinds[forKind]).badge,
   });
   const scanner = createScanner({ document: doc, renderer: capsules });
 
   scanner.start();
 
-  const pageId = appIdFromHref(doc.URL, doc.URL);
-  let renderAppPage: () => void = () => undefined;
-  if (pageId !== undefined) {
-    renderAppPage = await startAppPage(
-      doc,
-      pageId,
-      i18n,
-      kind,
-      pageVerdicts(doc, pageId, language, detectors),
-      {
-        ignored,
-        allowList,
-        settings: () => settings,
-        onAllowChange: (id) => {
-          capsules.refresh(new Set([id]));
-        },
-        card,
-      },
-    );
-  }
-
+  let appPage: AppPage | undefined;
   const unsubscribe: Unsubscribe = deps.settings.subscribe((value) => {
-    const before = effectiveSettings(settings.kinds[kind.id]);
+    const before = settings;
     settings = parseSettings(value);
-    const next = effectiveSettings(settings.kinds[kind.id]);
-    applyBadgeSetting(root, next.badge);
-    applyListFilter(root, next.filter);
-    if (next.banner !== before.banner) {
-      renderAppPage();
+    applyKindSettings(root, settings.kinds);
+    const badges = changed(before, settings, SHOWS_BADGE);
+    if (badges) {
+      capsules.refresh();
+    }
+    if (badges || changed(before, settings, SHOWS_BANNER)) {
+      appPage?.render();
     }
   });
+
+  if (pageId !== undefined) {
+    appPage = startAppPage(doc, pageId, i18n, {
+      language,
+      detectors,
+      live,
+      ignored,
+      allowList,
+      settings: () => settings,
+      onAllowChange: (id) => {
+        capsules.refresh(new Set([id]));
+      },
+      card,
+      logger,
+    });
+  }
 
   return {
     stop() {
       scanner.stop();
+      capsules.stop();
       card.stop();
+      appPage?.stop();
       unsubscribe();
     },
   };

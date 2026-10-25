@@ -1,7 +1,7 @@
 import * as v from "valibot";
 import type { JsonValue } from "../json";
 import type { KindId } from "../kinds/id";
-import { perKind } from "../kinds/registry";
+import { KINDS, perKind } from "../kinds/registry";
 import { type AppId, toAppId } from "../types";
 
 /** One ignored game: its store name at the time and when the user ignored it. */
@@ -16,6 +16,14 @@ export const ALLOW_ALL = "all";
 
 /** Where an ignore applies: one tag kind, or every kind. */
 export type AllowScope = typeof ALLOW_ALL | KindId;
+
+/** Every scope, in the order a list shows them: all kinds, then each kind in registry order. */
+export const ALLOW_SCOPES: readonly AllowScope[] = [ALLOW_ALL, ...KINDS.map((kind) => kind.id)];
+
+/** The scope a stored or attribute value names, or undefined when it is none. */
+export function toAllowScope(value: string | null): AllowScope | undefined {
+  return ALLOW_SCOPES.find((scope) => scope === value);
+}
 
 /** The ignored games of each scope, keyed by app ID. */
 export type AllowEntries = Readonly<Record<AllowScope, ReadonlyMap<AppId, AllowEntry>>>;

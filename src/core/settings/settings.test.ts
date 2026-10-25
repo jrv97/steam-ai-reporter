@@ -1,22 +1,37 @@
 import { describe, expect, it } from "vitest";
-import { KINDS } from "../kinds/registry";
+import { withKind } from "../../../tests/helpers/settings";
+import { KINDS, perKind } from "../kinds/registry";
 import {
+  applyPatch,
   DEFAULT_SETTINGS,
   encodeSettings,
   parseSettings,
   type Settings,
-  withKind,
 } from "./settings";
 
 const PLAIN = { enabled: true, badge: true, banner: true, filter: "off" } as const;
 
 describe("DEFAULT_SETTINGS", () => {
-  it("follows the page language and leaves every kind on, with a plain list", () => {
+  it("follows the page language and leaves every kind but PvP on, with a plain list", () => {
     expect(DEFAULT_SETTINGS).toStrictEqual({
       locale: "auto",
       debug: false,
-      kinds: { ai: PLAIN },
+      kinds: { ...perKind(() => PLAIN), pvp: { ...PLAIN, enabled: false } },
     });
+  });
+
+  it("is what a fresh install reads, and what a stored value without the kind reads", () => {
+    expect(parseSettings(undefined)).toStrictEqual(DEFAULT_SETTINGS);
+    expect(parseSettings({ locale: "es", kinds: { ai: { badge: false } } }).kinds.pvp)
+      .toStrictEqual(
+        { ...PLAIN, enabled: false },
+      );
+  });
+
+  it("keeps PvP on once the player turned it on", () => {
+    const on = withKind(DEFAULT_SETTINGS, "pvp", { enabled: true });
+    expect(parseSettings(encodeSettings(on)).kinds.pvp.enabled).toBe(true);
+    expect(parseSettings(encodeSettings(on)).kinds.ai).toStrictEqual(PLAIN);
   });
 
   it("takes each kind's defaults from its definition", () => {
@@ -42,11 +57,22 @@ describe("parseSettings", () => {
     );
   });
 
+  it("gives each kind the stored settings do not mention the defaults of its definition", () => {
+    const parsed = parseSettings({ kinds: { kernel: { badge: false }, drm: "junk" } });
+    for (const kind of KINDS) {
+      const expected = kind.id === "kernel" ? { ...kind.defaults, badge: false } : kind.defaults;
+      expect(parsed.kinds[kind.id]).toStrictEqual(expected);
+    }
+  });
+
   it("accepts every valid value", () => {
     const stored: Settings = {
       locale: "pt_BR",
       debug: true,
-      kinds: { ai: { enabled: false, badge: false, banner: false, filter: "hide" } },
+      kinds: {
+        ...perKind(() => ({ enabled: false, badge: false, banner: false, filter: "hide" })),
+        kernel: { enabled: true, badge: false, banner: true, filter: "dim" },
+      },
     };
     expect(parseSettings(stored)).toStrictEqual(stored);
     expect(parseSettings({ locale: "es" }).locale).toBe("es");
@@ -99,14 +125,20 @@ describe("encodeSettings", () => {
   const settings: Settings = {
     locale: "es",
     debug: true,
-    kinds: { ai: { enabled: true, badge: false, banner: true, filter: "dim" } },
+    kinds: {
+      ...perKind(() => PLAIN),
+      ai: { enabled: true, badge: false, banner: true, filter: "dim" },
+    },
   };
 
   it("stores the global fields and one object per kind", () => {
     expect(encodeSettings(settings)).toStrictEqual({
       locale: "es",
       debug: true,
-      kinds: { ai: { enabled: true, badge: false, banner: true, filter: "dim" } },
+      kinds: {
+        ...perKind(() => PLAIN),
+        ai: { enabled: true, badge: false, banner: true, filter: "dim" },
+      },
     });
   });
 
@@ -121,8 +153,41 @@ describe("withKind", () => {
     const next = withKind(DEFAULT_SETTINGS, "ai", { filter: "hide", enabled: false });
     expect(next).toStrictEqual({
       ...DEFAULT_SETTINGS,
-      kinds: { ai: { ...PLAIN, filter: "hide", enabled: false } },
+      kinds: { ...DEFAULT_SETTINGS.kinds, ai: { ...PLAIN, filter: "hide", enabled: false } },
     });
     expect(DEFAULT_SETTINGS.kinds.ai).toStrictEqual(PLAIN);
+    expect(next.kinds.kernel).toStrictEqual(PLAIN);
+  });
+});
+
+describe("applyPatch", () => {
+  const stored: Settings = {
+    locale: "es",
+    debug: true,
+    kinds: { ...perKind(() => PLAIN), kernel: { ...PLAIN, filter: "dim" } },
+  };
+
+  it("replaces the fields it names and keeps every other one", () => {
+    const next = applyPatch(stored, { locale: "en", kinds: { drm: { badge: false } } });
+    expect(next).toStrictEqual({
+      locale: "en",
+      debug: true,
+      kinds: { ...stored.kinds, drm: { ...PLAIN, badge: false } },
+    });
+  });
+
+  it("changes nothing for an empty patch, and leaves the settings it was given alone", () => {
+    expect(applyPatch(stored, {})).toStrictEqual(stored);
+    expect(applyPatch(stored, { kinds: {} })).toStrictEqual(stored);
+    applyPatch(stored, { debug: false, kinds: { kernel: { filter: "hide" } } });
+    expect(stored.debug).toBe(true);
+    expect(stored.kinds.kernel.filter).toBe("dim");
+  });
+
+  it("patches several kinds at once", () => {
+    const next = applyPatch(stored, { kinds: { ai: { enabled: false }, pvp: { filter: "hide" } } });
+    expect(next.kinds.ai.enabled).toBe(false);
+    expect(next.kinds.pvp.filter).toBe("hide");
+    expect(next.kinds.kernel.filter).toBe("dim");
   });
 });

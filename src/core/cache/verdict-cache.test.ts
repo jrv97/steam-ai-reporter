@@ -3,14 +3,22 @@ import { appId, appIds } from "../../../tests/helpers/app-ids";
 import { countingStore } from "../../../tests/helpers/counting-store";
 import { fixedClock } from "../../../tests/helpers/fixed-clock";
 import { memoryStore } from "../../../tests/helpers/memory-store";
-import { aiVerdicts, disclosedVerdict, NOT_DISCLOSED } from "../../../tests/helpers/verdicts";
+import {
+  aiVerdicts,
+  disclosedVerdict,
+  NOT_DISCLOSED,
+  uniformVerdicts,
+} from "../../../tests/helpers/verdicts";
 import type { JsonValue } from "../json";
+import { AI_KIND, type AiVerdict } from "../kinds/ai";
+import { perKind } from "../kinds/registry";
 import type { KindVerdicts } from "../kinds/verdicts";
-import { type AppId, UNKNOWN, type Verdict } from "../types";
-import { DISCLOSED_TTL_MS, NOT_DISCLOSED_TTL_MS, TRANSIENT_TTL_MS, UNKNOWN_TTL_MS } from "./ttl";
+import { type AppId, UNKNOWN } from "../types";
+import { TRANSIENT_TTL_MS, UNKNOWN_TTL_MS } from "./ttl";
 import { createVerdictCache } from "./verdict-cache";
 
 const T = 1_000_000_000_000;
+const { disclosed: DISCLOSED_TTL_MS, notDisclosed: NOT_DISCLOSED_TTL_MS } = AI_KIND.ttl;
 
 function setup(capacity?: number) {
   const store = countingStore(memoryStore());
@@ -46,10 +54,9 @@ describe("VerdictCache", () => {
 
   it("stores one entry per app, holding the fetch time and a verdict for each kind", async () => {
     const { cache, store } = setup();
-    await cache.save(new Map([[appId(10), aiVerdicts(NOT_DISCLOSED)]]));
-    expect(await store.get(["v1:a:10"])).toStrictEqual(
-      new Map([["v1:a:10", { time: T, kinds: { ai: { state: "not-disclosed", source: "api" } } }]]),
-    );
+    await cache.save(new Map([[appId(10), uniformVerdicts("not-disclosed")]]));
+    const entry = { time: T, kinds: perKind(() => ({ state: "not-disclosed", source: "api" })) };
+    expect(await store.get(["v1:a:10"])).toStrictEqual(new Map([["v1:a:10", entry]]));
   });
 
   it("keeps the language the notes were fetched in", async () => {
@@ -102,16 +109,16 @@ describe("VerdictCache", () => {
   });
 
   describe("TTL edges", () => {
-    const cases: readonly (readonly [string, Verdict, number])[] = [
-      ["disclosed", disclosedVerdict(), DISCLOSED_TTL_MS],
-      ["not disclosed", NOT_DISCLOSED, NOT_DISCLOSED_TTL_MS],
-      ["unknown gated", UNKNOWN.gated, UNKNOWN_TTL_MS],
-      ["unknown missing", UNKNOWN.missing, UNKNOWN_TTL_MS],
+    const cases: readonly (readonly [string, KindVerdicts, number])[] = [
+      ["disclosed", uniformVerdicts("disclosed"), DISCLOSED_TTL_MS],
+      ["not disclosed", uniformVerdicts("not-disclosed"), NOT_DISCLOSED_TTL_MS],
+      ["unknown gated", uniformVerdicts("gated"), UNKNOWN_TTL_MS],
+      ["unknown missing", uniformVerdicts("missing"), UNKNOWN_TTL_MS],
     ];
 
-    it.each(cases)("%s: stored for its TTL, gone at exactly the TTL", async (_n, verdict, ttl) => {
+    it.each(cases)("%s: stored for its TTL, gone at exactly the TTL", async (_n, verdicts, ttl) => {
       const { cache, another, clock } = setup();
-      await cache.save(new Map([[appId(10), aiVerdicts(verdict)]]));
+      await cache.save(new Map([[appId(10), verdicts]]));
 
       clock.set(T + ttl - 1);
       expect((await another().lookup(appIds(10))).has(appId(10))).toBe(true);
@@ -124,7 +131,7 @@ describe("VerdictCache", () => {
   });
 
   describe("verdicts that are not stored", () => {
-    const cases: readonly (readonly [string, Verdict])[] = [
+    const cases: readonly (readonly [string, AiVerdict])[] = [
       ["unknown error", UNKNOWN.error],
       ["unknown rate-limited", UNKNOWN["rate-limited"]],
     ];

@@ -1,31 +1,63 @@
-import type { ExtraDetails } from "../detect/getitems.schema";
-import type { SteamLanguage } from "../i18n/locale";
-import type { Verdict } from "../types";
+import { SarError } from "../errors";
+import { ACCOUNT_KIND } from "./account";
 import { AI_KIND } from "./ai";
-import { KIND_IDS, type KindId } from "./id";
+import { ANTICHEAT_KIND } from "./anticheat";
+import { DRM_KIND } from "./drm";
+import { EULA_KIND } from "./eula";
+import type { KindId } from "./id";
+import { KERNEL_KIND } from "./kernel";
 import type { TagKind } from "./kind";
+import { PVP_KIND } from "./pvp";
 
-// The one place that lists the kinds. Each literal here is checked against `KindId`, so a kind in
-// `KIND_IDS` without an entry fails the type check.
-const REGISTRY: Readonly<Record<KindId, TagKind>> = { ai: AI_KIND };
+/**
+ * The one place that lists the kinds. The kind ids, the settings defaults and every per-kind
+ * record derive from it. A new kind is one entry here and its definition.
+ */
+export const KINDS = [
+  AI_KIND,
+  KERNEL_KIND,
+  ANTICHEAT_KIND,
+  DRM_KIND,
+  ACCOUNT_KIND,
+  EULA_KIND,
+  PVP_KIND,
+] as const;
 
-/** Every registered kind, in `KIND_IDS` order. */
-export const KINDS: readonly TagKind[] = KIND_IDS.map((id) => REGISTRY[id]);
-
-export function kindOf(id: KindId): TagKind {
-  return REGISTRY[id];
+function anyValue(): boolean {
+  return true;
 }
 
-/** One `make(kind)` result for each registered kind, keyed by kind id. */
+/**
+ * Whether `values` holds a value for every registered kind, and `fits` accepts each one in its
+ * slot. Builders fill one slot per kind from that kind's own definition.
+ */
+export function holdsEveryKind<T>(
+  values: Partial<Record<KindId, T>>,
+  fits: (id: KindId, value: T) => boolean = anyValue,
+): values is Readonly<Record<KindId, T>> {
+  for (const kind of KINDS) {
+    const value = values[kind.id];
+    if (value === undefined || !fits(kind.id, value)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+/**
+ * One `make(kind)` result for each registered kind, keyed by kind id. `make` never returns
+ * undefined. The hot paths loop over `KINDS` instead, so they allocate no closure per call.
+ */
 export function perKind<T>(make: (kind: TagKind) => T): Readonly<Record<KindId, T>> {
-  return { ai: make(REGISTRY.ai) };
+  const values: Partial<Record<KindId, T>> = {};
+  for (const kind of KINDS) {
+    values[kind.id] = make(kind);
+  }
+  if (holdsEveryKind(values)) {
+    return values;
+  }
+  throw new SarError("error_unexpected", {});
 }
 
-/** Every kind's verdict for a GetItems item with `extra_details`. */
-export function kindsFromGetItems(
-  details: ExtraDetails,
-  name: string | undefined,
-  language: SteamLanguage,
-): Readonly<Record<KindId, Verdict>> {
-  return { ai: REGISTRY.ai.fromGetItems(details, name, language) };
-}
+/** Each registered kind's definition by id, for code that holds a verdict and needs its words. */
+export const KIND_BY_ID: Readonly<Record<KindId, TagKind>> = perKind((kind) => kind);

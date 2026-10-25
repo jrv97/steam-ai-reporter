@@ -1,8 +1,8 @@
-import * as v from "valibot";
+import type { TagKind } from "./kind";
+import { KINDS } from "./registry";
 
-/** Every tag kind the extension knows. A new kind gets an id here and an entry in `registry.ts`. */
-export const KIND_IDS = ["ai"] as const;
+/** The id of every registered kind, derived from the registry. */
+export type KindId = TagKind["id"];
 
-export type KindId = (typeof KIND_IDS)[number];
-
-export const KindIdSchema = v.picklist(KIND_IDS);
+/** Every kind id, in registry order. */
+export const KIND_IDS: readonly KindId[] = KINDS.map((kind) => kind.id);

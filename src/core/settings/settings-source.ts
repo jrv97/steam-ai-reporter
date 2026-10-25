@@ -1,7 +1,14 @@
 import type { KeyValueStore, SettingsSource, Unsubscribe } from "../ports";
+import { createSerial } from "../serial";
 import { SETTINGS_KEY } from "../storage-keys";
 import { migrateSettings, readSettingsValue } from "./migrate";
-import { encodeSettings, type Settings } from "./settings";
+import {
+  applyPatch,
+  encodeSettings,
+  parseSettings,
+  type Settings,
+  type SettingsPatch,
+} from "./settings";
 
 /**
  * Reports changes made by other tabs. The platform adapter supplies it from its own change event
@@ -10,10 +17,13 @@ import { encodeSettings, type Settings } from "./settings";
  */
 export type RemoteSettingsChanges = (listener: (value: unknown) => void) => Unsubscribe;
 
-/** The stored settings: a `SettingsSource` that can also write them. */
+/** The stored settings: a `SettingsSource` that can also change them. */
 export interface StoredSettings extends SettingsSource {
-  /** Replaces the stored settings and tells this context's subscribers. */
-  write(settings: Settings): Promise<void>;
+  /**
+   * Replaces the fields of `patch` in the settings stored now, writes them and returns them.
+   * Patches from one context run in turn; two tabs at once can still lose one.
+   */
+  patch(patch: SettingsPatch): Promise<Settings>;
 }
 
 /**
@@ -27,6 +37,7 @@ export function createSettingsSource(
   const listeners = new Set<(value: unknown) => void>();
   let lastTold: string | undefined;
   let unsubscribeRemote: Unsubscribe | undefined;
+  const serial = createSerial();
 
   function tell(value: unknown): void {
     const signature = JSON.stringify(value);
@@ -35,8 +46,20 @@ export function createSettingsSource(
     }
     lastTold = signature;
     for (const listener of listeners) {
-      listener(value);
+      try {
+        listener(value);
+      } catch {
+        // A subscriber's failure is its own; the write that told it has landed.
+      }
     }
+  }
+
+  async function write(settings: Settings): Promise<void> {
+    // Never put defaults over v1 settings that were not copied: a failed copy rejects the write.
+    await migrateSettings(store);
+    const value = encodeSettings(settings);
+    await store.set(new Map([[SETTINGS_KEY, value]]));
+    tell(value);
   }
 
   return {
@@ -44,12 +67,12 @@ export function createSettingsSource(
       return readSettingsValue(store);
     },
 
-    async write(settings) {
-      // Never put defaults over v1 settings that were not copied: a failed copy rejects the write.
-      await migrateSettings(store);
-      const value = encodeSettings(settings);
-      await store.set(new Map([[SETTINGS_KEY, value]]));
-      tell(value);
+    patch(patch) {
+      return serial(async () => {
+        const next = applyPatch(parseSettings(await readSettingsValue(store)), patch);
+        await write(next);
+        return next;
+      });
     },
 
     subscribe(listener) {

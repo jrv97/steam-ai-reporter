@@ -9,7 +9,7 @@ import {
   SKIPPED,
 } from "./candidates";
 import { createHostFinder } from "./hosts";
-import { HOST_APPID, HOST_HIDEABLE, HOST_STATE, isInSarNode, isSarNode, SAR_NODE } from "./marks";
+import { HOST_APPID, HOST_HIDEABLE, HOST_KINDS, isInSarNode, isSarNode, SAR_NODE } from "./marks";
 import { placeHost, type Placement, PLACEMENTS } from "./placements";
 import type { CapsuleHost, CapsuleRenderer } from "./renderer";
 
@@ -260,7 +260,7 @@ export function createScanner(options: ScannerOptions): Scanner {
     for (const element of plan.stale) {
       hosts.delete(element);
       element.removeAttribute(HOST_APPID);
-      element.removeAttribute(HOST_STATE);
+      element.removeAttribute(HOST_KINDS);
       element.removeAttribute(HOST_HIDEABLE);
       for (const copy of element.querySelectorAll(SAR_NODE)) {
         copy.remove();
@@ -268,7 +268,6 @@ export function createScanner(options: ScannerOptions): Scanner {
     }
     for (const host of plan.found) {
       host.element.setAttribute(HOST_APPID, String(host.appId));
-      host.element.setAttribute(HOST_STATE, "pending");
       if (!host.placement.hideable) {
         host.element.setAttribute(HOST_HIDEABLE, "false");
       }

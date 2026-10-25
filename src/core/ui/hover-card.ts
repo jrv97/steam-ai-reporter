@@ -1,6 +1,7 @@
-import type { TagKind } from "../kinds/kind";
+import { KIND_BY_ID } from "../kinds/registry";
+import { type AnyDisclosed, sameVerdicts } from "../kinds/verdicts";
 import type { MessageCatalog } from "../ports";
-import type { DisclosedVerdict } from "../types";
+import { type KindDetail, kindDetails } from "./kind-details";
 import { normalizeBreaks } from "./notes";
 
 /** The card's id, the target of `aria-describedby` while focus holds it open. */
@@ -68,10 +69,11 @@ export function placeCard(
 /** Elements register here as they render; the card looks them up when an event reaches them. */
 export interface CardTriggers {
   /**
-   * Makes the element open the card with this kind's verdict. Sets nothing on it. `ownPage` marks
-   * a trigger on the game's own store page, where the card does not point to that page.
+   * Makes the element open the card with these disclosed verdicts, one entry each, in the order
+   * given. Sets nothing on it. `ownPage` marks a trigger on the game's own store page, where the
+   * card does not point to that page.
    */
-  bind(trigger: Element, kind: TagKind, verdict: DisclosedVerdict, ownPage?: boolean): void;
+  bind(trigger: Element, entries: readonly AnyDisclosed[], ownPage?: boolean): void;
 }
 
 export interface HoverCard extends CardTriggers {
@@ -97,8 +99,8 @@ interface Open {
 
 interface Card {
   readonly root: HTMLElement;
-  readonly notes: HTMLElement;
   readonly more: HTMLElement;
+  readonly source: HTMLElement;
 }
 
 /** What a follow reuses from the last placement, so it reads only the trigger's box. */
@@ -109,8 +111,7 @@ interface Placed {
 }
 
 interface Binding {
-  readonly kind: TagKind;
-  readonly verdict: DisclosedVerdict;
+  readonly entries: readonly AnyDisclosed[];
   readonly ownPage: boolean;
 }
 
@@ -151,10 +152,11 @@ function defaultOverflows(notes: HTMLElement): boolean {
 }
 
 /**
- * The hover card: one panel per page, built like the store's game hover popup, that quotes the
- * developer's notes for the badge or summary row under the pointer or focus. Triggers register
- * in a `WeakMap`; six delegated listeners on the document serve every trigger on the page. The
- * card closes on `pagehide`.
+ * The hover card: one panel per page, built like the store's game hover popup, that lists every
+ * kind of the chip or summary row under the pointer or focus: Steam's line for the kind, its
+ * details and the developer's own text, then a line that names the developer as the source.
+ * Triggers register in a `WeakMap`; six delegated listeners on the document serve every trigger
+ * on the page. The card closes on `pagehide`.
  */
 export function createHoverCard(
   doc: Document,
@@ -182,8 +184,10 @@ export function createHoverCard(
   const bindings = new WeakMap<Element, Binding>();
 
   let card: Card | undefined;
-  let filled: DisclosedVerdict | undefined;
-  /** Whether the clamp hides part of the filled notes. */
+  let filled: readonly AnyDisclosed[] | undefined;
+  /** The clamped quotes of the filled entries. */
+  let quotes: HTMLElement[] = [];
+  /** Whether the clamp hides part of a filled quote. */
   let clamped = false;
   let open: Open | undefined;
   let described: Described | undefined;
@@ -216,40 +220,61 @@ export function createHoverCard(
     root.setAttribute("role", "tooltip");
     root.setAttribute("popover", "manual");
     root.hidden = true;
-    const notes = line("sar-hovercard-notes", "");
     const more = line("sar-hovercard-more", i18n.t("badge_card_more"));
     more.hidden = true;
+    const source = line("sar-hovercard-source", i18n.t("badge_card_declared"));
     doc.body.append(root);
-    card = { root, notes, more };
+    card = { root, more, source };
     return card;
   }
 
-  /** Rebuilds the shown card for another verdict; the same verdict keeps what is there. */
-  function fill(target: Card, { kind, verdict, ownPage }: Binding): void {
-    if (filled === verdict) {
-      target.more.hidden = ownPage || !clamped;
-      return;
+  /** One line of an entry: catalog copy, or the developer's text through `textContent`. */
+  function detailLine(detail: KindDetail): HTMLElement {
+    switch (detail.kind) {
+      case "message":
+        return line("sar-hovercard-detail", i18n.t(detail.key));
+      case "text":
+        return line("sar-hovercard-detail", detail.text);
+      case "quote": {
+        const quote = line("sar-hovercard-notes", normalizeBreaks(detail.text));
+        quotes.push(quote);
+        return quote;
+      }
+      case "labeled": {
+        const labeled = line("sar-hovercard-service", i18n.t(detail.key));
+        const name = doc.createElement("span");
+        name.className = "sar-hovercard-service-name";
+        name.textContent = detail.text;
+        labeled.append(" ", name);
+        return labeled;
+      }
     }
-    filled = verdict;
-    target.notes.textContent = normalizeBreaks(verdict.notes);
-    const parts: HTMLElement[] = [
-      line("sar-hovercard-title", i18n.t(kind.messages.label)),
-      line("sar-hovercard-source", i18n.t("badge_card_source")),
-      target.notes,
-    ];
-    if (verdict.service !== undefined && verdict.service !== "") {
-      const service = line("sar-hovercard-service", i18n.t(kind.messages.cardService));
-      const name = doc.createElement("span");
-      name.className = "sar-hovercard-service-name";
-      name.textContent = verdict.service;
-      service.append(" ", name);
-      parts.push(service);
+  }
+
+  /** A kind's entry. A line that only repeats the heading, as PvP does, is left out. */
+  function entry(verdict: AnyDisclosed): HTMLElement {
+    const heading = i18n.t(KIND_BY_ID[verdict.kind].messages.heading);
+    const node = doc.createElement("div");
+    node.className = "sar-hovercard-entry";
+    node.append(
+      line("sar-hovercard-title", heading),
+      ...kindDetails(verdict)
+        .filter((detail) => !(detail.kind === "message" && i18n.t(detail.key) === heading))
+        .map(detailLine),
+    );
+    return node;
+  }
+
+  /** Rebuilds the shown card for other verdicts; the same verdicts keep what is there. */
+  function fill(target: Card, { entries, ownPage }: Binding): void {
+    if (filled === undefined || !sameVerdicts(filled, entries)) {
+      filled = entries;
+      quotes = [];
+      target.root.replaceChildren(...entries.map(entry), target.more, target.source);
+      // Measured once per fill, on the shown card: the clamp depends on the text and the width.
+      target.more.hidden = true;
+      clamped = quotes.some(overflows);
     }
-    parts.push(target.more);
-    target.root.replaceChildren(...parts);
-    // Measured once per verdict, on the shown card: the clamp depends on the text and the width.
-    target.more.hidden = true;
-    clamped = overflows(target.notes);
     target.more.hidden = ownPage || !clamped;
   }
 
@@ -301,12 +326,15 @@ export function createHoverCard(
     }
   }
 
+  /** The focused element that holds the trigger, when the pointer opens a card over a focus. */
+  function focusedAround(trigger: Element): Element | undefined {
+    const active = doc.activeElement;
+    return active !== null && active !== doc.body && active.contains(trigger) ? active : undefined;
+  }
+
   function show(trigger: Element, via: Via, focused?: Element): void {
     const binding = bindings.get(trigger);
-    if (
-      binding === undefined || !trigger.isConnected
-      || doc.documentElement.getAttribute("data-sar-badges") === "off"
-    ) {
+    if (binding === undefined || binding.entries.length === 0 || !trigger.isConnected) {
       close();
       return;
     }
@@ -316,8 +344,9 @@ export function createHoverCard(
     target.root.hidden = false;
     raise(target.root);
     fill(target, binding);
-    if (focused !== undefined) {
-      describe(focused);
+    const owner = focused ?? focusedAround(trigger);
+    if (owner !== undefined) {
+      describe(owner);
     }
     place(target, trigger);
     doc.documentElement.setAttribute(OPEN_MARK, "open");
@@ -516,8 +545,8 @@ export function createHoverCard(
   view?.addEventListener("pagehide", close);
 
   return {
-    bind(trigger, kind, verdict, ownPage = false) {
-      bindings.set(trigger, { kind, verdict, ownPage });
+    bind(trigger, entries, ownPage = false) {
+      bindings.set(trigger, { entries, ownPage });
     },
     stop() {
       close();
@@ -528,6 +557,7 @@ export function createHoverCard(
       card?.root.remove();
       card = undefined;
       filled = undefined;
+      quotes = [];
     },
   };
 }

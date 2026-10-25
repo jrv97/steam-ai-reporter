@@ -1,14 +1,15 @@
 """Refresh the public fixtures in tests/fixtures/ from the live store (cookie-less, keyless).
 
-Captures the GetItems fixtures (`mixed-states`, `german-context`, `empty-response`) and the
-server-rendered app pages, sanitizes them the way tests/fixtures/README.md describes, and writes
-them in place. It never signs in and never captures a logged-in page. Fixtures that need a
+Captures the GetItems fixtures (`mixed-states`, `german-context`, `empty-response`, `kinds`)
+and the server-rendered app pages, sanitizes them the way tests/fixtures/README.md describes, and
+writes them in place. It never signs in and never captures a logged-in page. Fixtures that need a
 rendered DOM or an account (`surfaces/`, `app-page/*-live-dom.html`, `search-roguelike-50`,
 the `synthetic-*` files) are not touched; refresh those by hand.
 
 Without --out the files in tests/fixtures/ are overwritten and the capture date in
 tests/fixtures/README.md is updated; review the diff before committing. Use --out to write to
-another folder first. About a dozen requests are made, one second apart.
+another folder first, or --only kinds to refresh just the tag-kind fixtures (their capture date
+is in the README tables). About twenty requests are made, one second apart.
 """
 
 import argparse
@@ -33,16 +34,17 @@ TIMEOUT_SECONDS = 30
 SPACING_SECONDS = 1.0
 
 ITEM_REMOVED = ("related_items", "best_purchase_option")
-DETAILS_REMOVED = (
+KINDS_DETAILS_REMOVED = (
     "system_requirements",
     "early_access",
     "partner_awards_bbcode",
     "links_and_info",
     "press_review",
     "legal_notice_bbcode",
-    "eula",
     "section",
 )
+# The AI fixtures drop the EULA links; the kinds fixture keeps them.
+DETAILS_REMOVED = (*KINDS_DETAILS_REMOVED, "eula")
 
 VOID_TAGS = frozenset(
     [
@@ -96,6 +98,8 @@ class AppPage:
     file: str
     appid: int
     shallow: bool = False
+    # Keep only the name and the features list (#category_block) in a minimal document.
+    features_only: bool = False
 
 
 APP_PAGES = (
@@ -105,6 +109,21 @@ APP_PAGES = (
     AppPage("4618750-ai-line-breaks.html", 4618750),
     AppPage("339800-login-redirect.html", 339800, shallow=True),
     AppPage("99999999-home-redirect.html", 99999999, shallow=True),
+)
+
+# The tag kinds: apps that show each declaration, a package and a bundle without `extra_details`,
+# and an ID that does not exist.
+KIND_APPS = (3751950, 2807960, 1808500, 813230, 730, 570, 105600, 1245620, 1172470, 271590)
+# Games that declare nothing of any kind, from 2004 to 2024.
+KIND_NOTHING = (1145360, 413150, 504230, 367520, 2379780, 620)
+KIND_PACKAGE = 320795
+KIND_BUNDLE = 1
+KIND_MISSING = 99999999
+KIND_PAGES = (
+    AppPage("3751950-drm-account-eula.html", 3751950, features_only=True),
+    AppPage("2807960-kernel-boot-protection.html", 2807960, features_only=True),
+    AppPage("730-anticheat-nonkernel.html", 730, features_only=True),
+    AppPage("1172470-kernel-easyac.html", 1172470, features_only=True),
 )
 
 
@@ -152,7 +171,7 @@ class Sanitizer(HTMLParser):
     def _render(self, tag: str, attrs: dict[str, str | None]) -> str:
         parts = [tag]
         for key, value in attrs.items():
-            if key.startswith("on") or key in DROPPED_ATTRS:
+            if key.startswith(("on", "data-miniprofile")) or key in DROPPED_ATTRS:
                 continue
             if key.startswith("data-ds-") and key not in ALLOWED_DS:
                 continue
@@ -226,32 +245,72 @@ def sanitize_page(text: str, shallow: bool) -> str:
     return re.sub(r"\n{2,}", "\n", "".join(parser.out)).strip() + "\n"
 
 
-def getitems_url(ids: list[int], language: str, country: str) -> str:
+def element_html(text: str, element_id: str) -> str:
+    """The sanitized div with this id, found by counting the divs inside it."""
+    marker = text.find(f'id="{element_id}"')
+    start = text.rfind("<div", 0, marker)
+    if marker < 0 or start < 0:
+        fail(f"no div with the id {element_id} in the page")
+    depth = 0
+    end = -1
+    for tag in re.finditer(r"<(/?)div\b", text[start:]):
+        depth += -1 if tag.group(1) else 1
+        if depth == 0:
+            end = text.index(">", start + tag.end()) + 1
+            break
+    if end < 0:
+        fail(f"the div with the id {element_id} never closes")
+    return text[start:end]
+
+
+def features_page(text: str) -> str:
+    """A minimal document with the page title, the app name and the features list."""
+    title = re.search(r"<title>(.*?)</title>", text, re.DOTALL)
+    if title is None:
+        fail("no title in the page")
+    return (
+        '<!DOCTYPE html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n'
+        f"<title>{title.group(1)}</title>\n</head>\n<body>\n"
+        f"{element_html(text, 'appHubAppName')}\n{element_html(text, 'category_block')}\n"
+        "</body>\n</html>\n"
+    )
+
+
+def getitems_url(ids: list[dict[str, int]], language: str, country: str) -> str:
     request = {
-        "ids": [{"appid": appid} for appid in ids],
+        "ids": ids,
         "context": {"language": language, "country_code": country},
         "data_request": {"include_extra_details": True},
     }
     return f"{GETITEMS_URL}?input_json={urllib.parse.quote(json.dumps(request), safe='')}"
 
 
-def trim_item(entry: object) -> object:
+def trim_item(entry: object, removed: tuple[str, ...]) -> object:
     if not isinstance(entry, dict):
         return entry
     item = {key: value for key, value in entry.items() if key not in ITEM_REMOVED}
     details = item.get("extra_details")
     if isinstance(details, dict):
-        item["extra_details"] = {k: v for k, v in details.items() if k not in DETAILS_REMOVED}
+        item["extra_details"] = {k: v for k, v in details.items() if k not in removed}
     return item
 
 
-def getitems_fixture(ids: list[int], language: str, country: str) -> str:
+def app_ids(appids: list[int]) -> list[dict[str, int]]:
+    return [{"appid": appid} for appid in appids]
+
+
+def getitems_fixture(
+    ids: list[dict[str, int]],
+    language: str,
+    country: str,
+    removed: tuple[str, ...] = DETAILS_REMOVED,
+) -> str:
     envelope = json.loads(fetch(getitems_url(ids, language, country)))
     response = envelope.get("response") if isinstance(envelope, dict) else None
     items = response.get("store_items") if isinstance(response, dict) else None
     if not isinstance(items, list):
         fail(f"GetItems {ids}: no response.store_items in the answer")
-    rows = ",\n".join(json.dumps(trim_item(item), separators=(",", ":")) for item in items)
+    rows = ",\n".join(json.dumps(trim_item(item, removed), separators=(",", ":")) for item in items)
     return '{"response":{"store_items":[\n' + rows + "\n]}}\n"
 
 
@@ -263,21 +322,36 @@ def write(path: Path, text: str) -> None:
 
 def capture_getitems(out: Path) -> None:
     mixed = [5072580, 1808500, 1938090, 413150, 339800, 99999999, 50300]
-    write(out / "getitems" / "mixed-states.json", getitems_fixture(mixed, "english", "US"))
+    write(out / "getitems" / "mixed-states.json", getitems_fixture(app_ids(mixed), "english", "US"))
     time.sleep(SPACING_SECONDS)
     write(
         out / "getitems" / "german-context.json",
-        getitems_fixture([1938090, 5072580], "german", "DE"),
+        getitems_fixture(app_ids([1938090, 5072580]), "german", "DE"),
     )
     time.sleep(SPACING_SECONDS)
     write(out / "getitems" / "empty-response.json", fetch(getitems_url([], "english", "US")))
     time.sleep(SPACING_SECONDS)
 
 
-def capture_app_pages(out: Path) -> None:
-    for page in APP_PAGES:
+def capture_kinds_getitems(out: Path) -> None:
+    ids = [
+        *app_ids([*KIND_APPS, *KIND_NOTHING]),
+        {"packageid": KIND_PACKAGE},
+        {"bundleid": KIND_BUNDLE},
+        *app_ids([KIND_MISSING]),
+    ]
+    write(
+        out / "getitems" / "kinds.json",
+        getitems_fixture(ids, "english", "US", KINDS_DETAILS_REMOVED),
+    )
+    time.sleep(SPACING_SECONDS)
+
+
+def capture_app_pages(out: Path, pages: tuple[AppPage, ...] = APP_PAGES) -> None:
+    for page in pages:
         body = fetch(f"https://store.steampowered.com/app/{page.appid}/?l=english")
-        write(out / "app-page" / page.file, sanitize_page(body, page.shallow))
+        clean = sanitize_page(body, page.shallow)
+        write(out / "app-page" / page.file, features_page(clean) if page.features_only else clean)
         time.sleep(SPACING_SECONDS)
 
 
@@ -292,13 +366,18 @@ def update_readme_date() -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--out", type=Path, default=FIXTURES, help="output folder")
-    parser.add_argument("--only", choices=("getitems", "app-page"), help="capture one group")
+    parser.add_argument(
+        "--only", choices=("getitems", "app-page", "kinds"), help="capture one group"
+    )
     args = parser.parse_args()
-    if args.only != "app-page":
+    if args.only in (None, "getitems"):
         capture_getitems(args.out)
-    if args.only != "getitems":
+    if args.only in (None, "app-page"):
         capture_app_pages(args.out)
-    if args.out.resolve() == FIXTURES:
+    if args.only in (None, "kinds"):
+        capture_kinds_getitems(args.out)
+        capture_app_pages(args.out, KIND_PAGES)
+    if args.out.resolve() == FIXTURES and args.only != "kinds":
         update_readme_date()
 
 

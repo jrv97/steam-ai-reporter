@@ -1,7 +1,7 @@
 """Check the message catalogs (AGENTS.md rules 4 and 9).
 
 Shipped catalogs (src/locales/<locale>/messages.json):
-- keys are snake_case and start with a known prefix;
+- keys are snake_case and start with a known prefix (`kind_` names a tag kind's words);
 - every message has a description;
 - the `$name$` tokens of a message match its declared placeholders, each `$1`-style content;
 - every locale has the same keys and placeholders as English (other locales may add plural
@@ -13,7 +13,8 @@ Every catalog, shipped or test-only (tests/locales/), must be valid and must not
 "AI-free" or "no AI": the product reports disclosures, it does not judge games.
 
 No string literal under src/ or tests/ may repeat catalog text (rule 9): code and tests read copy
-from the catalog. A literal is catalog text when, trimmed, it either
+from the catalog. The detection constants (DETECTION_CONSTANTS) are the one exception. A literal is
+catalog text when, trimmed, it either
 - equals a whole message of any shipped locale, each `$name$` standing for any text; or
 - shares MIN_SHARED or more characters with the text between a message's placeholders: it
   contains that text, or is a piece of it.
@@ -48,6 +49,7 @@ TEST_CATALOGS = ROOT / "tests" / "locales"
 PREFIXES = (
     "badge_",
     "banner_",
+    "kind_",
     "options_",
     "error_",
     "warn_",
@@ -58,6 +60,10 @@ PREFIXES = (
 KEY = re.compile(r"^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$")
 CONTENT = re.compile(r"^\$[1-9]$")
 FORBIDDEN = re.compile(r"\buses AI\b|\bAI-free\b|\bno AI\b", re.IGNORECASE)
+
+# Steam's own words that detection matches on the store page. A catalog message may repeat one, as
+# the AI heading does, without making the detection literal a copy of the message.
+DETECTION_CONSTANTS = frozenset({"AI Generated Content Disclosure"})
 
 MIN_SHARED = 12
 MIN_WILDCARD_TEXT = 4
@@ -197,6 +203,8 @@ def copy_problems(root: Path, catalogs: Mapping[str, Catalog]) -> list[str]:
     for path in scanned_sources(root):
         where = path.relative_to(root).as_posix()
         for literal in string_literals(path.read_text(encoding="utf-8")):
+            if len(literal.parts) == 1 and literal.parts[0].strip() in DETECTION_CONSTANTS:
+                continue
             refs = index.matches(literal.parts)
             if refs:
                 keys = ", ".join(dict.fromkeys(ref.label() for ref in refs))

@@ -4,6 +4,13 @@ import { firstImage, imageBox } from "./image";
 // Where a host's badge goes, per store surface (rq6, S5; docs/design/components.mdx, sections 1,
 // 2 and 5). A new surface is a new entry here, never a scanner edit (rule 11).
 
+/** Chips a row with room for words shows beside its title. */
+const ROW_CHIPS = 3;
+/** Chips a capsule overlay shows: the image is narrow and the store's own flags sit on it. */
+const OVERLAY_CHIPS = 2;
+/** Chips a search suggestion shows: its row is the smallest. */
+const SUGGESTION_CHIPS = 2;
+
 /** Finds the element a badge attaches to inside a host, or undefined when it does not fit. */
 export type AnchorRule = (host: Element) => Element | undefined;
 
@@ -17,6 +24,11 @@ interface PlacementBase {
    * filter dims those hosts instead, through `data-sar-hideable="false"`.
    */
   readonly hideable: boolean;
+  /**
+   * How many kind chips the surface shows before one "+N" chip stands for the rest. A constant to
+   * tune by the room the surface leaves.
+   */
+  readonly maxChips: number;
   /** Reads only: it runs in the scan's read phase. */
   readonly anchor: AnchorRule;
 }
@@ -87,6 +99,7 @@ export const GENERIC: OverlayPlacement = {
   id: "generic",
   host: "*",
   hideable: true,
+  maxChips: OVERLAY_CHIPS,
   badge: "compact",
   slot: "overlay",
   anchor: capsuleImage,
@@ -100,6 +113,7 @@ export const PLACEMENTS: readonly Placement[] = [
     id: "search-row",
     host: "a.search_result_row",
     hideable: true,
+    maxChips: ROW_CHIPS,
     badge: "full",
     slot: "after",
     anchor: inside(".search_name .title"),
@@ -109,6 +123,7 @@ export const PLACEMENTS: readonly Placement[] = [
     id: "wishlist-row",
     host: "[data-index]",
     hideable: false,
+    maxChips: ROW_CHIPS,
     badge: "full",
     slot: "after",
     anchor: wishlistTitle,
@@ -118,6 +133,7 @@ export const PLACEMENTS: readonly Placement[] = [
     id: "search-suggestion",
     host: "[id^='searchSuggestions'] *",
     hideable: true,
+    maxChips: SUGGESTION_CHIPS,
     badge: "full",
     slot: "after",
     anchor: firstTextLeaf,
@@ -128,6 +144,7 @@ export const PLACEMENTS: readonly Placement[] = [
     id: "dlc-row",
     host: "a.game_area_dlc_row",
     hideable: true,
+    maxChips: ROW_CHIPS,
     badge: "full",
     slot: "end",
     anchor: inside(".game_area_dlc_name"),
@@ -137,6 +154,7 @@ export const PLACEMENTS: readonly Placement[] = [
     id: "home-main-carousel",
     host: "a.store_main_capsule",
     hideable: false,
+    maxChips: OVERLAY_CHIPS,
     badge: "compact",
     slot: "overlay",
     anchor: capsuleImage,
@@ -147,6 +165,7 @@ export const PLACEMENTS: readonly Placement[] = [
     id: "queue-preview",
     host: ".discovery_queue_content_ctn",
     hideable: false,
+    maxChips: OVERLAY_CHIPS,
     badge: "compact",
     slot: "overlay",
     anchor: inside(".dq_item"),
@@ -156,6 +175,7 @@ export const PLACEMENTS: readonly Placement[] = [
     id: "hub-carousel",
     host: ".LibraryAssetExpandedDisplay, .LibraryAssetExpandedDisplay *",
     hideable: false,
+    maxChips: OVERLAY_CHIPS,
     badge: "compact",
     slot: "overlay",
     anchor: capsuleImage,
