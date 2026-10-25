@@ -359,6 +359,34 @@ describe("createHoverCard", () => {
     expect(link.getAttribute("aria-describedby")).toBe(STORE_NOTE_ID);
   });
 
+  it("describes a focused link when the pointer opens the card over it, and lets go", () => {
+    const { link, badge, other } = page();
+    start().bind(badge, [disclosedVerdict()]);
+    link.focus();
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+    expect(shown()).toBeNull();
+    pointerOver(other);
+    pointerOver(badge);
+    flush();
+    expect(shown()).not.toBeNull();
+    expect(link.getAttribute("aria-describedby")).toBe(HOVER_CARD_ID);
+    pointerOver(other);
+    flush();
+    expect(shown()).toBeNull();
+    expect(link.hasAttribute("aria-describedby")).toBe(false);
+  });
+
+  it("describes nothing when the pointer opens the card and no link holds focus", () => {
+    const { link, badge, other } = page();
+    start().bind(badge, [disclosedVerdict()]);
+    other.focus();
+    pointerOver(badge);
+    flush();
+    expect(shown()).not.toBeNull();
+    expect(link.hasAttribute("aria-describedby")).toBe(false);
+    expect(other.hasAttribute("aria-describedby")).toBe(false);
+  });
+
   it("closes on Escape and stays closed until the pointer leaves the badge", () => {
     const { badge, other } = page();
     start().bind(badge, [disclosedVerdict()]);

@@ -201,6 +201,9 @@ a.sar-summary-row .sar-badge {
   text-align: start;
   white-space: normal;
   overflow-wrap: anywhere;
+  /* Never taller than the viewport less the offsets; a long list scrolls inside the card. */
+  max-block-size: calc(100vh - 2 * var(--sar-hovercard-offset));
+  overflow-y: auto;
   pointer-events: auto;
   opacity: 1;
   transition: opacity var(--sar-duration-fast) var(--sar-ease);
@@ -244,9 +247,13 @@ a.sar-summary-row .sar-badge {
 }
 
 .sar-hovercard-detail {
-  display: block;
+  display: -webkit-box;
+  overflow: hidden;
   color: var(--sar-color-text);
   font: var(--sar-hovercard-meta-font);
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: var(--sar-hovercard-detail-lines);
+  line-clamp: var(--sar-hovercard-detail-lines);
 }
 
 .sar-hovercard-notes {

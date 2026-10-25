@@ -53,6 +53,28 @@ describe("the per-kind page rules", () => {
   });
 });
 
+describe("the hover card rules", () => {
+  const rule = (selector: string) => {
+    const start = PAGE_CSS.indexOf(`${selector} {`);
+    return PAGE_CSS.slice(start, PAGE_CSS.indexOf("}", start));
+  };
+
+  it("keeps the card inside the viewport and scrolls what does not fit", () => {
+    expect(rule(".sar-hovercard")).toContain(
+      "max-block-size: calc(100vh - 2 * var(--sar-hovercard-offset))",
+    );
+    expect(rule(".sar-hovercard")).toContain("overflow-y: auto");
+    expect(rule(".sar-hovercard")).toContain("inline-size: var(--sar-hovercard-inline-size)");
+  });
+
+  it("clamps each detail line, a long DRM text or a EULA name among them", () => {
+    expect(rule(".sar-hovercard-detail")).toContain(
+      "-webkit-line-clamp: var(--sar-hovercard-detail-lines)",
+    );
+    expect(rule(".sar-hovercard-detail")).toContain("overflow: hidden");
+  });
+});
+
 describe("adoptStyles", () => {
   it("adopts a stylesheet once per root", () => {
     const host = document.createElement("div");

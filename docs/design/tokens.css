@@ -333,6 +333,8 @@
   --sar-banner-quote-lines: 3;
   /* Hover card notes clamp after this many lines (108px); a line then points to the store page. */
   --sar-hovercard-notes-lines: 6;
+  /* Each short detail line of the hover card (a name, a DRM text) clamps after this many lines. */
+  --sar-hovercard-detail-lines: 2;
 
   /* Font families: referenced by name only, never bundled */
 

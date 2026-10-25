@@ -323,6 +323,12 @@ export function createHoverCard(
     }
   }
 
+  /** The focused element that holds the trigger, when the pointer opens a card over a focus. */
+  function focusedAround(trigger: Element): Element | undefined {
+    const active = doc.activeElement;
+    return active !== null && active !== doc.body && active.contains(trigger) ? active : undefined;
+  }
+
   function show(trigger: Element, via: Via, focused?: Element): void {
     const binding = bindings.get(trigger);
     if (
@@ -338,8 +344,9 @@ export function createHoverCard(
     target.root.hidden = false;
     raise(target.root);
     fill(target, binding);
-    if (focused !== undefined) {
-      describe(focused);
+    const owner = focused ?? focusedAround(trigger);
+    if (owner !== undefined) {
+      describe(owner);
     }
     place(target, trigger);
     doc.documentElement.setAttribute(OPEN_MARK, "open");
