@@ -4,8 +4,8 @@
   tag                   tag a merged batch commit and dispatch the nightly
   validate [--release]  check the tag is CalVer, on main and green; --release checks the assets
   publish-nightly       create the GitHub prerelease from artifacts/
-  chrome                upload and publish the Chrome zip to the Chrome Web Store
-  amo                   submit the Firefox zip and the source zip to AMO, listed channel
+  chrome                upload and publish the Chromium zip to the Chrome Web Store
+  amo                   submit the Gecko zip and the source zip to AMO, listed channel
   latest                mark the release latest, which moves the userscript update URLs
 
 The release app writes with RELEASE_APP_TOKEN and RELEASE_APP_SLUG.
@@ -26,6 +26,7 @@ import cws
 from calver import next_version, parse, release_tags, utc_today
 from repo import (
     ARTIFACTS,
+    EXTENSION_TARGETS,
     ROOT,
     SLUG,
     fail,
@@ -255,8 +256,7 @@ def release_tag() -> str:
 
 def asset_names(version: str) -> list[str]:
     return [
-        f"{SLUG}-chrome-{version}.zip",
-        f"{SLUG}-firefox-{version}.zip",
+        *(f"{SLUG}-{target}-{version}.zip" for target in EXTENSION_TARGETS),
         f"{SLUG}.user.js",
         f"{SLUG}.meta.js",
         f"{SLUG}-source-{version}.zip",
@@ -325,8 +325,8 @@ def manifest_version(archive: Path) -> str:
     return json_string(manifest.get("version"), "manifest version")
 
 
-def promoted_zip(version: str, browser: str) -> Path:
-    (path,) = download(version, f"{SLUG}-{browser}-{version}.zip")
+def promoted_zip(version: str, target: str) -> Path:
+    (path,) = download(version, f"{SLUG}-{target}-{version}.zip")
     if manifest_version(path) != version:
         fail(f"{path.name}: manifest version is {manifest_version(path)}, not {version}")
     return path
@@ -339,13 +339,13 @@ def require_env(*names: str) -> None:
 
 
 def chrome() -> None:
-    """Submit the Chrome zip with a short-lived Workload Identity Federation token (ADR 0007).
+    """Submit the Chromium zip with a short-lived Workload Identity Federation token (ADR 0007).
 
     It reads CWS_ACCESS_TOKEN, CWS_PUBLISHER_ID and CWS_EXTENSION_ID.
     """
     require_env("CWS_ACCESS_TOKEN", "CWS_PUBLISHER_ID", "CWS_EXTENSION_ID")
     version = release_tag()
-    archive = promoted_zip(version, "chrome")
+    archive = promoted_zip(version, "chromium")
     call = cws.http_call(env("CWS_ACCESS_TOKEN"))
     state = cws.publish(call, env("CWS_PUBLISHER_ID"), env("CWS_EXTENSION_ID"), archive)
     summary(f"Submitted {archive.name} to the Chrome Web Store for review (state {state}).")
@@ -355,10 +355,10 @@ def amo() -> None:
     """Submit to the AMO listed channel through web-ext sign, which reads WEB_EXT_API_*."""
     require_env("WEB_EXT_API_KEY", "WEB_EXT_API_SECRET")
     version = release_tag()
-    archive = promoted_zip(version, "firefox")
+    archive = promoted_zip(version, "gecko")
     (source,) = download(version, f"{SLUG}-source-{version}.zip")
     with tempfile.TemporaryDirectory() as folder:
-        unpacked, metadata = Path(folder) / "firefox", Path(folder) / "amo-metadata.json"
+        unpacked, metadata = Path(folder) / "gecko", Path(folder) / "amo-metadata.json"
         with zipfile.ZipFile(archive) as files:
             files.extractall(unpacked)
         notes = {"version": {"release_notes": {"en-US": release_notes(version)}}}

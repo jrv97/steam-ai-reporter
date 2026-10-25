@@ -772,7 +772,7 @@ The ring is as thick as the tag's stroke: 20 units on the 300 unit canvas. The t
 
 Use the PNG nearest the display size; the options header shows `icon-48.png` at 32px, the popup `icon-32.png`. The 16 and 32px renders are interim until hand-hinted reduced versions replace them: an `icon-16.svg` or `icon-32.svg` in the folder is rendered in place of the mark and never overwritten. One ink per file; never add a gradient, a second color or letters.
 
-Regenerate the color files and the PNGs with `mise run icons`. It runs `scripts/render_icons.py`, which paints `mark-purple.svg` with headless Chrome (`SAR_CHROME_BIN`) into a page of exactly each size on a transparent ground.
+Regenerate the color files and the PNGs with `mise run icons`. It runs `scripts/render_icons.py`, which paints `mark-purple.svg` with headless Chromium (`SAR_CHROMIUM_BIN`) into a page of exactly each size on a transparent ground.
 
 ## 15. Hover card
 

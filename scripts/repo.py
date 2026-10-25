@@ -11,6 +11,8 @@ ROOT = Path(__file__).resolve().parent.parent
 DIST = ROOT / "dist"
 ARTIFACTS = ROOT / "artifacts"
 SLUG = "steam-ai-reporter"
+# The extension builds, named after their browser engines: dist/<target>, manifest.<target>.json.
+EXTENSION_TARGETS = ("chromium", "gecko")
 ICONS_DIR = ROOT / "assets" / "icons"
 ICON_SIZES = (16, 32, 48, 128)
 VALIBOT_LICENSE = ROOT / "node_modules" / "valibot" / "LICENSE.md"

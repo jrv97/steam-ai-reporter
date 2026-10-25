@@ -6,12 +6,12 @@ Run before each release, after `mise run canary` passes. Automated tests cover t
 
 Targets, each tested logged out and logged in:
 
-| Target            | How to load it                                                                                                                              |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| Chrome extension  | `mise run build`, then `chrome://extensions`, Developer mode, "Load unpacked", pick `dist/chrome`. Or `mise run run-chrome`.                |
-| Firefox extension | `mise run run-firefox`, which uses `SAR_FIREFOX_BIN` and the dedicated profile in `SAR_FIREFOX_PROFILE`. Personal profiles stay off limits. |
-| Tampermonkey      | Install `steam-ai-reporter.user.js` from `artifacts/` (or `dist/userscript/`) in Chrome and in Firefox.                                     |
-| Violentmonkey     | Same file, in Chrome and in Firefox.                                                                                                        |
+| Target            | How to load it                                                                                                                        |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| Chrome extension  | `mise run build`, then `chrome://extensions`, Developer mode, "Load unpacked", pick `dist/chromium`. Or `mise run run-chromium`.      |
+| Firefox extension | `mise run run-gecko`, which uses `SAR_GECKO_BIN` and the dedicated profile in `SAR_GECKO_PROFILE`. Personal profiles stay off limits. |
+| Tampermonkey      | Install `steam-ai-reporter.user.js` from `artifacts/` (or `dist/userscript/`) in Chrome and in Firefox.                               |
+| Violentmonkey     | Same file, in Chrome and in Firefox.                                                                                                  |
 
 Before starting:
 

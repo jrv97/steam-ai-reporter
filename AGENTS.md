@@ -1,7 +1,7 @@
 # Tag Kit for Steam
 
-A Chrome and Firefox MV3 extension and a Tampermonkey/Violentmonkey userscript, built from one
-TypeScript core, that tag Steam store items: AI Generated Content Disclosure, anti-cheat, 3rd-party DRM, 3rd-Party Account, 3rd-party EULA and PvP.
+An MV3 extension for Chromium-based browsers and Firefox, plus a Tampermonkey/Violentmonkey
+userscript, built from one TypeScript core, that tag Steam store items: AI Generated Content Disclosure, anti-cheat, 3rd-party DRM, 3rd-Party Account, 3rd-party EULA and PvP.
 
 ## Working knowledge (docs/)
 
@@ -89,11 +89,12 @@ These are hard rules. A change that breaks one needs an ADR first.
 
 ## Development browsers
 
-- Firefox testing uses Firefox Nightly only, through a dedicated profile. The regular Firefox
+- Gecko testing uses Firefox Nightly only, through a dedicated profile. The regular Firefox
   install is personal: never launch it, install into it, or touch its profiles.
-- Chrome (regular release) is used only for this project; loading the unpacked build there is fine.
-- Machine-specific paths (`SAR_FIREFOX_BIN`, `SAR_FIREFOX_PROFILE`, `SAR_CHROME_BIN`,
-  `SAR_CHROME_PROFILE`) live in the gitignored `mise.local.toml` of the main checkout. Edit it
+- Chromium (not the regular Chrome release) is the project's Chromium browser and is used only for
+  this project; loading the unpacked build there is fine.
+- Machine-specific paths (`SAR_GECKO_BIN`, `SAR_GECKO_PROFILE`, `SAR_CHROMIUM_BIN`,
+  `SAR_CHROMIUM_PROFILE`) live in the gitignored `mise.local.toml` of the main checkout. Edit it
   there; `.worktreeinclude` copies it into each new worktree, and an older worktree copies it by
   hand.
 - The Claude desktop app's built-in browser cannot load extensions; agents use it to inject the
@@ -113,4 +114,4 @@ These are hard rules. A change that breaks one needs an ADR first.
 - Plans in `docs/plans/` and research in `docs/research/` stay committed in this repo, since ADRs
   link to the research. Code never references either.
 - Main tasks: `mise run setup` once per clone, then `fmt`, `lint`, `typecheck`, `test`, `build`,
-  `check`, `ci`; `dev`, `run-firefox`, `run-chrome` to try builds; `change-new` for changelog notes.
+  `check`, `ci`; `dev`, `run-gecko`, `run-chromium` to try builds; `change-new` for changelog notes.

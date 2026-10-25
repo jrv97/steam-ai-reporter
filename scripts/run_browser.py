@@ -1,15 +1,16 @@
 """Run a build in a development browser through `web-ext run`, reloading on every rebuild.
 
-Firefox: only Firefox Nightly, from SAR_FIREFOX_BIN, with the dedicated profile directory in
-SAR_FIREFOX_PROFILE. There is no fallback to a Firefox on PATH: a personal Firefox and its
-profiles are never launched or touched. The binary must be a Nightly build (its channel-prefs.js
-says "nightly"), and a profile last used by another Firefox install is refused.
+gecko: the Gecko build in Firefox Nightly only, from SAR_GECKO_BIN, with the dedicated profile
+directory in SAR_GECKO_PROFILE. There is no fallback to a Firefox on PATH: a personal Firefox and
+its profiles are never launched or touched. The binary must be a Nightly build (its
+channel-prefs.js says "nightly"), and a profile last used by another Firefox install is refused.
 
-Chrome: SAR_CHROME_BIN with the dedicated profile directory in SAR_CHROME_PROFILE.
+chromium: the Chromium build in the browser at SAR_CHROMIUM_BIN, with the dedicated profile
+directory in SAR_CHROMIUM_PROFILE.
 
 The variables live in mise.local.toml (see mise.local.toml.example).
 
-Usage: run_browser.py {firefox,chrome} [--check]
+Usage: run_browser.py {chromium,gecko} [--check]
 """
 
 import argparse
@@ -21,7 +22,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from repo import DIST, ROOT, fail
+from repo import DIST, EXTENSION_TARGETS, ROOT, fail
 
 START_URL = "https://store.steampowered.com/"
 CHANNEL = re.compile(r'pref\(\s*"app\.update\.channel"\s*,\s*"([^"]+)"\s*\)')
@@ -71,21 +72,21 @@ def check_profile(name: str, profile: Path, binary: Path | None) -> None:
         )
 
 
-def firefox_args(check_only: bool) -> list[str]:
-    binary = env_path("SAR_FIREFOX_BIN")
+def gecko_args(check_only: bool) -> list[str]:
+    binary = env_path("SAR_GECKO_BIN")
     if not binary.is_file():
-        fail(f"SAR_FIREFOX_BIN does not exist: {binary}")
+        fail(f"SAR_GECKO_BIN does not exist: {binary}")
     channel = firefox_channel(binary)
     if channel != "nightly":
         found = f'channel "{channel}"' if channel else "no update channel"
-        fail(f"SAR_FIREFOX_BIN must be Firefox Nightly; {binary} has {found}")
-    profile = env_path("SAR_FIREFOX_PROFILE")
-    check_profile("SAR_FIREFOX_PROFILE", profile, binary)
+        fail(f"SAR_GECKO_BIN must be Firefox Nightly; {binary} has {found}")
+    profile = env_path("SAR_GECKO_PROFILE")
+    check_profile("SAR_GECKO_PROFILE", profile, binary)
     if check_only:
         return []
     return [
         "--target=firefox-desktop",
-        f"--source-dir={DIST / 'firefox'}",
+        f"--source-dir={DIST / 'gecko'}",
         f"--firefox={binary}",
         f"--firefox-profile={profile}",
         "--profile-create-if-missing",
@@ -93,17 +94,17 @@ def firefox_args(check_only: bool) -> list[str]:
     ]
 
 
-def chrome_args(check_only: bool) -> list[str]:
-    binary = env_path("SAR_CHROME_BIN")
+def chromium_args(check_only: bool) -> list[str]:
+    binary = env_path("SAR_CHROMIUM_BIN")
     if not binary.is_file():
-        fail(f"SAR_CHROME_BIN does not exist: {binary}")
-    profile = env_path("SAR_CHROME_PROFILE")
-    check_profile("SAR_CHROME_PROFILE", profile, None)
+        fail(f"SAR_CHROMIUM_BIN does not exist: {binary}")
+    profile = env_path("SAR_CHROMIUM_PROFILE")
+    check_profile("SAR_CHROMIUM_PROFILE", profile, None)
     if check_only:
         return []
     return [
         "--target=chromium",
-        f"--source-dir={DIST / 'chrome'}",
+        f"--source-dir={DIST / 'chromium'}",
         f"--chromium-binary={binary}",
         f"--chromium-profile={profile}",
         "--profile-create-if-missing",
@@ -113,22 +114,20 @@ def chrome_args(check_only: bool) -> list[str]:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("browser", choices=("firefox", "chrome"))
+    parser.add_argument("target", choices=EXTENSION_TARGETS)
     parser.add_argument("--check", action="store_true", help="only validate the settings")
     args = parser.parse_args()
 
-    browser_args = (
-        firefox_args(args.check) if args.browser == "firefox" else chrome_args(args.check)
-    )
+    browser_args = gecko_args(args.check) if args.target == "gecko" else chromium_args(args.check)
     if args.check:
-        print(f"{args.browser}: development browser settings look right")
+        print(f"{args.target}: development browser settings look right")
         return
     # web-ext creates a missing profile directory, but not its missing parents.
-    profile_var = "SAR_FIREFOX_PROFILE" if args.browser == "firefox" else "SAR_CHROME_PROFILE"
+    profile_var = "SAR_GECKO_PROFILE" if args.target == "gecko" else "SAR_CHROMIUM_PROFILE"
     env_path(profile_var).parent.mkdir(parents=True, exist_ok=True)
     web_ext = shutil.which("web-ext")
     if web_ext is None:
-        fail("web-ext is not on PATH; run this through `mise run run-firefox` or `run-chrome`")
+        fail("web-ext is not on PATH; run this through `mise run run-gecko` or `run-chromium`")
     command = [web_ext, "run", *browser_args, f"--start-url={START_URL}"]
     sys.exit(subprocess.run(command, cwd=ROOT, check=False).returncode)
 
