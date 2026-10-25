@@ -9,6 +9,8 @@ import {
 import { englishI18n } from "../../../tests/helpers/i18n";
 import { disclosedVerdict, FULL_DISCLOSED } from "../../../tests/helpers/verdicts";
 import type { PageDetails } from "../detect/page-details";
+import { SHIPPED_CATALOGS } from "../i18n/shipped";
+import { createI18n } from "../i18n/t";
 import { KIND_BY_ID } from "../kinds/registry";
 import type { AnyDisclosed } from "../kinds/verdicts";
 import { ALLOW_ALL } from "../settings/allow-data";
@@ -389,6 +391,33 @@ describe("the banner's accessibility", () => {
     expect(query(root, "aside").hasAttribute("data-sar-entries")).toBe(false);
     banner.show(view(disclosedList(capturedVerdicts(3751950))));
     expect(query(root, "aside").getAttribute("data-sar-entries")).toBe("many");
+  });
+});
+
+describe("the banner in Spanish", () => {
+  it("reads every line of the entries and the buttons from the Spanish catalog", () => {
+    const spanish = createI18n(SHIPPED_CATALOGS, "es");
+    setBody('<div class="game_description_column"></div>');
+    const banner = createBanner(document, spanish, manualActions().actions, {
+      frame: () => undefined,
+    });
+    const shown = disclosedList(capturedVerdicts(3751950));
+    banner.show(view(shown, { ignored: ["pvp"] }));
+    const root = banner.host.shadowRoot;
+    if (root === null) {
+      throw new TypeError();
+    }
+    expect(texts(root, "h2")).toEqual(
+      shown.map((verdict) => spanish.t(KIND_BY_ID[verdict.kind].messages.heading)),
+    );
+    expect(texts(root, ".sar-banner-action")).toEqual(
+      shown.map(() => spanish.t("banner_ignore_kind")),
+    );
+    expect(texts(root, ".sar-banner-ignored-text")).toEqual([
+      spanish.t("banner_ignored_kind", { heading: spanish.t("kind_pvp_heading") }),
+    ]);
+    expect(query(root, ".sar-banner-foot button").textContent).toBe(spanish.t("banner_ignore"));
+    expect(spanish.t("banner_ignore_kind")).not.toBe(i18n.t("banner_ignore_kind"));
   });
 });
 
