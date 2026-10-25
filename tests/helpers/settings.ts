@@ -13,12 +13,20 @@ export function withKind(settings: Settings, id: KindId, patch: Partial<KindSett
   return applyPatch(settings, { kinds: { [id]: patch } });
 }
 
-/** A patch that names every field, so applying it sets the settings to exactly `settings`. */
+/**
+ * A patch that names every field, so applying it sets the settings to exactly `settings`. An unset
+ * color is named as `undefined`, which clears a stored one.
+ */
 function wholePatch(settings: Settings): SettingsPatch {
   return {
     locale: settings.locale,
     debug: settings.debug,
-    kinds: Object.fromEntries(KINDS.map((kind) => [kind.id, settings.kinds[kind.id]])),
+    kinds: Object.fromEntries(
+      KINDS.map((kind) => {
+        const own = settings.kinds[kind.id];
+        return [kind.id, { ...own, color: own.color }];
+      }),
+    ),
   };
 }
 

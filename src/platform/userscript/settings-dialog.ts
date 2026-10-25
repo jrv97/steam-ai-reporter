@@ -74,6 +74,7 @@ export async function openSettingsDialog(deps: SettingsDialogDeps): Promise<void
     allowList: deps.allowList,
     sectionState: deps.sectionState,
     context: "popup",
+    colors: true,
     locales: Object.keys(deps.catalogs),
   });
 

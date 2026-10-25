@@ -1,7 +1,12 @@
 import * as v from "valibot";
 import { type JsonValue, parseWithDefaults } from "../json";
 import type { KindId } from "../kinds/id";
-import { encodeKindSettings, type KindSettings, parseKindSettings } from "../kinds/kind-settings";
+import {
+  encodeKindSettings,
+  type KindSettings,
+  mergeKindSettings,
+  parseKindSettings,
+} from "../kinds/kind-settings";
 import { KINDS, perKind } from "../kinds/registry";
 
 /** The `locale` setting that follows the store page's language (see `resolveLocale`). */
@@ -69,6 +74,6 @@ export function applyPatch(settings: Settings, patch: SettingsPatch): Settings {
   return {
     locale: patch.locale ?? settings.locale,
     debug: patch.debug ?? settings.debug,
-    kinds: perKind((kind) => ({ ...settings.kinds[kind.id], ...patch.kinds?.[kind.id] })),
+    kinds: perKind((kind) => mergeKindSettings(settings.kinds[kind.id], patch.kinds?.[kind.id])),
   };
 }

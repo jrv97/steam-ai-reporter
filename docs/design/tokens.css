@@ -91,6 +91,29 @@
      art, 4.21:1 against mid grey, 3.34:1 against violet. */
   --sar-accent-900: #1f1840;
 
+  /* A tag's custom color (experimental) */
+
+  /* The picked color plays the role of accent 400. The other steps are mixes of it, at the shares
+     where the violet scale sits from accent 400, so a custom color makes a scale of the same
+     shape. Nothing here checks contrast: a custom color lifts the AA and 3:1 pairs for the person
+     who picked it, and the defaults keep them (decisions.mdx, decision 49). The color itself is
+     the root custom property --sar-kind-color-<id>, written by the app, never in this file. */
+
+  /* Full badge tint: the color over transparent (accent 400 at 20%). */
+  --sar-kind-mix-tint: 20%;
+  /* Full badge text and hover card title: the color over white (accent 200). */
+  --sar-kind-mix-text: 37%;
+  /* Compact badge text: the color over white (accent 100). */
+  --sar-kind-mix-light: 24%;
+  /* Compact badge surface: the color over black (accent 900). */
+  --sar-kind-mix-solid: 22%;
+  /* Banner wash, dark stop: the color over black (accent 800). */
+  --sar-kind-mix-wash-start: 31%;
+  /* Banner wash, bright stop: the color over black (accent 600). */
+  --sar-kind-mix-wash-end: 66%;
+  /* Both wash stops are drawn at this share, as the violet wash is. */
+  --sar-kind-mix-wash-alpha: 80%;
+
   /* Focus */
 
   /* Keyboard focus ring: a solid 2px outline at 2px offset on :focus-visible only. 3.69:1 or more
@@ -255,6 +278,8 @@
   --sar-control-height-sm: 28px;
   /* Popup segments; the banner button's minimum, above the store's 22px for the target size. */
   --sar-control-height-xs: 24px;
+  /* The hex text box of a tag's color field: room for #rrggbb and the placeholder word. */
+  --sar-color-input-inline-size: 9em;
   /* Options page column. */
   --sar-options-max-width: 640px;
   /* Action popup width. */

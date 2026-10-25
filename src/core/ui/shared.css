@@ -12,3 +12,60 @@
   white-space: nowrap !important;
   border: 0 !important;
 }
+
+/* A tag's custom color (experimental). Whatever carries data-sar-kind reads that kind's color
+   from the root custom property the app writes, and derives every shade from it. With no color
+   set, the property is empty and so is every shade, so each rule falls back to the violet tokens.
+   The kinds are listed by hand because a custom property name cannot be built from an attribute;
+   styles.test.ts fails for a kind missing here. */
+[data-sar-kind="ai"] {
+  --sar-kind-color: var(--sar-kind-color-ai);
+}
+
+[data-sar-kind="kernel"] {
+  --sar-kind-color: var(--sar-kind-color-kernel);
+}
+
+[data-sar-kind="anticheat"] {
+  --sar-kind-color: var(--sar-kind-color-anticheat);
+}
+
+[data-sar-kind="drm"] {
+  --sar-kind-color: var(--sar-kind-color-drm);
+}
+
+[data-sar-kind="account"] {
+  --sar-kind-color: var(--sar-kind-color-account);
+}
+
+[data-sar-kind="eula"] {
+  --sar-kind-color: var(--sar-kind-color-eula);
+}
+
+[data-sar-kind="pvp"] {
+  --sar-kind-color: var(--sar-kind-color-pvp);
+}
+
+[data-sar-kind] {
+  --sar-tag-edge: var(--sar-kind-color);
+  --sar-tag-tint: color-mix(
+    in srgb,
+    var(--sar-kind-color) var(--sar-kind-mix-tint),
+    transparent
+  );
+  --sar-tag-text: color-mix(in srgb, var(--sar-kind-color) var(--sar-kind-mix-text), white);
+  --sar-tag-light: color-mix(in srgb, var(--sar-kind-color) var(--sar-kind-mix-light), white);
+  --sar-tag-solid: color-mix(in srgb, var(--sar-kind-color) var(--sar-kind-mix-solid), black);
+  --sar-tag-wash-start: color-mix(
+    in srgb,
+    color-mix(in srgb, var(--sar-kind-color) var(--sar-kind-mix-wash-start), black)
+      var(--sar-kind-mix-wash-alpha),
+    transparent
+  );
+  --sar-tag-wash-end: color-mix(
+    in srgb,
+    color-mix(in srgb, var(--sar-kind-color) var(--sar-kind-mix-wash-end), black)
+      var(--sar-kind-mix-wash-alpha),
+    transparent
+  );
+}

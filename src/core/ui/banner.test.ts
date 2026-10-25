@@ -310,6 +310,22 @@ describe("the banner's accessibility", () => {
     }
   });
 
+  it("marks a one-tag banner with its kind and a several-tag banner with none", () => {
+    const { banner, root } = setup();
+    banner.show(view([disclosedVerdict()]));
+    expect(query(root, "aside").getAttribute("data-sar-kind")).toBe("ai");
+    const several = disclosedList(capturedVerdicts(3751950));
+    banner.show(view(several));
+    expect(query(root, "aside").hasAttribute("data-sar-kind")).toBe(false);
+    expect(query(root, "aside").hasAttribute("style")).toBe(false);
+  });
+
+  it("marks a banner with only notes for ignored scopes with no kind", () => {
+    const { banner, root } = setup();
+    banner.show(view([], { ignored: ["pvp"] }));
+    expect(query(root, "aside").hasAttribute("data-sar-kind")).toBe(false);
+  });
+
   it("steps the headings down when it lists several kinds", () => {
     const { banner, root } = setup();
     banner.show(view([disclosedVerdict()]));

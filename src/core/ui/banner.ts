@@ -3,6 +3,7 @@ import type { AnyDisclosed } from "../kinds/verdicts";
 import type { MessageCatalog } from "../ports";
 import { ALLOW_ALL, type AllowScope, toAllowScope } from "../settings/allow-data";
 import { announce, POLITE } from "./announce";
+import { KIND_ATTRIBUTE } from "./kind-attributes";
 import { type KindDetail, kindDetails } from "./kind-details";
 import { normalizeBreaks } from "./notes";
 import { adoptStyles, BANNER_CSS } from "./styles";
@@ -243,10 +244,15 @@ export function createBanner(
     } else {
       aside.setAttribute("aria-label", i18n.t("banner_region_label"));
     }
-    if (view.shown.length === 0) {
+    if (only === undefined) {
       aside.setAttribute("data-sar-variant", "ignored");
-    } else if (view.shown.length > 1) {
-      aside.setAttribute("data-sar-entries", "many");
+    } else {
+      // A banner with one tag takes its color; several tags keep the default violet.
+      if (view.shown.length > 1) {
+        aside.setAttribute("data-sar-entries", "many");
+      } else {
+        aside.setAttribute(KIND_ATTRIBUTE, only.kind);
+      }
     }
     for (const verdict of view.shown) {
       aside.append(buildEntry(verdict));

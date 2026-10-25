@@ -48,8 +48,8 @@
   min-inline-size: 0;
   padding-inline: var(--sar-badge-pad-inline);
   border-radius: var(--sar-badge-radius);
-  background: var(--sar-badge-bg);
-  color: var(--sar-badge-fg);
+  background: var(--sar-tag-tint, var(--sar-badge-bg));
+  color: var(--sar-tag-text, var(--sar-badge-fg));
   font: var(--sar-badge-font);
   letter-spacing: normal;
   text-transform: none;
@@ -125,10 +125,10 @@
   block-size: var(--sar-compact-height);
   min-inline-size: 0;
   padding-inline: var(--sar-compact-pad-inline);
-  border: 1px solid var(--sar-compact-border);
-  background: var(--sar-compact-bg);
+  border: 1px solid var(--sar-tag-edge, var(--sar-compact-border));
+  background: var(--sar-tag-solid, var(--sar-compact-bg));
   box-shadow: var(--sar-compact-shadow);
-  color: var(--sar-compact-fg);
+  color: var(--sar-tag-light, var(--sar-compact-fg));
   font: var(--sar-compact-font);
   letter-spacing: normal;
   text-transform: none;
@@ -232,7 +232,7 @@ a.sar-summary-row .sar-badge {
 
 .sar-hovercard-title {
   display: block;
-  color: var(--sar-badge-fg);
+  color: var(--sar-tag-text, var(--sar-badge-fg));
   font: var(--sar-hovercard-title-font);
 }
 

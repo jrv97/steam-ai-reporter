@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { withKind } from "../../../tests/helpers/settings";
+import { toHexColor } from "../kinds/color";
 import { KINDS, perKind } from "../kinds/registry";
 import {
   applyPatch,
@@ -145,6 +146,37 @@ describe("encodeSettings", () => {
   it("round trips through parseSettings", () => {
     expect(parseSettings(encodeSettings(settings))).toStrictEqual(settings);
     expect(parseSettings(encodeSettings(DEFAULT_SETTINGS))).toStrictEqual(DEFAULT_SETTINGS);
+  });
+});
+
+describe("a tag's color", () => {
+  const RED = toHexColor("#f00");
+
+  it("is absent from the defaults, so a fresh install keeps the violet", () => {
+    for (const kind of KINDS) {
+      expect(DEFAULT_SETTINGS.kinds[kind.id]).not.toHaveProperty("color");
+    }
+  });
+
+  it("reads old stored settings, which have no color, as before", () => {
+    const old = { locale: "es", debug: false, kinds: { ai: { ...PLAIN, filter: "dim" } } };
+    expect(parseSettings(old).kinds.ai).toStrictEqual({ ...PLAIN, filter: "dim" });
+  });
+
+  it("is kept per kind, stored as text and read back", () => {
+    const next = withKind(DEFAULT_SETTINGS, "drm", { color: RED });
+    expect(next.kinds.drm.color).toBe("#ff0000");
+    expect(next.kinds.ai).not.toHaveProperty("color");
+    expect(encodeSettings(next)).toMatchObject({ kinds: { drm: { color: "#ff0000" } } });
+    expect(parseSettings(encodeSettings(next))).toStrictEqual(next);
+  });
+
+  it("is cleared by a patch of undefined, and left alone by any other patch", () => {
+    const tinted = withKind(DEFAULT_SETTINGS, "drm", { color: RED });
+    expect(applyPatch(tinted, { kinds: { drm: { badge: false } } }).kinds.drm.color).toBe(RED);
+    expect(applyPatch(tinted, { kinds: { drm: { color: undefined } } })).toStrictEqual(
+      DEFAULT_SETTINGS,
+    );
   });
 });
 

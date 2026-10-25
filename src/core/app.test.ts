@@ -12,11 +12,13 @@ import { withKind, writeSettings } from "../../tests/helpers/settings";
 import { loadPage, SURFACES } from "../../tests/helpers/surfaces";
 import { type App, start } from "./app";
 import type { JsonValue } from "./json";
+import { toHexColor } from "./kinds/color";
 import type { KindId } from "./kinds/id";
 import { KIND_BY_ID } from "./kinds/registry";
 import { DEFAULT_SETTINGS, encodeSettings } from "./settings/settings";
 import { createSettingsSource } from "./settings/settings-source";
 import { ALLOW_KEY, SETTINGS_KEY } from "./storage-keys";
+import { KIND_ATTRIBUTE } from "./ui/kind-attributes";
 import { adoptPageStyles } from "./ui/styles";
 
 const i18n = englishI18n();
@@ -214,6 +216,54 @@ describe("start on the search page", () => {
     await writeSettings(settings, DEFAULT_SETTINGS);
     expect(rootMark("data-sar-filter-ai")).toBe("off");
     await expect.poll(() => document.querySelectorAll(".sar-badge").length).toBe(1);
+  });
+
+  describe("with a custom tag color", () => {
+    const property = "--sar-kind-color-ai";
+    const colorOnRoot = () => document.documentElement.style.getPropertyValue(property);
+    const red = toHexColor("#ff0000");
+
+    it("sets nothing by default, so the badges keep the violet", async () => {
+      await startOnSearch();
+      await expect.poll(() => document.querySelectorAll(".sar-badge").length).toBe(1);
+      expect(colorOnRoot()).toBe("");
+      expect(document.documentElement.hasAttribute("style")).toBe(false);
+    });
+
+    it("applies a stored color at start as one root property", async () => {
+      const stored = encodeSettings(withKind(DEFAULT_SETTINGS, "ai", { color: red }));
+      await startOnSearch(new Map([[SETTINGS_KEY, stored]]));
+      await expect.poll(() => document.querySelectorAll(".sar-badge").length).toBe(1);
+      expect(colorOnRoot()).toBe("#ff0000");
+      expect(document.querySelector(".sar-badge")?.getAttribute(KIND_ATTRIBUTE)).toBe("ai");
+      expect(document.querySelector(".sar-badge")?.hasAttribute("style")).toBe(false);
+      expect(document.querySelector(".sar-chips")?.hasAttribute("style")).toBe(false);
+    });
+
+    it("follows a change and its removal without drawing a badge again", async () => {
+      const { settings } = await startOnSearch();
+      await expect.poll(() => document.querySelectorAll(".sar-badge").length).toBe(1);
+      const badge = document.querySelector(".sar-badge");
+      await writeSettings(settings, withKind(DEFAULT_SETTINGS, "ai", { color: red }));
+      expect(colorOnRoot()).toBe("#ff0000");
+      await writeSettings(
+        settings,
+        withKind(DEFAULT_SETTINGS, "ai", { color: toHexColor("#00ff00") }),
+      );
+      expect(colorOnRoot()).toBe("#00ff00");
+      await writeSettings(settings, DEFAULT_SETTINGS);
+      expect(colorOnRoot()).toBe("");
+      expect(document.querySelector(".sar-badge")).toBe(badge);
+    });
+
+    it("keeps the other kinds on the default", async () => {
+      const { settings } = await startOnSearch();
+      await writeSettings(settings, withKind(DEFAULT_SETTINGS, "drm", { color: red }));
+      expect(document.documentElement.style.getPropertyValue("--sar-kind-color-drm")).toBe(
+        "#ff0000",
+      );
+      expect(colorOnRoot()).toBe("");
+    });
   });
 
   it("logs a settings read that fails and starts on the defaults", async () => {

@@ -1,5 +1,6 @@
 import * as v from "valibot";
 import { type JsonValue, parseWithDefaults } from "../json";
+import { type HexColor, HexColorSchema } from "./color";
 
 /** What the list filter does to hosts whose app carries a kind's tag. */
 export const LIST_FILTERS = ["off", "dim", "hide"] as const;
@@ -15,9 +16,14 @@ export interface KindSettings {
   /** Show the banner on app pages. */
   readonly banner: boolean;
   readonly filter: ListFilter;
+  /** The tag's own color on every surface that carries it; absent, the default violet. */
+  readonly color?: HexColor | undefined;
 }
 
-/** What a kind starts with: switched on, badge and banner shown, the list left alone. */
+/**
+ * What a kind starts with: switched on, badge and banner shown, the list left alone, and no custom
+ * color.
+ */
 export const DEFAULT_KIND_SETTINGS: KindSettings = {
   enabled: true,
   badge: true,
@@ -31,6 +37,7 @@ function kindSettingsSchema(defaults: KindSettings) {
     badge: v.fallback(v.boolean(), defaults.badge),
     banner: v.fallback(v.boolean(), defaults.banner),
     filter: v.fallback(v.picklist(LIST_FILTERS), defaults.filter),
+    color: v.fallback(v.optional(HexColorSchema), defaults.color),
   });
 }
 
@@ -43,18 +50,33 @@ export function parseKindSettings(defaults: KindSettings, stored: unknown): Kind
     schema = kindSettingsSchema(defaults);
     schemas.set(defaults, schema);
   }
-  return parseWithDefaults(schema, stored);
+  const { color, ...rest } = parseWithDefaults(schema, stored);
+  // No `color` key at all while none is set, so a kind with no color reads back as its defaults.
+  return color === undefined ? rest : { ...rest, color };
+}
+
+/**
+ * One kind's settings with the fields of `patch` replaced. A `color` of `undefined` clears the
+ * color, and leaves no key behind, so settings with no color are equal however they got there.
+ */
+export function mergeKindSettings(
+  settings: KindSettings,
+  patch: Readonly<Partial<KindSettings>> | undefined,
+): KindSettings {
+  const { color, ...rest } = { ...settings, ...patch };
+  return color === undefined ? rest : { ...rest, color };
 }
 
 /** The stored value of one kind's settings; a field added to `KindSettings` must be added here. */
 export function encodeKindSettings(settings: KindSettings): JsonValue {
-  const stored: { readonly [Field in keyof KindSettings]: JsonValue; } = {
+  const stored: Readonly<Record<Exclude<keyof KindSettings, "color">, JsonValue>> = {
     enabled: settings.enabled,
     badge: settings.badge,
     banner: settings.banner,
     filter: settings.filter,
   };
-  return stored;
+  // An unset color is left out, so what is stored stays what it was before colors existed.
+  return settings.color === undefined ? stored : { ...stored, color: settings.color };
 }
 
 /** The settings that take effect: a disabled kind shows no badge or banner and filters nothing. */

@@ -1,5 +1,6 @@
 import * as v from "valibot";
 import type { BareMessageKey } from "../i18n/t";
+import { type HexColor, readTypedColor } from "../kinds/color";
 import { KIND_IDS, type KindId } from "../kinds/id";
 import type { TagKind } from "../kinds/kind";
 import { type KindSettings, LIST_FILTERS, type ListFilter } from "../kinds/kind-settings";
@@ -25,6 +26,7 @@ import {
 import type { StoredSettings } from "../settings/settings-source";
 import { type AppId, toAppId } from "../types";
 import { announce, POLITE } from "./announce";
+import { KIND_ATTRIBUTE, setColorOnce } from "./kind-attributes";
 import {
   isSectionOpen,
   SECTION_DEFAULT_OPEN,
@@ -53,6 +55,11 @@ export interface SettingsFormDeps {
   /** Which tag sections are open, kept across visits. */
   readonly sectionState: SectionState;
   readonly context: SettingsContext;
+  /**
+   * Whether each tag gets a color field. The full page and the userscript dialog show it; the
+   * toolbar popup does not. It is a capability, not a context, so the layout stays the same.
+   */
+  readonly colors: boolean;
   /** The catalog locales this build ships, for the language picker. */
   readonly locales: readonly string[];
   /** Renders the product heading; omitted where the host already titles the form. */
@@ -78,7 +85,7 @@ const NO_OPENER = "noopener";
 const ICON_SIZE = 32;
 
 /** What a control changes, named in its `data-sar-setting`. A kind's control names its kind. */
-const FIELDS = ["enabled", "badge", "banner", "filter", "locale"] as const;
+const FIELDS = ["enabled", "badge", "banner", "filter", "color", "locale"] as const;
 type Field = (typeof FIELDS)[number];
 const FieldSchema = v.picklist(FIELDS);
 const KindIdSchema = v.picklist(KIND_IDS);
@@ -101,6 +108,18 @@ const FILTER_HELP: Readonly<Record<ListFilter, BareMessageKey>> = {
   hide: "options_filter_hide_help",
 };
 
+/** What marks the Reset button of a color field, with the kind it resets. */
+const COLOR_RESET_ATTRIBUTE = "data-sar-color-reset";
+
+/** The controls of one kind's color field. */
+interface ColorControls {
+  readonly input: HTMLInputElement;
+  /** Shown only while a color is set. */
+  readonly reset: HTMLButtonElement;
+  /** Names the text as no hex color; shown while the text is invalid. */
+  readonly invalid: HTMLElement;
+}
+
 /** The controls of one kind's section, which `sync` sets from the stored settings. */
 interface KindControls {
   /** The switches below the master switch; hidden while the kind is off. */
@@ -110,6 +129,8 @@ interface KindControls {
   readonly switches: Readonly<Record<SwitchField, HTMLInputElement>>;
   readonly radios: ReadonlyMap<ListFilter, HTMLInputElement>;
   readonly filterHelp: HTMLElement;
+  /** Absent where the form has no color fields. */
+  readonly color: ColorControls | undefined;
 }
 
 let mounts = 0;
@@ -312,6 +333,52 @@ export async function mountSettingsForm(
     return { row, radios, help };
   }
 
+  /**
+   * A tag's color field: a swatch, a text box for the hex code, and Reset. The swatch and the
+   * words are redundant on purpose, so the color is never the only cue. The row carries the kind,
+   * so the swatch reads the kind's color through the same style rules as the badges.
+   */
+  function colorField(kind: TagKind): {
+    readonly row: HTMLElement;
+    readonly controls: ColorControls;
+  } {
+    const row = element("div", "sar-field sar-color");
+    row.setAttribute("data-sar-layout", "stacked");
+    row.setAttribute(KIND_ATTRIBUTE, kind.id);
+    const label = element("label", "sar-field-label", i18n.t("options_color_label"));
+    const input = element("input", "sar-input");
+    input.type = "text";
+    input.id = `${prefix}${kind.id}-color`;
+    input.autocomplete = "off";
+    input.spellcheck = false;
+    input.placeholder = i18n.t("options_color_placeholder");
+    input.setAttribute("data-sar-setting", "color");
+    input.setAttribute("data-sar-for", kind.id);
+    label.htmlFor = input.id;
+    const swatch = element("span", "sar-color-swatch");
+    swatch.setAttribute("aria-hidden", String(true));
+    const reset = element("button", "sar-button", i18n.t("options_color_reset"));
+    reset.type = "button";
+    reset.setAttribute(COLOR_RESET_ATTRIBUTE, kind.id);
+    reset.setAttribute(
+      "aria-label",
+      i18n.t("options_color_reset_label", { heading: i18n.t(kind.messages.heading) }),
+    );
+    const entry = element("div", "sar-color-entry");
+    entry.append(swatch, input, reset);
+    const help = element("span", "sar-field-help", i18n.t("options_color_help"));
+    help.id = `${input.id}-help`;
+    const invalid = element("p", "sar-field-error", i18n.t("options_color_invalid"));
+    invalid.id = `${input.id}-invalid`;
+    invalid.setAttribute("role", "alert");
+    invalid.hidden = true;
+    input.setAttribute("aria-describedby", [help.id, invalid.id].join(" "));
+    const error = fieldError();
+    errors.set(errorKey("color", kind.id), error);
+    row.append(label, entry, help, invalid, error);
+    return { row, controls: { input, reset, invalid } };
+  }
+
   /** One tag's section, titled with Steam's line for it: the master switch, then the rest. */
   function kindCard(kind: TagKind): HTMLElement {
     const state = element("span", "sar-card-state");
@@ -335,8 +402,13 @@ export async function mountSettingsForm(
       i18n.t("options_banner_help"),
     );
     const filter = filterField(kind);
+    const color = deps.colors ? colorField(kind) : undefined;
     const options = element("div", "sar-kind-options");
-    options.append(badge.row, banner.row, filter.row);
+    options.append(badge.row, banner.row);
+    if (color !== undefined) {
+      options.append(color.row);
+    }
+    options.append(filter.row);
     body.append(enabled.row, options);
     controls.set(kind.id, {
       options,
@@ -344,6 +416,7 @@ export async function mountSettingsForm(
       switches: { enabled: enabled.input, badge: badge.input, banner: banner.input },
       radios: filter.radios,
       filterHelp: filter.help,
+      color: color?.controls,
     });
     return section;
   }
@@ -468,6 +541,15 @@ export async function mountSettingsForm(
     allowChanges(false);
   }
 
+  /** Text the person is still fixing stays as typed; everything else shows what is stored. */
+  function syncColor(id: KindId, own: ColorControls, color: HexColor | undefined): void {
+    setColorOnce(root, id, color);
+    own.reset.hidden = color === undefined;
+    if (own.input.getAttribute("aria-invalid") !== "true") {
+      own.input.value = color ?? "";
+    }
+  }
+
   function sync(): void {
     for (const [id, own] of controls) {
       const kind = current.kinds[id];
@@ -478,6 +560,9 @@ export async function mountSettingsForm(
         input.checked = value === kind.filter;
       }
       own.filterHelp.textContent = i18n.t(FILTER_HELP[kind.filter]);
+      if (own.color !== undefined) {
+        syncColor(id, own.color, kind.color);
+      }
       own.options.hidden = !kind.enabled;
       own.state.textContent = i18n.t(kind.enabled ? "options_state_on" : "options_state_off");
       own.state.toggleAttribute("data-sar-on", kind.enabled);
@@ -489,7 +574,7 @@ export async function mountSettingsForm(
 
   /** The patch for a control's value; an invalid value becomes the default. */
   function patchFor(
-    field: Field,
+    field: Exclude<Field, "color">,
     kind: TagKind | undefined,
     control: HTMLInputElement | HTMLSelectElement,
   ): SettingsPatch | undefined {
@@ -514,6 +599,33 @@ export async function mountSettingsForm(
             control.value,
           ),
         });
+    }
+  }
+
+  /** Marks the color text as a color or not, with the words that say so. */
+  function showColorValidity(own: ColorControls, valid: boolean): void {
+    own.invalid.hidden = valid;
+    own.input.setAttribute("aria-invalid", String(!valid));
+  }
+
+  /**
+   * Live while typing: the error shows at once, and a color that reads shows on the swatch and
+   * the badge at once (the root's custom property), unsaved. Saving waits for `change`.
+   */
+  function onColorInput(kind: TagKind, own: ColorControls): void {
+    const typed = readTypedColor(own.input.value);
+    showColorValidity(own, typed.valid);
+    if (typed.valid) {
+      setColorOnce(root, kind.id, typed.color);
+    }
+  }
+
+  /** The text is committed (Enter or leaving the field): a valid color is saved, normalized. */
+  function onColorChange(kind: TagKind, own: ColorControls): void {
+    const typed = readTypedColor(own.input.value);
+    showColorValidity(own, typed.valid);
+    if (typed.valid) {
+      void save(forKind(kind.id, { color: typed.color }), errorKey("color", kind.id));
     }
   }
 
@@ -549,6 +661,13 @@ export async function mountSettingsForm(
     }
     const id = v.safeParse(KindIdSchema, target.getAttribute("data-sar-for"));
     const kind = id.success ? KIND_BY_ID[id.output] : undefined;
+    if (field.output === "color") {
+      const own = kind === undefined ? undefined : controls.get(kind.id)?.color;
+      if (kind !== undefined && own !== undefined) {
+        onColorChange(kind, own);
+      }
+      return;
+    }
     const patch = patchFor(field.output, kind, target);
     if (patch !== undefined) {
       void save(patch, errorKey(field.output, kind?.id));
@@ -676,7 +795,39 @@ export async function mountSettingsForm(
     );
   }
 
+  function onInput(target: EventTarget | null): void {
+    if (!(target instanceof HTMLInputElement) || loadFailed) {
+      return;
+    }
+    const id = v.safeParse(KindIdSchema, target.getAttribute("data-sar-for"));
+    const field = v.safeParse(FieldSchema, target.getAttribute("data-sar-setting"));
+    const own = id.success ? controls.get(id.output)?.color : undefined;
+    if (id.success && field.success && field.output === "color" && own !== undefined) {
+      onColorInput(KIND_BY_ID[id.output], own);
+    }
+  }
+
+  /** The Reset button of a color field: clears the color, whatever the text says. */
+  function resetColor(button: HTMLElement): void {
+    const id = v.safeParse(KindIdSchema, button.getAttribute(COLOR_RESET_ATTRIBUTE));
+    const own = id.success ? controls.get(id.output)?.color : undefined;
+    if (!id.success || own === undefined || loadFailed) {
+      return;
+    }
+    showColorValidity(own, true);
+    void save(forKind(id.output, { color: undefined }), errorKey("color", id.output)).then(() => {
+      own.input.focus();
+    });
+  }
+
   function onClick(target: EventTarget | null): void {
+    const reset = target instanceof Element
+      ? target.closest<HTMLElement>(`[${COLOR_RESET_ATTRIBUTE}]`)
+      : null;
+    if (reset !== null) {
+      resetColor(reset);
+      return;
+    }
     const button = target instanceof Element
       ? target.closest<HTMLElement>("[data-sar-restore]")
       : null;
@@ -722,6 +873,9 @@ export async function mountSettingsForm(
       case "change":
         onChange(event.target);
         break;
+      case "input":
+        onInput(event.target);
+        break;
       case "toggle":
         onToggle(event.target);
         break;
@@ -734,6 +888,7 @@ export async function mountSettingsForm(
   await refreshAllowList();
   applySections(await storedSections);
   root.addEventListener("change", onEvent);
+  root.addEventListener("input", onEvent);
   root.addEventListener("click", onEvent);
   // A toggle does not bubble, so the one listener for it takes the capture phase
   root.addEventListener("toggle", onEvent, true);
@@ -750,6 +905,7 @@ export async function mountSettingsForm(
     destroy() {
       unsubscribe();
       root.removeEventListener("change", onEvent);
+      root.removeEventListener("input", onEvent);
       root.removeEventListener("click", onEvent);
       root.removeEventListener("toggle", onEvent, true);
       root.replaceChildren();
