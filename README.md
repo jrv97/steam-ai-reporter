@@ -91,6 +91,7 @@ The toolbar popup holds the same per-tag switches and list filters and the games
 - [Report a bug](https://github.com/jrv97/steam-ai-reporter/issues/new?template=bug_report.yml)
 - [Request a feature](https://github.com/jrv97/steam-ai-reporter/issues/new?template=feature_request.yml)
 - [Request a language or fix a translation](https://github.com/jrv97/steam-ai-reporter/issues/new?template=translation.yml)
+- [Send quick anonymous feedback](https://forms.gle/Fo652zzyFWUQn2qK9)
 
 ## Privacy
 
