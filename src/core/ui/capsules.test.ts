@@ -54,6 +54,7 @@ function setup(
   const views: HostView[] = [];
   const frames: (() => void)[] = [];
   const watched = new Set<Element>();
+  let disconnects = 0;
   let reportSized: (elements: readonly Element[]) => void = () => undefined;
   const ui = createCapsuleUi({
     document,
@@ -67,7 +68,14 @@ function setup(
     frame: (callback) => frames.push(callback),
     watchSize: (onSized): SizeWatch => {
       reportSized = onSized;
-      return { observe: (element) => watched.add(element), unobserve: (e) => watched.delete(e) };
+      return {
+        observe: (element) => watched.add(element),
+        unobserve: (e) => watched.delete(e),
+        disconnect: () => {
+          disconnects += 1;
+          watched.clear();
+        },
+      };
     },
   });
   const flush = async () => {
@@ -80,7 +88,7 @@ function setup(
   const sized = (elements: readonly Element[]) => {
     reportSized(elements);
   };
-  return { ui, detect, views, flush, watched, sized };
+  return { ui, detect, views, flush, watched, sized, disconnects: () => disconnects };
 }
 
 function host(id: number, placement: Placement = ROW): CapsuleHost {
@@ -215,6 +223,33 @@ describe("createCapsuleUi", () => {
     expect(views[2]?.slot).toMatchObject({ kind: "compact", size: "text" });
     expect(watched.size).toBe(0);
     expect(detect).toHaveBeenCalledTimes(1);
+  });
+
+  it("lets go of the size watch on pagehide and starts a new one when needed", async () => {
+    const id = appId(16);
+    const { ui, flush, watched, disconnects } = setup(new Map([[id, disclosedVerdict()]]));
+    const found = host(16, {
+      ...GENERIC,
+      anchor: (element) => element.querySelector(".art") ?? undefined,
+    });
+    vi.spyOn(found.anchor, "getBoundingClientRect").mockReturnValue(new DOMRect(0, 0, 0, 0));
+    ui.render({ found: [found], changed: [] });
+    await flush();
+    expect(watched.size).toBe(1);
+    window.dispatchEvent(new Event("pagehide"));
+    expect(disconnects()).toBe(1);
+    expect(watched.size).toBe(0);
+    ui.refresh();
+    await flush();
+    expect([...watched]).toEqual([found.anchor]);
+  });
+
+  it("stops listening for pagehide when stopped", () => {
+    const { ui, disconnects } = setup(new Map());
+    ui.stop();
+    expect(disconnects()).toBe(0);
+    window.dispatchEvent(new Event("pagehide"));
+    expect(disconnects()).toBe(0);
   });
 
   it("does not watch a small image that has a size, nor a host without a badge", async () => {

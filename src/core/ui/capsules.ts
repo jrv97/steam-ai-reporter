@@ -23,6 +23,8 @@ const POSITIONED: ReadonlySet<string> = new Set(["relative", "absolute", "fixed"
 export interface SizeWatch {
   observe(element: Element): void;
   unobserve(element: Element): void;
+  /** Stops watching every element. */
+  disconnect(): void;
 }
 
 /** Makes a size watch that reports elements whose box became non-empty. */
@@ -33,7 +35,7 @@ function resizeWatch(doc: Document): SizeWatchFactory {
   return (onSized) => {
     const view = doc.defaultView;
     if (view === null) {
-      return { observe: () => undefined, unobserve: () => undefined };
+      return { observe: () => undefined, unobserve: () => undefined, disconnect: () => undefined };
     }
     return new view.ResizeObserver((entries) => {
       onSized(
@@ -63,6 +65,8 @@ export interface CapsuleUiOptions {
 export interface CapsuleUi extends CapsuleRenderer {
   /** Draws every known host again, or only those of `ids`, as after an allow-list change. */
   refresh(ids?: ReadonlySet<AppId>): void;
+  /** Stops watching image boxes and listening for `pagehide`. */
+  stop(): void;
 }
 
 interface HostRecord {
@@ -116,7 +120,7 @@ export function createCapsuleUi(options: CapsuleUiOptions): CapsuleUi {
   });
   const records = new WeakMap<Element, HostRecord>();
   /** Image boxes waiting for a size that fits a compact badge, with the host to draw again. */
-  const unsized = new WeakMap<Element, HostRecord>();
+  let unsized = new WeakMap<Element, HostRecord>();
   const watchSize = options.watchSize ?? resizeWatch(doc);
   let sizeWatch: SizeWatch | undefined;
   let queued = new Set<HostRecord>();
@@ -172,6 +176,13 @@ export function createCapsuleUi(options: CapsuleUiOptions): CapsuleUi {
     if (unsized.delete(anchor)) {
       sizeWatch?.unobserve(anchor);
     }
+  }
+
+  /** Lets go of the size watch, as on `pagehide`; a later draw starts a new one if it needs it. */
+  function disconnect(): void {
+    sizeWatch?.disconnect();
+    sizeWatch = undefined;
+    unsized = new WeakMap();
   }
 
   function drawQueued(): void {
@@ -234,6 +245,8 @@ export function createCapsuleUi(options: CapsuleUiOptions): CapsuleUi {
     }
   }
 
+  doc.defaultView?.addEventListener("pagehide", disconnect);
+
   return {
     render(batch: ScanBatch) {
       for (const host of batch.changed) {
@@ -268,6 +281,11 @@ export function createCapsuleUi(options: CapsuleUiOptions): CapsuleUi {
           queue(record);
         }
       }
+    },
+
+    stop() {
+      disconnect();
+      doc.defaultView?.removeEventListener("pagehide", disconnect);
     },
   };
 }

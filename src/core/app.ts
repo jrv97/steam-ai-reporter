@@ -196,6 +196,7 @@ export async function start(deps: AppDeps): Promise<App> {
   return {
     stop() {
       scanner.stop();
+      capsules.stop();
       card.stop();
       appPage?.stop();
       unsubscribe();
