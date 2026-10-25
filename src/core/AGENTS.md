@@ -1,6 +1,6 @@
 # src/core
 
-The platform-free heart of AI Reporter for Steam: detection, cache, scanning, placement, rendering and i18n. The root `AGENTS.md` rules apply here; this file adds what is specific to core. The reasons are in [ADR 0002 (single codebase and tooling)](../../docs/adr/0002-single-codebase-and-tooling.mdx).
+The platform-free heart of Tag Kit for Steam: detection, cache, scanning, placement, rendering and i18n. The root `AGENTS.md` rules apply here; this file adds what is specific to core. The reasons are in [ADR 0002 (single codebase and tooling)](../../docs/adr/0002-single-codebase-and-tooling.mdx).
 
 ## What core must not import
 

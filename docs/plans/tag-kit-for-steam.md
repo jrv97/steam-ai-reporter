@@ -16,7 +16,7 @@ Grow the extension and the userscript from one tag (AI disclosure) to seven, fro
 Three PRs, each squash-merged in order, each branch based on the one below it.
 
 1. `refactor/tag-kind-registry` (base `main`), about 3.5k changed lines. Research notes, ADRs 0009 and 0010 and this plan. A tag-kind registry with AI as the only kind. Per-kind verdicts through detection and the cache. Per-kind settings and ignore scopes with the v1 migration. No visible change. Done when `mise run ci` passes and the AI fixtures render identically.
-2. `feat/tag-types` (base PR 1), about 4k lines. The six new tags with Steam's vocabulary for every tag including AI, chips, one banner, the hover card, per-kind switch, badge, banner entry, filter and ignore scopes, page-only detail from the live page, fixtures and canary checks, the bundle budget raise with measured numbers, rule 4 in AGENTS.md amended, ADRs 0006 and 0008 marked superseded, design docs for chips. Chip icons are not part of this PR.
+2. `feat/tag-types` (base PR 1), about 4k lines. The six new tags with Steam's vocabulary for every tag including AI, chips, one banner, the hover card, per-kind switch, badge, banner entry, filter and ignore scopes, fixtures and canary checks, the bundle budget raise with measured numbers, rule 4 in AGENTS.md amended, ADRs 0006 and 0008 marked superseded, design docs for chips. Chip icons are not part of this PR.
 3. `feat/tag-kit-rename` (base PR 2), about 1.5k lines. The name in the catalogs, README and PRIVACY, the new extension mark and its PNG script, licence notices, design docs for the mark and an ADR for the name.
 
 ## Migration

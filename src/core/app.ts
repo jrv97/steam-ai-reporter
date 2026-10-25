@@ -111,7 +111,7 @@ const SHOWS_BADGE = (settings: KindSettings): boolean => settings.badge;
 const SHOWS_BANNER = (settings: KindSettings): boolean => settings.banner;
 
 /**
- * Starts AI Reporter for Steam on one store page: settings, locale and logger, cache upkeep, the
+ * Starts Tag Kit for Steam on one store page: settings, locale and logger, cache upkeep, the
  * detector stack, the allow-list, the page stylesheet, the scanner with its renderers, and the app
  * page's banner. Settings changes from any tab re-render at once: badges and the list filter are
  * one root attribute each, the banner is drawn again from the known verdicts.
