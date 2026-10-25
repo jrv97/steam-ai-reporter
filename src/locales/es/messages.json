@@ -445,6 +445,14 @@
     "message": "Si la desactivas, se quitan sus marcadores, su entrada en el aviso y su filtro de listas.",
     "description": "Help under the master switch of one tag."
   },
+  "options_state_on": {
+    "message": "Activada",
+    "description": "Short status in the closed or open header of a tag's settings section, next to Steam's line for the tag: the tag is switched on. It describes the tag's master switch, not any game."
+  },
+  "options_state_off": {
+    "message": "Desactivada",
+    "description": "Short status in the header of a tag's settings section, next to Steam's line for the tag: the tag is switched off. It describes the tag's master switch, not any game."
+  },
   "userscript_menu_settings": {
     "message": "Configuración",
     "description": "Entry in the script manager's menu (Tampermonkey, Violentmonkey) that opens the settings dialog on a store page. One word."

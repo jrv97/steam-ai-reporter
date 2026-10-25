@@ -542,6 +542,74 @@ a.sar-summary-row .sar-badge {
   font: var(--sar-weight-medium) var(--sar-size-xl) / var(--sar-leading-xl) var(--sar-font-ext);
 }
 
+.sar-card-title:focus {
+  outline: none;
+}
+
+/* A tag's card closes: a native details, so the browser owns the keyboard and the expanded state.
+   The summary keeps the title and the on or off cue in view; the arrow turns when it opens. */
+.sar-card-summary {
+  display: flex;
+  align-items: center;
+  column-gap: var(--sar-space-3);
+  min-block-size: var(--sar-control-height-sm);
+  list-style: none;
+  cursor: pointer;
+}
+
+.sar-card-summary::-webkit-details-marker {
+  display: none;
+}
+
+.sar-card-summary::after {
+  content: "";
+  flex: none;
+  inline-size: var(--sar-space-2);
+  block-size: var(--sar-space-2);
+  margin-block-end: var(--sar-space-1);
+  border-inline-end: 2px solid var(--sar-color-text-subtle);
+  border-block-end: 2px solid var(--sar-color-text-subtle);
+  transform: rotate(45deg);
+}
+
+.sar-card-details[open] > .sar-card-summary {
+  margin-block-end: var(--sar-space-2);
+}
+
+.sar-card-details[open] > .sar-card-summary::after {
+  margin-block: var(--sar-space-1) 0;
+  transform: rotate(225deg);
+}
+
+.sar-options .sar-card-summary .sar-card-title {
+  flex: 1 1 auto;
+  min-inline-size: 0;
+  margin: 0;
+}
+
+/* The cue is words, so it reads without colour: the master switch's state, off in a quieter tone */
+.sar-card-state {
+  flex: none;
+  color: var(--sar-color-text-subtle);
+  font-size: var(--sar-size-sm);
+}
+
+.sar-card-state[data-sar-on] {
+  color: var(--sar-color-text);
+}
+
+.sar-options[data-sar-context="popup"] .sar-card-summary {
+  min-block-size: var(--sar-control-height-xs);
+}
+
+.sar-options[data-sar-context="popup"] .sar-card-details[open] > .sar-card-summary {
+  margin-block-end: var(--sar-space-1);
+}
+
+.sar-options[data-sar-context="popup"] .sar-card-state {
+  font-size: var(--sar-size-xs);
+}
+
 /* The label wraps in column 1; the switch keeps column 2 */
 .sar-field {
   display: grid;
@@ -553,6 +621,15 @@ a.sar-summary-row .sar-badge {
 
 .sar-field + .sar-field {
   border-block-start: 1px solid var(--sar-color-divider);
+}
+
+/* A tag's switches below its master switch: one divider above them, then the usual ones */
+.sar-kind-options {
+  border-block-start: 1px solid var(--sar-color-divider);
+}
+
+.sar-kind-options > .sar-field:first-child {
+  border-block-start: 0;
 }
 
 .sar-field-label {
@@ -686,6 +763,7 @@ a.sar-summary-row .sar-badge {
 .sar-segment input:focus-visible + label,
 .sar-select:focus-visible,
 .sar-button:focus-visible,
+.sar-card-summary:focus-visible,
 .sar-options a:focus-visible {
   outline: var(--sar-focus-width) solid var(--sar-focus-color);
   outline-offset: var(--sar-focus-offset);

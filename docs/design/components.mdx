@@ -463,12 +463,13 @@ Preview: `previews/OptionsPage.html`.
 - Font: the `ext` family (a system stack). The store font is not loaded on extension pages and none is bundled.
 - Type on the full page: field labels, help and error lines in `sar-text-body` (13/18). The popup keeps help and error lines in `sar-text-help` (12/16).
 - On the full page, sections are `.sar-card`: `sar-color-bg-raised`, `sar-radius-md`, `sar-space-3` padding, `sar-space-2` apart, titled in `sar-text-card-title` with `sar-space-2` below the title.
+- Each tag's section closes. It is a native `details` with its `summary` first: the section title (still the `h2`, still focusable with `tabindex="-1"` so focus can land on it) and a cue, `options_state_on` or `options_state_off`, from the master switch, in `sar-text-help` (`sar-color-text` when on, `sar-color-text-subtle` when off). The cue is words, so it never relies on color. After the cue comes an arrow drawn in CSS, which points down when closed and up when open. The summary is at least `sar-control-height-sm` tall (`sar-control-height-xs` in the popup) and takes the same focus ring as the other controls. There is no animation. The other cards (language, ignored games, backup, privacy) do not close.
 - Header: the 32px icon (48px source), `ext_name` in `sar-text-options-title`, the version in `sar-color-text-subtle`.
 
 ### Sections, in order
 
 1. Header.
-2. One section for each tag kind, in registry order (PvP starts switched off, the other kinds on), titled with Steam's line for the kind (`kind_<id>_heading`). It holds the master switch `options_kind_enabled` (`kinds.<id>.enabled`), then the switches `options_badges` (popup `options_badges_short`; `badge`) and `options_banner` (`banner`), then a stacked SegmentedControl with Show, Dim and Hide (`filter`; values `off`, `dim`, `hide`; label `options_filter_label`; the help follows the selection). Each switch has help. While the master switch is off, the other three are hidden and their stored values stay.
+2. One section for each tag kind, in registry order (PvP starts switched off, the other kinds on), titled with Steam's line for the kind (`kind_<id>_heading`). It holds the master switch `options_kind_enabled` (`kinds.<id>.enabled`), then the switches `options_badges` (popup `options_badges_short`; `badge`) and `options_banner` (`banner`), then a stacked SegmentedControl with Show, Dim and Hide (`filter`; values `off`, `dim`, `hide`; label `options_filter_label`; the help follows the selection). Each switch has help. While the master switch is off, the other three are hidden and their stored values stay. The summary shows the title and the master switch's state; the master switch and the rest sit in the body, one open away.
 3. Language (page only): a stacked Select, `Automatic` first, then each shipped locale named in its own language through `Intl.DisplayNames`.
 4. Games you ignored: the AllowList, in groups. All tags comes first, then each kind in registry order, each group titled with its scope's name and listing its games newest first. Left out of the popup while it is empty.
 5. Backup (page only): the Backup card, to download a file and restore from one.
@@ -479,7 +480,8 @@ Preview: `previews/OptionsPage.html`.
 
 - Every change applies at once through the settings port; there is no save button. It is a patch of the fields the control names, applied to the settings stored at that moment, so a page that holds older settings never overwrites another kind's values. A polite live region announces `notice_settings_saved`.
 - A failed write reverts the control and shows `error_settings_save` under it in `.sar-field-error` (`role="alert"`).
-- A failed read shows the defaults with `error_settings_load` at the top of the first card.
+- A failed read shows the defaults with `error_settings_load` above the first section, outside every `details`, so a closed section cannot hide it.
+- A section starts open. Closing or opening one is remembered for that section alone, in the `v2:ui` record (`{ "open": { "<id>": false } }`, only sections the person has toggled), so the popup, the full page and the userscript dialog agree. It is interface state, not a setting, and it is not in the backup. A record that cannot be read or has bad entries leaves the section open; a write that fails loses only the memory of the choice, with no error shown. One listener on the form's root, in the capture phase, hears every section's `toggle` event, because `toggle` does not bubble.
 
 ### Longer translations
 

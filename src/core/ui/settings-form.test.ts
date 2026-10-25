@@ -8,12 +8,15 @@ import { SHIPPED_CATALOGS } from "../i18n/shipped";
 import { createI18n } from "../i18n/t";
 import type { KindId } from "../kinds/id";
 import { LIST_FILTERS } from "../kinds/kind-settings";
+import type { KeyValueStore } from "../ports";
 import { KIND_BY_ID, KINDS } from "../kinds/registry";
 import { ALLOW_ALL } from "../settings/allow-data";
 import { createAllowList } from "../settings/allow-list";
 import { DEFAULT_SETTINGS, parseSettings } from "../settings/settings";
 import { createSettingsSource } from "../settings/settings-source";
+import { SECTION_STATE_KEY } from "../storage-keys";
 import { toAppId } from "../types";
+import { createSectionState, isSectionOpen, type SectionState } from "./section-state";
 import { mountSettingsForm, type SettingsContext } from "./settings-form";
 
 const DAY = 86_400_000;
@@ -38,7 +41,11 @@ function change(control: Element): void {
 }
 
 /** A form on a store of its own, with the games the tests ignore already listed. */
-async function setup(context: SettingsContext = "page") {
+async function setup(
+  context: SettingsContext = "page",
+  sectionStore: KeyValueStore = memoryStore(),
+  sectionState: SectionState = createSectionState(sectionStore),
+) {
   const clock = fixedClock(Date.UTC(2026, 9, 1));
   const store = memoryStore();
   const settings = createSettingsSource(store);
@@ -56,6 +63,7 @@ async function setup(context: SettingsContext = "page") {
     i18n,
     settings,
     allowList,
+    sectionState,
     context,
     locales: ["en", "es"],
   });
@@ -90,7 +98,26 @@ async function setup(context: SettingsContext = "page") {
     }
     return found;
   };
-  return { root, form, settings, allowList, store, control, card, input, select };
+  return {
+    root,
+    form,
+    settings,
+    allowList,
+    store,
+    sectionStore,
+    sectionState,
+    control,
+    card,
+    input,
+    select,
+  };
+}
+
+/** The titles of the tag sections, which sit in the summary of each. */
+function kindTitles(root: HTMLElement): (string | null)[] {
+  return [...root.querySelectorAll(".sar-card-summary > .sar-card-title")].map((title) =>
+    title.textContent
+  );
 }
 
 afterEach(() => {
@@ -100,9 +127,7 @@ afterEach(() => {
 describe("the section of each tag", () => {
   it("has one section per kind, in registry order, titled with Steam's line", async () => {
     const { root } = await setup();
-    const titles = [...root.querySelectorAll("section.sar-card > .sar-card-title")].map((title) =>
-      title.textContent
-    );
+    const titles = kindTitles(root);
     expect(titles.slice(0, KINDS.length)).toEqual(KINDS.map((kind) => heading(kind.id)));
     expect(titles.slice(0, 2)).toEqual([i18n.t("kind_ai_heading"), i18n.t("kind_kernel_heading")]);
   });
@@ -321,6 +346,7 @@ describe("two forms over one store", () => {
       i18n,
       settings,
       allowList: createAllowList(store, fixedClock(0)),
+      sectionState: createSectionState(memoryStore()),
       context: "page",
       locales: ["en"],
     });
@@ -442,6 +468,7 @@ describe("the page around the sections", () => {
       i18n,
       settings: createSettingsSource(memoryStore()),
       allowList: createAllowList(memoryStore(), fixedClock(0)),
+      sectionState: createSectionState(memoryStore()),
       context: "popup",
       locales: ["en"],
       header: { version: "2026.10.20", iconUrl: "icons/icon-32.png" },
@@ -475,12 +502,11 @@ describe("the page around the sections", () => {
       i18n: spanish,
       settings: createSettingsSource(memoryStore()),
       allowList: createAllowList(memoryStore(), fixedClock(0)),
+      sectionState: createSectionState(memoryStore()),
       context: "page",
       locales: ["en", "es"],
     });
-    const titles = [...root.querySelectorAll("section.sar-card > .sar-card-title")].map((title) =>
-      title.textContent
-    );
+    const titles = kindTitles(root);
     expect(titles.slice(0, KINDS.length)).toEqual(
       KINDS.map((kind) => spanish.t(kind.messages.heading)),
     );
@@ -644,6 +670,7 @@ describe("the ignored games", () => {
         i18n,
         settings: createSettingsSource(memoryStore()),
         allowList,
+        sectionState: createSectionState(memoryStore()),
         context,
         locales: ["en"],
       });
@@ -763,13 +790,15 @@ describe("a failed read of the settings", () => {
       i18n,
       settings,
       allowList: createAllowList(memoryStore(), fixedClock(0)),
+      sectionState: createSectionState(memoryStore()),
       context: "page",
       locales: ["en"],
     });
-    const error = root.querySelector<HTMLElement>(".sar-card .sar-field-error");
+    // Above the cards, so a closed section cannot hide it
+    const error = root.querySelector<HTMLElement>(":scope > .sar-field-error");
     expect(error?.hidden).toBe(false);
     expect(error?.textContent).toBe(i18n.t("error_settings_load"));
-    expect(error?.closest("section")?.querySelector(".sar-card-title")?.textContent).toBe(
+    expect(error?.nextElementSibling?.querySelector(".sar-card-title")?.textContent).toBe(
       heading("ai"),
     );
     expect(
@@ -790,10 +819,11 @@ describe("a failed read of the settings", () => {
       i18n,
       settings,
       allowList: createAllowList(memoryStore(), fixedClock(0)),
+      sectionState: createSectionState(memoryStore()),
       context: "page",
       locales: ["en", "es"],
     });
-    const error = root.querySelector<HTMLElement>(".sar-card .sar-field-error");
+    const error = root.querySelector<HTMLElement>(":scope > .sar-field-error");
     expect(error?.hidden).toBe(false);
     const controls = [...root.querySelectorAll<HTMLInputElement>("[data-sar-setting]")];
     expect(controls.length).toBeGreaterThan(KINDS.length);
@@ -831,6 +861,7 @@ describe("a failed read of the settings", () => {
       i18n,
       settings,
       allowList: createAllowList(memoryStore(), fixedClock(0)),
+      sectionState: createSectionState(memoryStore()),
       context: "page",
       locales: ["en"],
     });
@@ -838,8 +869,204 @@ describe("a failed read of the settings", () => {
     expect(banner?.disabled).toBe(true);
     await writeSettings(settings, withKind(DEFAULT_SETTINGS, "ai", { banner: false }));
     expect(banner?.disabled).toBe(false);
-    expect(root.querySelector<HTMLElement>(".sar-card .sar-field-error")?.hidden).toBe(true);
+    expect(root.querySelector<HTMLElement>(":scope > .sar-field-error")?.hidden).toBe(true);
     expect(banner?.checked).toBe(false);
+  });
+});
+
+describe("collapsible sections", () => {
+  function detailsOf(section: HTMLElement): HTMLDetailsElement {
+    const found = section.querySelector("details");
+    if (found === null) {
+      throw new TypeError();
+    }
+    return found;
+  }
+
+  /** Opens or closes the section the way a click on its summary does: the toggle follows. */
+  function toggle(section: HTMLElement, open: boolean): void {
+    detailsOf(section).open = open;
+  }
+
+  it("makes each tag's section a native disclosure with its title in the summary", async () => {
+    const { card } = await setup();
+    for (const kind of KINDS) {
+      const details = detailsOf(card(kind.id));
+      const summary = details.firstElementChild;
+      expect(summary?.tagName).toBe("SUMMARY");
+      expect(summary?.querySelector(".sar-card-title")?.textContent).toBe(heading(kind.id));
+      expect(details.querySelectorAll(":scope > summary")).toHaveLength(1);
+      // The master switch is in the body, one open away
+      expect(details.querySelector("[data-sar-setting=enabled]")).not.toBeNull();
+      expect(summary?.querySelector("[data-sar-setting]")).toBeNull();
+    }
+  });
+
+  it("starts every section open when nothing was stored", async () => {
+    const { card } = await setup();
+    for (const kind of KINDS) {
+      expect(detailsOf(card(kind.id)).open).toBe(true);
+    }
+  });
+
+  it("keeps the other cards as they were", async () => {
+    const { control } = await setup();
+    expect(control(`.sar-card [data-sar-setting=locale]`).closest("details")).toBeNull();
+    expect(control(".sar-allow-list").closest("details")).toBeNull();
+  });
+
+  it("shows on or off in the summary, from the master switch", async () => {
+    const { card, input, settings } = await setup();
+    const cue = (id: KindId) => card(id).querySelector(".sar-card-summary .sar-card-state");
+    for (const kind of KINDS) {
+      const on = kind.id !== "pvp";
+      expect(cue(kind.id)?.textContent).toBe(i18n.t(on ? "options_state_on" : "options_state_off"));
+      expect(cue(kind.id)?.hasAttribute("data-sar-on")).toBe(on);
+    }
+
+    toggle(card("ai"), false);
+    const master = input("ai", "enabled");
+    master.checked = false;
+    change(master);
+    await vi.waitFor(() => {
+      expect(cue("ai")?.textContent).toBe(i18n.t("options_state_off"));
+    });
+    expect(cue("ai")?.hasAttribute("data-sar-on")).toBe(false);
+    expect(parseSettings(await settings.read()).kinds.ai.enabled).toBe(false);
+  });
+
+  it("follows the master switch in another tab while the section is closed", async () => {
+    const { card, settings } = await setup();
+    toggle(card("pvp"), false);
+    await writeSettings(settings, withKind(DEFAULT_SETTINGS, "pvp", { enabled: true }));
+    expect(card("pvp").querySelector(".sar-card-state")?.textContent).toBe(
+      i18n.t("options_state_on"),
+    );
+  });
+
+  it("remembers a closed section, and only that one", async () => {
+    const { card, sectionState } = await setup();
+    toggle(card("kernel"), false);
+    await vi.waitFor(async () => {
+      expect([...(await sectionState.read())]).toEqual([["kernel", false]]);
+    });
+  });
+
+  it("opens the sections as stored, in the popup and on the page alike", async () => {
+    const sectionStore = memoryStore();
+    const seed = createSectionState(sectionStore);
+    await seed.setOpen("ai", false);
+    await seed.setOpen("pvp", false);
+    for (const context of ["page", "popup"] as const) {
+      const { root, card } = await setup(context, sectionStore);
+      for (const kind of KINDS) {
+        expect(detailsOf(card(kind.id)).open).toBe(kind.id !== "ai" && kind.id !== "pvp");
+      }
+      root.remove();
+    }
+  });
+
+  it("restores what the last visit left, after a close and a new mount", async () => {
+    const sectionStore = memoryStore();
+    const first = await setup("page", sectionStore);
+    toggle(first.card("drm"), false);
+    await vi.waitFor(async () => {
+      expect(isSectionOpen(await first.sectionState.read(), "drm")).toBe(false);
+    });
+    first.form.destroy();
+    const second = await setup("popup", sectionStore);
+    expect(detailsOf(second.card("drm")).open).toBe(false);
+    toggle(second.card("drm"), true);
+    await vi.waitFor(async () => {
+      expect(isSectionOpen(await second.sectionState.read(), "drm")).toBe(true);
+    });
+  });
+
+  it("writes nothing for a mount, or for a toggle that changes nothing", async () => {
+    const sectionStore = countingStore(memoryStore());
+    await createSectionState(sectionStore).setOpen("ai", false);
+    const writes = sectionStore.calls.set;
+    const { card } = await setup("page", sectionStore);
+    const details = detailsOf(card("ai"));
+    expect(details.open).toBe(false);
+    details.dispatchEvent(new Event("toggle"));
+    toggle(card("kernel"), true);
+    await Promise.resolve();
+    expect(sectionStore.calls.set).toBe(writes);
+  });
+
+  it("remembers the last of two quick toggles, one write for each change", async () => {
+    const sectionStore = countingStore(memoryStore());
+    const { card } = await setup("page", sectionStore);
+    toggle(card("ai"), false);
+    toggle(card("ai"), true);
+    await vi.waitFor(() => {
+      expect(sectionStore.calls.set).toBe(2);
+    });
+    const { sectionState } = await setup("popup", sectionStore);
+    expect(isSectionOpen(await sectionState.read(), "ai")).toBe(true);
+  });
+
+  it("opens every section when the stored state is bad", async () => {
+    const sectionStore = memoryStore(new Map([[SECTION_STATE_KEY, { open: "closed" }]]));
+    const { card } = await setup("page", sectionStore);
+    for (const kind of KINDS) {
+      expect(detailsOf(card(kind.id)).open).toBe(true);
+    }
+  });
+
+  it("still renders and works when the state cannot be read", async () => {
+    const sectionStore = countingStore(memoryStore());
+    sectionStore.break();
+    const { card, input, settings } = await setup("page", sectionStore);
+    for (const kind of KINDS) {
+      expect(detailsOf(card(kind.id)).open).toBe(true);
+    }
+    expect(card("ai").querySelector(".sar-card-state")?.textContent).toBe(
+      i18n.t("options_state_on"),
+    );
+    const banner = input("ai", "banner");
+    banner.checked = false;
+    change(banner);
+    await vi.waitFor(async () => {
+      expect(parseSettings(await settings.read()).kinds.ai.banner).toBe(false);
+    });
+  });
+
+  it("keeps a section closed on screen when remembering it fails", async () => {
+    const sectionStore = countingStore(memoryStore());
+    const { card } = await setup("page", sectionStore);
+    sectionStore.break();
+    // A rejected write must not surface as an unhandled rejection, which fails the run
+    toggle(card("ai"), false);
+    await vi.waitFor(() => {
+      expect(sectionStore.calls.get).toBeGreaterThan(1);
+    });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(detailsOf(card("ai")).open).toBe(false);
+    sectionStore.heal();
+    toggle(card("kernel"), false);
+    await vi.waitFor(() => {
+      expect(sectionStore.calls.set).toBe(1);
+    });
+  });
+
+  it("puts focus on the title of a closed section, which stays in view", async () => {
+    const { card, root } = await setup();
+    const last = card(KINDS.at(-1)?.id ?? "ai");
+    toggle(last, false);
+    const title = last.querySelector<HTMLElement>(".sar-card-title");
+    title?.focus();
+    expect(title?.tabIndex).toBe(-1);
+    expect(title?.closest("summary")).not.toBeNull();
+    expect(root.ownerDocument.activeElement).toBe(title);
+  });
+
+  it("stops listening for toggles on destroy, in the capture phase it joined", async () => {
+    const { root, form } = await setup();
+    const remove = vi.spyOn(root, "removeEventListener");
+    form.destroy();
+    expect(remove).toHaveBeenCalledWith("toggle", expect.any(Function), true);
   });
 });
 

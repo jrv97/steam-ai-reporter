@@ -5,6 +5,7 @@ import { type BareMessageKey, createI18n, type I18n } from "../../core/i18n/t";
 import { createAllowList } from "../../core/settings/allow-list";
 import { AUTO_LOCALE, parseSettings } from "../../core/settings/settings";
 import { ALLOW_KEY } from "../../core/storage-keys";
+import { createSectionState } from "../../core/ui/section-state";
 import { mountSettingsForm, type SettingsContext } from "../../core/ui/settings-form";
 import { extensionUrl, extensionVersion, localStorageArea, onLocalChanged } from "./ext";
 import { createExtensionSettings, createExtensionStore } from "./store";
@@ -66,6 +67,7 @@ async function main(): Promise<void> {
     i18n,
     settings,
     allowList,
+    sectionState: createSectionState(store),
     context,
     locales: Object.keys(catalogs),
     header: { version: extensionVersion(), iconUrl: extensionUrl(ICONS[context]) },

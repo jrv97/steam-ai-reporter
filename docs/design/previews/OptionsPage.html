@@ -27,31 +27,49 @@
         <div class="sar-options-version">Version 2026.10.20</div>
       </div>
     </header>
-    <section class="sar-card" aria-labelledby="o-store">
-      <h2 class="sar-card-title" id="o-store">On store pages</h2>
-      <label class="sar-field">
-        <span class="sar-field-label">Badges on games that report AI use</span>
-        <input class="sar-toggle" type="checkbox" role="switch" checked>
-        <span class="sar-field-help">Adds "AI use reported" to search and wishlist rows and to
-          game images.</span>
-      </label>
-      <label class="sar-field">
-        <span class="sar-field-label">Banner on game pages</span>
-        <input class="sar-toggle" type="checkbox" role="switch" checked>
-        <span class="sar-field-help">Shows the developer's report above the purchase box.</span>
-      </label>
+    <section class="sar-card" aria-labelledby="o-ai">
+      <details class="sar-card-details" open>
+        <summary class="sar-card-summary">
+          <h2 class="sar-card-title" id="o-ai" tabindex="-1">AI Generated Content Disclosure</h2>
+          <span class="sar-card-state" data-sar-on>On</span>
+        </summary>
+        <label class="sar-field">
+          <span class="sar-field-label">Use this tag</span>
+          <input class="sar-toggle" type="checkbox" role="switch" checked>
+          <span class="sar-field-help">Off removes its badges, its entry in the banner and its list
+            filter.</span>
+        </label>
+        <div class="sar-kind-options">
+          <label class="sar-field">
+            <span class="sar-field-label">Badges on games and rows</span>
+            <input class="sar-toggle" type="checkbox" role="switch" checked>
+          </label>
+          <label class="sar-field">
+            <span class="sar-field-label">Show in the banner</span>
+            <input class="sar-toggle" type="checkbox" role="switch" checked>
+          </label>
+          <div class="sar-field" data-sar-layout="stacked">
+            <span class="sar-field-label" id="o-filter">In lists</span>
+            <fieldset class="sar-segment" aria-labelledby="o-filter">
+              <input type="radio" name="f" id="f-off" checked><label for="f-off">Show</label>
+              <input type="radio" name="f" id="f-dim"><label for="f-dim">Dim</label>
+              <input type="radio" name="f" id="f-hide"><label for="f-hide">Hide</label>
+            </fieldset>
+          </div>
+        </div>
+      </details>
     </section>
-    <section class="sar-card" aria-labelledby="o-lists">
-      <h2 class="sar-card-title" id="o-lists">In lists</h2>
-      <div class="sar-field" data-sar-layout="stacked">
-        <span class="sar-field-label" id="o-filter">Games that report AI use</span>
-        <fieldset class="sar-segment" aria-labelledby="o-filter">
-          <input type="radio" name="f" id="f-off" checked><label for="f-off">Show</label>
-          <input type="radio" name="f" id="f-dim"><label for="f-dim">Dim</label>
-          <input type="radio" name="f" id="f-hide"><label for="f-hide">Hide</label>
-        </fieldset>
-        <span class="sar-field-help">Lists stay as they are, apart from badges.</span>
-      </div>
+    <section class="sar-card" aria-labelledby="o-pvp">
+      <details class="sar-card-details">
+        <summary class="sar-card-summary">
+          <h2 class="sar-card-title" id="o-pvp" tabindex="-1">PvP</h2>
+          <span class="sar-card-state">Off</span>
+        </summary>
+        <label class="sar-field">
+          <span class="sar-field-label">Use this tag</span>
+          <input class="sar-toggle" type="checkbox" role="switch">
+        </label>
+      </details>
     </section>
     <section class="sar-card" aria-labelledby="o-lang">
       <h2 class="sar-card-title" id="o-lang">Language</h2>
@@ -115,20 +133,31 @@
           <div class="sar-options-version">Version 2026.10.20</div>
         </div>
       </header>
-      <section class="sar-card" aria-labelledby="p-store">
-        <h2 class="sar-card-title" id="p-store">On store pages</h2>
-        <label class="sar-field"><span class="sar-field-label">Badges</span>
-          <input class="sar-toggle" type="checkbox" role="switch" checked></label>
-        <label class="sar-field"><span class="sar-field-label">Banner on game pages</span>
-          <input class="sar-toggle" type="checkbox" role="switch"></label>
+      <section class="sar-card" aria-labelledby="p-ai">
+        <details class="sar-card-details" open>
+          <summary class="sar-card-summary">
+            <h2 class="sar-card-title" id="p-ai" tabindex="-1">AI Generated Content Disclosure</h2>
+            <span class="sar-card-state" data-sar-on>On</span>
+          </summary>
+          <label class="sar-field"><span class="sar-field-label">Use this tag</span>
+            <input class="sar-toggle" type="checkbox" role="switch" checked></label>
+          <div class="sar-kind-options">
+            <label class="sar-field"><span class="sar-field-label">Badges</span>
+              <input class="sar-toggle" type="checkbox" role="switch" checked></label>
+            <label class="sar-field"><span class="sar-field-label">Banner on game pages</span>
+              <input class="sar-toggle" type="checkbox" role="switch"></label>
+          </div>
+        </details>
       </section>
-      <section class="sar-card" aria-labelledby="p-lists">
-        <h2 class="sar-card-title" id="p-lists">In lists</h2>
-        <fieldset class="sar-segment" aria-labelledby="p-lists">
-          <input type="radio" name="p" id="p-off"><label for="p-off">Show</label>
-          <input type="radio" name="p" id="p-dim" checked><label for="p-dim">Dim</label>
-          <input type="radio" name="p" id="p-hide"><label for="p-hide">Hide</label>
-        </fieldset>
+      <section class="sar-card" aria-labelledby="p-pvp">
+        <details class="sar-card-details">
+          <summary class="sar-card-summary">
+            <h2 class="sar-card-title" id="p-pvp" tabindex="-1">PvP</h2>
+            <span class="sar-card-state">Off</span>
+          </summary>
+          <label class="sar-field"><span class="sar-field-label">Use this tag</span>
+            <input class="sar-toggle" type="checkbox" role="switch"></label>
+        </details>
       </section>
       <footer class="sar-options-footer">Not affiliated with Valve. Nothing leaves your browser
         except lookups to Valve's store. <a href="#">All settings</a></footer>

@@ -25,6 +25,14 @@ import {
 import type { StoredSettings } from "../settings/settings-source";
 import { type AppId, toAppId } from "../types";
 import { announce, POLITE } from "./announce";
+import {
+  isSectionOpen,
+  SECTION_DEFAULT_OPEN,
+  SECTION_IDS,
+  type SectionId,
+  type SectionState,
+  type SectionStates,
+} from "./section-state";
 import { adoptStyles, SETTINGS_CSS, TOKENS_CSS } from "./styles";
 
 /** The full options page, or the short toolbar popup (no language picker, no privacy card). */
@@ -42,6 +50,8 @@ export interface SettingsFormDeps {
   readonly i18n: MessageCatalog;
   readonly settings: StoredSettings;
   readonly allowList: AllowList;
+  /** Which tag sections are open, kept across visits. */
+  readonly sectionState: SectionState;
   readonly context: SettingsContext;
   /** The catalog locales this build ships, for the language picker. */
   readonly locales: readonly string[];
@@ -72,6 +82,10 @@ const FIELDS = ["enabled", "badge", "banner", "filter", "locale"] as const;
 type Field = (typeof FIELDS)[number];
 const FieldSchema = v.picklist(FIELDS);
 const KindIdSchema = v.picklist(KIND_IDS);
+const SectionIdSchema = v.picklist(SECTION_IDS);
+
+/** Names the collapsible section a `details` element holds. */
+const SECTION_ATTRIBUTE = "data-sar-section";
 
 /** The switches of a kind, which `data-sar-setting` names as the kind setting they flip. */
 type SwitchField = "enabled" | "badge" | "banner";
@@ -91,6 +105,8 @@ const FILTER_HELP: Readonly<Record<ListFilter, BareMessageKey>> = {
 interface KindControls {
   /** The switches below the master switch; hidden while the kind is off. */
   readonly options: HTMLElement;
+  /** The on or off cue in the section's summary, which stays in view while it is closed. */
+  readonly state: HTMLElement;
   readonly switches: Readonly<Record<SwitchField, HTMLInputElement>>;
   readonly radios: ReadonlyMap<ListFilter, HTMLInputElement>;
   readonly filterHelp: HTMLElement;
@@ -173,14 +189,49 @@ export async function mountSettingsForm(
     return error;
   }
 
-  function card(title: string, id: string): HTMLElement {
-    const section = element("section", "sar-card");
+  /** The title of a card; focus lands on it after a restore, so it takes focus but is no stop. */
+  function cardTitle(title: string, id: string): HTMLElement {
     const heading = element("h2", "sar-card-title", title);
     heading.id = prefix + id;
     heading.tabIndex = -1;
+    return heading;
+  }
+
+  function card(title: string, id: string): HTMLElement {
+    const section = element("section", "sar-card");
+    const heading = cardTitle(title, id);
     section.setAttribute("aria-labelledby", heading.id);
     section.append(heading);
     return section;
+  }
+
+  const sections = new Map<SectionId, HTMLDetailsElement>();
+  /** The state each section is known to be in, so a toggle that changes nothing writes nothing. */
+  const shown = new Map<SectionId, boolean>();
+
+  /**
+   * A card the user can close: a native `details` whose `summary` holds the title and the cue.
+   * The browser gives it the disclosure role, the keyboard and the expanded state. The body goes
+   * into the returned `details`; it starts open until the stored state says otherwise.
+   */
+  function collapsibleCard(
+    title: string,
+    id: SectionId,
+    cue: HTMLElement,
+  ): { readonly section: HTMLElement; readonly body: HTMLDetailsElement; } {
+    const section = element("section", "sar-card");
+    const heading = cardTitle(title, id);
+    section.setAttribute("aria-labelledby", heading.id);
+    const body = element("details", "sar-card-details");
+    body.open = SECTION_DEFAULT_OPEN;
+    body.setAttribute(SECTION_ATTRIBUTE, id);
+    const summary = element("summary", "sar-card-summary");
+    summary.append(heading, cue);
+    body.append(summary);
+    section.append(body);
+    sections.set(id, body);
+    shown.set(id, SECTION_DEFAULT_OPEN);
+    return { section, body };
   }
 
   function header(info: SettingsHeader): HTMLElement {
@@ -263,7 +314,8 @@ export async function mountSettingsForm(
 
   /** One tag's section, titled with Steam's line for it: the master switch, then the rest. */
   function kindCard(kind: TagKind): HTMLElement {
-    const section = card(i18n.t(kind.messages.heading), kind.id);
+    const state = element("span", "sar-card-state");
+    const { section, body } = collapsibleCard(i18n.t(kind.messages.heading), kind.id, state);
     const enabled = switchField(
       kind.id,
       "enabled",
@@ -285,9 +337,10 @@ export async function mountSettingsForm(
     const filter = filterField(kind);
     const options = element("div", "sar-kind-options");
     options.append(badge.row, banner.row, filter.row);
-    section.append(enabled.row, options);
+    body.append(enabled.row, options);
     controls.set(kind.id, {
       options,
+      state,
       switches: { enabled: enabled.input, badge: badge.input, banner: banner.input },
       radios: filter.radios,
       filterHelp: filter.help,
@@ -299,11 +352,11 @@ export async function mountSettingsForm(
   loadError.setAttribute("role", "alert");
   loadError.hidden = true;
   const kindCards = KINDS.map(kindCard);
-  kindCards[0]?.querySelector(".sar-card-title")?.after(loadError);
 
+  // Above the cards, so a closed section cannot hide it
   const cards: HTMLElement[] = deps.header === undefined
-    ? [...kindCards]
-    : [header(deps.header), ...kindCards];
+    ? [loadError, ...kindCards]
+    : [header(deps.header), loadError, ...kindCards];
 
   // Language (page only)
   let picker: HTMLSelectElement | undefined;
@@ -395,6 +448,16 @@ export async function mountSettingsForm(
     }
   }
 
+  /** The stored section states; a store that cannot be read leaves every section open. */
+  async function readSections(): Promise<SectionStates> {
+    try {
+      return await deps.sectionState.read();
+    } catch {
+      return new Map();
+    }
+  }
+  const storedSections = readSections();
+
   let current: Settings = DEFAULT_SETTINGS;
   let loadFailed = false;
   try {
@@ -416,6 +479,8 @@ export async function mountSettingsForm(
       }
       own.filterHelp.textContent = i18n.t(FILTER_HELP[kind.filter]);
       own.options.hidden = !kind.enabled;
+      own.state.textContent = i18n.t(kind.enabled ? "options_state_on" : "options_state_off");
+      own.state.toggleAttribute("data-sar-on", kind.enabled);
     }
     if (picker !== undefined) {
       picker.value = current.locale;
@@ -624,18 +689,54 @@ export async function mountSettingsForm(
     }
   }
 
+  /** Opens or closes the sections as stored. `shown` moves first, so the toggles it fires pass. */
+  function applySections(states: SectionStates): void {
+    for (const [id, details] of sections) {
+      const open = isSectionOpen(states, id);
+      shown.set(id, open);
+      details.open = open;
+    }
+  }
+
+  async function remember(id: SectionId, open: boolean): Promise<void> {
+    try {
+      await deps.sectionState.setOpen(id, open);
+    } catch {
+      // The section keeps the state on screen; only the memory of it is lost.
+    }
+  }
+
+  function onToggle(target: EventTarget | null): void {
+    if (!(target instanceof HTMLDetailsElement)) {
+      return;
+    }
+    const id = v.safeParse(SectionIdSchema, target.getAttribute(SECTION_ATTRIBUTE));
+    if (id.success && shown.get(id.output) !== target.open) {
+      shown.set(id.output, target.open);
+      void remember(id.output, target.open);
+    }
+  }
+
   function onEvent(event: Event): void {
-    if (event.type === "change") {
-      onChange(event.target);
-    } else {
-      onClick(event.target);
+    switch (event.type) {
+      case "change":
+        onChange(event.target);
+        break;
+      case "toggle":
+        onToggle(event.target);
+        break;
+      default:
+        onClick(event.target);
     }
   }
 
   sync();
   await refreshAllowList();
+  applySections(await storedSections);
   root.addEventListener("change", onEvent);
   root.addEventListener("click", onEvent);
+  // A toggle does not bubble, so the one listener for it takes the capture phase
+  root.addEventListener("toggle", onEvent, true);
   const unsubscribe = settings.subscribe((value) => {
     current = parseSettings(value);
     loadFailed = false;
@@ -650,6 +751,7 @@ export async function mountSettingsForm(
       unsubscribe();
       root.removeEventListener("change", onEvent);
       root.removeEventListener("click", onEvent);
+      root.removeEventListener("toggle", onEvent, true);
       root.replaceChildren();
     },
   };

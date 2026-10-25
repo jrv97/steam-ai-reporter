@@ -5,18 +5,19 @@ import { SHIPPED_CATALOGS } from "../../core/i18n/shipped";
 import { createI18n } from "../../core/i18n/t";
 import { createAllowList } from "../../core/settings/allow-list";
 import { createSettingsSource } from "../../core/settings/settings-source";
+import { createSectionState } from "../../core/ui/section-state";
 import { openSettingsDialog, type SettingsDialogDeps } from "./settings-dialog";
 
 const i18n = createI18n(SHIPPED_CATALOGS, "en");
 
-function deps(live: boolean): SettingsDialogDeps {
-  const store = memoryStore();
+function deps(live: boolean, store = memoryStore()): SettingsDialogDeps {
   return {
     document,
     i18n,
     catalogs: SHIPPED_CATALOGS,
     settings: createSettingsSource(store),
     allowList: createAllowList(store, fixedClock(Date.UTC(2026, 9, 20))),
+    sectionState: createSectionState(store),
     live,
   };
 }
