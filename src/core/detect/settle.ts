@@ -1,5 +1,6 @@
 import { type KindVerdicts, UNKNOWN_KINDS } from "../kinds/verdicts";
-import type { AppId, Detector } from "../types";
+import type { Detector } from "../ports";
+import type { AppId } from "../types";
 
 /**
  * One `KindVerdicts` for each of `ids` (already distinct) from `detector`, even if it breaks its

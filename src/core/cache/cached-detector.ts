@@ -1,6 +1,7 @@
 import type { KindVerdicts } from "../kinds/verdicts";
 import type { Logger } from "../log";
-import type { AppId, Detector } from "../types";
+import type { Detector } from "../ports";
+import type { AppId } from "../types";
 import type { VerdictCache } from "./verdict-cache";
 
 /**

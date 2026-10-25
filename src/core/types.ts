@@ -1,5 +1,4 @@
 import * as v from "valibot";
-import type { KindVerdicts } from "./kinds/verdicts";
 
 /** Steam app IDs are unsigned 32-bit integers; 0 is what GetItems reports for an invalid item. */
 const MAX_APP_ID = 0xffff_ffff;
@@ -81,12 +80,3 @@ export type Verdict<Disclosed extends DisclosedBase = DisclosedBase> =
   | Disclosed
   | NotDisclosedVerdict
   | UnknownVerdict;
-
-/**
- * One source of verdicts: GetItems, the HTML fallback, or a chain or decorator of them. Its
- * contract (tests/contracts/detector.contract.ts): it never rejects, and the result holds exactly
- * one `KindVerdicts` per distinct requested ID, with `unknown` for anything it could not settle.
- */
-export interface Detector {
-  detect(ids: readonly AppId[]): Promise<ReadonlyMap<AppId, KindVerdicts>>;
-}

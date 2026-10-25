@@ -9,9 +9,10 @@ import {
 import type { AiVerdict } from "../kinds/ai";
 import { KIND_IDS, type KindId } from "../kinds/id";
 import type { KindVerdicts } from "../kinds/verdicts";
+import type { Detector } from "../ports";
 import { GENERIC, type Placement, type RowPlacement } from "../scan/placements";
 import type { CapsuleHost } from "../scan/renderer";
-import { type AppId, type Detector, toAppId } from "../types";
+import { type AppId, toAppId } from "../types";
 import { createCapsuleUi, type SizeWatch } from "./capsules";
 import type { HostView } from "./host";
 

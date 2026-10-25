@@ -12,7 +12,8 @@ import {
   NOT_DISCLOSED,
 } from "../../../tests/helpers/verdicts";
 import type { AiVerdict } from "../kinds/ai";
-import { type AppId, type Detector, UNKNOWN } from "../types";
+import type { Detector } from "../ports";
+import { type AppId, UNKNOWN } from "../types";
 import { cachedDetector } from "./cached-detector";
 import { createVerdictCache } from "./verdict-cache";
 

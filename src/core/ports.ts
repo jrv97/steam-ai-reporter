@@ -1,4 +1,6 @@
 import type { JsonValue } from "./json";
+import type { KindVerdicts } from "./kinds/verdicts";
+import type { AppId } from "./types";
 
 // The capabilities core receives from a composition root (see src/core/AGENTS.md, "Ports"). Each
 // port is one capability. Every implementation passes the suite in tests/contracts/.
@@ -75,4 +77,13 @@ export interface SettingsSource {
    * platform cannot observe changes, it never calls it, and settings apply on the next page load.
    */
   subscribe(listener: (value: unknown) => void): Unsubscribe;
+}
+
+/**
+ * One source of verdicts: GetItems, the HTML fallback, or a chain or decorator of them. Its
+ * contract (tests/contracts/detector.contract.ts): it never rejects, and the result holds exactly
+ * one `KindVerdicts` per distinct requested ID, with `unknown` for anything it could not settle.
+ */
+export interface Detector {
+  detect(ids: readonly AppId[]): Promise<ReadonlyMap<AppId, KindVerdicts>>;
 }

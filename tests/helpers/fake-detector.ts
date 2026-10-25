@@ -1,5 +1,6 @@
 import type { KindVerdicts } from "../../src/core/kinds/verdicts";
-import type { AppId, Detector } from "../../src/core/types";
+import type { Detector } from "../../src/core/ports";
+import type { AppId } from "../../src/core/types";
 
 export interface FakeDetector extends Detector {
   /** The IDs of every `detect` call, in order. */

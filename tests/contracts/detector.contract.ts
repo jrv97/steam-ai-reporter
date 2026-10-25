@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { Detector } from "../../src/core/types";
+import type { Detector } from "../../src/core/ports";
 import { appIds as ids } from "../helpers/app-ids";
 
 /**

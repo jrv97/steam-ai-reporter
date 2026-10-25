@@ -11,11 +11,11 @@ import {
   UNKNOWN_KINDS,
 } from "./kinds/verdicts";
 import type { Logger } from "./log";
-import type { MessageCatalog } from "./ports";
+import type { Detector, MessageCatalog } from "./ports";
 import { perScope } from "./settings/allow-data";
 import type { AllowList } from "./settings/allow-list";
 import type { Settings } from "./settings/settings";
-import type { AppId, Detector } from "./types";
+import type { AppId } from "./types";
 import { type AppPageView, createAppPageUi } from "./ui/app-page";
 import type { CardTriggers } from "./ui/hover-card";
 

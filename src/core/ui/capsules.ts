@@ -1,10 +1,11 @@
 import type { KindId } from "../kinds/id";
 import { KINDS, perKind } from "../kinds/registry";
 import type { KindVerdicts } from "../kinds/verdicts";
+import type { Detector } from "../ports";
 import { HOST_APPID } from "../scan/marks";
 import type { RowPlacement } from "../scan/placements";
 import type { CapsuleHost, CapsuleRenderer, ScanBatch } from "../scan/renderer";
-import type { AppId, Detector } from "../types";
+import type { AppId } from "../types";
 import { compactSize } from "./badge";
 import type { BadgeSlot, HostRenderer } from "./host";
 

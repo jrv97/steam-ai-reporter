@@ -8,7 +8,8 @@ import {
   UNKNOWN_KINDS,
 } from "../kinds/verdicts";
 import type { Http, HttpResult } from "../ports";
-import { type AppId, type Detector, UNKNOWN } from "../types";
+import type { Detector } from "../ports";
+import { type AppId, UNKNOWN } from "../types";
 import { trimNotes } from "./notes";
 
 // Detection from the English app page (ADR 0001, the fallback when GetItems cannot answer). Rules

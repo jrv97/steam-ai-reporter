@@ -3,7 +3,8 @@ import type { SteamLanguage } from "../i18n/locale";
 import { parseJson } from "../json";
 import { kindsFromGetItems, type KindVerdicts, UNKNOWN_KINDS } from "../kinds/verdicts";
 import type { Http, HttpResponse, HttpResult } from "../ports";
-import type { AppId, Detector, UnknownReason } from "../types";
+import type { Detector } from "../ports";
+import type { AppId, UnknownReason } from "../types";
 import {
   type GetItemsEnvelope,
   GetItemsEnvelopeSchema,

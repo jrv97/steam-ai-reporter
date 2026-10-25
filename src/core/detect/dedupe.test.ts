@@ -6,7 +6,8 @@ import { fakeHttp } from "../../../tests/helpers/fake-http";
 import { getItemsRequest, getItemsRoute, storeItem } from "../../../tests/helpers/getitems";
 import { aiVerdicts } from "../../../tests/helpers/verdicts";
 import { type KindVerdicts, UNKNOWN_KINDS } from "../kinds/verdicts";
-import type { AppId, Detector } from "../types";
+import type { Detector } from "../ports";
+import type { AppId } from "../types";
 import { createDedupingDetector } from "./dedupe";
 import { createGetItemsDetector } from "./getitems";
 

@@ -1,5 +1,6 @@
 import { type KindVerdicts, UNKNOWN_KINDS } from "../kinds/verdicts";
-import type { AppId, Detector } from "../types";
+import type { Detector } from "../ports";
+import type { AppId } from "../types";
 import { settle } from "./settle";
 
 /** HTML fallback apps per page view (ADR 0001): each one is a full app page request. */
