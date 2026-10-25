@@ -12,12 +12,26 @@ import {
 const PLAIN = { enabled: true, badge: true, banner: true, filter: "off" } as const;
 
 describe("DEFAULT_SETTINGS", () => {
-  it("follows the page language and leaves every kind on, with a plain list", () => {
+  it("follows the page language and leaves every kind but PvP on, with a plain list", () => {
     expect(DEFAULT_SETTINGS).toStrictEqual({
       locale: "auto",
       debug: false,
-      kinds: perKind(() => PLAIN),
+      kinds: { ...perKind(() => PLAIN), pvp: { ...PLAIN, enabled: false } },
     });
+  });
+
+  it("is what a fresh install reads, and what a stored value without the kind reads", () => {
+    expect(parseSettings(undefined)).toStrictEqual(DEFAULT_SETTINGS);
+    expect(parseSettings({ locale: "es", kinds: { ai: { badge: false } } }).kinds.pvp)
+      .toStrictEqual(
+        { ...PLAIN, enabled: false },
+      );
+  });
+
+  it("keeps PvP on once the player turned it on", () => {
+    const on = withKind(DEFAULT_SETTINGS, "pvp", { enabled: true });
+    expect(parseSettings(encodeSettings(on)).kinds.pvp.enabled).toBe(true);
+    expect(parseSettings(encodeSettings(on)).kinds.ai).toStrictEqual(PLAIN);
   });
 
   it("takes each kind's defaults from its definition", () => {

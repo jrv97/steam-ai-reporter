@@ -104,7 +104,7 @@ describe("the list filter styles", () => {
     adoptStyles(document, TOKENS_CSS + PAGE_CSS);
     applyKindSettings(
       document.documentElement,
-      perKind((kind) => ({ ...kind.defaults, filter: modes[kind.id] ?? "off" })),
+      perKind((kind) => ({ ...kind.defaults, enabled: true, filter: modes[kind.id] ?? "off" })),
     );
   }
 

@@ -111,9 +111,12 @@ describe("start on the search page", () => {
         (element) => element.querySelector(".sar-badge-label")?.textContent,
       );
     const chip = (id: KindId) => i18n.t(KIND_BY_ID[id].messages.chip);
+    // PvP starts off, so these tests turn it on in the stored settings.
+    const withPvp = withKind(DEFAULT_SETTINGS, "pvp", { enabled: true });
+    const pvpOn = (): Map<string, JsonValue> => new Map([[SETTINGS_KEY, encodeSettings(withPvp)]]);
 
     it("draws the placement's allowance of chips and a +N chip for the rest", async () => {
-      const { http } = await startOnSearch(new Map(), several);
+      const { http } = await startOnSearch(pvpOn(), several);
       await drawn(http);
       expect(row(DISCLOSED)?.getAttribute("data-sar-kinds")).toBe("ai kernel eula pvp");
       expect(chips()).toEqual([
@@ -125,9 +128,9 @@ describe("start on the search page", () => {
     });
 
     it("draws the chips again when a kind's badges are switched off", async () => {
-      const { http, settings } = await startOnSearch(new Map(), several);
+      const { http, settings } = await startOnSearch(pvpOn(), several);
       await drawn(http);
-      await settings.write(withKind(DEFAULT_SETTINGS, "kernel", { badge: false }));
+      await settings.write(withKind(withPvp, "kernel", { badge: false }));
       expect(rootMark("data-sar-badges-kernel")).toBe("off");
       await expect.poll(() => chips()).toEqual([
         chip("ai"),
@@ -138,9 +141,10 @@ describe("start on the search page", () => {
     });
 
     it("draws no chip for an ignored kind, and keeps the others", async () => {
-      const ignored = new Map<string, JsonValue>([
-        [ALLOW_KEY, { all: {}, kernel: { [DISCLOSED]: { name: "Ignored", added: NOW } } }],
-      ]);
+      const ignored = pvpOn().set(ALLOW_KEY, {
+        all: {},
+        kernel: { [DISCLOSED]: { name: "Ignored", added: NOW } },
+      });
       const { http } = await startOnSearch(ignored, several);
       await drawn(http);
       expect(row(DISCLOSED)?.getAttribute("data-sar-kinds")).toBe("ai eula pvp");
@@ -166,9 +170,9 @@ describe("start on the search page", () => {
     });
 
     it("hides the row when any of its kinds hides, whatever the others do", async () => {
-      const { http, settings } = await startOnSearch(new Map(), several);
+      const { http, settings } = await startOnSearch(pvpOn(), several);
       await drawn(http);
-      const dimAi = withKind(DEFAULT_SETTINGS, "ai", { filter: "dim" });
+      const dimAi = withKind(withPvp, "ai", { filter: "dim" });
       await settings.write(withKind(dimAi, "pvp", { filter: "hide" }));
       const style = getComputedStyle(row(DISCLOSED) ?? document.body);
       expect(style.display).toBe("none");

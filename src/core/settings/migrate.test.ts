@@ -251,10 +251,17 @@ describe("settingsFromV1 and allowFromV1", () => {
       debug: true,
       kinds: {
         ...perKind(() => ({ enabled: true, badge: true, banner: true, filter: "off" })),
+        pvp: { enabled: false, badge: true, banner: true, filter: "off" },
         ai: { enabled: true, badge: false, banner: true, filter: "hide" },
       },
     });
     expect(settingsFromV1(undefined)).toStrictEqual(DEFAULT_SETTINGS);
+  });
+
+  it("leave PvP off, as for a fresh install", () => {
+    expect(settingsFromV1(V1_CUSTOM).kinds.pvp.enabled).toBe(false);
+    expect(settingsFromV1(undefined).kinds.pvp.enabled).toBe(false);
+    expect(settingsFromV1(V1_CUSTOM).kinds.ai.enabled).toBe(true);
   });
 
   it("put the v1 list in the AI scope", () => {

@@ -35,6 +35,8 @@ const V1_CUSTOM: JsonValue = {
 const V1_ALLOW: JsonValue = { "1808500": ARC, "5072580": COURAGE };
 
 const PLAIN_AI = { enabled: true, badge: true, banner: true, filter: "off" };
+// PvP starts off.
+const DEFAULT_KINDS = { ...perKind(() => PLAIN_AI), pvp: { ...PLAIN_AI, enabled: false } };
 const CUSTOM_AI = { enabled: true, badge: false, banner: true, filter: "hide" };
 /** The stored ignore list with no game in any scope. */
 const NO_GAMES = perScope(() => ({}));
@@ -64,7 +66,7 @@ export function migrationContract(name: string, make: () => KeyValueStore): void
       expect(await stored(store, "v2:settings")).toStrictEqual({
         locale: "auto",
         debug: false,
-        kinds: perKind(() => PLAIN_AI),
+        kinds: DEFAULT_KINDS,
       });
       expect(await stored(store, "v2:allow")).toStrictEqual(NO_GAMES);
       expect([...(await store.keys())].toSorted()).toStrictEqual([
@@ -82,7 +84,7 @@ export function migrationContract(name: string, make: () => KeyValueStore): void
       expect(await stored(store, "v2:settings")).toStrictEqual({
         locale: "es",
         debug: true,
-        kinds: { ...perKind(() => PLAIN_AI), ai: CUSTOM_AI },
+        kinds: { ...DEFAULT_KINDS, ai: CUSTOM_AI },
       });
       expect(await stored(store, "v1:settings")).toStrictEqual(V1_CUSTOM);
     });

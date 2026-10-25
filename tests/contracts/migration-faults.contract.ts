@@ -20,6 +20,7 @@ const SETTINGS_V2 = {
   debug: true,
   kinds: {
     ...perKind(() => ({ enabled: true, badge: true, banner: true, filter: "off" })),
+    pvp: { enabled: false, badge: true, banner: true, filter: "off" },
     ai: { enabled: true, badge: false, banner: true, filter: "hide" },
   },
 };

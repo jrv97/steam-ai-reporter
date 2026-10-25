@@ -9,10 +9,10 @@ describe("KINDS", () => {
     expect(new Set(KIND_IDS).size).toBe(KIND_IDS.length);
   });
 
-  it("starts every kind enabled, with badge and banner on and the list untouched", () => {
+  it("starts every kind but PvP enabled, with badge and banner on and the list untouched", () => {
     for (const kind of KINDS) {
       expect(kind.defaults).toStrictEqual({
-        enabled: true,
+        enabled: kind.id !== "pvp",
         badge: true,
         banner: true,
         filter: "off",

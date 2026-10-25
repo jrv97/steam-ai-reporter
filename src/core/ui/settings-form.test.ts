@@ -122,10 +122,10 @@ describe("the section of each tag", () => {
     }
   });
 
-  it("shows the defaults: on, badge and banner on, the list left alone", async () => {
+  it("shows the defaults: on but PvP, badge and banner on, the list left alone", async () => {
     const { input } = await setup();
     for (const kind of KINDS) {
-      expect(input(kind.id, "enabled").checked).toBe(true);
+      expect(input(kind.id, "enabled").checked).toBe(kind.id !== "pvp");
       expect(input(kind.id, "badge").checked).toBe(true);
       expect(input(kind.id, "banner").checked).toBe(true);
       expect(input(kind.id, "filter", "off").checked).toBe(true);
@@ -172,6 +172,26 @@ describe("the section of each tag", () => {
     await settings.patch({ kinds: { drm: { enabled: true } } });
     expect(options()?.hidden).toBe(false);
     expect(input("drm", "badge").checked).toBe(false);
+  });
+
+  it("keeps PvP off and its controls hidden until the player turns it on", async () => {
+    const { settings, card, input } = await setup();
+    const options = () => card("pvp").querySelector<HTMLElement>(".sar-kind-options");
+    expect(input("pvp", "enabled").checked).toBe(false);
+    expect(options()?.hidden).toBe(true);
+    const master = input("pvp", "enabled");
+    master.checked = true;
+    change(master);
+    await vi.waitFor(async () => {
+      expect(parseSettings(await settings.read()).kinds.pvp).toStrictEqual({
+        enabled: true,
+        badge: true,
+        banner: true,
+        filter: "off",
+      });
+    });
+    expect(options()?.hidden).toBe(false);
+    expect(parseSettings(await settings.read()).kinds.drm.enabled).toBe(true);
   });
 
   it("turns a kind off from its master switch and keeps its other settings", async () => {

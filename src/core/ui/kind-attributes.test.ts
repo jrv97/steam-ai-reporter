@@ -15,7 +15,7 @@ const root = () => document.documentElement;
 
 /** The same settings for every kind, over the defaults. */
 function settings(patch: Partial<KindSettings> = {}) {
-  return perKind((kind) => ({ ...kind.defaults, ...patch }));
+  return perKind((kind) => ({ ...kind.defaults, enabled: true, ...patch }));
 }
 
 /** The defaults, except for the DRM kind. */

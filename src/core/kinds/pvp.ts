@@ -63,6 +63,7 @@ export const PVP_KIND: KindDefinition<PvpDisclosed> = {
   stored: STORED,
 
   messages: { heading: "kind_pvp_heading", chip: "kind_pvp_chip" },
-  defaults: DEFAULT_KIND_SETTINGS,
+  // A PvP mode is on most games, so the tag starts off until the player turns it on.
+  defaults: { ...DEFAULT_KIND_SETTINGS, enabled: false },
   ttl: WEEK_TTL,
 };
