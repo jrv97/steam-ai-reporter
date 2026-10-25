@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { KIND_IDS } from "../kinds/id";
+import { PLACEMENTS } from "../scan/placements";
 import { adoptStyles, BANNER_CSS, DIALOG_CSS, PAGE_CSS, SETTINGS_CSS, TOKENS_CSS } from "./styles";
 
 const RULES = { PAGE_CSS, BANNER_CSS, SETTINGS_CSS, DIALOG_CSS };
@@ -72,6 +73,33 @@ describe("the hover card rules", () => {
       "-webkit-line-clamp: var(--sar-hovercard-detail-lines)",
     );
     expect(rule(".sar-hovercard-detail")).toContain("overflow: hidden");
+  });
+});
+
+describe("the chips on a narrow row", () => {
+  const rule = (selector: string) => {
+    const start = PAGE_CSS.indexOf(`${selector} {`);
+    return PAGE_CSS.slice(start, PAGE_CSS.indexOf("}", start));
+  };
+
+  it("lets a search row wrap and keeps its title a basis of room", () => {
+    expect(rule(".search_result_row[data-sar-kinds] .search_name")).toContain("flex-wrap: wrap");
+    expect(rule(".search_result_row[data-sar-kinds] .search_name > .title")).toContain(
+      "flex: 1 1 var(--sar-row-title-basis)",
+    );
+  });
+
+  it("lets a DLC row wrap, and the chips wrap inside their own group", () => {
+    expect(rule(".game_area_dlc_row[data-sar-kinds] .game_area_dlc_name")).toContain(
+      "flex-wrap: wrap",
+    );
+    expect(rule('.sar-chips[data-sar-chips="full"]')).toContain("flex-wrap: wrap");
+    expect(rule('.sar-chips[data-sar-chips="full"]')).toContain("max-inline-size: 100%");
+  });
+
+  it("keeps the allowance of chips a constant on each placement", () => {
+    expect(PLACEMENTS.every((placement) => Number.isInteger(placement.maxChips))).toBe(true);
+    expect(PLACEMENTS.find((placement) => placement.id === "search-row")?.maxChips).toBe(3);
   });
 });
 

@@ -81,14 +81,17 @@
   white-space: nowrap;
 }
 
-/* Search rows: right after the title. On a disclosed row the one-line title box becomes a flex
-   row, so a long title ends in an ellipsis and the badge stays visible. */
+/* Search rows: right after the title. On a disclosed row the one-line title box becomes a wrapping
+   flex row. A long title ends in an ellipsis, and the chips drop to a second line before the title
+   gets narrower than its basis. */
 .search_result_row[data-sar-kinds] .search_name {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
 }
 
 .search_result_row[data-sar-kinds] .search_name > .title {
+  flex: 1 1 var(--sar-row-title-basis);
   min-inline-size: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -99,7 +102,14 @@
    trailing space. The badge's margin is then the whole gap, as on search rows. */
 .game_area_dlc_row[data-sar-kinds] .game_area_dlc_name {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
+}
+
+/* On a row the group wraps inside its line, so a third chip or the "+N" chip is never clipped */
+.sar-chips[data-sar-chips="full"] {
+  flex-wrap: wrap;
+  max-inline-size: 100%;
 }
 
 .search_name > .sar-chips,
