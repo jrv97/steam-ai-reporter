@@ -11,7 +11,7 @@
 
 A browser extension for Chromium-based browsers and Firefox, and a userscript for Tampermonkey and Violentmonkey, that tag items on the Steam store with what Steam's own store data says about them: AI Generated Content Disclosure, anti-cheat (Kernel Level Anti-Cheat first), 3rd-party DRM, 3rd-Party Account, 3rd-party EULA and PvP.
 
-> Status: in development. Nothing is released yet, and the install links below are placeholders.
+> Status: [releases](https://github.com/jrv97/steam-ai-reporter/releases) are on GitHub. The store links below are placeholders.
 
 The extension only reads what Steam's store data and developers report there, and sends no reports anywhere.
 
@@ -26,15 +26,16 @@ If you browse the store the same way, I hope you find it useful too.
 ## What it does
 
 - Tags these kinds of items: AI Generated Content Disclosure, Kernel Level Anti-Cheat and other Anti-Cheat Software, 3rd-party DRM, 3rd-Party Account, 3rd-party EULA and PvP.
-- Adds a badge to capsules and rows (search, wishlist, home, tag and category hubs, sale pages such as Next Fest, developer and publisher pages, the discovery queue, search suggestions) for items that carry one of those tags.
-- Shows a non-blocking banner on the app page that quotes the developer's AI report verbatim.
-- Optionally dims or hides those items in lists. This is off by default.
-- Lets you ignore a game you consider a false flag, with a per-game allow-list.
+- Adds a badge to capsules and rows (search, wishlist, home, tag and category hubs, sale pages such as Next Fest, developer and publisher pages, the discovery queue, search suggestions) for items that carry one of those tags. Each tag has a short chip (AI, KLAC, Anti-Cheat, DRM, Account, EULA, PvP), and a +N chip stands for the tags that do not fit.
+- Opens a card on hover or keyboard focus that lists every tag in Steam's words and ends with a line naming the developer as the source.
+- Shows a non-blocking banner on the app page that lists each tag the developer declared and quotes the developer's AI report verbatim.
+- Gives each tag its own switch, badge, banner entry and list filter (Show, Dim or Hide). Filters start on Show, and the strongest filter wins when a game carries several tags. The PvP tag starts switched off.
+- Lets you ignore a game you consider a false flag, for one tag or for all tags.
 
 Each tag follows Steam's own words:
 
-- AI Generated Content Disclosure: the developer reported generative AI use. The badge reads "AI use reported".
-- Kernel Level Anti-Cheat: the game's anti-cheat runs at the kernel level.
+- AI Generated Content Disclosure: the developer reported generative AI use. The chip reads "AI", and the card and the banner carry Steam's heading "AI Generated Content Disclosure".
+- Kernel Level Anti-Cheat: the game's anti-cheat runs at the kernel level. The chip reads "KLAC".
 - Anti-Cheat Software: the game uses anti-cheat software.
 - 3rd-party DRM: the game uses DRM from a third party.
 - 3rd-Party Account: the game needs an account with a third party.
@@ -55,17 +56,17 @@ On a game's page, a banner above the purchase box quotes the developer's report 
 
 ![A search row's badge with a panel open below it that quotes the developer's report](docs/store/screenshots/03-hover-card.jpg)
 
-Hovering or tabbing to a badge opens a panel in the style of Steam's game hover, with the developer's own text and any AI service they named.
+Hovering or tabbing to a badge opens a panel in the style of Steam's game hover, with the developer's own text, any AI service they named and a line for each other tag the game carries.
 
 ![Next Fest sale cards where two game images carry a small "AI use reported" badge in their corner](docs/store/screenshots/04-next-fest.jpg)
 
-Sale pages such as Next Fest, tag and category hubs and the home page get a compact "AI use reported" badge on the game's image.
+Sale pages such as Next Fest, tag and category hubs and the home page get a compact badge on the game's image.
 
 ### Settings
 
 ![The options page: switches for badges and the banner, a Show, Dim and Hide control for lists, a language picker, and a list of games you ignored](docs/store/screenshots/05-options.jpg)
 
-The options page turns badges and the banner on or off, sets how lists treat those games, picks the language (automatic follows the store page), and lists the games you ignored, each with "Stop ignoring".
+The options page has one section per tag with switches for the tag, its badge and its banner entry, and a Show, Dim and Hide control for lists. Each section can be closed, and the page remembers which ones. It also picks the language (automatic follows the store page) and lists the games you ignored under the scope you ignored them for, each with "Stop ignoring".
 
 ![The same search results with the list filter set to Dim, where the three badged rows are faded](docs/store/screenshots/list-dim.jpg)
 
@@ -73,7 +74,7 @@ With the list filter on Dim, badged games fade in lists and come back on hover. 
 
 <img src="docs/store/screenshots/popup.jpg" alt="The toolbar popup with the badge and banner switches, the Show, Dim and Hide control, one game you ignored, and a link to all settings" width="360">
 
-The toolbar popup holds the same switches, the list filter and the games you ignored, with a link to the full options page. The userscript opens the same settings in a dialog from the script manager's menu.
+The toolbar popup holds the same per-tag switches and list filters and the games you ignored, with a link to the full options page. The userscript opens the same settings in a dialog from the script manager's menu.
 
 ### Known gaps
 
@@ -83,7 +84,7 @@ The toolbar popup holds the same switches, the list filter and the games you ign
 
 - Chrome Web Store: link to follow.
 - Firefox Add-ons (AMO): link to follow.
-- Userscript: link to follow (Tampermonkey or Violentmonkey).
+- Userscript: open [steam-ai-reporter.user.js](https://github.com/jrv97/steam-ai-reporter/releases/latest/download/steam-ai-reporter.user.js) from the latest release in Tampermonkey or Violentmonkey.
 
 ## Privacy
 
@@ -91,7 +92,7 @@ Nothing is collected. App IDs of the items on the page go, without cookies, only
 
 ## Development
 
-Requirements: [mise](https://mise.jdx.dev) and Git. mise installs every other tool at the pinned version (Node, pnpm, Python, dprint, ruff, mypy, shellcheck, shfmt, actionlint, zizmor, changie, web-ext), and pnpm installs the JavaScript libraries (esbuild, TypeScript, oxlint, vitest) from the lockfile. On Windows, use Git for Windows; see `mise.local.toml.example` for putting Git Bash ahead of WSL's `bash` when running tasks from PowerShell.
+Requirements: [mise](https://mise.jdx.dev) and Git. mise installs every other tool at the pinned version (Node, pnpm, Python, uv, dprint, ruff, mypy, shellcheck, shfmt, actionlint, zizmor, changie, gh, web-ext), and pnpm installs the JavaScript libraries (esbuild, TypeScript, oxlint, valibot, vitest) and the test DOM (happy-dom) from the lockfile. On Windows, use Git for Windows; see `mise.local.toml.example` for putting Git Bash ahead of WSL's `bash` when running tasks from PowerShell.
 
 ```bash
 mise trust
@@ -109,7 +110,7 @@ Main tasks:
 - `mise run ci`: everything CI runs. The pre-push hook runs `prepush`, which is the same without the reproducibility check and `web-ext lint`.
 - `mise run dev`: rebuild on change. In another terminal, `mise run run-gecko` (Firefox Nightly only) or `mise run run-chromium` loads the build with auto-reload.
 - `mise run package`: write the Chromium and Gecko zips, the userscript and its `.meta.js`, and the source archive for store reviewers to `artifacts/`, then check them.
-- `mise run canary`: before a release, check that live Steam still answers in the shape the detectors expect (two requests). It is not part of `ci`.
+- `mise run canary`: before a release, check that live Steam still answers in the shape the detectors expect (four requests). It is not part of `ci`.
 - `mise run capture-fixtures`: refresh the public test fixtures from the live store.
 - `mise run icons`: render the extension icon PNGs in `assets/icons/` from `mark-purple.svg` with headless Chromium (`SAR_CHROMIUM_BIN`).
 - `mise run change-new`: add a changelog fragment. A pull request that changes `src/` needs one, unless it carries the `no-changelog-fragment` label.
@@ -155,12 +156,30 @@ A recut after a store rejection needs a new `.N` version, because AMO never reus
 
 ## Prior art and thanks
 
-No code is copied from any of these projects. Their ideas shaped this one, and the work is credited here.
+No code is copied from any of these projects. Ideas that shaped this one are credited here, and two projects are listed for comparison only.
 
 - [AI warning for Steam](https://github.com/seeeeew/aiwarningforsteam) by seeeeew: the low-permission manifest, separate cache lifetimes for positive and negative results, and the idea of an automated check for heading changes.
 - [Steam AI Games Indicator](https://github.com/Pierre-Demessence/SteamAIGamesIndicator) by Pierre-Demessence: badging every surface, including wishlist and home capsules, guarding against age gates before trusting a negative, and serial requests with a delay.
 - [AI Generated Content Filter for Steam](https://github.com/SoBloxsy/AI-Content-Hider-for-Steam) by SoBloxsy: falling back from hiding to highlighting where hiding breaks a list.
 - [Augmented Steam](https://github.com/IsThereAnyDeal/AugmentedSteam): ideas only (handling both classic and React store pages, one module per feature, and the request for a dismissible banner). It is GPL-3.0 licensed, and nothing from it is used in any form.
+- [Slop-Inator](https://github.com/Dysnomia-Studio/slopinator) by Dysnomia Studio: listed for comparison. It shaped no part of this project.
+- [Enhanced Steam](https://github.com/jshackles/Enhanced_Steam) by Jason Shackles: listed for comparison. Its development ended in 2019, and Augmented Steam continues from it. It is GPL-3.0 licensed, and nothing from it is used in any form.
+
+### How they compare
+
+The cells follow each project's own README, release notes or issue tracker. "Not stated" marks a topic the source leaves out, and the project may still cover it.
+
+| Project                                                                                         | AI disclosure                                     | Filtering                                        | Other store data                                                               |
+| ----------------------------------------------------------------------------------------------- | ------------------------------------------------- | ------------------------------------------------ | ------------------------------------------------------------------------------ |
+| Tag Kit for Steam                                                                               | Badge, hover card, app page banner                | Show, Dim or Hide per tag                        | Anti-cheat, 3rd-party DRM, account, EULA, PvP                                  |
+| [AI warning for Steam](https://github.com/seeeeew/aiwarningforsteam)                            | Popup on store pages                              | Blur or hide in search                           | Not stated                                                                     |
+| [Slop-Inator](https://github.com/Dysnomia-Studio/slopinator)                                    | Badges on search pages, sale pages (experimental) | Not stated                                       | Not stated                                                                     |
+| [AI Generated Content Filter for Steam](https://github.com/SoBloxsy/AI-Content-Hider-for-Steam) | Disclosure shown on store and search pages        | Not stated                                       | Not stated                                                                     |
+| [Steam AI Games Indicator](https://github.com/Pierre-Demessence/SteamAIGamesIndicator)          | Banner on game pages, badge on tiles              | Hide toggle in search                            | Not stated                                                                     |
+| [Augmented Steam](https://github.com/IsThereAnyDeal/AugmentedSteam)                             | Not stated                                        | Search by review count, score, Early Access      | 3rd-party DRM warning setting, highlights for owned, wishlisted, ignored games |
+| [Enhanced Steam](https://github.com/jshackles/Enhanced_Steam)                                   | Not stated                                        | Hide Early Access games on home and search pages | 3rd-party DRM warnings, highlights for owned, wishlisted, coupon items         |
+
+Tag Kit for Steam has no Early Access handling and no highlighting of owned or wishlisted games. Slop-Inator and Steam AI Games Indicator keep lists of known games in their repositories. Tag Kit for Steam reads each game's data from Valve's servers and ships no list.
 
 ## How it was built
 
