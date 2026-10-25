@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { withKind } from "../../../tests/helpers/settings";
 import { KINDS, perKind } from "../kinds/registry";
 import {
   applyPatch,
@@ -6,7 +7,6 @@ import {
   encodeSettings,
   parseSettings,
   type Settings,
-  withKind,
 } from "./settings";
 
 const PLAIN = { enabled: true, badge: true, banner: true, filter: "off" } as const;

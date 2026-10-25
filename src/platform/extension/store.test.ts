@@ -3,8 +3,9 @@ import { keyValueStoreContract } from "../../../tests/contracts/key-value-store.
 import { migrationFaultContract } from "../../../tests/contracts/migration-faults.contract";
 import { migrationContract } from "../../../tests/contracts/migration.contract";
 import { fakeArea, faultyArea } from "../../../tests/helpers/fake-area";
+import { withKind, writeSettings } from "../../../tests/helpers/settings";
 import type { Unsubscribe } from "../../core/ports";
-import { DEFAULT_SETTINGS, encodeSettings, withKind } from "../../core/settings/settings";
+import { DEFAULT_SETTINGS, encodeSettings } from "../../core/settings/settings";
 import { SETTINGS_KEY } from "../../core/storage-keys";
 import type { LocalChanges } from "./ext";
 import { createExtensionSettings, createExtensionStore } from "./store";
@@ -72,7 +73,7 @@ describe("createExtensionSettings", () => {
       seen.push(value);
     });
     const next = withKind(DEFAULT_SETTINGS, "ai", { banner: false });
-    await settings.write(next);
+    await writeSettings(settings, next);
     changes.fire({ [SETTINGS_KEY]: { newValue: encodeSettings(next) } });
     expect(seen).toStrictEqual([encodeSettings(next)]);
   });

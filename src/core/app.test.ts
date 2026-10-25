@@ -8,12 +8,13 @@ import { fixedClock } from "../../tests/helpers/fixed-clock";
 import { fixtureItems, getItemsRequest, getItemsRoute, itemAs } from "../../tests/helpers/getitems";
 import { englishI18n } from "../../tests/helpers/i18n";
 import { memoryStore } from "../../tests/helpers/memory-store";
+import { withKind, writeSettings } from "../../tests/helpers/settings";
 import { loadPage, SURFACES } from "../../tests/helpers/surfaces";
 import { type App, start } from "./app";
 import type { JsonValue } from "./json";
 import type { KindId } from "./kinds/id";
 import { KIND_BY_ID } from "./kinds/registry";
-import { DEFAULT_SETTINGS, encodeSettings, withKind } from "./settings/settings";
+import { DEFAULT_SETTINGS, encodeSettings } from "./settings/settings";
 import { createSettingsSource } from "./settings/settings-source";
 import { ALLOW_KEY, SETTINGS_KEY } from "./storage-keys";
 import { adoptPageStyles } from "./ui/styles";
@@ -87,7 +88,10 @@ describe("start on the search page", () => {
     await expect.poll(() => row(DISCLOSED)?.getAttribute("data-sar-kinds")).toBe("ai");
     expect(rootMark("data-sar-filter-ai")).toBe("off");
 
-    await settings.write(withKind(DEFAULT_SETTINGS, "ai", { filter: "hide", badge: false }));
+    await writeSettings(
+      settings,
+      withKind(DEFAULT_SETTINGS, "ai", { filter: "hide", badge: false }),
+    );
     expect(rootMark("data-sar-filter-ai")).toBe("hide");
     expect(rootMark("data-sar-badges-ai")).toBe("off");
     expect(rootMark("data-sar-filter-kernel")).toBe("off");
@@ -130,7 +134,7 @@ describe("start on the search page", () => {
     it("draws the chips again when a kind's badges are switched off", async () => {
       const { http, settings } = await startOnSearch(pvpOn(), several);
       await drawn(http);
-      await settings.write(withKind(withPvp, "kernel", { badge: false }));
+      await writeSettings(settings, withKind(withPvp, "kernel", { badge: false }));
       expect(rootMark("data-sar-badges-kernel")).toBe("off");
       await expect.poll(() => chips()).toEqual([
         chip("ai"),
@@ -173,7 +177,7 @@ describe("start on the search page", () => {
       const { http, settings } = await startOnSearch(pvpOn(), several);
       await drawn(http);
       const dimAi = withKind(withPvp, "ai", { filter: "dim" });
-      await settings.write(withKind(dimAi, "pvp", { filter: "hide" }));
+      await writeSettings(settings, withKind(dimAi, "pvp", { filter: "hide" }));
       const style = getComputedStyle(row(DISCLOSED) ?? document.body);
       expect(style.display).toBe("none");
     });
@@ -204,12 +208,13 @@ describe("start on the search page", () => {
   it("shows no badge and filters nothing while the kind is disabled", async () => {
     const { settings } = await startOnSearch();
     await expect.poll(() => document.querySelectorAll(".sar-badge").length).toBe(1);
-    await settings.write(
+    await writeSettings(
+      settings,
       withKind(DEFAULT_SETTINGS, "ai", { enabled: false, filter: "hide" }),
     );
     expect(rootMark("data-sar-badges-ai")).toBe("off");
     expect(rootMark("data-sar-filter-ai")).toBe("off");
-    await settings.write(DEFAULT_SETTINGS);
+    await writeSettings(settings, DEFAULT_SETTINGS);
     expect(rootMark("data-sar-badges-ai")).toBe("on");
   });
 

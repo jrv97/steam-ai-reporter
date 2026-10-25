@@ -72,8 +72,3 @@ export function applyPatch(settings: Settings, patch: SettingsPatch): Settings {
     kinds: perKind((kind) => ({ ...settings.kinds[kind.id], ...patch.kinds?.[kind.id] })),
   };
 }
-
-/** The settings with `patch` applied to one kind's settings. */
-export function withKind(settings: Settings, id: KindId, patch: Partial<KindSettings>): Settings {
-  return applyPatch(settings, { kinds: { [id]: patch } });
-}

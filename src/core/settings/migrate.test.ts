@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { migrationContract } from "../../../tests/contracts/migration.contract";
 import { countingStore } from "../../../tests/helpers/counting-store";
 import { memoryStore } from "../../../tests/helpers/memory-store";
+import { withKind } from "../../../tests/helpers/settings";
 import type { JsonValue } from "../json";
 import { perKind } from "../kinds/registry";
 import type { KeyValueStore } from "../ports";
@@ -14,7 +15,7 @@ import {
   readSettingsValue,
   settingsFromV1,
 } from "./migrate";
-import { DEFAULT_SETTINGS, encodeSettings, parseSettings, withKind } from "./settings";
+import { DEFAULT_SETTINGS, encodeSettings, parseSettings } from "./settings";
 
 const T = 1_000_000_000_000;
 /** The stored ignore list with no game in any scope. */

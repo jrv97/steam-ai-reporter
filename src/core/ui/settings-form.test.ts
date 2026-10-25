@@ -3,6 +3,7 @@ import { countingStore } from "../../../tests/helpers/counting-store";
 import { fixedClock } from "../../../tests/helpers/fixed-clock";
 import { englishI18n } from "../../../tests/helpers/i18n";
 import { memoryStore } from "../../../tests/helpers/memory-store";
+import { withKind, writeSettings } from "../../../tests/helpers/settings";
 import { SHIPPED_CATALOGS } from "../i18n/shipped";
 import { createI18n } from "../i18n/t";
 import type { KindId } from "../kinds/id";
@@ -10,7 +11,7 @@ import { LIST_FILTERS } from "../kinds/kind-settings";
 import { KIND_BY_ID, KINDS } from "../kinds/registry";
 import { ALLOW_ALL } from "../settings/allow-data";
 import { createAllowList } from "../settings/allow-list";
-import { DEFAULT_SETTINGS, parseSettings, withKind } from "../settings/settings";
+import { DEFAULT_SETTINGS, parseSettings } from "../settings/settings";
 import { createSettingsSource } from "../settings/settings-source";
 import { toAppId } from "../types";
 import { mountSettingsForm, type SettingsContext } from "./settings-form";
@@ -134,7 +135,7 @@ describe("the section of each tag", () => {
 
   it("shows the settings stored for each kind", async () => {
     const { settings, input } = await setup();
-    await settings.write({
+    await writeSettings(settings, {
       ...DEFAULT_SETTINGS,
       kinds: {
         ...DEFAULT_SETTINGS.kinds,
@@ -242,7 +243,7 @@ describe("changing a setting", () => {
 
   it("keeps the other settings of the stored value", async () => {
     const { settings, input } = await setup();
-    await settings.write({ ...DEFAULT_SETTINGS, locale: "es", debug: true });
+    await writeSettings(settings, { ...DEFAULT_SETTINGS, locale: "es", debug: true });
     const banner = input("ai", "banner");
     banner.checked = false;
     change(banner);
@@ -257,7 +258,7 @@ describe("changing a setting", () => {
 
   it("sets a list filter the setting does not allow to its default and shows it", async () => {
     const { settings, input } = await setup();
-    await settings.write(withKind(DEFAULT_SETTINGS, "pvp", { filter: "dim" }));
+    await writeSettings(settings, withKind(DEFAULT_SETTINGS, "pvp", { filter: "dim" }));
     expect(input("pvp", "filter", "dim").checked).toBe(true);
     const radio = input("pvp", "filter", "hide");
     radio.value = "blur";
@@ -302,7 +303,7 @@ describe("changing a setting", () => {
 
   it("follows changes from other tabs", async () => {
     const { settings, input } = await setup();
-    await settings.write(withKind(DEFAULT_SETTINGS, "kernel", { banner: false }));
+    await writeSettings(settings, withKind(DEFAULT_SETTINGS, "kernel", { banner: false }));
     expect(input("kernel", "banner").checked).toBe(false);
     expect(input("drm", "banner").checked).toBe(true);
   });
@@ -364,7 +365,7 @@ describe("two forms over one store", () => {
     const store = memoryStore();
     const first = await tab(store);
     const second = await tab(store);
-    await createSettingsSource(store).write({
+    await writeSettings(createSettingsSource(store), {
       ...withKind(DEFAULT_SETTINGS, "pvp", { filter: "hide" }),
       locale: "es",
     });
@@ -391,7 +392,7 @@ describe("the language", () => {
 
   it("sets a language the setting does not allow to automatic and shows it", async () => {
     const { settings, select } = await setup();
-    await settings.write({ ...DEFAULT_SETTINGS, locale: "es" });
+    await writeSettings(settings, { ...DEFAULT_SETTINGS, locale: "es" });
     const picker = select();
     expect(picker.value).toBe("es");
     const option = document.createElement("option");
@@ -407,7 +408,7 @@ describe("the language", () => {
 
   it("changes the language and leaves every kind alone", async () => {
     const { settings, select } = await setup();
-    await settings.write(withKind(DEFAULT_SETTINGS, "drm", { filter: "hide" }));
+    await writeSettings(settings, withKind(DEFAULT_SETTINGS, "drm", { filter: "hide" }));
     const picker = select();
     picker.value = "es";
     change(picker);
@@ -813,7 +814,7 @@ describe("a failed read of the settings", () => {
     });
     const banner = root.querySelector<HTMLInputElement>("[data-sar-setting=banner]");
     expect(banner?.disabled).toBe(true);
-    await settings.write(withKind(DEFAULT_SETTINGS, "ai", { banner: false }));
+    await writeSettings(settings, withKind(DEFAULT_SETTINGS, "ai", { banner: false }));
     expect(banner?.disabled).toBe(false);
     expect(root.querySelector<HTMLElement>(".sar-card .sar-field-error")?.hidden).toBe(true);
     expect(banner?.checked).toBe(false);

@@ -4,12 +4,8 @@ import { perKind } from "../../src/core/kinds/registry";
 import type { KeyValueStore } from "../../src/core/ports";
 import { perScope } from "../../src/core/settings/allow-data";
 import { allowFromV1, migrateStorage, settingsFromV1 } from "../../src/core/settings/migrate";
-import {
-  DEFAULT_SETTINGS,
-  encodeSettings,
-  parseSettings,
-  withKind,
-} from "../../src/core/settings/settings";
+import { DEFAULT_SETTINGS, encodeSettings, parseSettings } from "../../src/core/settings/settings";
+import { withKind } from "../../tests/helpers/settings";
 
 const T = 1_000_000_000_000;
 

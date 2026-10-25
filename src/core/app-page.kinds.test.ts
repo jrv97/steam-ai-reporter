@@ -9,9 +9,10 @@ import { fixedClock } from "../../tests/helpers/fixed-clock";
 import { fixtureItems, getItemsRequest, getItemsRoute } from "../../tests/helpers/getitems";
 import { englishI18n } from "../../tests/helpers/i18n";
 import { memoryStore } from "../../tests/helpers/memory-store";
+import { withKind, writeSettings } from "../../tests/helpers/settings";
 import { loadPage } from "../../tests/helpers/surfaces";
 import { type App, start } from "./app";
-import { DEFAULT_SETTINGS, withKind } from "./settings/settings";
+import { DEFAULT_SETTINGS } from "./settings/settings";
 import { createSettingsSource } from "./settings/settings-source";
 import { ALLOW_KEY } from "./storage-keys";
 import { adoptPageStyles } from "./ui/styles";
@@ -88,9 +89,9 @@ describe("start on an English app page of a game with no AI", () => {
   it("leaves out a kind whose banner entry is switched off", async () => {
     const { settings } = await startOnDrmPage();
 
-    await settings.write(withKind(DEFAULT_SETTINGS, "eula", { banner: false }));
+    await writeSettings(settings, withKind(DEFAULT_SETTINGS, "eula", { banner: false }));
     expect(headings()).toEqual([i18n.t("kind_drm_heading"), i18n.t("kind_account_heading")]);
-    await settings.write(withKind(DEFAULT_SETTINGS, "drm", { enabled: false }));
+    await writeSettings(settings, withKind(DEFAULT_SETTINGS, "drm", { enabled: false }));
     expect(headings()).toEqual([i18n.t("kind_account_heading"), i18n.t("kind_eula_heading")]);
   });
 });

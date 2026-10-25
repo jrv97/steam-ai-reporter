@@ -5,9 +5,10 @@ import { fakeFetch } from "../../../tests/helpers/fake-http";
 import { fixtureItems, getItemsRoute } from "../../../tests/helpers/getitems";
 import { fakeGm } from "../../../tests/helpers/gm-fake";
 import { englishI18n } from "../../../tests/helpers/i18n";
+import { withKind } from "../../../tests/helpers/settings";
 import { loadPage, SURFACES } from "../../../tests/helpers/surfaces";
 import type { App } from "../../core/app";
-import { DEFAULT_SETTINGS, encodeSettings, withKind } from "../../core/settings/settings";
+import { DEFAULT_SETTINGS, encodeSettings } from "../../core/settings/settings";
 import { SETTINGS_KEY } from "../../core/storage-keys";
 import { startUserscript, type UserscriptEnv } from "./userscript";
 

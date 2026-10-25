@@ -9,12 +9,13 @@ import { fixedClock } from "../../tests/helpers/fixed-clock";
 import { fixtureItems, getItemsRequest, getItemsRoute, itemAs } from "../../tests/helpers/getitems";
 import { englishI18n } from "../../tests/helpers/i18n";
 import { memoryStore } from "../../tests/helpers/memory-store";
+import { withKind, writeSettings } from "../../tests/helpers/settings";
 import { loadPage } from "../../tests/helpers/surfaces";
 import { type App, start } from "./app";
 import { GETITEMS_URL } from "./detect/getitems";
 import type { JsonValue } from "./json";
 import type { Http } from "./ports";
-import { DEFAULT_SETTINGS, encodeSettings, withKind } from "./settings/settings";
+import { DEFAULT_SETTINGS, encodeSettings } from "./settings/settings";
 import { createSettingsSource } from "./settings/settings-source";
 import { ALLOW_KEY, SETTINGS_KEY } from "./storage-keys";
 import { adoptPageStyles } from "./ui/styles";
@@ -164,16 +165,16 @@ describe("start on an English app page", () => {
   it("follows the banner setting of the kind", async () => {
     const { settings } = await startOnAiPage();
 
-    await settings.write(withKind(DEFAULT_SETTINGS, "ai", { banner: false }));
+    await writeSettings(settings, withKind(DEFAULT_SETTINGS, "ai", { banner: false }));
     expect(document.getElementById("sar-banner")).toBeNull();
-    await settings.write(DEFAULT_SETTINGS);
+    await writeSettings(settings, DEFAULT_SETTINGS);
     expect(headings()).toEqual([i18n.t("kind_ai_heading")]);
   });
 
   it("follows the switch of the kind", async () => {
     const { settings } = await startOnAiPage();
 
-    await settings.write(withKind(DEFAULT_SETTINGS, "ai", { enabled: false }));
+    await writeSettings(settings, withKind(DEFAULT_SETTINGS, "ai", { enabled: false }));
     expect(document.getElementById("sar-banner")).toBeNull();
   });
 });

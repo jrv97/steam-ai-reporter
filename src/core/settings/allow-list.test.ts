@@ -28,6 +28,38 @@ async function scoped(
   return (await allow.list())[scope];
 }
 
+describe("two quick changes", () => {
+  it("both apply when two games stop being ignored at once", async () => {
+    const { allow } = setup();
+    await allow.add("drm", appId(1), "One");
+    await allow.add("drm", appId(2), "Two");
+    await allow.add("drm", appId(3), "Three");
+    await Promise.all([allow.remove("drm", appId(1)), allow.remove("drm", appId(2))]);
+    expect([...(await scoped(allow, "drm")).keys()]).toEqual([3]);
+  });
+
+  it("keep every game added at once, in two scopes", async () => {
+    const { allow } = setup();
+    await Promise.all([
+      allow.add("drm", appId(1), "One"),
+      allow.add("eula", appId(1), "One"),
+      allow.add("all", appId(2), "Two"),
+    ]);
+    const listed = await allow.list();
+    expect([listed.drm.size, listed.eula.size, listed.all.size]).toEqual([1, 1, 1]);
+  });
+
+  it("run the next change after one that failed", async () => {
+    const { allow, store } = setup();
+    store.break();
+    const failed = allow.add("drm", appId(1), "One");
+    await expect(failed).rejects.toBeInstanceOf(Error);
+    store.heal();
+    await allow.add("drm", appId(2), "Two");
+    expect([...(await scoped(allow, "drm")).keys()]).toEqual([2]);
+  });
+});
+
 describe("createAllowList", () => {
   it("starts empty in every scope", async () => {
     expect(await setup().allow.list()).toStrictEqual(NO_ENTRIES);

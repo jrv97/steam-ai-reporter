@@ -1,4 +1,5 @@
 import type { KeyValueStore, SettingsSource, Unsubscribe } from "../ports";
+import { createSerial } from "../serial";
 import { SETTINGS_KEY } from "../storage-keys";
 import { migrateSettings, readSettingsValue } from "./migrate";
 import {
@@ -16,10 +17,8 @@ import {
  */
 export type RemoteSettingsChanges = (listener: (value: unknown) => void) => Unsubscribe;
 
-/** The stored settings: a `SettingsSource` that can also write them. */
+/** The stored settings: a `SettingsSource` that can also change them. */
 export interface StoredSettings extends SettingsSource {
-  /** Replaces the stored settings and tells this context's subscribers. */
-  write(settings: Settings): Promise<void>;
   /**
    * Replaces the fields of `patch` in the settings stored now, writes them and returns them.
    * Patches from one context run in turn; two tabs at once can still lose one.
@@ -38,7 +37,7 @@ export function createSettingsSource(
   const listeners = new Set<(value: unknown) => void>();
   let lastTold: string | undefined;
   let unsubscribeRemote: Unsubscribe | undefined;
-  let patching: Promise<unknown> = Promise.resolve();
+  const serial = createSerial();
 
   function tell(value: unknown): void {
     const signature = JSON.stringify(value);
@@ -47,7 +46,11 @@ export function createSettingsSource(
     }
     lastTold = signature;
     for (const listener of listeners) {
-      listener(value);
+      try {
+        listener(value);
+      } catch {
+        // A subscriber's failure is its own; the write that told it has landed.
+      }
     }
   }
 
@@ -64,17 +67,12 @@ export function createSettingsSource(
       return readSettingsValue(store);
     },
 
-    write,
-
     patch(patch) {
-      const run = async (): Promise<Settings> => {
+      return serial(async () => {
         const next = applyPatch(parseSettings(await readSettingsValue(store)), patch);
         await write(next);
         return next;
-      };
-      const result = patching.then(run);
-      patching = result.catch(() => undefined);
-      return result;
+      });
     },
 
     subscribe(listener) {

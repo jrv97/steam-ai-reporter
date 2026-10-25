@@ -1,4 +1,5 @@
 import type { Clock, KeyValueStore } from "../ports";
+import { createSerial } from "../serial";
 import { ALLOW_KEY } from "../storage-keys";
 import type { AppId } from "../types";
 import {
@@ -22,7 +23,8 @@ export interface AllowList {
 
 /**
  * The allow-list over a `KeyValueStore`, stored as `v2:allow`, an object per scope. Changes read
- * and write the whole object, so two tabs at once can lose one. A read copies a `v1:allow` list.
+ * and write the whole object, one after another in this context, so two quick changes both apply;
+ * two tabs at once can still lose one. A read copies a `v1:allow` list.
  */
 export function createAllowList(store: KeyValueStore, clock: Clock): AllowList {
   async function read(): Promise<AllowEntries> {
@@ -33,15 +35,19 @@ export function createAllowList(store: KeyValueStore, clock: Clock): AllowList {
     await store.set(new Map([[ALLOW_KEY, encodeAllow(entries)]]));
   }
 
-  async function change(
+  const serial = createSerial();
+
+  function change(
     scope: AllowScope,
     update: (entries: Map<AppId, AllowEntry>) => boolean,
   ): Promise<void> {
-    const entries = await read();
-    const scoped = new Map(entries[scope]);
-    if (update(scoped)) {
-      await write({ ...entries, [scope]: scoped });
-    }
+    return serial(async () => {
+      const entries = await read();
+      const scoped = new Map(entries[scope]);
+      if (update(scoped)) {
+        await write({ ...entries, [scope]: scoped });
+      }
+    });
   }
 
   return {

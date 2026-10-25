@@ -1,13 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import { countingStore } from "../../../tests/helpers/counting-store";
 import { memoryStore } from "../../../tests/helpers/memory-store";
-import {
-  DEFAULT_SETTINGS,
-  encodeSettings,
-  parseSettings,
-  type Settings,
-  withKind,
-} from "./settings";
+import { withKind, writeSettings } from "../../../tests/helpers/settings";
+import { DEFAULT_SETTINGS, encodeSettings, parseSettings, type Settings } from "./settings";
 import { createSettingsSource, type RemoteSettingsChanges } from "./settings-source";
 
 const DIMMED: Settings = withKind(DEFAULT_SETTINGS, "ai", { filter: "dim" });
@@ -32,11 +27,38 @@ function remoteEvents() {
   };
 }
 
+describe("a subscriber that throws", () => {
+  it("does not reject a patch that was saved, and the others still hear it", async () => {
+    const source = createSettingsSource(memoryStore());
+    const heard = vi.fn();
+    source.subscribe(() => {
+      throw new Error();
+    });
+    source.subscribe(heard);
+    const written = await source.patch({ debug: true });
+    expect(written.debug).toBe(true);
+    expect(heard).toHaveBeenCalledTimes(1);
+    expect(parseSettings(await source.read()).debug).toBe(true);
+  });
+
+  it("does not stop a change from another tab reaching the others", () => {
+    const events = remoteEvents();
+    const source = createSettingsSource(memoryStore(), events.remote);
+    const heard = vi.fn();
+    source.subscribe(() => {
+      throw new Error();
+    });
+    source.subscribe(heard);
+    events.fire(encodeSettings(DIMMED));
+    expect(heard).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe("patch", () => {
   it("changes only the fields it names in what is stored now", async () => {
     const store = memoryStore();
     const source = createSettingsSource(store);
-    await source.write({ ...DEFAULT_SETTINGS, locale: "es" });
+    await writeSettings(source, { ...DEFAULT_SETTINGS, locale: "es" });
     await source.patch({ kinds: { drm: { badge: false } } });
     expect(parseSettings(await source.read())).toStrictEqual({
       ...withKind(DEFAULT_SETTINGS, "drm", { badge: false }),
@@ -48,7 +70,7 @@ describe("patch", () => {
     const store = memoryStore();
     const first = createSettingsSource(store);
     const second = createSettingsSource(store);
-    await first.write(DEFAULT_SETTINGS);
+    await writeSettings(first, DEFAULT_SETTINGS);
     await second.patch({ kinds: { kernel: { filter: "hide" } } });
     await first.patch({ kinds: { drm: { banner: false } } });
     const stored = parseSettings(await first.read());
@@ -130,13 +152,13 @@ describe("createSettingsSource", () => {
 
   it("reads what was written, as a value parseSettings accepts", async () => {
     const source = createSettingsSource(memoryStore());
-    await source.write(DIMMED);
+    await writeSettings(source, DIMMED);
     expect(parseSettings(await source.read())).toStrictEqual(DIMMED);
   });
 
   it("shares storage with another source over the same store", async () => {
     const store = memoryStore();
-    await createSettingsSource(store).write(DIMMED);
+    await writeSettings(createSettingsSource(store), DIMMED);
     expect(parseSettings(await createSettingsSource(store).read())).toStrictEqual(DIMMED);
   });
 
@@ -145,7 +167,7 @@ describe("createSettingsSource", () => {
     const source = createSettingsSource(store);
     await source.read();
     expect(store.calls).toStrictEqual({ get: 1, set: 0, remove: 0, keys: 0 });
-    await source.write(DEFAULT_SETTINGS);
+    await writeSettings(source, DEFAULT_SETTINGS);
     expect(store.calls.set).toBe(1);
   });
 
@@ -154,7 +176,7 @@ describe("createSettingsSource", () => {
     const store = countingStore(inner);
     const source = createSettingsSource(store);
     store.break();
-    await expect(source.write(DEFAULT_SETTINGS)).rejects.toThrow();
+    await expect(writeSettings(source, DEFAULT_SETTINGS)).rejects.toThrow();
     store.heal();
     expect(await inner.keys()).toStrictEqual(["v1:settings"]);
     expect(parseSettings(await source.read()).kinds.ai.badge).toBe(false);
@@ -162,7 +184,7 @@ describe("createSettingsSource", () => {
 
   it("stores the settings under the v2 key", async () => {
     const store = memoryStore();
-    await createSettingsSource(store).write(DIMMED);
+    await writeSettings(createSettingsSource(store), DIMMED);
     expect([...(await store.keys())]).toStrictEqual(["v2:settings"]);
   });
 
@@ -193,11 +215,11 @@ describe("createSettingsSource", () => {
     const source = createSettingsSource(memoryStore());
     const listener = vi.fn<(value: unknown) => void>();
     source.subscribe(listener);
-    await source.write(DIMMED);
-    await source.write(DIMMED);
+    await writeSettings(source, DIMMED);
+    await writeSettings(source, DIMMED);
     expect(listener).toHaveBeenCalledTimes(1);
     expect(parseSettings(listener.mock.calls[0]?.[0])).toStrictEqual(DIMMED);
-    await source.write(DEFAULT_SETTINGS);
+    await writeSettings(source, DEFAULT_SETTINGS);
     expect(listener).toHaveBeenCalledTimes(2);
   });
 
@@ -207,7 +229,7 @@ describe("createSettingsSource", () => {
     const stop = source.subscribe(listener);
     stop();
     stop();
-    await source.write(DIMMED);
+    await writeSettings(source, DIMMED);
     expect(listener).not.toHaveBeenCalled();
   });
 
@@ -229,7 +251,7 @@ describe("createSettingsSource", () => {
     const source = createSettingsSource(memoryStore(), events.remote);
     const listener = vi.fn<(value: unknown) => void>();
     source.subscribe(listener);
-    await source.write(DIMMED);
+    await writeSettings(source, DIMMED);
     events.fire(await source.read());
     expect(listener).toHaveBeenCalledTimes(1);
   });
