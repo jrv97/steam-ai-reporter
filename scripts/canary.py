@@ -1,13 +1,14 @@
 """Check that Steam still answers in the shape the detectors rely on (live, keyless).
 
-One GetItems call for a sample of apps, then three `?l=english` app pages, one for each structural
-hook: the anti-cheat name line, the DRM notice with a line break and the non-kernel notice. Four
-requests in total, all without cookies, to the two Valve hosts the extension itself uses. Each
-field has the type the schemas expect when it is present, and across the sample some app shows
-each kind of declaration. A page comes from an app the sample shows that declaration for, and is
-checked against what GetItems says about its own app. Exits non-zero, listing what changed, when
-an answer no longer has the expected shape. Not part of `ci`: it needs the network and Steam's
-mood. Run it before a release.
+One GetItems call for a sample of apps and one DLC, then three `?l=english` app pages, one for
+each structural hook: the anti-cheat name line, the DRM notice with a line break and the
+non-kernel notice. Four requests in total, all without cookies, to the two Valve hosts the
+extension itself uses. Each field has the type the schemas expect when it is present, and across
+the sample some app shows each kind of declaration. The DLC must still name its base game in
+related_items.parent_appid. A page comes from an app the sample shows that declaration for, and
+is checked against what GetItems says about its own app. Exits non-zero, listing what changed,
+when an answer no longer has the expected shape. Not part of `ci`: it needs the network and
+Steam's mood. Run it before a release.
 """
 
 import json
@@ -28,6 +29,10 @@ HEADING = "AI Generated Content Disclosure"
 # declaration, so only the order matters.
 SAMPLE = (1808500, 5072580, 413150, 3751950, 2807960, 730, 105600, 1245620)
 # Steam's category IDs for PvP, Online PvP, LAN PvP and Shared/Split Screen PvP.
+# A DLC and its base game: the DLC must keep answering related_items.parent_appid with the base
+# game's ID, which the ignore list follows (decision 51). ARC Raiders - Frozen Trail Collector Set.
+DLC_APP = 5201760
+DLC_PARENT = 1808500
 PVP_CATEGORY_IDS = frozenset({49, 36, 47, 37})
 EULA_URL = re.compile(r"^https://store\.steampowered\.com/+eula/")
 APP_PATH = re.compile(r"^/app/(\d+)(?:/|$)")
@@ -189,6 +194,19 @@ def facts_of(item: dict[str, object]) -> set[str]:
         )
         if shown
     }
+
+
+def dlc_problems(item: dict[str, object] | None) -> list[str]:
+    where = f"GetItems DLC {DLC_APP}"
+    if item is None:
+        return [f"{where}: no item with this id in the answer"]
+    related = as_object(item.get("related_items"))
+    if related is None:
+        return [f"{where}: related_items is missing or not an object"]
+    parent = related.get("parent_appid")
+    if parent != DLC_PARENT or isinstance(parent, bool):
+        return [f"{where}: related_items.parent_appid is {parent!r}, expected {DLC_PARENT}"]
+    return []
 
 
 def parse_items(response: Response) -> tuple[list[str], dict[int, dict[str, object]]]:
@@ -392,8 +410,9 @@ def app_page_problems(
 
 
 def main() -> None:
-    problems, by_id = parse_items(get(getitems_url(SAMPLE)))
+    problems, by_id = parse_items(get(getitems_url((*SAMPLE, DLC_APP))))
     problems += getitems_problems(by_id)
+    problems += dlc_problems(by_id.get(DLC_APP))
     for hook, options in PAGE_HOOKS:
         appid = pick_page_app(by_id, options)
         item = by_id.get(appid) if appid is not None else None
