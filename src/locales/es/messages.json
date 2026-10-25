@@ -43,6 +43,28 @@
       }
     }
   },
+  "notice_page_disagrees": {
+    "message": "La página de la tienda dice $page$ y los datos de Steam dicen $data$ para la etiqueta $kind$ de la aplicación $app$.",
+    "description": "Logged to the browser console in debug mode when the open game's page and the data Steam returns for it give different answers for one tag. $kind$ is the tag id and $page$ and $data$ are verdict states; keep them as they are.",
+    "placeholders": {
+      "kind": {
+        "content": "$1",
+        "example": "drm"
+      },
+      "app": {
+        "content": "$2",
+        "example": "1808500"
+      },
+      "page": {
+        "content": "$3",
+        "example": "not-disclosed"
+      },
+      "data": {
+        "content": "$4",
+        "example": "disclosed"
+      }
+    }
+  },
   "kind_ai_heading": {
     "message": "Información sobre contenido generado por IA",
     "description": "Steam's own heading of the block where a developer describes generative AI use. It titles the AI entry in the hover card, begins the screen reader name of the AI chip and heads the notice on the game's page. Use the wording Steam shows in this language."

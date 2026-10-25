@@ -1,138 +1,124 @@
-// @vitest-environment-options {"url":"https://store.steampowered.com/app/5072580/"}
-import { afterEach, describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { appId } from "../../tests/helpers/app-ids";
 import { APP_PAGES } from "../../tests/helpers/app-page";
 import { fakeDetector } from "../../tests/helpers/fake-detector";
 import { capturedVerdicts } from "../../tests/helpers/fixture-verdicts";
-import { loadPage } from "../../tests/helpers/surfaces";
-import { aiVerdicts, disclosedVerdict } from "../../tests/helpers/verdicts";
-import { pageVerdicts } from "./app-page";
-import type { KindVerdicts } from "./kinds/verdicts";
+import { aiVerdicts, disclosedVerdict, NOT_DISCLOSED } from "../../tests/helpers/verdicts";
+import { mergeVerdicts, translatedVerdicts } from "./app-page";
+import { parseAppPage } from "./detect/app-page";
+import { KINDS } from "./kinds/registry";
 import { UNKNOWN_KINDS } from "./kinds/verdicts";
+import { UNKNOWN } from "./types";
 
 const ID = appId(5072580);
+const PAGE_URL = "https://store.steampowered.com/app/5072580/?l=english";
 
-afterEach(() => {
-  document.documentElement.lang = "";
-});
-
-function detectors(verdicts: KindVerdicts) {
-  return { getItems: fakeDetector(() => verdicts), detector: fakeDetector(() => verdicts) };
+/** What the open English page says about itself: only the AI kind can be read from it. */
+function pageOf(name: "5072580-ai-first.html" | "413150-no-block.html") {
+  const doc = new DOMParser().parseFromString(APP_PAGES[name], "text/html");
+  return parseAppPage(doc, PAGE_URL);
 }
 
-describe("pageVerdicts on an English page", () => {
-  it("takes the AI kind from the page and every other kind from the detector", async () => {
-    loadPage(APP_PAGES["5072580-ai-first.html"]);
-    document.documentElement.lang = "en";
-    const found = detectors(capturedVerdicts(1808500));
+const none = () => undefined;
 
-    const verdicts = await pageVerdicts(document, ID, "english", found);
-
-    expect(verdicts.ai).toMatchObject({ state: "disclosed", source: "html" });
-    expect(verdicts.kernel).toBe(capturedVerdicts(1808500).kernel);
-    expect(verdicts.eula).toBe(capturedVerdicts(1808500).eula);
-    expect(verdicts.pvp).toBe(capturedVerdicts(1808500).pvp);
-    expect(found.detector.calls).toEqual([[ID]]);
-    expect(found.getItems.calls).toEqual([]);
+describe("mergeVerdicts", () => {
+  it("takes every kind from Steam's data when both disclose", () => {
+    const data = capturedVerdicts(1808500);
+    const disagree = vi.fn();
+    const merged = mergeVerdicts(pageOf("5072580-ai-first.html"), data, disagree);
+    for (const kind of KINDS) {
+      expect(merged[kind.id]).toBe(data[kind.id]);
+    }
+    expect(merged.ai).toBe(data.ai);
+    expect(disagree).not.toHaveBeenCalled();
   });
 
-  it("adds the AI service GetItems named to the notes the page gave", async () => {
-    loadPage(APP_PAGES["5072580-ai-first.html"]);
-    document.documentElement.lang = "en";
+  it("prefers a disclosure from Steam's data, which also names the AI service", () => {
     const named = aiVerdicts(disclosedVerdict({ service: "Midjourney" }));
-    const { service: _service, ...plain } = disclosedVerdict();
-    const unnamed = aiVerdicts(plain);
-
-    const withService = await pageVerdicts(document, ID, "english", detectors(named));
-    const without = await pageVerdicts(document, ID, "english", detectors(unnamed));
-
-    expect(withService.ai).toMatchObject({
-      state: "disclosed",
-      source: "html",
-      service: "Midjourney",
-    });
-    expect(without.ai).not.toHaveProperty("service");
+    const merged = mergeVerdicts(pageOf("5072580-ai-first.html"), named, none);
+    expect(merged.ai).toMatchObject({ source: "api", service: "Midjourney" });
   });
 
-  it("keeps the kinds the detector found for a game whose page has no AI block", async () => {
-    loadPage(APP_PAGES["3751950-drm-account-eula.html"]);
-    document.documentElement.lang = "en";
-    const detected = capturedVerdicts(3751950);
-
-    const verdicts = await pageVerdicts(document, appId(3751950), "english", detectors(detected));
-
-    expect(verdicts.ai).toMatchObject({ state: "not-disclosed", source: "html" });
-    expect(verdicts.drm).toBe(detected.drm);
-    expect(verdicts.account).toBe(detected.account);
-    expect(verdicts.eula).toBe(detected.eula);
+  it("keeps the page's disclosure when Steam's data has none, and reports the disagreement", () => {
+    const disagree = vi.fn();
+    const page = pageOf("5072580-ai-first.html");
+    const merged = mergeVerdicts(page, aiVerdicts(NOT_DISCLOSED), disagree);
+    expect(merged.ai).toBe(page.ai);
+    expect(disagree).toHaveBeenCalledWith("ai", page.ai, NOT_DISCLOSED);
   });
 
-  it("keeps the page's answer for AI when the page hid the store", async () => {
-    loadPage(APP_PAGES["339800-login-redirect.html"]);
-    document.documentElement.lang = "en";
-    const detected = capturedVerdicts(3751950);
-
-    const verdicts = await pageVerdicts(document, ID, "english", detectors(detected));
-
-    expect(verdicts.ai).toBe(UNKNOWN_KINDS.gated.ai);
-    expect(verdicts.drm).toBe(detected.drm);
+  it("keeps Steam's disclosure when the page shows none, and reports the disagreement", () => {
+    const disagree = vi.fn();
+    const data = aiVerdicts(disclosedVerdict());
+    const page = pageOf("413150-no-block.html");
+    const merged = mergeVerdicts(page, data, disagree);
+    expect(merged.ai).toBe(data.ai);
+    expect(disagree).toHaveBeenCalledOnce();
+    expect(disagree).toHaveBeenCalledWith("ai", page.ai, data.ai);
   });
 
-  it("leaves the other kinds unknown when the detector cannot answer", async () => {
-    loadPage(APP_PAGES["5072580-ai-first.html"]);
-    document.documentElement.lang = "en";
+  it("keeps Steam's disclosure when the page hid the store, and reports it", () => {
+    const disagree = vi.fn();
+    const data = aiVerdicts(disclosedVerdict());
+    const merged = mergeVerdicts(UNKNOWN_KINDS.gated, data, disagree);
+    expect(merged.ai).toBe(data.ai);
+    expect(disagree).toHaveBeenCalledWith("ai", UNKNOWN.gated, data.ai);
+  });
 
-    const verdicts = await pageVerdicts(
-      document,
-      ID,
-      "english",
-      detectors(UNKNOWN_KINDS.error),
-    );
+  it("uses Steam's answer when the page's is unknown, without a report", () => {
+    const disagree = vi.fn();
+    const data = aiVerdicts(disclosedVerdict());
+    expect(mergeVerdicts(UNKNOWN_KINDS.missing, data, disagree).ai).toBe(data.ai);
+    expect(disagree).not.toHaveBeenCalled();
+  });
 
-    expect(verdicts.ai.state).toBe("disclosed");
-    expect(verdicts.drm).toBe(UNKNOWN_KINDS.error.drm);
+  it("keeps the page's answer when Steam's data could not answer", () => {
+    const page = pageOf("5072580-ai-first.html");
+    expect(mergeVerdicts(page, UNKNOWN_KINDS.error, none).ai).toBe(page.ai);
+    const quiet = pageOf("413150-no-block.html");
+    expect(mergeVerdicts(quiet, UNKNOWN_KINDS["rate-limited"], none).ai).toBe(quiet.ai);
+  });
+
+  it("settles a page that shows none and data that has none as not disclosed", () => {
+    const data = aiVerdicts(NOT_DISCLOSED);
+    expect(mergeVerdicts(pageOf("413150-no-block.html"), data, none).ai).toBe(NOT_DISCLOSED);
+  });
+
+  it("never lets the page speak for a kind that cannot be read from it", () => {
+    const data = capturedVerdicts(813230);
+    const page = { ...UNKNOWN_KINDS.missing, kernel: capturedVerdicts(1808500).kernel };
+    expect(mergeVerdicts(page, data, none).kernel).toBe(data.kernel);
+  });
+
+  it("holds a verdict for every kind", () => {
+    const merged = mergeVerdicts(UNKNOWN_KINDS.missing, UNKNOWN_KINDS.error, none);
+    expect(Object.keys(merged)).toStrictEqual(KINDS.map((kind) => kind.id));
   });
 });
 
-describe("pageVerdicts on a page in another language", () => {
-  it("takes every kind from the detector and never reads the page", async () => {
-    loadPage(APP_PAGES["5072580-ai-first.html"]);
-    document.documentElement.lang = "de";
+describe("translatedVerdicts", () => {
+  it("takes Steam's data as it is when the AI notes are in the page's language", async () => {
     const detected = aiVerdicts(disclosedVerdict({ language: "german" }));
-    const found = detectors(detected);
-
-    const verdicts = await pageVerdicts(document, ID, "german", found);
-
-    expect(verdicts).toBe(detected);
-    expect(found.getItems.calls).toEqual([]);
+    const getItems = fakeDetector(() => UNKNOWN_KINDS.error);
+    expect(await translatedVerdicts(ID, "german", detected, getItems)).toBe(detected);
+    expect(getItems.calls).toEqual([]);
   });
 
   it("asks GetItems again when the stored AI notes are in another language", async () => {
-    loadPage(APP_PAGES["5072580-ai-first.html"]);
-    document.documentElement.lang = "de";
     const stored = capturedVerdicts(1808500);
     const fresh = disclosedVerdict({ language: "german", notes: "Deutsche Hinweise." });
-    const found = {
-      detector: fakeDetector(() => stored),
-      getItems: fakeDetector(() => aiVerdicts(fresh)),
-    };
+    const getItems = fakeDetector(() => aiVerdicts(fresh));
 
-    const verdicts = await pageVerdicts(document, ID, "german", found);
+    const verdicts = await translatedVerdicts(ID, "german", stored, getItems);
 
     expect(verdicts.ai).toBe(fresh);
     expect(verdicts.kernel).toBe(stored.kernel);
-    expect(found.getItems.calls).toEqual([[ID]]);
+    expect(getItems.calls).toEqual([[ID]]);
   });
 
   it("keeps the stored verdicts when the second answer is no disclosure", async () => {
-    loadPage(APP_PAGES["5072580-ai-first.html"]);
-    document.documentElement.lang = "de";
     const stored = capturedVerdicts(1808500);
-    const found = {
-      detector: fakeDetector(() => stored),
-      getItems: fakeDetector(() => UNKNOWN_KINDS.error),
-    };
-
-    expect(await pageVerdicts(document, ID, "german", found)).toBe(stored);
+    const getItems = fakeDetector(() => UNKNOWN_KINDS.error);
+    expect(await translatedVerdicts(ID, "german", stored, getItems)).toBe(stored);
   });
 });

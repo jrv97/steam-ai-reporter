@@ -82,11 +82,18 @@ function verdictsOf(
   }
 }
 
+/** The app page the visitor has open: its verdicts are in the document, so no request is needed. */
+export interface OpenPage {
+  readonly id: AppId;
+  readonly verdicts: KindVerdicts;
+}
+
 /**
- * The HTML detector: one request per app, one after another. Spacing, the per-page budget and the
- * breaker come from the `Http` it is given (a throttling decorator) or from a chain around it.
+ * The HTML detector: one request per app, one after another, except for the open page, which it
+ * reads from the document. Spacing, the per-page budget and the breaker come from the `Http` it is
+ * given (a throttling decorator) or from a chain around it.
  */
-export function createAppPageDetector(http: Http): Detector {
+export function createAppPageDetector(http: Http, open?: OpenPage): Detector {
   const parser = new DOMParser();
   const parse = (body: string, url: string): KindVerdicts =>
     parseAppPage(parser.parseFromString(body, "text/html"), url);
@@ -94,6 +101,10 @@ export function createAppPageDetector(http: Http): Detector {
     async detect(ids: readonly AppId[]): Promise<ReadonlyMap<AppId, KindVerdicts>> {
       const verdicts = new Map<AppId, KindVerdicts>();
       for (const id of new Set(ids)) {
+        if (id === open?.id) {
+          verdicts.set(id, open.verdicts);
+          continue;
+        }
         // Sequential on purpose: one request in flight (rule 13).
         verdicts.set(id, verdictsOf(await http.get(appPageUrl(id)), parse));
       }

@@ -1,8 +1,8 @@
-import { startAppPage } from "./app-page";
+import { type AppPage, startAppPage } from "./app-page";
 import { cachedDetector } from "./cache/cached-detector";
 import { maintainCache } from "./cache/maintenance";
 import { createVerdictCache } from "./cache/verdict-cache";
-import { createAppPageDetector } from "./detect/app-page";
+import { createAppPageDetector, type OpenPage, parseLiveAppPage } from "./detect/app-page";
 import { API_BREAKER_KEY, createBreaker, HTML_BREAKER_KEY } from "./detect/breaker";
 import { createBudgetDetector } from "./detect/budget";
 import { createChainDetector } from "./detect/chain";
@@ -81,12 +81,17 @@ async function readSettings(source: SettingsSource): Promise<SettingsRead> {
  * unknown, the English app page within a per-page budget. Each host has its own throttle and
  * breaker.
  */
-function createDetector(deps: AppDeps, logger: Logger, language: SteamLanguage) {
+function createDetector(
+  deps: AppDeps,
+  logger: Logger,
+  language: SteamLanguage,
+  open: OpenPage | undefined,
+) {
   const { http, store, clock } = deps;
   const throttled = (key: string) =>
     createThrottledHttp({ http, clock, breaker: createBreaker({ store, clock, logger, key }) });
   const getItems = createGetItemsDetector({ http: throttled(API_BREAKER_KEY), language });
-  const appPage = createBudgetDetector(createAppPageDetector(throttled(HTML_BREAKER_KEY)));
+  const appPage = createBudgetDetector(createAppPageDetector(throttled(HTML_BREAKER_KEY), open));
   const chain = createDedupingDetector(createChainDetector([getItems, appPage]));
   return { getItems, detector: cachedDetector(chain, createVerdictCache(store, clock), logger) };
 }
@@ -134,7 +139,13 @@ export async function start(deps: AppDeps): Promise<App> {
   });
 
   const language = steamLanguage(root.lang) ?? DEFAULT_STEAM_LANGUAGE;
-  const detectors = createDetector(deps, logger, language);
+  const pageId = appIdFromHref(doc.URL, doc.URL);
+  // An English app page holds its own verdicts, so nothing fetches the page that is open.
+  const live = pageId === undefined ? undefined : parseLiveAppPage(doc, doc.URL);
+  const open = pageId === undefined || live === undefined
+    ? undefined
+    : { id: pageId, verdicts: live };
+  const detectors = createDetector(deps, logger, language, open);
   const allowList = createAllowList(store, clock);
   const ignored = await loadIgnored(allowList, logger);
 
@@ -154,8 +165,7 @@ export async function start(deps: AppDeps): Promise<App> {
 
   scanner.start();
 
-  // Listening starts before the app page's lookup finishes, so no settings change is missed.
-  let renderAppPage: () => void = () => undefined;
+  let appPage: AppPage | undefined;
   const unsubscribe: Unsubscribe = deps.settings.subscribe((value) => {
     const before = settings;
     settings = parseSettings(value);
@@ -164,13 +174,15 @@ export async function start(deps: AppDeps): Promise<App> {
       capsules.refresh();
     }
     if (bannersChanged(before, settings)) {
-      renderAppPage();
+      appPage?.render();
     }
   });
 
-  const pageId = appIdFromHref(doc.URL, doc.URL);
   if (pageId !== undefined) {
-    renderAppPage = await startAppPage(doc, pageId, i18n, language, detectors, {
+    appPage = startAppPage(doc, pageId, i18n, {
+      language,
+      detectors,
+      live,
       ignored,
       allowList,
       settings: () => settings,
@@ -178,6 +190,7 @@ export async function start(deps: AppDeps): Promise<App> {
         capsules.refresh(new Set([id]));
       },
       card,
+      logger,
     });
   }
 
@@ -185,6 +198,7 @@ export async function start(deps: AppDeps): Promise<App> {
     stop() {
       scanner.stop();
       card.stop();
+      appPage?.stop();
       unsubscribe();
     },
   };

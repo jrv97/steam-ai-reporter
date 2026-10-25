@@ -43,6 +43,28 @@
       }
     }
   },
+  "notice_page_disagrees": {
+    "message": "The store page says $page$ and Steam's data says $data$ for the $kind$ tag of app $app$.",
+    "description": "Logged to the browser console in debug mode when the open game's page and the data Steam returns for it give different answers for one tag. $kind$ is the tag id and $page$ and $data$ are verdict states; keep them as they are.",
+    "placeholders": {
+      "kind": {
+        "content": "$1",
+        "example": "drm"
+      },
+      "app": {
+        "content": "$2",
+        "example": "1808500"
+      },
+      "page": {
+        "content": "$3",
+        "example": "not-disclosed"
+      },
+      "data": {
+        "content": "$4",
+        "example": "disclosed"
+      }
+    }
+  },
   "kind_ai_heading": {
     "message": "AI Generated Content Disclosure",
     "description": "Steam's own heading of the block where a developer describes generative AI use. It titles the AI entry in the hover card, begins the screen reader name of the AI chip and heads the notice on the game's page. Use the wording Steam shows in this language."

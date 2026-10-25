@@ -51,6 +51,7 @@ async function startOnDrmPage() {
     console: quiet,
     addPageStyles: adoptPageStyles,
   });
+  await expect.poll(() => headings().length).toBe(3);
   const ignored = async (scope: string) =>
     Object.keys(v.parse(AllowSchema, (await store.get([ALLOW_KEY])).get(ALLOW_KEY))[scope] ?? {});
   return { http, settings, ignored };

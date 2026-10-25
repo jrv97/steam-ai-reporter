@@ -156,6 +156,15 @@ describe("createAppPageDetector", () => {
     ]);
   });
 
+  it("answers the open page from its document and requests the others", async () => {
+    const http = fakeHttp(fixtureRoutes);
+    const open = { id: aiId, verdicts: UNKNOWN_KINDS.error };
+    const found = await createAppPageDetector(http, open).detect(appIds(5072580, 413150));
+    expect(found.get(aiId)).toBe(open.verdicts);
+    expect(found.get(appId(413150))?.ai.state).toBe("not-disclosed");
+    expect(http.calls).toStrictEqual([APP(413150)]);
+  });
+
   it("answers the AI kind only: the other kinds stay unknown", async () => {
     const { detector: d } = detector(fixtureRoutes);
     const found = await d.detect(appIds(5072580, 413150, 99999999));
