@@ -37,3 +37,28 @@ const DESCRIPTION_COLUMN =
 export function withDescriptionColumn(html: string): string {
   return html.replace("</body>", `${DESCRIPTION_COLUMN}</body>`);
 }
+
+/** The summary box rows under which the tag section falls back to when the page has no tags. */
+export const DEV_ROWS = `
+    <div class="dev_row" id="developer"><div class="subtitle">Developer:</div></div>
+    <div class="dev_row" id="publisher"><div class="subtitle">Publisher:</div></div>`;
+
+/** Steam's block of popular user-defined tags, which the tag section follows. */
+export const USER_TAGS = `
+    <div class="glance_tags_ctn popular_tags_ctn" id="tags">
+      <div class="glance_tags_label"></div>
+      <div class="glance_tags popular_tags"></div>
+    </div>`;
+
+/**
+ * The summary box of a store page as the code expects it (no capture holds it): the Developer and
+ * Publisher rows, then the popular tags block.
+ */
+export const SUMMARY_BOX = `
+  <div class="glance_ctn_responsive_left">${DEV_ROWS}${USER_TAGS}
+  </div>`;
+
+/** The page with the summary box added, where the tag section goes. */
+export function withSummaryBox(html: string): string {
+  return html.replace("</body>", `${SUMMARY_BOX}</body>`);
+}

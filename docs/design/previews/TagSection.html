@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="../reference.css">
+<title>Tag section</title>
+<style>
+  body {
+    margin: 0;
+    background: var(--sar-color-bg-page);
+    color: var(--sar-color-text-subtle);
+    font: 12px/16px var(--sar-font-page);
+  }
+  .stage { display: flex; flex-wrap: wrap; gap: var(--sar-space-5); padding: var(--sar-space-4); }
+  .cap { margin: 0 0 var(--sar-space-2); }
+  /* Stand-in for the store's summary box: rows, then the popular tags block (Arial 11/19 chips) */
+  .glance { inline-size: 324px; }
+  .glance.narrow { inline-size: 240px; }
+  .glance .r {
+    display: flex;
+    font: 13px/18px var(--sar-font-summary);
+    color: var(--sar-color-text);
+    white-space: nowrap;
+  }
+  .glance .l {
+    flex: none;
+    inline-size: 35%;
+    padding-inline-end: 10px;
+    box-sizing: border-box;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--sar-color-text-subtle);
+    font-size: 11px;
+    text-transform: uppercase;
+  }
+  .glance .v { color: #67c1f5; }
+  .glance .gap { block-size: var(--sar-space-2); }
+  .glance .tags-label {
+    margin-block-start: var(--sar-space-2);
+    font: var(--sar-summary-tag-font);
+  }
+  .glance .tags { display: flex; flex-wrap: wrap; gap: var(--sar-space-0); }
+  .glance .tag {
+    padding-inline: 7px;
+    border-radius: 2px;
+    background: rgba(103, 193, 245, 0.2);
+    color: #67c1f5;
+    font: var(--sar-summary-tag-font);
+  }
+</style>
+</head>
+<body>
+<div class="stage">
+  <div>
+    <p class="cap">All shown kinds, in registry order, wrapping; each chip opens its card</p>
+    <div class="glance">
+      <div class="r"><span class="l">Developer:</span><span class="v">Example Studio</span></div>
+      <div class="r"><span class="l">Publisher:</span><span class="v">Example Studio</span></div>
+      <div class="tags-label">Popular user-defined tags for this product:</div>
+      <div class="tags">
+        <span class="tag">Action</span><span class="tag">Roguelike</span>
+        <span class="tag">Co-op</span>
+      </div>
+      <div class="sar-tag-section" role="group" aria-labelledby="l1">
+        <div class="sar-tag-section-label" id="l1">Tag Kit tags for this product</div>
+        <span class="sar-chips" data-sar-chips="full">
+          <span class="sar-badge" tabindex="0"><span class="sar-badge-label">AI</span></span>
+          <span class="sar-badge" tabindex="0"><span class="sar-badge-label">KLAC</span></span>
+          <span class="sar-badge" tabindex="0"><span class="sar-badge-label">DRM</span></span>
+          <span class="sar-badge" tabindex="0"><span class="sar-badge-label">Account</span></span>
+          <span class="sar-badge" tabindex="0"><span class="sar-badge-label">EULA</span></span>
+          <span class="sar-badge" tabindex="0"><span class="sar-badge-label">PvP</span></span>
+        </span>
+      </div>
+    </div>
+  </div>
+  <div>
+    <p class="cap">One kind: a game that declares only kernel anti-cheat</p>
+    <div class="glance">
+      <div class="r"><span class="l">Developer:</span><span class="v">Example Studio</span></div>
+      <div class="r"><span class="l">Publisher:</span><span class="v">Example Studio</span></div>
+      <div class="tags-label">Popular user-defined tags for this product:</div>
+      <div class="tags"><span class="tag">Shooter</span><span class="tag">Multiplayer</span></div>
+      <div class="sar-tag-section" role="group" aria-labelledby="l2">
+        <div class="sar-tag-section-label" id="l2">Tag Kit tags for this product</div>
+        <span class="sar-chips" data-sar-chips="full">
+          <span class="sar-badge" tabindex="0"><span class="sar-badge-label">KLAC</span></span>
+        </span>
+      </div>
+    </div>
+  </div>
+  <div lang="es">
+    <p class="cap">Spanish, in a narrow summary box</p>
+    <div class="glance narrow">
+      <div class="r"><span class="l">Desarrollador:</span><span class="v">Example Studio</span>
+        </div>
+      <div class="r"><span class="l">Editor:</span><span class="v">Example Studio</span></div>
+      <div class="tags-label">Etiquetas populares de usuarios</div>
+      <div class="tags">
+        <span class="tag">Acci&oacute;n</span><span class="tag">Cooperativo</span>
+      </div>
+      <div class="sar-tag-section" role="group" aria-labelledby="l3">
+        <div class="sar-tag-section-label" id="l3">Etiquetas de Tag Kit para este producto</div>
+        <span class="sar-chips" data-sar-chips="full">
+          <span class="sar-badge" tabindex="0"><span class="sar-badge-label">IA</span></span>
+          <span class="sar-badge" tabindex="0"><span class="sar-badge-label">Kernel</span></span>
+          <span class="sar-badge" tabindex="0"><span class="sar-badge-label">Antitrampas
+            </span></span>
+          <span class="sar-badge" tabindex="0"><span class="sar-badge-label">DRM</span></span>
+          <span class="sar-badge" tabindex="0"><span class="sar-badge-label">Cuenta</span></span>
+          <span class="sar-badge" tabindex="0"><span class="sar-badge-label">ALUF</span></span>
+          <span class="sar-badge" tabindex="0"><span class="sar-badge-label">JcJ</span></span>
+        </span>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

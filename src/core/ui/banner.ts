@@ -8,7 +8,7 @@ import { type KindDetail, kindDetails } from "./kind-details";
 import { normalizeBreaks } from "./notes";
 import { adoptStyles, BANNER_CSS } from "./styles";
 
-/** The banner host's id, the target of the summary row's link. */
+/** The banner host's id. */
 export const BANNER_ID = "sar-banner";
 
 /** The store's left description column; the banner goes first in it, above the purchase box. */
@@ -42,8 +42,6 @@ export interface Banner {
   readonly host: HTMLElement;
   /** Shows the entries and the notes. Same view: no change. */
   show(view: BannerView): void;
-  /** Scrolls the banner into view and moves focus to it, for the summary row's jump. */
-  reveal(): void;
 }
 
 const ACTIONS = ["ignore", "undo", "toggle"] as const;
@@ -355,11 +353,6 @@ export function createBanner(
       if (shown === undefined || !sameView(shown, view)) {
         render(view);
       }
-    },
-
-    reveal() {
-      host.scrollIntoView({ block: "start" });
-      box.focus({ preventScroll: true });
     },
   };
 }

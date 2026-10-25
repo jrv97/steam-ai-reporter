@@ -282,6 +282,19 @@ describe("createHoverCard", () => {
     expect(shown()?.querySelector<HTMLElement>(".sar-hovercard-more")?.hidden).toBe(true);
   });
 
+  it("opens for a focusable chip on the game's own page and closes when focus leaves", () => {
+    const { badge, other } = page();
+    badge.tabIndex = 0;
+    start().bind(badge, [disclosedVerdict()], true);
+    focusIn(badge);
+    expect(shown()).not.toBeNull();
+    expect(badge.getAttribute("aria-describedby")).toBe(HOVER_CARD_ID);
+    focusOut(badge);
+    focusIn(other);
+    expect(shown()).toBeNull();
+    expect(badge.hasAttribute("aria-describedby")).toBe(false);
+  });
+
   it("leaves out the store page pointer on the game's own page", () => {
     const { badge, other } = page();
     const hover = start();

@@ -3,7 +3,7 @@ import type { KindId } from "../kinds/id";
 import { effectiveSettings, type KindSettings } from "../kinds/kind-settings";
 import { KINDS } from "../kinds/registry";
 
-/** On a chip and on the summary row: the id of the kind they show. */
+/** On a chip: the id of the kind it shows. */
 export const KIND_ATTRIBUTE = "data-sar-kind";
 
 /** The root attribute that holds a kind's list filter: `off`, `dim` or `hide`. */

@@ -265,9 +265,6 @@
   --sar-badge-max-inline-size: 180px;
   /* A row title keeps room for about this much before its chips wrap to a second line. */
   --sar-row-title-basis: 8em;
-  /* Summary row chip offset from the row's inline start: the share of the row the store gives its
-     own labels, so the chip lines up with the Developer and Publisher values. */
-  --sar-summary-chip-inset-inline: 35%;
   /* Compact badge block size, text tier: the store's corner-flag height. */
   --sar-compact-height: 19px;
   /* Compact badge block size, large tier. */

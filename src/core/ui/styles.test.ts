@@ -250,3 +250,30 @@ describe("adoptStyles", () => {
     expect(shadow.adoptedStyleSheets).toHaveLength(1);
   });
 });
+
+describe("the tag section rules", () => {
+  const rule = (selector: string) => {
+    const start = PAGE_CSS.indexOf(`${selector} {`);
+    return PAGE_CSS.slice(start, PAGE_CSS.indexOf("}", start));
+  };
+
+  it("leaves no rule for the summary row it replaced", () => {
+    expect(PAGE_CSS).not.toContain("sar-summary-row");
+    expect(TOKENS_CSS).not.toContain("--sar-summary-chip-inset-inline");
+  });
+
+  it("resets the section and its label like the other light-DOM components", () => {
+    expect(PAGE_CSS).toMatch(/\.sar-tag-section,\n\.sar-tag-section \*,/);
+  });
+
+  it("sets the label muted and the chips in the store's tag font", () => {
+    expect(rule(".sar-tag-section-label")).toContain("color: var(--sar-color-text-muted)");
+    expect(rule(".sar-tag-section .sar-badge")).toContain("font: var(--sar-summary-tag-font)");
+  });
+
+  it("gives a focused chip the shared focus ring", () => {
+    expect(rule(".sar-tag-section .sar-badge:focus-visible")).toContain(
+      "outline: var(--sar-focus-width) solid var(--sar-focus-color)",
+    );
+  });
+});

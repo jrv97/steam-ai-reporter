@@ -1,0 +1,3 @@
+kind: Changed
+body: A game's own store page now lists its Tag Kit tags in a section of their own, right below Steam's popular user-defined tags and headed "Tag Kit tags for this product". It shows one short chip for every tag the game declares, such as AI, KLAC or DRM, wrapping onto more rows, and a chip leaves out only that tag when you switch its badge off or ignore the game for it. Hovering a chip, or tabbing to it, opens the card with the tag in Steam's words. The lone AI chip under Developer and Publisher is gone, and a game with nothing to show gets no section.
+time: 2026-10-25T03:15:00.0000000+02:00

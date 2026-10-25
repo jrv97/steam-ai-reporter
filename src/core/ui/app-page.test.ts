@@ -1,9 +1,15 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
+import { SUMMARY_BOX } from "../../../tests/helpers/app-page";
 import { setBody } from "../../../tests/helpers/dom";
 import { capturedVerdicts } from "../../../tests/helpers/fixture-verdicts";
 import { englishI18n } from "../../../tests/helpers/i18n";
-import { aiVerdicts, disclosedVerdict, NOT_DISCLOSED } from "../../../tests/helpers/verdicts";
-import { AI_KIND, type AiVerdict } from "../kinds/ai";
+import {
+  aiVerdicts,
+  disclosedKinds,
+  disclosedVerdict,
+  NOT_DISCLOSED,
+} from "../../../tests/helpers/verdicts";
+import type { AiVerdict } from "../kinds/ai";
 import type { KindId } from "../kinds/id";
 import { perKind } from "../kinds/registry";
 import type { AnyDisclosed, KindVerdicts } from "../kinds/verdicts";
@@ -12,12 +18,9 @@ import { UNKNOWN } from "../types";
 import { type AppPageView, createAppPageUi } from "./app-page";
 import { BANNER_ID } from "./banner";
 
-// The summary box and description column as sampled on app 1808500 (components.mdx, section 3).
-const PAGE = `
-  <div class="glance_ctn_responsive_left">
-    <div class="dev_row" id="developer"><div class="subtitle">Developer:</div></div>
-    <div class="dev_row" id="publisher"><div class="subtitle">Publisher:</div></div>
-  </div>
+// The summary box with Steam's user-defined tags block, and the description column of an app page
+// (components.mdx, section 3).
+const PAGE = `${SUMMARY_BOX}
   <div class="game_description_column"><div id="game_area_purchase"></div></div>`;
 
 const i18n = englishI18n();
@@ -37,7 +40,7 @@ function setup() {
     bind: (trigger: Element, entries: readonly AnyDisclosed[], ownPage?: boolean) =>
       bound.set(trigger, { entries, ownPage }),
   };
-  return createAppPageUi(document, i18n, AI_KIND, actions, { frame: () => undefined, card });
+  return createAppPageUi(document, i18n, actions, { frame: () => undefined, card });
 }
 
 interface ViewOptions {
@@ -60,7 +63,9 @@ function view(options: ViewOptions = {}): AppPageView {
   };
 }
 
-const summaryRow = () => document.querySelector<HTMLElement>(".sar-summary-row");
+const section = () => document.querySelector<HTMLElement>(".sar-tag-section");
+const chips = () => [...document.querySelectorAll<HTMLElement>(".sar-tag-section .sar-badge")];
+const chipKinds = () => chips().map((chip) => chip.getAttribute("data-sar-kind"));
 const bannerHost = () => document.getElementById(BANNER_ID);
 const bannerRoot = () => bannerHost()?.shadowRoot ?? null;
 const headings = () =>
@@ -75,36 +80,42 @@ describe("createAppPageUi", () => {
     document.body.replaceChildren();
   });
 
-  it("adds the summary row under Publisher and the banner above the purchase box", () => {
+  it("adds the tag section under the user tags and the banner above the purchase box", () => {
     setup().render(view());
-    const row = summaryRow();
-    expect(row?.previousElementSibling?.id).toBe("publisher");
-    expect(row?.querySelector(".sar-badge-label")?.textContent).toBe(i18n.t("kind_ai_chip"));
-    expect(row?.querySelector(".sar-vh")?.textContent).toBe(
+    const root = section();
+    expect(document.getElementById("tags")?.nextElementSibling).toBe(root);
+    expect(root?.querySelector(".sar-tag-section-label")?.textContent).toBe(
+      i18n.t("badge_tags_title"),
+    );
+    expect(chipKinds()).toEqual(["ai"]);
+    expect(root?.querySelector(".sar-badge-label")?.textContent).toBe(i18n.t("kind_ai_chip"));
+    expect(root?.querySelector(".sar-vh")?.textContent).toBe(
       i18n.t("kind_chip_name", {
         chip: i18n.t("kind_ai_chip"),
         heading: i18n.t("kind_ai_heading"),
       }),
     );
-    expect(row?.getAttribute("href")).toBe(`#${BANNER_ID}`);
-    expect(row?.hasAttribute("title")).toBe(false);
-    // The link jumps to the full notes, so it opens no hover card.
-    expect(row === null ? undefined : bound.get(row)).toBeUndefined();
+    expect(root?.querySelector("a, [href]")).toBeNull();
     expect(bannerHost()?.nextElementSibling?.id).toBe("game_area_purchase");
   });
 
-  it("jumps to the banner without changing the URL", () => {
-    setup().render(view());
-    const host = bannerHost();
-    const scroll = vi.fn();
-    if (host !== null) {
-      host.scrollIntoView = scroll;
+  it("leaves nothing under Publisher", () => {
+    setup().render(view({ verdicts: capturedVerdicts(1808500) }));
+    expect(document.getElementById("publisher")?.nextElementSibling?.id).toBe("tags");
+  });
+
+  it("binds the hover card to each chip with its own kind, as on the game's own page", () => {
+    const verdicts = capturedVerdicts(1808500);
+    setup().render(view({ verdicts }));
+    expect(chips()).toHaveLength(4);
+    for (const chip of chips()) {
+      const kind = chip.getAttribute("data-sar-kind");
+      const entries = bound.get(chip)?.entries ?? [];
+      expect(entries.map((entry) => entry.kind)).toEqual([kind]);
+      expect(entries[0]).toBe(verdicts[entries[0]?.kind ?? "ai"]);
+      expect(bound.get(chip)?.ownPage).toBe(true);
+      expect(chip.tabIndex).toBe(0);
     }
-    const before = location.href;
-    summaryRow()?.click();
-    expect(scroll).toHaveBeenCalledWith({ block: "start" });
-    expect(location.href).toBe(before);
-    expect(host?.shadowRoot?.activeElement?.tagName).toBe("ASIDE");
   });
 
   it.each(
@@ -117,7 +128,7 @@ describe("createAppPageUi", () => {
     expect(document.body.innerHTML).toBe(PAGE);
   });
 
-  it("lists every disclosed kind in the banner and keeps the summary row for AI", () => {
+  it("lists every disclosed kind in the banner and in the tag section, in registry order", () => {
     setup().render(view({ verdicts: capturedVerdicts(1808500) }));
     expect(headings()).toEqual([
       i18n.t("kind_ai_heading"),
@@ -125,31 +136,39 @@ describe("createAppPageUi", () => {
       i18n.t("kind_eula_heading"),
       i18n.t("kind_pvp_heading"),
     ]);
-    expect(document.querySelectorAll(".sar-summary-row")).toHaveLength(1);
-    expect(summaryRow()?.getAttribute("data-sar-kind")).toBe("ai");
+    expect(document.querySelectorAll(".sar-tag-section")).toHaveLength(1);
+    expect(chipKinds()).toEqual(["ai", "kernel", "eula", "pvp"]);
   });
 
-  it("shows a game that discloses no AI the banner entries and no summary row", () => {
+  it("shows a game that discloses no AI its chips and its banner entries", () => {
     setup().render(view({ verdicts: capturedVerdicts(3751950) }));
     expect(headings()).toEqual([
       i18n.t("kind_drm_heading"),
       i18n.t("kind_account_heading"),
       i18n.t("kind_eula_heading"),
     ]);
-    expect(summaryRow()).toBeNull();
+    expect(chipKinds()).toEqual(["drm", "account", "eula"]);
   });
 
-  it("shows a game ignored for all tags only the note, with no summary row", () => {
+  it("gives a game that declares only kernel anti-cheat a section with one chip", () => {
+    setup().render(view({ verdicts: disclosedKinds(["kernel"]) }));
+    expect(chipKinds()).toEqual(["kernel"]);
+    expect(chips()[0]?.querySelector(".sar-badge-label")?.textContent).toBe(
+      i18n.t("kind_kernel_chip"),
+    );
+  });
+
+  it("shows a game ignored for all tags only the note, with no section", () => {
     setup().render(view({ verdicts: capturedVerdicts(1808500), ignored: ["all"] }));
-    expect(summaryRow()).toBeNull();
+    expect(section()).toBeNull();
     expect(headings()).toEqual([]);
     expect(notes()).toEqual([i18n.t("banner_ignored")]);
     expect(bannerRoot()?.querySelector("aside")?.getAttribute("data-sar-variant")).toBe("ignored");
   });
 
-  it("notes the AI kind ignored on its own, keeps the other entries and drops the row", () => {
+  it("notes the AI kind ignored on its own, keeps the other entries and drops its chip", () => {
     setup().render(view({ verdicts: capturedVerdicts(1808500), ignored: ["ai"] }));
-    expect(summaryRow()).toBeNull();
+    expect(chipKinds()).toEqual(["kernel", "eula", "pvp"]);
     expect(headings()).toEqual([
       i18n.t("kind_kernel_heading"),
       i18n.t("kind_eula_heading"),
@@ -160,25 +179,34 @@ describe("createAppPageUi", () => {
     ]);
   });
 
-  it("drops the summary row when the AI badge is off, and keeps the banner entry", () => {
+  it("drops only the chip of a kind whose badge is off, and keeps its banner entry", () => {
     const ui = setup();
-    ui.render(view());
-    expect(summaryRow()).not.toBeNull();
-    ui.render(view({ badgeOff: ["ai"] }));
-    expect(summaryRow()).toBeNull();
-    expect(headings()).toEqual([i18n.t("kind_ai_heading")]);
-    ui.render(view());
-    expect(summaryRow()).not.toBeNull();
+    const verdicts = capturedVerdicts(1808500);
+    ui.render(view({ verdicts }));
+    expect(chipKinds()).toEqual(["ai", "kernel", "eula", "pvp"]);
+    ui.render(view({ verdicts, badgeOff: ["ai"] }));
+    expect(chipKinds()).toEqual(["kernel", "eula", "pvp"]);
+    expect(headings()).toHaveLength(4);
+    ui.render(view({ verdicts, badgeOff: ["kernel", "pvp"] }));
+    expect(chipKinds()).toEqual(["ai", "eula"]);
+    ui.render(view({ verdicts }));
+    expect(chipKinds()).toEqual(["ai", "kernel", "eula", "pvp"]);
+    expect(document.querySelectorAll(".sar-tag-section")).toHaveLength(1);
   });
 
-  it("keeps the summary row when another kind's badge is off", () => {
-    setup().render(view({ badgeOff: ["drm", "pvp"] }));
-    expect(summaryRow()).not.toBeNull();
+  it("removes the section and its label when every badge is off", () => {
+    const ui = setup();
+    const verdicts = capturedVerdicts(1808500);
+    ui.render(view({ verdicts }));
+    ui.render(view({ verdicts, badgeOff: ["ai", "kernel", "eula", "pvp"] }));
+    expect(section()).toBeNull();
+    expect(document.querySelector(".sar-tag-section-label")).toBeNull();
+    expect(headings()).toHaveLength(4);
   });
 
-  it("keeps the summary row when another kind is ignored", () => {
+  it("keeps the chips of the other kinds when one kind is ignored", () => {
     setup().render(view({ verdicts: capturedVerdicts(1808500), ignored: ["kernel"] }));
-    expect(summaryRow()?.getAttribute("href")).toBe(`#${BANNER_ID}`);
+    expect(chipKinds()).toEqual(["ai", "eula", "pvp"]);
     expect(headings()).toEqual([
       i18n.t("kind_ai_heading"),
       i18n.t("kind_eula_heading"),
@@ -199,27 +227,16 @@ describe("createAppPageUi", () => {
     );
     expect(headings()).toEqual([i18n.t("kind_ai_heading"), i18n.t("kind_eula_heading")]);
     expect(notes()).toEqual([]);
+    expect(chipKinds()).toEqual(["ai", "eula", "pvp"]);
   });
 
-  it("drops the banner and unlinks the row when every banner entry is off", () => {
+  it("drops the banner when every banner entry is off and keeps the chips", () => {
     const ui = setup();
     ui.render(view());
     ui.render(view({ bannerOff: ["ai"] }));
     expect(bannerHost()).toBeNull();
-    expect(summaryRow()?.tagName).toBe("DIV");
-    expect(summaryRow()?.hasAttribute("href")).toBe(false);
-    expect(summaryRow()?.tabIndex).toBe(0);
-    const row = summaryRow();
-    expect(row === null ? undefined : bound.get(row)?.ownPage).toBe(true);
-    expect(document.querySelectorAll(".sar-summary-row")).toHaveLength(1);
-  });
-
-  it("opens the card from the row when the banner has no AI entry", () => {
-    setup().render(view({ verdicts: capturedVerdicts(1808500), bannerOff: ["ai"] }));
-    expect(headings()).toHaveLength(3);
-    expect(summaryRow()?.tagName).toBe("DIV");
-    const row = summaryRow();
-    expect(row === null ? undefined : bound.get(row)?.ownPage).toBe(true);
+    expect(chipKinds()).toEqual(["ai"]);
+    expect(document.querySelectorAll(".sar-tag-section")).toHaveLength(1);
   });
 
   it("removes the note when the banner setting of an ignored game is off", () => {
@@ -233,22 +250,23 @@ describe("createAppPageUi", () => {
     const ui = setup();
     const same = view();
     ui.render(same);
-    const row = summaryRow();
+    const root = section();
     ui.render(same);
-    expect(summaryRow()).toBe(row);
-    row?.remove();
+    expect(section()).toBe(root);
+    root?.remove();
     bannerHost()?.remove();
     ui.render(same);
-    expect(document.querySelectorAll(".sar-summary-row")).toHaveLength(1);
+    expect(document.querySelectorAll(".sar-tag-section")).toHaveLength(1);
     expect(bannerHost()?.isConnected).toBe(true);
   });
 
-  it("draws the row again when its verdict changes", () => {
+  it("draws the chips again when a verdict changes", () => {
     const ui = setup();
     ui.render(view());
-    const row = summaryRow();
+    const root = section();
     ui.render(view({ verdict: disclosedVerdict({ notes: "Other notes." }) }));
-    expect(summaryRow()).not.toBe(row);
-    expect(document.querySelectorAll(".sar-summary-row")).toHaveLength(1);
+    expect(section()).not.toBe(root);
+    expect(document.querySelectorAll(".sar-tag-section")).toHaveLength(1);
+    expect(chipKinds()).toEqual(["ai"]);
   });
 });

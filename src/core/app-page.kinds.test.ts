@@ -2,7 +2,7 @@
 import * as v from "valibot";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import kindItems from "../../tests/fixtures/getitems/kinds.json";
-import { APP_PAGES, withDescriptionColumn } from "../../tests/helpers/app-page";
+import { APP_PAGES, withDescriptionColumn, withSummaryBox } from "../../tests/helpers/app-page";
 import { clearRoot } from "../../tests/helpers/dom";
 import { fakeHttp } from "../../tests/helpers/fake-http";
 import { fixedClock } from "../../tests/helpers/fixed-clock";
@@ -35,10 +35,14 @@ afterEach(() => {
 const banner = () => document.getElementById("sar-banner")?.shadowRoot ?? null;
 const headings = () =>
   [...(banner()?.querySelectorAll("h2") ?? [])].map((heading) => heading.textContent);
+const chipKinds = () =>
+  [...document.querySelectorAll(".sar-tag-section .sar-badge")].map((chip) =>
+    chip.getAttribute("data-sar-kind")
+  );
 const control = (selector: string) => banner()?.querySelector<HTMLElement>(selector);
 
 async function startOnDrmPage() {
-  loadPage(withDescriptionColumn(APP_PAGES["3751950-drm-account-eula.html"]));
+  loadPage(withSummaryBox(withDescriptionColumn(APP_PAGES["3751950-drm-account-eula.html"])));
   document.documentElement.lang = "en";
   const store = memoryStore();
   const settings = createSettingsSource(store);
@@ -69,7 +73,7 @@ describe("start on an English app page of a game with no AI", () => {
       i18n.t("kind_account_heading"),
       i18n.t("kind_eula_heading"),
     ]);
-    expect(document.querySelector(".sar-summary-row")).toBeNull();
+    expect(chipKinds()).toEqual(["drm", "account", "eula"]);
   });
 
   it("ignores one kind from its entry and leaves the others", async () => {
@@ -80,9 +84,11 @@ describe("start on an English app page of a game with no AI", () => {
     expect(await ignored("drm")).toEqual(["3751950"]);
     expect(await ignored("all")).toEqual([]);
     expect(headings()).toEqual([i18n.t("kind_account_heading"), i18n.t("kind_eula_heading")]);
+    expect(chipKinds()).toEqual(["account", "eula"]);
 
     control('[data-sar-action="undo"]')?.click();
     await expect.poll(() => headings().length).toBe(3);
+    expect(chipKinds()).toEqual(["drm", "account", "eula"]);
     expect(await ignored("drm")).toEqual([]);
   });
 
@@ -91,7 +97,19 @@ describe("start on an English app page of a game with no AI", () => {
 
     await writeSettings(settings, withKind(DEFAULT_SETTINGS, "eula", { banner: false }));
     expect(headings()).toEqual([i18n.t("kind_drm_heading"), i18n.t("kind_account_heading")]);
+    expect(chipKinds()).toEqual(["drm", "account", "eula"]);
     await writeSettings(settings, withKind(DEFAULT_SETTINGS, "drm", { enabled: false }));
     expect(headings()).toEqual([i18n.t("kind_account_heading"), i18n.t("kind_eula_heading")]);
+    expect(chipKinds()).toEqual(["account", "eula"]);
+  });
+
+  it("draws only the chips whose badge switch is on", async () => {
+    const { settings } = await startOnDrmPage();
+
+    await writeSettings(settings, withKind(DEFAULT_SETTINGS, "account", { badge: false }));
+    expect(chipKinds()).toEqual(["drm", "eula"]);
+    expect(headings()).toHaveLength(3);
+    await writeSettings(settings, DEFAULT_SETTINGS);
+    expect(chipKinds()).toEqual(["drm", "account", "eula"]);
   });
 });

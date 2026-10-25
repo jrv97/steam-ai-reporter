@@ -55,14 +55,14 @@ A kind is data. The detectors, the chain, the cache, the settings and the ignore
 
 Every attribute core writes on a store node starts with `data-sar-`. The scheme is per kind, so one setting change is one attribute write on the root element and no host is touched.
 
-| Where                       | Attribute                   | Holds                                                                                                                                                                  |
-| --------------------------- | --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Each host                   | `data-sar-appid`            | The app ID the host shows.                                                                                                                                             |
-| Each host with a kind       | `data-sar-kinds`            | The ids of the kinds that are disclosed and not ignored for the game, in registry order, separated by spaces. Absent when there is none. Rules match one id with `~=`. |
-| Hosts that cannot hide      | `data-sar-hideable="false"` | Hiding would break the list, so hide dims instead.                                                                                                                     |
-| The root element            | `data-sar-filter-<kind>`    | The kind's list filter that takes effect: `off`, `dim` or `hide`.                                                                                                      |
-| The root element            | `--sar-kind-color-<kind>`   | The kind's custom color, a validated `#rrggbb`, in the root's `style`. Removed when unset.                                                                             |
-| A chip, and the summary row | `data-sar-kind`             | The id of the kind it shows. A hover card entry and the banner (its first entry) carry it too, so the color rules reach them.                                          |
+| Where                  | Attribute                   | Holds                                                                                                                                                                  |
+| ---------------------- | --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Each host              | `data-sar-appid`            | The app ID the host shows.                                                                                                                                             |
+| Each host with a kind  | `data-sar-kinds`            | The ids of the kinds that are disclosed and not ignored for the game, in registry order, separated by spaces. Absent when there is none. Rules match one id with `~=`. |
+| Hosts that cannot hide | `data-sar-hideable="false"` | Hiding would break the list, so hide dims instead.                                                                                                                     |
+| The root element       | `data-sar-filter-<kind>`    | The kind's list filter that takes effect: `off`, `dim` or `hide`.                                                                                                      |
+| The root element       | `--sar-kind-color-<kind>`   | The kind's custom color, a validated `#rrggbb`, in the root's `style`. Removed when unset.                                                                             |
+| A chip                 | `data-sar-kind`             | The id of the kind it shows. A hover card entry and a banner with one tag carry it too, so the color rules reach them.                                                 |
 
 A host with several kinds takes the strongest filter without a rule for it: a hidden host ignores a dim, and a host that cannot hide dims for either mode. A kind the game is ignored for is left out of `data-sar-kinds` and gets no chip, so it counts as absent.
 
