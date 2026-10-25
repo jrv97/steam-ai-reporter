@@ -2,6 +2,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import kindItems from "../../tests/fixtures/getitems/kinds.json";
 import searchItems from "../../tests/fixtures/getitems/search-roguelike-50.json";
+import { basicInfo } from "../../tests/helpers/creators";
 import { clearRoot } from "../../tests/helpers/dom";
 import { fakeHttp } from "../../tests/helpers/fake-http";
 import { fixedClock } from "../../tests/helpers/fixed-clock";
@@ -11,13 +12,14 @@ import { memoryStore } from "../../tests/helpers/memory-store";
 import { withKind, writeSettings } from "../../tests/helpers/settings";
 import { loadPage, SURFACES } from "../../tests/helpers/surfaces";
 import { type App, start } from "./app";
+import type { CreatorRole } from "./creator";
 import type { JsonValue } from "./json";
 import { toHexColor } from "./kinds/color";
 import type { KindId } from "./kinds/id";
 import { KIND_BY_ID } from "./kinds/registry";
 import { DEFAULT_SETTINGS, encodeSettings } from "./settings/settings";
 import { createSettingsSource } from "./settings/settings-source";
-import { ALLOW_KEY, SETTINGS_KEY } from "./storage-keys";
+import { ALLOW_KEY, CREATOR_ALLOW_KEYS, SETTINGS_KEY } from "./storage-keys";
 import { KIND_ATTRIBUTE } from "./ui/kind-attributes";
 import { adoptPageStyles } from "./ui/styles";
 
@@ -250,6 +252,46 @@ describe("start on the search page", () => {
       const { http } = await startOnSearch(own, dlc);
       await drawn(http);
       expect(row(DISCLOSED)?.getAttribute("data-sar-kinds")).toBe("kernel eula pvp");
+    });
+  });
+
+  describe("with a row by a developer and a publisher the user ignored", () => {
+    // The disclosed row carries ARC Raiders' kinds and the developer and publisher below; the
+    // ignore lists name creators, never this game.
+    const studio = [
+      ...fixtureItems(searchItems),
+      {
+        ...itemAs(kindItems, 1808500, Number(DISCLOSED)),
+        ...basicInfo({ developers: [["Dev Studio", 7]], publishers: ["Big Publisher"] }),
+      },
+    ];
+    const ALL = "ai kernel eula pvp";
+    const marks = () => row(DISCLOSED)?.getAttribute("data-sar-kinds") ?? "";
+    const listing = (key: string, creator: string, scope: string): Map<string, JsonValue> =>
+      new Map<string, JsonValue>([
+        [key, { all: {}, [scope]: { [creator]: { name: "Ignored", added: NOW } } }],
+      ]);
+
+    it.each<[string, CreatorRole, string, string, string]>([
+      ["a developer by clan ID, for one kind", "developer", "c:7", "ai", "kernel eula pvp"],
+      ["a developer by name, for one kind", "developer", "n:Dev Studio", "ai", "kernel eula pvp"],
+      [
+        "a publisher by name, for one kind",
+        "publisher",
+        "n:Big Publisher",
+        "kernel",
+        "ai eula pvp",
+      ],
+      ["a developer for all kinds", "developer", "c:7", "all", ""],
+      ["the publisher's name on the developer list", "developer", "n:Big Publisher", "ai", ALL],
+      ["another developer", "developer", "c:8", "ai", ALL],
+    ])("draws no chip for %s", async (_name, role, creator, scope, expected) => {
+      const { http } = await startOnSearch(
+        listing(CREATOR_ALLOW_KEYS[role], creator, scope),
+        studio,
+      );
+      await drawn(http);
+      expect(marks()).toBe(expected);
     });
   });
 

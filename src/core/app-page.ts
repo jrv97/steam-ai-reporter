@@ -1,5 +1,5 @@
 import type { SteamLanguage } from "./i18n/locale";
-import { type IgnoredGames, isIgnored } from "./ignored";
+import { type Ignored, isIgnored } from "./ignored";
 import type { KindId } from "./kinds/id";
 import { effectiveSettings } from "./kinds/kind-settings";
 import { KINDS, perKind } from "./kinds/registry";
@@ -119,8 +119,8 @@ export interface AppPageDeps {
   readonly detectors: PageDetectors;
   /** The verdicts of the open page read from its document, when it is English. */
   readonly live: KindVerdicts | undefined;
-  /** The games the user ignored, kept current by the banner's buttons. */
-  readonly ignored: IgnoredGames;
+  /** What the user ignored, kept current by the banner's buttons. */
+  readonly ignored: Ignored;
   readonly allowList: AllowList;
   readonly settings: () => Settings;
   /** Called after the banner ignores or restores the game, so the capsules draw again. */
@@ -156,7 +156,7 @@ export function startAppPage(
     const { kinds } = deps.settings();
     return {
       verdicts: known,
-      ignored: perScope((scope) => deps.ignored[scope].has(id)),
+      ignored: perScope((scope) => deps.ignored.games[scope].has(id)),
       suppressed: perKind((kind) => isIgnored(deps.ignored, id, kind.id, known)),
       badge: perKind((kind) => effectiveSettings(kinds[kind.id]).badge),
       banner: perKind((kind) => effectiveSettings(kinds[kind.id]).banner),
@@ -166,13 +166,13 @@ export function startAppPage(
   const ui = createAppPageUi(doc, i18n, {
     async ignore(scope) {
       await deps.allowList.add(scope, id, appName(doc, known, id));
-      deps.ignored[scope].add(id);
+      deps.ignored.games[scope].add(id);
       deps.onAllowChange(id);
       render();
     },
     async restore(scope) {
       await deps.allowList.remove(scope, id);
-      deps.ignored[scope].delete(id);
+      deps.ignored.games[scope].delete(id);
       deps.onAllowChange(id);
       render();
     },

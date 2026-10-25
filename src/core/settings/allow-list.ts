@@ -1,6 +1,7 @@
+import { type CreatorKey, type CreatorRole, toCreatorKey } from "../creator";
 import type { Clock, KeyValueStore } from "../ports";
 import { createSerial } from "../serial";
-import { ALLOW_KEY } from "../storage-keys";
+import { ALLOW_KEY, CREATOR_ALLOW_KEYS } from "../storage-keys";
 import type { AppId } from "../types";
 import {
   type AllowEntries,
@@ -25,6 +26,9 @@ export interface ScopedList<Key> {
 
 /** The games the user chose to ignore. */
 export type AllowList = ScopedList<AppId>;
+
+/** The developers or publishers the user chose to ignore, by creator key. */
+export type CreatorList = ScopedList<CreatorKey>;
 
 /** Where a list lives and how its keys read back. */
 export interface ScopedListSpec<Key> {
@@ -87,5 +91,22 @@ export function createAllowList(store: KeyValueStore, clock: Clock): AllowList {
     storageKey: ALLOW_KEY,
     read: readAllowValue,
     parseKey: parseGameKey,
+  });
+}
+
+/**
+ * The developers or publishers the user ignored, stored as `v2:allow-developers` or
+ * `v2:allow-publishers`. A missing key is an empty list, and nothing else is read.
+ */
+export function createCreatorList(
+  store: KeyValueStore,
+  clock: Clock,
+  role: CreatorRole,
+): CreatorList {
+  const storageKey = CREATOR_ALLOW_KEYS[role];
+  return createScopedList(store, clock, {
+    storageKey,
+    read: async (from) => (await from.get([storageKey])).get(storageKey),
+    parseKey: toCreatorKey,
   });
 }

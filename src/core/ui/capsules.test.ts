@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { setBody } from "../../../tests/helpers/dom";
+import { ignoredSets } from "../../../tests/helpers/ignored";
 import {
   aiVerdicts,
   disclosedVerdict,
@@ -13,7 +14,6 @@ import type { KindVerdicts, Relations } from "../kinds/verdicts";
 import type { Detector } from "../ports";
 import { GENERIC, type Placement, type RowPlacement } from "../scan/placements";
 import type { CapsuleHost } from "../scan/renderer";
-import { perScope } from "../settings/allow-data";
 import { type AppId, toAppId } from "../types";
 import { createCapsuleUi, type SizeWatch } from "./capsules";
 import type { HostView } from "./host";
@@ -323,7 +323,7 @@ describe("createCapsuleUi", () => {
       setupList(ignored);
       return (id: AppId, kind: KindId, related: Relations) => isIgnored(ignored, id, kind, related);
     }
-    const lists = () => perScope(() => new Set<AppId>());
+    const lists = () => ignoredSets();
 
     it("asks whether the game is ignored with the base game Steam named", async () => {
       const asked = vi.fn((_id: AppId, _kind: KindId, _related: Relations) => false);
@@ -341,7 +341,7 @@ describe("createCapsuleUi", () => {
     });
 
     it("flags a DLC of a base game ignored for one kind in that kind only", async () => {
-      const isAllowed = ignoring((ignored) => ignored.ai.add(BASE));
+      const isAllowed = ignoring((ignored) => ignored.games.ai.add(BASE));
       const { ui, views, flush } = setup(
         new Map([[DLC, disclosedVerdict()]]),
         new Set(),
@@ -357,7 +357,7 @@ describe("createCapsuleUi", () => {
     });
 
     it("gives a DLC whose only disclosure is ignored through its base game no slot", async () => {
-      const isAllowed = ignoring((ignored) => ignored.all.add(BASE));
+      const isAllowed = ignoring((ignored) => ignored.games.all.add(BASE));
       const { ui, views, flush } = setup(
         new Map([[DLC, disclosedVerdict()]]),
         new Set(),
@@ -382,19 +382,19 @@ describe("createCapsuleUi", () => {
       );
       ui.render({ found: [host(5201760)], changed: [] });
       await flush();
-      ignored.ai.add(BASE);
+      ignored.games.ai.add(BASE);
       ui.refresh(new Set([BASE]));
       await flush();
       ui.refresh(new Set([appId(12)]));
       await flush();
-      ignored.ai.delete(BASE);
+      ignored.games.ai.delete(BASE);
       ui.refresh(new Set([BASE]));
       await flush();
       expect(views.map((view) => view.allowed.ai)).toEqual([false, true, false]);
     });
 
     it("leaves a DLC with no known base game on its own entries", async () => {
-      const isAllowed = ignoring((ignored) => ignored.all.add(BASE));
+      const isAllowed = ignoring((ignored) => ignored.games.all.add(BASE));
       const { ui, views, flush } = setup(
         new Map([[DLC, disclosedVerdict()]]),
         new Set(),

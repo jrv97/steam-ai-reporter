@@ -1,5 +1,11 @@
 import * as v from "valibot";
-import { ClanIdSchema, type Creator, makeCreators } from "../../src/core/creator";
+import {
+  ClanIdSchema,
+  type Creator,
+  type CreatorKey,
+  CreatorKeySchema,
+  makeCreators,
+} from "../../src/core/creator";
 
 /** A creator in a test: its name, or its name with the clan ID Steam gave it. */
 export type CreatorSpec = string | readonly [name: string, clan: number];
@@ -49,4 +55,9 @@ export function creatorsFor(
   creators: CreatorsSpec,
 ): { readonly developer: readonly Creator[]; readonly publisher: readonly Creator[]; } {
   return { developer: creatorsOf(creators.developers), publisher: creatorsOf(creators.publishers) };
+}
+
+/** The creator key for a text such as `c:4` or `n:Valve`; throws for text that is none. */
+export function keyOf(text: string): CreatorKey {
+  return v.parse(CreatorKeySchema, text);
 }

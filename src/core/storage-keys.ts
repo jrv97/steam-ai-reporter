@@ -1,3 +1,4 @@
+import type { CreatorRole } from "./creator";
 import { type AppId, toAppId } from "./types";
 
 // Settings and the ignore list use layout `v2`, with one entry per tag kind, and so does the small
@@ -16,6 +17,11 @@ const VERDICT_PREFIX = "v1:a:";
 
 export const SETTINGS_KEY = "v2:settings";
 export const ALLOW_KEY = "v2:allow";
+/** The ignored developers and publishers, shaped like `v2:allow` and keyed by creator key. */
+export const CREATOR_ALLOW_KEYS: Readonly<Record<CreatorRole, string>> = {
+  developer: "v2:allow-developers",
+  publisher: "v2:allow-publishers",
+};
 /** Which settings sections the user closed or opened again; interface state, not a setting. */
 export const SECTION_STATE_KEY = "v2:ui";
 export const META_KEY = "v1:meta";
