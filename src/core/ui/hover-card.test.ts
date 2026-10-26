@@ -3,7 +3,7 @@ import { setBody } from "../../../tests/helpers/dom";
 import { capturedVerdicts, pageVerdicts } from "../../../tests/helpers/fixture-verdicts";
 import { englishI18n } from "../../../tests/helpers/i18n";
 import { manualQueue } from "../../../tests/helpers/manual-queue";
-import { disclosedVerdict, FULL_DISCLOSED } from "../../../tests/helpers/verdicts";
+import { disclosedVerdict, FULL_DISCLOSED, lent } from "../../../tests/helpers/verdicts";
 import { KIND_IDS, type KindId } from "../kinds/id";
 import { KIND_BY_ID } from "../kinds/registry";
 import type { AnyDisclosed, KindVerdicts } from "../kinds/verdicts";
@@ -578,6 +578,16 @@ describe("createHoverCard", () => {
       open(markup);
       expect(document.querySelector(".sar-hovercard img")).toBeNull();
       expect(entries().map((lines) => lines[1])).toEqual([XSS, XSS, XSS, XSS, XSS]);
+    });
+
+    it("marks the full game's disclosure under its heading, and names the developer", () => {
+      const { drm, anticheat } = FULL_DISCLOSED;
+      open([lent(anticheat), drm]);
+      expect(entries()).toEqual([
+        [heading("anticheat"), i18n.t("kind_full_game"), anticheat.name],
+        [heading("drm"), drm.text, drm.activationLimit],
+      ]);
+      expect(shown()?.lastElementChild?.textContent).toBe(i18n.t("badge_card_declared"));
     });
 
     it("leaves out the details the data does not carry", () => {

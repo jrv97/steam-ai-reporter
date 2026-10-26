@@ -1,13 +1,21 @@
 // @vitest-environment-options {"url":"https://store.steampowered.com/app/5072580/"}
 import * as v from "valibot";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import kindItems from "../../tests/fixtures/getitems/kinds.json";
 import mixedStates from "../../tests/fixtures/getitems/mixed-states.json";
-import { APP_PAGES } from "../../tests/helpers/app-page";
+import { APP_PAGES, type AppPageName } from "../../tests/helpers/app-page";
 import { basicInfo } from "../../tests/helpers/creators";
 import { clearRoot } from "../../tests/helpers/dom";
 import { fakeHttp, type Route } from "../../tests/helpers/fake-http";
 import { fixedClock } from "../../tests/helpers/fixed-clock";
-import { fixtureItems, getItemsRequest, getItemsRoute, itemAs } from "../../tests/helpers/getitems";
+import { capturedVerdicts } from "../../tests/helpers/fixture-verdicts";
+import {
+  demoItem,
+  fixtureItems,
+  getItemsRequest,
+  getItemsRoute,
+  itemAs,
+} from "../../tests/helpers/getitems";
 import { englishI18n } from "../../tests/helpers/i18n";
 import { memoryStore } from "../../tests/helpers/memory-store";
 import { withKind, writeSettings } from "../../tests/helpers/settings";
@@ -18,12 +26,14 @@ import type { CreatorRole } from "./creator";
 import { API_BREAKER_KEY } from "./detect/breaker";
 import { GETITEMS_URL } from "./detect/getitems";
 import { RETRY_DELAY_MS } from "./detect/retry";
+import { DEFAULT_SPACING_MS } from "./detect/throttle";
 import { SHIPPED_CATALOGS } from "./i18n/shipped";
 import type { JsonValue } from "./json";
 import type { Clock, Http } from "./ports";
 import { DEFAULT_SETTINGS, encodeSettings } from "./settings/settings";
 import { createSettingsSource } from "./settings/settings-source";
 import { ALLOW_KEY, CREATOR_ALLOW_KEYS, SETTINGS_KEY } from "./storage-keys";
+import { normalizeBreaks } from "./ui/notes";
 import { adoptPageStyles } from "./ui/styles";
 
 const i18n = englishI18n();
@@ -56,11 +66,13 @@ interface StartOptions {
   /** Holds every request until `release` is called. */
   readonly held?: boolean;
   readonly clock?: Clock;
+  /** The open page's document; the AI page by default. */
+  readonly page?: AppPageName;
 }
 
 async function startOnAiPage(options: StartOptions = {}) {
   const { route = getItemsRoute(fixtureItems(mixedStates)), initial = new Map() } = options;
-  loadPage(APP_PAGES["5072580-ai-first.html"]);
+  loadPage(APP_PAGES[options.page ?? "5072580-ai-first.html"]);
   document.documentElement.lang = "en";
   const store = memoryStore(initial);
   const settings = createSettingsSource(store);
@@ -311,6 +323,45 @@ describe("start on an English app page", () => {
         i18n.t("banner_ignored"),
       );
       expect(Object.keys((await stored()).all)).toEqual(["5072580"]);
+    });
+  });
+
+  describe("on the page of a demo", () => {
+    // The open page (5072580) shows no declaration and is a demo of ARC Raiders, whose item
+    // declares AI notes, a kernel anti-cheat, a EULA and PvP (off by default).
+    const GAME = 1808500;
+    const route = getItemsRoute([demoItem(5072580, GAME), itemAs(kindItems, GAME, GAME)]);
+    const kinds = ["kind_ai_heading", "kind_kernel_heading", "kind_eula_heading"] as const;
+    const lines = () =>
+      [...(banner()?.querySelectorAll(".sar-banner-full-game") ?? [])].map((line) =>
+        line.textContent
+      );
+
+    async function startOnDemo(initial: ReadonlyMap<string, JsonValue> = new Map()) {
+      await startOnAiPage({ route, initial, page: "413150-no-block.html", clock: useTimerClock() });
+      await vi.advanceTimersByTimeAsync(DEFAULT_SPACING_MS);
+    }
+
+    it("lists the full game's tags, each said to be the full game's, and quotes it", async () => {
+      await startOnDemo();
+      await expect.poll(headings).toEqual(kinds.map((key) => i18n.t(key)));
+      expect(lines()).toEqual(kinds.map(() => i18n.t("kind_full_game")));
+      const { ai } = capturedVerdicts(GAME);
+      const notes = ai.state === "disclosed" ? normalizeBreaks(ai.notes) : "";
+      expect(banner()?.querySelector("blockquote")?.textContent).toBe(notes);
+      expect(banner()?.querySelector(".sar-banner-source")?.textContent).toBe(
+        i18n.t("banner_source"),
+      );
+    });
+
+    it("leaves out a tag the full game is ignored for, with no note", async () => {
+      await startOnDemo(
+        new Map<string, JsonValue>([
+          [ALLOW_KEY, { all: {}, ai: { [String(GAME)]: { name: "Full game", added: 0 } } }],
+        ]),
+      );
+      await expect.poll(headings).toEqual(kinds.slice(1).map((key) => i18n.t(key)));
+      expect(banner()?.querySelector(".sar-banner-note")).toBeNull();
     });
   });
 

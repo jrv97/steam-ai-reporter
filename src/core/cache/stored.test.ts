@@ -5,6 +5,7 @@ import {
   aiVerdicts,
   disclosedVerdict,
   FULL_DISCLOSED,
+  lent,
   NOT_DISCLOSED,
   uniformVerdicts,
 } from "../../../tests/helpers/verdicts";
@@ -207,6 +208,30 @@ describe("encodeVerdicts and decodeVerdicts", () => {
     for (const id of KIND_IDS) {
       expect(decoded?.verdicts[id]).toBe(UNKNOWN.gated);
     }
+  });
+});
+
+describe("the demo mark in storage", () => {
+  const demo = withRelations(FULL_DISCLOSED, { parent: appId(3489340), demo: true });
+  const stored = { time: T, kinds: STORED_KINDS, parent: 3489340 };
+
+  it("round trips the mark beside the full game, and stores nothing for a DLC", () => {
+    expect(encodeVerdicts(demo, T)).toMatchObject({ parent: 3489340, demo: true });
+    expect(decodeVerdicts(encodeVerdicts(demo, T))).toStrictEqual({ verdicts: demo, time: T });
+    const dlc = withRelations(FULL_DISCLOSED, { parent: appId(3489340) });
+    expect(encodeVerdicts(dlc, T)).not.toHaveProperty("demo");
+  });
+
+  it.each([["false", false], ["a number", 1], ["a string", "true"]])(
+    "discards an entry whose mark is %s, so the app is fetched again",
+    (_name, value) => {
+      expect(decodeVerdicts({ ...stored, demo: value })).toBeUndefined();
+    },
+  );
+
+  it("stores the demo's own verdicts, never a lent one's mark", () => {
+    const shown = { ...demo, ai: lent(FULL_DISCLOSED.ai) };
+    expect(decodeVerdicts(encodeVerdicts(shown, T))?.verdicts.ai).toStrictEqual(FULL_DISCLOSED.ai);
   });
 });
 

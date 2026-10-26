@@ -14,8 +14,16 @@ import { holdsEveryKind, KINDS, perKind } from "./registry";
 
 type DisclosedOf<Kind> = Kind extends KindDefinition<infer Disclosed> ? Disclosed : never;
 
+/**
+ * Marks the full game's disclosure that its demo shows (`detect/full-game.ts`), so a surface can
+ * say whose it is. Set when read, never stored: the cache keeps each app's own verdicts.
+ */
+interface Lent {
+  readonly fullGame?: true;
+}
+
 /** The disclosed verdict of any registered kind. */
-export type AnyDisclosed = DisclosedOf<TagKind>;
+export type AnyDisclosed = DisclosedOf<TagKind> & Lent;
 
 /** A verdict of any registered kind, for code that does not know which kind it holds. */
 export type KindVerdict = Verdict<AnyDisclosed>;
@@ -26,8 +34,10 @@ export type KindVerdict = Verdict<AnyDisclosed>;
  * source that does not know it (the app page).
  */
 export interface Relations {
-  /** The base game of a DLC, from `related_items.parent_appid`. */
+  /** The base game of a DLC or the full game of a demo, from `related_items.parent_appid`. */
   readonly parent?: AppId;
+  /** Set when the app is a demo (GetItems `type` 1) with a `parent`, its full game. */
+  readonly demo?: true;
   /** The developers and publishers, from `basic_info`; absent when there are none. */
   readonly creators?: Readonly<Record<CreatorRole, readonly Creator[]>>;
 }
@@ -47,7 +57,10 @@ export type KindVerdicts = PerKindVerdicts & Relations;
 /** Relations as read from data: each one may be missing. */
 export type FoundRelations = { readonly [Key in keyof Relations]?: Relations[Key] | undefined; };
 
-/** The verdicts with the relations of `from` added; the same object when there are none. */
+/**
+ * The verdicts with the relations of `from` added; the same object when there are none. A demo
+ * mark without a parent is left out, as nothing follows it.
+ */
 export function withRelations(verdicts: KindVerdicts, from: FoundRelations): KindVerdicts {
   const { parent, creators } = from;
   const named = creators !== undefined && CREATOR_ROLES.some((role) => creators[role].length > 0);
@@ -57,6 +70,7 @@ export function withRelations(verdicts: KindVerdicts, from: FoundRelations): Kin
   return {
     ...verdicts,
     ...(parent === undefined ? {} : { parent }),
+    ...(parent !== undefined && from.demo === true ? { demo: true } : {}),
     ...(named ? { creators } : {}),
   };
 }

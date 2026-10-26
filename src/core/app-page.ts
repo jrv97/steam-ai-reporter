@@ -36,7 +36,8 @@ export type Disagree = (kind: KindId, page: KindVerdict, data: KindVerdict) => v
 /**
  * One kind from the page and from Steam's data. A kind the page cannot say, or Steam could not
  * answer, takes the other. When both know, a disclosure wins over none, and a disagreement is
- * reported. The data wins when it discloses, and the page when only the page does.
+ * reported. The data wins when it discloses, and the page when only the page does. On a demo's
+ * page the full game's disclosure is no disagreement, and the demo's own wins over it.
  */
 function mergeKind(
   kind: KindId,
@@ -46,6 +47,9 @@ function mergeKind(
 ): KindVerdict {
   if (page.state === "unknown" && page.reason === "missing") {
     return data;
+  }
+  if (data.state === "disclosed" && data.fullGame === true) {
+    return page.state === "disclosed" ? page : data;
   }
   if (data.state === "disclosed") {
     if (page.state !== "disclosed") {
@@ -83,12 +87,13 @@ export function mergeVerdicts(
 }
 
 /**
- * Whether the AI kind holds a disclosure from the API in another language than the page's. The
- * developer's notes are the only text that comes in a language.
+ * Whether the AI kind holds the app's own disclosure from the API in another language than the
+ * page's. The developer's notes are the only text that comes in a language.
  */
 function needsTranslation(verdicts: KindVerdicts, language: SteamLanguage): boolean {
   const { ai } = verdicts;
-  return ai.state === "disclosed" && ai.source === "api" && ai.language !== language;
+  return ai.state === "disclosed" && ai.fullGame !== true && ai.source === "api"
+    && ai.language !== language;
 }
 
 /**
@@ -110,7 +115,8 @@ export async function translatedVerdicts(
 
 function appName(doc: Document, verdicts: KindVerdicts, id: AppId): string {
   const { ai } = verdicts;
-  const fromVerdict = ai.state === "disclosed" ? ai.name : undefined;
+  // A demo's AI verdict may carry its full game's name.
+  const fromVerdict = ai.state === "disclosed" && ai.fullGame !== true ? ai.name : undefined;
   const fromPage = doc.querySelector(APP_NAME_SELECTOR)?.textContent.trim();
   return fromVerdict ?? (fromPage === undefined || fromPage === "" ? String(id) : fromPage);
 }

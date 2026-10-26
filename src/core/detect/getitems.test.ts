@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { detectorContract } from "../../../tests/contracts/detector.contract";
 import creatorsFixture from "../../../tests/fixtures/getitems/creators.json";
+import demoParent from "../../../tests/fixtures/getitems/demo-parent.json";
 import dlc from "../../../tests/fixtures/getitems/dlc-parent.json";
 import empty from "../../../tests/fixtures/getitems/empty-response.json";
 import german from "../../../tests/fixtures/getitems/german-context.json";
@@ -171,6 +172,15 @@ describe("parseGetItems and the base game of a DLC", () => {
     const item = storeItem(4, { extra_details: undefined, related_items: { parent_appid: 9 } });
     const found = parse(appIds(4), getItemsResponse([item])).get(appId(4));
     expect(found).toBe(UNKNOWN_KINDS.missing);
+  });
+
+  it("marks the captured demo, and not its full game or a DLC (demo-parent.json)", () => {
+    const ids = appIds(3489340, 4513800);
+    const found = parse(ids, getItemsResponse(fixtureItems(demoParent)));
+    expect(found.get(appId(4513800))).toMatchObject({ parent: 3489340, demo: true });
+    expect(found.get(appId(3489340))).not.toHaveProperty("demo");
+    const dlcItem = parse([dlcId], getItemsResponse(fixtureItems(dlc))).get(dlcId);
+    expect(dlcItem).not.toHaveProperty("demo");
   });
 
   it("reads the parents of a mixed batch by their own ids", () => {

@@ -99,8 +99,9 @@ const CategoriesSchema = record({
 });
 
 /**
- * The base game a DLC belongs to (`parent_appid`). It only adds detail, so a value that is not an
- * app ID, or an item that is not a DLC, reads as no parent and never costs the item its verdicts.
+ * The base game of a DLC, or the full game of a demo (`parent_appid`). It only adds detail, so a
+ * value that is not an app ID, or an item with no parent, reads as no parent and never costs the
+ * item its verdicts.
  */
 const RelatedItemsSchema = record({ parent_appid: droppable(AppIdSchema) });
 
@@ -128,16 +129,21 @@ const BasicInfoSchema = record({
   publishers: droppable(CreatorListSchema),
 });
 
+/** Steam's `type` of a demo; a DLC is 4 and a game 0. */
+export const DEMO_TYPE = 1;
+
 /**
  * One store item. `id` echoes the requested ID; `appid` is 0 for invalid items and unused.
- * The name and the categories are lenient, and `related_items` and `basic_info` are droppable.
- * An item without a valid `id`, `success` or `extra_details` says nothing about any kind.
+ * The name and the categories are lenient, and `type`, `related_items` and `basic_info` are
+ * droppable. An item without a valid `id`, `success` or `extra_details` says nothing about any
+ * kind.
  */
 export const StoreItemSchema = v.pipe(
   v.object({
     id: AppIdSchema,
     success: v.number(),
     name: lenient(TextSchema),
+    type: droppable(v.pipe(v.number(), v.integer())),
     categories: lenient(CategoriesSchema),
     related_items: droppable(RelatedItemsSchema),
     basic_info: droppable(BasicInfoSchema),

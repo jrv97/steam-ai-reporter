@@ -106,6 +106,8 @@ The state is per kind: a game can be disclosed for one kind and not disclosed or
 
 An unknown that holds for every kind with the reason `error` or `rate-limited` (a lookup that failed or was held back while the breaker was open) is asked again once the breaker has closed, at most twice. The chips, the tag section, the package summary and the banner then draw from the new answer, with no reload (decision 55). Until then nothing renders, as for any unknown.
 
+A demo shows its full game's disclosed kinds beside its own, and its own disclosure of a kind wins (decision 59). A lent kind renders like the "Disclosed" row above on every surface; the hover card and the banner add `kind_full_game` under its heading. A kind whose full game is unknown is unknown for the demo too, unless the demo discloses it itself. A DLC lends nothing and borrows nothing.
+
 A DLC follows its base game's ignore list. A kind disclosed on a DLC whose base game is ignored for that kind, or for all tags, renders as the "ignored" row above, except in the banner of the DLC's own page, which shows neither an entry nor a note for it (see "Ignored through a base game" below). Everything else about the state is per kind, as above.
 
 Each kind's settings (`kinds.<id>`: `enabled`, `badge`, `banner` and `filter`) gate its columns. `enabled` off removes everything for the kind, `badge` off removes its chips, in lists and in the tag section, and its line in the package summary, `banner` off removes its entry and its note, and `filter` set to `off` leaves lists alone. All are on by default, except that PvP starts with `enabled` off, and the filter is `off`. The ignore list wins over every setting.
@@ -327,6 +329,7 @@ Preview: `previews/Banner.html`.
 - On the app page of a game with at least one disclosed kind that is enabled and has its banner switch on, once per page view. One banner holds every such kind, in registry order.
 - A kind the game is ignored for is not listed. It becomes a one-line note with Undo. A game ignored for all tags gets one such note and nothing else.
 - Below the entries sits a closed section, "Ignore a developer or publisher", with a row for each of the game's developers and publishers (see "Ignoring a developer or publisher" below). A tag a creator is ignored for becomes a note with Undo.
+- On a demo's page, a kind the full game declared and the demo did not is listed like the others, with `kind_full_game` right under its heading and before the developer's text, which stays the full game's developer's (decision 59).
 - A kind the game's base game is ignored for (the game is a DLC) is not listed and gets no note, since its Undo would belong to the other game's page. A DLC page whose every kind is silenced this way has no banner. "Ignore this game" on a DLC page still ignores that DLC only.
 - Never as a modal or overlay, never over content, never stealing focus.
 
@@ -345,7 +348,8 @@ Preview: `previews/Banner.html`.
       </div>
     </div>
     <div class="sar-banner-entry">
-      <!-- AI: its heading, then the developer's own words -->
+      <!-- AI: its heading, on a demo's page the line for a kind its full game declared, then the developer's own words -->
+      <p class="sar-banner-full-game">t('kind_full_game')</p>
       <p class="sar-banner-source">t('banner_source')</p>
       <blockquote class="sar-banner-quote" id="sar-banner-ai-notes" data-sar-collapsed="true">notes</blockquote>
       <button class="sar-banner-link" type="button" aria-expanded="false"
@@ -416,7 +420,7 @@ The two lists are shown in the options page, the popup and the userscript dialog
 
 #### Ignored through a base game
 
-A DLC is ignored for a kind when its own app ID or its base game's app ID is on that kind's list or on the list for all tags. The base game is `related_items.parent_appid` of the DLC's GetItems item, kept with the cached verdict as `parent`; no list of DLC is stored, so a DLC released tomorrow follows at once. `isIgnored` (`src/core/ignored.ts`) is the only place that decides; the chips, the `data-sar-kinds` mark (so the dim and hide filters), the hover card and the app page's banner and tag section all ask it. The "Games you ignored" list is keyed by the games the person ignored, so a DLC never appears in it, and "Stop ignoring" on the base game brings the DLC back. A parent that is not known (not fetched yet, no parent, a source that does not carry it) leaves the game on its own entries. The relation is one level.
+A DLC is ignored for a kind when its own app ID or its base game's app ID is on that kind's list or on the list for all tags. The base game is `related_items.parent_appid` of the DLC's GetItems item, kept with the cached verdict as `parent`; no list of DLC is stored, so a DLC released tomorrow follows at once. `isIgnored` (`src/core/ignored.ts`) is the only place that decides; the chips, the `data-sar-kinds` mark (so the dim and hide filters), the hover card and the app page's banner and tag section all ask it. The "Games you ignored" list is keyed by the games the person ignored, so a DLC never appears in it, and "Stop ignoring" on the base game brings the DLC back. A parent that is not known (not fetched yet, no parent, a source that does not carry it) leaves the game on its own entries. The relation is one level. A demo follows its full game the same way, for its own kinds and for the kinds its full game lends it (decision 59).
 - The polite live region announces `notice_marking_stopped` or `notice_marking_restored`.
 
 ### Longer translations
@@ -847,6 +851,12 @@ Preview: `previews/HoverCard.html`.
     <p class="sar-hovercard-detail">the anti-cheat's name</p>
     <p class="sar-hovercard-detail">t('kind_kernel_uninstall')</p>
   </div>
+  <div class="sar-hovercard-entry">
+    <!-- a kind a demo shows for its full game -->
+    <p class="sar-hovercard-title">t('kind_drm_heading')</p>
+    <p class="sar-hovercard-full-game">t('kind_full_game')</p>
+    <p class="sar-hovercard-detail">the DRM's name</p>
+  </div>
   <p class="sar-hovercard-more" hidden>t('badge_card_more')</p>
   <p class="sar-hovercard-source">t('badge_card_declared')</p>
 </div>
@@ -856,6 +866,7 @@ Preview: `previews/HoverCard.html`.
 - Triggers register with the card when they render: a `WeakMap` from trigger element to the host's disclosed verdicts, plus whether the trigger sits on the game's own page (a tag-section chip). Nothing is set on the trigger, and no listener is added to it.
 - Opening and closing run on delegated listeners on the document: `pointerover`, `pointerout`, `focusin`, `focusout`, `keydown` and `scroll`. Their number does not depend on how many chips the page holds. One `pagehide` listener on the window closes the card.
 - The lines under each heading come from `kindDetails`, the function the banner uses, without links. The AI notes go in through `textContent` with `\r\n` turned into `\n`, never translated or cut in the DOM. The service line appears only when GetItems named one (`ai_generation_service`), the name inserted as data.
+- On a demo, an entry for a kind its full game declared has `kind_full_game` right under the title (decision 59). The demo's own entries have none.
 - A last line, `badge_card_declared`, says the developer, not this extension, made the declarations above.
 - No request: the card shows the verdicts the chips were drawn from.
 
@@ -866,6 +877,7 @@ Built like the store's game hover popup, sampled on the home page on 2026-10-21:
 - Surface `sar-hovercard-bg` with `sar-hovercard-shadow`, padding `sar-hovercard-pad`, inline size `sar-hovercard-inline-size`, capped at the viewport width less two offsets.
 - Each entry's title is Steam's line for the kind, in `sar-hovercard-title-font` (15/17, like the store's game name there), `sar-badge-fg`. The violet title is what marks the card as ours. Entries sit `sar-space-2` apart.
 - Detail lines (names, Steam's notes, category names) in `sar-hovercard-meta-font` (11/16) and `sar-color-text`.
+- The full game line, `kind_full_game`, in the meta font and `sar-color-text-muted`, like the source line.
 - The source line, `badge_card_declared`, ends the card in `sar-hovercard-meta-font` (11/16) and `sar-color-text-muted`, like the store's release line.
 - Notes in `sar-hovercard-notes-font` (12/18 italic, like the store's own disclosure section), `sar-color-text`, `white-space: pre-line`, clamped to `sar-hovercard-notes-lines` (6) lines.
 - Service line in the meta font: label `sar-color-text-muted`, name `sar-color-text`.
@@ -1026,6 +1038,7 @@ For every translator:
 | `kind_chip_name` | `$chip$`: `$heading$` | Accessible name of a chip: the chip text, then Steam's line. |
 | `kind_chip_more` | +`$count$` | Chip that stands for the kinds that do not fit. |
 | `kind_chip_more_name` | more tags | After the chip text, names the hidden chips for screen readers. |
+| `kind_full_game` | Declared for the full game | In the hover card and the banner on a demo, under a tag its full game declared. Never says the demo declared it. |
 
 ### `badge_`
 

@@ -1,0 +1,4 @@
+{"response":{"store_items":[
+{"item_type":0,"id":3489340,"success":1,"visible":true,"name":"ReBlade: The Death Spiral","appid":3489340,"type":0,"is_coming_soon":true,"related_items":{"demo_appid":[4513800],"demos":[{"appid":4513800,"show_above_purchase":true}]},"basic_info":{"publishers":[{"name":"Spiral Up Games","creator_clan_account_id":44708939}],"developers":[{"name":" ChillyRoom"}]},"extra_details":{"vetted":true}},
+{"item_type":0,"id":4513800,"success":1,"visible":true,"name":"ReBlade: The Death Spiral Demo","appid":4513800,"type":1,"is_free":true,"related_items":{"parent_appid":3489340},"basic_info":{"publishers":[{"name":"Spiral Up Games","creator_clan_account_id":44708939}],"developers":[{"name":" ChillyRoom"}]},"extra_details":{"vetted":true}}
+]}}

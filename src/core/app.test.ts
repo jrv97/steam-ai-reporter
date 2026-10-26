@@ -4,9 +4,10 @@ import kindItems from "../../tests/fixtures/getitems/kinds.json";
 import searchItems from "../../tests/fixtures/getitems/search-roguelike-50.json";
 import { basicInfo } from "../../tests/helpers/creators";
 import { clearRoot, setBody } from "../../tests/helpers/dom";
-import { fakeHttp } from "../../tests/helpers/fake-http";
+import { fakeHttp, type Route } from "../../tests/helpers/fake-http";
 import { fixedClock } from "../../tests/helpers/fixed-clock";
 import {
+  demoItem,
   disclosedItem,
   fixtureItems,
   getItemsRequest,
@@ -24,6 +25,7 @@ import { type App, start } from "./app";
 import type { CreatorRole } from "./creator";
 import { API_BREAKER_KEY } from "./detect/breaker";
 import { RETRY_DELAY_MS } from "./detect/retry";
+import { DEFAULT_SPACING_MS } from "./detect/throttle";
 import { SHIPPED_CATALOGS } from "./i18n/shipped";
 import type { JsonValue } from "./json";
 import { toHexColor } from "./kinds/color";
@@ -49,9 +51,10 @@ async function startOnSearch(
   initial: ReadonlyMap<string, JsonValue> = new Map(),
   items: readonly unknown[] = fixtureItems(searchItems),
   clock: Clock = fixedClock(NOW),
+  route: Route = getItemsRoute(items),
 ) {
   loadPage(SURFACES.search);
-  return startOnLoaded(initial, items, clock);
+  return startOnLoaded(initial, items, clock, route);
 }
 
 /** Starts the app on the page the test document holds. */
@@ -59,11 +62,12 @@ async function startOnLoaded(
   initial: ReadonlyMap<string, JsonValue>,
   items: readonly unknown[],
   clock: Clock = fixedClock(NOW),
+  route: Route = getItemsRoute(items),
 ) {
   document.documentElement.lang = "en";
   const store = memoryStore(initial);
   const settings = createSettingsSource(store);
-  const http = fakeHttp([getItemsRoute(items)]);
+  const http = fakeHttp([route]);
   app = await start({
     document,
     http,
@@ -319,6 +323,92 @@ describe("start on the search page", () => {
       const { http } = await startOnSearch(own, dlc);
       await drawn(http);
       expect(row(DISCLOSED)?.getAttribute("data-sar-kinds")).toBe("kernel eula pvp");
+    });
+  });
+
+  describe("with demo rows of a full game that declares several kinds", () => {
+    // Two rows become demos of ARC Raiders, which is not on the page and declares AI notes, a
+    // kernel anti-cheat, a EULA and PvP; a third becomes a demo of another row's game.
+    const GAME = 1808500;
+    const SIBLING = String(SEARCH_IDS[0]);
+    const ROW_DEMO = String(SEARCH_IDS[1]);
+    const demos = [
+      ...fixtureItems(searchItems),
+      demoItem(Number(DISCLOSED), GAME),
+      demoItem(Number(SIBLING), GAME),
+      demoItem(Number(ROW_DEMO), SEARCH_IDS[4] ?? 0),
+      itemAs(kindItems, GAME, GAME),
+    ];
+    const marks = (id: string) => row(id)?.getAttribute("data-sar-kinds");
+    const chip = (id: KindId) => i18n.t(KIND_BY_ID[id].messages.chip);
+    const chips = () =>
+      Array.from(
+        row(DISCLOSED)?.querySelectorAll(".sar-chips > .sar-badge") ?? [],
+        (element) => element.querySelector(".sar-badge-label")?.textContent,
+      );
+    const asked = (http: { readonly calls: readonly string[]; }) =>
+      http.calls.map((url) => getItemsRequest(url).ids);
+    const listing = (id: number | string): Map<string, JsonValue> =>
+      new Map<string, JsonValue>([
+        [ALLOW_KEY, { all: {}, ai: { [String(id)]: { name: "Ignored", added: NOW } } }],
+      ]);
+
+    /** Starts on the page and lets the throttle send the second request. */
+    async function startDemos(initial = new Map<string, JsonValue>(), route?: Route) {
+      const started = await startOnSearch(initial, demos, useTimerClock(), route);
+      await vi.advanceTimersByTimeAsync(DEFAULT_SPACING_MS);
+      return started;
+    }
+
+    it("lends the game's tags to its demo rows after one more request, for it alone", async () => {
+      const { http } = await startDemos();
+      await expect.poll(() => marks(DISCLOSED)).toBe("ai kernel eula pvp");
+      expect(marks(SIBLING)).toBe("ai kernel eula pvp");
+      expect(row(ROW_DEMO)?.hasAttribute("data-sar-kinds")).toBe(false);
+      expect(asked(http)).toStrictEqual([SEARCH_IDS, [GAME]]);
+      expect(chips()).toStrictEqual([chip("ai"), chip("kernel"), chip("eula")]);
+      row(DISCLOSED)?.dispatchEvent(new FocusEvent("focusin", { bubbles: true }));
+      const lines = [...document.querySelectorAll(".sar-hovercard-full-game")];
+      expect(lines.map((line) => line.textContent)).toStrictEqual(
+        chips().map(() => i18n.t("kind_full_game")),
+      );
+    });
+
+    it.each([
+      ["the game it is a demo of", GAME],
+      ["the demo", DISCLOSED],
+    ])("drops the lent AI chip and mark when %s is ignored for AI", async (_name, id) => {
+      await startDemos(listing(id));
+      await expect.poll(() => marks(DISCLOSED)).toBe("kernel eula pvp");
+      expect(chips()).toStrictEqual([chip("kernel"), chip("eula")]);
+    });
+
+    it("follows the lent kind's switch and list filter", async () => {
+      const settings = withKind(withKind(DEFAULT_SETTINGS, "ai", { filter: "hide" }), "kernel", {
+        enabled: false,
+      });
+      await startDemos(new Map([[SETTINGS_KEY, encodeSettings(settings)]]));
+      await expect.poll(() => marks(DISCLOSED)).toBe("ai kernel eula pvp");
+      expect(chips()).toStrictEqual([chip("ai"), chip("eula")]);
+      expect(getComputedStyle(row(DISCLOSED) ?? document.body).display).toBe("none");
+    });
+
+    it("asks again for a full game whose lookup failed, and lends its tags then", async () => {
+      const [match, reply] = getItemsRoute(demos);
+      let failed = false;
+      const failingOnce: Route = [match, (url) => {
+        if (!failed && getItemsRequest(url).ids.includes(GAME)) {
+          failed = true;
+          return "network-error";
+        }
+        return typeof reply === "function" ? reply(url) : reply;
+      }];
+      const { http } = await startDemos(new Map(), failingOnce);
+      await expect.poll(() => http.calls.length).toBe(2);
+      expect(row(DISCLOSED)?.hasAttribute("data-sar-kinds")).toBe(false);
+      await vi.advanceTimersByTimeAsync(RETRY_DELAY_MS);
+      await expect.poll(() => marks(DISCLOSED)).toBe("ai kernel eula pvp");
+      expect(asked(http)).toStrictEqual([SEARCH_IDS, [GAME], [GAME]]);
     });
   });
 

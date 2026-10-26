@@ -25,12 +25,21 @@ export function isStoredReason(reason: UnknownReason): reason is StoredReason {
   return reason === "gated" || reason === "missing" || reason === "malformed";
 }
 
-/** Whether every kind is unknown for a reason that is not stored: the lookup failed or waited. */
+/**
+ * Whether the lookup failed or waited: each kind is unknown for a reason that is not stored, or
+ * disclosed, and one is unknown. Both sit side by side only on a demo whose full game failed.
+ */
 export function isTransient(verdicts: KindVerdicts): boolean {
-  return KINDS.every((kind) => {
+  let transient = false;
+  for (const kind of KINDS) {
     const verdict = verdicts[kind.id];
-    return verdict.state === "unknown" && !isStoredReason(verdict.reason);
-  });
+    if (verdict.state === "unknown" && !isStoredReason(verdict.reason)) {
+      transient = true;
+    } else if (verdict.state !== "disclosed") {
+      return false;
+    }
+  }
+  return transient;
 }
 
 /** How long one verdict stays fresh, given the TTLs of its kind. */

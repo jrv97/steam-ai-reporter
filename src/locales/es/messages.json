@@ -177,6 +177,10 @@
     "message": "más etiquetas",
     "description": "After the chip text, names the hidden chips for screen readers, as in \"+2: more tags\"."
   },
+  "kind_full_game": {
+    "message": "Declarado para el juego completo",
+    "description": "In the hover card and in the notice on a demo's store page, right under a tag's heading when the tag is shown because the full game declared it; the demo did not declare it itself. \"The full game\" is the product the demo belongs to. Never say the demo declared it."
+  },
   "badge_card_declared": {
     "message": "Declarado por el desarrollador en la página de la tienda",
     "description": "Last line of the hover card. It says the developer, not this extension, made the declarations above."

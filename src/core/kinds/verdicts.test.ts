@@ -35,6 +35,7 @@ describe("withRelations", () => {
     ["no parent", { parent: undefined }],
     ["no creators", { creators: undefined }],
     ["creators of no one", { creators: creatorsFor({}) }],
+    ["a demo mark without a full game", { demo: true }],
   ])("returns the same verdicts when it is given %s", (_name, from) => {
     expect(withRelations(FULL_DISCLOSED, from)).toBe(FULL_DISCLOSED);
   });
@@ -43,6 +44,7 @@ describe("withRelations", () => {
     ["the base game", { parent: appId(7) }],
     ["the creators", { creators: creatorsFor({ developers: ["A"] }) }],
     ["both", { parent: appId(7), creators: creatorsFor({ publishers: [["B", 2]] }) }],
+    ["the full game of a demo", { parent: appId(7), demo: true }],
   ])("adds %s without touching the shared objects or the verdicts", (_name, from) => {
     const related = withRelations(UNKNOWN_KINDS.missing, from);
     expect(related).toMatchObject(from);

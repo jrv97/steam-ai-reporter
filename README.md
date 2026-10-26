@@ -28,6 +28,7 @@ Once I got that working in place, I thought "why not also flag all the other ann
 - Tags these kinds of items: AI Generated Content Disclosure, Kernel Level Anti-Cheat and other Anti-Cheat Software, 3rd-party DRM, 3rd-Party Account, 3rd-party EULA and PvP.
 - Adds a badge to capsules and rows (search, wishlist, home, tag and category hubs, sale pages such as Next Fest, developer and publisher pages, the discovery queue, search suggestions) for items that carry one of those tags. Each tag has a short chip (AI, KLAC, Anti-Cheat, DRM, Account, EULA, PvP), and a +N chip stands for the tags that do not fit.
 - Opens a card on hover or keyboard focus that lists every tag in Steam's words and ends with a line naming the developer as the source.
+- Gives a demo the tags of its full game, each marked "Declared for the full game" in the card and the banner; a tag the demo declares itself shows as its own. DLC keep their own tags only.
 - Shows a non-blocking banner on the app page that lists each tag the developer declared and quotes the developer's AI report verbatim.
 - Sums up the included games' tags at the top of a package page, one line per tag such as "AI Generated Content Disclosure: 2 of 5 games", from the lookups its rows already use.
 - Gives each tag its own switch, badge, banner entry and list filter (Show, Dim or Hide). Filters start on Show, and the strongest filter wins when a game carries several tags. The PvP tag starts switched off.

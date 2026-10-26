@@ -69,7 +69,7 @@ Every attribute core writes on a store node starts with `data-sar-`. The scheme 
 | The root element       | `--sar-kind-color-<kind>`   | The kind's custom color, a validated `#rrggbb`, in the root's `style`. Removed when unset.                                                                             |
 | A chip                 | `data-sar-kind`             | The id of the kind it shows. A hover card entry and a banner with one tag carry it too, so the color rules reach them.                                                 |
 
-A host with several kinds takes the strongest filter without a rule for it: a hidden host ignores a dim, and a host that cannot hide dims for either mode. A kind the game is ignored for is left out of `data-sar-kinds` and gets no chip, so it counts as absent. For a DLC, "ignored for the game" includes its base game, and a game follows its developers and publishers: see "What an app is related to" below.
+A host with several kinds takes the strongest filter without a rule for it: a hidden host ignores a dim, and a host that cannot hide dims for either mode. A kind the game is ignored for is left out of `data-sar-kinds` and gets no chip, so it counts as absent. For a DLC or a demo, "ignored for the game" includes its base or full game, and a game follows its developers and publishers: see "What an app is related to" below.
 
 ### What an app is related to
 
@@ -77,10 +77,15 @@ The banner adds a closed `details` per game that lists its creators, one row per
 
 `KindVerdicts` is one verdict per kind plus `Relations`, which no verdict reads and the ignore lists follow.
 
-- `parent`: the DLC's base game, a branded `AppId` read from GetItems `related_items.parent_appid` (`getitems.schema.ts`, droppable, so a missing or malformed value is no parent).
+- `parent`: the DLC's base game or the demo's full game, a branded `AppId` read from GetItems `related_items.parent_appid` (`getitems.schema.ts`, droppable, so a missing or malformed value is no parent).
+- `demo`: `true` when GetItems `type` is 1 (droppable too) and the item has a parent. Only a demo borrows from its parent; a DLC (`type` 4) does not.
 - `creators`: the developers and publishers, from GetItems `basic_info` (the request sets `include_basic_info`). A `Creator` (`creator.ts`) holds Steam's name, the clan ID when Steam sends `creator_clan_account_id` (some creators have none), `key` and `keys`. The keys are `c:<clan id>` first when there is an ID, then `n:<name>` with the name exactly as Steam sends it, and Ignore stores `key`. The schema drops a bad entry or list on its own, `makeCreators` collapses repeats and keeps eight per role.
 
 `withRelations` sets them, and they are stored with the cached verdict (`cache/stored.ts`; a change to what is stored bumps `CACHE_SCHEMA`). Ignoring is decided in one place, `isIgnored(ignored, id, kind, related)` in `ignored.ts`: true, for the kind or for all kinds, when the app or its parent is on the games list, when any developer's key is on the developer list, or when any publisher's key is on the publisher list. The roles stay apart, and a creator matches on any of its keys, so a name-keyed entry keeps matching after Steam adds a clan ID. The lists are `v2:allow` and the sibling keys `v2:allow-developers` and `v2:allow-publishers`, each an object per scope with `{ name, added }` entries, made by `createAllowList` and `createCreatorList` over one generic `createScopedList`. Every surface calls `isIgnored` with the verdicts it holds (the capsule UI's `isAllowed`, the app page's `suppressed` per kind); none reads the sets itself. No list of DLC is kept, and the ignored games list never holds a DLC the person did not ignore. A detector that cannot know a relation (the app page) leaves it out, and the app then behaves as if it had none.
+
+### A demo's full game
+
+`createFullGameDetector` (`detect/full-game.ts`) is the outermost detector in `app.ts`. It asks the cached stack for the IDs, then once more, in one call, for the full games of the answered demos it was not asked about, and merges per kind: the demo's own disclosure, else the game's, else unknown when the game is unknown, else the demo's own answer. A lent disclosure is the game's verdict with `fullGame: true` (on `AnyDisclosed`, read by no stored schema), so every surface draws it as a disclosure and the hover card and the banner add `kind_full_game` under its heading. The cache keeps each app's own verdicts and the merge runs on every read. One level only: the full game's own parent is never asked for.
 
 ## Style in this folder
 
@@ -88,7 +93,7 @@ The banner adds a closed `details` per game that lists its creators, one row per
 - `readonly` by default; discriminated unions with exhaustive `never` checks for states such as `Verdict`; branded types for domain IDs (`AppId`).
 - A `Detector` answers with `KindVerdicts`, one `Verdict` per tag kind. Settings and the ignore lists are stored per kind (`v2:settings`, `v2:allow`, `v2:allow-developers`, `v2:allow-publishers`); `settings/migrate.ts` copies the `v1` keys to them the first time either is read; the `v1` keys stay.
 - CSS classes and data attributes use the prefix `sar-` and `data-sar-*`; errors are `SarError` with a catalog-key `code`.
-- A surface that detects once asks again after a transient answer (every kind unknown `error` or `rate-limited`, `isTransient` in `cache/ttl.ts`) through `createTransientRetry` in `detect/retry.ts`: one timer per round, past the longest breaker pause, two rounds per item at most. The capsule UI and the app page use it; a new surface uses it too, never a timer of its own.
+- A surface that detects once asks again after a transient answer (every kind unknown `error` or `rate-limited`, or disclosed beside them on a demo whose full game failed: `isTransient` in `cache/ttl.ts`) through `createTransientRetry` in `detect/retry.ts`: one timer per round, past the longest breaker pause, two rounds per item at most. The capsule UI and the app page use it; a new surface uses it too, never a timer of its own.
 - Efficiency is a requirement (rule 13, efficiency): scan only added subtrees, batch DOM reads before writes, no per-node closures or listeners, `WeakSet` and `WeakMap` keyed by elements, bounded caches, no polling.
 - Tests sit next to the module as `*.test.ts` and use the builders in `tests/helpers/`.
 - A backup (`backup/`) is read by the same schemas that read storage. A new setting or list reaches the file through `encodeSettings` or `encodeAllow`; a change to the file's shape bumps `BACKUP_VERSION` with an upgrade step in `UPGRADES`.

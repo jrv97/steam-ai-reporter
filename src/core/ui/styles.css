@@ -246,7 +246,8 @@
 
 .sar-hovercard-source,
 .sar-hovercard-service,
-.sar-hovercard-more {
+.sar-hovercard-more,
+.sar-hovercard-full-game {
   display: block;
   color: var(--sar-color-text-muted);
   font: var(--sar-hovercard-meta-font);

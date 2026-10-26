@@ -273,7 +273,10 @@ export function createBanner(
     entry.append(line);
   }
 
-  /** One kind: Steam's line as the heading and its own ignore button, then the developer's text. */
+  /**
+   * One kind: Steam's line as the heading and its own ignore button, a line on a demo's page when
+   * the full game declared it, then the developer's text.
+   */
   function buildEntry(verdict: AnyDisclosed): HTMLElement {
     const entry = element("div", "sar-banner-entry");
     const titleId = partId(verdict.kind, "title");
@@ -292,6 +295,9 @@ export function createBanner(
     const head = element("div", "sar-banner-head");
     head.append(title, ignore);
     entry.append(head);
+    if (verdict.fullGame === true) {
+      entry.append(element("p", "sar-banner-full-game", i18n.t("kind_full_game")));
+    }
     for (const [index, detail] of kindDetails(verdict).filter(isDeveloperText).entries()) {
       appendDetail(entry, detail, `${partId(verdict.kind, "notes")}-${String(index)}`);
     }
