@@ -1050,6 +1050,15 @@ describe("the ignored games", () => {
     await form.refreshAllowList();
     expect(root.querySelectorAll(".sar-allow-scope")).toHaveLength(5);
   });
+
+  it("reads each list once per refresh, however many places draw it", async () => {
+    const { lists, form } = await setup();
+    const reads = [lists.games, ...CREATOR_ROLES.map((role) => lists.creators[role])].map((list) =>
+      vi.spyOn(list, "list")
+    );
+    await form.refreshAllowList();
+    expect(reads.map((read) => read.mock.calls.length)).toEqual([1, 1, 1]);
+  });
 });
 
 describe("a failed read of the settings", () => {
