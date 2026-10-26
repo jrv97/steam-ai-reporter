@@ -12,14 +12,22 @@
   name in the bundle has an @grant and every @grant is used; valibot's license block is in the
   body; no userscript header in any other bundle.
 - No eval( or new Function in any bundle (rule 2); no URL outside the two Valve hosts.
-- Size budgets: content.js at most 200 KB, options.js at most 150 KB and the userscript at most
-  284 KB, unminified (rule 13). Each is the measured size plus a few percent of headroom; raise one
-  only with a measurement. Every shipped catalog is inlined, so each added locale costs about 5 KB
-  in each of them. Measured when ignoring by developer or publisher landed (ADR 0013): content.js
-  186,313 B (from 169,265), options.js 126,147 B (from 118,688), userscript 251,440 B (from
-  232,227). Measured when backup and restore landed (decision 54): content.js 198,433 B (from
-  193,262, catalog text only), options.js 147,172 B (from 127,308), userscript 279,609 B (from
-  259,792); the backup code ships in options.js and the userscript only.
+- Catalogs: each shipped bundle carries exactly the messages its code reads (decision 58). Every
+  key or plural base that a string literal of its code names is in its inlined catalogs, and every
+  message there is named, so a missing key fails here and never falls back to the raw key on a
+  store page. scripts/gen_catalogs.py writes each entry's catalogs by the same reading.
+- Size budgets: content.js at most 194 KiB, options.js at most 143 KiB and the userscript at most
+  284 KiB, unminified (rule 13). Each is the measured size plus a few percent of headroom; raise one
+  only with a measurement. A message costs bytes only in the bundles that read it, and an added
+  locale costs about 5 KB in content.js, 9 KB in options.js and 12 KB in the userscript. Measured
+  when ignoring by developer or publisher landed (ADR 0013): content.js 186,313 B (from 169,265),
+  options.js 126,147 B (from 118,688), userscript 251,440 B (from 232,227). Measured when backup
+  and restore landed (decision 54): content.js 198,433 B (from 193,262, catalog text only),
+  options.js 147,172 B (from 127,308), userscript 279,609 B (from 259,792); the backup code ships
+  in options.js and the userscript only. Measured when each bundle got its own catalogs (decision
+  58): content.js 190,090 B (from 204,338), options.js 140,579 B (from 148,242), userscript
+  285,327 B (from 285,925). The userscript reads both sets and keeps 284 KiB, which is already
+  under its size plus a few percent.
 - The STEAM_API_KEY value, when set, appears nowhere in dist/ or artifacts/ (rule 16).
 - The dev injection bundle is never packaged into artifacts/, and when artifacts/ exists it holds
   exactly the five release artifacts, with a manifest at the root of each extension zip. The source
@@ -32,10 +40,13 @@ import zipfile
 from html.parser import HTMLParser
 from pathlib import Path
 
+from bundle_keys import carried_keys, message_names, name_of, read_names
+from catalogs import DEFAULT_LOCALE, load, plural_bases
 from repo import (
     ARTIFACTS,
     DIST,
     EXTENSION_TARGETS,
+    ROOT,
     SLUG,
     VALIBOT_LICENSE,
     fail,
@@ -49,10 +60,11 @@ from repo import (
 
 KIB = 1024
 BUDGETS = {
-    **{DIST / target / "content.js": 200 * KIB for target in EXTENSION_TARGETS},
-    **{DIST / target / "options.js": 150 * KIB for target in EXTENSION_TARGETS},
+    **{DIST / target / "content.js": 194 * KIB for target in EXTENSION_TARGETS},
+    **{DIST / target / "options.js": 143 * KIB for target in EXTENSION_TARGETS},
     DIST / "userscript" / f"{SLUG}.user.js": 284 * KIB,
 }
+ENGLISH = ROOT / "src" / "locales" / DEFAULT_LOCALE / "messages.json"
 STORE_MATCH = ["https://store.steampowered.com/*"]
 RELEASE_BASE = "https://github.com/jrv97/steam-ai-reporter/releases/latest/download"
 ALLOWED_HOSTS = {"api.steampowered.com", "store.steampowered.com"}
@@ -281,6 +293,27 @@ def script_problems(path: Path) -> list[str]:
     return problems
 
 
+def catalog_problems(paths: list[Path]) -> list[str]:
+    """Each shipped bundle carries the messages its code reads, and no other."""
+    english = load(ENGLISH)
+    names = message_names(english)
+    bases = plural_bases(english)
+    problems: list[str] = []
+    for path in paths:
+        where = path.relative_to(DIST.parent).as_posix()
+        script = path.read_text(encoding="utf-8")
+        read = read_names(script, names)
+        carried = {name_of(key, bases) for key in carried_keys(script)}
+        problems += [
+            f"{where}: reads {name}, which its catalogs lack" for name in sorted(read - carried)
+        ]
+        problems += [
+            f"{where}: carries {name}, which its code never reads"
+            for name in sorted(carried - read)
+        ]
+    return problems
+
+
 def secret_problems(roots: list[Path]) -> list[str]:
     secret = os.environ.get("STEAM_API_KEY", "")
     if len(secret) < 8:
@@ -359,6 +392,7 @@ def main() -> None:
         problems += manifest_problems(target)
     for path in sorted(DIST.rglob("*.js")):
         problems += script_problems(path)
+    problems += catalog_problems([path for path in BUDGETS if path.is_file()])
     for path, budget in BUDGETS.items():
         if not path.is_file():
             problems.append(f"{path}: missing")

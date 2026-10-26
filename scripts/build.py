@@ -221,7 +221,7 @@ def main() -> None:
     write_text(DIST / "userscript" / f"{SLUG}.meta.js", header + "\n")
     run_esbuild(bundles(header), watch=False)
     if args.watch:
-        print("watching src/ (manifests and catalogs are copied on the next full build)")
+        print("watching src/ (manifests and catalogs follow on the next `mise run build`)")
         try:
             run_esbuild(bundles(header), watch=True)
         except KeyboardInterrupt:

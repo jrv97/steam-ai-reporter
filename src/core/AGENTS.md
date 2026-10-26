@@ -39,7 +39,7 @@ Every implementation of a port passes the same shared contract suite, with no pe
 - A host never grows past an element the store marks as an item (`data-ds-appid`). A link's host climbs to the lowest image ancestor and at most `MAX_JOIN_LEVELS` more, and stops at the first such element, so on a package page (`/sub/<id>/`, where nothing else names an app) the host is the included game's row and not the column around the package header.
 - On an app page, the page's header capsule, purchase area and description name the page's app (`PAGE_PARTS` in `scan/candidates.ts`, by id). A host for another app never takes one in, which keeps a dim on a DLC's page to the glance box instead of the column. Another such part is another id there, and an app page region whose links are never capsules, such as the DLC bubble, is an entry in `SKIPPED`.
 - A new detection source is a new `Detector` link in the chain. The chain and the scanner are not edited.
-- A new message is a catalog key in `src/locales/`, never a literal in code or in a test.
+- A new message is a catalog key in `src/locales/`, never a literal in code or in a test. Name it by its key literal (`t("banner_undo")`), never by a key built from parts: each shipped bundle carries only the messages whose keys its code names (`scripts/gen_catalogs.py`, decision 58), and `scripts/check_bundle.py` fails on a key a bundle names but does not carry. Core code takes its catalogs from the composition root (`AppDeps.catalogs`); only tests and the dev bundle import `SHIPPED_CATALOGS`, which holds every message.
 
 ### A new tag kind
 

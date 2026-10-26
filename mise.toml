@@ -47,25 +47,31 @@ run = [
 ]
 
 [tasks.gen]
-description = "Generate the typed message keys, the shipped catalogs and the stylesheet constants"
+description = "Generate the typed message keys, the stylesheet constants and the shipped catalogs"
 hide = true
+# gen_catalogs.py bundles each shipped entry with esbuild to see which messages its code reads.
+depends = ["deps"]
 sources = [
   "src/locales/*/messages.json",
   "tests/locales/en/messages.json",
   "docs/design/tokens.css",
   "src/core/ui/*.css",
+  "src/**/*.ts",
   "scripts/*.py",
 ]
 outputs = [
   "src/core/i18n/keys.gen.ts",
   "src/core/i18n/shipped.gen.ts",
+  "src/platform/extension/content.catalogs.gen.ts",
+  "src/platform/extension/options.catalogs.gen.ts",
+  "src/platform/userscript/main.catalogs.gen.ts",
   "tests/locales/keys.gen.ts",
   "src/core/ui/styles.gen.ts",
 ]
 run = [
   "python scripts/gen_i18n_keys.py",
-  "python scripts/gen_catalogs.py",
   "python scripts/gen_styles.py",
+  "python scripts/gen_catalogs.py",
 ]
 
 [tasks.deps]

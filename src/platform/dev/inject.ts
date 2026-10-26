@@ -34,6 +34,7 @@ start({
   clock: { now: () => Date.now() },
   console,
   browserLang: navigator.language,
+  catalogs: SHIPPED_CATALOGS,
   addPageStyles: adoptPageStyles,
 }).then(
   (app) => {
