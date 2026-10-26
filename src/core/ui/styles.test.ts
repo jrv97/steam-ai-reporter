@@ -281,6 +281,18 @@ describe("the hidden results notice rules", () => {
     expect(rule(".sar-list-notice[hidden]")).toContain("display: none !important");
   });
 
+  it.each([
+    [".sar-list-notice", "background: var(--sar-store-notice-bg)"],
+    [".sar-list-notice", "color: var(--sar-store-notice-fg)"],
+    [".sar-list-notice", "padding: var(--sar-store-notice-pad)"],
+    [".sar-list-notice", "margin-block-end: var(--sar-store-notice-margin-block-end)"],
+    [".sar-list-notice", "font: var(--sar-store-notice-font)"],
+    [".sar-list-notice-button", "color: var(--sar-store-notice-fg)"],
+    [".sar-list-notice-button", "text-decoration: underline"],
+  ])("takes the store's notice bar look from its tokens: %s has %s", (selector, declaration) => {
+    expect(rule(selector)).toContain(declaration);
+  });
+
   it("gives the button the shared focus ring", () => {
     expect(rule(".sar-list-notice-button:focus-visible")).toContain(
       "outline: var(--sar-focus-width) solid var(--sar-focus-color)",

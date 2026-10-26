@@ -351,20 +351,17 @@
   display: none !important;
 }
 
-/* Hidden results notice: one line above a list, shaped like the banner's ignored note and neutral,
-   since it reports what this extension did and not a tag. The button is an in-bubble link. */
+/* Hidden results notice: our own bar in the look of the store's notice bar above search results,
+   right after it when the page has one: its ground, yellowish text, padding and type, full width.
+   The button is an underlined link in the sentence, as the store's own link there. */
 
 .sar-list-notice {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  column-gap: var(--sar-space-2);
-  margin-block-end: var(--sar-space-1);
-  padding-inline: var(--sar-space-2);
-  border-radius: var(--sar-radius-xs);
-  background: var(--sar-banner-note-bg);
-  color: var(--sar-color-text-muted);
-  font: var(--sar-banner-note-font);
+  display: block;
+  margin-block-end: var(--sar-store-notice-margin-block-end);
+  padding: var(--sar-store-notice-pad);
+  background: var(--sar-store-notice-bg);
+  color: var(--sar-store-notice-fg);
+  font: var(--sar-store-notice-font);
 }
 
 .sar-list-notice[hidden] {
@@ -372,12 +369,14 @@
 }
 
 .sar-list-notice-button {
-  display: inline-flex;
-  align-items: center;
-  min-block-size: var(--sar-control-height-xs);
-  color: var(--sar-banner-link-color);
+  margin-inline-start: var(--sar-space-1);
+  color: var(--sar-store-notice-fg);
   text-decoration: underline;
   cursor: pointer;
+}
+
+.sar-list-notice-button:hover {
+  color: var(--sar-store-notice-link-hover);
 }
 
 .sar-list-notice-button:focus-visible {

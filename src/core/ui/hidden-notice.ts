@@ -45,6 +45,12 @@ export function hiddenSelector(root: Element): string | undefined {
   return parts.length === 0 ? undefined : parts.join(", ");
 }
 
+/** A list surface in the page, and the store's own notice the bar follows when there is one. */
+interface FoundList {
+  readonly list: Element;
+  readonly after: Element | null;
+}
+
 /** Whether a record can change the count: a mark or a filter, or a marked host leaving. */
 function concernsCount(record: MutationRecord): boolean {
   if (record.type === "attributes") {
@@ -65,11 +71,12 @@ function setText(element: Element, text: string): void {
 }
 
 /**
- * One line above a list surface that counts the results the list filter hides there, with a
- * button that shows them on this page and hides them again. It counts the hosts the renderers
- * marked, with one selector query per change, and never scans. One observer follows the marks,
- * the root's filters and hosts leaving; it disconnects on `pagehide`. The live region speaks the
- * line once it stays the same for `ANNOUNCE_DELAY_MS`.
+ * One bar above a list surface, right after the store's own notice bar when the page has one, that
+ * counts the results the list filter hides there, with a link-styled button that shows them on
+ * this page and hides them again. It counts the hosts the renderers marked, with one selector
+ * query per change, and never scans. One observer follows the marks, the root's filters and hosts
+ * leaving; it disconnects on `pagehide`. The live region speaks the line once it stays the same
+ * for `ANNOUNCE_DELAY_MS`.
  */
 export function createHiddenNotice(options: HiddenNoticeOptions): HiddenNotice {
   const { document: doc, i18n } = options;
@@ -116,11 +123,12 @@ export function createHiddenNotice(options: HiddenNoticeOptions): HiddenNotice {
   let spoken: string | undefined;
   let cancelSpeech: (() => void) | undefined;
 
-  function findList(): Element | undefined {
+  function findList(): FoundList | undefined {
     for (const placement of LIST_PLACEMENTS) {
       const list = doc.querySelector(placement.list);
       if (list !== null) {
-        return list;
+        const after = placement.after === undefined ? null : doc.querySelector(placement.after);
+        return { list, after };
       }
     }
     return undefined;
@@ -151,12 +159,16 @@ export function createHiddenNotice(options: HiddenNoticeOptions): HiddenNotice {
 
   function draw(): void {
     // Read phase: the list, the filters, the count and where the notice sits.
-    const list = findList();
+    const found = findList();
+    const list = found?.list;
+    const after = found?.after ?? null;
     const selector = hiddenSelector(root);
     const count = list === undefined || selector === undefined
       ? 0
       : list.querySelectorAll(selector).length;
-    const placed = list?.previousElementSibling === box;
+    const placed = after === null
+      ? list?.previousElementSibling === box
+      : after.nextElementSibling === box;
     const moved = list !== shownList;
     const revealed = !moved && root.hasAttribute(REVEAL_ATTRIBUTE);
     shownList = list;
@@ -175,7 +187,11 @@ export function createHiddenNotice(options: HiddenNoticeOptions): HiddenNotice {
       box.hidden = false;
     }
     if (!placed) {
-      list.before(box);
+      if (after === null) {
+        list.before(box);
+      } else {
+        after.after(box);
+      }
     }
     speak(line);
   }

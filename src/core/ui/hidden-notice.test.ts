@@ -6,6 +6,7 @@ import { manualQueue } from "../../../tests/helpers/manual-queue";
 import { applyFilters } from "../../../tests/helpers/settings";
 import {
   loadPage,
+  nodes,
   pageTransition,
   searchRow,
   SURFACES,
@@ -20,6 +21,7 @@ import { createHostKindsRenderer } from "./list-filter";
 
 const i18n = englishI18n();
 const LIST = "#search_resultsRows";
+const STORE_BAR = "#search_results_filtered_warning_persistent";
 const BUTTON = ".sar-list-notice-button";
 const renderer = createHostKindsRenderer();
 
@@ -139,13 +141,34 @@ describe("createHiddenNotice", () => {
     },
   );
 
-  it("sits right before the list and counts no host outside it", () => {
+  it("counts no host outside the list", () => {
     const outside = searchRow(1);
     document.body.append(outside);
     mark(outside, ["ai"]);
     hidingRows(2);
-    expect(the(LIST).previousElementSibling).toBe(box());
     expect(line()).toBe(i18n.plural("notice_list_hidden", 2));
+  });
+
+  const PLACES = [
+    {
+      name: "right before the list",
+      page: () => undefined,
+      slot: () => the(LIST).previousElementSibling,
+    },
+    {
+      name: "right after the store's own notice bar when the page has one",
+      // Another element between the store's bar and the rows tells the two places apart
+      page: () => {
+        the(LIST).before(...nodes(`<div id="${STORE_BAR.slice(1)}"></div><div></div>`));
+      },
+      slot: () => the(STORE_BAR).nextElementSibling,
+    },
+  ];
+
+  it.each(PLACES.map((each) => [each.name, each] as const))("sits %s", (_name, { page, slot }) => {
+    page();
+    hidingRows(1);
+    expect(slot()).toBe(box());
   });
 
   const CHANGES = [

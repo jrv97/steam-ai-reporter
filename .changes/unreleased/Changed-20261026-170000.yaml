@@ -1,0 +1,3 @@
+kind: Changed
+body: The notice about hidden search results now looks like the store's own notice bar above the results, with the same dark ground and light yellow text, and sits right below the store's bar when it shows one. It reads, for example, "4 titles have been hidden by Tag Kit based on your settings." with an underlined Show them link, which shows those results again, dimmed, on that page only. It still names only the number and never changes your settings.
+time: 2026-10-26T17:00:00.000000+02:00
