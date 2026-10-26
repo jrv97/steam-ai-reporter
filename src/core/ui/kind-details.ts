@@ -1,5 +1,6 @@
 import type { BareMessageKey } from "../i18n/t";
 import { facetOf } from "../kinds/facets";
+import type { FacetDefinition, FacetId } from "../kinds/kind";
 import { pvpCategoryMessage } from "../kinds/pvp";
 import { KIND_BY_ID } from "../kinds/registry";
 import type { AnyDisclosed } from "../kinds/verdicts";
@@ -67,6 +68,11 @@ export function kindDetails(verdict: AnyDisclosed): readonly KindDetail[] {
     case "deck":
     case "machine":
       return facetLines(verdict);
+    case "family":
+      // A derived value says what Steam's list shows, and nothing about the game (ADR 0016).
+      return verdict.facet === "unsupported"
+        ? [...facetLines(verdict), message("kind_family_unlisted")]
+        : facetLines(verdict);
   }
 }
 
@@ -87,13 +93,24 @@ export function fullGameLine(verdict: AnyDisclosed): BareMessageKey {
 }
 
 /**
+ * What names a kind's value, given the kind's heading: the value's word after it, or the word
+ * alone when it names the kind by itself (a value with a chip of its own).
+ */
+export function facetName(
+  i18n: MessageCatalog,
+  heading: string,
+  facet: FacetDefinition<FacetId>,
+): string {
+  const value = i18n.t(facet.word);
+  return facet.chip === undefined ? i18n.t("kind_facet_name", { heading, value }) : value;
+}
+
+/**
  * What names a disclosed kind's entry where no line follows its heading (the banner, the package
- * summary): Steam's heading, and for a kind with facets the value's word after it.
+ * summary): Steam's heading, or for a kind with facets the value's name.
  */
 export function entryName(i18n: MessageCatalog, verdict: AnyDisclosed): string {
   const heading = i18n.t(KIND_BY_ID[verdict.kind].messages.heading);
   const facet = facetOf(verdict);
-  return facet === undefined
-    ? heading
-    : i18n.t("kind_facet_name", { heading, value: i18n.t(facet.word) });
+  return facet === undefined ? heading : facetName(i18n, heading, facet);
 }

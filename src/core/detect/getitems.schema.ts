@@ -146,14 +146,16 @@ const PlatformsSchema = record({
 /** A field of `platforms` that a compatibility kind reads. */
 export type CompatField = keyof v.InferOutput<typeof PlatformsSchema>;
 
-/** Steam's `type` of a demo; a DLC is 4 and a game 0. */
+/** Steam's `type` of a game; a demo is 1 and a DLC 4. */
+export const GAME_TYPE = 0;
+/** Steam's `type` of a demo. */
 export const DEMO_TYPE = 1;
 
 /**
  * One store item. `id` echoes the requested ID; `appid` is 0 for invalid items and unused.
- * The name, the categories and the platforms are lenient, and `type`, `related_items` and
- * `basic_info` are droppable. An item without a valid `id`, `success` or `extra_details` says
- * nothing about any kind.
+ * The name, `is_free`, the categories and the platforms are lenient, and `type`, `related_items`
+ * and `basic_info` are droppable. An item without a valid `id`, `success` or `extra_details` says
+ * nothing about any kind. Steam sends `is_free` for free items only.
  */
 export const StoreItemSchema = v.pipe(
   v.object({
@@ -161,6 +163,7 @@ export const StoreItemSchema = v.pipe(
     success: v.number(),
     name: lenient(TextSchema),
     type: droppable(v.pipe(v.number(), v.integer())),
+    is_free: lenient(v.boolean()),
     categories: lenient(CategoriesSchema),
     platforms: lenient(PlatformsSchema),
     related_items: droppable(RelatedItemsSchema),

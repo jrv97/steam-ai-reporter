@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { toHexColor } from "./color";
 import { DECK_KIND } from "./deck";
+import { FAMILY_KIND } from "./family";
 import {
   effectiveSettings,
   encodeKindSettings,
@@ -94,6 +95,14 @@ describe("parseKindSettings", () => {
     ["an empty list, kept: the kind tags nothing", [], []],
   ])("reads the facets of a kind with facets from %s", (_name, facets, read) => {
     expect(parseKindSettings(DECK_KIND, { facets }).facets).toStrictEqual(read);
+  });
+
+  it("keeps only the kind's own values: a device rating is no value of the family kind", () => {
+    const stored = { facets: ["verified", "unsupported", "supported"] };
+    expect(parseKindSettings(FAMILY_KIND, stored).facets).toStrictEqual([
+      "supported",
+      "unsupported",
+    ]);
   });
 });
 

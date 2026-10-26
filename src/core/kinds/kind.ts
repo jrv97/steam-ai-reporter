@@ -17,7 +17,7 @@ export interface KindMessages {
   readonly heading: BareMessageKey;
   /**
    * The short text of the kind's chip. A kind with facets puts Steam's word for the value after
-   * it (`kind_facet_chip`).
+   * it (`kind_facet_chip`), unless the value has a chip of its own.
    */
   readonly chip: BareMessageKey;
 }
@@ -28,6 +28,11 @@ export interface FacetDefinition<Facet extends string> {
   readonly id: Facet;
   /** Steam's word for the value, under the heading and in the settings. */
   readonly word: BareMessageKey;
+  /**
+   * The value's own short chip, for a value whose word names the kind by itself ("Family Sharing
+   * not Available"); its word alone then names it. Absent, the chip is `kind_facet_chip`.
+   */
+  readonly chip?: BareMessageKey;
 }
 
 /** The facet ids of a disclosed verdict shape; none for a kind with one value. */

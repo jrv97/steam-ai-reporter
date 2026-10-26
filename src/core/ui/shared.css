@@ -58,6 +58,10 @@
   --sar-kind-color: var(--sar-kind-color-machine);
 }
 
+[data-sar-kind="family"] {
+  --sar-kind-color: var(--sar-kind-color-family);
+}
+
 [data-sar-kind] {
   --sar-tag-edge: var(--sar-kind-color);
   --sar-tag-tint: color-mix(

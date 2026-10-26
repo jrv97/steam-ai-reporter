@@ -17,16 +17,19 @@ export function hexColor(text: string): HexColor {
   return v.parse(HexColorSchema, text);
 }
 
-/** The kinds that start switched off: most games would carry them, or Valve rates them. */
-export const OFF_KINDS: readonly KindId[] = ["pvp", "iap", "deck", "machine"];
+/** The kinds that start switched off: most games would carry them, or Valve states them. */
+export const OFF_KINDS: readonly KindId[] = ["pvp", "iap", "deck", "machine", "family"];
 
-/** Valve's device ratings: they start off, with no banner entry and only Unsupported tagged. */
+/** Valve's device ratings, each with Steam's three rating words. */
 export const STATUS_KINDS = ["deck", "machine"] as const;
 
-export type StatusKind = (typeof STATUS_KINDS)[number];
+/** The kinds Valve states: they start off, with no banner entry and only Unsupported tagged. */
+export const VALVE_KINDS = [...STATUS_KINDS, "family"] as const;
 
-export function isStatusKind(id: KindId): id is StatusKind {
-  return id === "deck" || id === "machine";
+export type ValveKind = (typeof VALVE_KINDS)[number];
+
+export function isValveKind(id: KindId): id is ValveKind {
+  return VALVE_KINDS.some((kind) => kind === id);
 }
 
 /** One kind's settings as `plainKinds` gives them. */
@@ -37,14 +40,14 @@ export type PlainKind<T> = Omit<T, "enabled" | "banner"> & {
 };
 
 /**
- * Each kind's settings as `plain`, switched off for the kinds that start off, and for Valve's
- * ratings with their banner entry off and only Unsupported chosen.
+ * Each kind's settings as `plain`, switched off for the kinds that start off, and for the kinds
+ * Valve states with their banner entry off and only Unsupported chosen.
  */
 export function plainKinds<T extends { readonly enabled: boolean; readonly banner: boolean; }>(
   plain: T,
 ): Readonly<Record<KindId, PlainKind<T>>> {
   return perKind((kind) => {
-    if (isStatusKind(kind.id)) {
+    if (isValveKind(kind.id)) {
       return { ...plain, enabled: false, banner: false, facets: ["unsupported"] };
     }
     return OFF_KINDS.includes(kind.id) ? { ...plain, enabled: false } : plain;

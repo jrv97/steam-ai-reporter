@@ -11,10 +11,12 @@ import {
   NOT_DISCLOSED,
 } from "../../../tests/helpers/verdicts";
 import type { AiVerdict } from "../kinds/ai";
+import { taggedView } from "../kinds/facets";
 import type { KindId } from "../kinds/id";
 import { perKind } from "../kinds/registry";
 import type { AnyDisclosed, KindVerdicts } from "../kinds/verdicts";
 import { type AllowScope, perScope } from "../settings/allow-data";
+import { DEFAULT_SETTINGS } from "../settings/settings";
 import { UNKNOWN } from "../types";
 import { type AppPageView, createAppPageUi } from "./app-page";
 import { BANNER_ID } from "./banner";
@@ -61,12 +63,13 @@ interface ViewOptions {
    * a note to the banner.
    */
   readonly developerIgnored?: readonly AllowScope[];
-  /** Kinds whose banner entry is switched off. */
+  /** Kinds whose banner entry is switched off, besides those that start off. */
   readonly bannerOff?: readonly KindId[];
   /** Kinds whose badge is switched off. */
   readonly badgeOff?: readonly KindId[];
 }
 
+/** What the page draws for the options, with each kind's default values and banner switch. */
 function view(options: ViewOptions = {}): AppPageView {
   const { verdict = disclosedVerdict(), ignored = [], bannerOff = [], badgeOff = [] } = options;
   const { baseIgnored = [], developerIgnored = [] } = options;
@@ -74,14 +77,14 @@ function view(options: ViewOptions = {}): AppPageView {
   const covers = (scopes: readonly AllowScope[], kind: KindId) =>
     scopes.includes("all") || scopes.includes(kind);
   return {
-    verdicts: options.verdicts ?? aiVerdicts(verdict),
+    verdicts: taggedView(options.verdicts ?? aiVerdicts(verdict), DEFAULT_SETTINGS.kinds),
     ignored: perScope((scope) => ignored.includes(scope)),
     suppressed: perKind((kind) =>
       covers(ignored, kind.id) || covers(baseIgnored, kind.id) || covers(developerIgnored, kind.id)
     ),
     creators: [developer],
     badge: perKind((kind) => !badgeOff.includes(kind.id)),
-    banner: perKind((kind) => !bannerOff.includes(kind.id)),
+    banner: perKind((kind) => kind.defaults.banner && !bannerOff.includes(kind.id)),
   };
 }
 
@@ -171,7 +174,8 @@ describe("createAppPageUi", () => {
       i18n.t("kind_eula_heading"),
       i18n.t("kind_iap_heading"),
     ]);
-    expect(chipKinds()).toEqual(["drm", "account", "eula", "iap"]);
+    // Steam's features leave Family Sharing out of this paid game; its banner entry starts off.
+    expect(chipKinds()).toEqual(["drm", "account", "eula", "iap", "family"]);
   });
 
   it("gives a game that declares only kernel anti-cheat a section with one chip", () => {

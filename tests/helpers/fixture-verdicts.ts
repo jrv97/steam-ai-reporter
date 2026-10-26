@@ -1,7 +1,7 @@
 import { parseAppPage } from "../../src/core/detect/app-page";
 import { GETITEMS_URL, parseGetItems } from "../../src/core/detect/getitems";
 import { KIND_IDS } from "../../src/core/kinds/id";
-import { KINDS } from "../../src/core/kinds/registry";
+import { KIND_BY_ID, KINDS } from "../../src/core/kinds/registry";
 import type { AnyDisclosed, KindVerdicts } from "../../src/core/kinds/verdicts";
 import kinds from "../fixtures/getitems/kinds.json";
 import { appId, appIds } from "./app-ids";
@@ -38,10 +38,15 @@ export function disclosedIds(verdicts: KindVerdicts): readonly string[] {
   return KIND_IDS.filter((id) => verdicts[id].state === "disclosed");
 }
 
-/** The disclosed verdicts of every kind, in registry order, as the banner lists them. */
+/** The disclosed verdicts of every kind, in registry order. */
 export function disclosedList(verdicts: KindVerdicts): readonly AnyDisclosed[] {
   return KINDS.flatMap((kind) => {
     const verdict = verdicts[kind.id];
     return verdict.state === "disclosed" ? [verdict] : [];
   });
+}
+
+/** The disclosed verdicts of the kinds whose banner entry starts on, as the banner lists them. */
+export function bannerList(verdicts: KindVerdicts): readonly AnyDisclosed[] {
+  return disclosedList(verdicts).filter((verdict) => KIND_BY_ID[verdict.kind].defaults.banner);
 }

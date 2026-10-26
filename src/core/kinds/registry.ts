@@ -5,6 +5,7 @@ import { ANTICHEAT_KIND } from "./anticheat";
 import { DECK_KIND } from "./deck";
 import { DRM_KIND } from "./drm";
 import { EULA_KIND } from "./eula";
+import { FAMILY_KIND } from "./family";
 import { IAP_KIND } from "./iap";
 import type { KindId } from "./id";
 import { KERNEL_KIND } from "./kernel";
@@ -27,6 +28,7 @@ export const KINDS = [
   IAP_KIND,
   DECK_KIND,
   MACHINE_KIND,
+  FAMILY_KIND,
 ] as const;
 
 function anyValue(): boolean {

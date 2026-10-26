@@ -72,6 +72,7 @@ const STORED_KINDS = {
   iap: { state: "disclosed", kind: "iap", source: "api" },
   deck: { state: "disclosed", kind: "deck", source: "api", facet: "unsupported" },
   machine: { state: "disclosed", kind: "machine", source: "api", facet: "unsupported" },
+  family: { state: "disclosed", kind: "family", source: "api", facet: "unsupported" },
 };
 
 /** Round trips: the verdicts of one or two kinds, the rest unknown `missing`. */
@@ -385,7 +386,8 @@ describe("decodeVerdicts", () => {
   });
 
   it("discards malformed entries instead of casting them", () => {
-    const { ai, kernel, anticheat, drm, account, eula, pvp, iap, deck, machine } = STORED_KINDS;
+    const { ai, kernel, anticheat, drm, account, eula, pvp, iap, deck, machine, family } =
+      STORED_KINDS;
     const bad: readonly unknown[] = [
       withEntry("ai", { ...ai, state: "maybe" }),
       withEntry("ai", { ...ai, state: undefined }),
@@ -432,6 +434,7 @@ describe("decodeVerdicts", () => {
       withEntry("iap", { ...iap, kind: "pvp" }),
       withEntry("deck", { ...deck, facet: "unknown" }),
       withEntry("machine", { ...machine, facet: undefined }),
+      withEntry("family", { ...family, facet: "verified" }),
     ];
     for (const stored of bad) {
       expect(decodeVerdicts(stored)).toBeUndefined();

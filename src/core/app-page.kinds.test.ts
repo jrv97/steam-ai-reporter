@@ -148,6 +148,17 @@ describe("start on an English app page of a game with no AI", () => {
     });
   });
 
+  it("tags a paid game whose features lack category 62, in Steam's words", async () => {
+    // The game's feature list in the capture leaves out category 62.
+    const on = withKind(DEFAULT_SETTINGS, "family", { enabled: true });
+    const { settings } = await startOnDrmPage(new Map([[SETTINGS_KEY, encodeSettings(on)]]));
+    expect(chipKinds()).toEqual(["drm", "account", "eula", "family"]);
+    expect(headings()).toHaveLength(3);
+    await writeSettings(settings, withKind(on, "family", { banner: true }));
+    await expect.poll(() => headings().length).toBe(4);
+    expect(headings()[3]).toBe(i18n.t("kind_family_unsupported"));
+  });
+
   it("draws only the chips whose badge switch is on", async () => {
     const { settings } = await startOnDrmPage();
 

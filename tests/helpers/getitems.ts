@@ -62,6 +62,15 @@ export function ratedItem(
   });
 }
 
+/** A paid game (no `is_free`, as Steam sends it) with these feature categories. */
+export function featuredItem(
+  id: number,
+  features: readonly unknown[],
+  overrides: Readonly<Record<string, unknown>> = {},
+): Readonly<Record<string, unknown>> {
+  return storeItem(id, { categories: { feature_categoryids: features }, ...overrides });
+}
+
 /** A demo of the game `game` that declares nothing itself, as demo-parent.json captured one. */
 export function demoItem(id: number, game: number): Readonly<Record<string, unknown>> {
   return storeItem(id, { type: 1, related_items: { parent_appid: game } });

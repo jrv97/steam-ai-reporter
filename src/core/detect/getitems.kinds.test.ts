@@ -36,12 +36,15 @@ function of(id: number): KindVerdicts {
   return found;
 }
 
-/** The state of each kind, with the reason for unknown. */
+/** The state of each kind, with the reason for unknown and the value for a disclosed facet. */
 function states(id: number): Readonly<Record<string, string>> {
   const found = of(id);
   return perKind((kind) => {
     const verdict = found[kind.id];
-    return verdict.state === "unknown" ? `unknown:${verdict.reason}` : verdict.state;
+    if (verdict.state === "unknown") {
+      return `unknown:${verdict.reason}`;
+    }
+    return "facet" in verdict ? `disclosed:${verdict.facet}` : verdict.state;
   });
 }
 
@@ -57,6 +60,8 @@ const NONE = {
   // The batch was parsed as asked without platforms, which Valve's ratings read.
   deck: "unknown:unrequested",
   machine: "unknown:unrequested",
+  // Valve lists Family Sharing for most paid games; the tests name the ones it leaves out.
+  family: "disclosed:supported",
 };
 
 describe("parseGetItems over the tag kind fixture", () => {
@@ -74,6 +79,7 @@ describe("parseGetItems over the tag kind fixture", () => {
       account: "disclosed",
       eula: "disclosed",
       iap: "disclosed",
+      family: "disclosed:unsupported",
     });
     const found = of(3751950);
     expect(found.drm).toMatchObject({ text: "Denuvo Anti-tamper" });
@@ -95,6 +101,7 @@ describe("parseGetItems over the tag kind fixture", () => {
       eula: "disclosed",
       pvp: "disclosed",
       iap: "disclosed",
+      family: "disclosed:unsupported",
     });
     const found = of(2807960);
     expect(found.kernel).toStrictEqual({
@@ -132,7 +139,13 @@ describe("parseGetItems over the tag kind fixture", () => {
 
   it("reads the VAC anti-cheat of Counter-Strike 2 and Dota 2 as non-kernel (730, 570)", () => {
     for (const id of [730, 570]) {
-      expect(states(id)).toStrictEqual({ ...NONE, anticheat: "disclosed", iap: "disclosed" });
+      expect(states(id)).toStrictEqual({
+        ...NONE,
+        anticheat: "disclosed",
+        iap: "disclosed",
+        // Free games are never tagged for Family Sharing.
+        family: "not-disclosed",
+      });
       expect(of(id).anticheat).toMatchObject({
         name: "VAC (Valve Anti-Cheat)",
         nameToken: "#Store_AntiCheat_Type_vac",
@@ -157,8 +170,12 @@ describe("parseGetItems over the tag kind fixture", () => {
       eula: "disclosed",
       pvp: "disclosed",
     };
-    expect(states(271590)).toStrictEqual(delisted);
-    expect(states(1172470)).toStrictEqual({ ...delisted, iap: "disclosed" });
+    expect(states(271590)).toStrictEqual({ ...delisted, family: "disclosed:unsupported" });
+    expect(states(1172470)).toStrictEqual({
+      ...delisted,
+      iap: "disclosed",
+      family: "not-disclosed",
+    });
     expect(of(1172470).kernel).toMatchObject({ name: "Easy Anti-Cheat" });
     expect(of(271590).kernel).toMatchObject({ name: "BattlEye" });
   });
@@ -224,8 +241,20 @@ describe("parseGetItems with one malformed field", () => {
 
   const CATEGORIES = { supported_player_categoryids: [49], feature_categoryids: [35] };
   const PLATFORMS = { steam_deck_compat_category: 1, steam_machine_compat_category: 1 };
-  // What FULL, CATEGORIES and PLATFORMS disclose: a kernel anti-cheat is not the other anti-cheat.
-  const DISCLOSING = ["ai", "kernel", "drm", "account", "eula", "pvp", "iap", "deck", "machine"];
+  // What FULL, CATEGORIES and PLATFORMS disclose: a kernel anti-cheat is not the other anti-cheat,
+  // and a paid game whose features lack 62 is not available for Family Sharing.
+  const DISCLOSING = [
+    "ai",
+    "kernel",
+    "drm",
+    "account",
+    "eula",
+    "pvp",
+    "iap",
+    "deck",
+    "machine",
+    "family",
+  ];
 
   function disclosedKinds(found: KindVerdicts): readonly string[] {
     return KIND_IDS.filter((id) => found[id].state === "disclosed");
@@ -246,13 +275,18 @@ describe("parseGetItems with one malformed field", () => {
     ["drm_third_party_type", item({ drm_third_party_type: 5 }), ["drm"]],
     ["user_account_third_party", item({ user_account_third_party: 5 }), ["account"]],
     ["eula", item({ eula: "none" }), ["eula"]],
-    ["categories", item({}, "co-op"), ["pvp", "iap"]],
+    ["categories", item({}, "co-op"), ["pvp", "iap", "family"]],
     [
       "supported_player_categoryids",
       item({}, { ...CATEGORIES, supported_player_categoryids: "49" }),
       ["pvp"],
     ],
-    ["feature_categoryids", item({}, { ...CATEGORIES, feature_categoryids: [35, "1"] }), ["iap"]],
+    [
+      "feature_categoryids",
+      item({}, { ...CATEGORIES, feature_categoryids: [35, "1"] }),
+      ["iap", "family"],
+    ],
+    ["is_free", { ...item({}), is_free: "no" }, ["family"]],
     ["platforms", item({}, CATEGORIES, "Steam Deck Verified"), ["deck", "machine"]],
     [
       "steam_machine_compat_category",
@@ -271,7 +305,8 @@ describe("parseGetItems with one malformed field", () => {
 
   it("reads an empty list for extra_details as an object that declares nothing", () => {
     const categories = { supported_player_categoryids: [2], feature_categoryids: [22] };
-    const found = parse(storeItem(1, { extra_details: [], categories }));
+    // A free game, which Family Sharing never tags from its features.
+    const found = parse(storeItem(1, { extra_details: [], categories, is_free: true }));
     expect(disclosedKinds(found)).toStrictEqual([]);
     for (const kind of KINDS.filter(({ sections }) => sections === undefined)) {
       expect(found[kind.id].state).toBe("not-disclosed");

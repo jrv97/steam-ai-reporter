@@ -24,6 +24,7 @@ body:
         - In-App Purchases
         - Steam Deck Compatibility
         - Steam Machine Compatibility
+        - Family Sharing
         - Settings or interface
         - Other
     validations:

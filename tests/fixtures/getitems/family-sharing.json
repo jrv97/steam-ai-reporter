@@ -1,0 +1,12 @@
+{"response":{"store_items":[
+{"item_type":0,"id":1091500,"success":1,"visible":true,"name":"Cyberpunk 2077","appid":1091500,"type":0,"categories":{"feature_categoryids":[62]},"extra_details":{}},
+{"item_type":0,"id":1808500,"success":1,"visible":true,"name":"ARC Raiders","appid":1808500,"type":0,"categories":{"feature_categoryids":[22,35,15,62]},"extra_details":{}},
+{"item_type":0,"id":1145360,"success":1,"visible":true,"name":"Hades","appid":1145360,"type":0,"categories":{"feature_categoryids":[22,29,13,23,41,42,43,62]},"extra_details":{}},
+{"item_type":0,"id":3489340,"success":1,"visible":true,"name":"ReBlade: The Death Spiral","appid":3489340,"type":0,"is_coming_soon":true,"categories":{"feature_categoryids":[62]},"extra_details":{}},
+{"item_type":0,"id":1174180,"success":1,"visible":true,"name":"Red Dead Redemption 2","appid":1174180,"type":0,"categories":{"feature_categoryids":[22,35,41,42]},"extra_details":{}},
+{"item_type":0,"id":3751950,"success":1,"visible":true,"name":"Assassin's Creed Black Flag Resynced","appid":3751950,"type":0,"categories":{"feature_categoryids":[22,29,13,35,64,65,66,67,68,69,70,71,74,75,76,78,79,61]},"extra_details":{}},
+{"item_type":0,"id":730,"success":1,"visible":true,"name":"Counter-Strike 2","appid":730,"type":0,"is_free":true,"categories":{"feature_categoryids":[29,30,51,35,64,66,67,68,69,70,74,8,15,41,42,43,63]},"extra_details":{}},
+{"item_type":0,"id":5201760,"success":1,"visible":true,"name":"ARC Raiders - Frozen Trail Collector Set","appid":5201760,"type":4,"related_items":{"parent_appid":1808500},"categories":{"feature_categoryids":[22,35,15]},"extra_details":{}},
+{"item_type":0,"id":4513800,"success":1,"visible":true,"name":"ReBlade: The Death Spiral Demo","appid":4513800,"type":1,"is_free":true,"related_items":{"parent_appid":3489340},"extra_details":{}},
+{"item_type":0,"id":2778580,"success":1,"visible":true,"name":"ELDEN RING Shadow of the Erdtree","appid":2778580,"type":4,"related_items":{"parent_appid":1245620},"categories":{"feature_categoryids":[22,29,23,62]},"extra_details":{}}
+]}}
