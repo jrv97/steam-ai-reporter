@@ -1,0 +1,71 @@
+---
+status: accepted
+date: 2026-10-26
+decision-makers: Jorge Rodriguez de la Vega
+---
+
+# Tag what Valve computes, name Valve as its source, and never show Valve's Unknown
+
+## Context and problem statement
+
+[ADR 0010](0010-new-tags-from-getitems.mdx) says of the tag kinds it chose: "Every field is declared by the developer and nothing is detected". [ADR 0009](0009-tag-kinds-in-steams-words.mdx) puts each tag in Steam's words, and the hover card closes with "Declared by the developer on the store page". The Steam Deck and Steam Machine ratings (decision 62) are not declared by the developer: Valve tests the game and assigns `steam_deck_compat_category` and `steam_machine_compat_category`, each 0 Unknown, 1 Unsupported, 2 Playable or 3 Verified. Steam's own pages say "Valve's testing indicates" for them.
+
+How does a kind that Valve computes fit rule 4 and the copy rules, and what does the extension say about a game Valve has not rated? This ADR amends ADR 0010's statement and the source line of ADR 0009 and decisions 35 and 43.
+
+## Decision drivers
+
+- Rule 4: three states; unknown is never shown as not disclosed; neither state renders as a negative of our own; a tag uses Steam's words.
+- Principle 1: every fact is attributed to whoever states it.
+- Rule 1: Valve hosts only, without credentials; no community data.
+- Small code: one more field on the kind definition and one more line in the card.
+
+## Considered options
+
+1. Read Valve's ratings from GetItems, name Valve as the source per entry, and read Valve's Unknown (0) as not disclosed (chosen).
+2. Treat the ratings as the developer's, with the existing source line.
+3. Show Valve's Unknown as a value of its own.
+4. Take ratings from community data, such as ProtonDB.
+
+## Decision outcome
+
+Chosen option 1.
+
+- Source: a kind says who states its facts (`KindDefinition.source`, the developer when absent); the device kinds say Valve. The hover card closes with a line for each source of its entries: "Declared by the developer on the store page" when at least one comes from the developer, "According to Valve" when at least one comes from Valve, both in that order when they mix. A banner that lists an entry from Valve is named "Tag Kit tags for this product", since "Declared by the developer" would be false for it (decision 63).
+- States: 1, 2 and 3 are disclosed, each with its facet (decision 61). 0, Valve's Unknown, is not disclosed: it draws nothing, is never drawn or counted as Unsupported, and our copy never names it. A requested `platforms` without the field is unknown `missing`, a value outside 0 to 3 is unknown `malformed`, and a request that left the section out is unknown `unrequested` ([ADR 0014](0014-getitems-sections-follow-enabled-kinds.mdx)). An unreleased game (all zeros in the capture) and a cosmetic DLC (all zeros) render nothing; a DLC never borrows its base game's rating.
+- Words: Steam's headings, "Steam Deck Compatibility" and "Steam Machine Compatibility", and Steam's value words, Verified, Playable and Unsupported, in every surface but the chip, which is our short device word and Steam's value word ("Deck Unsupported", "Steam Machine Playable"). No copy of ours states anything about a game beyond Steam's words and data.
+- Rule 4's text in AGENTS.md stays as it is: an item with `extra_details` and no rating is "not reported" there too, the device ratings use Steam's words, and no negative of ours is shown. The wording that names a kind's source and a value derived from a field Steam computes for every item belongs with the Family Sharing slice.
+
+### Library check (rule 12)
+
+Nothing to adopt: the kind maps four integers, and the source is one field on the definition.
+
+### Consequences
+
+- Good: the card and the banner say who states each fact, and a mixed card says both.
+- Good: a game Valve has not rated, or an answer that lacks the section, never reads as unsupported.
+- Good: the next Valve-computed kind (Steam Frame, SteamOS, or a derived value such as Family Sharing) sets `source` and gets the line with no new mechanism.
+- Bad: one more line on mixed cards, and the banner's region label depends on its entries.
+- Bad: Valve re-rates games; a rating keeps for the kind's TTL, a week, before it is asked again.
+- Neutral: Steam Frame and SteamOS read the same `platforms` object and stay out of scope (backlog).
+
+## Pros and cons of the options
+
+### 1. Valve's ratings, named as Valve's, Unknown not disclosed
+
+- Good: true to who states the fact, and silent where Valve says nothing.
+- Bad: two closing lines to choose from instead of one.
+
+### 2. The ratings as the developer's
+
+- Good: no change to the card.
+- Bad: false attribution, against principle 1 and the copy rules.
+
+### 3. Valve's Unknown as a value
+
+- Good: says that Valve has not rated a game.
+- Bad: nearly every small or unreleased game is 0, the chip would mark most rows, and the word clashes with our own unknown state.
+
+### 4. Community data
+
+- Good: covers games Valve has not rated.
+- Bad: a third-party host and a seed list, against rule 1, and data nobody at Valve stands behind.
