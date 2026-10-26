@@ -7,38 +7,43 @@
 <title>Allow-list</title>
 <style>
   body { margin: 0; background: var(--sar-color-bg-panel); }
-  .sar-options { max-inline-size: 440px; margin: 0; }
+  .sar-options { max-inline-size: 560px; margin: 0; }
 </style>
 </head>
 <body>
 <div class="sar-options" data-sar-context="page">
-  <section class="sar-card" aria-labelledby="a">
-    <h2 class="sar-card-title" id="a">Games you ignored</h2>
-    <ul class="sar-allow-list">
-      <li class="sar-allow-item">
-        <div>
-          <a class="sar-allow-name" href="#">A game with an upscaling-only disclosure and a long
-            name</a>
-          <span class="sar-allow-meta">Since Oct 20, 2026</span>
-        </div>
-        <button
-            class="sar-button"
-            type="button"
-            aria-label="Stop ignoring A game with an upscaling-only disclosure and a long name">
-          Stop ignoring</button>
-      </li>
-      <li class="sar-allow-item">
-        <div>
-          <a class="sar-allow-name" href="#">Another game</a>
-          <span class="sar-allow-meta">Since Sep 2, 2026</span>
-        </div>
-        <button class="sar-button" type="button" aria-label="Stop ignoring Another game">
-          Stop ignoring</button>
-      </li>
-    </ul>
+  <section class="sar-card" aria-labelledby="a-ign">
+    <h3 class="sar-card-title" id="a-ign" tabindex="-1">Ignored for this tag</h3>
+    <div class="sar-allow-group" role="group" aria-labelledby="a-ign-games">
+      <h4 class="sar-allow-scope" id="a-ign-games">Games you ignored</h4>
+      <ul class="sar-allow-list">
+        <li class="sar-allow-item">
+          <div><a class="sar-allow-name" href="#">A game with a long name that ends in an
+            ellipsis</a><span class="sar-allow-meta">Since Oct 20, 2026</span></div>
+          <button class="sar-button" data-sar-variant="quiet" type="button"
+            aria-label="Stop ignoring A game with a long name (Uses Kernel Level Anti-Cheat)">
+            Stop ignoring</button>
+        </li>
+      </ul>
+    </div>
+    <div class="sar-allow-group" role="group" aria-labelledby="a-ign-devs">
+      <h4 class="sar-allow-scope" id="a-ign-devs">Developers you ignored</h4>
+      <ul class="sar-allow-list">
+        <li class="sar-allow-item">
+          <div><span class="sar-allow-name">A studio</span><span class="sar-allow-meta">Since
+            Sep 30, 2026</span></div>
+          <button class="sar-button" data-sar-variant="quiet" type="button"
+            aria-label="Stop ignoring A studio (Uses Kernel Level Anti-Cheat)">
+            Stop ignoring</button>
+        </li>
+      </ul>
+    </div>
+    <p class="sar-allow-note">2 items ignored for all tags also apply here.
+      <button class="sar-button" data-sar-variant="quiet" type="button">Show in
+        General</button></p>
   </section>
   <section class="sar-card" aria-labelledby="b">
-    <h2 class="sar-card-title" id="b">Games you ignored</h2>
+    <h3 class="sar-card-title" id="b" tabindex="-1">Ignored for all tags</h3>
     <p class="sar-empty">None yet. Use "Ignore this game" on a game page.</p>
   </section>
 </div>
