@@ -5,7 +5,10 @@ each structural hook: the anti-cheat name line, the DRM notice with a line break
 notice. Four requests in total, all without cookies, to the two Valve hosts the extension itself
 uses. Each field has the type the schemas expect when it is present, and across the sample some app
 shows each kind of declaration and names a developer or publisher (clan IDs are not required, as
-Steam omits them for some creators). The DLC and the demo must still name their base or full game in
+Steam omits them for some creators). The call asks for `platforms`, as the extension does while a
+Steam Deck or Steam Machine tag is on: each sample app must carry it, with each device rating an
+integer from 0 to 3 when present, and some app must have a Deck and a Machine rating above 0. No
+single game is held to a rating. The DLC and the demo must still name their base or full game in
 related_items.parent_appid, with `type` 4 for the DLC and 1 for the demo. A page comes from an app
 the sample shows that declaration for, and is checked against what GetItems says about its own app.
 Exits non-zero, listing what changed, when an answer no longer has the expected shape. Not part of
@@ -28,7 +31,7 @@ TIMEOUT_SECONDS = 30
 HEADING = "AI Generated Content Disclosure"
 # Apps that between them declare every kind. A page hook takes the first app that shows its
 # declaration, so only the order matters.
-SAMPLE = (1808500, 5072580, 413150, 3751950, 2807960, 730, 105600, 1245620)
+SAMPLE = (1808500, 5072580, 413150, 3751950, 2807960, 730, 105600, 1245620, 1145360, 1091500)
 # Child items with their `type` and parent: each must keep answering related_items.parent_appid
 # with its parent's ID, which the ignore list follows (decision 51), and a demo shows its full
 # game's tags by `type` 1 (decision 59). ARC Raiders - Frozen Trail Collector Set, a DLC of
@@ -39,6 +42,11 @@ PVP_CATEGORY_IDS = frozenset({49, 36, 47, 37})
 # Steam's feature category ID for In-App Purchases.
 IAP_CATEGORY_ID = 35
 CATEGORY_LISTS = ("supported_player_categoryids", "feature_categoryids")
+# Valve's device ratings in `platforms`: 0 Unknown, 1 Unsupported, 2 Playable, 3 Verified.
+DECK_FIELD = "steam_deck_compat_category"
+MACHINE_FIELD = "steam_machine_compat_category"
+COMPAT_FIELDS = (DECK_FIELD, MACHINE_FIELD)
+COMPAT_VALUES = range(4)
 EULA_URL = re.compile(r"^https://store\.steampowered\.com/+eula/")
 APP_PATH = re.compile(r"^/app/(\d+)(?:/|$)")
 
@@ -61,6 +69,8 @@ REQUIRED_FACTS = {
     "pvp": "categories.supported_player_categoryids with a PvP category",
     "iap": "categories.feature_categoryids with In-App Purchases (35)",
     "creator": "basic_info.developers or publishers with a named entry",
+    "deck": f"platforms.{DECK_FIELD} above 0",
+    "machine": f"platforms.{MACHINE_FIELD} above 0",
 }
 CREATOR_ROLES = ("developers", "publishers")
 
@@ -91,7 +101,11 @@ def getitems_url(ids: tuple[int, ...]) -> str:
     request = {
         "ids": [{"appid": appid} for appid in ids],
         "context": {"language": "english", "country_code": "US"},
-        "data_request": {"include_extra_details": True, "include_basic_info": True},
+        "data_request": {
+            "include_extra_details": True,
+            "include_basic_info": True,
+            "include_platforms": True,
+        },
     }
     return f"{GETITEMS_URL}?input_json={urllib.parse.quote(json.dumps(request), safe='')}"
 
@@ -201,6 +215,23 @@ def category_ids(
     return [entry for entry in ids if isinstance(entry, int)]
 
 
+def rating(item: dict[str, object], field: str) -> object:
+    """The value of a device rating field in the item's `platforms`; None when it is absent."""
+    platforms = as_object(item.get("platforms"))
+    return platforms.get(field) if platforms is not None else None
+
+
+def platform_problems(where: str, item: dict[str, object]) -> list[str]:
+    if as_object(item.get("platforms")) is None:
+        return [f"{where}: platforms is missing or not an object"]
+    return [
+        f"{where}: platforms.{field} is {value!r}, expected an integer from 0 to 3"
+        for field in COMPAT_FIELDS
+        if (value := rating(item, field)) is not None
+        and (isinstance(value, bool) or value not in COMPAT_VALUES)
+    ]
+
+
 def item_problems(appid: int, item: dict[str, object] | None) -> list[str]:
     where = f"GetItems app {appid}"
     if item is None:
@@ -210,7 +241,7 @@ def item_problems(appid: int, item: dict[str, object] | None) -> list[str]:
     details = as_object(item.get("extra_details"))
     if details is None:
         return [f"{where}: extra_details is missing"]
-    problems = details_problems(where, details)
+    problems = details_problems(where, details) + platform_problems(where, item)
     if "basic_info" in item:
         problems += creator_problems(where, item["basic_info"])
     if "categories" in item:
@@ -240,6 +271,8 @@ def facts_of(item: dict[str, object]) -> set[str]:
                 "creator",
                 any(has_text((as_object(c) or {}).get("name")) for c in creator_entries(item)),
             ),
+            ("deck", rating(item, DECK_FIELD) in (1, 2, 3)),
+            ("machine", rating(item, MACHINE_FIELD) in (1, 2, 3)),
         )
         if shown
     }
