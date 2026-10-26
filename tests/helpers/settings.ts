@@ -1,4 +1,9 @@
 import * as v from "valibot";
+import {
+  CHIP_TEXT_SCHEMAS,
+  type ChipText,
+  type ChipTextField,
+} from "../../src/core/kinds/chip-text";
 import { type HexColor, HexColorSchema } from "../../src/core/kinds/color";
 import type { KindId } from "../../src/core/kinds/id";
 import type { FacetId } from "../../src/core/kinds/kind";
@@ -15,6 +20,29 @@ import { applyKindSettings } from "../../src/core/ui/kind-attributes";
 /** The text as a tag color; throws when it is not one, so a typo fails the test. */
 export function hexColor(text: string): HexColor {
   return v.parse(HexColorSchema, text);
+}
+
+/** The text as a person's chip text for a field; throws when nothing is left of it. */
+export function chipText(text: string, field: ChipTextField = "chip"): ChipText {
+  return v.parse(CHIP_TEXT_SCHEMAS[field], text);
+}
+
+/** Settings whose kinds carry these chip texts, by kind and field. */
+export function withChipText(
+  settings: Settings,
+  texts: Partial<Record<KindId, Partial<Record<ChipTextField, string>>>>,
+): Settings {
+  return applyPatch(settings, {
+    kinds: perKind((kind) => {
+      const own = texts[kind.id] ?? {};
+      return {
+        chip: own.chip === undefined ? undefined : chipText(own.chip),
+        chipCompact: own.chipCompact === undefined
+          ? undefined
+          : chipText(own.chipCompact, "chipCompact"),
+      };
+    }),
+  });
 }
 
 /** The kinds that start switched off: most games would carry them, or Valve states them. */

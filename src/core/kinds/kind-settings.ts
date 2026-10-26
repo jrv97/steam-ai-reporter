@@ -1,6 +1,8 @@
 import * as v from "valibot";
-import { type JsonValue, parseWithDefaults } from "../json";
+import { type JsonValue, parseWithDefaults, toJsonValue } from "../json";
+import { CHIP_TEXT_SCHEMAS, type ChipText } from "./chip-text";
 import { type HexColor, HexColorSchema } from "./color";
+import type { KindId } from "./id";
 import type { FacetDefinition, FacetId } from "./kind";
 
 /** What the list filter does to hosts whose app carries a kind's tag. */
@@ -24,7 +26,16 @@ export interface KindSettings {
    * the list filter act on these; an empty list tags nothing.
    */
   readonly facets?: readonly FacetId[];
+  /** The person's own text for every chip of the kind; absent, the catalog's (ADR 0017). */
+  readonly chip?: ChipText | undefined;
+  /** The person's own text for the chips of small game images; absent, `chip`'s. */
+  readonly chipCompact?: ChipText | undefined;
 }
+
+/** Each kind's chip text fields, which every surface that draws a chip reads. */
+export type ChipWords = Readonly<
+  Partial<Record<KindId, Pick<KindSettings, "chip" | "chipCompact">>>
+>;
 
 /** What parsing a kind's settings needs from its definition. */
 export interface KindSettingsSpec {
@@ -65,10 +76,30 @@ function kindSettingsSchema({ defaults, facets = [] }: KindSettingsSpec) {
       v.pipe(v.array(v.unknown()), v.transform((values) => knownFacets(facets, values))),
       defaults.facets ?? [],
     ),
+    chip: v.fallback(v.optional(CHIP_TEXT_SCHEMAS.chip), defaults.chip),
+    chipCompact: v.fallback(v.optional(CHIP_TEXT_SCHEMAS.chipCompact), defaults.chipCompact),
   });
 }
 
 const schemas = new WeakMap<KindSettingsSpec, ReturnType<typeof kindSettingsSchema>>();
+
+/**
+ * The settings without a key for an unset color or chip text, so settings are equal however they
+ * got there.
+ */
+function trimmed(settings: KindSettings): KindSettings {
+  const copy: { -readonly [Field in keyof KindSettings]: KindSettings[Field]; } = { ...settings };
+  if (copy.color === undefined) {
+    delete copy.color;
+  }
+  if (copy.chip === undefined) {
+    delete copy.chip;
+  }
+  if (copy.chipCompact === undefined) {
+    delete copy.chipCompact;
+  }
+  return copy;
+}
 
 /**
  * The stored settings: each valid field, and the default for every other one. A kind with facets
@@ -81,42 +112,38 @@ export function parseKindSettings(kind: KindSettingsSpec, stored: unknown): Kind
     schema = kindSettingsSchema(kind);
     schemas.set(kind, schema);
   }
-  const { color, facets, ...rest } = parseWithDefaults(schema, stored);
+  const { facets, ...rest } = parseWithDefaults(schema, stored);
   // Only the keys that apply, so settings read back equal the defaults they came from.
-  return {
-    ...rest,
-    ...(color === undefined ? {} : { color }),
-    ...(kind.facets === undefined ? {} : { facets }),
-  };
+  return trimmed(kind.facets === undefined ? rest : { ...rest, facets });
 }
 
 /**
- * One kind's settings with the fields of `patch` replaced. A `color` of `undefined` clears the
- * color, and leaves no key behind, so settings with no color are equal however they got there.
+ * One kind's settings with the fields of `patch` replaced. A color or chip text of `undefined`
+ * clears it and leaves no key behind.
  */
 export function mergeKindSettings(
   settings: KindSettings,
   patch: Readonly<Partial<KindSettings>> | undefined,
 ): KindSettings {
-  const { color, ...rest } = { ...settings, ...patch };
-  return color === undefined ? rest : { ...rest, color };
+  return trimmed({ ...settings, ...patch });
 }
 
-/** The stored value of one kind's settings; a field added to `KindSettings` must be added here. */
+/**
+ * The stored value of one kind's settings; a field added to `KindSettings` must be added here. An
+ * unset field is left out, so what is stored stays what it was before the field existed.
+ */
 export function encodeKindSettings(settings: KindSettings): JsonValue {
-  const stored: Readonly<Record<Exclude<keyof KindSettings, "color" | "facets">, JsonValue>> = {
+  const fields: Readonly<Record<keyof KindSettings, unknown>> = {
     enabled: settings.enabled,
     badge: settings.badge,
     banner: settings.banner,
     filter: settings.filter,
+    color: settings.color,
+    facets: settings.facets,
+    chip: settings.chip,
+    chipCompact: settings.chipCompact,
   };
-  // An unset color is left out, so what is stored stays what it was before colors existed.
-  const { color, facets } = settings;
-  return {
-    ...stored,
-    ...(color === undefined ? {} : { color }),
-    ...(facets === undefined ? {} : { facets }),
-  };
+  return toJsonValue(fields) ?? {};
 }
 
 /** The settings that take effect: a disabled kind shows no badge or banner and filters nothing. */

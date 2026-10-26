@@ -1,6 +1,6 @@
 import type { BareMessageKey } from "../i18n/t";
 import { facetOf } from "../kinds/facets";
-import type { FacetDefinition, FacetId } from "../kinds/kind";
+import type { FacetDefinition, FacetId, TagKind } from "../kinds/kind";
 import { pvpCategoryMessage } from "../kinds/pvp";
 import { KIND_BY_ID } from "../kinds/registry";
 import type { AnyDisclosed } from "../kinds/verdicts";
@@ -100,9 +100,36 @@ export function sourceLine(verdict: AnyDisclosed): BareMessageKey {
     : "badge_card_declared";
 }
 
-/** A kind's chip name: its word, then Steam's line, or the word once when they match (PvP). */
-export function chipName(i18n: MessageCatalog, chip: string, heading: string): string {
-  return chip === heading ? chip : i18n.t("kind_chip_name", { chip, heading });
+/** A chip's visible text, and the accessible name that starts with it. */
+export interface ChipText {
+  readonly label: string;
+  readonly name: string;
+}
+
+/**
+ * A kind's chip, or its value's: the person's text (`own`) or the catalog's word, with Steam's
+ * word for a value after it unless the value has a chip of its own, which the text replaces. The
+ * name is the visible text, then Steam's words: the heading, or a value's word that names the kind
+ * by itself; said once when they match (PvP). Label in name, WCAG 2.5.3 (ADR 0017).
+ */
+export function chipText(
+  i18n: MessageCatalog,
+  kind: TagKind,
+  facet: FacetDefinition<FacetId> | undefined,
+  own: string | undefined,
+): ChipText {
+  const { messages } = kind;
+  const word = own ?? i18n.t(messages.chip);
+  const label = facet === undefined
+    ? word
+    : facet.chip === undefined
+    ? i18n.t("kind_facet_chip", { chip: word, value: i18n.t(facet.word) })
+    : own ?? i18n.t(facet.chip);
+  const steam = i18n.t(facet?.chip === undefined ? messages.heading : facet.word);
+  return {
+    label,
+    name: label === steam ? label : i18n.t("kind_chip_name", { chip: label, heading: steam }),
+  };
 }
 
 /**

@@ -1,0 +1,85 @@
+---
+status: accepted
+date: 2026-10-26
+decision-makers: Jorge Rodriguez de la Vega
+---
+
+# A person may name a tag's chips in their own words
+
+## Context and problem statement
+
+[ADR 0009](0009-tag-kinds-in-steams-words.mdx) puts every tag in Steam's words: the box, the hover card and the accessible name carry Steam's full line, and the chip is a short form of it from the catalog ("KLAC", "Deck Unsupported", "No Family Sharing"). Rule 4 says a tag uses Steam's own words for its kind. Eleven tags later, people read the chips in a row or over a small game image, and the short forms are ours, not Steam's: "KLAC" means nothing to someone who never saw the abbreviation, "Steam Machine Unsupported" does not fit a 184px image, and a person who tags Family Sharing may prefer a word of their own. The maintainer asked for chip text a person can set per tag.
+
+Two problems come with it. Rule 4 binds the words of a tag, and text a person types needs a rule of its own. And the accessible names of some chips did not contain their visible text: the device ratings' chips ("Deck Unsupported") and the Family Sharing chip ("No Family Sharing") were named by Steam's heading and value alone ("Steam Deck Compatibility: Unsupported", "Family Sharing not Available"), which fails WCAG 2.5.3 (Label in Name), and custom text would widen that gap on every chip.
+
+May a person replace a tag's chip text, where does that text show, how does it combine with a tag's values, and what does a chip's accessible name say? This ADR amends ADR 0009 and rule 4, and the consequence of [ADR 0016](0016-derive-family-sharing-from-valves-list.mdx)'s amendment on the Family Sharing chip's accessible name.
+
+## Decision drivers
+
+- Rule 4: three states, nothing judged, and Steam's words wherever a fact is stated: the hover card, the banner's headings, the settings heading and the package summary.
+- WCAG 2.5.3: a control's accessible name contains its visible label, best at its start, for speech input to say what it sees.
+- Rule 9: the person's text is no copy of ours. It never enters a catalog, and the catalog checks stay as they are.
+- Rule 13: a store page pays for one more comparison per draw, not for a new pass; `content.js` has about 1.8 KB of room.
+- Safety: the text is untrusted input rendered on every store page; it goes through `textContent` only, after a schema.
+- One field per size, not per value or language: the maintainer declined separate tag names and per-value text.
+
+## Considered options
+
+1. No customization: the catalog's chips stay the only ones.
+2. Two fields per tag, a chip text and a separate tag name for the settings and the banner.
+3. One chip text per tag and size, with per-value text for a tag with values (one field per rating, per Family Sharing value).
+4. One chip text per tag for every chip, and a shorter one for small images that falls back to it (chosen).
+
+## Decision outcome
+
+Chosen option 4.
+
+Fields. `kinds.<id>.chip` (up to 32 code points) and `kinds.<id>.chipCompact` (up to 16), both optional, stored once per tag whatever the interface language. A schema reads each: it strips control and format characters (Unicode `Cc` and `Cf`, which takes out bidirectional marks and overrides, zero-width characters and joiners), collapses whitespace, trims, cuts to the limit by code points, and turns an empty result into unset. A bad stored value drops only that field (`v.fallback`), an unset field is not stored, and a backup carries both inside `settings` at `BACKUP_VERSION` 1, as an additive field (decision 61).
+
+Where the text shows. `chip` names the full badge on rows, the tag section's chips, the compact badge's large tier (images 400px and wider), the settings tab label and its sort order, the toolbar popup's row, the Tag order card and the banner's "Ignore $chip$" buttons in the creators' rows. `chipCompact` names the compact badge's text tier (images 180 to 399px wide), and when it is unset the tier takes `chip`, then the catalog's chip. The "+N" chip is not customizable. Steam's words stay where they state the fact: the hover card's heading, value and source lines, the banner's entry headings, the settings panel's heading and the package summary lines.
+
+Values. The text replaces the tag's own word, and a value word Steam gives stays visible. A device rating is the device word and Steam's rating word (`kind_facet_chip`), and custom text replaces the device word only: "SD Unsupported", never "SD" alone. Family Sharing has no device word: each value's chip is a whole word of its own ("Family Sharing", "No Family Sharing"), and the text replaces the whole chip for every value, as the maintainer said. A person who tags both values with one text sees one chip for both; the hover card and the accessible name keep the value.
+
+Accessible names. Every chip's accessible name begins with its visible text and goes on with Steam's words, joined by `kind_chip_name` ("$chip$: $heading$"): Steam's heading for a tag without values and for a rating, whose value word is already in the visible text, and Steam's value word for a value with its own chip, which names the tag by itself. When the visible text equals those words, the name says them once. "KLAC: Uses Kernel Level Anti-Cheat", "Deck Unsupported: Steam Deck Compatibility", "No Family Sharing: Family Sharing not Available", "PvP". With custom text: "SD Unsupported: Steam Deck Compatibility", "Lending: Family Sharing". One helper builds the name for badges, compact chips, tag section chips, tabs and popup rows, and a test over every tag and value proves the visible text is a prefix of it.
+
+Rule 4 in `AGENTS.md` gains a last sentence:
+
+> A person may replace a kind's chip text with their own words (ADR 0017); the hover card, the banner's headings, the settings heading and the package summary keep Steam's words, every chip's accessible name begins with the chip's visible text and then gives Steam's words, and the person's text is rendered through `textContent` and never enters a catalog.
+
+ADR 0009's wording rule stands for everything the person does not name. The amendment of ADR 0016 said the Family Sharing chip's accessible name does not start with its visible text; it now does, and keeps Steam's "Family Sharing not Available" after it.
+
+### Library check (rule 12)
+
+Nothing adopted. Cutting text at grapheme boundaries would need `graphemer` 1.4.0 (MIT, about 30 KB of tables) or `Intl.Segmenter`; the maintainer set the limits in code points, which `Array.from` counts, and the normalization is three regular expressions over `\p{Cc}`, `\p{Cf}` and whitespace. Settings libraries do not apply: the fields are two text inputs in the existing form.
+
+### Consequences
+
+- Good: a person reads chips in words they know, and the small images get a text that fits.
+- Good: every chip now meets WCAG 2.5.3; a person using speech input can name a chip by what it shows.
+- Good: Steam's words still state every fact, and the catalogs and their checks are unchanged.
+- Bad: a chip may now say anything, including words that misstate the fact; the hover card, the accessible name and the banner correct it, the chip alone does not.
+- Bad: a cut by code points can split a letter from its combining mark or an emoji sequence; the field's own `maxlength` counts UTF-16 units and stops typing earlier, so only a hand-edited backup reaches the cut.
+- Bad: the store page compares the texts on each settings change and draws the chips again when one changed; the bytes come out of `content.js`'s small room.
+- Neutral: the Spanish name of a rating chip reads "Deck: No compatible: Compatibilidad con Steam Deck", two colons, since the Spanish chip pattern carries one.
+
+## Pros and cons of the options
+
+### 1. No customization
+
+- Good: nothing to build; Steam's and our words only.
+- Bad: "KLAC" and "Steam Machine Unsupported" stay as they are for everyone, and the maintainer asked for the feature.
+
+### 2. A chip text and a separate tag name
+
+- Good: the settings and the banner could read a long name while chips stay short.
+- Bad: two names for one tag in one person's head, while the settings heading and the banner carry Steam's line; declined by the maintainer.
+
+### 3. Per-value text
+
+- Good: a person could word each rating and each Family Sharing value.
+- Bad: three fields per rating tag and two for Family Sharing, a form nobody finishes, for a need nobody stated; declined by the maintainer. Additive later as its own field.
+
+### 4. One text per tag and a shorter one for small images
+
+- Good: one idea per tag, a fallback that keeps the short field optional, and Steam's value words stay on rating chips.
+- Bad: Family Sharing's two values share one custom text.

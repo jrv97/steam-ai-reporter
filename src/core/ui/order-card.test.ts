@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { countingStore } from "../../../tests/helpers/counting-store";
 import { englishI18n } from "../../../tests/helpers/i18n";
 import { memoryStore } from "../../../tests/helpers/memory-store";
-import { writeSettings } from "../../../tests/helpers/settings";
+import { withChipText, writeSettings } from "../../../tests/helpers/settings";
 import { mountForm } from "../../../tests/helpers/settings-form";
 import { pageTransition } from "../../../tests/helpers/surfaces";
 import { KIND_IDS, type KindId } from "../kinds/id";
@@ -82,6 +82,18 @@ afterEach(() => {
 });
 
 describe("the Tag order card", () => {
+  it("names a row and its handle by the person's chip text, with Steam's line beside", async () => {
+    const { root, handle, settings } = await setup();
+    await writeSettings(settings, withChipText(DEFAULT_SETTINGS, { pvp: { chip: "Versus" } }));
+    const row = handle("pvp").closest("li");
+    expect(row?.querySelector(".sar-order-chip")?.textContent).toBe("Versus");
+    expect(row?.querySelector<HTMLElement>(".sar-order-heading")?.hidden).toBe(false);
+    expect(handle("pvp").getAttribute("aria-label")).toBe(
+      i18n.t("options_order_handle", { name: "Versus" }),
+    );
+    expect(root.querySelector(".sar-order-row .sar-order-chip")?.textContent).toBe(chip("ai"));
+  });
+
   it("lists every kind in the stored order, with a named handle and the small marks", async () => {
     const order = parseOrder(["family", "pvp"]);
     const { root, handle, shown } = await setup(order);

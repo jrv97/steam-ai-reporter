@@ -4,6 +4,7 @@ import { bannerCreator } from "../../../tests/helpers/creators";
 import { setBody } from "../../../tests/helpers/dom";
 import { capturedVerdicts } from "../../../tests/helpers/fixture-verdicts";
 import { englishI18n } from "../../../tests/helpers/i18n";
+import { withChipText } from "../../../tests/helpers/settings";
 import {
   aiVerdicts,
   disclosedKinds,
@@ -13,6 +14,7 @@ import {
 import type { AiVerdict } from "../kinds/ai";
 import { taggedView } from "../kinds/facets";
 import { KIND_IDS, type KindId } from "../kinds/id";
+import type { ChipWords } from "../kinds/kind-settings";
 import { kindsInOrder, parseOrder } from "../kinds/order";
 import { perKind } from "../kinds/registry";
 import type { AnyDisclosed, KindVerdicts } from "../kinds/verdicts";
@@ -70,6 +72,8 @@ interface ViewOptions {
   readonly badgeOff?: readonly KindId[];
   /** The tag order; the registry's by default. */
   readonly order?: readonly KindId[];
+  /** The person's chip text; none by default. */
+  readonly words?: ChipWords;
 }
 
 /** What the page draws for the options, with each kind's default values and banner switch. */
@@ -89,6 +93,7 @@ function view(options: ViewOptions = {}): AppPageView {
     badge: perKind((kind) => !badgeOff.includes(kind.id)),
     banner: perKind((kind) => kind.defaults.banner && !bannerOff.includes(kind.id)),
     order: kindsInOrder(options.order ?? KIND_IDS),
+    words: options.words ?? DEFAULT_SETTINGS.kinds,
   };
 }
 
@@ -180,6 +185,25 @@ describe("createAppPageUi", () => {
     ]);
     // Steam's features leave Family Sharing out of this paid game; its banner entry starts off.
     expect(chipKinds()).toEqual(["drm", "account", "eula", "iap", "family"]);
+  });
+
+  describe("with the person's chip text", () => {
+    const words = withChipText(DEFAULT_SETTINGS, { ai: { chip: "Mine" } }).kinds;
+    const ignoreAi = () =>
+      bannerRoot()?.querySelector(
+        "[data-sar-action=ignore-creator][data-sar-scope=ai]",
+      )?.textContent;
+
+    it("names the chips and a creator's Ignore button by it, and keeps Steam's heading", () => {
+      const ui = setup();
+      ui.render(view());
+      ui.render(view({ words }));
+      expect(chips().map((chip) => chip.querySelector(".sar-badge-label")?.textContent)).toEqual([
+        "Mine",
+      ]);
+      expect(ignoreAi()).toBe(i18n.t("banner_ignore_creator_kind", { chip: "Mine" }));
+      expect(headings()).toEqual([i18n.t("kind_ai_heading")]);
+    });
   });
 
   describe("in the tag order", () => {

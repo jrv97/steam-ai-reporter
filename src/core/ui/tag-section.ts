@@ -1,3 +1,4 @@
+import type { ChipWords } from "../kinds/kind-settings";
 import { type AnyDisclosed, sameVerdicts } from "../kinds/verdicts";
 import type { MessageCatalog } from "../ports";
 import { createChip, createChipGroup } from "./badge";
@@ -16,15 +17,17 @@ const LABEL_ID = "sar-tag-section-label";
 /** The tag section of the game's own page. */
 export interface TagSection {
   /**
-   * Shows one chip for each verdict, in the order given, or removes the section when there is
-   * none. Idempotent: the same verdicts change nothing, and a section the store dropped returns.
+   * Shows one chip for each verdict, in the order given, with the person's chip text, or removes
+   * the section when there is none. Idempotent: the same verdicts and words change nothing, and a
+   * section the store dropped returns.
    */
-  render(verdicts: readonly AnyDisclosed[]): void;
+  render(verdicts: readonly AnyDisclosed[], words?: ChipWords): void;
 }
 
 interface Drawn {
   readonly element: HTMLElement;
   readonly verdicts: readonly AnyDisclosed[];
+  readonly words: ChipWords | undefined;
 }
 
 function anchorOf(doc: Document): Element | undefined {
@@ -72,11 +75,11 @@ export function createTagSection(
 ): TagSection {
   let drawn: Drawn | undefined;
 
-  function build(verdicts: readonly AnyDisclosed[]): HTMLElement {
+  function build(verdicts: readonly AnyDisclosed[], words: ChipWords | undefined): HTMLElement {
     const element = createTagBlock(doc, i18n, "sar-tag-section", LABEL_ID);
     const group = createChipGroup(doc, "full");
     for (const verdict of verdicts) {
-      const chip = createChip(doc, i18n, verdict);
+      const chip = createChip(doc, i18n, verdict, words);
       if (card !== undefined) {
         chip.tabIndex = 0;
         card.bind(chip, [verdict], true);
@@ -93,16 +96,17 @@ export function createTagSection(
   }
 
   return {
-    render(verdicts) {
+    render(verdicts, words) {
       if (verdicts.length === 0) {
         remove();
         return;
       }
       if (
-        drawn === undefined || !drawn.element.isConnected || !sameVerdicts(drawn.verdicts, verdicts)
+        drawn === undefined || !drawn.element.isConnected || drawn.words !== words
+        || !sameVerdicts(drawn.verdicts, verdicts)
       ) {
         remove();
-        drawn = { element: build(verdicts), verdicts };
+        drawn = { element: build(verdicts, words), verdicts, words };
       }
       const anchor = anchorOf(doc);
       if (anchor === undefined) {

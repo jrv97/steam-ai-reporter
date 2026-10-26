@@ -1,7 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { compatVerdict, FULL_DISCLOSED } from "../../../tests/helpers/verdicts";
+import { englishI18n } from "../../../tests/helpers/i18n";
+import { STATUS_KINDS } from "../../../tests/helpers/settings";
+import { compatVerdict, familyVerdict, FULL_DISCLOSED } from "../../../tests/helpers/verdicts";
+import { SHIPPED_CATALOGS } from "../i18n/shipped";
+import { createI18n } from "../i18n/t";
 import { COMPAT_FACETS } from "../kinds/compat";
-import { kindDetails } from "./kind-details";
+import { facetOf } from "../kinds/facets";
+import { FAMILY_FACETS, FAMILY_KIND } from "../kinds/family";
+import type { FacetDefinition, FacetId, TagKind } from "../kinds/kind";
+import { KIND_BY_ID, KINDS } from "../kinds/registry";
+import { chipText, kindDetails } from "./kind-details";
 
 const { ai, kernel, anticheat, drm, account, eula, pvp, iap } = FULL_DISCLOSED;
 
@@ -79,5 +87,59 @@ describe("kindDetails", () => {
     expect(kindDetails(compatVerdict("machine", facet))).toEqual([
       { kind: "message", key: `kind_compat_${facet}` },
     ]);
+  });
+});
+
+describe("chipText", () => {
+  const LOCALES = [["en", englishI18n()], ["es", createI18n(SHIPPED_CATALOGS, "es")]] as const;
+  /** Every kind with each of its values, or with none for a kind without values. */
+  const CHIPS = KINDS.flatMap((kind) =>
+    (kind.facets ?? [undefined]).map((facet) => [kind, facet] as const)
+  );
+  const CASES = LOCALES.flatMap(([locale, i18n]) =>
+    CHIPS.flatMap(([kind, facet]) =>
+      [undefined, "Mine"].map((own) =>
+        [locale, kind.id, facet?.id ?? "-", own, i18n, kind, facet] as const
+      )
+    )
+  );
+
+  it.each(CASES)(
+    "names the %s %s chip (value %s, own text %s) by its visible text, then Steam's words",
+    (_locale, _id, _value, own, i18n, kind, facet) => {
+      const { label, name } = chipText(i18n, kind, facet, own);
+      const steam = i18n.t(facet?.chip === undefined ? kind.messages.heading : facet.word);
+      expect(name.startsWith(label)).toBe(true);
+      expect(name.endsWith(steam)).toBe(true);
+    },
+  );
+
+  it.each(
+    LOCALES.flatMap(([locale, i18n]) =>
+      STATUS_KINDS.flatMap((id) => COMPAT_FACETS.map((facet) => [locale, id, facet, i18n] as const))
+    ),
+  )("puts the %s own text of %s rated %s before Steam's value word", (_locale, id, facet, i18n) => {
+    const value = i18n.t(`kind_compat_${facet}`);
+    expect(chipText(i18n, KIND_BY_ID[id], facetOf(compatVerdict(id, facet)), "Mine").label).toBe(
+      i18n.t("kind_facet_chip", { chip: "Mine", value }),
+    );
+  });
+
+  it.each(FAMILY_FACETS)("lets own text replace the whole chip of the family value %s", (value) => {
+    const i18n = englishI18n();
+    const facet = facetOf(familyVerdict(value));
+    const { label, name } = chipText(i18n, FAMILY_KIND, facet, "Mine");
+    expect(label).toBe("Mine");
+    expect(name).toBe(
+      i18n.t("kind_chip_name", { chip: "Mine", heading: i18n.t(facet?.word ?? "kind_ai_chip") }),
+    );
+  });
+
+  it.each<readonly [string, TagKind, FacetDefinition<FacetId> | undefined]>([
+    ["pvp", KIND_BY_ID.pvp, undefined],
+    ["family supported", FAMILY_KIND, facetOf(familyVerdict("supported"))],
+  ])("says the words of the %s chip once, as they equal Steam's", (_name, kind, facet) => {
+    const { label, name } = chipText(englishI18n(), kind, facet, undefined);
+    expect(name).toBe(label);
   });
 });

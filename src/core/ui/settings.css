@@ -5,6 +5,7 @@
  */
 
 @import "./shared.css";
+@import "./chips.css";
 
 .sar-options {
   box-sizing: border-box;
@@ -464,6 +465,7 @@
 .sar-segment input:focus-visible + label,
 .sar-select:focus-visible,
 .sar-input:focus-visible,
+.sar-color-pick:focus-visible,
 .sar-button:focus-visible,
 .sar-tab:focus-visible,
 .sar-order-handle:focus-visible,
@@ -472,23 +474,71 @@
   outline-offset: var(--sar-focus-offset);
 }
 
-/* A tag's color field: the swatch, the hex text and Reset in one row. The swatch reads the kind's
-   color through the same rules as the badges; with none set it shows the default violet. */
-.sar-color-entry {
+/* A tag's color field: the color square, the hex text and Reset in one row; with no color set the
+   square shows the default violet. A chip text field puts its text box and Reset in a row the
+   same way. */
+.sar-color-entry,
+.sar-text-entry {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: var(--sar-space-2);
 }
 
-.sar-color-swatch {
+.sar-text-entry > .sar-input {
+  inline-size: var(--sar-chip-input-inline-size);
+  max-inline-size: 100%;
+}
+
+/* How many characters a chip text field holds, of the most it takes */
+.sar-field-count {
+  grid-column: 1 / -1;
+  color: var(--sar-color-text-subtle);
+  font-size: var(--sar-size-sm);
+  line-height: var(--sar-leading-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+/* The live preview of a tag's chips: the badge of a row, then the chip of a small image, drawn by
+   the store page's own chip rules (chips.css) in the tag's color */
+.sar-chip-preview {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sar-space-2);
+  min-inline-size: 0;
+}
+
+.sar-chip-preview .sar-compact {
+  max-inline-size: var(--sar-chip-preview-compact-max);
+}
+
+/* The color square: the browser's own color picker, drawn as a square of the picked color. The
+   engines name the inner swatch differently, so each gets a rule of its own. */
+.sar-color-pick {
   flex: none;
+  box-sizing: border-box;
   inline-size: var(--sar-control-height-sm);
   block-size: var(--sar-control-height-sm);
+  padding: 0;
   border: 1px solid var(--sar-color-border);
   border-radius: var(--sar-radius-sm);
-  background: var(--sar-tag-edge, var(--sar-accent-400));
-  forced-color-adjust: none;
+  background: none;
+  cursor: pointer;
+}
+
+.sar-color-pick::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.sar-color-pick::-webkit-color-swatch {
+  border: 0;
+  border-radius: var(--sar-radius-sm);
+}
+
+.sar-color-pick::-moz-color-swatch {
+  border: 0;
+  border-radius: var(--sar-radius-sm);
 }
 
 .sar-input {

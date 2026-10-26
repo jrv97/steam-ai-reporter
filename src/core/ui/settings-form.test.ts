@@ -8,6 +8,7 @@ import {
   isValveKind,
   OFF_KINDS,
   STATUS_KINDS,
+  withChipText,
   withKind,
   writeSettings,
 } from "../../../tests/helpers/settings";
@@ -19,14 +20,15 @@ import { createIgnoreLists } from "../ignored";
 import { toHexColor } from "../kinds/color";
 import type { KindId } from "../kinds/id";
 import { LIST_FILTERS } from "../kinds/kind-settings";
-import { KINDS } from "../kinds/registry";
+import { KIND_BY_ID, KINDS } from "../kinds/registry";
 import { ALLOW_ALL, type AllowScope } from "../settings/allow-data";
 import { DEFAULT_SETTINGS, parseSettings } from "../settings/settings";
 import { createSettingsSource } from "../settings/settings-source";
 import { UI_STATE_KEY } from "../storage-keys";
 import { toAppId } from "../types";
-import { chipName } from "./kind-details";
-import type { SettingsFormDeps } from "./settings-form";
+import { chipText } from "./kind-details";
+import { DEFAULT_TAG_COLOR, type SettingsFormDeps } from "./settings-form";
+import { TOKENS_CSS } from "./styles";
 import { GENERAL_TAB, sortTabs, type TabId } from "./tab-id";
 import { createUiState } from "./ui-state";
 
@@ -144,7 +146,7 @@ describe("the settings of each tag", () => {
     }
   });
 
-  it("holds a master switch, a badge, a banner entry, a color and a filter in each", async () => {
+  it("holds the master switch, badge, banner, chip text, color and filter", async () => {
     const { card } = await setup();
     for (const kind of KINDS) {
       const section = card(kind.id);
@@ -157,6 +159,8 @@ describe("the settings of each tag", () => {
         ...facets,
         "badge",
         "banner",
+        "chip",
+        "chipCompact",
         "color",
         "filter",
         "filter",
@@ -409,12 +413,109 @@ describe("the color field", () => {
   const storedColor = async (settings: { read(): Promise<unknown>; }, id: KindId) =>
     parseSettings(await settings.read()).kinds[id].color;
 
+  describe("its color square", () => {
+    /** A tag's color square and hex text box. */
+    async function square(id: KindId = "ai") {
+      const form = await setup();
+      const picker = form.root.querySelector(`[data-sar-picker=${id}]`);
+      if (!(picker instanceof HTMLInputElement)) {
+        throw new TypeError(id);
+      }
+      return { ...form, picker, text: form.input(id, "color") };
+    }
+    const fire = (target: Element, type: "input" | "change") => {
+      target.dispatchEvent(new Event(type, { bubbles: true }));
+    };
+    type Square = Awaited<ReturnType<typeof square>>;
+
+    it("is the browser's own picker, named for the tag, on the default violet", async () => {
+      const { picker } = await square();
+      expect([picker.type, picker.value]).toEqual(["color", DEFAULT_TAG_COLOR]);
+      expect(picker.getAttribute("aria-label")).toBe(
+        i18n.t("options_color_pick_label", { heading: heading("ai") }),
+      );
+    });
+
+    it("pins the default violet to accent 400 of the tokens", () => {
+      expect(DEFAULT_TAG_COLOR).toBe(/--sar-accent-400:\s*([^;]+);/.exec(TOKENS_CSS)?.[1]);
+    });
+
+    it.each<readonly [string, (form: Square) => void, string, string, string | undefined]>([
+      [
+        "a typed hex",
+        ({ text }) => {
+          text.value = "#F0a";
+          fire(text, "input");
+        },
+        "#ff00aa",
+        "#F0a",
+        undefined,
+      ],
+      [
+        "typed text that is no color",
+        ({ text }) => {
+          text.value = "#F0a";
+          fire(text, "input");
+          text.value = "#12";
+          fire(text, "input");
+        },
+        "#ff00aa",
+        "#12",
+        undefined,
+      ],
+      [
+        "a pick while the picker is open",
+        ({ picker }) => {
+          picker.value = "#00ff00";
+          fire(picker, "input");
+        },
+        "#00ff00",
+        "#00ff00",
+        undefined,
+      ],
+      [
+        "a pick the picker commits",
+        ({ picker }) => {
+          picker.value = "#00ff00";
+          fire(picker, "change");
+        },
+        "#00ff00",
+        "#00ff00",
+        "#00ff00",
+      ],
+    ])("keeps in step with the text after %s", async (_case, act, picked, typed, stored) => {
+      const form = await square();
+      const patch = vi.spyOn(form.settings, "patch");
+      act(form);
+      expect([form.picker.value, form.text.value]).toEqual([picked, typed]);
+      if (stored === undefined) {
+        expect(patch).not.toHaveBeenCalled();
+      } else {
+        await vi.waitFor(async () => {
+          expect(await storedColor(form.settings, "ai")).toBe(stored);
+        });
+      }
+    });
+
+    it("goes back to the default violet on Reset", async () => {
+      const { picker, settings, card } = await square();
+      await settings.patch({ kinds: { ai: { color: toHexColor("#123456") } } });
+      expect(picker.value).toBe("#123456");
+      card("ai").querySelector<HTMLElement>("[data-sar-color-reset]")?.click();
+      expect(picker.value).toBe(DEFAULT_TAG_COLOR);
+      await vi.waitFor(async () => {
+        expect(await storedColor(settings, "ai")).toBeUndefined();
+      });
+    });
+  });
+
   it("is on the full page and in the dialog, and not in the popup", async () => {
     const page = await setup();
     expect(page.root.querySelectorAll("[data-sar-setting=color]")).toHaveLength(KINDS.length);
     page.form.destroy();
     const popup = await setup(POPUP);
     expect(popup.root.querySelector("[data-sar-setting=color]")).toBeNull();
+    expect(popup.root.querySelector("[data-sar-picker]")).toBeNull();
     expect(popup.root.querySelector("[data-sar-color-reset]")).toBeNull();
     popup.form.destroy();
     const dialog = await setup({ context: "popup" });
@@ -797,6 +898,16 @@ describe("the toolbar popup", () => {
     }
   });
 
+  it("names and sorts a row by the person's chip text", async () => {
+    const { root, settings } = await popup();
+    await writeSettings(settings, withChipText(DEFAULT_SETTINGS, { pvp: { chip: "Aaa" } }));
+    const first = rows(root)[0];
+    expect(first?.querySelector("[data-sar-open-tab]")?.getAttribute("data-sar-open-tab")).toBe(
+      "pvp",
+    );
+    expect(first?.querySelector(".sar-tab-label")?.textContent).toBe("Aaa");
+  });
+
   it.each(KINDS.map((kind) => kind.id))(
     "links %s's name to its tab and names its switch and filter by it",
     async (id) => {
@@ -805,7 +916,7 @@ describe("the toolbar popup", () => {
       expect(link?.getAttribute("href")).toBe(`options.html#tab=${id}`);
       expect(link?.getAttribute("target")).toBe("_blank");
       expect(link?.querySelector(".sar-vh")?.textContent).toBe(
-        chipName(i18n, link?.querySelector(".sar-tab-label")?.textContent ?? "", heading(id)),
+        chipText(i18n, KIND_BY_ID[id], undefined, undefined).name,
       );
       const enabled = row(root, id).querySelector("[data-sar-setting=enabled]");
       expect(enabled?.getAttribute("role")).toBe("switch");
@@ -950,13 +1061,25 @@ describe("the tabs", () => {
       const shown = tab(id).querySelector(".sar-tab-label");
       expect([shown?.textContent, shown?.getAttribute("aria-hidden")]).toEqual([chip, "true"]);
       expect(tab(id).querySelector(".sar-vh")?.textContent).toBe(
-        chipName(i18n, chip, heading(id)),
+        chipText(i18n, KIND_BY_ID[id], undefined, undefined).name,
       );
       expect(tab(id).querySelector(".sar-tab-state")?.textContent).toBe(
         i18n.t(on ? "options_state_on" : "options_state_off"),
       );
     },
   );
+
+  it("names and sorts a tab by the person's chip text, and the arrows follow", async () => {
+    const { tab, tabIds, settings } = await setup();
+    await writeSettings(settings, withChipText(DEFAULT_SETTINGS, { pvp: { chip: "Aaa" } }));
+    expect(tabIds().slice(0, 2)).toEqual([GENERAL_TAB, "pvp"]);
+    expect(tab("pvp").querySelector(".sar-tab-label")?.textContent).toBe("Aaa");
+    expect(tab("pvp").querySelector(".sar-vh")?.textContent).toBe(
+      i18n.t("kind_chip_name", { chip: "Aaa", heading: heading("pvp") }),
+    );
+    press(tab(GENERAL_TAB), "ArrowRight");
+    expect(tab("pvp").getAttribute("aria-selected")).toBe("true");
+  });
 
   it("follows the master switch on the tab, here and from another tab", async () => {
     const { tab, input, settings } = await setup();

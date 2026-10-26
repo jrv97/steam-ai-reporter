@@ -16,8 +16,8 @@
   key or plural base that a string literal of its code names is in its inlined catalogs, and every
   message there is named, so a missing key fails here and never falls back to the raw key on a
   store page. scripts/gen_catalogs.py writes each entry's catalogs by the same reading.
-- Size budgets: content.js at most 205 KiB, options.js at most 183 KiB and the userscript at most
-  339 KiB, unminified (rule 13). Each is the measured size plus a few percent of headroom; raise one
+- Size budgets: content.js at most 205 KiB, options.js at most 200 KiB and the userscript at most
+  355 KiB, unminified (rule 13). Each is the measured size plus a few percent of headroom; raise one
   only with a measurement. A message costs bytes only in the bundles that read it, and an added
   locale costs about 5 KB in content.js, 9 KB in options.js and 12 KB in the userscript. Measured
   when ignoring by developer or publisher landed (ADR 0013): content.js 186,313 B (from 169,265),
@@ -37,7 +37,13 @@
   content.js 208,094 B (from 206,761: the order setting and the surfaces that follow it),
   options.js 182,687 B (from 165,741) and userscript 338,320 B (from 321,389): the card's code
   about 12.5 KB, its CSS 2 KB and its messages 2 KB. Their budgets rise to 183 and 339 KiB, the
-  size plus 2.6 percent; content.js keeps 205 KiB.
+  size plus 2.6 percent; content.js keeps 205 KiB. Measured when a person's chip text and the color
+  picker landed (decisions 67 and 68): content.js 209,814 B (from 208,094: the two stored fields,
+  their schema and the chips that read them), which keeps 205 KiB with 106 bytes to spare;
+  options.js 200,213 B (from 182,687) and userscript 354,609 B (from 338,320): the chip text fields
+  and their preview about 6.8 KB of code, the shared chip rules and the field rules 1.9 KB of CSS,
+  their messages 1.8 KB, the picker 1.6 KB and the tabs, rows and order card that follow the text
+  2.2 KB. Their budgets rise to 200 and 355 KiB, the size plus 2.3 and 2.5 percent.
 - The STEAM_API_KEY value, when set, appears nowhere in dist/ or artifacts/ (rule 16).
 - The dev injection bundle is never packaged into artifacts/, and when artifacts/ exists it holds
   exactly the five release artifacts, with a manifest at the root of each extension zip. The source
@@ -71,8 +77,8 @@ from repo import (
 KIB = 1024
 BUDGETS = {
     **{DIST / target / "content.js": 205 * KIB for target in EXTENSION_TARGETS},
-    **{DIST / target / "options.js": 183 * KIB for target in EXTENSION_TARGETS},
-    DIST / "userscript" / f"{SLUG}.user.js": 339 * KIB,
+    **{DIST / target / "options.js": 200 * KIB for target in EXTENSION_TARGETS},
+    DIST / "userscript" / f"{SLUG}.user.js": 355 * KIB,
 }
 ENGLISH = ROOT / "src" / "locales" / DEFAULT_LOCALE / "messages.json"
 STORE_MATCH = ["https://store.steampowered.com/*"]

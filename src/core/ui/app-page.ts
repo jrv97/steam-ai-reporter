@@ -1,5 +1,6 @@
 import type { KindId } from "../kinds/id";
 import type { TagKind } from "../kinds/kind";
+import type { ChipWords } from "../kinds/kind-settings";
 import type { AnyDisclosed, KindVerdicts } from "../kinds/verdicts";
 import type { MessageCatalog } from "../ports";
 import { ALLOW_ALL, type AllowScope } from "../settings/allow-data";
@@ -38,6 +39,8 @@ export interface AppPageView {
   readonly banner: Readonly<Record<KindId, boolean>>;
   /** The kinds in the person's tag order, which the banner and the tag section follow. */
   readonly order: readonly TagKind[];
+  /** The person's chip text, a new object only when a text changed. */
+  readonly words: ChipWords;
 }
 
 /** The game's own page: the banner above the purchase box and the tag section. */
@@ -86,7 +89,7 @@ function bannerView(view: AppPageView): BannerView | undefined {
   );
   return shown.length + ignored.length + creatorNotes.length === 0
     ? undefined
-    : { shown, ignored, creators: view.creators, creatorNotes };
+    : { shown, ignored, creators: view.creators, creatorNotes, words: view.words };
 }
 
 /**
@@ -130,7 +133,7 @@ export function createAppPageUi(
   return {
     render(view) {
       renderBanner(bannerView(view));
-      section.render(tagVerdicts(view));
+      section.render(tagVerdicts(view), view.words);
     },
   };
 }

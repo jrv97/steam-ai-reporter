@@ -9,7 +9,7 @@ import {
 import { countingStore } from "../../../tests/helpers/counting-store";
 import { fixedClock } from "../../../tests/helpers/fixed-clock";
 import { memoryStore } from "../../../tests/helpers/memory-store";
-import { hexColor, withKind, writeSettings } from "../../../tests/helpers/settings";
+import { hexColor, withChipText, withKind, writeSettings } from "../../../tests/helpers/settings";
 import { createIgnoreLists } from "../ignored";
 import type { JsonValue } from "../json";
 import { parseOrder } from "../kinds/order";
@@ -26,9 +26,12 @@ import {
 import { type BackupDeps, createBackupFile, restoreBackup } from "./backup";
 import { type BackupContents, readBackup } from "./format";
 
-/** Settings a person changed: a color, a filter and the tag order. */
+/** Settings a person changed: a color, a filter, chip text and the tag order. */
 const CHANGED: Settings = {
-  ...withKind(DEFAULT_SETTINGS, "ai", { color: hexColor("#112233"), filter: "dim" }),
+  ...withChipText(
+    withKind(DEFAULT_SETTINGS, "ai", { color: hexColor("#112233"), filter: "dim" }),
+    { deck: { chip: "SD", chipCompact: "S" } },
+  ),
   order: parseOrder(["family", "ai"]),
 };
 
@@ -94,7 +97,7 @@ describe("restoreBackup", () => {
     expect(await contentsOf(target)).toStrictEqual(await contentsOf(source));
   });
 
-  it("replaces the settings, clearing a color and an order the backup does not have", async () => {
+  it("replaces the settings, clearing what the backup does not hold", async () => {
     const deps = await seeded(CHANGED);
     await restoreBackup(deps, backupContents());
     expect(parseSettings(await deps.settings.read())).toStrictEqual(DEFAULT_SETTINGS);

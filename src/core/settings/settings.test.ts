@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { plainKinds, withKind } from "../../../tests/helpers/settings";
+import { plainKinds, withChipText, withKind } from "../../../tests/helpers/settings";
 import { toHexColor } from "../kinds/color";
 import { KIND_IDS, type KindId } from "../kinds/id";
 import type { KindSettings } from "../kinds/kind-settings";
@@ -188,6 +188,38 @@ describe("a tag's color", () => {
     expect(applyPatch(tinted, { kinds: { drm: { color: undefined } } })).toStrictEqual(
       DEFAULT_SETTINGS,
     );
+  });
+});
+
+describe("a tag's chip text", () => {
+  const NAMED = withChipText(DEFAULT_SETTINGS, {
+    deck: { chip: "SD", chipCompact: "S" },
+    family: { chip: "Lending" },
+  });
+
+  it("is stored only for the fields a person set, and read back", () => {
+    const stored = encodeSettings(NAMED);
+    expect(stored).toMatchObject({ kinds: { deck: { chip: "SD", chipCompact: "S" } } });
+    expect(stored).toMatchObject({ kinds: { family: { chip: "Lending" } } });
+    expect(JSON.stringify(encodeSettings(DEFAULT_SETTINGS))).not.toMatch(/"chip/);
+    expect(parseSettings(stored)).toStrictEqual(NAMED);
+  });
+
+  it.each<[string, unknown]>([
+    ["a number", 3],
+    ["only spaces", "   "],
+    ["a list", ["SD"]],
+  ])("drops a stored text that is %s and keeps the kind's other fields", (_case, chip) => {
+    const parsed = parseSettings({ kinds: { deck: { chip, chipCompact: "S", filter: "dim" } } });
+    expect(parsed.kinds.deck).toStrictEqual({
+      ...DEFAULT_SETTINGS.kinds.deck,
+      filter: "dim",
+      chipCompact: "S",
+    });
+  });
+
+  it("is cleared by a whole patch of settings without it", () => {
+    expect(applyPatch(NAMED, wholePatch(DEFAULT_SETTINGS))).toStrictEqual(DEFAULT_SETTINGS);
   });
 });
 

@@ -54,6 +54,7 @@ describe("surface catalogs", () => {
     ["badge_tags_title", ["content", "userscript"]],
     ["kind_ai_heading", ["content", "options", "userscript"]],
     ["options_color_label", ["options", "userscript"]],
+    ["options_chip_label", ["options", "userscript"]],
     ["notice_settings_saved", ["options", "userscript"]],
     ["userscript_menu_settings", ["userscript"]],
     ["ext_description", []],
