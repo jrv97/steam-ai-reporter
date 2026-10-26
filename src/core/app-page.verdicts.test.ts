@@ -4,7 +4,7 @@ import { APP_PAGES } from "../../tests/helpers/app-page";
 import { creatorsFor } from "../../tests/helpers/creators";
 import { fakeDetector } from "../../tests/helpers/fake-detector";
 import { capturedVerdicts } from "../../tests/helpers/fixture-verdicts";
-import { aiVerdicts, disclosedVerdict, NOT_DISCLOSED } from "../../tests/helpers/verdicts";
+import { aiVerdicts, disclosedVerdict, lent, NOT_DISCLOSED } from "../../tests/helpers/verdicts";
 import { mergeVerdicts, translatedVerdicts } from "./app-page";
 import { parseAppPage } from "./detect/app-page";
 import { KINDS } from "./kinds/registry";
@@ -102,6 +102,22 @@ describe("mergeVerdicts", () => {
     expect(alone).not.toHaveProperty("creators");
   });
 
+  it.each(
+    [
+      ["shows none", "413150-no-block.html", "data"],
+      ["shows its own", "5072580-ai-first.html", "page"],
+    ] as const,
+  )(
+    "takes a full game's AI on a demo page that %s, unless it is the page's",
+    (_name, file, wins) => {
+      const disagree = vi.fn();
+      const page = pageOf(file);
+      const data = aiVerdicts(lent(disclosedVerdict()));
+      expect(mergeVerdicts(page, data, disagree).ai).toBe(wins === "page" ? page.ai : data.ai);
+      expect(disagree).not.toHaveBeenCalled();
+    },
+  );
+
   it("holds a verdict for every kind", () => {
     const merged = mergeVerdicts(UNKNOWN_KINDS.missing, UNKNOWN_KINDS.error, none);
     expect(Object.keys(merged)).toStrictEqual(KINDS.map((kind) => kind.id));
@@ -111,6 +127,13 @@ describe("mergeVerdicts", () => {
 describe("translatedVerdicts", () => {
   it("takes Steam's data as it is when the AI notes are in the page's language", async () => {
     const detected = aiVerdicts(disclosedVerdict({ language: "german" }));
+    const getItems = fakeDetector(() => UNKNOWN_KINDS.error);
+    expect(await translatedVerdicts(ID, "german", detected, getItems)).toBe(detected);
+    expect(getItems.calls).toEqual([]);
+  });
+
+  it("never asks again for the full game's notes that a demo shows", async () => {
+    const detected = aiVerdicts(lent(disclosedVerdict({ language: "english" })));
     const getItems = fakeDetector(() => UNKNOWN_KINDS.error);
     expect(await translatedVerdicts(ID, "german", detected, getItems)).toBe(detected);
     expect(getItems.calls).toEqual([]);

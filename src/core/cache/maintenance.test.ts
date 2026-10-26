@@ -77,14 +77,18 @@ describe("maintainCache: schema reset", () => {
     expect(await run()).toBe("skipped");
   });
 
-  it("drops the verdicts stored before the base game of a DLC was kept, once", async () => {
-    // Version 2 entries lack `parent`, so a cached DLC would never learn its base game.
+  // Version 2 entries lack `parent`, so a cached DLC would never learn its base game, and
+  // version 4 entries lack `demo`, so a cached demo would not show its full game's tags.
+  it.each([
+    [2, "the base game of a DLC"],
+    [4, "the demo mark"],
+  ])("drops the verdicts of schema %i, stored before %s was kept, once", async (schema) => {
     const { store, run } = setup([
-      [META_KEY, { schema: 2, sweptAt: T }],
+      [META_KEY, { schema, sweptAt: T }],
       ["v1:a:5201760", verdict("disclosed", T)],
       ...others,
     ]);
-    expect(CACHE_SCHEMA).toBeGreaterThan(2);
+    expect(CACHE_SCHEMA).toBeGreaterThan(schema);
     expect(await run()).toBe("reset");
     expect(await keysOf(store)).toStrictEqual(["v1:allow", "v1:breaker", META_KEY, "v1:settings"]);
     expect(await run()).toBe("skipped");

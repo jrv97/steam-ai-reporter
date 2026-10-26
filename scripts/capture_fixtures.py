@@ -33,7 +33,8 @@ USER_AGENT = "steam-ai-reporter-fixtures (+https://github.com/jrv97/steam-ai-rep
 TIMEOUT_SECONDS = 30
 SPACING_SECONDS = 1.0
 
-# `related_items` stays: the schema reads `related_items.parent_appid` of a DLC (decision 51).
+# `related_items` and `type` stay: the schema reads `related_items.parent_appid` of a DLC or a demo
+# (decisions 51 and 59), and `type` 1 marks a demo.
 ITEM_REMOVED = ("best_purchase_option",)
 # `basic_info` keeps only the creators the ignore lists follow (ADR 0013); its descriptions go.
 BASIC_INFO_KEPT = ("developers", "publishers")

@@ -13,6 +13,7 @@ import type { Detector, Http, HttpResponse, HttpResult } from "../ports";
 import type { AppId, UnknownReason } from "../types";
 import {
   type BasicInfo,
+  DEMO_TYPE,
   type GetItemsEnvelope,
   GetItemsEnvelopeSchema,
   type StoreItem,
@@ -156,6 +157,7 @@ function itemVerdicts(item: StoreItem, language: SteamLanguage): KindVerdicts {
   }
   return withRelations(kindsFromGetItems(item, details, language), {
     parent: item.related_items?.parent_appid,
+    demo: item.type === DEMO_TYPE ? true : undefined,
     creators: creatorsOf(item.basic_info),
   });
 }

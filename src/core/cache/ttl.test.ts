@@ -88,6 +88,14 @@ describe("isTransient", () => {
       ["unknown malformed", false, uniformVerdicts("malformed")],
       ["one kind answered", false, { ...UNKNOWN_KINDS.error, ai: NOT_DISCLOSED }],
       ["disclosed", false, uniformVerdicts("disclosed")],
+      ["a demo's own disclosure beside its failed full game", true, {
+        ...UNKNOWN_KINDS.error,
+        drm: FULL_DISCLOSED.drm,
+      }],
+      ["a demo's own disclosure beside a stored unknown", false, {
+        ...UNKNOWN_KINDS.missing,
+        drm: FULL_DISCLOSED.drm,
+      }],
     ] as const,
   )("%s: %s", (_name, transient, verdicts) => {
     expect(isTransient(verdicts)).toBe(transient);

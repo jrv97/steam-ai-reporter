@@ -1,5 +1,6 @@
 import * as v from "valibot";
 import { describe, expect, it } from "vitest";
+import demoParent from "../../../tests/fixtures/getitems/demo-parent.json";
 import dlc from "../../../tests/fixtures/getitems/dlc-parent.json";
 import kinds from "../../../tests/fixtures/getitems/kinds.json";
 import { fixtureItems, storeItem } from "../../../tests/helpers/getitems";
@@ -113,6 +114,23 @@ describe("StoreItemSchema related_items", () => {
     expect(item.related_items).toBeUndefined();
     expect(item.id).toBe(1);
   });
+});
+
+describe("StoreItemSchema type", () => {
+  it("reads the captured demo as type 1 and its full game as type 0 (demo-parent.json)", () => {
+    const [game, demo] = fixtureItems(demoParent).map(parse);
+    expect([game?.type, demo?.type]).toStrictEqual([0, 1]);
+    expect(demo?.related_items?.parent_appid).toBe(3489340);
+  });
+
+  it.each([["a string", "1"], ["a fraction", 1.5], ["null", null], ["a list", [1]]])(
+    "reads a type that is %s as absent and keeps the item",
+    (_name, value) => {
+      const item = parse(storeItem(1, { type: value }));
+      expect(item.type).toBeUndefined();
+      expect(item.extra_details).toBeDefined();
+    },
+  );
 });
 
 describe("StoreItemSchema leniency", () => {

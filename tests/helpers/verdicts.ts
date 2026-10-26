@@ -7,8 +7,8 @@ import type { KindId } from "../../src/core/kinds/id";
 import type { KernelDisclosed } from "../../src/core/kinds/kernel";
 import type { PvpDisclosed } from "../../src/core/kinds/pvp";
 import { perKind } from "../../src/core/kinds/registry";
-import { type KindVerdicts, UNKNOWN_KINDS } from "../../src/core/kinds/verdicts";
-import type { NotDisclosedVerdict, UnknownReason } from "../../src/core/types";
+import { type AnyDisclosed, type KindVerdicts, UNKNOWN_KINDS } from "../../src/core/kinds/verdicts";
+import type { AppId, NotDisclosedVerdict, UnknownReason } from "../../src/core/types";
 
 /** The link of a EULA entry, when the address is one the store hosts. */
 function linked(address: string): { readonly url?: EulaUrl; } {
@@ -114,4 +114,19 @@ export function disclosedKinds(kinds: readonly KindId[]): KindVerdicts {
     eula: pick("eula", FULL_DISCLOSED.eula),
     pvp: pick("pvp", FULL_DISCLOSED.pvp),
   };
+}
+
+/** `verdicts` as those of a demo of `game` (GetItems `type` 1 with `parent_appid`). */
+export function demoOf(game: AppId, verdicts: KindVerdicts = disclosedKinds([])): KindVerdicts {
+  return { ...verdicts, parent: game, demo: true };
+}
+
+/** `verdicts` as those of a DLC of `game`: a parent and no demo mark. */
+export function dlcOf(game: AppId, verdicts: KindVerdicts = disclosedKinds([])): KindVerdicts {
+  return { ...verdicts, parent: game };
+}
+
+/** A full game's disclosure as its demo shows it: the same fields, marked as the game's. */
+export function lent<Disclosed extends AnyDisclosed>(verdict: Disclosed): Disclosed {
+  return { ...verdict, fullGame: true };
 }

@@ -14,9 +14,9 @@ import { AppIdSchema, NOT_DISCLOSED, UNKNOWN, VerdictSourceSchema } from "../typ
 import { isStoredReason, STORED_REASONS } from "./ttl";
 
 // An app is stored as `v1:a:<appid>`: its fetch time, one entry per kind and, when known, its base
-// game and its developers and publishers. A disclosed entry is the verdict, read back with its
-// kind's schema. Storage is untrusted, so a read that fails is discarded, and the app is fetched
-// again.
+// or full game, whether it is a demo, and its developers and publishers. A disclosed entry is the
+// verdict, read back with its kind's schema. Storage is untrusted, so a read that fails is
+// discarded, and the app is fetched again.
 
 const TimeSchema = v.pipe(v.number(), v.finite());
 
@@ -31,13 +31,14 @@ const StoredCreatorsSchema = v.exactOptional(
 
 /**
  * The entries stay `unknown` here and are validated kind by kind. `parent` is the base game of a
- * DLC; an entry whose `parent` is not an app ID, or whose creators are not a list of named
- * entries, is invalid, so that app is fetched again.
+ * DLC or the full game of a demo, and `demo` marks a demo; an entry whose `parent` is not an app
+ * ID, or whose creators are not a list of named entries, is invalid, so that app is fetched again.
  */
 const StoredAppSchema = v.object({
   time: TimeSchema,
   kinds: v.record(v.string(), v.unknown()),
   parent: v.exactOptional(AppIdSchema),
+  demo: v.exactOptional(v.literal(true)),
   developers: StoredCreatorsSchema,
   publishers: StoredCreatorsSchema,
 });
@@ -88,9 +89,9 @@ export function decodeVerdicts(stored: unknown): TimedVerdicts | undefined {
   if (!isKindVerdicts(verdicts)) {
     return undefined;
   }
-  const { parent, developers = [], publishers = [], time } = app.output;
+  const { parent, demo, developers = [], publishers = [], time } = app.output;
   const creators = { developer: makeCreators(developers), publisher: makeCreators(publishers) };
-  return { verdicts: withRelations(verdicts, { parent, creators }), time };
+  return { verdicts: withRelations(verdicts, { parent, demo, creators }), time };
 }
 
 function encodeCreators(creators: readonly Creator[]): JsonValue {
@@ -125,11 +126,12 @@ export function encodeVerdicts(verdicts: KindVerdicts, time: number): JsonValue 
     }
     kinds[kind.id] = entry;
   }
-  const { parent, creators } = verdicts;
+  const { parent, demo, creators } = verdicts;
   return {
     time,
     kinds,
     ...(parent === undefined ? {} : { parent }),
+    ...(demo === true ? { demo } : {}),
     ...(creators === undefined
       ? {}
       : {
