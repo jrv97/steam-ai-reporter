@@ -39,6 +39,7 @@ Every implementation of a port passes the same shared contract suite, with no pe
 - A host never grows past an element the store marks as an item (`data-ds-appid`). A link's host climbs to the lowest image ancestor and at most `MAX_JOIN_LEVELS` more, and stops at the first such element, so on a package page (`/sub/<id>/`, where nothing else names an app) the host is the included game's row and not the column around the package header.
 - On an app page, the page's header capsule, purchase area and description name the page's app (`PAGE_PARTS` in `scan/candidates.ts`, by id). A host for another app never takes one in, which keeps a dim on a DLC's page to the glance box instead of the column. Another such part is another id there, and an app page region whose links are never capsules, such as the DLC bubble, is an entry in `SKIPPED`.
 - A new detection source is a new `Detector` link in the chain. The chain and the scanner are not edited.
+- A new kind gets its settings tab and its toolbar popup row with no edit of `ui/settings-form.ts`: both loop over `KINDS`, and the order is `sortTabs` (`ui/tab-id.ts`), by each tag's visible label. The form never reads `location`: the page hands it `initialTab` from `parseTabHash` and writes `#tab=<id>` in `onTabChange`, and the tab last shown lives in `v2:ui` (`ui/ui-state.ts`). The tab code and its messages stay out of `content.js`, which never imports the form.
 - A new message is a catalog key in `src/locales/`, never a literal in code or in a test. Name it by its key literal (`t("banner_undo")`), never by a key built from parts: each shipped bundle carries only the messages whose keys its code names (`scripts/gen_catalogs.py`, decision 58), and `scripts/check_bundle.py` fails on a key a bundle names but does not carry. Core code takes its catalogs from the composition root (`AppDeps.catalogs`); only tests and the dev bundle import `SHIPPED_CATALOGS`, which holds every message.
 
 ### A new tag kind
@@ -81,7 +82,7 @@ A host with several kinds takes the strongest filter without a rule for it: a hi
 
 ### What an app is related to
 
-The banner adds a closed `details` per game that lists its creators, one row per name and role (`BannerView.creators`), and a note with Undo for each creator ignored for a tag the banner lists (`creatorNotes`). `BannerActions` gains `ignoreCreator` and `restoreCreator`; the app page wires them to `lists.creators[role]` and tells the capsule UI to draw again. The settings form draws its three ignore cards (games, developers, publishers) from one `AllowSpec` each.
+The banner adds a closed `details` per game that lists its creators, one row per name and role (`BannerView.creators`), and a note with Undo for each creator ignored for a tag the banner lists (`creatorNotes`). `BannerActions` gains `ignoreCreator` and `restoreCreator`; the app page wires them to `lists.creators[role]` and tells the capsule UI to draw again. The settings form reads each of the three lists (games, developers, publishers) once per refresh through one `AllowSource` per `AllowSpec` (`ui/allow-view.ts`) and draws every scope's card from that read: all tags in General, each tag in its own tab.
 
 `KindVerdicts` is one verdict per kind plus `Relations`, which no verdict reads and the ignore lists follow.
 

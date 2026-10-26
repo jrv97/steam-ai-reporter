@@ -3,11 +3,18 @@ import { resolveLocale } from "../../core/i18n/locale";
 import { type BareMessageKey, createI18n, type I18n } from "../../core/i18n/t";
 import { createIgnoreLists } from "../../core/ignored";
 import { AUTO_LOCALE, parseSettings } from "../../core/settings/settings";
-import { ALLOW_KEY, CREATOR_ALLOW_KEYS } from "../../core/storage-keys";
-import { createSectionState } from "../../core/ui/section-state";
+import { ALLOW_KEY, CREATOR_ALLOW_KEYS, UI_STATE_KEY } from "../../core/storage-keys";
 import { mountSettingsForm, type SettingsContext } from "../../core/ui/settings-form";
+import { parseTabHash, tabHash, type TabId } from "../../core/ui/tab-id";
+import { createUiState, decodeTabRequest, type UiState } from "../../core/ui/ui-state";
 import { createFileTransfer } from "../shared/file-transfer";
-import { extensionUrl, extensionVersion, localStorageArea, onLocalChanged } from "./ext";
+import {
+  extensionUrl,
+  extensionVersion,
+  localStorageArea,
+  onLocalChanged,
+  openOptionsPage,
+} from "./ext";
 import { CATALOGS } from "./options.catalogs.gen";
 import { createExtensionSettings, createExtensionStore } from "./store";
 
@@ -44,12 +51,27 @@ function fillText(doc: Document, i18n: I18n): void {
   }
 }
 
+/**
+ * From a popup row: asks an open options page for the tab and focuses it, or opens the page,
+ * which reads the same request. Without the API, the row's own link opens the tab.
+ */
+async function openTab(uiState: UiState, id: TabId, optionsUrl: string): Promise<void> {
+  try {
+    await uiState.requestTab(id, Date.now());
+    await openOptionsPage();
+  } catch {
+    open(`${optionsUrl}${tabHash(id)}`, "_blank", "noopener");
+  }
+  close();
+}
+
 async function main(): Promise<void> {
   const context = pageContext();
   const store = createExtensionStore(localStorageArea);
   const settings = createExtensionSettings(store, onLocalChanged);
   const clock = { now: () => Date.now() };
   const lists = createIgnoreLists(store, clock);
+  const uiState = createUiState(store);
   const catalogs = CATALOGS;
 
   let setting: string = AUTO_LOCALE;
@@ -65,19 +87,29 @@ async function main(): Promise<void> {
   const i18n = createI18n(catalogs, locale);
   fillText(document, i18n);
 
+  const page = context === "page";
+  const initialTab = page ? parseTabHash(location.hash) : undefined;
+  const optionsUrl = extensionUrl(OPTIONS_PAGE);
   const form = await mountSettingsForm(document.body, {
     i18n,
     settings,
     lists,
-    sectionState: createSectionState(store),
+    uiState,
     context,
-    colors: context === "page",
+    layout: page ? "tabs" : "list",
+    colors: page,
     locales: Object.keys(catalogs),
     header: { version: extensionVersion(), iconUrl: extensionUrl(ICONS[context]) },
+    ...(initialTab === undefined ? {} : { initialTab }),
     // A file chooser can close the toolbar popup before the file arrives, so backup is page only
-    ...(context === "popup"
-      ? { allSettingsUrl: extensionUrl(OPTIONS_PAGE) }
-      : { backup: { files: createFileTransfer(document.body), clock } }),
+    ...(page
+      ? {
+        backup: { files: createFileTransfer(document.body), clock },
+        onTabChange: (id) => {
+          history.replaceState(null, "", tabHash(id));
+        },
+      }
+      : { allSettingsUrl: optionsUrl, openTab: (id) => void openTab(uiState, id, optionsUrl) }),
   });
 
   // The page's own copy follows a new language on the next load; reload now.
@@ -87,13 +119,26 @@ async function main(): Promise<void> {
     }
   });
 
-  // A game, developer or publisher ignored or restored on a store page shows up here at once.
+  // A game, developer or publisher ignored or restored on a store page shows up here at once,
+  // as does a tab the popup asks for.
   const listKeys = [ALLOW_KEY, ...Object.values(CREATOR_ALLOW_KEYS)];
   onLocalChanged((changes) => {
     if (listKeys.some((key) => changes[key] !== undefined)) {
       void form.refreshAllowList();
     }
+    const asked = page ? decodeTabRequest(changes[UI_STATE_KEY]?.newValue) : undefined;
+    if (asked !== undefined) {
+      form.selectTab(asked);
+    }
   });
+  if (page) {
+    addEventListener("hashchange", () => {
+      const id = parseTabHash(location.hash);
+      if (id !== undefined) {
+        form.selectTab(id);
+      }
+    });
+  }
 }
 
 void main();

@@ -1,12 +1,12 @@
 /*
- * Userscript settings dialog (components.mdx section 13): a native dialog in a shadow root, 400px
+ * Userscript settings dialog (components.mdx section 13): a native dialog in a shadow root, 760px
  * wide, over the settings form. Tokens inherit from the store page's :root; the form's own rules
  * come from SETTINGS_CSS in the same shadow root.
  */
 
 dialog {
   box-sizing: border-box;
-  inline-size: min(400px, calc(100vw - var(--sar-space-6)));
+  inline-size: min(760px, calc(100vw - var(--sar-space-6)));
   max-block-size: calc(100vh - var(--sar-space-6));
   margin: auto;
   padding: 0;

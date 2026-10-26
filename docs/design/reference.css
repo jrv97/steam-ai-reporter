@@ -592,68 +592,164 @@
   outline: none;
 }
 
-/* A tag's card closes: a native details, so the browser owns the keyboard and the expanded state.
-   The summary keeps the title and the on or off cue in view; the arrow turns when it opens. */
-.sar-card-summary {
+/* Tabs: a row that wraps under the header on narrow screens, a sticky rail beside the panels from
+   800px. The selected tab has a bar and strong text, so it never relies on color alone. */
+.sar-tabs {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--sar-space-3);
+}
+
+.sar-tablist {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sar-space-1);
+}
+
+.sar-tab {
+  appearance: none;
   display: flex;
   align-items: center;
-  column-gap: var(--sar-space-3);
+  justify-content: space-between;
+  gap: var(--sar-space-2);
   min-block-size: var(--sar-control-height-sm);
-  list-style: none;
+  padding-block: var(--sar-space-1);
+  padding-inline: var(--sar-space-2);
+  border: 0;
+  border-block-end: 2px solid transparent;
+  border-radius: var(--sar-radius-sm) var(--sar-radius-sm) 0 0;
+  background: none;
+  color: var(--sar-color-text);
+  font: inherit;
+  text-align: start;
   cursor: pointer;
 }
 
-.sar-card-summary::-webkit-details-marker {
-  display: none;
+.sar-tab:hover {
+  background: var(--sar-color-bg-raised);
 }
 
-.sar-card-summary::after {
-  content: "";
-  flex: none;
-  inline-size: var(--sar-space-2);
-  block-size: var(--sar-space-2);
-  margin-block-end: var(--sar-space-1);
-  border-inline-end: 2px solid var(--sar-color-text-subtle);
-  border-block-end: 2px solid var(--sar-color-text-subtle);
-  transform: rotate(45deg);
+.sar-tab[aria-selected="true"] {
+  border-color: var(--sar-accent-400);
+  background: var(--sar-color-bg-raised);
+  color: var(--sar-color-text-strong);
+  font-weight: var(--sar-weight-medium);
 }
 
-.sar-card-details[open] > .sar-card-summary {
-  margin-block-end: var(--sar-space-2);
-}
-
-.sar-card-details[open] > .sar-card-summary::after {
-  margin-block: var(--sar-space-1) 0;
-  transform: rotate(225deg);
-}
-
-.sar-options .sar-card-summary .sar-card-title {
-  flex: 1 1 auto;
-  min-inline-size: 0;
-  margin: 0;
-}
-
-/* The cue is words, so it reads without colour: the master switch's state, off in a quieter tone */
-.sar-card-state {
-  flex: none;
+/* The tag's state in words beside its label, off in a quieter tone */
+.sar-tab-state {
   color: var(--sar-color-text-subtle);
   font-size: var(--sar-size-sm);
+  font-weight: var(--sar-weight-regular);
 }
 
-.sar-card-state[data-sar-on] {
+.sar-tab-state[data-sar-on] {
   color: var(--sar-color-text);
 }
 
-.sar-options[data-sar-context="popup"] .sar-card-summary {
+.sar-panel-title {
+  margin: 0 0 var(--sar-space-2);
+  color: var(--sar-color-text-strong);
+  font: var(--sar-weight-medium) var(--sar-size-xl) / var(--sar-leading-xl) var(--sar-font-ext);
+}
+
+@media (min-width: 800px) {
+  /* Room for the longest tag label and its state */
+  .sar-tabs {
+    grid-template-columns: 200px minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .sar-tablist {
+    position: sticky;
+    inset-block-start: 0;
+    flex-direction: column;
+    flex-wrap: nowrap;
+  }
+
+  .sar-tab {
+    border-block-end: 0;
+    border-inline-start: 2px solid transparent;
+    border-radius: 0 var(--sar-radius-sm) var(--sar-radius-sm) 0;
+  }
+}
+
+@media (forced-colors: active) {
+  .sar-tab[aria-selected="true"] {
+    border-color: Highlight;
+    outline: 1px solid CanvasText;
+  }
+}
+
+/* Popup: the gear at the end of the header, which stays in view, and one row per tag with its
+   name, list filter and master switch. A tag that is off keeps its filter, disabled. */
+.sar-options[data-sar-view="list"] .sar-options-header {
+  position: sticky;
+  inset-block-start: 0;
+  z-index: 1;
+  background: var(--sar-color-bg-panel);
+}
+
+.sar-gear {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  inline-size: var(--sar-control-height-sm);
+  block-size: var(--sar-control-height-sm);
+  margin-inline-start: auto;
+  border-radius: var(--sar-radius-sm);
+}
+
+.sar-gear:hover {
+  background: var(--sar-button-secondary-bg);
+}
+
+.sar-gear svg {
+  inline-size: 20px;
+  block-size: 20px;
+  fill: currentColor;
+}
+
+.sar-kind-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  column-gap: var(--sar-space-2);
+  padding-block: var(--sar-space-1);
+}
+
+.sar-kind-row + .sar-kind-row {
+  border-block-start: 1px solid var(--sar-color-divider);
+}
+
+.sar-options .sar-kind-link {
+  overflow: hidden;
+  color: var(--sar-color-text);
+  text-decoration: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sar-options .sar-kind-link:hover {
+  text-decoration: underline;
+}
+
+.sar-kind-row .sar-segment label {
   min-block-size: var(--sar-control-height-xs);
+  padding-block: 0;
+  font-size: var(--sar-size-sm);
 }
 
-.sar-options[data-sar-context="popup"] .sar-card-details[open] > .sar-card-summary {
-  margin-block-end: var(--sar-space-1);
+.sar-segment:disabled label {
+  color: var(--sar-color-text-subtle);
+  cursor: default;
 }
 
-.sar-options[data-sar-context="popup"] .sar-card-state {
-  font-size: var(--sar-size-xs);
+.sar-segment:disabled input:checked + label {
+  border-color: var(--sar-color-border);
+  background: none;
+  color: var(--sar-color-text-subtle);
 }
 
 /* The label wraps in column 1; the switch keeps column 2 */
@@ -874,7 +970,7 @@
 .sar-select:focus-visible,
 .sar-input:focus-visible,
 .sar-button:focus-visible,
-.sar-card-summary:focus-visible,
+.sar-tab:focus-visible,
 .sar-options a:focus-visible {
   outline: var(--sar-focus-width) solid var(--sar-focus-color);
   outline-offset: var(--sar-focus-offset);
@@ -911,6 +1007,20 @@
   background: var(--sar-button-primary-bg-hover);
 }
 
+/* Reset, Stop ignoring and Show in General: quiet text buttons that read as links, at the same
+   target size as the other buttons */
+.sar-button[data-sar-variant="quiet"] {
+  padding-inline: 0;
+  background: none;
+  color: var(--sar-accent-300);
+  text-decoration: underline;
+}
+
+.sar-button[data-sar-variant="quiet"]:hover {
+  background: none;
+  color: var(--sar-color-text-strong);
+}
+
 .sar-options a {
   color: var(--sar-accent-300);
 }
@@ -919,6 +1029,17 @@
   margin: 0;
   padding: 0;
   list-style: none;
+}
+
+/* Each list of a scope's card sits under a quiet caption: games, developers, publishers */
+.sar-allow-group + .sar-allow-group {
+  margin-block-start: var(--sar-space-3);
+}
+
+.sar-allow-scope {
+  margin: 0;
+  color: var(--sar-color-text-subtle);
+  font: var(--sar-weight-medium) var(--sar-size-sm) / var(--sar-leading-sm) var(--sar-font-ext);
 }
 
 .sar-options[data-sar-context="popup"] .sar-allow-list {
@@ -957,6 +1078,17 @@
 .sar-empty {
   margin: 0;
   color: var(--sar-color-text-subtle);
+}
+
+/* What all tags ignore, counted under a tag's own list, with its way to General */
+.sar-allow-note {
+  margin: var(--sar-space-2) 0 0;
+  color: var(--sar-color-text-subtle);
+}
+
+.sar-allow-note .sar-button {
+  min-block-size: var(--sar-control-height-xs);
+  padding-block: 0;
 }
 
 .sar-privacy {

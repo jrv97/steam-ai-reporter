@@ -3,9 +3,9 @@ import type { I18n } from "../../core/i18n/t";
 import type { IgnoreLists } from "../../core/ignored";
 import type { Clock } from "../../core/ports";
 import type { StoredSettings } from "../../core/settings/settings-source";
-import type { SectionState } from "../../core/ui/section-state";
 import { mountSettingsForm } from "../../core/ui/settings-form";
 import { adoptStyles, DIALOG_CSS } from "../../core/ui/styles";
+import type { UiState } from "../../core/ui/ui-state";
 import { createFileTransfer } from "../shared/file-transfer";
 
 export interface SettingsDialogDeps {
@@ -14,7 +14,8 @@ export interface SettingsDialogDeps {
   readonly catalogs: Catalogs;
   readonly settings: StoredSettings;
   readonly lists: IgnoreLists;
-  readonly sectionState: SectionState;
+  /** The tab last shown, kept in the manager's storage. */
+  readonly uiState: UiState;
   /** Dates a backup. */
   readonly clock: Clock;
   /** False when the manager cannot tell other tabs about a change, so it applies on reload. */
@@ -76,8 +77,9 @@ export async function openSettingsDialog(deps: SettingsDialogDeps): Promise<void
     i18n,
     settings: deps.settings,
     lists: deps.lists,
-    sectionState: deps.sectionState,
+    uiState: deps.uiState,
     context: "popup",
+    layout: "tabs",
     colors: true,
     locales: Object.keys(deps.catalogs),
     // The page around a modal dialog is inert, so the file input lives inside it

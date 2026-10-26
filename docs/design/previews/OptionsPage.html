@@ -9,7 +9,7 @@
   body { margin: 0; background: var(--sar-color-bg-sunken); }
   .two {
     display: grid;
-    grid-template-columns: minmax(0, 640px) 362px;
+    grid-template-columns: minmax(0, 880px) 362px;
     gap: var(--sar-space-5);
     align-items: start;
     padding: var(--sar-space-4);
@@ -19,7 +19,7 @@
 </head>
 <body>
 <div class="two">
-  <div class="sar-options" data-sar-context="page">
+  <div class="sar-options" data-sar-context="page" data-sar-view="tabs">
     <header class="sar-options-header">
       <img src="../../../assets/icons/mark-purple.svg" alt="">
       <div>
@@ -27,281 +27,391 @@
         <div class="sar-options-version">Version 2026.10.20</div>
       </div>
     </header>
-    <section class="sar-card" aria-labelledby="o-ai">
-      <details class="sar-card-details" open>
-        <summary class="sar-card-summary">
-          <h2 class="sar-card-title" id="o-ai" tabindex="-1">AI Generated Content Disclosure</h2>
-          <span class="sar-card-state" data-sar-on>On</span>
-        </summary>
+  <div class="sar-tabs">
+    <div class="sar-tablist" role="tablist" aria-label="Settings sections">
+      <button class="sar-tab" type="button" role="tab" id="o-t-general"
+        aria-controls="o-p-general" aria-selected="false" tabindex="-1">
+        General
+      </button>
+      <button class="sar-tab" type="button" role="tab" id="o-t-account"
+        aria-controls="o-p-account" aria-selected="false" tabindex="-1">
+        <span class="sar-tab-label" aria-hidden="true">Account</span>
+        <span class="sar-vh">Account: Requires 3rd-Party Account</span>
+        <span class="sar-tab-state" data-sar-on>On</span>
+      </button>
+      <button class="sar-tab" type="button" role="tab" id="o-t-ai"
+        aria-controls="o-p-ai" aria-selected="false" tabindex="-1">
+        <span class="sar-tab-label" aria-hidden="true">AI</span>
+        <span class="sar-vh">AI: AI Generated Content Disclosure</span>
+        <span class="sar-tab-state" data-sar-on>On</span>
+      </button>
+      <button class="sar-tab" type="button" role="tab" id="o-t-anticheat"
+        aria-controls="o-p-anticheat" aria-selected="false" tabindex="-1">
+        <span class="sar-tab-label" aria-hidden="true">Anti-Cheat</span>
+        <span class="sar-vh">Anti-Cheat: Uses Anti-Cheat</span>
+        <span class="sar-tab-state" data-sar-on>On</span>
+      </button>
+      <button class="sar-tab" type="button" role="tab" id="o-t-deck"
+        aria-controls="o-p-deck" aria-selected="false" tabindex="-1">
+        <span class="sar-tab-label" aria-hidden="true">Deck</span>
+        <span class="sar-vh">Deck: Steam Deck Compatibility</span>
+        <span class="sar-tab-state">Off</span>
+      </button>
+      <button class="sar-tab" type="button" role="tab" id="o-t-drm"
+        aria-controls="o-p-drm" aria-selected="false" tabindex="-1">
+        <span class="sar-tab-label" aria-hidden="true">DRM</span>
+        <span class="sar-vh">DRM: Includes 3rd-party DRM</span>
+        <span class="sar-tab-state" data-sar-on>On</span>
+      </button>
+      <button class="sar-tab" type="button" role="tab" id="o-t-eula"
+        aria-controls="o-p-eula" aria-selected="false" tabindex="-1">
+        <span class="sar-tab-label" aria-hidden="true">EULA</span>
+        <span class="sar-vh">EULA: Requires agreement to a 3rd-party EULA</span>
+        <span class="sar-tab-state" data-sar-on>On</span>
+      </button>
+      <button class="sar-tab" type="button" role="tab" id="o-t-family"
+        aria-controls="o-p-family" aria-selected="false" tabindex="-1">
+        <span class="sar-tab-label" aria-hidden="true">Family Sharing</span>
+        <span class="sar-vh">Family Sharing</span>
+        <span class="sar-tab-state">Off</span>
+      </button>
+      <button class="sar-tab" type="button" role="tab" id="o-t-iap"
+        aria-controls="o-p-iap" aria-selected="false" tabindex="-1">
+        <span class="sar-tab-label" aria-hidden="true">IAP</span>
+        <span class="sar-vh">IAP: In-App Purchases</span>
+        <span class="sar-tab-state">Off</span>
+      </button>
+      <button class="sar-tab" type="button" role="tab" id="o-t-kernel"
+        aria-controls="o-p-kernel" aria-selected="true" tabindex="0">
+        <span class="sar-tab-label" aria-hidden="true">KLAC</span>
+        <span class="sar-vh">KLAC: Uses Kernel Level Anti-Cheat</span>
+        <span class="sar-tab-state" data-sar-on>On</span>
+      </button>
+      <button class="sar-tab" type="button" role="tab" id="o-t-pvp"
+        aria-controls="o-p-pvp" aria-selected="false" tabindex="-1">
+        <span class="sar-tab-label" aria-hidden="true">PvP</span>
+        <span class="sar-vh">PvP</span>
+        <span class="sar-tab-state">Off</span>
+      </button>
+      <button class="sar-tab" type="button" role="tab" id="o-t-machine"
+        aria-controls="o-p-machine" aria-selected="false" tabindex="-1">
+        <span class="sar-tab-label" aria-hidden="true">Steam Machine</span>
+        <span class="sar-vh">Steam Machine: Steam Machine Compatibility</span>
+        <span class="sar-tab-state">Off</span>
+      </button>
+    </div>
+    <div class="sar-tabpanel" role="tabpanel" id="o-p-general"
+      aria-labelledby="o-t-general" hidden>
+      <h2 class="sar-panel-title">General</h2>
+    </div>
+    <div class="sar-tabpanel" role="tabpanel" id="o-p-kernel"
+      aria-labelledby="o-t-kernel">
+      <section class="sar-card" aria-labelledby="o-kernel">
+        <h2 class="sar-card-title" id="o-kernel" tabindex="-1">Uses Kernel Level Anti-Cheat</h2>
         <label class="sar-field">
           <span class="sar-field-label">Use this tag</span>
           <input class="sar-toggle" type="checkbox" role="switch" checked>
-          <span class="sar-field-help">Off removes its badges, its entry in the banner and its list
-            filter.</span>
+          <span class="sar-field-help">Off removes its badges, its entry in the banner and its
+            list filter.</span>
         </label>
         <div class="sar-kind-options">
-          <label class="sar-field">
-            <span class="sar-field-label">Badges on games and rows</span>
-            <input class="sar-toggle" type="checkbox" role="switch" checked>
-          </label>
-          <label class="sar-field">
-            <span class="sar-field-label">Show in the banner</span>
-            <input class="sar-toggle" type="checkbox" role="switch" checked>
-          </label>
-          <div class="sar-field sar-color" data-sar-layout="stacked">
-            <label class="sar-field-label" for="o-ai-color">Badge color (experimental)</label>
-            <div class="sar-color-entry">
-              <span class="sar-color-swatch" aria-hidden="true"></span>
-              <input class="sar-input" id="o-ai-color" type="text" autocomplete="off"
-                spellcheck="false" placeholder="Default" aria-describedby="o-ai-color-help">
-            </div>
-            <span class="sar-field-help" id="o-ai-color-help">Type a hex code such as #8f73f3, with
-              or without the #. Colors this tag's badge, its entry in the banner and its card.
-              Contrast is not checked, so a very light or very dark color can be hard to read. Leave
-              it empty for the default violet.</span>
-          </div>
-          <div class="sar-field sar-color" data-sar-layout="stacked">
-            <label class="sar-field-label" for="o-ai-color-set">Badge color (experimental)</label>
-            <div class="sar-color-entry">
-              <span class="sar-color-swatch" aria-hidden="true"
-                style="--sar-tag-edge: #e8590c"></span>
-              <input class="sar-input" id="o-ai-color-set" type="text" autocomplete="off"
-                spellcheck="false" placeholder="Default" value="#e8590c">
-              <button class="sar-button" type="button">Reset</button>
-            </div>
-          </div>
-          <div class="sar-field sar-color" data-sar-layout="stacked">
-            <label class="sar-field-label" for="o-ai-color-bad">Badge color (experimental)</label>
-            <div class="sar-color-entry">
-              <span class="sar-color-swatch" aria-hidden="true"></span>
-              <input class="sar-input" id="o-ai-color-bad" type="text" autocomplete="off"
-                spellcheck="false" placeholder="Default" value="#12" aria-invalid="true"
-                aria-describedby="o-ai-color-bad-error">
-            </div>
-            <p class="sar-field-error" id="o-ai-color-bad-error" role="alert">Not a color. Type
-              three or six hex digits, such as #8f73f3.</p>
-          </div>
-          <div class="sar-field" data-sar-layout="stacked">
-            <span class="sar-field-label" id="o-filter">In lists</span>
-            <fieldset class="sar-segment" aria-labelledby="o-filter">
-              <input type="radio" name="f" id="f-off" checked><label for="f-off">Show</label>
-              <input type="radio" name="f" id="f-dim"><label for="f-dim">Dim</label>
-              <input type="radio" name="f" id="f-hide"><label for="f-hide">Hide</label>
-            </fieldset>
-          </div>
-        </div>
-      </details>
-    </section>
-    <section class="sar-card" aria-labelledby="o-pvp">
-      <details class="sar-card-details">
-        <summary class="sar-card-summary">
-          <h2 class="sar-card-title" id="o-pvp" tabindex="-1">PvP</h2>
-          <span class="sar-card-state">Off</span>
-        </summary>
-        <label class="sar-field">
-          <span class="sar-field-label">Use this tag</span>
-          <input class="sar-toggle" type="checkbox" role="switch">
-        </label>
-      </details>
-    </section>
-    <section class="sar-card" aria-labelledby="o-iap">
-      <details class="sar-card-details">
-        <summary class="sar-card-summary">
-          <h2 class="sar-card-title" id="o-iap" tabindex="-1">In-App Purchases</h2>
-          <span class="sar-card-state">Off</span>
-        </summary>
-        <label class="sar-field">
-          <span class="sar-field-label">Use this tag</span>
-          <input class="sar-toggle" type="checkbox" role="switch">
-        </label>
-      </details>
-    </section>
-    <section class="sar-card" aria-labelledby="o-deck">
-      <details class="sar-card-details" open>
-        <summary class="sar-card-summary">
-          <h2 class="sar-card-title" id="o-deck" tabindex="-1">Steam Deck Compatibility</h2>
-          <span class="sar-card-state" data-sar-on>On</span>
-        </summary>
-        <label class="sar-field">
-          <span class="sar-field-label">Use this tag</span>
-          <input class="sar-toggle" type="checkbox" role="switch" checked>
-        </label>
-        <div class="sar-kind-options">
-          <div class="sar-field" data-sar-layout="stacked">
-            <span class="sar-field-label" id="o-deck-facets">Values to tag</span>
-            <fieldset class="sar-checks" aria-labelledby="o-deck-facets">
-              <label><input type="checkbox">Verified</label>
-              <label><input type="checkbox">Playable</label>
-              <label><input type="checkbox" checked>Unsupported</label>
-            </fieldset>
-            <span class="sar-field-help">Badges, banner entries and the list filter act on the
-              values ticked here. With none ticked, the tag marks no game.</span>
-          </div>
           <label class="sar-field">
             <span class="sar-field-label">Badge on games</span>
             <input class="sar-toggle" type="checkbox" role="switch" checked>
+            <span class="sar-field-help">Adds "KLAC" to search and wishlist rows and to game
+              images.</span>
           </label>
           <label class="sar-field">
             <span class="sar-field-label">Entry in the banner on game pages</span>
-            <input class="sar-toggle" type="checkbox" role="switch">
+            <input class="sar-toggle" type="checkbox" role="switch" checked>
           </label>
+          <div class="sar-field sar-color" data-sar-layout="stacked">
+            <label class="sar-field-label" for="o-color">Badge color (experimental)</label>
+            <div class="sar-color-entry">
+              <span class="sar-color-swatch" aria-hidden="true"
+                style="--sar-tag-edge: #e8590c"></span>
+              <input class="sar-input" id="o-color" type="text" autocomplete="off"
+                spellcheck="false" placeholder="Default" value="#e8590c">
+              <button class="sar-button" data-sar-variant="quiet" type="button">Reset</button>
+            </div>
+            <span class="sar-field-help">Contrast is not checked. See General.</span>
+          </div>
+          <div class="sar-field" data-sar-layout="stacked">
+            <span class="sar-field-label" id="o-filter">Games with this tag</span>
+            <fieldset class="sar-segment" aria-labelledby="o-filter">
+              <input type="radio" name="o-f" id="o-f-off">
+              <label for="o-f-off">Show</label>
+              <input type="radio" name="o-f" id="o-f-dim" checked>
+              <label for="o-f-dim">Dim</label>
+              <input type="radio" name="o-f" id="o-f-hide">
+              <label for="o-f-hide">Hide</label>
+            </fieldset>
+            <span class="sar-field-help">Fades these games in lists. Hover to see one
+              clearly.</span>
+          </div>
         </div>
-      </details>
-    </section>
-    <section class="sar-card" aria-labelledby="o-machine">
-      <details class="sar-card-details">
-        <summary class="sar-card-summary">
-          <h2 class="sar-card-title" id="o-machine" tabindex="-1">Steam Machine Compatibility</h2>
-          <span class="sar-card-state">Off</span>
-        </summary>
-        <label class="sar-field">
-          <span class="sar-field-label">Use this tag</span>
-          <input class="sar-toggle" type="checkbox" role="switch">
-        </label>
-      </details>
-    </section>
-    <section class="sar-card" aria-labelledby="o-family">
-      <details class="sar-card-details">
-        <summary class="sar-card-summary">
-          <h2 class="sar-card-title" id="o-family" tabindex="-1">Family Sharing</h2>
-          <span class="sar-card-state">Off</span>
-        </summary>
-        <label class="sar-field">
-          <span class="sar-field-label">Use this tag</span>
-          <input class="sar-toggle" type="checkbox" role="switch">
-        </label>
-      </details>
-    </section>
-    <section class="sar-card" aria-labelledby="o-lang">
-      <h2 class="sar-card-title" id="o-lang">Language</h2>
-      <div class="sar-field" data-sar-layout="stacked">
-        <label class="sar-field-label" for="o-locale">Language of this extension</label>
-        <select class="sar-select" id="o-locale"><option>Automatic</option><option>English</option>
-          </select>
-        <span class="sar-field-help">Automatic follows the store page's language when a translation
-          exists, and English otherwise.</span>
-      </div>
-    </section>
-    <section class="sar-card" aria-labelledby="o-allow">
-      <h2 class="sar-card-title" id="o-allow">Games you ignored</h2>
-      <ul class="sar-allow-list">
-        <li class="sar-allow-item">
-          <div><a class="sar-allow-name" href="#">A game with an upscaling-only disclosure</a>
-            <span class="sar-allow-meta">Since Oct 20, 2026</span></div>
-          <button
-              class="sar-button"
-              type="button"
-              aria-label="Stop ignoring A game with an upscaling-only disclosure">
-            Stop ignoring</button>
-        </li>
-        <li class="sar-allow-item">
-          <div><a class="sar-allow-name" href="#">Another game</a><span class="sar-allow-meta">Since
-            Sep 2, 2026</span></div>
-          <button class="sar-button" type="button" aria-label="Stop ignoring Another game">
-            Stop ignoring</button>
-        </li>
-      </ul>
-    </section>
-    <section class="sar-card" aria-labelledby="o-backup">
-      <h2 class="sar-card-title" id="o-backup">Backup</h2>
-      <p class="sar-backup-help">Save your settings and game lists to a file, to restore them after
-        reinstalling or in another browser.</p>
-      <div class="sar-backup-actions">
-        <button class="sar-button" type="button">Download backup</button>
-        <button class="sar-button" type="button">Restore from a backup</button>
-      </div>
-    </section>
-    <section class="sar-card" aria-labelledby="o-priv">
-      <h2 class="sar-card-title" id="o-priv">Privacy</h2>
-      <ul class="sar-privacy">
-        <li>Settings and results stay in this browser.</li>
-        <li>To check a game, the extension asks Valve's own store servers, without your cookies or
-          account.</li>
-        <li>Nothing is sent to us or anyone else. No analytics.</li>
-        <li>Backups are files on your computer. They never pass through us.</li>
-      </ul>
-    </section>
-    <footer class="sar-options-footer">Not affiliated with or endorsed by Valve Corporation. Steam
-      is a trademark of Valve Corporation.</footer>
+      </section>
+      <section class="sar-card" aria-labelledby="o-ign">
+        <h3 class="sar-card-title" id="o-ign" tabindex="-1">Ignored for this tag</h3>
+        <div class="sar-allow-group" role="group" aria-labelledby="o-ign-games">
+          <h4 class="sar-allow-scope" id="o-ign-games">Games you ignored</h4>
+          <ul class="sar-allow-list">
+            <li class="sar-allow-item">
+              <div><a class="sar-allow-name" href="#">A game with a long name that ends in an
+                ellipsis</a><span class="sar-allow-meta">Since Oct 20, 2026</span></div>
+              <button class="sar-button" data-sar-variant="quiet" type="button"
+                aria-label="Stop ignoring A game with a long name (Uses Kernel Level Anti-Cheat)">
+                Stop ignoring</button>
+            </li>
+          </ul>
+        </div>
+        <div class="sar-allow-group" role="group" aria-labelledby="o-ign-devs">
+          <h4 class="sar-allow-scope" id="o-ign-devs">Developers you ignored</h4>
+          <ul class="sar-allow-list">
+            <li class="sar-allow-item">
+              <div><span class="sar-allow-name">A studio</span><span class="sar-allow-meta">Since
+                Sep 30, 2026</span></div>
+              <button class="sar-button" data-sar-variant="quiet" type="button"
+                aria-label="Stop ignoring A studio (Uses Kernel Level Anti-Cheat)">
+                Stop ignoring</button>
+            </li>
+          </ul>
+        </div>
+        <p class="sar-allow-note">2 items ignored for all tags also apply here.
+          <button class="sar-button" data-sar-variant="quiet" type="button">Show in
+            General</button></p>
+      </section>
+    </div>
+    <div class="sar-tabpanel" role="tabpanel" id="o-p-account"
+      aria-labelledby="o-t-account" hidden></div>
+    <div class="sar-tabpanel" role="tabpanel" id="o-p-ai"
+      aria-labelledby="o-t-ai" hidden></div>
+    <div class="sar-tabpanel" role="tabpanel" id="o-p-anticheat"
+      aria-labelledby="o-t-anticheat" hidden></div>
+    <div class="sar-tabpanel" role="tabpanel" id="o-p-deck"
+      aria-labelledby="o-t-deck" hidden></div>
+    <div class="sar-tabpanel" role="tabpanel" id="o-p-drm"
+      aria-labelledby="o-t-drm" hidden></div>
+    <div class="sar-tabpanel" role="tabpanel" id="o-p-eula"
+      aria-labelledby="o-t-eula" hidden></div>
+    <div class="sar-tabpanel" role="tabpanel" id="o-p-family"
+      aria-labelledby="o-t-family" hidden></div>
+    <div class="sar-tabpanel" role="tabpanel" id="o-p-iap"
+      aria-labelledby="o-t-iap" hidden></div>
+    <div class="sar-tabpanel" role="tabpanel" id="o-p-pvp"
+      aria-labelledby="o-t-pvp" hidden></div>
+    <div class="sar-tabpanel" role="tabpanel" id="o-p-machine"
+      aria-labelledby="o-t-machine" hidden></div>
   </div>
-
+    <div class="sar-options-footer"><p>Not affiliated with or endorsed by Valve Corporation.
+      Steam is a trademark of Valve Corporation.</p></div>
+  </div>
   <div class="popup-frame">
-    <div class="sar-options" data-sar-context="popup">
+    <div class="sar-options" data-sar-context="popup" data-sar-view="list">
       <header class="sar-options-header">
         <img src="../../../assets/icons/icon-32.png" alt="">
         <div>
           <h1 class="sar-options-title">Tag Kit for Steam</h1>
           <div class="sar-options-version">Version 2026.10.20</div>
         </div>
+        <a class="sar-gear" href="#" aria-label="All settings" title="All settings">
+          <svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><path fill-rule="evenodd"
+            d="M40 26 45 30 43 35 37 34 34 37 35 43 30 45 26 40 22 40 18 45 13 43 14 37
+            11 34 5 35 3 30 8 26 8 22 3 18 5 13 11 14 14 11 13 5 18 3 22 8 26 8 30 3 35 5
+            34 11 37 14 43 13 45 18 40 22ZM31 24a7 7 0 1 0-14 0 7 7 0 1 0 14 0Z"/></svg></a>
       </header>
-      <section class="sar-card" aria-labelledby="p-ai">
-        <details class="sar-card-details" open>
-          <summary class="sar-card-summary">
-            <h2 class="sar-card-title" id="p-ai" tabindex="-1">AI Generated Content Disclosure</h2>
-            <span class="sar-card-state" data-sar-on>On</span>
-          </summary>
-          <label class="sar-field"><span class="sar-field-label">Use this tag</span>
-            <input class="sar-toggle" type="checkbox" role="switch" checked></label>
-          <div class="sar-kind-options">
-            <label class="sar-field"><span class="sar-field-label">Badges</span>
-              <input class="sar-toggle" type="checkbox" role="switch" checked></label>
-            <label class="sar-field"><span class="sar-field-label">Banner on game pages</span>
-              <input class="sar-toggle" type="checkbox" role="switch"></label>
-          </div>
-        </details>
-      </section>
-      <section class="sar-card" aria-labelledby="p-pvp">
-        <details class="sar-card-details">
-          <summary class="sar-card-summary">
-            <h2 class="sar-card-title" id="p-pvp" tabindex="-1">PvP</h2>
-            <span class="sar-card-state">Off</span>
-          </summary>
-          <label class="sar-field"><span class="sar-field-label">Use this tag</span>
-            <input class="sar-toggle" type="checkbox" role="switch"></label>
-        </details>
-      </section>
-      <section class="sar-card" aria-labelledby="p-iap">
-        <details class="sar-card-details">
-          <summary class="sar-card-summary">
-            <h2 class="sar-card-title" id="p-iap" tabindex="-1">In-App Purchases</h2>
-            <span class="sar-card-state">Off</span>
-          </summary>
-          <label class="sar-field"><span class="sar-field-label">Use this tag</span>
-            <input class="sar-toggle" type="checkbox" role="switch"></label>
-        </details>
-      </section>
-      <section class="sar-card" aria-labelledby="p-deck">
-        <details class="sar-card-details">
-          <summary class="sar-card-summary">
-            <h2 class="sar-card-title" id="p-deck" tabindex="-1">Steam Deck Compatibility</h2>
-            <span class="sar-card-state">Off</span>
-          </summary>
-          <label class="sar-field"><span class="sar-field-label">Use this tag</span>
-            <input class="sar-toggle" type="checkbox" role="switch"></label>
-        </details>
-      </section>
-      <section class="sar-card" aria-labelledby="p-machine">
-        <details class="sar-card-details">
-          <summary class="sar-card-summary">
-            <h2 class="sar-card-title" id="p-machine" tabindex="-1">Steam Machine Compatibility</h2>
-            <span class="sar-card-state">Off</span>
-          </summary>
-          <label class="sar-field"><span class="sar-field-label">Use this tag</span>
-            <input class="sar-toggle" type="checkbox" role="switch"></label>
-        </details>
-      </section>
-      <section class="sar-card" aria-labelledby="p-family">
-        <details class="sar-card-details">
-          <summary class="sar-card-summary">
-            <h2 class="sar-card-title" id="p-family" tabindex="-1">Family Sharing</h2>
-            <span class="sar-card-state">Off</span>
-          </summary>
-          <label class="sar-field"><span class="sar-field-label">Use this tag</span>
-            <input class="sar-toggle" type="checkbox" role="switch"></label>
-        </details>
-      </section>
-      <footer class="sar-options-footer">Not affiliated with Valve. Nothing leaves your browser
-        except lookups to Valve's store. <a href="#">All settings</a></footer>
+      <div class="sar-kind-rows">
+      <div class="sar-kind-row">
+        <a class="sar-kind-link" id="q-account" href="#tab=account">
+          <span class="sar-tab-label" aria-hidden="true">Account</span>
+          <span class="sar-vh">Account: Requires 3rd-Party Account</span>
+        </a>
+        <span class="sar-vh" id="q-account-f">Games with this tag</span>
+        <fieldset class="sar-segment" aria-labelledby="q-account q-account-f">
+          <input type="radio" name="q-account" id="q-account-off" checked>
+          <label for="q-account-off">Show</label>
+          <input type="radio" name="q-account" id="q-account-dim">
+          <label for="q-account-dim">Dim</label>
+          <input type="radio" name="q-account" id="q-account-hide">
+          <label for="q-account-hide">Hide</label>
+        </fieldset>
+        <input class="sar-toggle" type="checkbox" role="switch"
+          aria-labelledby="q-account" checked>
+      </div>
+      <div class="sar-kind-row">
+        <a class="sar-kind-link" id="q-ai" href="#tab=ai">
+          <span class="sar-tab-label" aria-hidden="true">AI</span>
+          <span class="sar-vh">AI: AI Generated Content Disclosure</span>
+        </a>
+        <span class="sar-vh" id="q-ai-f">Games with this tag</span>
+        <fieldset class="sar-segment" aria-labelledby="q-ai q-ai-f">
+          <input type="radio" name="q-ai" id="q-ai-off" checked>
+          <label for="q-ai-off">Show</label>
+          <input type="radio" name="q-ai" id="q-ai-dim">
+          <label for="q-ai-dim">Dim</label>
+          <input type="radio" name="q-ai" id="q-ai-hide">
+          <label for="q-ai-hide">Hide</label>
+        </fieldset>
+        <input class="sar-toggle" type="checkbox" role="switch"
+          aria-labelledby="q-ai" checked>
+      </div>
+      <div class="sar-kind-row">
+        <a class="sar-kind-link" id="q-anticheat" href="#tab=anticheat">
+          <span class="sar-tab-label" aria-hidden="true">Anti-Cheat</span>
+          <span class="sar-vh">Anti-Cheat: Uses Anti-Cheat</span>
+        </a>
+        <span class="sar-vh" id="q-anticheat-f">Games with this tag</span>
+        <fieldset class="sar-segment" aria-labelledby="q-anticheat q-anticheat-f">
+          <input type="radio" name="q-anticheat" id="q-anticheat-off" checked>
+          <label for="q-anticheat-off">Show</label>
+          <input type="radio" name="q-anticheat" id="q-anticheat-dim">
+          <label for="q-anticheat-dim">Dim</label>
+          <input type="radio" name="q-anticheat" id="q-anticheat-hide">
+          <label for="q-anticheat-hide">Hide</label>
+        </fieldset>
+        <input class="sar-toggle" type="checkbox" role="switch"
+          aria-labelledby="q-anticheat" checked>
+      </div>
+      <div class="sar-kind-row">
+        <a class="sar-kind-link" id="q-deck" href="#tab=deck">
+          <span class="sar-tab-label" aria-hidden="true">Deck</span>
+          <span class="sar-vh">Deck: Steam Deck Compatibility</span>
+        </a>
+        <span class="sar-vh" id="q-deck-f">Games with this tag</span>
+        <fieldset class="sar-segment" aria-labelledby="q-deck q-deck-f" disabled>
+          <input type="radio" name="q-deck" id="q-deck-off" checked>
+          <label for="q-deck-off">Show</label>
+          <input type="radio" name="q-deck" id="q-deck-dim">
+          <label for="q-deck-dim">Dim</label>
+          <input type="radio" name="q-deck" id="q-deck-hide">
+          <label for="q-deck-hide">Hide</label>
+        </fieldset>
+        <input class="sar-toggle" type="checkbox" role="switch"
+          aria-labelledby="q-deck">
+      </div>
+      <div class="sar-kind-row">
+        <a class="sar-kind-link" id="q-drm" href="#tab=drm">
+          <span class="sar-tab-label" aria-hidden="true">DRM</span>
+          <span class="sar-vh">DRM: Includes 3rd-party DRM</span>
+        </a>
+        <span class="sar-vh" id="q-drm-f">Games with this tag</span>
+        <fieldset class="sar-segment" aria-labelledby="q-drm q-drm-f">
+          <input type="radio" name="q-drm" id="q-drm-off" checked>
+          <label for="q-drm-off">Show</label>
+          <input type="radio" name="q-drm" id="q-drm-dim">
+          <label for="q-drm-dim">Dim</label>
+          <input type="radio" name="q-drm" id="q-drm-hide">
+          <label for="q-drm-hide">Hide</label>
+        </fieldset>
+        <input class="sar-toggle" type="checkbox" role="switch"
+          aria-labelledby="q-drm" checked>
+      </div>
+      <div class="sar-kind-row">
+        <a class="sar-kind-link" id="q-eula" href="#tab=eula">
+          <span class="sar-tab-label" aria-hidden="true">EULA</span>
+          <span class="sar-vh">EULA: Requires agreement to a 3rd-party EULA</span>
+        </a>
+        <span class="sar-vh" id="q-eula-f">Games with this tag</span>
+        <fieldset class="sar-segment" aria-labelledby="q-eula q-eula-f">
+          <input type="radio" name="q-eula" id="q-eula-off" checked>
+          <label for="q-eula-off">Show</label>
+          <input type="radio" name="q-eula" id="q-eula-dim">
+          <label for="q-eula-dim">Dim</label>
+          <input type="radio" name="q-eula" id="q-eula-hide">
+          <label for="q-eula-hide">Hide</label>
+        </fieldset>
+        <input class="sar-toggle" type="checkbox" role="switch"
+          aria-labelledby="q-eula" checked>
+      </div>
+      <div class="sar-kind-row">
+        <a class="sar-kind-link" id="q-family" href="#tab=family">
+          <span class="sar-tab-label" aria-hidden="true">Family Sharing</span>
+          <span class="sar-vh">Family Sharing</span>
+        </a>
+        <span class="sar-vh" id="q-family-f">Games with this tag</span>
+        <fieldset class="sar-segment" aria-labelledby="q-family q-family-f" disabled>
+          <input type="radio" name="q-family" id="q-family-off" checked>
+          <label for="q-family-off">Show</label>
+          <input type="radio" name="q-family" id="q-family-dim">
+          <label for="q-family-dim">Dim</label>
+          <input type="radio" name="q-family" id="q-family-hide">
+          <label for="q-family-hide">Hide</label>
+        </fieldset>
+        <input class="sar-toggle" type="checkbox" role="switch"
+          aria-labelledby="q-family">
+      </div>
+      <div class="sar-kind-row">
+        <a class="sar-kind-link" id="q-iap" href="#tab=iap">
+          <span class="sar-tab-label" aria-hidden="true">IAP</span>
+          <span class="sar-vh">IAP: In-App Purchases</span>
+        </a>
+        <span class="sar-vh" id="q-iap-f">Games with this tag</span>
+        <fieldset class="sar-segment" aria-labelledby="q-iap q-iap-f" disabled>
+          <input type="radio" name="q-iap" id="q-iap-off" checked>
+          <label for="q-iap-off">Show</label>
+          <input type="radio" name="q-iap" id="q-iap-dim">
+          <label for="q-iap-dim">Dim</label>
+          <input type="radio" name="q-iap" id="q-iap-hide">
+          <label for="q-iap-hide">Hide</label>
+        </fieldset>
+        <input class="sar-toggle" type="checkbox" role="switch"
+          aria-labelledby="q-iap">
+      </div>
+      <div class="sar-kind-row">
+        <a class="sar-kind-link" id="q-kernel" href="#tab=kernel">
+          <span class="sar-tab-label" aria-hidden="true">KLAC</span>
+          <span class="sar-vh">KLAC: Uses Kernel Level Anti-Cheat</span>
+        </a>
+        <span class="sar-vh" id="q-kernel-f">Games with this tag</span>
+        <fieldset class="sar-segment" aria-labelledby="q-kernel q-kernel-f">
+          <input type="radio" name="q-kernel" id="q-kernel-off" checked>
+          <label for="q-kernel-off">Show</label>
+          <input type="radio" name="q-kernel" id="q-kernel-dim">
+          <label for="q-kernel-dim">Dim</label>
+          <input type="radio" name="q-kernel" id="q-kernel-hide">
+          <label for="q-kernel-hide">Hide</label>
+        </fieldset>
+        <input class="sar-toggle" type="checkbox" role="switch"
+          aria-labelledby="q-kernel" checked>
+      </div>
+      <div class="sar-kind-row">
+        <a class="sar-kind-link" id="q-pvp" href="#tab=pvp">
+          <span class="sar-tab-label" aria-hidden="true">PvP</span>
+          <span class="sar-vh">PvP</span>
+        </a>
+        <span class="sar-vh" id="q-pvp-f">Games with this tag</span>
+        <fieldset class="sar-segment" aria-labelledby="q-pvp q-pvp-f" disabled>
+          <input type="radio" name="q-pvp" id="q-pvp-off" checked>
+          <label for="q-pvp-off">Show</label>
+          <input type="radio" name="q-pvp" id="q-pvp-dim">
+          <label for="q-pvp-dim">Dim</label>
+          <input type="radio" name="q-pvp" id="q-pvp-hide">
+          <label for="q-pvp-hide">Hide</label>
+        </fieldset>
+        <input class="sar-toggle" type="checkbox" role="switch"
+          aria-labelledby="q-pvp">
+      </div>
+      <div class="sar-kind-row">
+        <a class="sar-kind-link" id="q-machine" href="#tab=machine">
+          <span class="sar-tab-label" aria-hidden="true">Steam Machine</span>
+          <span class="sar-vh">Steam Machine: Steam Machine Compatibility</span>
+        </a>
+        <span class="sar-vh" id="q-machine-f">Games with this tag</span>
+        <fieldset class="sar-segment" aria-labelledby="q-machine q-machine-f" disabled>
+          <input type="radio" name="q-machine" id="q-machine-off" checked>
+          <label for="q-machine-off">Show</label>
+          <input type="radio" name="q-machine" id="q-machine-dim">
+          <label for="q-machine-dim">Dim</label>
+          <input type="radio" name="q-machine" id="q-machine-hide">
+          <label for="q-machine-hide">Hide</label>
+        </fieldset>
+        <input class="sar-toggle" type="checkbox" role="switch"
+          aria-labelledby="q-machine">
+      </div>
+      </div>
+      <div class="sar-options-footer"><p>Sends no reports. It only reads what developers report on
+        Steam.</p><p>Not affiliated with Valve. Nothing leaves your browser except lookups to
+        Valve's store.</p></div>
     </div>
   </div>
 </div>

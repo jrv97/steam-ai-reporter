@@ -91,6 +91,7 @@ Every text pair meets WCAG 2.2 AA on the grounds its token's note names; see the
 - **The mark** is a Steam badge, a ring around the Steam glyph, with a tag icon attached at its lower right: "Steam store pages, tagged". One ink per file, `sar-accent-400` in the extension icon; the tag leaves a transparent cut where it crosses the ring; no gradient, no letters. See section 14 for files, variants and sizes.
 - **No icons in components.** Badges, the tag section and the banner carry no icon, like the store's own tags, corner flags and notice bubbles. The violet hue and the wording mark them as ours. The mark appears as the extension icon and wherever that icon is shown, never inside a component. Icons on chips for the other tag kinds are a later design decision (decision 39).
 - No other icon set. Platform icons and flags around our badges are the store's.
+- **One icon in the settings chrome: the gear.** The toolbar popup's header ends in a gear that opens all settings (decision 65). It is an original eight-tooth gear with a round hole, one inline SVG path on a 48 unit grid, under 400 bytes, filled with `currentColor` (`sar-accent-300` as a link), `aria-hidden`, inside a link named by `options_all_settings`. It is chrome on an extension page, not a component on a store page, so the rule above stands for every store-page component.
 - The extension icon holds an outlined Steam glyph (decision 40). It shows in the README logo, the store listing images, the options and popup headers and the design previews. No chip, badge, banner or hover card shows a Valve mark, and no Valve wordmark, image or font file ships anywhere.
 
 ## What renders for each state
@@ -485,43 +486,51 @@ No classes, no inline styles, no per-node writes when the mode changes.
 
 ## 6. Options page and action popup
 
-The settings form, rendered as the full options page (`data-sar-context="page"`) and as the toolbar popup (`data-sar-context="popup"`), dark only. The stored settings are `locale`, `debug` and, for each kind, `kinds.<id>.enabled`, `kinds.<id>.badge`, `kinds.<id>.banner`, `kinds.<id>.filter` and, when the person set one, `kinds.<id>.color`.
+The settings form, rendered as the full options page (`data-sar-context="page"`, `data-sar-view="tabs"`) and as the toolbar popup (`data-sar-context="popup"`, `data-sar-view="list"`), dark only. The stored settings are `locale`, `debug` and, for each kind, `kinds.<id>.enabled`, `kinds.<id>.badge`, `kinds.<id>.banner`, `kinds.<id>.filter` and, when the person set one, `kinds.<id>.color`.
 
-Preview: `previews/OptionsPage.html`.
+Preview: `previews/OptionsPage.html`, and `previews/Tabs.html` for the tabs alone.
 
 ### What the consumer provides
 
 - `options.html` with structure and `data-i18n` keys only; every string from the catalog.
-- The context attribute on `.sar-options`. The userscript mounts the same form in its settings dialog.
-- Whether to show the color fields (`colors`). It is a capability apart from the context, so the dialog keeps the popup layout and still gets them: the full page and the dialog pass it, the toolbar popup does not.
+- The context (`page` or `popup`: density and the page-only pieces) and the layout (`tabs` or `list`). The userscript mounts the same form in its settings dialog with the popup context and tabs.
+- Whether to show the color fields (`colors`). It is a capability apart from the context: the full page and the dialog pass it, the toolbar popup does not.
 - The version from `package.json` for `options_version`.
+- On the full page: the tab named by the location fragment (`#tab=<id>`, read by `parseTabHash`) as `initialTab`, and `onTabChange`, which writes the fragment back with `history.replaceState`. The dialog passes neither and never touches the store page's address.
+- In the popup: `allSettingsUrl` for the gear and the row links, and `openTab`, which asks an open options page for a tab (below).
 
 ### Layout
 
-- Page: centered, `sar-options-max-width` (640px), `sar-space-4` padding, `sar-color-bg-panel`, `color-scheme: dark`.
-- Popup: `sar-popup-width` (360px), `sar-space-3` padding, short labels where a key exists. With a section for each of ten kinds the popup is tall and scrolls. Sections are flat, not cards: no fill, radius or inline padding, `sar-space-2` above and below, and a 1px `sar-color-divider` line between them. Section titles become captions in `sar-text-popup-caption` (11/16 medium, uppercase) and `sar-color-text-subtle`, like the store's own section labels. Rows take `sar-space-1` padding, the segmented control takes `sar-control-height-xs` (24px, the store's smallest control), and the allow-list scrolls inside 240px. An empty allow-list is left out of the popup; the full page keeps its empty state.
+- Page: centered, `sar-options-max-width` (880px), `sar-space-4` padding, `sar-color-bg-panel`, `color-scheme: dark`. Below the header the tabs (section 18): from an 800px viewport a 200px rail beside the panels, narrower a row of tabs that wraps above them.
+- Popup: `sar-popup-width` (360px), `sar-space-3` padding. The header stays in view and ends in the gear. Below it one row per tag, in the tabs' order: the tag's chip word, a link to its tab; a compact Show, Dim and Hide control (`sar-control-height-xs`, `sar-text-help`); the master switch. Rows take `sar-space-1` padding with a `sar-color-divider` line between them. The popup has no ignore lists and no badge, banner, value or color controls: those live on the page.
+- Dialog: the popup's density (flat sections, small captions, `sar-control-height-xs` segments) with the page's tabs and the color fields, 760px wide.
 - Font: the `ext` family (a system stack). The store font is not loaded on extension pages and none is bundled.
-- Type on the full page: field labels, help and error lines in `sar-text-body` (13/18). The popup keeps help and error lines in `sar-text-help` (12/16).
-- On the full page, sections are `.sar-card`: `sar-color-bg-raised`, `sar-radius-md`, `sar-space-3` padding, `sar-space-2` apart, titled in `sar-text-card-title` with `sar-space-2` below the title.
-- Each tag's section closes. It is a native `details` with its `summary` first: the section title (still the `h2`, still focusable with `tabindex="-1"` so focus can land on it) and a cue, `options_state_on` or `options_state_off`, from the master switch, in `sar-text-help` (`sar-color-text` when on, `sar-color-text-subtle` when off). The cue is words, so it never relies on color. After the cue comes an arrow drawn in CSS, which points down when closed and up when open. The summary is at least `sar-control-height-sm` tall (`sar-control-height-xs` in the popup) and takes the same focus ring as the other controls. There is no animation. The other cards (language, ignored games, backup, privacy) do not close.
+- Type on the full page: field labels, help and error lines in `sar-text-body` (13/18). The popup and the dialog keep help and error lines in `sar-text-help` (12/16).
+- Cards are `.sar-card`: `sar-color-bg-raised`, `sar-radius-md`, `sar-space-3` padding, `sar-space-2` apart, titled in `sar-text-card-title` with `sar-space-2` below the title. A tag's card title is an `h2`; the cards of General sit under the panel's `h2` (`options_tab_general`) and take `h3`. Every card title takes focus with `tabindex="-1"`, so focus can land on it.
 - Header: the 32px icon (48px source), `ext_name` in `sar-text-options-title`, the version in `sar-color-text-subtle`.
 
-### Sections, in order
+### Tabs, in order
 
-1. Header.
-2. One section for each tag kind, in registry order (PvP, In-App Purchases, Steam Deck, Steam Machine and Family Sharing start switched off, the other kinds on), titled with Steam's line for the kind (`kind_<id>_heading`). It holds the master switch `options_kind_enabled` (`kinds.<id>.enabled`), then, for a tag with values, a group of native checkboxes, one per value in Steam's words (Verified, Playable, Unsupported, or Family Sharing and Family Sharing not Available; `facets`; label `options_facets_label`, help `options_facets_help`), on the full page, in the popup and in the userscript dialog alike, since the choice decides what the tag means, then the switches `options_badges` (popup `options_badges_short`; `badge`) and `options_banner` (`banner`), then, on the full page and in the userscript dialog only, the color field (below), then a stacked SegmentedControl with Show, Dim and Hide (`filter`; values `off`, `dim`, `hide`; label `options_filter_label`; the help follows the selection). Each switch has help. While the master switch is off, the other three are hidden and their stored values stay. The summary shows the title and the master switch's state; the master switch and the rest sit in the body, one open away.
-3. Language (page only): a stacked Select, `Automatic` first, then each shipped locale named in its own language through `Intl.DisplayNames`.
-4. Games you ignored: the AllowList, in groups. All tags comes first, then each kind in registry order, each group titled with its scope's name and listing its games newest first. Left out of the popup while it is empty.
-5. Backup (full page and userscript dialog, not the toolbar popup): the Backup card, to download a file and restore from one.
-6. Privacy (page only): four bullets.
-7. Footer: `options_unaffiliated` in `sar-text-help`, subtle. The popup uses `options_unaffiliated_short` and adds an `options_all_settings` link.
+1. General, first and selected on a first visit:
+   - Language: a stacked Select, `Automatic` first, then each shipped locale named in its own language through `Intl.DisplayNames`. On the page and in the dialog.
+   - Badge color (experimental), where the form has color fields: the full help `options_color_help`, once.
+   - Ignored for all tags (`options_allow_all_title`): the games, developers and publishers ignored for every tag (section 11).
+   - Backup (page and dialog): the Backup card (section 12).
+   - Privacy (page only): four bullets.
+   - A Tag order card will join General when tags can be put in an order of the person's own.
+2. One tab per tag kind, sorted by its chip word in the UI language (`localeCompare` through `Intl.Collator`), labelled with that word and `options_state_on` or `options_state_off`. A tag that is off keeps its tab. The panel holds:
+   - The tag's card, titled with Steam's line for the kind (`kind_<id>_heading`): the master switch `options_kind_enabled` (`kinds.<id>.enabled`), then, for a tag with values, a group of native checkboxes, one per value in Steam's words (`facets`; label `options_facets_label`, help `options_facets_help`), then the switches `options_badges` (dialog `options_badges_short`; `badge`) and `options_banner` (`banner`), then, where the form has color fields, the color field (below), then a stacked SegmentedControl with Show, Dim and Hide (`filter`; label `options_filter_label`; the help follows the selection). Each switch has help. While the master switch is off, the other controls are hidden and their stored values stay.
+   - Ignored for this tag (`options_allow_kind_title`): what is ignored for this tag alone, and the note on what all tags ignore (section 11).
+3. Footer, under the tabs: `options_unaffiliated` in `sar-text-help`, subtle. The popup and the dialog use `options_privacy_no_reports` and `options_unaffiliated_short`.
 
 ### Behavior
 
 - Every change applies at once through the settings port; there is no save button. It is a patch of the fields the control names, applied to the settings stored at that moment, so a page that holds older settings never overwrites another kind's values. A polite live region announces `notice_settings_saved`.
 - A failed write reverts the control and shows `error_settings_save` under it in `.sar-field-error` (`role="alert"`).
-- A failed read shows the defaults with `error_settings_load` above the first section, outside every `details`, so a closed section cannot hide it.
-- A section starts open. Closing or opening one is remembered for that section alone, in the `v2:ui` record (`{ "open": { "<id>": false } }`, only sections the person has toggled), so the popup, the full page and the userscript dialog agree. It is interface state, not a setting, and it is not in the backup. A record that cannot be read or has bad entries leaves the section open; a write that fails loses only the memory of the choice, with no error shown. One listener on the form's root, in the capture phase, hears every section's `toggle` event, because `toggle` does not bubble.
+- A failed read shows the defaults with `error_settings_load` above the tabs, where no tab can hide it.
+- The tab shown is remembered in the `v2:ui` record as `{ "tab": "<id>" }`, shared by the page and the popup (the userscript keeps its own in the manager's storage). It is interface state, not a setting, and it is not in the backup. The first tab is the fragment's, else the stored one, else General; a tab that is unknown, an older build's `open` map or a record that cannot be read leave General. Opening writes nothing; each tab shown after that is written once, through a serial queue that skips a tab already stored, and the first write drops the old `open` map. A write that fails loses only the memory.
+- A tag's name in the popup is a link to `options.html#tab=<id>`. With `openTab`, a click writes `{ "tab": "<id>", "asked": <ms> }` to `v2:ui` and calls `runtime.openOptionsPage()`, which focuses an open options page or opens one; an open page hears the request through its storage listener and shows the tab, and a page that opens reads the same record. The time makes each request a new value, which `storage.onChanged` reports even for the tab already stored. Where the call fails, the link's own address opens in a new tab. No permission is needed: `options_ui` names the page.
+- The page also follows `hashchange`, so a link to `#tab=<id>` switches the tab in place.
 
 ### The color field (experimental)
 
@@ -531,7 +540,8 @@ One stacked field in each tag's options, after the banner switch and before the 
 - A row of a swatch (`sar-control-height-sm` square, `sar-color-border` edge, decorative, `aria-hidden`), a plain text box and a Reset button. No native color picker, no sliders. The text box is `sar-color-input-inline-size` wide, shows `options_color_placeholder` ("Default") while empty, and reads `#rgb` or `#rrggbb`, with or without the `#`, in any case. A valid value is saved as lowercase `#rrggbb` and shown back in that form. The typed hex is the visible readout, so the swatch is never the only cue.
 - The swatch shows the picked color, or the default violet while the box is empty. Reset (`options_color_reset`, with the screen reader name `options_color_reset_label` that begins with its text) shows only while a color is set, clears it and returns focus to the text box. Emptying the box does the same.
 - Live validation: on every keystroke, text that is not a color shows `options_color_invalid` (`role="alert"`, the box gets `aria-invalid` and a `sar-color-error` edge) and a text that reads shows at once on the swatch and the page, unsaved. The value is saved when the edit is committed (Enter or leaving the box), one patch of the `color` field. Invalid text is never saved and stays as typed until fixed. A failed save reverts the field and shows `error_settings_save`.
-- Help `options_color_help` always says that contrast is not checked.
+- Help: under the field, `options_color_help_short` ("Contrast is not checked. See General."); the full help `options_color_help`, which always says that contrast is not checked, sits once in General, and every color field names it in `aria-describedby`.
+- Reset is the quiet text button of section 10.
 
 ### Longer translations
 
@@ -638,7 +648,7 @@ Not in the popup: the popup leaves language to the full page.
 
 ## 10. Button
 
-Buttons on extension pages: secondary by default ("Stop ignoring"), primary only for Restore in the backup summary.
+Buttons on extension pages: secondary by default (Download backup), quiet for the small actions inside a card (Reset, Stop ignoring, Show in General), primary only for Restore in the backup summary.
 
 Preview: `previews/Button.html`.
 
@@ -662,44 +672,53 @@ Preview: `previews/Button.html`.
 
 - Banner actions are text buttons (`.sar-banner-action`, `.sar-banner-toggle`), documented under Banner.
 - Primary (`data-sar-variant="primary"`): `sar-button-primary-bg` with `sar-button-primary-fg` (6.77:1), `sar-button-primary-bg-hover` on hover (4.98:1). One per screen at most, for the action that overwrites something. Today that is only Restore in the Backup card.
+- Quiet (`data-sar-variant="quiet"`): no fill, no inline padding, `sar-accent-300` text with an underline, `sar-color-text-strong` on hover; the same minimum height and focus ring, so it keeps its target size. It reads as a link but is a `button`, because it acts on the page and never navigates. Reset, Stop ignoring and Show in General use it; the heavy filled look of a row of Stop ignoring buttons is gone.
 
 ## 11. Allow-list
 
-The list of games the person ignored, in groups by scope: all tags first, then each kind in registry order. Within a group the newest comes first, and each game has a way to stop ignoring it.
+What the person ignored, one card per scope: Ignored for all tags in General, Ignored for this tag in each tag's tab. A card lists the games, developers and publishers of its scope, each list under a caption and only when it holds an item, newest first, and each item has a quiet button to stop ignoring it.
 
 Preview: `previews/AllowList.html`.
 
 ### What the consumer provides
 
 ```html
-<div class="sar-allow-group" role="group" aria-labelledby="scope-title">
-  <h3 class="sar-allow-scope" id="scope-title">scope name</h3>
-  <ul class="sar-allow-list">
-    <li class="sar-allow-item">
-      <div>
-        <a class="sar-allow-name" href="/app/APPID">game name</a>
-        <span class="sar-allow-meta">t('options_allow_since', { date })</span>
-      </div>
-      <button class="sar-button" type="button" data-sar-restore="APPID" data-sar-scope="drm"
-              aria-label="t('options_allow_restore_label', { name, scope })">t('options_allow_restore')</button>
-    </li>
-  </ul>
-</div>
+<section class="sar-card" aria-labelledby="card-title">
+  <h3 class="sar-card-title" id="card-title" tabindex="-1">t('options_allow_kind_title')</h3>
+  <div class="sar-allow-group" role="group" aria-labelledby="list-caption">
+    <h4 class="sar-allow-scope" id="list-caption">t('options_section_allow')</h4>
+    <ul class="sar-allow-list">
+      <li class="sar-allow-item">
+        <div>
+          <a class="sar-allow-name" href="/app/APPID">game name</a>
+          <span class="sar-allow-meta">t('options_allow_since', { date })</span>
+        </div>
+        <button class="sar-button" data-sar-variant="quiet" type="button" data-sar-restore="APPID"
+                data-sar-scope="drm" aria-label="t('options_allow_restore_label', { name, scope })">
+          t('options_allow_restore')</button>
+      </li>
+    </ul>
+  </div>
+  <p class="sar-allow-note">t('options_allow_all_note', count)
+    <button class="sar-button" data-sar-variant="quiet" type="button" data-sar-tab="general">
+      t('options_allow_all_show')</button></p>
+</section>
 ```
 
-- The scope's name: `options_allow_scope_all` for all tags, else Steam's line for the kind. A group with no game is left out.
-- The game name as data, untranslated, linked to its store page.
+- The captions are the lists' names: `options_section_allow`, `options_section_allow_developers`, `options_section_allow_publishers`. The restore button's name still names the scope (`options_allow_restore_label`), so no two are alike.
+- The game name as data, untranslated, linked to its store page; a creator's name as plain text.
 - The date formatted with `Intl.DateTimeFormat(locale, { dateStyle: "medium" })`.
-- Empty: `<p class="sar-empty">t('options_allow_empty', { action })</p>`, where `action` is the "Ignore this game" label.
-- A failed removal shows `error_allow_list_save` under that item.
-- One game can sit in several groups; stopping to ignore it in one leaves the others.
+- Empty card: `<p class="sar-empty">t('options_allow_empty', { action })</p>`, where `action` is `banner_ignore` ("Ignore this game") in General and `banner_ignore_kind` ("Ignore for this tag") on a tag's tab.
+- A tag's card ends with the note on what all tags ignore, when anything is: `options_allow_all_note` (plural) and the quiet button `options_allow_all_show`, which selects General and moves focus to the title of Ignored for all tags. It is a button, not a hash link, because in the userscript dialog a hash would change the store page's address.
+- Each list is read once per refresh, and every card draws from that read. A list that cannot be read shows its `error_*_list_load` line in every card, never the empty state. A failed removal shows `error_allow_list_save` or `error_creator_list_save` under that item.
+- One game can sit in several scopes; stopping to ignore it in one leaves the others.
 
 ### Look
 
 - Items are a grid: name and date keep at least 40% of the row, the button wraps its text in the rest. `sar-color-divider` between items.
-- The scope's name is a small heading in `sar-color-text-strong` above its list; groups sit `sar-space-3` apart.
+- A caption is small: `sar-text-help` medium in `sar-color-text-subtle`; lists sit `sar-space-3` apart.
 - The name ends in an ellipsis; the date is `sar-text-help` in `sar-color-text-subtle`.
-- In the popup the lists scroll inside 240px, rows take `sar-space-1` padding, and the whole section is left out while there is no game. When the last game is removed there, focus moves to the section above.
+- After a restore, focus moves to the next item in the same card, else the previous one, else the card's title.
 
 ## 12. Backup
 
@@ -712,7 +731,7 @@ Preview: `previews/Backup.html`.
 - Settings: each tag's switches, list filter and color, the language and the debug flag.
 - Games, developers and publishers you ignored, by scope, with their names and dates.
 
-Not the lookup history, the open sections (`v2:ui`) or anything else derived. One JSON file named `ai-reporter-backup-YYYY-MM-DD.json` (local date), with `"format": "sar-backup"` and a `version`. The `ai-reporter-` prefix is a deliberate technical identifier that stays when the product name changes, like the `sar-` prefix. The file reuses the stored shapes of `v2:settings` and `v2:allow` under names of its own, so the extension and the userscript read the same file. Nothing else goes in: no cookies, no account data, nothing from the store.
+Not the lookup history, the tab last shown (`v2:ui`) or anything else derived. One JSON file named `ai-reporter-backup-YYYY-MM-DD.json` (local date), with `"format": "sar-backup"` and a `version`. The `ai-reporter-` prefix is a deliberate technical identifier that stays when the product name changes, like the `sar-` prefix. The file reuses the stored shapes of `v2:settings` and `v2:allow` under names of its own, so the extension and the userscript read the same file. Nothing else goes in: no cookies, no account data, nothing from the store.
 
 ### Where it appears
 
@@ -801,12 +820,12 @@ The userscript's settings, opened from the script manager's menu: the one modal 
 
 - A menu command `userscript_menu_settings` registered with `GM.registerMenuCommand`.
 - A native `dialog` in a shadow root on `div.sar-dialog-host`, opened with `showModal()`. `Escape` and a `userscript_close` text button close it; focus returns to the page.
-- Content: the popup layout (OptionsPage, `data-sar-context="popup"`) with the color fields of section 6 (the toolbar popup has none) plus the language and backup cards, 400px wide, titled with `ext_name`, set in the `page` family because the store font is available there.
+- Content: the settings form (section 6) with the popup's density (`data-sar-context="popup"`), the tabs of section 18 and the color fields, `min(760px, 100vw - sar-space-6)` wide, titled with `ext_name`, set in the `page` family because the store font is available there. From an 800px viewport the tabs are a rail, narrower a wrapping row. General holds the language picker (new in the dialog; the dialog's own copy follows a new language when it opens next), Badge color, Ignored for all tags and Backup; the dialog has no privacy card. The tab shown is remembered in the manager's storage; the dialog reads and writes no location fragment.
 - When `GM_addValueChangeListener` is missing, `userscript_reload_note` under the controls.
 
 ### Status
 
-Specified only. No dialog rules exist yet, so this card has no preview.
+The rules are in `ui/dialog.css`. It has no preview of its own: `previews/OptionsPage.html` and `previews/Tabs.html` show its content.
 
 ## 14. Extension icon
 
@@ -1005,6 +1024,54 @@ A block at the top of a package page (`/sub/<id>/`) that sums up the chips of th
 - Don't count an unknown game in "of N".
 - Don't send a package or bundle request for it: the rows' own lookups are enough.
 
+## 18. Tabs
+
+The settings' sections, as tabs: General first, then one per tag kind sorted by its chip word. On the options page and in the userscript dialog. Decision 65.
+
+Preview: `previews/Tabs.html`.
+
+### What the consumer provides
+
+```html
+<div class="sar-tabs">
+  <div class="sar-tablist" role="tablist" aria-label="t('options_tabs_label')">
+    <button class="sar-tab" type="button" role="tab" id="tab-general" aria-controls="panel-general"
+            aria-selected="true" tabindex="0" data-sar-tab="general">t('options_tab_general')</button>
+    <button class="sar-tab" type="button" role="tab" id="tab-kernel" aria-controls="panel-kernel"
+            aria-selected="false" tabindex="-1" data-sar-tab="kernel">
+      <span class="sar-tab-label" aria-hidden="true">t('kind_kernel_chip')</span>
+      <span class="sar-vh">t('kind_chip_name', { chip, heading })</span>
+      <span class="sar-tab-state" data-sar-on>t('options_state_on')</span>
+    </button>
+  </div>
+  <div class="sar-tabpanel" role="tabpanel" id="panel-general" aria-labelledby="tab-general">...</div>
+  <div class="sar-tabpanel" role="tabpanel" id="panel-kernel" aria-labelledby="tab-kernel" hidden>...</div>
+</div>
+```
+
+- `createTabs` (`ui/tabs.ts`) builds the list and the panels; the form fills them. The order comes from `sortTabs` (`ui/tab-id.ts`), a pure helper with a hook for a later order of the person's own.
+- A tag's tab: the chip word shown and hidden from screen readers, the full name (`kind_chip_name`, or the word once when it equals Steam's line, as PvP) read instead, then the state in words. A screen reader hears "KLAC: Uses Kernel Level Anti-Cheat On, tab, selected, 3 of 12".
+
+### Behavior
+
+- The standard tabs pattern with automatic activation: the selected tab has `aria-selected="true"` and is the one tab stop (`tabindex="0"`, the others `-1`); its panel shows and the others carry `hidden`. Every panel is rendered at mount.
+- Keys on a tab: ArrowRight and ArrowDown select the next tab, ArrowLeft and ArrowUp the previous one, on either axis and wrapping at the ends; Home the first, End the last. Focus follows. A key with Alt, Control or Meta is left to the browser. One delegated `keydown` listener on the form's root serves every tab, beside the one `click` listener.
+- No `aria-orientation`: both axes work in the rail and in the row.
+- The selection is remembered and mirrored in the page's fragment as section 6 says.
+
+### Look
+
+- Row (narrower than 800px): tabs wrap, `sar-space-1` apart; each at least `sar-control-height-sm`, `sar-space-1` by `sar-space-2` padding, with a 2px block-end bar.
+- Rail (from 800px): a 200px column beside the panels, sticky at the top of its scroller, tabs stacked, with a 2px inline-start bar.
+- Selected: the bar in `sar-accent-400`, `sar-color-bg-raised` behind it, `sar-color-text-strong` medium text. The bar and the weight carry the state without color. Hover: `sar-color-bg-raised`.
+- State: `sar-text-help` in `sar-color-text` when on, `sar-color-text-subtle` when off.
+- Forced colors: the selected tab's bar takes `Highlight` and a 1px `CanvasText` outline; the state stays words.
+- Focus: the shared `sar-focus-color` ring. No transition or animation.
+
+### Longer translations
+
+Labels sit beside their state in a flex row that wraps in the narrow layout. The longest Spanish label, "Prestamo familiar" (with the accent the catalog keeps), and "Desactivada" are expected to fit the 200px rail in one line at the body size; a longer one wraps. Nothing has a fixed height.
+
 ## Message catalog
 
 Every string the UI shows, as keys for `src/locales/en/messages.json`. Keys are snake_case, grouped by prefix. Placeholders use the Chrome form `$name$`. The note under each seeds the message's `description` for translators.
@@ -1121,7 +1188,7 @@ For every translator:
 | Key | English | Note |
 | --- | --- | --- |
 | `options_version` | Version `$version$` | Under the product name. |
-| `options_kind_enabled` | Use this tag | Master switch of one tag. Its section is titled with Steam's line for the tag. |
+| `options_kind_enabled` | Use this tag | Master switch of one tag. Its card is titled with Steam's line for the tag. |
 | `options_kind_enabled_help` | Off removes its badges, its entry in the banner and its list filter. | Help under the master switch. |
 | `options_badges` | Badge on games | Switch label of one tag's badge. |
 | `options_badges_short` | Badge | The same switch in the popup. |
@@ -1139,7 +1206,8 @@ For every translator:
 | `options_filter_hide_help` | Removes these games from lists. Where hiding would break a list, they are dimmed instead. | Help for "Hide". |
 | `options_color_label` | Badge color (experimental) | Label of a text field for a tag's hex color. It colors the tag's badge, its entry in the banner and its hover card. "(experimental)" stays in the label. |
 | `options_color_placeholder` | Default | Shown in the empty color field: the tag keeps the default violet. |
-| `options_color_help` | Type a hex code such as `#8f73f3`, with or without the `#`. Colors this tag's badge, its entry in the banner and its card. Contrast is not checked, so a very light or very dark color can be hard to read. Leave it empty for the default violet. | Help under the color field. Keep the example code. |
+| `options_color_help` | Type a hex code such as `#8f73f3`, with or without the `#`, in a tag's tab. It colors that tag's badge, its entry in the banner and its card. Contrast is not checked, so a very light or very dark color can be hard to read. Leave it empty for the default violet. | Once in General, under the color title. Keep the example code. |
+| `options_color_help_short` | Contrast is not checked. See General. | Under each color field; names the General tab. |
 | `options_color_invalid` | Not a color. Type three or six hex digits, such as `#8f73f3`. | Error under the color field while the text is no hex color. |
 | `options_color_reset` | Reset | Button that clears the tag's color. |
 | `options_color_reset_label` | Reset the badge color (experimental) of `$heading$` | Screen reader name of Reset; starts with its visible word. `heading` is Steam's line for the tag. |
@@ -1152,7 +1220,12 @@ For every translator:
 | `options_allow_scope_all` | All tags | Heading of the games ignored for every tag. The games ignored for one tag sit under Steam's line for it. |
 | `options_allow_restore` | Stop ignoring | Button next to a game. |
 | `options_allow_restore_label` | Stop ignoring `$name$` (`$scope$`) | Screen reader name of that button; `name` is untranslated and `scope` is the scope's name. |
-| `options_allow_empty` | None yet. Use "`$action$`" on a game page. | `action` is the "Ignore this game" label. |
+| `options_allow_empty` | None yet. Use "`$action$`" on a game page. | `action` is "Ignore this game" in General, "Ignore for this tag" on a tag's tab. |
+| `options_allow_kind_title` | Ignored for this tag | Card title on a tag's tab. |
+| `options_allow_all_title` | Ignored for all tags | Card title in General. |
+| `options_allow_all_note_one` | `$count$` item ignored for all tags also applies here. | Plural, one: the note on a tag's tab. |
+| `options_allow_all_note_other` | `$count$` items ignored for all tags also apply here. | Plural, other. |
+| `options_allow_all_show` | Show in General | Quiet button after that note. |
 | `options_section_privacy` | Privacy | Section heading. |
 | `options_privacy_storage` | Settings and results stay in this browser. | Privacy bullet. |
 | `options_privacy_lookup` | To check a game, the extension asks Valve's own store servers, without your cookies or account. | Privacy bullet. |
@@ -1160,7 +1233,11 @@ For every translator:
 | `options_privacy_backup` | Backups are files on your computer. They never pass through us. | Privacy bullet. |
 | `options_unaffiliated` | Not affiliated with or endorsed by Valve Corporation. Steam is a trademark of Valve Corporation. | Legal line; keep the names as they are. |
 | `options_unaffiliated_short` | Not affiliated with Valve. Nothing leaves your browser except lookups to Valve's store. | Popup footer. |
-| `options_all_settings` | All settings | Popup link to the full page. |
+| `options_all_settings` | All settings | Name and tooltip of the popup's gear to the full page. |
+| `options_tabs_label` | Settings sections | Name of the tab list. |
+| `options_tab_general` | General | The first tab and its heading. |
+| `options_state_on` | On | A tag's state on its tab. |
+| `options_state_off` | Off | A tag's state on its tab. |
 | `options_section_backup` | Backup | Section heading. |
 | `options_backup_help` | Save your settings and game lists to a file, to restore them after reinstalling or in another browser. | Help under the heading. |
 | `options_backup_download` | Download backup | Button that saves the file. |

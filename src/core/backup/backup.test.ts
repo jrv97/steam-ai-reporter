@@ -18,8 +18,8 @@ import { createSettingsSource } from "../settings/settings-source";
 import {
   ALLOW_KEY,
   CREATOR_ALLOW_KEYS,
-  SECTION_STATE_KEY,
   SETTINGS_KEY,
+  UI_STATE_KEY,
   verdictKey,
 } from "../storage-keys";
 import { type BackupDeps, createBackupFile, restoreBackup } from "./backup";
@@ -58,11 +58,11 @@ describe("createBackupFile", () => {
     expect(file.name).toBe("ai-reporter-backup-2026-01-05.json");
   });
 
-  it("leaves out the verdict cache and the open sections", async () => {
+  it("leaves out the verdict cache and the tab last shown", async () => {
     const store = memoryStore(
       new Map<string, JsonValue>([
         [verdictKey(appId(10)), { cached: "marker" }],
-        [SECTION_STATE_KEY, "marker"],
+        [UI_STATE_KEY, "marker"],
       ]),
     );
     expect((await createBackupFile(backupDeps(store))).text).not.toContain("marker");

@@ -2,7 +2,7 @@ import type { CreatorRole } from "./creator";
 import { type AppId, toAppId } from "./types";
 
 // Settings and the ignore list use layout `v2`, with one entry per tag kind, and so does the small
-// record of which settings sections are open. The verdict cache, its meta record and the breaker
+// record of the settings tab last shown. The verdict cache, its meta record and the breaker
 // keep `v1`. `CACHE_SCHEMA` versions the cache; the breaker owns `v1:breaker`.
 
 /**
@@ -25,8 +25,8 @@ export const CREATOR_ALLOW_KEYS: Readonly<Record<CreatorRole, string>> = {
   developer: "v2:allow-developers",
   publisher: "v2:allow-publishers",
 };
-/** Which settings sections the user closed or opened again; interface state, not a setting. */
-export const SECTION_STATE_KEY = "v2:ui";
+/** The settings tab last shown; interface state, not a setting, and left out of a backup. */
+export const UI_STATE_KEY = "v2:ui";
 export const META_KEY = "v1:meta";
 
 /** The layout `v1` keys of settings and the ignore list; only the migration reads them. */

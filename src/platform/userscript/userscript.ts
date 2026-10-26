@@ -3,8 +3,8 @@ import { createFetchHttp, type Fetch } from "../../core/http";
 import { createIgnoreLists } from "../../core/ignored";
 import { type ConsoleSink, createLogger } from "../../core/log";
 import { createSettingsSource } from "../../core/settings/settings-source";
-import { createSectionState } from "../../core/ui/section-state";
 import { adoptPageStyles, PAGE_CSS, TOKENS_CSS } from "../../core/ui/styles";
+import { createUiState } from "../../core/ui/ui-state";
 import { createGmStore, createRemoteSettings, type GmStorage, type WatchValue } from "./gm-storage";
 import { currentI18n } from "./locale";
 import { CATALOGS } from "./main.catalogs.gen";
@@ -59,7 +59,7 @@ export async function startUserscript(env: UserscriptEnv): Promise<App | undefin
         catalogs: CATALOGS,
         settings,
         lists: createIgnoreLists(store, clock),
-        sectionState: createSectionState(store),
+        uiState: createUiState(store),
         clock,
         live: remote !== undefined,
       });
