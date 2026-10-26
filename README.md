@@ -74,7 +74,7 @@ Sale pages such as Next Fest, tag and category hubs and the home page get a comp
 
 ![The options page: switches for badges and the banner, a Show, Dim and Hide control for lists, a language picker, and a list of games you ignored](docs/store/screenshots/05-options.jpg)
 
-The options page has a tab for each tag, sorted by the tag's name, with switches for the tag, its badge and its banner entry, a Show, Dim and Hide control for lists, and what you ignored for that tag alone. A General tab picks the language (automatic follows the store page) and lists what you ignored for all tags, each item with "Stop ignoring", beside the backup. The page remembers the last tab, and a link to `options.html#tab=drm` opens the DRM tab.
+The options page has a tab for each tag, sorted by the tag's name, with switches for the tag, its badge and its banner entry, a Show, Dim and Hide control for lists, and what you ignored for that tag alone. A General tab picks the language (automatic follows the store page) and lists what you ignored for all tags, each item with "Stop ignoring", beside the backup. Its Tag order card puts the tags in the order badges, the banner and summaries list them: drag a tag by its handle, click its handle and then another, or use Space and the arrow keys; a small game image shows the first two. The page remembers the last tab, and a link to `options.html#tab=drm` opens the DRM tab.
 
 ![The same search results with the list filter set to Dim, where the three badged rows are faded](docs/store/screenshots/list-dim.jpg)
 
