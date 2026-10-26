@@ -21,6 +21,7 @@ body:
         - 3rd-Party Account
         - 3rd-party EULA
         - PvP
+        - In-App Purchases
         - Settings or interface
         - Other
     validations:
