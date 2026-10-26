@@ -15,14 +15,27 @@ export const LINK_CANDIDATE = "a[href*='/app/']";
 /** Links to store items that are not apps: packages, bundles and events. They name `several`. */
 const OTHER_ITEM_LINK = "a[href*='/sub/'], a[href*='/bundle/'], a[href*='/news/']";
 const OTHER_ITEM_PATH = /\/(?:sub|bundle|news)\//;
-export const ANY_CANDIDATE = `${DATA_CANDIDATE}, ${LINK_CANDIDATE}, ${OTHER_ITEM_LINK}`;
+/**
+ * The ids of app page parts that belong to the page's app: its header capsule, purchase area and
+ * description. Each names the page's app (nothing off an app page), which keeps a host for another
+ * app from taking one in.
+ */
+const PAGE_PARTS: readonly string[] = [
+  "gameHeaderImageCtn",
+  "game_area_purchase",
+  "game_area_description",
+];
+export const ANY_CANDIDATE = [DATA_CANDIDATE, LINK_CANDIDATE, OTHER_ITEM_LINK]
+  .concat(PAGE_PARTS.map((id) => `#${id}`))
+  .join(", ");
 
 /**
  * Regions whose app links are never capsules: the classic and React footers, the app page
- * breadcrumbs, and our own nodes. The global header root is not here: it holds the search
- * suggestions, and its navigation links carry no image, so the host rule drops them.
+ * breadcrumbs and DLC bubble, and our own nodes. The global header root is not here: it holds the
+ * search suggestions, and its navigation links carry no image, so the host rule drops them.
  */
-export const SKIPPED = `#footer, [data-featuretarget='footer'], .breadcrumbs, ${SAR_NODE}`;
+export const SKIPPED =
+  `#footer, [data-featuretarget='footer'], .breadcrumbs, .game_area_dlc_bubble, ${SAR_NODE}`;
 
 /** What an element names: one app ID, `several` (a comma list or another item), or nothing. */
 export type Naming = AppId | "several" | undefined;
@@ -44,7 +57,7 @@ export function namingOf(element: Element, base: string): Naming {
     }
   }
   if (element.localName !== "a") {
-    return undefined;
+    return PAGE_PARTS.includes(element.id) ? appIdFromHref(base, base) : undefined;
   }
   const href = element.getAttribute("href");
   if (href === null) {
