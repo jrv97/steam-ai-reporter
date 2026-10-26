@@ -1,3 +1,0 @@
-kind: Changed
-body: Ignoring a game for a tag, or for all tags, now ignores its DLC for that tag too, on the game's own page, in search, on the wishlist and on sale pages. The extension takes the link from the base game that Steam already names for each DLC in the data it fetches, so a DLC released later follows at once and nothing new is requested or stored in your list of ignored games. Stop ignoring the game and its DLC come back. Stored lookup results from before are cleared once, so each game is checked again as you browse.
-time: 2026-10-25T15:55:00.000000+02:00
