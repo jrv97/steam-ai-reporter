@@ -97,18 +97,18 @@ Every text pair meets WCAG 2.2 AA on the grounds its token's note names; see the
 
 The state is per kind: a game can be disclosed for one kind and not disclosed or unknown for another.
 
-| Verdict of a kind | Chip | Tag section | Banner | List filter |
-| --- | --- | --- | --- | --- |
-| Disclosed | yes | a chip | an entry | dim or hide |
-| Disclosed, ignored for the kind or for all tags | nothing | nothing | one-line note | nothing |
-| Not disclosed | nothing | nothing | nothing | nothing |
-| Unknown | nothing | nothing | nothing | nothing |
+| Verdict of a kind | Chip | Tag section | Banner | List filter | Package summary |
+| --- | --- | --- | --- | --- | --- |
+| Disclosed | yes | a chip | an entry | dim or hide | counted, and in "of N" |
+| Disclosed, ignored for the kind or for all tags | nothing | nothing | one-line note | nothing | in "of N" only |
+| Not disclosed | nothing | nothing | nothing | nothing | in "of N" only |
+| Unknown | nothing | nothing | nothing | nothing | left out of "of N" |
 
-An unknown that holds for every kind with the reason `error` or `rate-limited` (a lookup that failed or was held back while the breaker was open) is asked again once the breaker has closed, at most twice. The chips, the tag section and the banner then draw from the new answer, with no reload (decision 55). Until then nothing renders, as for any unknown.
+An unknown that holds for every kind with the reason `error` or `rate-limited` (a lookup that failed or was held back while the breaker was open) is asked again once the breaker has closed, at most twice. The chips, the tag section, the package summary and the banner then draw from the new answer, with no reload (decision 55). Until then nothing renders, as for any unknown.
 
 A DLC follows its base game's ignore list. A kind disclosed on a DLC whose base game is ignored for that kind, or for all tags, renders as the "ignored" row above, except in the banner of the DLC's own page, which shows neither an entry nor a note for it (see "Ignored through a base game" below). Everything else about the state is per kind, as above.
 
-Each kind's settings (`kinds.<id>`: `enabled`, `badge`, `banner` and `filter`) gate its columns. `enabled` off removes everything for the kind, `badge` off removes its chips, in lists and in the tag section, `banner` off removes its entry and its note, and `filter` set to `off` leaves lists alone. All are on by default, except that PvP starts with `enabled` off, and the filter is `off`. The ignore list wins over every setting.
+Each kind's settings (`kinds.<id>`: `enabled`, `badge`, `banner` and `filter`) gate its columns. `enabled` off removes everything for the kind, `badge` off removes its chips, in lists and in the tag section, and its line in the package summary, `banner` off removes its entry and its note, and `filter` set to `off` leaves lists alone. All are on by default, except that PvP starts with `enabled` off, and the filter is `off`. The ignore list wins over every setting.
 
 ## Shared rules
 
@@ -948,6 +948,46 @@ A bar above a list, in the look of the store's own notice bar above search resul
 - Don't scan for the count; read the marks the renderers wrote.
 - Don't edit, restyle or join the store's bar, and don't reuse its classes.
 
+## 17. Package summary
+
+A block at the top of a package page (`/sub/<id>/`) that sums up the chips of the games the package includes, one line per tag, so a person sees what the package holds without reading every row: "AI Generated Content Disclosure: 2 of 5 games". It reuses the tag section's block and label (section 3) and draws from the verdicts the rows were looked up with: no request of its own (decision 57).
+
+### When to use
+
+- On a list surface named in `SUMMARY_PLACEMENTS` (`scan/placements.ts`): the package page's included games first. An entry is the same `ListPlacement` shape as the hidden results notice: the selector of the element that holds the hosts and, in `after`, the store element the block follows. A bundle page is one more entry once a capture shows its markup.
+- One line for each kind that at least one included game shows a chip for: disclosed, not ignored for the game (`isIgnored`, through the capsule UI's `allowed`), enabled and with its badge switch on. A kind with no such game has no line, never a zero.
+- With no line to show, there is no block and no label.
+
+### What the consumer provides
+
+```html
+<div class="sar-tag-section sar-summary" role="group" aria-labelledby="sar-summary-label">
+  <div class="sar-tag-section-label" id="sar-summary-label">t('badge_tags_title')</div>
+  <div class="sar-summary-line">t('badge_summary_games', { kind, tagged }, count)</div>
+  <!-- one line for each further kind, then t('badge_summary_pending', count) while some wait -->
+</div>
+```
+
+- `tagged` counts the included games that show the kind's chip. `count` (the plural count) counts the included games whose verdict for the kind is known: an unknown game is neither counted as carrying the kind nor as not carrying it.
+- While an included game has no answer yet, a last line says how many: "1 game not checked yet". It goes once every game has an answer.
+- The summary is a renderer beside the badges (`createPackageSummary`). It keeps each host's last view in a `WeakMap` keyed by the host and counts the marked hosts inside the list in one microtask after a batch of draws. New verdicts, a retry's answer, a settings change and a change to the ignore lists reach it through the capsule UI's draws, with no observer, timer or request of its own.
+
+### Look
+
+- The tag section's block and label: `sar-text-summary-tag`, the label in `sar-color-text-muted` with `sar-space-1` below it. Each line is `sar-text-summary-tag` in `sar-color-text`, one per row, with no chip and no violet: the lines quote Steam's words and count games, and the rows below carry the chips.
+- It goes right after `#package_header_container`, the package's title image, when the page has it, else right before the list of included games, with `sar-space-2` above and below. Without the list, nothing is drawn.
+- One node of our own, inside no host, which keeps it out of every list filter's dim and hide.
+
+### Accessibility
+
+- The group is named by its visible label. The lines are plain text in reading order; the block is drawn once the answers are in and does not announce itself.
+
+### Don't
+
+- Don't write a zero line, "none" or "free of" for a kind: a kind no included game shows has no line.
+- Don't count an unknown game in "of N".
+- Don't send a package or bundle request for it: the rows' own lookups are enough.
+
 ## Message catalog
 
 Every string the UI shows, as keys for `src/locales/en/messages.json`. Keys are snake_case, grouped by prefix. Placeholders use the Chrome form `$name$`. The note under each seeds the message's `description` for translators.
@@ -994,6 +1034,8 @@ For every translator:
 | `badge_card_declared` | Declared by the developer on the store page | Last line of the hover card. It says the developer, not this extension, made the declarations above. |
 | `badge_card_service_label` | AI service named by the developer: | Precedes a product name inserted as data. Used by the card and the banner. |
 | `badge_card_more` | The full text is on the game's store page. | Shown when the card cuts a long text short, never on the game's own page. |
+| `badge_summary_games_one`, `_other` | `$kind$`: `$tagged$` of `$count$` game(s) | A line of the package summary, one per tag: Steam's line, then how many of the games with a known answer carry it. Neutral count words only. |
+| `badge_summary_pending_one`, `_other` | `$count$` game(s) not checked yet | Last line of the package summary while some included games are still being looked up. |
 
 ### `banner_`
 
