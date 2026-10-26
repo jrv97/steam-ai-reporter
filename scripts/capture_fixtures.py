@@ -33,8 +33,9 @@ USER_AGENT = "steam-ai-reporter-fixtures (+https://github.com/jrv97/steam-ai-rep
 TIMEOUT_SECONDS = 30
 SPACING_SECONDS = 1.0
 
-# `related_items` and `type` stay: the schema reads `related_items.parent_appid` of a DLC or a demo
-# (decisions 51 and 59), and `type` 1 marks a demo.
+# `related_items`, `type` and `is_free` stay: the schema reads `related_items.parent_appid` of a
+# DLC or a demo (decisions 51 and 59), `type` 1 marks a demo, and Family Sharing reads `type` and
+# `is_free`, which Steam sends for free items only (decision 64).
 ITEM_REMOVED = ("best_purchase_option",)
 # `basic_info` keeps only the creators the ignore lists follow (ADR 0013); its descriptions go.
 BASIC_INFO_KEPT = ("developers", "publishers")
@@ -117,7 +118,8 @@ APP_PAGES = (
 
 # The tag kinds: apps that show each declaration, a package and a bundle without `extra_details`,
 # and an ID that does not exist. 1091500 and 1174180 carry Steam Deck ratings, and 3489340 is
-# unreleased, which Valve has not rated.
+# unreleased, which Valve has not rated. For Family Sharing: its demo 4513800 has no feature
+# list, the DLC 5201760 lacks 62 while its base game lists it, and the DLC 2778580 lists it.
 KIND_APPS = (
     3751950,
     2807960,
@@ -132,6 +134,9 @@ KIND_APPS = (
     1091500,
     1174180,
     3489340,
+    4513800,
+    5201760,
+    2778580,
 )
 # Games that declare nothing of any kind, from 2004 to 2024.
 KIND_NOTHING = (1145360, 413150, 504230, 367520, 2379780, 620)

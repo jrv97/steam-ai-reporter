@@ -8,7 +8,10 @@ shows each kind of declaration and names a developer or publisher (clan IDs are 
 Steam omits them for some creators). The call asks for `platforms`, as the extension does while a
 Steam Deck or Steam Machine tag is on: each sample app must carry it, with each device rating an
 integer from 0 to 3 when present, and some app must have a Deck and a Machine rating above 0. No
-single game is held to a rating. The DLC and the demo must still name their base or full game in
+single game is held to a rating. Every sampled game must carry categories.feature_categoryids,
+which Family Sharing reads, and `is_free` must be a boolean when present; across the sample some
+app lists Family Sharing (62) and some paid game's list leaves it out, again with no game held
+to either. The DLC and the demo must still name their base or full game in
 related_items.parent_appid, with `type` 4 for the DLC and 1 for the demo. A page comes from an app
 the sample shows that declaration for, and is checked against what GetItems says about its own app.
 Exits non-zero, listing what changed, when an answer no longer has the expected shape. Not part of
@@ -39,8 +42,11 @@ SAMPLE = (1808500, 5072580, 413150, 3751950, 2807960, 730, 105600, 1245620, 1145
 CHILDREN = (("DLC", 5201760, 4, 1808500), ("demo", 4513800, 1, 3489340))
 # Steam's category IDs for PvP, Online PvP, LAN PvP and Shared/Split Screen PvP.
 PVP_CATEGORY_IDS = frozenset({49, 36, 47, 37})
-# Steam's feature category ID for In-App Purchases.
+# Steam's feature category IDs for In-App Purchases and for Family Sharing, which Valve computes.
 IAP_CATEGORY_ID = 35
+FAMILY_CATEGORY_ID = 62
+# Steam's `type` of a game.
+GAME_TYPE = 0
 CATEGORY_LISTS = ("supported_player_categoryids", "feature_categoryids")
 # Valve's device ratings in `platforms`: 0 Unknown, 1 Unsupported, 2 Playable, 3 Verified.
 DECK_FIELD = "steam_deck_compat_category"
@@ -68,6 +74,8 @@ REQUIRED_FACTS = {
     "eula": "a non-empty eula list",
     "pvp": "categories.supported_player_categoryids with a PvP category",
     "iap": "categories.feature_categoryids with In-App Purchases (35)",
+    "family": "categories.feature_categoryids with Family Sharing (62)",
+    "family-unlisted": "a paid game whose feature list leaves out Family Sharing (62)",
     "creator": "basic_info.developers or publishers with a named entry",
     "deck": f"platforms.{DECK_FIELD} above 0",
     "machine": f"platforms.{MACHINE_FIELD} above 0",
@@ -248,7 +256,21 @@ def item_problems(appid: int, item: dict[str, object] | None) -> list[str]:
         for name in CATEGORY_LISTS:
             if category_ids(item, name) is None:
                 problems.append(f"{where}: categories.{name} is not a list")
+    return problems + family_problems(where, item)
+
+
+def family_problems(where: str, item: dict[str, object]) -> list[str]:
+    """A game carries a feature list for Family Sharing; `is_free` is a boolean when sent."""
+    problems = type_problems(where, item, ("is_free",), bool)
+    if item.get("type") == GAME_TYPE and not category_ids(item, "feature_categoryids"):
+        problems.append(f"{where}: a game without a categories.feature_categoryids list")
     return problems
+
+
+def lists_family(item: dict[str, object]) -> bool | None:
+    """Whether a game's non-empty feature list holds Family Sharing; None for no such list."""
+    ids = category_ids(item, "feature_categoryids")
+    return FAMILY_CATEGORY_ID in ids if ids else None
 
 
 def facts_of(item: dict[str, object]) -> set[str]:
@@ -267,6 +289,13 @@ def facts_of(item: dict[str, object]) -> set[str]:
             ("eula", isinstance(eula, list) and bool(eula)),
             ("pvp", bool(PVP_CATEGORY_IDS.intersection(category_ids(item) or []))),
             ("iap", IAP_CATEGORY_ID in (category_ids(item, "feature_categoryids") or [])),
+            ("family", lists_family(item) is True),
+            (
+                "family-unlisted",
+                lists_family(item) is False
+                and item.get("type") == GAME_TYPE
+                and item.get("is_free") is not True,
+            ),
             (
                 "creator",
                 any(has_text((as_object(c) or {}).get("name")) for c in creator_entries(item)),
