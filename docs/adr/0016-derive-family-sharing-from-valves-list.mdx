@@ -1,5 +1,5 @@
 ---
-status: accepted
+status: accepted, amended 2026-10-26 by the maintainer
 date: 2026-10-26
 decision-makers: Jorge Rodriguez de la Vega
 ---
@@ -84,3 +84,37 @@ Nothing to adopt: the kind reads one integer in a list and two item fields, and 
 
 - Good: exact for one owner's library.
 - Bad: needs the person's credentials and the client's endpoints, against rule 1, and says nothing about games the person does not own.
+
+## Amendment 2026-10-26: the maintainer's wording for the derived value
+
+Amended 2026-10-26 by the maintainer. With the chips in Steam's full words, the maintainer chose wording of our own for the derived value, knowing that it departs from rule 4 as written above and from the catalog check this ADR added.
+
+### Decision
+
+- The derived value's chip reads "No Family Sharing" (Spanish "Sin prestamo familiar", with the accent the catalog keeps). The listed value's chip stays Steam's "Family Sharing".
+- In the hover card, the derived value's line reads "Family Sharing is not supported for this game" (Spanish "El prestamo familiar no esta disponible para este juego", with the accents the catalog keeps; our own wording, not checked against Steam's). It replaces Steam's client words "Family Sharing not Available" as the card's value line and our earlier line "Family Sharing is not in the features Steam lists for this game.", which is gone.
+- The card's source line for this kind reads "According to the features Steam lists for this game" (Spanish "Segun las caracteristicas que Steam lista para este juego", with the accents the catalog keeps, unverified) instead of "According to Valve". A kind names its own line in `KindMessages.source`, `badge_card_valve` when absent, and Steam Deck and Steam Machine keep "According to Valve". A card with entries of several kinds lists each distinct line once, the developer's first.
+- Steam's "Family Sharing not Available" stays where no source line follows it: the banner heading, the settings choice, the package summary and the chip's accessible name.
+- Scope: such wording is allowed only for a kind read from Valve's computed category list under the conditions above (a non-empty list that lacks the category, a game, not free), and only Family Sharing uses it. Developer-declared kinds keep rule 4 as written: "no AI", "AI-free", "no anti-cheat", "DRM-free" and "none" stay banned for them and for every other kind.
+- The catalog check allows the two keys `kind_family_unsupported_chip` and `kind_family_unsupported_line`, by key and not by pattern, and still fails on "No" and a tag's name under every other key.
+
+Rule 4 in `AGENTS.md` changes from the text quoted above, as this ADR first set it, to:
+
+> 4. **Semantics.** Three verdict states: disclosed, not disclosed, unknown. Unknown is never stored or shown as not disclosed. An item without `extra_details`, or without a section a kind reads, is unknown; an item with them and no key for a kind is not reported. Only a kind read from Valve's own computed category list may derive a value from a non-empty list that lacks its category, under the conditions of an ADR (ADR 0016). Neither state nor a derived value renders as "none", "no" and the kind, "DRM-free" or "no anti-cheat", with one exception (ADR 0016, amended): Family Sharing's derived value may read "No Family Sharing" on its chip and "Family Sharing is not supported for this game" in the hover card, which then always closes with "According to the features Steam lists for this game". No other kind, and no developer-declared kind, has such an exception. A tag uses Steam's own words for its kind and names its source: the developer, or Valve for what Valve computes. Our own copy never says "uses AI", "AI-free" or "no AI", and states nothing about a game beyond Steam's words and data, apart from that qualified exception. The developer's own text is rendered verbatim through `textContent`.
+
+### Considered options
+
+1. Keep Steam's words: "Family Sharing not Available" on the chip and as the card's value line, with our line about Steam's list under it.
+2. A short form without "no", such as the first build's "Family not Available".
+3. "No Family Sharing" on the chip and "Family Sharing is not supported for this game" in the card, qualified by a source line that names Steam's feature list (chosen).
+
+- Option 1. Good: Steam's own words, and rule 4 unchanged. Bad: a status from the signed-in client's library, not from the store, and long on a chip (28 characters, 31 in Spanish).
+- Option 2. Good: no negative of our own. Bad: it shortens Steam's name, which the maintainer rejected for the chips, and still reads as the client's status.
+- Option 3. Good: short and plain (17 characters, 21 in Spanish), and it reads as the warning a person who shares a library looks for. Bad: our own negative, which rule 4 banned, and an allow-list in the catalog check.
+
+### Consequences
+
+- The card now states the fact in our own words, qualified by the source line that names the features Steam lists for the game.
+- The chip alone does not carry the qualifier: its hover card and its accessible name do. The chip's accessible name stays Steam's "Family Sharing not Available", which holds Steam's heading and the value, and does not start with the visible "No Family Sharing", as with the device ratings' chips.
+- A demo's lent value shows "For the full game", the line and the kind's own source line.
+- The rest of this ADR stands: the conditions, the states, the evidence and the canary are unchanged.
