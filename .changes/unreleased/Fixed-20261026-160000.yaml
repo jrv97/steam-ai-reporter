@@ -1,0 +1,3 @@
+kind: Fixed
+body: The tag on a game image now sits the same distance from the top and the right edge. It was 5px from the top and flush against the right edge, and now keeps 5px from both. On a narrow image the tag still shrinks and ends in an ellipsis instead of running past the image.
+time: 2026-10-26T16:00:00.000000+02:00

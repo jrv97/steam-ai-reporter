@@ -233,20 +233,20 @@ Preview: `previews/CompactBadge.html`.
 | Tier | Image box | Renders | Height | Type | Inset |
 | --- | --- | --- | --- | --- | --- |
 | none | under 180px wide or 32px tall | nothing | | | |
-| `text` | 180 to 399px wide | label | `sar-compact-height` 19px | `sar-text-compact` 11/17 medium | `sar-compact-inset-block` 5px, `sar-compact-inset-inline` 0 |
+| `text` | 180 to 399px wide | label | `sar-compact-height` 19px | `sar-text-compact` 11/17 medium | `sar-compact-inset-block` 5px, `sar-compact-inset-inline` 5px |
 | `large` | 400px wide and 150px tall | label | `sar-compact-height-lg` 22px | `sar-text-compact-lg` 12/20 medium | same |
 
 Tiers depend on image size only. A longer translation truncates inside its tier and never moves the badge to another.
 
 ### Look and placement
 
-Built as a mirror of the store's own corner flags (in library, on wishlist): solid, square, 19px tall, 5px down from the top, flush to the edge.
+Built as a mirror of the store's own corner flags (in library, on wishlist): solid, square, 19px tall, and 5px from the top and 5px from the end edge, so the two margins match.
 
 - `sar-compact-fg` on `sar-compact-bg` (12.65:1 whatever the art), square corners, a 1px `sar-compact-border` and `sar-compact-shadow`.
 - Unlike the store's mid-tone flags, the surface is dark (accent 900) and keeps an edge. Together they give every kind of art a boundary at 3:1 or more: the edge against black (5.91:1), the surface against white (16.63:1), mid grey (4.21:1) and violet (3.34:1).
 - Block-start, inline-end corner (top right in English), mirroring the store's flags, which sit top-left. The store also owns the bottom edge (prices).
 - `z-index: sar-z-badge`: over the art, the corner flags and the microtrailer video that home capsules play on hover, under the store's hover popups.
-- Maximum inline size is the image width; past it the chips shrink and their text ends in an ellipsis. Two chips can take more room than the one label did before, and the badges share the store flags' row, so a longer translation on a small capsule can reach a store flag; see the open questions.
+- Maximum inline size is the image width less the inline inset (the group is anchored at the end edge only: the inset is subtracted once, and the start edge may be reached); past it the chips shrink and their text ends in an ellipsis. Two chips can take more room than the one label did before, and the badges share the store flags' row, so a longer translation on a small capsule can reach a store flag; see the open questions.
 - On home capsules, the store's options arrow (`.ds_options`, z-index 15) appears in the same corner on hover and covers about 39px of the group's inline end; the store control stays on top on purpose, and at rest the chips are clear.
 
 ### Pointer and accessibility

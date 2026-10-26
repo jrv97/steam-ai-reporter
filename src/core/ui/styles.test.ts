@@ -245,6 +245,21 @@ describe("the chips on a narrow row", () => {
   });
 });
 
+describe("the compact badge placement", () => {
+  const token = (name: string) => new RegExp(`${name}:\\s*([^;]+);`).exec(TOKENS_CSS)?.[1];
+  const group = PAGE_CSS.slice(PAGE_CSS.indexOf('.sar-chips[data-sar-chips="compact"] {'));
+
+  it("sits the same distance from the top and the end edge", () => {
+    expect(token("--sar-compact-inset-inline")).toBe(token("--sar-compact-inset-block"));
+    expect(group).toContain("inset-block-start: var(--sar-compact-inset-block)");
+    expect(group).toContain("inset-inline-end: var(--sar-compact-inset-inline)");
+  });
+
+  it("keeps the group inside the image by subtracting the end inset once", () => {
+    expect(group).toContain("max-inline-size: calc(100% - var(--sar-compact-inset-inline))");
+  });
+});
+
 describe("adoptStyles", () => {
   it("adopts a stylesheet once per root", () => {
     const host = document.createElement("div");

@@ -237,8 +237,9 @@
   /* Compact badge offset from the image's block-start edge: the store's corner flags sit 5px down.
   */
   --sar-compact-inset-block: 5px;
-  /* Compact badge offset from the inline-end edge: flush, like the store's flags. */
-  --sar-compact-inset-inline: 0;
+  /* Compact badge offset from the inline-end edge: equal to the block offset, so the badge sits the
+     same distance from the top and the end edge. */
+  --sar-compact-inset-inline: 5px;
   /* Compact badge inline padding, large tier. */
   --sar-compact-pad-inline-lg: 7px;
   /* Gap between a control and its focus ring. */
