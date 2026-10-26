@@ -60,6 +60,7 @@ export async function startUserscript(env: UserscriptEnv): Promise<App | undefin
         settings,
         lists: createIgnoreLists(store, clock),
         sectionState: createSectionState(store),
+        clock,
         live: remote !== undefined,
       });
     })().catch((problem: unknown) => {

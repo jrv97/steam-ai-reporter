@@ -7,7 +7,7 @@ import { KIND_IDS, type KindId } from "../kinds/id";
 import type { TagKind } from "../kinds/kind";
 import { type KindSettings, LIST_FILTERS, type ListFilter } from "../kinds/kind-settings";
 import { KIND_BY_ID, KINDS } from "../kinds/registry";
-import type { MessageCatalog } from "../ports";
+import type { Clock, FileTransfer, MessageCatalog } from "../ports";
 import {
   ALLOW_ALL,
   ALLOW_SCOPES,
@@ -29,6 +29,7 @@ import {
 } from "../settings/settings";
 import type { StoredSettings } from "../settings/settings-source";
 import { announce, POLITE } from "./announce";
+import { createBackupCard } from "./backup-card";
 import { KIND_ATTRIBUTE, setColorOnce } from "./kind-attributes";
 import {
   isSectionOpen,
@@ -70,6 +71,14 @@ export interface SettingsFormDeps {
   readonly header?: SettingsHeader;
   /** The full options page, linked from the popup footer as "All settings". */
   readonly allSettingsUrl?: string;
+  /** Gives the form its Backup card; the toolbar popup has none. */
+  readonly backup?: BackupFormDeps;
+}
+
+/** The download and file chooser of the Backup card, and the clock that dates a backup. */
+export interface BackupFormDeps {
+  readonly files: FileTransfer;
+  readonly clock: Clock;
 }
 
 export interface SettingsForm {
@@ -521,6 +530,26 @@ export async function mountSettingsForm(
   ];
   cards.push(...views.map((view) => view.card));
 
+  const live = element("div", "sar-vh");
+  live.setAttribute("aria-live", POLITE);
+
+  if (deps.backup !== undefined) {
+    cards.push(
+      createBackupCard(doc, {
+        ...deps.backup,
+        settings,
+        lists,
+        i18n,
+        dates,
+        idPrefix: prefix,
+        announce: (text) => {
+          announce(doc, live, text);
+        },
+        onRestored: refreshAllowList,
+      }),
+    );
+  }
+
   // Privacy (page only) and footer
   if (context === "page") {
     const privacy = card(i18n.t("options_section_privacy"), "privacy");
@@ -555,9 +584,6 @@ export async function mountSettingsForm(
     line.append(link);
     footer.append(line);
   }
-
-  const live = element("div", "sar-vh");
-  live.setAttribute("aria-live", POLITE);
 
   root.classList.add("sar-options");
   root.setAttribute("data-sar-context", context);

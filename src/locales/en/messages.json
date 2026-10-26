@@ -633,6 +633,160 @@
     "message": "Ignore all tags",
     "description": "Button in the closed section of the notice that ignores one developer or publisher for every tag, in this extension only. A screen reader adds the name and role of the developer or publisher after it."
   },
+  "options_section_backup": {
+    "message": "Backup",
+    "description": "Title of the settings card that saves the settings and ignore lists to a file and restores them. Full options page and userscript dialog only."
+  },
+  "options_backup_help": {
+    "message": "Save your settings and ignore lists to a file on this device, or restore them from one. The extension and the userscript read the same file. Lookup results are not included.",
+    "description": "Help under the Backup title. The file stays on the person's device; nothing is sent anywhere. \"userscript\" is the script version of the product. \"Lookup results\" are the cached answers about games, which are not in the file."
+  },
+  "options_backup_download": {
+    "message": "Download backup",
+    "description": "Button that saves the settings and ignore lists to a JSON file through the browser's download."
+  },
+  "options_backup_restore": {
+    "message": "Restore from a backup",
+    "description": "Button that opens the file chooser to pick a backup file. Nothing changes until the person confirms with options_backup_confirm. Also the accessible name of the file chooser."
+  },
+  "options_backup_summary_title": {
+    "message": "Backup from $date$",
+    "description": "Title of the check shown after a valid backup file is picked, before anything changes. $date$ is the day the backup was made, formatted for the language.",
+    "placeholders": {
+      "date": {
+        "content": "$1",
+        "example": "Oct 20, 2026"
+      }
+    }
+  },
+  "options_backup_summary_list": {
+    "message": "$list$: $number$",
+    "description": "One line of the check after a backup file is picked: a list in the file and how many entries it holds. $list$ is a settings card title such as \"Games you ignored\", $number$ a number.",
+    "placeholders": {
+      "list": {
+        "content": "$1",
+        "example": "Games you ignored"
+      },
+      "number": {
+        "content": "$2",
+        "example": "12"
+      }
+    }
+  },
+  "options_backup_summary_skipped_one": {
+    "message": "$count$ entry cannot be read and will be left out",
+    "description": "Line of the check after a backup file is picked, when some ignore list entries in it are damaged. $count$ is how many. Singular form.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "1"
+      }
+    }
+  },
+  "options_backup_summary_skipped_other": {
+    "message": "$count$ entries cannot be read and will be left out",
+    "description": "Line of the check after a backup file is picked, when some ignore list entries in it are damaged. $count$ is how many. Plural form.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "3"
+      }
+    }
+  },
+  "options_backup_restore_note": {
+    "message": "Restore replaces the settings here with the ones in the file and adds its ignored items to your lists. Nothing you ignored here is removed.",
+    "description": "Note in the check before the person confirms a restore: what the restore will do."
+  },
+  "options_backup_confirm": {
+    "message": "Restore",
+    "description": "Primary button of the check: applies the picked backup file."
+  },
+  "options_backup_cancel": {
+    "message": "Cancel",
+    "description": "Button of the check: closes it and changes nothing."
+  },
+  "notice_backup_downloaded": {
+    "message": "Backup downloaded.",
+    "description": "Status line and screen reader announcement after the backup file was handed to the browser's download."
+  },
+  "notice_backup_restored_one": {
+    "message": "Backup restored. $count$ new entry was added to your ignore lists.",
+    "description": "Status line and screen reader announcement after a restore. $count$ is how many ignore list entries were not on this browser before. Singular form.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "1"
+      }
+    }
+  },
+  "notice_backup_restored_other": {
+    "message": "Backup restored. $count$ new entries were added to your ignore lists.",
+    "description": "Status line and screen reader announcement after a restore. $count$ is how many ignore list entries were not on this browser before. Plural form.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "3"
+      }
+    }
+  },
+  "notice_backup_skipped_one": {
+    "message": "$count$ entry could not be read and was left out.",
+    "description": "Follows notice_backup_restored when some ignore list entries in the file were damaged. $count$ is how many. Singular form.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "1"
+      }
+    }
+  },
+  "notice_backup_skipped_other": {
+    "message": "$count$ entries could not be read and were left out.",
+    "description": "Follows notice_backup_restored when some ignore list entries in the file were damaged. $count$ is how many. Plural form.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "3"
+      }
+    }
+  },
+  "error_backup_invalid": {
+    "message": "$name$ is not a Tag Kit backup, or is too large to be one. Nothing was changed.",
+    "description": "Error after picking a file that is not a backup of this product. $name$ is the file name, shown as is. \"Tag Kit\" is the brand, kept as is.",
+    "placeholders": {
+      "name": {
+        "content": "$1",
+        "example": "ai-reporter-backup-2026-10-20.json"
+      }
+    }
+  },
+  "error_backup_newer": {
+    "message": "$name$ comes from a newer version of Tag Kit. Update Tag Kit here, then try again. Nothing was changed.",
+    "description": "Error after picking a backup made by a later version of the product. $name$ is the file name, shown as is. \"Tag Kit\" is the brand, kept as is.",
+    "placeholders": {
+      "name": {
+        "content": "$1",
+        "example": "ai-reporter-backup-2026-10-20.json"
+      }
+    }
+  },
+  "error_backup_read": {
+    "message": "$name$ could not be read. Nothing was changed.",
+    "description": "Error when the browser cannot read the picked file. $name$ is the file name, shown as is.",
+    "placeholders": {
+      "name": {
+        "content": "$1",
+        "example": "ai-reporter-backup-2026-10-20.json"
+      }
+    }
+  },
+  "error_backup_create": {
+    "message": "The backup could not be made. Try again.",
+    "description": "Error when \"Download backup\" fails because the settings or lists cannot be read or the browser refuses the download."
+  },
+  "error_backup_restore": {
+    "message": "The backup could not be fully restored. Try again; restoring the same file twice is safe.",
+    "description": "Error when saving a restore fails. A retry only adds what is missing, so it is safe."
+  },
   "options_section_privacy": {
     "message": "Privacy",
     "description": "Section heading in the settings."

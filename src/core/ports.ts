@@ -87,3 +87,26 @@ export interface SettingsSource {
 export interface Detector {
   detect(ids: readonly AppId[]): Promise<ReadonlyMap<AppId, KindVerdicts>>;
 }
+
+/** A file the person picked: its name and size as the browser reports them, and its text. */
+export interface PickedFile {
+  readonly name: string;
+  /** In bytes. */
+  readonly size: number;
+  /** The whole text; rejects when the file cannot be read. */
+  text(): Promise<string>;
+}
+
+/**
+ * Files on the person's device, without the network: offer text as a download, and open the file
+ * chooser. Both run from the person's click, which browsers require for either.
+ */
+export interface FileTransfer {
+  /** Offers `text` as a JSON file named `name`. Throws when the browser refuses. */
+  save(name: string, text: string): void;
+  /**
+   * Opens the file chooser, labelled `label`. `onPick` hears the picked file and nothing when the
+   * person cancels; a later call replaces it.
+   */
+  pick(label: string, onPick: (file: PickedFile) => void): void;
+}

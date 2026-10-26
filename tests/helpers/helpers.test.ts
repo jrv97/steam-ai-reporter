@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { LIST_FILTERS } from "../../src/core/kinds/kind-settings";
+import { fileTransferContract } from "../contracts/file-transfer.contract";
 import { httpContract } from "../contracts/http.contract";
 import { keyValueStoreContract } from "../contracts/key-value-store.contract";
+import { fakeFileTransferHarness } from "./fake-file-transfer";
 import { fakeHttp } from "./fake-http";
 import { fixedClock } from "./fixed-clock";
 import { memoryStore } from "./memory-store";
@@ -9,6 +11,7 @@ import { strongestFilter } from "./settings";
 
 keyValueStoreContract("memoryStore", () => memoryStore());
 httpContract("fakeHttp", fakeHttp);
+fileTransferContract("fakeFileTransfer", fakeFileTransferHarness);
 
 describe("memoryStore", () => {
   it("starts from initial values", async () => {

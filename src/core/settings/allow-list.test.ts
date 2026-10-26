@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { appId } from "../../../tests/helpers/app-ids";
+import { gameEntries } from "../../../tests/helpers/backup";
 import { countingStore } from "../../../tests/helpers/counting-store";
 import { keyOf } from "../../../tests/helpers/creators";
 import { fixedClock } from "../../../tests/helpers/fixed-clock";
@@ -121,6 +122,25 @@ describe("createAllowList", () => {
     const { allow, store } = setup();
     await allow.remove("ai", appId(10));
     expect(store.calls.set).toBe(0);
+  });
+
+  it.each([
+    ["the earlier entry here", T - 1, { name: "Here", added: T - 1 }],
+    ["the earlier entry in the merge", T + 1, { name: "Merged", added: T }],
+  ])("keeps %s when a merge lists a game again", async (_case, hereAdded, kept) => {
+    const { allow, clock } = setup();
+    clock.set(hereAdded);
+    await allow.add("ai", appId(10), "Here");
+    await allow.merge(gameEntries({ ai: [[10, "Merged", T]] }));
+    expect((await scoped(allow, "ai")).get(appId(10))).toStrictEqual(kept);
+  });
+
+  it("merges in one write, counts the new games and writes nothing the second time", async () => {
+    const { allow, store } = setup();
+    const merged = gameEntries({ all: [[10, "Ten", T]], drm: [[10, "Ten", T], [20, "Twenty", T]] });
+    expect(await allow.merge(merged)).toBe(3);
+    expect(await allow.merge(merged)).toBe(0);
+    expect(store.calls.set).toBe(1);
   });
 
   it("is shared by every list over the same store", async () => {

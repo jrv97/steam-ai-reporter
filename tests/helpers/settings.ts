@@ -1,34 +1,24 @@
+import * as v from "valibot";
+import { type HexColor, HexColorSchema } from "../../src/core/kinds/color";
 import type { KindId } from "../../src/core/kinds/id";
 import {
   type KindSettings,
   LIST_FILTERS,
   type ListFilter,
 } from "../../src/core/kinds/kind-settings";
-import { KINDS, perKind } from "../../src/core/kinds/registry";
-import { applyPatch, type Settings, type SettingsPatch } from "../../src/core/settings/settings";
+import { perKind } from "../../src/core/kinds/registry";
+import { applyPatch, type Settings, wholePatch } from "../../src/core/settings/settings";
 import type { StoredSettings } from "../../src/core/settings/settings-source";
 import { applyKindSettings } from "../../src/core/ui/kind-attributes";
+
+/** The text as a tag color; throws when it is not one, so a typo fails the test. */
+export function hexColor(text: string): HexColor {
+  return v.parse(HexColorSchema, text);
+}
 
 /** The settings with `patch` applied to one kind's settings. */
 export function withKind(settings: Settings, id: KindId, patch: Partial<KindSettings>): Settings {
   return applyPatch(settings, { kinds: { [id]: patch } });
-}
-
-/**
- * A patch that names every field, so applying it sets the settings to exactly `settings`. An unset
- * color is named as `undefined`, which clears a stored one.
- */
-function wholePatch(settings: Settings): SettingsPatch {
-  return {
-    locale: settings.locale,
-    debug: settings.debug,
-    kinds: Object.fromEntries(
-      KINDS.map((kind) => {
-        const own = settings.kinds[kind.id];
-        return [kind.id, { ...own, color: own.color }];
-      }),
-    ),
-  };
 }
 
 /** Writes the kinds' list filters on the root element as the app does, `off` for the rest. */

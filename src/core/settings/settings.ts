@@ -77,3 +77,18 @@ export function applyPatch(settings: Settings, patch: SettingsPatch): Settings {
     kinds: perKind((kind) => mergeKindSettings(settings.kinds[kind.id], patch.kinds?.[kind.id])),
   };
 }
+
+/**
+ * A patch that names every field, so applying it sets the settings to exactly `settings`. An unset
+ * color is named as `undefined`, which clears a stored one.
+ */
+export function wholePatch(settings: Settings): SettingsPatch {
+  return {
+    locale: settings.locale,
+    debug: settings.debug,
+    kinds: perKind((kind) => {
+      const own = settings.kinds[kind.id];
+      return { ...own, color: own.color };
+    }),
+  };
+}
