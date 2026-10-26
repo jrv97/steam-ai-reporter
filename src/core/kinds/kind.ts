@@ -6,6 +6,7 @@ import type { DisclosedBase, Verdict } from "../types";
 import type { KindSettings } from "./kind-settings";
 import type { KindTtl } from "./kind-ttl";
 import type { KINDS } from "./registry";
+import type { Section } from "./sections";
 
 /** The catalog keys of the words a kind uses on every surface, in Steam's vocabulary. */
 export interface KindMessages {
@@ -40,6 +41,11 @@ export interface KindDefinition<Disclosed extends DisclosedBase> {
    * Only kinds that can be read from the page declare it; the others stay unknown on that path.
    */
   readonly fromAppPage?: (doc: Document, name: string) => Verdict<Disclosed>;
+  /**
+   * The GetItems sections the kind reads besides `extra_details` and `categories`. A request that
+   * leaves one out makes the kind unknown `unrequested`, and an enabled kind adds them to it.
+   */
+  readonly sections?: readonly Section[];
   /** Reads a stored disclosed verdict back; anything that does not fit is dropped. */
   readonly stored: v.GenericSchema<unknown, Disclosed>;
   readonly messages: KindMessages;

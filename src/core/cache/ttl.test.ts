@@ -52,6 +52,10 @@ describe("ttlMs", () => {
     }
   });
 
+  it("never runs out for a kind whose section the request left out", () => {
+    expect(ttlMs(WEEK_TTL, UNKNOWN.unrequested)).toBe(Number.POSITIVE_INFINITY);
+  });
+
   it("is short for the verdicts that are not stored", () => {
     expect(ttlMs(AI_KIND.ttl, UNKNOWN.error)).toBe(TRANSIENT_TTL_MS);
     expect(ttlMs(AI_KIND.ttl, UNKNOWN["rate-limited"])).toBe(TRANSIENT_TTL_MS);
@@ -65,10 +69,11 @@ describe("ttlMs", () => {
 });
 
 describe("isStoredReason", () => {
-  it("stores gated, missing and malformed only", () => {
+  it("stores gated, missing, malformed and unrequested only", () => {
     expect(isStoredReason("gated")).toBe(true);
     expect(isStoredReason("missing")).toBe(true);
     expect(isStoredReason("malformed")).toBe(true);
+    expect(isStoredReason("unrequested")).toBe(true);
     expect(isStoredReason("error")).toBe(false);
     expect(isStoredReason("rate-limited")).toBe(false);
   });
@@ -95,6 +100,14 @@ describe("isTransient", () => {
       ["a demo's own disclosure beside a stored unknown", false, {
         ...UNKNOWN_KINDS.missing,
         drm: FULL_DISCLOSED.drm,
+      }],
+      ["a section left out beside a failed lookup", true, {
+        ...UNKNOWN_KINDS.error,
+        pvp: UNKNOWN.unrequested,
+      }],
+      ["a section left out beside answers", false, {
+        ...uniformVerdicts("not-disclosed"),
+        pvp: UNKNOWN.unrequested,
       }],
     ] as const,
   )("%s: %s", (_name, transient, verdicts) => {
@@ -168,6 +181,11 @@ describe("isFresh across kinds", () => {
       expect(isFresh(failed, T, T + TRANSIENT_TTL_MS - 1)).toBe(true);
       expect(isFresh(failed, T, T + TRANSIENT_TTL_MS)).toBe(false);
     }
+  });
+
+  it("leaves the TTL to the other kinds when a kind's section was left out", () => {
+    expiresAt({ ...notDisclosed, pvp: UNKNOWN.unrequested }, 12 * HOUR_MS);
+    expiresAt({ ...FULL_DISCLOSED, pvp: UNKNOWN.unrequested }, 7 * DAY_MS);
   });
 
   it("keeps disclosed kinds for 7 days when no kind is shorter", () => {

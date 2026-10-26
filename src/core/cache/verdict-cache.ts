@@ -1,4 +1,5 @@
 import type { JsonValue } from "../json";
+import { coversSections, type Section } from "../kinds/sections";
 import type { KindVerdicts } from "../kinds/verdicts";
 import type { Clock, KeyValueStore } from "../ports";
 import { verdictKey } from "../storage-keys";
@@ -13,8 +14,14 @@ import { isFresh } from "./ttl";
  * stored (`error`, `rate-limited`). Rejections from the store propagate to the caller.
  */
 export interface VerdictCache {
-  /** The fresh verdicts among `ids`: one storage read for the IDs memory does not hold. */
-  lookup(ids: readonly AppId[]): Promise<ReadonlyMap<AppId, KindVerdicts>>;
+  /**
+   * The fresh verdicts among `ids` that hold every section of `need`: one storage read for the IDs
+   * memory does not hold.
+   */
+  lookup(
+    ids: readonly AppId[],
+    need?: readonly Section[],
+  ): Promise<ReadonlyMap<AppId, KindVerdicts>>;
   /** Remembers the verdicts now: one storage write for the ones that are stored. */
   save(verdicts: ReadonlyMap<AppId, KindVerdicts>): Promise<void>;
 }
@@ -27,13 +34,15 @@ export function createVerdictCache(
   const memory = new Lru<AppId, TimedVerdicts>(capacity);
 
   return {
-    async lookup(ids) {
+    async lookup(ids, need = []) {
       const now = clock.now();
       const found = new Map<AppId, KindVerdicts>();
       const unseen = new Set<AppId>();
+      const usable = (entry: TimedVerdicts): boolean =>
+        isFresh(entry.verdicts, entry.time, now) && coversSections(entry.verdicts.sections, need);
       for (const id of ids) {
         const held = memory.get(id);
-        if (held !== undefined && isFresh(held.verdicts, held.time, now)) {
+        if (held !== undefined && usable(held)) {
           found.set(id, held.verdicts);
         } else {
           memory.delete(id);
@@ -46,7 +55,7 @@ export function createVerdictCache(
       const stored = await store.get([...unseen].map(verdictKey));
       for (const id of unseen) {
         const entry = decodeVerdicts(stored.get(verdictKey(id)));
-        if (entry !== undefined && isFresh(entry.verdicts, entry.time, now)) {
+        if (entry !== undefined && usable(entry)) {
           memory.set(id, entry);
           found.set(id, entry.verdicts);
         }

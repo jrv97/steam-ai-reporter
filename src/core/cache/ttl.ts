@@ -5,7 +5,11 @@ import type { UnknownReason, Verdict } from "../types";
 
 export { DAY_MS };
 
-/** How long a stored unknown verdict (`gated`, `missing`, `malformed`) stays fresh. */
+/**
+ * How long a stored unknown verdict (`gated`, `missing`, `malformed`) stays fresh. `unrequested`
+ * never expires on its own: the entry's other kinds decide, and a request that needs the section
+ * is a cache miss (`coversSections`).
+ */
 export const UNKNOWN_TTL_MS = 6 * HOUR_MS;
 /**
  * How long an `error` or `rate-limited` verdict is remembered in page memory, which keeps a rescan
@@ -17,17 +21,22 @@ export const TRANSIENT_TTL_MS = 60_000;
  * The unknown reasons that are written to storage. `error` and `rate-limited` say nothing about
  * the app, so they live in page memory only.
  */
-export const STORED_REASONS = ["gated", "missing", "malformed"] as const;
+export const STORED_REASONS = ["gated", "missing", "malformed", "unrequested"] as const;
 
 export type StoredReason = (typeof STORED_REASONS)[number];
 
 export function isStoredReason(reason: UnknownReason): reason is StoredReason {
-  return reason === "gated" || reason === "missing" || reason === "malformed";
+  return reason !== "error" && reason !== "rate-limited";
+}
+
+function isUnrequested(verdict: Verdict): boolean {
+  return verdict.state === "unknown" && verdict.reason === "unrequested";
 }
 
 /**
  * Whether the lookup failed or waited: each kind is unknown for a reason that is not stored, or
- * disclosed, and one is unknown. Both sit side by side only on a demo whose full game failed.
+ * disclosed, and one is unknown. Both sit side by side only on a demo whose full game failed. A
+ * kind whose section was not asked for counts for neither.
  */
 export function isTransient(verdicts: KindVerdicts): boolean {
   let transient = false;
@@ -35,7 +44,7 @@ export function isTransient(verdicts: KindVerdicts): boolean {
     const verdict = verdicts[kind.id];
     if (verdict.state === "unknown" && !isStoredReason(verdict.reason)) {
       transient = true;
-    } else if (verdict.state !== "disclosed") {
+    } else if (verdict.state !== "disclosed" && !isUnrequested(verdict)) {
       return false;
     }
   }
@@ -50,6 +59,9 @@ export function ttlMs(ttl: KindTtl, verdict: Verdict): number {
     case "not-disclosed":
       return ttl.notDisclosed;
     case "unknown":
+      if (isUnrequested(verdict)) {
+        return Number.POSITIVE_INFINITY;
+      }
       return isStoredReason(verdict.reason) ? UNKNOWN_TTL_MS : TRANSIENT_TTL_MS;
     default:
       return verdict satisfies never;

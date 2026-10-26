@@ -19,6 +19,7 @@ import { TRANSIENT_TTL_MS, UNKNOWN_TTL_MS } from "./ttl";
 import { createVerdictCache } from "./verdict-cache";
 
 const T = 1_000_000_000_000;
+const FULL = uniformVerdicts("disclosed");
 const { disclosed: DISCLOSED_TTL_MS, notDisclosed: NOT_DISCLOSED_TTL_MS } = AI_KIND.ttl;
 
 function setup(capacity?: number) {
@@ -120,6 +121,22 @@ describe("VerdictCache", () => {
     expect(await cache.lookup([])).toStrictEqual(new Map());
     await cache.save(new Map());
     expect(store.calls).toStrictEqual({ get: 0, set: 0, remove: 0, keys: 0 });
+  });
+
+  it.each(
+    [
+      ["holds the section", ["basic_info", "platforms"], true],
+      ["lacks the section", ["basic_info"], false],
+      ["came without GetItems details", undefined, true],
+    ] as const,
+  )("serves an entry that %s to a lookup that needs it: %s", async (_n, had, hit) => {
+    const { cache, another } = setup();
+    const verdicts = had === undefined ? FULL : { ...FULL, sections: had };
+    await cache.save(new Map([[appId(10), verdicts]]));
+    for (const tab of [cache, another()]) {
+      expect((await tab.lookup(appIds(10), ["platforms"])).has(appId(10))).toBe(hit);
+      expect((await tab.lookup(appIds(10))).has(appId(10))).toBe(true);
+    }
   });
 
   describe("TTL edges", () => {

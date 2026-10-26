@@ -147,6 +147,8 @@ export interface AppPageDeps {
 export interface AppPage {
   /** Draws again from the known verdicts and the current settings. */
   render(): void;
+  /** Looks the game up again, as when a kind that reads a section the answer lacks turns on. */
+  redetect(): void;
   /** Stops a lookup that has not finished from drawing, and cancels a pending retry. */
   stop(): void;
 }
@@ -259,6 +261,7 @@ export function startAppPage(
   lookUp();
   return {
     render,
+    redetect: lookUp,
     stop() {
       stopped = true;
       retry.cancel();

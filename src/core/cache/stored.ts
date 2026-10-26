@@ -4,6 +4,7 @@ import { type JsonValue, toJsonValue } from "../json";
 import type { KindId } from "../kinds/id";
 import type { TagKind } from "../kinds/kind";
 import { KINDS } from "../kinds/registry";
+import { SECTIONS } from "../kinds/sections";
 import {
   isKindVerdicts,
   type KindVerdict,
@@ -13,10 +14,10 @@ import {
 import { AppIdSchema, NOT_DISCLOSED, UNKNOWN, VerdictSourceSchema } from "../types";
 import { isStoredReason, STORED_REASONS } from "./ttl";
 
-// An app is stored as `v1:a:<appid>`: its fetch time, one entry per kind and, when known, its base
-// or full game, whether it is a demo, and its developers and publishers. A disclosed entry is the
-// verdict, read back with its kind's schema. Storage is untrusted, so a read that fails is
-// discarded, and the app is fetched again.
+// An app is stored as `v1:a:<appid>`: its fetch time, the GetItems sections it came with, one
+// entry per kind and, when known, its base or full game, whether it is a demo, and its developers
+// and publishers. A disclosed entry is the verdict, read back with its kind's schema. Storage is
+// untrusted, so a read that fails is discarded, and the app is fetched again.
 
 const TimeSchema = v.pipe(v.number(), v.finite());
 
@@ -30,12 +31,14 @@ const StoredCreatorsSchema = v.exactOptional(
 );
 
 /**
- * The entries stay `unknown` here and are validated kind by kind. `parent` is the base game of a
- * DLC or the full game of a demo, and `demo` marks a demo; an entry whose `parent` is not an app
- * ID, or whose creators are not a list of named entries, is invalid, so that app is fetched again.
+ * The entries stay `unknown` here and are validated kind by kind. `sections` is absent when the
+ * answer had no GetItems details. `parent` is the base game of a DLC or the full game of a demo,
+ * and `demo` marks a demo; an entry whose `parent` is not an app ID, or whose creators are not a
+ * list of named entries, is invalid, so that app is fetched again.
  */
 const StoredAppSchema = v.object({
   time: TimeSchema,
+  sections: v.exactOptional(v.array(v.picklist(SECTIONS))),
   kinds: v.record(v.string(), v.unknown()),
   parent: v.exactOptional(AppIdSchema),
   demo: v.exactOptional(v.literal(true)),
@@ -89,9 +92,10 @@ export function decodeVerdicts(stored: unknown): TimedVerdicts | undefined {
   if (!isKindVerdicts(verdicts)) {
     return undefined;
   }
-  const { parent, demo, developers = [], publishers = [], time } = app.output;
+  const { sections, parent, demo, developers = [], publishers = [], time } = app.output;
   const creators = { developer: makeCreators(developers), publisher: makeCreators(publishers) };
-  return { verdicts: withRelations(verdicts, { parent, demo, creators }), time };
+  const related = withRelations(verdicts, { parent, demo, creators });
+  return { verdicts: sections === undefined ? related : { ...related, sections }, time };
 }
 
 function encodeCreators(creators: readonly Creator[]): JsonValue {
@@ -126,9 +130,10 @@ export function encodeVerdicts(verdicts: KindVerdicts, time: number): JsonValue 
     }
     kinds[kind.id] = entry;
   }
-  const { parent, demo, creators } = verdicts;
+  const { sections, parent, demo, creators } = verdicts;
   return {
     time,
+    ...(sections === undefined ? {} : { sections }),
     kinds,
     ...(parent === undefined ? {} : { parent }),
     ...(demo === true ? { demo } : {}),

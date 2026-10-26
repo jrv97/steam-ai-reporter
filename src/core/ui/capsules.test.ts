@@ -316,6 +316,20 @@ describe("createCapsuleUi", () => {
     expect(views).toHaveLength(2);
   });
 
+  it("asks again about the hosts whose verdicts are stale, and draws the new answer", async () => {
+    const id = appId(13);
+    const { ui, detect, views, flush } = setup(new Map([[id, disclosedVerdict()]]));
+    ui.render({ found: [host(13)], changed: [] });
+    await flush();
+    ui.redetect(() => false);
+    await flush();
+    expect(detect).toHaveBeenCalledTimes(1);
+    ui.redetect((verdicts) => verdicts.ai.state === "disclosed");
+    await flush();
+    expect(detect.mock.calls.map(([ids]) => ids)).toStrictEqual([[id], [id]]);
+    expect(views).toHaveLength(2);
+  });
+
   describe("for a DLC", () => {
     const BASE = appId(1808500);
     const DLC = appId(5201760);

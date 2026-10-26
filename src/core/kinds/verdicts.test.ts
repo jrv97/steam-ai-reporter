@@ -103,7 +103,7 @@ describe("kindsFromGetItems", () => {
   it("gives every kind the verdict its definition derives from the item", () => {
     const { item, details } = parsedItem({ content_survey_ai_notes: "Concept art." });
     const verdicts = kindsFromGetItems(item, details, "english");
-    expect(Object.keys(verdicts)).toStrictEqual([...KIND_IDS]);
+    expect(Object.keys(verdicts)).toStrictEqual([...KIND_IDS, "sections"]);
     for (const kind of KINDS) {
       expect(verdicts[kind.id]).toStrictEqual(kind.fromGetItems(item, details, "english"));
     }

@@ -94,6 +94,14 @@ export function getItemsRequest(url: URL | string): GetItemsRequest {
   return { ids: request.ids.map(({ appid }) => appid), language: request.context.language };
 }
 
+const FlagsSchema = v.object({ data_request: v.record(v.string(), v.literal(true)) });
+
+/** The `data_request` flags a GetItems URL sets, in order. Throws when the URL is not one. */
+export function requestFlags(url: URL | string): readonly string[] {
+  const input = new URL(url).searchParams.get("input_json") ?? "";
+  return Object.keys(v.parse(FlagsSchema, parseJson(input)).data_request);
+}
+
 const ItemIdSchema = v.looseObject({ id: AppIdSchema });
 
 /** The `id` of each item. Throws on an item without a valid one. */

@@ -34,9 +34,16 @@ export type VerdictSource = v.InferOutput<typeof VerdictSourceSchema>;
  * Why a verdict is unknown. `gated`: the app page hid the store content (age gate, sign-in,
  * redirect). `missing`: Steam returned no usable item. `malformed`: a field the kind reads came in
  * the wrong shape. `error`: the request or its answer was broken. `rate-limited`: a breaker held
- * the request back. Unknown is never shown as not disclosed.
+ * the request back. `unrequested`: the request left out a GetItems section the kind reads.
+ * Unknown is never shown as not disclosed.
  */
-export type UnknownReason = "gated" | "missing" | "malformed" | "error" | "rate-limited";
+export type UnknownReason =
+  | "gated"
+  | "missing"
+  | "malformed"
+  | "error"
+  | "rate-limited"
+  | "unrequested";
 
 /**
  * What every disclosed verdict carries. A tag kind adds its own fields (see `kinds/`): the
@@ -66,6 +73,7 @@ export const UNKNOWN: Readonly<Record<UnknownReason, UnknownVerdict>> = {
   "malformed": { state: "unknown", reason: "malformed" },
   "error": { state: "unknown", reason: "error" },
   "rate-limited": { state: "unknown", reason: "rate-limited" },
+  "unrequested": { state: "unknown", reason: "unrequested" },
 };
 
 /** One shared object per source, so a not disclosed verdict costs no allocation. */

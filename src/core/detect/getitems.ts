@@ -2,6 +2,7 @@ import * as v from "valibot";
 import { makeCreators } from "../creator";
 import type { SteamLanguage } from "../i18n/locale";
 import { parseJson } from "../json";
+import { BASE_SECTIONS, type Section } from "../kinds/sections";
 import {
   kindsFromGetItems,
   type KindVerdicts,
@@ -49,12 +50,29 @@ export interface GetItemsBatch {
   readonly url: string;
 }
 
-/** The GetItems URL for these IDs, with `context.language` set to the page's Steam language. */
-export function getItemsUrl(ids: readonly AppId[], language: SteamLanguage): string {
+/** The `data_request` flag of each section. */
+const SECTION_FLAGS: Readonly<Record<Section, string>> = {
+  basic_info: "include_basic_info",
+  platforms: "include_platforms",
+};
+
+/**
+ * The GetItems URL for these IDs, with `context.language` set to the page's Steam language. It
+ * always asks for `extra_details`, which rule 4 rests on, and for the sections given.
+ */
+export function getItemsUrl(
+  ids: readonly AppId[],
+  language: SteamLanguage,
+  sections: readonly Section[] = BASE_SECTIONS,
+): string {
+  const flags: Record<string, true> = { include_extra_details: true };
+  for (const section of sections) {
+    flags[SECTION_FLAGS[section]] = true;
+  }
   const input = {
     ids: ids.map((appid) => ({ appid })),
     context: { language, country_code: COUNTRY_CODE },
-    data_request: { include_extra_details: true, include_basic_info: true },
+    data_request: flags,
   };
   return `${GETITEMS_URL}?input_json=${encodeURIComponent(JSON.stringify(input))}`;
 }
@@ -68,8 +86,9 @@ export function planBatches(
   ids: Iterable<AppId>,
   language: SteamLanguage,
   limits: BatchLimits = DEFAULT_BATCH_LIMITS,
+  sections: readonly Section[] = BASE_SECTIONS,
 ): readonly GetItemsBatch[] {
-  const overhead = getItemsUrl([], language).length;
+  const overhead = getItemsUrl([], language, sections).length;
   const batches: GetItemsBatch[] = [];
   let current: AppId[] = [];
   let length = overhead;
@@ -78,7 +97,7 @@ export function planBatches(
     const full = current.length >= limits.maxIds
       || length + SEPARATOR_LENGTH + cost > limits.maxUrlLength;
     if (current.length > 0 && full) {
-      batches.push({ ids: current, url: getItemsUrl(current, language) });
+      batches.push({ ids: current, url: getItemsUrl(current, language, sections) });
       current = [];
       length = overhead;
     }
@@ -86,7 +105,7 @@ export function planBatches(
     current.push(id);
   }
   if (current.length > 0) {
-    batches.push({ ids: current, url: getItemsUrl(current, language) });
+    batches.push({ ids: current, url: getItemsUrl(current, language, sections) });
   }
   return batches;
 }
@@ -147,15 +166,19 @@ function creatorsOf(info: BasicInfo | undefined): Relations["creators"] {
 }
 
 /**
- * Every kind's verdict for one item, with what it is related to; unknown `missing` when the item
- * has no usable details.
+ * Every kind's verdict for one item, with what it is related to and the sections it was asked
+ * with; unknown `missing` when the item has no usable details.
  */
-function itemVerdicts(item: StoreItem, language: SteamLanguage): KindVerdicts {
+function itemVerdicts(
+  item: StoreItem,
+  language: SteamLanguage,
+  sections: readonly Section[],
+): KindVerdicts {
   const details = item.extra_details;
   if (item.success !== ERESULT_OK || details === undefined) {
     return UNKNOWN_KINDS.missing;
   }
-  return withRelations(kindsFromGetItems(item, details, language), {
+  return withRelations(kindsFromGetItems(item, details, language, sections), {
     parent: item.related_items?.parent_appid,
     demo: item.type === DEMO_TYPE ? true : undefined,
     creators: creatorsOf(item.basic_info),
@@ -166,12 +189,14 @@ function itemVerdicts(item: StoreItem, language: SteamLanguage): KindVerdicts {
  * Maps one GetItems result to the verdicts of every requested ID, keyed by the item's `id` (never
  * by `appid`, which is 0 for invalid items). An item that fails its schema gets unknown `error`; a
  * requested ID with no item gets unknown `missing`, or `error` when the batch also held an item
- * whose ID could not be read. A broken answer makes the whole batch unknown.
+ * whose ID could not be read. A broken answer makes the whole batch unknown. `sections` are the
+ * ones the request asked for.
  */
 export function parseGetItems(
   ids: readonly AppId[],
   result: HttpResult,
   language: SteamLanguage,
+  sections: readonly Section[] = BASE_SECTIONS,
 ): ReadonlyMap<AppId, KindVerdicts> {
   const read = batchItems(result);
   if (!read.ok) {
@@ -184,7 +209,7 @@ export function parseGetItems(
     const item = v.safeParse(StoreItemSchema, entry);
     if (item.success) {
       if (!found.has(item.output.id)) {
-        found.set(item.output.id, itemVerdicts(item.output, language));
+        found.set(item.output.id, itemVerdicts(item.output, language, sections));
       }
       continue;
     }
@@ -206,6 +231,8 @@ export interface GetItemsOptions {
   /** The page's Steam language (`steamLanguage(<html lang>)`, else `english`). */
   readonly language: SteamLanguage;
   readonly limits?: BatchLimits;
+  /** The sections to ask for, read once per call (`requestSections`); the base ones by default. */
+  readonly sections?: () => readonly Section[];
 }
 
 /**
@@ -218,10 +245,11 @@ export function createGetItemsDetector(options: GetItemsOptions): Detector {
   return {
     async detect(ids: readonly AppId[]): Promise<ReadonlyMap<AppId, KindVerdicts>> {
       const verdicts = new Map<AppId, KindVerdicts>();
-      for (const batch of planBatches(ids, language, limits)) {
+      const sections = options.sections?.() ?? BASE_SECTIONS;
+      for (const batch of planBatches(ids, language, limits, sections)) {
         // Sequential on purpose: one request in flight (rule 13).
         const result = await http.get(batch.url);
-        for (const [id, verdict] of parseGetItems(batch.ids, result, language)) {
+        for (const [id, verdict] of parseGetItems(batch.ids, result, language, sections)) {
           verdicts.set(id, verdict);
         }
       }

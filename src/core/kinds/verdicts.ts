@@ -11,6 +11,7 @@ import {
 import type { KindId } from "./id";
 import type { KindDefinition, TagKind } from "./kind";
 import { holdsEveryKind, KINDS, perKind } from "./registry";
+import { BASE_SECTIONS, type Section } from "./sections";
 
 type DisclosedOf<Kind> = Kind extends KindDefinition<infer Disclosed> ? Disclosed : never;
 
@@ -42,6 +43,12 @@ export interface Relations {
   readonly creators?: Readonly<Record<CreatorRole, readonly Creator[]>>;
 }
 
+/** Where an answer came from, which the cache keeps to know what a later request would add. */
+interface Provenance {
+  /** The GetItems sections the answer came with; absent when it had no GetItems details. */
+  readonly sections?: readonly Section[];
+}
+
 /** A verdict for every registered kind, in the shape of that kind. */
 type PerKindVerdicts = {
   readonly [Id in KindId]: Verdict<Extract<AnyDisclosed, DisclosedBase<Id>>>;
@@ -49,10 +56,10 @@ type PerKindVerdicts = {
 
 /**
  * What core knows about one app: a verdict for every registered kind, in the shape of that kind,
- * and what the app is related to. A verdict has the three states of rule 4. A missing answer is
- * unknown, never not disclosed.
+ * what the app is related to, and the sections the answer came with. A verdict has the three
+ * states of rule 4. A missing answer is unknown, never not disclosed.
  */
-export type KindVerdicts = PerKindVerdicts & Relations;
+export type KindVerdicts = PerKindVerdicts & Relations & Provenance;
 
 /** Relations as read from data: each one may be missing. */
 export type FoundRelations = { readonly [Key in keyof Relations]?: Relations[Key] | undefined; };
@@ -105,17 +112,23 @@ export const UNKNOWN_KINDS: Readonly<Record<UnknownReason, KindVerdicts>> = {
   "malformed": allUnknown("malformed"),
   "error": allUnknown("error"),
   "rate-limited": allUnknown("rate-limited"),
+  "unrequested": allUnknown("unrequested"),
 };
 
-/** Every kind's verdict for a GetItems item with `extra_details`. */
+/**
+ * Every kind's verdict for a GetItems item with `extra_details`, asked for with `sections`. A kind
+ * that reads a section the request left out is unknown `unrequested`.
+ */
 export function kindsFromGetItems(
   item: StoreItem,
   details: ExtraDetails,
   language: SteamLanguage,
+  sections: readonly Section[] = BASE_SECTIONS,
 ): KindVerdicts {
   const verdicts: Partial<Record<KindId, KindVerdict>> = {};
   for (const kind of KINDS) {
-    verdicts[kind.id] = kind.fromGetItems(item, details, language);
+    const asked = kind.sections?.every((section) => sections.includes(section)) ?? true;
+    verdicts[kind.id] = asked ? kind.fromGetItems(item, details, language) : UNKNOWN.unrequested;
   }
-  return isKindVerdicts(verdicts) ? verdicts : UNKNOWN_KINDS.error;
+  return isKindVerdicts(verdicts) ? { ...verdicts, sections } : UNKNOWN_KINDS.error;
 }

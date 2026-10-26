@@ -22,6 +22,7 @@ import { createI18n } from "./i18n/t";
 import { createIgnoreLists, isIgnored, loadIgnored } from "./ignored";
 import { effectiveSettings, type KindSettings } from "./kinds/kind-settings";
 import { KINDS } from "./kinds/registry";
+import { coversSections, requestSections, type Section } from "./kinds/sections";
 import { type ConsoleSink, createLogger, type Logger } from "./log";
 import type { Clock, Http, KeyValueStore, SettingsSource, Unsubscribe } from "./ports";
 import { appIdFromHref } from "./scan/appid";
@@ -83,21 +84,23 @@ async function readSettings(source: SettingsSource): Promise<SettingsRead> {
  * The detector stack (hand-overs of steps 7 and 8): a demo's full game outside, asked through the
  * stack below it; the verdict cache, so cache hits never touch the network; in-flight dedupe; then
  * the chain of GetItems and, for what it leaves unknown, the English app page within a per-page
- * budget. Each host has its own throttle and breaker.
+ * budget. Each host has its own throttle and breaker. `sections` names what GetItems asks for
+ * and what a cached entry must hold.
  */
 function createDetector(
   deps: AppDeps,
   logger: Logger,
   language: SteamLanguage,
   open: OpenPage | undefined,
+  sections: () => readonly Section[],
 ) {
   const { http, store, clock } = deps;
   const throttled = (key: string) =>
     createThrottledHttp({ http, clock, breaker: createBreaker({ store, clock, logger, key }) });
-  const getItems = createGetItemsDetector({ http: throttled(API_BREAKER_KEY), language });
+  const getItems = createGetItemsDetector({ http: throttled(API_BREAKER_KEY), language, sections });
   const appPage = createBudgetDetector(createAppPageDetector(throttled(HTML_BREAKER_KEY), open));
   const chain = createDedupingDetector(createChainDetector([getItems, appPage]));
-  const cached = cachedDetector(chain, createVerdictCache(store, clock), logger);
+  const cached = cachedDetector(chain, createVerdictCache(store, clock), logger, sections);
   return { getItems, detector: createFullGameDetector(cached) };
 }
 
@@ -115,12 +118,19 @@ function changed(
 const SHOWS_BADGE = (settings: KindSettings): boolean => settings.badge;
 const SHOWS_BANNER = (settings: KindSettings): boolean => settings.banner;
 
+/** The sections `after` asks for that `before` did not, as when a kind that reads one turns on. */
+function addedSections(before: Settings, after: Settings): readonly Section[] {
+  const had = requestSections(before.kinds);
+  return requestSections(after.kinds).filter((section) => !had.includes(section));
+}
+
 /**
  * Starts Tag Kit for Steam on one store page: settings, locale and logger, cache upkeep, the
  * detector stack, the allow-list, the page stylesheet, the scanner with its renderers (the package
  * summary among them), the hidden results notice and the app page's banner. Settings changes from
  * any tab re-render at once: badges, the list filter and the tag colors are one root attribute or
- * custom property each, the banner is drawn again from the known verdicts.
+ * custom property each, the banner is drawn again from the known verdicts. A kind that turns on
+ * and reads a section the answers on screen lack asks for them again, once.
  */
 export async function start(deps: AppDeps): Promise<App> {
   const { document: doc, store, clock } = deps;
@@ -150,7 +160,13 @@ export async function start(deps: AppDeps): Promise<App> {
   const open = pageId === undefined || live === undefined
     ? undefined
     : { id: pageId, verdicts: live };
-  const detectors = createDetector(deps, logger, language, open);
+  const detectors = createDetector(
+    deps,
+    logger,
+    language,
+    open,
+    () => requestSections(settings.kinds),
+  );
   const lists = createIgnoreLists(store, clock);
   const ignored = await loadIgnored(lists, logger);
 
@@ -186,6 +202,11 @@ export async function start(deps: AppDeps): Promise<App> {
     }
     if (badges || changed(before, settings, SHOWS_BANNER)) {
       appPage?.render();
+    }
+    const added = addedSections(before, settings);
+    if (added.length > 0) {
+      capsules.redetect((verdicts) => !coversSections(verdicts.sections, added));
+      appPage?.redetect();
     }
   });
 

@@ -71,6 +71,11 @@ export interface CapsuleUi extends CapsuleRenderer {
    * game is in `ids`, as after an allow-list change.
    */
   refresh(ids?: ReadonlySet<AppId>): void;
+  /**
+   * Asks again, in one call, about the known hosts whose verdicts are `stale`, as when a kind that
+   * reads a section their answers lack turns on. They keep drawing what they hold meanwhile.
+   */
+  redetect(stale: (verdicts: KindVerdicts) => boolean): void;
   /** Stops watching image boxes, cancels a pending retry and stops listening for `pagehide`. */
   stop(): void;
 }
@@ -306,6 +311,19 @@ export function createCapsuleUi(options: CapsuleUiOptions): CapsuleUi {
         if (record?.verdicts !== undefined && (ids === undefined || concerns(ids, record))) {
           queue(record);
         }
+      }
+    },
+
+    redetect(stale) {
+      const due: HostRecord[] = [];
+      for (const element of doc.querySelectorAll(`[${HOST_APPID}]`)) {
+        const record = records.get(element);
+        if (record?.verdicts !== undefined && stale(record.verdicts)) {
+          due.push(record);
+        }
+      }
+      if (due.length > 0) {
+        void detect(due);
       }
     },
 

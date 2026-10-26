@@ -18,10 +18,12 @@ import {
   getItemsRoute,
   invalidItem,
   itemIds,
+  requestFlags,
   storeItem,
 } from "../../../tests/helpers/getitems";
 import type { SteamLanguage } from "../i18n/locale";
 import { KIND_IDS } from "../kinds/id";
+import { SECTIONS } from "../kinds/sections";
 import { type KindVerdicts, UNKNOWN_KINDS } from "../kinds/verdicts";
 import type { Http } from "../ports";
 import type { AppId } from "../types";
@@ -328,7 +330,7 @@ describe("parseGetItems edge cases", () => {
     );
     expect(verdicts.size).toBe(3);
     for (const found of verdicts.values()) {
-      expect(Object.keys(found)).toStrictEqual([...KIND_IDS]);
+      expect(Object.keys(found)).toStrictEqual(expect.arrayContaining([...KIND_IDS]));
     }
   });
 
@@ -459,6 +461,23 @@ describe("planBatches", () => {
     expect(batches.map(({ ids }) => ids)).toStrictEqual([[5072580]]);
   });
 
+  it("keeps a batch of 50 of the longest IDs under the URL guard with every section", () => {
+    const longest = appIds(...Array.from({ length: 50 }, (_, index) => 0xffff_ffff - index));
+    const batches = planBatches(longest, "english", DEFAULT_BATCH_LIMITS, SECTIONS);
+    expect(batches.map(({ ids }) => ids.length)).toStrictEqual([50]);
+    expect(batches[0]?.url.length).toBeLessThan(DEFAULT_BATCH_LIMITS.maxUrlLength / 2);
+  });
+
+  it.each(
+    [
+      ["the base sections", undefined, ["include_extra_details", "include_basic_info"]],
+      ["platforms", SECTIONS, ["include_extra_details", "include_basic_info", "include_platforms"]],
+    ] as const,
+  )("asks for extra details and %s", (_name, sections, flags) => {
+    const [batch] = planBatches(appIds(730), "english", DEFAULT_BATCH_LIMITS, sections);
+    expect(requestFlags(batch?.url ?? GETITEMS_URL)).toStrictEqual(flags);
+  });
+
   it("plans nothing for no IDs", () => {
     expect(planBatches([], "english")).toStrictEqual([]);
   });
@@ -525,6 +544,24 @@ describe("createGetItemsDetector", () => {
     expect(stateOf(verdicts, 4_000_049)).toBe("disclosed");
     expect(stateOf(verdicts, 4_000_050)).toBe("unknown:error");
     expect(stateOf(verdicts, 4_000_059)).toBe("unknown:error");
+  });
+
+  it("asks for the sections the getter names at call time, and records them", async () => {
+    const http = fakeHttp([getItemsRoute([storeItem(730)])]);
+    let sections: readonly (typeof SECTIONS)[number][] = ["basic_info"];
+    const detector = createGetItemsDetector({
+      http,
+      language: "english",
+      sections: () => sections,
+    });
+    expect((await detector.detect(appIds(730))).get(appId(730))?.sections).toStrictEqual([
+      "basic_info",
+    ]);
+    sections = SECTIONS;
+    expect((await detector.detect(appIds(730))).get(appId(730))?.sections).toBe(SECTIONS);
+    expect(http.calls.map((url) => requestFlags(url).includes("include_platforms"))).toStrictEqual(
+      [false, true],
+    );
   });
 
   it("sends nothing for no IDs", async () => {

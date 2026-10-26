@@ -53,7 +53,7 @@ describe("parseGetItems over the tag kind fixture", () => {
   it("answers every requested ID with a verdict for every kind", () => {
     expect(verdicts.size).toBe(IDS.length + OTHER_ITEMS.length);
     for (const found of verdicts.values()) {
-      expect(Object.keys(found)).toStrictEqual([...KIND_IDS]);
+      expect(Object.keys(found)).toStrictEqual(expect.arrayContaining([...KIND_IDS]));
     }
   });
 
