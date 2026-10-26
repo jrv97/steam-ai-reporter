@@ -1,12 +1,13 @@
 import * as v from "valibot";
 import { type JsonValue, parseWithDefaults } from "../json";
-import type { KindId } from "../kinds/id";
+import { KIND_IDS, type KindId } from "../kinds/id";
 import {
   encodeKindSettings,
   type KindSettings,
   mergeKindSettings,
   parseKindSettings,
 } from "../kinds/kind-settings";
+import { parseOrder, sameOrder } from "../kinds/order";
 import { KINDS, perKind } from "../kinds/registry";
 
 /** The `locale` setting that follows the store page's language (see `resolveLocale`). */
@@ -26,12 +27,15 @@ export interface Settings {
   /** Write debug lines to the console. */
   readonly debug: boolean;
   readonly kinds: Readonly<Record<KindId, KindSettings>>;
+  /** Every kind once, in the order chips, banners and summaries list them. */
+  readonly order: readonly KindId[];
 }
 
 export const DEFAULT_SETTINGS: Settings = {
   locale: AUTO_LOCALE,
   debug: false,
   kinds: perKind((kind) => kind.defaults),
+  order: KIND_IDS,
 };
 
 // Each field falls back to its own default, so one bad or missing field (an old version, a
@@ -41,15 +45,20 @@ const SettingsSchema = v.object({
   locale: v.fallback(LocaleSchema, DEFAULT_SETTINGS.locale),
   debug: v.fallback(v.boolean(), DEFAULT_SETTINGS.debug),
   kinds: v.fallback(v.record(v.string(), v.unknown()), {}),
+  order: v.fallback(
+    v.pipe(v.array(v.unknown()), v.transform((values) => parseOrder(values))),
+    KIND_IDS,
+  ),
 });
 
 /** The settings in a stored value: every valid field, and the default for every other one. */
 export function parseSettings(stored: unknown): Settings {
-  const { locale, debug, kinds } = parseWithDefaults(SettingsSchema, stored);
+  const { locale, debug, kinds, order } = parseWithDefaults(SettingsSchema, stored);
   return {
     locale,
     debug,
     kinds: perKind((kind) => parseKindSettings(kind, kinds[kind.id])),
+    order,
   };
 }
 
@@ -59,7 +68,9 @@ export function encodeSettings(settings: Settings): JsonValue {
   for (const kind of KINDS) {
     kinds[kind.id] = encodeKindSettings(settings.kinds[kind.id]);
   }
-  return { locale: settings.locale, debug: settings.debug, kinds };
+  // The registry order is not stored, so a new kind lands last for one who never moved a tag
+  const { locale, debug, order } = settings;
+  return { locale, debug, kinds, ...(sameOrder(order, KIND_IDS) ? {} : { order }) };
 }
 
 /** A change to the settings: only the fields it names, so it leaves every other one alone. */
@@ -67,6 +78,8 @@ export interface SettingsPatch {
   readonly locale?: string;
   readonly debug?: boolean;
   readonly kinds?: Readonly<Partial<Record<KindId, Readonly<Partial<KindSettings>>>>>;
+  /** A whole order; a kind it leaves out goes last. */
+  readonly order?: readonly KindId[];
 }
 
 /** The settings with the fields of `patch` replaced. */
@@ -75,6 +88,7 @@ export function applyPatch(settings: Settings, patch: SettingsPatch): Settings {
     locale: patch.locale ?? settings.locale,
     debug: patch.debug ?? settings.debug,
     kinds: perKind((kind) => mergeKindSettings(settings.kinds[kind.id], patch.kinds?.[kind.id])),
+    order: patch.order === undefined ? settings.order : parseOrder(patch.order),
   };
 }
 
@@ -90,5 +104,6 @@ export function wholePatch(settings: Settings): SettingsPatch {
       const own = settings.kinds[kind.id];
       return { ...own, color: own.color };
     }),
+    order: settings.order,
   };
 }

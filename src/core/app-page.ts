@@ -5,6 +5,7 @@ import { type Ignored, type IgnoreLists, isIgnored } from "./ignored";
 import { taggedView } from "./kinds/facets";
 import type { KindId } from "./kinds/id";
 import { effectiveSettings } from "./kinds/kind-settings";
+import { kindsInOrder } from "./kinds/order";
 import { KINDS, perKind } from "./kinds/registry";
 import {
   isKindVerdicts,
@@ -189,7 +190,7 @@ export function startAppPage(
   }
 
   function view(): AppPageView {
-    const { kinds } = deps.settings();
+    const { kinds, order } = deps.settings();
     return {
       verdicts: taggedView(known, kinds),
       creators: creatorRows(),
@@ -197,6 +198,7 @@ export function startAppPage(
       suppressed: perKind((kind) => isIgnored(deps.ignored, id, kind.id, known)),
       badge: perKind((kind) => effectiveSettings(kinds[kind.id]).badge),
       banner: perKind((kind) => effectiveSettings(kinds[kind.id]).banner),
+      order: kindsInOrder(order),
     };
   }
 

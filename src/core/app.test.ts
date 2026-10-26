@@ -34,6 +34,7 @@ import type { JsonValue } from "./json";
 import { toHexColor } from "./kinds/color";
 import { COMPAT_FACETS, type CompatFacet } from "./kinds/compat";
 import type { KindId } from "./kinds/id";
+import { parseOrder } from "./kinds/order";
 import { KIND_BY_ID } from "./kinds/registry";
 import type { Clock } from "./ports";
 import { DEFAULT_SETTINGS, encodeSettings, type Settings } from "./settings/settings";
@@ -252,6 +253,19 @@ describe("start on the search page", () => {
         chip("ai"),
         chip("eula"),
         chip("pvp"),
+      ]);
+      expect(row(DISCLOSED)?.getAttribute("data-sar-kinds")).toBe("ai kernel eula pvp iap");
+    });
+
+    it("draws the chips again in a new tag order, the allowance from its start", async () => {
+      const { http, settings } = await startOnSearch(pvpOn(), several);
+      await drawn(http);
+      await writeSettings(settings, { ...withPvp, order: parseOrder(["pvp", "eula"]) });
+      await expect.poll(() => chips()).toEqual([
+        chip("pvp"),
+        chip("eula"),
+        chip("ai"),
+        i18n.t("kind_chip_more", { count: "1" }),
       ]);
       expect(row(DISCLOSED)?.getAttribute("data-sar-kinds")).toBe("ai kernel eula pvp iap");
     });

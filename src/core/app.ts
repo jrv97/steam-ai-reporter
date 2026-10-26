@@ -22,6 +22,7 @@ import { createI18n } from "./i18n/t";
 import { createIgnoreLists, isIgnored, loadIgnored } from "./ignored";
 import { taggedView } from "./kinds/facets";
 import { effectiveSettings, type KindSettings } from "./kinds/kind-settings";
+import { kindsInOrder, sameOrder } from "./kinds/order";
 import { KINDS } from "./kinds/registry";
 import { coversSections, requestSections, type Section } from "./kinds/sections";
 import { type ConsoleSink, createLogger, type Logger } from "./log";
@@ -182,13 +183,14 @@ export async function start(deps: AppDeps): Promise<App> {
   applyKindSettings(root, settings.kinds);
 
   const card = createHoverCard(doc, i18n);
+  const order = () => kindsInOrder(settings.order);
   const capsules = createCapsuleUi({
     document: doc,
     detector: detectors.detector,
     renderers: [
       createHostKindsRenderer(),
-      createBadgeRenderer(doc, i18n, card),
-      createPackageSummary(doc, i18n),
+      createBadgeRenderer(doc, i18n, card, order),
+      createPackageSummary(doc, i18n, order),
     ],
     isAllowed: (id, forKind, related) => isIgnored(ignored, id, forKind, related),
     isBadged: (forKind) => effectiveSettings(settings.kinds[forKind]).badge,
@@ -205,8 +207,9 @@ export async function start(deps: AppDeps): Promise<App> {
     const before = settings;
     settings = parseSettings(value);
     applyKindSettings(root, settings.kinds);
-    // Chosen values decide which hosts carry a kind, so a change to them draws the hosts again.
-    const badges = changed(before, settings, SHOWS_BADGE) || facetsChanged(before, settings);
+    // Chosen values decide which hosts carry a kind and the order places chips: both draw again
+    const badges = changed(before, settings, SHOWS_BADGE) || facetsChanged(before, settings)
+      || !sameOrder(before.order, settings.order);
     if (badges) {
       capsules.refresh();
     }

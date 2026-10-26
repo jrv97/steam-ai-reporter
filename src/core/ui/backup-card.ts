@@ -4,6 +4,7 @@ import { type BackupReading, countEntries, MAX_BACKUP_SIZE, readBackup } from ".
 import { CREATOR_ROLES, type CreatorRole } from "../creator";
 import type { BareMessageKey } from "../i18n/t";
 import type { FileTransfer, MessageCatalog, PickedFile } from "../ports";
+import { createElement } from "./element";
 
 /** What the Backup card needs beyond the stored settings and lists. */
 export interface BackupCardDeps extends BackupDeps {
@@ -44,10 +45,7 @@ export function createBackupCard(doc: Document, deps: BackupCardDeps): HTMLEleme
     className: string,
     text?: string,
   ): HTMLElementTagNameMap[K] {
-    const node = doc.createElement(tag);
-    node.className = className;
-    node.textContent = text ?? "";
-    return node;
+    return createElement(doc, tag, className, text);
   }
 
   function button(action: Action, label: BareMessageKey): HTMLButtonElement {

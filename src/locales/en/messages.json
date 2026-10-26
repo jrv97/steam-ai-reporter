@@ -1035,6 +1035,110 @@
     "message": "Show in General",
     "description": "Button after that note that opens the General tab at the list of what is ignored for all tags. \"General\" is the tab's name (options_tab_general)."
   },
+  "options_order_title": {
+    "message": "Tag order",
+    "description": "Title of the card in the General settings tab where a person puts the tags in the order badges, banners and summaries list them."
+  },
+  "options_order_help": {
+    "message": "Badges, banners and summaries list tags in this order. Small game images show the first $count$.",
+    "description": "Help under the Tag order title. $count$ is how many tags fit on a small game image, as a number (2); a +N badge stands for the rest.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "2"
+      }
+    }
+  },
+  "options_order_how": {
+    "message": "Drag a tag by its handle, or click the handle and then the handle of the place it goes to. With a keyboard, Space or Enter picks a tag up, the arrow keys move it, Space or Enter drops it and Escape puts it back.",
+    "description": "Second help line of the Tag order card, also read by screen readers on each handle: the three ways to move a tag. Space, Enter, Escape and the arrow keys are key names; use the names your keyboards print."
+  },
+  "options_order_handle": {
+    "message": "Reorder $name$",
+    "description": "Screen reader name of the grip handle at the start of a row in the Tag order card. $name$ is the tag's short chip word.",
+    "placeholders": {
+      "name": {
+        "content": "$1",
+        "example": "KLAC"
+      }
+    }
+  },
+  "options_order_small": {
+    "message": "small image",
+    "description": "Small marker on the first rows of the Tag order card: these tags are the ones a small game image shows. Lowercase, a few words."
+  },
+  "options_order_reset": {
+    "message": "Reset order",
+    "description": "Quiet text button under the Tag order list that puts the tags back in the default order."
+  },
+  "options_order_reset_done": {
+    "message": "Tags are back in the default order.",
+    "description": "Screen reader announcement after Reset order saved the default order."
+  },
+  "options_order_picked": {
+    "message": "Picked up $name$, position $position$ of $count$.",
+    "description": "Screen reader announcement when a person picks a tag up in the Tag order list, to move it. $name$ is the tag's chip word, $position$ its place and $count$ how many tags there are, as numbers.",
+    "placeholders": {
+      "name": {
+        "content": "$1",
+        "example": "KLAC"
+      },
+      "position": {
+        "content": "$2",
+        "example": "2"
+      },
+      "count": {
+        "content": "$3",
+        "example": "11"
+      }
+    }
+  },
+  "options_order_moved": {
+    "message": "Moved to position $position$ of $count$.",
+    "description": "Screen reader announcement each time the picked up tag moves one place. $position$ is its new place and $count$ how many tags there are, as numbers.",
+    "placeholders": {
+      "position": {
+        "content": "$1",
+        "example": "3"
+      },
+      "count": {
+        "content": "$2",
+        "example": "11"
+      }
+    }
+  },
+  "options_order_dropped": {
+    "message": "Dropped $name$, position $position$ of $count$.",
+    "description": "Screen reader announcement when the picked up tag is put down and its new place is saved. $name$ is the tag's chip word, $position$ its place and $count$ how many tags there are, as numbers.",
+    "placeholders": {
+      "name": {
+        "content": "$1",
+        "example": "KLAC"
+      },
+      "position": {
+        "content": "$2",
+        "example": "3"
+      },
+      "count": {
+        "content": "$3",
+        "example": "11"
+      }
+    }
+  },
+  "options_order_cancelled": {
+    "message": "Cancelled. $name$ is back at position $position$.",
+    "description": "Screen reader announcement when Escape puts the picked up tag back where it was. $name$ is the tag's chip word and $position$ its place, as a number.",
+    "placeholders": {
+      "name": {
+        "content": "$1",
+        "example": "KLAC"
+      },
+      "position": {
+        "content": "$2",
+        "example": "2"
+      }
+    }
+  },
   "options_color_help_short": {
     "message": "Contrast is not checked. See General.",
     "description": "Short help under a tag's color field. The full help is in the General tab (options_tab_general), which this names. It must say that contrast is not checked."

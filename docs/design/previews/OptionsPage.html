@@ -15,6 +15,7 @@
     padding: var(--sar-space-4);
   }
   .popup-frame { border: 1px solid #3d4450; }
+  .one { max-inline-size: 880px; padding: 0 var(--sar-space-4) var(--sar-space-4); }
 </style>
 </head>
 <body>
@@ -413,6 +414,131 @@
         Steam.</p><p>Not affiliated with Valve. Nothing leaves your browser except lookups to
         Valve's store.</p></div>
     </div>
+  </div>
+</div>
+<div class="one">
+  <div class="sar-options" data-sar-context="page" data-sar-view="tabs">
+    <h2 class="sar-panel-title">General: Tag order, KLAC picked up</h2>
+    <section class="sar-card" aria-labelledby="g-order">
+      <h3 class="sar-card-title" id="g-order" tabindex="-1">Tag order</h3>
+      <p class="sar-field-help">Badges, banners and summaries list tags in this order. Small game
+        images show the first 2.</p>
+      <p class="sar-field-help" id="g-order-how">Drag a tag by its handle, or click the handle and
+        then the handle of the place it goes to. With a keyboard, Space or Enter picks a tag up, the
+        arrow keys move it, Space or Enter drops it and Escape puts it back.</p>
+      <ul class="sar-order-list">
+      <li class="sar-order-row">
+        <button class="sar-order-handle" type="button" data-sar-order="ai"
+          aria-label="Reorder AI" aria-describedby="g-order-how" aria-pressed="false">
+          <svg viewBox="0 0 10 16" aria-hidden="true" focusable="false">
+            <path d="M2 1h2v2H2zm4 0h2v2H6zM2 7h2v2H2zm4 0h2v2H6zM2 13h2v2H2zm4 0h2v2H6z"/></svg>
+        </button>
+        <span class="sar-order-chip">AI</span>
+        <span class="sar-order-heading">AI Generated Content Disclosure</span>
+        <span class="sar-order-small">small image</span>
+      </li>
+      <li class="sar-order-row" data-sar-held>
+        <button class="sar-order-handle" type="button" data-sar-order="kernel"
+          aria-label="Reorder KLAC" aria-describedby="g-order-how" aria-pressed="true">
+          <svg viewBox="0 0 10 16" aria-hidden="true" focusable="false">
+            <path d="M2 1h2v2H2zm4 0h2v2H6zM2 7h2v2H2zm4 0h2v2H6zM2 13h2v2H2zm4 0h2v2H6z"/></svg>
+        </button>
+        <span class="sar-order-chip">KLAC</span>
+        <span class="sar-order-heading">Uses Kernel Level Anti-Cheat</span>
+        <span class="sar-order-small">small image</span>
+      </li>
+      <li class="sar-order-row">
+        <button class="sar-order-handle" type="button" data-sar-order="anticheat"
+          aria-label="Reorder Anti-Cheat" aria-describedby="g-order-how" aria-pressed="false">
+          <svg viewBox="0 0 10 16" aria-hidden="true" focusable="false">
+            <path d="M2 1h2v2H2zm4 0h2v2H6zM2 7h2v2H2zm4 0h2v2H6zM2 13h2v2H2zm4 0h2v2H6z"/></svg>
+        </button>
+        <span class="sar-order-chip">Anti-Cheat</span>
+        <span class="sar-order-heading">Uses Anti-Cheat</span>
+        <span class="sar-order-small" hidden>small image</span>
+      </li>
+      <li class="sar-order-row">
+        <button class="sar-order-handle" type="button" data-sar-order="drm"
+          aria-label="Reorder DRM" aria-describedby="g-order-how" aria-pressed="false">
+          <svg viewBox="0 0 10 16" aria-hidden="true" focusable="false">
+            <path d="M2 1h2v2H2zm4 0h2v2H6zM2 7h2v2H2zm4 0h2v2H6zM2 13h2v2H2zm4 0h2v2H6z"/></svg>
+        </button>
+        <span class="sar-order-chip">DRM</span>
+        <span class="sar-order-heading">Includes 3rd-party DRM</span>
+        <span class="sar-order-small" hidden>small image</span>
+      </li>
+      <li class="sar-order-row">
+        <button class="sar-order-handle" type="button" data-sar-order="account"
+          aria-label="Reorder Account" aria-describedby="g-order-how" aria-pressed="false">
+          <svg viewBox="0 0 10 16" aria-hidden="true" focusable="false">
+            <path d="M2 1h2v2H2zm4 0h2v2H6zM2 7h2v2H2zm4 0h2v2H6zM2 13h2v2H2zm4 0h2v2H6z"/></svg>
+        </button>
+        <span class="sar-order-chip">Account</span>
+        <span class="sar-order-heading">Requires 3rd-Party Account</span>
+        <span class="sar-order-small" hidden>small image</span>
+      </li>
+      <li class="sar-order-row">
+        <button class="sar-order-handle" type="button" data-sar-order="eula"
+          aria-label="Reorder EULA" aria-describedby="g-order-how" aria-pressed="false">
+          <svg viewBox="0 0 10 16" aria-hidden="true" focusable="false">
+            <path d="M2 1h2v2H2zm4 0h2v2H6zM2 7h2v2H2zm4 0h2v2H6zM2 13h2v2H2zm4 0h2v2H6z"/></svg>
+        </button>
+        <span class="sar-order-chip">EULA</span>
+        <span class="sar-order-heading">Requires agreement to a 3rd-party EULA</span>
+        <span class="sar-order-small" hidden>small image</span>
+      </li>
+      <li class="sar-order-row">
+        <button class="sar-order-handle" type="button" data-sar-order="pvp"
+          aria-label="Reorder PvP" aria-describedby="g-order-how" aria-pressed="false">
+          <svg viewBox="0 0 10 16" aria-hidden="true" focusable="false">
+            <path d="M2 1h2v2H2zm4 0h2v2H6zM2 7h2v2H2zm4 0h2v2H6zM2 13h2v2H2zm4 0h2v2H6z"/></svg>
+        </button>
+        <span class="sar-order-chip">PvP</span>
+        <span class="sar-order-small" hidden>small image</span>
+      </li>
+      <li class="sar-order-row">
+        <button class="sar-order-handle" type="button" data-sar-order="iap"
+          aria-label="Reorder IAP" aria-describedby="g-order-how" aria-pressed="false">
+          <svg viewBox="0 0 10 16" aria-hidden="true" focusable="false">
+            <path d="M2 1h2v2H2zm4 0h2v2H6zM2 7h2v2H2zm4 0h2v2H6zM2 13h2v2H2zm4 0h2v2H6z"/></svg>
+        </button>
+        <span class="sar-order-chip">IAP</span>
+        <span class="sar-order-heading">In-App Purchases</span>
+        <span class="sar-order-small" hidden>small image</span>
+      </li>
+      <li class="sar-order-row">
+        <button class="sar-order-handle" type="button" data-sar-order="deck"
+          aria-label="Reorder Deck" aria-describedby="g-order-how" aria-pressed="false">
+          <svg viewBox="0 0 10 16" aria-hidden="true" focusable="false">
+            <path d="M2 1h2v2H2zm4 0h2v2H6zM2 7h2v2H2zm4 0h2v2H6zM2 13h2v2H2zm4 0h2v2H6z"/></svg>
+        </button>
+        <span class="sar-order-chip">Deck</span>
+        <span class="sar-order-heading">Steam Deck Compatibility</span>
+        <span class="sar-order-small" hidden>small image</span>
+      </li>
+      <li class="sar-order-row">
+        <button class="sar-order-handle" type="button" data-sar-order="machine"
+          aria-label="Reorder Steam Machine" aria-describedby="g-order-how" aria-pressed="false">
+          <svg viewBox="0 0 10 16" aria-hidden="true" focusable="false">
+            <path d="M2 1h2v2H2zm4 0h2v2H6zM2 7h2v2H2zm4 0h2v2H6zM2 13h2v2H2zm4 0h2v2H6z"/></svg>
+        </button>
+        <span class="sar-order-chip">Steam Machine</span>
+        <span class="sar-order-heading">Steam Machine Compatibility</span>
+        <span class="sar-order-small" hidden>small image</span>
+      </li>
+      <li class="sar-order-row">
+        <button class="sar-order-handle" type="button" data-sar-order="family"
+          aria-label="Reorder Family Sharing" aria-describedby="g-order-how" aria-pressed="false">
+          <svg viewBox="0 0 10 16" aria-hidden="true" focusable="false">
+            <path d="M2 1h2v2H2zm4 0h2v2H6zM2 7h2v2H2zm4 0h2v2H6zM2 13h2v2H2zm4 0h2v2H6z"/></svg>
+        </button>
+        <span class="sar-order-chip">Family Sharing</span>
+        <span class="sar-order-small" hidden>small image</span>
+      </li>
+      </ul>
+      <button class="sar-button" type="button" data-sar-variant="quiet"
+        data-sar-order-reset>Reset order</button>
+    </section>
   </div>
 </div>
 </body>

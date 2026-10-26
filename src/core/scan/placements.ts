@@ -1,3 +1,4 @@
+import { OVERLAY_CHIPS } from "../kinds/order";
 import { LINK_CANDIDATE } from "./candidates";
 import { firstImage, imageBox } from "./image";
 
@@ -6,8 +7,6 @@ import { firstImage, imageBox } from "./image";
 
 /** Chips a row with room for words shows beside its title. */
 const ROW_CHIPS = 3;
-/** Chips a capsule overlay shows: the image is narrow and the store's own flags sit on it. */
-const OVERLAY_CHIPS = 2;
 /** Chips a search suggestion shows: its row is the smallest. */
 const SUGGESTION_CHIPS = 2;
 

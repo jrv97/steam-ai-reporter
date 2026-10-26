@@ -12,6 +12,7 @@ import { memoryStore } from "../../../tests/helpers/memory-store";
 import { hexColor, withKind, writeSettings } from "../../../tests/helpers/settings";
 import { createIgnoreLists } from "../ignored";
 import type { JsonValue } from "../json";
+import { parseOrder } from "../kinds/order";
 import type { KeyValueStore } from "../ports";
 import { DEFAULT_SETTINGS, parseSettings, type Settings } from "../settings/settings";
 import { createSettingsSource } from "../settings/settings-source";
@@ -25,7 +26,11 @@ import {
 import { type BackupDeps, createBackupFile, restoreBackup } from "./backup";
 import { type BackupContents, readBackup } from "./format";
 
-const COLORED = withKind(DEFAULT_SETTINGS, "ai", { color: hexColor("#112233"), filter: "dim" });
+/** Settings a person changed: a color, a filter and the tag order. */
+const CHANGED: Settings = {
+  ...withKind(DEFAULT_SETTINGS, "ai", { color: hexColor("#112233"), filter: "dim" }),
+  order: parseOrder(["family", "ai"]),
+};
 
 function backupDeps(store: KeyValueStore = memoryStore()): BackupDeps {
   return {
@@ -77,7 +82,7 @@ describe("createBackupFile", () => {
 
 describe("restoreBackup", () => {
   it("makes another store hold the same settings and lists after a round trip", async () => {
-    const source = await seeded(COLORED, {
+    const source = await seeded(CHANGED, {
       games: gameEntries({ all: [[10, "Ten", 1]] }),
       creators: {
         developer: creatorEntries({ ai: [["c:4", "Studio", 2]] }),
@@ -89,8 +94,8 @@ describe("restoreBackup", () => {
     expect(await contentsOf(target)).toStrictEqual(await contentsOf(source));
   });
 
-  it("replaces the settings, clearing a color the backup does not have", async () => {
-    const deps = await seeded(COLORED);
+  it("replaces the settings, clearing a color and an order the backup does not have", async () => {
+    const deps = await seeded(CHANGED);
     await restoreBackup(deps, backupContents());
     expect(parseSettings(await deps.settings.read())).toStrictEqual(DEFAULT_SETTINGS);
   });
@@ -99,8 +104,8 @@ describe("restoreBackup", () => {
     const deps = backupDeps();
     const heard: Settings[] = [];
     deps.settings.subscribe((value) => heard.push(parseSettings(value)));
-    await restoreBackup(deps, backupContents({ settings: COLORED }));
-    expect(heard).toStrictEqual([COLORED]);
+    await restoreBackup(deps, backupContents({ settings: CHANGED }));
+    expect(heard).toStrictEqual([CHANGED]);
   });
 
   it("writes the keys that open pages watch for list and settings changes", async () => {

@@ -1,5 +1,5 @@
 import type { KindId } from "../kinds/id";
-import { KINDS } from "../kinds/registry";
+import type { TagKind } from "../kinds/kind";
 import type { AnyDisclosed, KindVerdicts } from "../kinds/verdicts";
 import type { MessageCatalog } from "../ports";
 import { ALLOW_ALL, type AllowScope } from "../settings/allow-data";
@@ -36,6 +36,8 @@ export interface AppPageView {
    * Each kind's badge switch is a root attribute (`applyKindSettings`).
    */
   readonly banner: Readonly<Record<KindId, boolean>>;
+  /** The kinds in the person's tag order, which the banner and the tag section follow. */
+  readonly order: readonly TagKind[];
 }
 
 /** The game's own page: the banner above the purchase box and the tag section. */
@@ -60,7 +62,7 @@ function bannerView(view: AppPageView): BannerView | undefined {
   const ignored: AllowScope[] = [];
   const listed = new Set<KindId>();
   let silenced = false;
-  for (const kind of KINDS) {
+  for (const kind of view.order) {
     const verdict = view.verdicts[kind.id];
     if (verdict.state !== "disclosed" || !view.banner[kind.id]) {
       continue;
@@ -88,12 +90,12 @@ function bannerView(view: AppPageView): BannerView | undefined {
 }
 
 /**
- * The verdicts the tag section shows, in registry order: each disclosed kind with its badge on
+ * The verdicts the tag section shows, in the tag order: each disclosed kind with its badge on
  * that is not ignored for the game or, for a DLC, for its base game.
  */
 function tagVerdicts(view: AppPageView): readonly AnyDisclosed[] {
   const shown: AnyDisclosed[] = [];
-  for (const kind of KINDS) {
+  for (const kind of view.order) {
     const verdict = view.verdicts[kind.id];
     if (verdict.state === "disclosed" && view.badge[kind.id] && !view.suppressed[kind.id]) {
       shown.push(verdict);

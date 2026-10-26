@@ -681,6 +681,99 @@
   }
 }
 
+/* Tag order: one list, a grip handle per row. A dragged row follows the pointer with a transform
+   while the rows between slide aside to open its gap; the DOM reorders on the drop. */
+.sar-order-list {
+  margin: var(--sar-space-2) 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sar-order-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: var(--sar-space-2);
+  padding-block: var(--sar-space-1);
+  border-block-start: 1px solid var(--sar-color-divider);
+  background: var(--sar-color-bg-raised);
+}
+
+.sar-order-handle {
+  appearance: none;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  inline-size: var(--sar-control-height-sm);
+  block-size: var(--sar-control-height-sm);
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--sar-radius-sm);
+  background: none;
+  color: var(--sar-color-text-subtle);
+  cursor: grab;
+  touch-action: none;
+}
+
+.sar-order-handle:hover,
+.sar-order-row[data-sar-held] .sar-order-handle {
+  background: var(--sar-button-secondary-bg);
+  color: var(--sar-color-text-strong);
+}
+
+.sar-order-handle svg {
+  inline-size: 10px;
+  block-size: 16px;
+  fill: currentColor;
+}
+
+.sar-order-chip {
+  color: var(--sar-color-text-strong);
+  font-weight: var(--sar-weight-medium);
+}
+
+.sar-order-heading,
+.sar-order-small {
+  color: var(--sar-color-text-subtle);
+  font-size: var(--sar-size-sm);
+}
+
+.sar-order-small {
+  padding-inline: var(--sar-space-1);
+  border: 1px solid var(--sar-color-border);
+  border-radius: var(--sar-radius-sm);
+}
+
+.sar-order-row[data-sar-held] {
+  position: relative;
+  z-index: 1;
+  outline: 1px solid var(--sar-accent-400);
+}
+
+.sar-order-list[data-sar-dragging] .sar-order-row {
+  transition: transform var(--sar-duration-fast) var(--sar-ease);
+}
+
+.sar-order-list[data-sar-dragging] .sar-order-row[data-sar-held] {
+  transition: none;
+  box-shadow: var(--sar-hovercard-shadow);
+}
+
+.sar-order-list[data-sar-dragging] .sar-order-handle {
+  cursor: grabbing;
+}
+
+@media (forced-colors: active) {
+  .sar-order-handle {
+    border-color: ButtonText;
+  }
+
+  .sar-order-row[data-sar-held] {
+    outline: 2px solid Highlight;
+  }
+}
+
 /* Popup: the gear at the end of the header, which stays in view, and one row per tag with its
    name, list filter and master switch. A tag that is off keeps its filter, disabled. */
 .sar-options[data-sar-view="list"] .sar-options-header {
@@ -971,6 +1064,7 @@
 .sar-input:focus-visible,
 .sar-button:focus-visible,
 .sar-tab:focus-visible,
+.sar-order-handle:focus-visible,
 .sar-options a:focus-visible {
   outline: var(--sar-focus-width) solid var(--sar-focus-color);
   outline-offset: var(--sar-focus-offset);

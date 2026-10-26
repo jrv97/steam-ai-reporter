@@ -247,6 +247,7 @@ describe("migrateSettings", () => {
 describe("settingsFromV1 and allowFromV1", () => {
   it("map the v1 fields into the AI kind", () => {
     expect(settingsFromV1(V1_CUSTOM)).toStrictEqual({
+      ...DEFAULT_SETTINGS,
       locale: "es",
       debug: true,
       kinds: {

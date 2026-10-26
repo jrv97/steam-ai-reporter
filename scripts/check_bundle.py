@@ -16,8 +16,8 @@
   key or plural base that a string literal of its code names is in its inlined catalogs, and every
   message there is named, so a missing key fails here and never falls back to the raw key on a
   store page. scripts/gen_catalogs.py writes each entry's catalogs by the same reading.
-- Size budgets: content.js at most 205 KiB, options.js at most 165 KiB and the userscript at most
-  320 KiB, unminified (rule 13). Each is the measured size plus a few percent of headroom; raise one
+- Size budgets: content.js at most 205 KiB, options.js at most 183 KiB and the userscript at most
+  339 KiB, unminified (rule 13). Each is the measured size plus a few percent of headroom; raise one
   only with a measurement. A message costs bytes only in the bundles that read it, and an added
   locale costs about 5 KB in content.js, 9 KB in options.js and 12 KB in the userscript. Measured
   when ignoring by developer or publisher landed (ADR 0013): content.js 186,313 B (from 169,265),
@@ -33,7 +33,11 @@
   percent. Measured when the settings became tabs and the popup a row per tag (decision 65):
   content.js 206,761 B (unchanged: the tab code and its messages stay out of its graph), options.js
   164,999 B (from 150,395) and userscript 320,101 B (from 307,306); their budgets rise to 165 and
-  320 KiB, the size plus 2.4 percent.
+  320 KiB, the size plus 2.4 percent. Measured when the tag order card landed (decision 66):
+  content.js 208,094 B (from 206,761: the order setting and the surfaces that follow it),
+  options.js 182,687 B (from 165,741) and userscript 338,320 B (from 321,389): the card's code
+  about 12.5 KB, its CSS 2 KB and its messages 2 KB. Their budgets rise to 183 and 339 KiB, the
+  size plus 2.6 percent; content.js keeps 205 KiB.
 - The STEAM_API_KEY value, when set, appears nowhere in dist/ or artifacts/ (rule 16).
 - The dev injection bundle is never packaged into artifacts/, and when artifacts/ exists it holds
   exactly the five release artifacts, with a manifest at the root of each extension zip. The source
@@ -67,8 +71,8 @@ from repo import (
 KIB = 1024
 BUDGETS = {
     **{DIST / target / "content.js": 205 * KIB for target in EXTENSION_TARGETS},
-    **{DIST / target / "options.js": 165 * KIB for target in EXTENSION_TARGETS},
-    DIST / "userscript" / f"{SLUG}.user.js": 320 * KIB,
+    **{DIST / target / "options.js": 183 * KIB for target in EXTENSION_TARGETS},
+    DIST / "userscript" / f"{SLUG}.user.js": 339 * KIB,
 }
 ENGLISH = ROOT / "src" / "locales" / DEFAULT_LOCALE / "messages.json"
 STORE_MATCH = ["https://store.steampowered.com/*"]

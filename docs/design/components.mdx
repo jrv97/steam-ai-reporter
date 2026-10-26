@@ -154,7 +154,7 @@ Preview: `previews/Badge.html`.
 ### When to use
 
 - One chip for each kind that is disclosed, enabled, has its badge switch on and is not ignored for the game. Not disclosed, unknown and ignored kinds get nothing: no neutral chip, no check mark.
-- The chips of a host sit in one group, in registry order. A placement shows at most its `maxChips` (3 on rows with room, 2 on capsule overlays and search suggestions), and one "+N" chip stands for the rest.
+- The chips of a host sit in one group, in the person's tag order (`order`, set in the Tag order card of section 6; the registry's until moved). A placement shows the first `maxChips` of them (3 on rows with room, `OVERLAY_CHIPS` 2 on capsule overlays, 2 on search suggestions), and one "+N" chip stands for the rest. A new order draws every host again.
 - A host with full chips gets no compact badge.
 
 ### What the consumer provides
@@ -216,7 +216,7 @@ Preview: `previews/CompactBadge.html`.
 ### When to use
 
 - A host with a kind to show whose capsule image is at least 180px wide and 32px tall. Smaller images get nothing on the image; a row-shaped host still gets full chips.
-- One chip per kind in one group, at most two, then a "+N" chip. Never alongside full chips on the same host.
+- One chip per kind in one group: the first two kinds of the tag order (`OVERLAY_CHIPS`), then a "+N" chip. Never alongside full chips on the same host.
 
 ### What the consumer provides
 
@@ -274,7 +274,7 @@ Preview: `previews/TagSection.html`.
 ### When to use
 
 - On the app page of a game with a disclosed kind that is enabled, not ignored for the game (for the kind or for all tags) and has its badge switch on. These are the filters of the chips on lists. Each kind counts on its own: switching off the badge of one kind, or ignoring the game for it, removes only that chip.
-- All chips show, in registry order, and wrap to more rows. There is no "+N" chip. A game whose only declaration is kernel-level anti-cheat gets a section with one chip.
+- All chips show, in the tag order, and wrap to more rows. There is no "+N" chip. A game whose only declaration is kernel-level anti-cheat gets a section with one chip.
 - With no chip to show, there is no section and no heading.
 - Once per page. The banner, lower down by the purchase box, still carries the developer's words and the ignore buttons.
 
@@ -329,7 +329,7 @@ Preview: `previews/Banner.html`.
 
 ### When to use
 
-- On the app page of a game with at least one disclosed kind that is enabled and has its banner switch on, once per page view. One banner holds every such kind, in registry order.
+- On the app page of a game with at least one disclosed kind that is enabled and has its banner switch on, once per page view. One banner holds every such kind, in the tag order (section 6).
 - A kind the game is ignored for is not listed. It becomes a one-line note with Undo. A game ignored for all tags gets one such note and nothing else.
 - Below the entries sits a closed section, "Ignore a developer or publisher", with a row for each of the game's developers and publishers (see "Ignoring a developer or publisher" below). A tag a creator is ignored for becomes a note with Undo.
 - On a demo's page, a kind the full game declared and the demo did not is listed like the others, with `kind_full_game` right under its heading and before the developer's text, which stays the full game's developer's (decision 59). A Valve value lent this way reads `kind_full_game_valve`.
@@ -486,7 +486,7 @@ No classes, no inline styles, no per-node writes when the mode changes.
 
 ## 6. Options page and action popup
 
-The settings form, rendered as the full options page (`data-sar-context="page"`, `data-sar-view="tabs"`) and as the toolbar popup (`data-sar-context="popup"`, `data-sar-view="list"`), dark only. The stored settings are `locale`, `debug` and, for each kind, `kinds.<id>.enabled`, `kinds.<id>.badge`, `kinds.<id>.banner`, `kinds.<id>.filter` and, when the person set one, `kinds.<id>.color`.
+The settings form, rendered as the full options page (`data-sar-context="page"`, `data-sar-view="tabs"`) and as the toolbar popup (`data-sar-context="popup"`, `data-sar-view="list"`), dark only. The stored settings are `locale`, `debug`, `order` when the person moved a tag and, for each kind, `kinds.<id>.enabled`, `kinds.<id>.badge`, `kinds.<id>.banner`, `kinds.<id>.filter` and, when the person set one, `kinds.<id>.color`.
 
 Preview: `previews/OptionsPage.html`, and `previews/Tabs.html` for the tabs alone.
 
@@ -515,9 +515,9 @@ Preview: `previews/OptionsPage.html`, and `previews/Tabs.html` for the tabs alon
    - Language: a stacked Select, `Automatic` first, then each shipped locale named in its own language through `Intl.DisplayNames`. On the page and in the dialog.
    - Badge color (experimental), where the form has color fields: the full help `options_color_help`, once.
    - Ignored for all tags (`options_allow_all_title`): the games, developers and publishers ignored for every tag (section 11).
+   - Tag order (page and dialog): the order chips, banners and summaries list the tags in (below).
    - Backup (page and dialog): the Backup card (section 12).
    - Privacy (page only): four bullets.
-   - A Tag order card will join General when tags can be put in an order of the person's own.
 2. One tab per tag kind, sorted by its chip word in the UI language (`localeCompare` through `Intl.Collator`), labelled with that word and `options_state_on` or `options_state_off`. A tag that is off keeps its tab. The panel holds:
    - The tag's card, titled with Steam's line for the kind (`kind_<id>_heading`): the master switch `options_kind_enabled` (`kinds.<id>.enabled`), then, for a tag with values, a group of native checkboxes, one per value in Steam's words (`facets`; label `options_facets_label`, help `options_facets_help`), then the switches `options_badges` (dialog `options_badges_short`; `badge`) and `options_banner` (`banner`), then, where the form has color fields, the color field (below), then a stacked SegmentedControl with Show, Dim and Hide (`filter`; label `options_filter_label`; the help follows the selection). Each switch has help. While the master switch is off, the other controls are hidden and their stored values stay.
    - Ignored for this tag (`options_allow_kind_title`): what is ignored for this tag alone, and the note on what all tags ignore (section 11).
@@ -542,6 +542,20 @@ One stacked field in each tag's options, after the banner switch and before the 
 - Live validation: on every keystroke, text that is not a color shows `options_color_invalid` (`role="alert"`, the box gets `aria-invalid` and a `sar-color-error` edge) and a text that reads shows at once on the swatch and the page, unsaved. The value is saved when the edit is committed (Enter or leaving the box), one patch of the `color` field. Invalid text is never saved and stays as typed until fixed. A failed save reverts the field and shows `error_settings_save`.
 - Help: under the field, `options_color_help_short` ("Contrast is not checked. See General."); the full help `options_color_help`, which always says that contrast is not checked, sits once in General, and every color field names it in `aria-describedby`.
 - Reset is the quiet text button of section 10.
+
+### The Tag order card
+
+One card in General, after Ignored for all tags. It sets `order`: every kind once, the order the chips on rows and images, the hover card, the tag section, the banner and the package summary list them in. It does not reorder the tabs or the popup rows, which stay alphabetical.
+
+- Title `options_order_title`, then `options_order_help` (badges, banners and summaries follow the order; small images show the first `OVERLAY_CHIPS`) and `options_order_how` (how to move a tag by pointer, click or keys). The handles name the second line in `aria-describedby`.
+- One `ul.sar-order-list` with an `li.sar-order-row` per kind: a grip handle, the chip word in `sar-color-text-strong` and medium weight, Steam's line in `sar-text-help` subtle (PvP shows its word once), and on the first `OVERLAY_CHIPS` rows a small outlined `options_order_small` marker. Rows are `sar-space-1` padded with a `sar-color-divider` line between them.
+- The handle is a `button` (`sar-control-height-sm` square, an original six-square grip in `currentColor`, no text) named `options_order_handle` ("Reorder KLAC"), with `aria-pressed` while its row is held and `touch-action: none`, so a drag on it never scrolls the page.
+- Drag: a pointer press on a handle that moves 4px or more picks the row up. The row follows the pointer by a `transform`, the rows between slide aside by one row's pitch to open its gap (a `sar-duration-fast` transition, none under reduced motion), and the release drops it: only then do the rows move in the DOM. The press captures the pointer; its move, up and cancel listeners sit on the handle, with one `pagehide` listener on the window, and all go at the release. A cancel or `pagehide` puts the row back.
+- Keys and clicks: Space, Enter or a click on a handle picks its row up; the arrows move it one place, Home and End to the ends; Space, Enter or a click on the same handle drops it; Escape puts it back (and, in the userscript dialog, does not close it). A click on another row's handle while one is held puts the held row in that row's place.
+- Each step is said in the form's live region: `options_order_picked`, `options_order_moved`, `options_order_dropped`, `options_order_cancelled`. A drop that changed the order saves it as one patch, then says the drop; a failed save shows `error_settings_save` and puts the stored order back.
+- Reset order (`options_order_reset`), the quiet text button of section 10, stores the registry order, which is then left out of the stored value, and says `options_order_reset_done`.
+- The held row carries `data-sar-held` (an accent outline, and the hover card's shadow while dragged); forced colors draw the handle with a `ButtonText` edge and the held row with a `Highlight` outline.
+- One listener per event type on the form's root serves the card (`pointerdown`, `click`, `keydown`); the card keeps no listener of its own on its rows.
 
 ### Longer translations
 
@@ -884,7 +898,7 @@ Preview: `previews/HoverCard.html`.
 </div>
 ```
 
-- One card per page, created on first use and appended to `body`. Every trigger reuses it; opening for another game refills it. One entry for each disclosed kind of the host, in registry order.
+- One card per page, created on first use and appended to `body`. Every trigger reuses it; opening for another game refills it. One entry for each disclosed kind of the host, in the tag order, the chips' own.
 - Triggers register with the card when they render: a `WeakMap` from trigger element to the host's disclosed verdicts, plus whether the trigger sits on the game's own page (a tag-section chip). Nothing is set on the trigger, and no listener is added to it.
 - Opening and closing run on delegated listeners on the document: `pointerover`, `pointerout`, `focusin`, `focusout`, `keydown` and `scroll`. Their number does not depend on how many chips the page holds. One `pagehide` listener on the window closes the card.
 - The lines under each heading come from `kindDetails`, the function the banner uses, without links. The AI notes go in through `textContent` with `\r\n` turned into `\n`, never translated or cut in the DOM. The service line appears only when GetItems named one (`ai_generation_service`), the name inserted as data.
@@ -991,7 +1005,7 @@ A block at the top of a package page (`/sub/<id>/`) that sums up the chips of th
 ### When to use
 
 - On a list surface named in `SUMMARY_PLACEMENTS` (`scan/placements.ts`): the package page's included games first. An entry is the same `ListPlacement` shape as the hidden results notice: the selector of the element that holds the hosts and, in `after`, the store element the block follows. A bundle page is one more entry once a capture shows its markup.
-- One line for each kind that at least one included game shows a chip for: disclosed, not ignored for the game (`isIgnored`, through the capsule UI's `allowed`), enabled and with its badge switch on. A kind with no such game has no line, never a zero.
+- One line for each kind that at least one included game shows a chip for, in the tag order: disclosed, not ignored for the game (`isIgnored`, through the capsule UI's `allowed`), enabled and with its badge switch on. A kind with no such game has no line, never a zero.
 - With no line to show, there is no block and no label.
 
 ### What the consumer provides
@@ -1049,7 +1063,7 @@ Preview: `previews/Tabs.html`.
 </div>
 ```
 
-- `createTabs` (`ui/tabs.ts`) builds the list and the panels; the form fills them. The order comes from `sortTabs` (`ui/tab-id.ts`), a pure helper with a hook for a later order of the person's own.
+- `createTabs` (`ui/tabs.ts`) builds the list and the panels; the form fills them. The order comes from `sortTabs` (`ui/tab-id.ts`), a pure helper; the tag order of the Tag order card does not move the tabs (decision 66).
 - A tag's tab: the chip word shown and hidden from screen readers, the full name (`kind_chip_name`, or the word once when it equals Steam's line, as PvP) read instead, then the state in words. A screen reader hears "KLAC: Uses Kernel Level Anti-Cheat On, tab, selected, 3 of 12".
 
 ### Behavior
@@ -1134,7 +1148,7 @@ For every translator:
 | --- | --- | --- |
 | `badge_card_declared` | Declared by the developer on the store page | Last line of the hover card. It says the developer, not this extension, made the declarations above. |
 | `badge_card_valve` | According to Valve | Last line of the hover card when it lists a Steam Deck or Steam Machine rating; after the developer's line when both apply. |
-| `kind_family_source` | According to the features Steam lists for this game | Family Sharing's source line in the hover card, instead of `badge_card_valve`; after the developer's line and, in registry order, after "According to Valve" when a rating is listed too. Spanish unverified. |
+| `kind_family_source` | According to the features Steam lists for this game | Family Sharing's source line in the hover card, instead of `badge_card_valve`; after the developer's line and, in the tag order, after "According to Valve" when a rating is listed too. Spanish unverified. |
 | `badge_card_service_label` | AI service named by the developer: | Precedes a product name inserted as data. Used by the card and the banner. |
 | `badge_card_more` | The full text is on the game's store page. | Shown when the card cuts a long text short, never on the game's own page. |
 | `badge_summary_games_one`, `_other` | `$kind$`: `$tagged$` of `$count$` game(s) | A line of the package summary, one per tag: Steam's line, then how many of the games with a known answer carry it. Neutral count words only. |
@@ -1226,6 +1240,17 @@ For every translator:
 | `options_allow_all_note_one` | `$count$` item ignored for all tags also applies here. | Plural, one: the note on a tag's tab. |
 | `options_allow_all_note_other` | `$count$` items ignored for all tags also apply here. | Plural, other. |
 | `options_allow_all_show` | Show in General | Quiet button after that note. |
+| `options_order_title` | Tag order | Card title in General. |
+| `options_order_help` | Badges, banners and summaries list tags in this order. Small game images show the first `$count$`. | `count` is `OVERLAY_CHIPS` as a number. |
+| `options_order_how` | Drag a tag by its handle, or click the handle and then the handle of the place it goes to. With a keyboard, Space or Enter picks a tag up, the arrow keys move it, Space or Enter drops it and Escape puts it back. | Second help line, named by every handle. |
+| `options_order_handle` | Reorder `$name$` | Screen reader name of a row's grip handle; `name` is the chip word. |
+| `options_order_small` | small image | Marker on the rows a small image shows. |
+| `options_order_reset` | Reset order | Quiet button under the list. |
+| `options_order_reset_done` | Tags are back in the default order. | Announced after Reset order. |
+| `options_order_picked` | Picked up `$name$`, position `$position$` of `$count$`. | Announced when a row is picked up. |
+| `options_order_moved` | Moved to position `$position$` of `$count$`. | Announced on each move. |
+| `options_order_dropped` | Dropped `$name$`, position `$position$` of `$count$`. | Announced on the drop. |
+| `options_order_cancelled` | Cancelled. `$name$` is back at position `$position$`. | Announced when Escape or a lost pointer puts the row back. |
 | `options_section_privacy` | Privacy | Section heading. |
 | `options_privacy_storage` | Settings and results stay in this browser. | Privacy bullet. |
 | `options_privacy_lookup` | To check a game, the extension asks Valve's own store servers, without your cookies or account. | Privacy bullet. |
