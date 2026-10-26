@@ -1,16 +1,19 @@
 import { describe, expect, it, vi } from "vitest";
 import { setBody } from "../../../tests/helpers/dom";
+import { fakeDetector } from "../../../tests/helpers/fake-detector";
 import { ignoredSets } from "../../../tests/helpers/ignored";
+import { manualQueue } from "../../../tests/helpers/manual-queue";
 import {
   aiVerdicts,
   disclosedVerdict,
   FULL_DISCLOSED,
   NOT_DISCLOSED,
 } from "../../../tests/helpers/verdicts";
+import { MAX_RETRIES } from "../detect/retry";
 import { isIgnored } from "../ignored";
 import type { AiVerdict } from "../kinds/ai";
 import { KIND_IDS, type KindId } from "../kinds/id";
-import type { KindVerdicts, Relations } from "../kinds/verdicts";
+import { type KindVerdicts, type Relations, UNKNOWN_KINDS } from "../kinds/verdicts";
 import type { Detector } from "../ports";
 import { GENERIC, type Placement, type RowPlacement } from "../scan/placements";
 import type { CapsuleHost } from "../scan/renderer";
@@ -405,6 +408,73 @@ describe("createCapsuleUi", () => {
       ui.render({ found: [host(5201760)], changed: [] });
       await flush();
       expect(views[0]?.allowed.ai).toBe(false);
+    });
+  });
+
+  describe("after a transient answer", () => {
+    const DISCLOSED = aiVerdicts(disclosedVerdict());
+    const { error: ERROR, missing: MISSING, "rate-limited": LIMITED } = UNKNOWN_KINDS;
+
+    /** A capsule UI on manual frames and retry timers, whose detector answers each call in turn. */
+    function retrying(answers: readonly KindVerdicts[]) {
+      const frames = manualQueue();
+      const timers = manualQueue();
+      const views: HostView[] = [];
+      const detector = fakeDetector(() =>
+        answers[Math.min(detector.calls.length, answers.length) - 1] ?? UNKNOWN_KINDS.missing
+      );
+      const ui = createCapsuleUi({
+        document,
+        detector,
+        renderers: [{ render: (view) => views.push(view) }],
+        isAllowed: () => false,
+        isBadged: () => true,
+        frame: frames.frame,
+        delay: timers.delay,
+      });
+      /** Lets the pending lookup answer, then draws. */
+      const answered = async () => {
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        frames.run();
+      };
+      return { ui, detector, timers, views, answered };
+    }
+
+    it.each(
+      [
+        ["unknown error: asked again", [ERROR, DISCLOSED], true, 2, true],
+        ["unknown rate-limited: asked again", [LIMITED, DISCLOSED], true, 2, true],
+        ["a host that left the page: not asked again", [ERROR, DISCLOSED], false, 1, false],
+        ["unknown missing, which is stored: not asked again", [MISSING, DISCLOSED], true, 1, false],
+        ["rate-limited every time: asked twice more", [LIMITED], true, 1 + MAX_RETRIES, false],
+      ] as const,
+    )("%s", async (_name, answers, connected, calls, chips) => {
+      const { ui, detector, timers, views, answered } = retrying(answers);
+      const found = host(21);
+      ui.render({ found: [found], changed: [] });
+      for (let round = 0; round <= MAX_RETRIES + 1; round++) {
+        await answered();
+        if (!connected) {
+          found.element.remove();
+        }
+        timers.run();
+      }
+      expect(detector.calls).toHaveLength(calls);
+      expect(timers.size).toBe(0);
+      expect(views.at(-1)?.slot !== undefined).toBe(chips);
+    });
+
+    it.each(["pagehide", "stop"] as const)("cancels the pending retry on %s", async (end) => {
+      const { ui, timers, answered } = retrying([ERROR]);
+      ui.render({ found: [host(22)], changed: [] });
+      await answered();
+      expect(timers.size).toBe(1);
+      if (end === "pagehide") {
+        window.dispatchEvent(new Event("pagehide"));
+      } else {
+        ui.stop();
+      }
+      expect(timers.size).toBe(0);
     });
   });
 });

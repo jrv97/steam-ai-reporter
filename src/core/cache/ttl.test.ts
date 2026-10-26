@@ -5,12 +5,21 @@ import {
   NOT_DISCLOSED,
   uniformVerdicts,
 } from "../../../tests/helpers/verdicts";
+import { DEFAULT_BACKOFF } from "../detect/breaker";
+import { RETRY_DELAY_MS } from "../detect/retry";
 import { AI_KIND } from "../kinds/ai";
 import { DAY_MS, HOUR_MS, WEEK_TTL } from "../kinds/kind-ttl";
 import { KINDS } from "../kinds/registry";
-import type { KindVerdicts } from "../kinds/verdicts";
+import { type KindVerdicts, UNKNOWN_KINDS } from "../kinds/verdicts";
 import { UNKNOWN } from "../types";
-import { isFresh, isStoredReason, TRANSIENT_TTL_MS, ttlMs, UNKNOWN_TTL_MS } from "./ttl";
+import {
+  isFresh,
+  isStoredReason,
+  isTransient,
+  TRANSIENT_TTL_MS,
+  ttlMs,
+  UNKNOWN_TTL_MS,
+} from "./ttl";
 
 const T = 1_000_000_000_000;
 
@@ -48,6 +57,11 @@ describe("ttlMs", () => {
     expect(ttlMs(AI_KIND.ttl, UNKNOWN["rate-limited"])).toBe(TRANSIENT_TTL_MS);
     expect(TRANSIENT_TTL_MS).toBeLessThan(UNKNOWN_TTL_MS);
   });
+
+  it("runs out before a retry round, which waits out the longest breaker pause", () => {
+    expect(TRANSIENT_TTL_MS).toBeLessThan(RETRY_DELAY_MS);
+    expect(DEFAULT_BACKOFF.baseMs + DEFAULT_BACKOFF.jitterMs).toBeLessThan(RETRY_DELAY_MS);
+  });
 });
 
 describe("isStoredReason", () => {
@@ -57,6 +71,26 @@ describe("isStoredReason", () => {
     expect(isStoredReason("malformed")).toBe(true);
     expect(isStoredReason("error")).toBe(false);
     expect(isStoredReason("rate-limited")).toBe(false);
+  });
+});
+
+describe("isTransient", () => {
+  it.each(
+    [
+      ["unknown error", true, uniformVerdicts("error")],
+      ["unknown rate-limited", true, uniformVerdicts("rate-limited")],
+      ["error and rate-limited mixed", true, {
+        ...UNKNOWN_KINDS.error,
+        ai: UNKNOWN["rate-limited"],
+      }],
+      ["unknown gated", false, uniformVerdicts("gated")],
+      ["unknown missing", false, uniformVerdicts("missing")],
+      ["unknown malformed", false, uniformVerdicts("malformed")],
+      ["one kind answered", false, { ...UNKNOWN_KINDS.error, ai: NOT_DISCLOSED }],
+      ["disclosed", false, uniformVerdicts("disclosed")],
+    ] as const,
+  )("%s: %s", (_name, transient, verdicts) => {
+    expect(isTransient(verdicts)).toBe(transient);
   });
 });
 

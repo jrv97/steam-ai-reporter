@@ -12,11 +12,14 @@ import { englishI18n } from "../../tests/helpers/i18n";
 import { memoryStore } from "../../tests/helpers/memory-store";
 import { withKind, writeSettings } from "../../tests/helpers/settings";
 import { loadPage } from "../../tests/helpers/surfaces";
+import { T0, useTimerClock } from "../../tests/helpers/timer-clock";
 import { type App, start } from "./app";
 import type { CreatorRole } from "./creator";
+import { API_BREAKER_KEY } from "./detect/breaker";
 import { GETITEMS_URL } from "./detect/getitems";
+import { RETRY_DELAY_MS } from "./detect/retry";
 import type { JsonValue } from "./json";
-import type { Http } from "./ports";
+import type { Clock, Http } from "./ports";
 import { DEFAULT_SETTINGS, encodeSettings } from "./settings/settings";
 import { createSettingsSource } from "./settings/settings-source";
 import { ALLOW_KEY, CREATOR_ALLOW_KEYS, SETTINGS_KEY } from "./storage-keys";
@@ -31,6 +34,7 @@ afterEach(() => {
   app?.stop();
   app = undefined;
   clearRoot();
+  vi.useRealTimers();
 });
 
 const AllowSchema = v.object({
@@ -50,6 +54,7 @@ interface StartOptions {
   readonly initial?: ReadonlyMap<string, JsonValue>;
   /** Holds every request until `release` is called. */
   readonly held?: boolean;
+  readonly clock?: Clock;
 }
 
 async function startOnAiPage(options: StartOptions = {}) {
@@ -78,7 +83,7 @@ async function startOnAiPage(options: StartOptions = {}) {
     http,
     store,
     settings,
-    clock: fixedClock(0),
+    clock: options.clock ?? fixedClock(0),
     console: quiet,
     addPageStyles: adoptPageStyles,
   });
@@ -123,6 +128,21 @@ describe("start on an English app page", () => {
     await new Promise((resolve) => setTimeout(resolve, 20));
 
     expect(headings()).toEqual([i18n.t("kind_ai_heading")]);
+  });
+
+  it("asks GetItems again once a breaker left open by a past page closes", async () => {
+    const { http } = await startOnAiPage({
+      initial: new Map([[API_BREAKER_KEY, { until: T0 + 65_000 }]]),
+      clock: useTimerClock(),
+    });
+    await vi.advanceTimersByTimeAsync(RETRY_DELAY_MS - 1000);
+    expect(http.calls).toHaveLength(0);
+    expect(banner()?.querySelector(".sar-banner-service")).toBeNull();
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(http.calls).toHaveLength(1);
+    await expect.poll(() => banner()?.querySelector(".sar-banner-service")?.textContent).toContain(
+      i18n.t("badge_card_service_label"),
+    );
   });
 
   it("logs a disagreement in debug mode and keeps the disclosure of the page", async () => {

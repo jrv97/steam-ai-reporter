@@ -8,8 +8,8 @@ export { DAY_MS };
 /** How long a stored unknown verdict (`gated`, `missing`, `malformed`) stays fresh. */
 export const UNKNOWN_TTL_MS = 6 * HOUR_MS;
 /**
- * How long an `error` or `rate-limited` verdict is remembered in page memory. About the breaker's
- * backoff, so a failed ID is asked again soon after the breaker closes but not on every rescan.
+ * How long an `error` or `rate-limited` verdict is remembered in page memory, which keeps a rescan
+ * from asking again at once. Shorter than `RETRY_DELAY_MS`: a retry round finds it expired.
  */
 export const TRANSIENT_TTL_MS = 60_000;
 
@@ -23,6 +23,14 @@ export type StoredReason = (typeof STORED_REASONS)[number];
 
 export function isStoredReason(reason: UnknownReason): reason is StoredReason {
   return reason === "gated" || reason === "missing" || reason === "malformed";
+}
+
+/** Whether every kind is unknown for a reason that is not stored: the lookup failed or waited. */
+export function isTransient(verdicts: KindVerdicts): boolean {
+  return KINDS.every((kind) => {
+    const verdict = verdicts[kind.id];
+    return verdict.state === "unknown" && !isStoredReason(verdict.reason);
+  });
 }
 
 /** How long one verdict stays fresh, given the TTLs of its kind. */
