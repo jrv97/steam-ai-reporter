@@ -305,6 +305,33 @@ describe("the hidden results notice rules", () => {
   });
 });
 
+describe("the settings tab rules", () => {
+  const tabRules = rulesOf(SETTINGS_CSS).filter((rule) =>
+    rule.selectors.some((selector) => selector.includes(".sar-tab"))
+  );
+
+  it("marks the selected tab with strong text, and with system colors when forced", () => {
+    const selected = tabRules.filter((rule) =>
+      rule.selectors.includes('.sar-tab[aria-selected="true"]')
+    );
+    expect(selected.map((rule) => rule.body).join("")).toMatch(/font-weight: var\(--sar-weight/);
+    const forced = SETTINGS_CSS.slice(SETTINGS_CSS.indexOf("@media (forced-colors: active)"));
+    expect(forced).toMatch(/\.sar-tab\[aria-selected="true"\] \{\n\s+border-color: Highlight;/);
+  });
+
+  it("moves nothing: no transition or animation on a tab", () => {
+    expect(tabRules.length).toBeGreaterThan(3);
+    expect(tabRules.filter((rule) => /transition|animation/.test(rule.body))).toEqual([]);
+  });
+
+  it("gives a focused tab the shared focus ring", () => {
+    const ring = rulesOf(SETTINGS_CSS).find((rule) =>
+      rule.selectors.includes(".sar-tab:focus-visible")
+    );
+    expect(ring?.body).toContain("outline: var(--sar-focus-width) solid var(--sar-focus-color)");
+  });
+});
+
 describe("the tag section rules", () => {
   const rule = (selector: string) => {
     const start = PAGE_CSS.indexOf(`${selector} {`);

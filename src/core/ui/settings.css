@@ -188,6 +188,95 @@
   font-size: var(--sar-size-xs);
 }
 
+/* Tabs: a row that wraps under the header on narrow screens, a sticky rail beside the panels from
+   800px. The selected tab has a bar and strong text, so it never relies on color alone. */
+.sar-tabs {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--sar-space-3);
+}
+
+.sar-tablist {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sar-space-1);
+}
+
+.sar-tab {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sar-space-2);
+  min-block-size: var(--sar-control-height-sm);
+  padding-block: var(--sar-space-1);
+  padding-inline: var(--sar-space-2);
+  border: 0;
+  border-block-end: 2px solid transparent;
+  border-radius: var(--sar-radius-sm) var(--sar-radius-sm) 0 0;
+  background: none;
+  color: var(--sar-color-text);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.sar-tab:hover {
+  background: var(--sar-color-bg-raised);
+}
+
+.sar-tab[aria-selected="true"] {
+  border-color: var(--sar-accent-400);
+  background: var(--sar-color-bg-raised);
+  color: var(--sar-color-text-strong);
+  font-weight: var(--sar-weight-medium);
+}
+
+/* The tag's state in words beside its label, off in a quieter tone */
+.sar-tab-state {
+  color: var(--sar-color-text-subtle);
+  font-size: var(--sar-size-sm);
+  font-weight: var(--sar-weight-regular);
+}
+
+.sar-tab-state[data-sar-on] {
+  color: var(--sar-color-text);
+}
+
+.sar-panel-title {
+  margin: 0 0 var(--sar-space-2);
+  color: var(--sar-color-text-strong);
+  font: var(--sar-weight-medium) var(--sar-size-xl) / var(--sar-leading-xl) var(--sar-font-ext);
+}
+
+@media (min-width: 800px) {
+  /* Room for the longest tag label and its state */
+  .sar-tabs {
+    grid-template-columns: 200px minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .sar-tablist {
+    position: sticky;
+    inset-block-start: 0;
+    flex-direction: column;
+    flex-wrap: nowrap;
+  }
+
+  .sar-tab {
+    border-block-end: 0;
+    border-inline-start: 2px solid transparent;
+    border-radius: 0 var(--sar-radius-sm) var(--sar-radius-sm) 0;
+  }
+}
+
+@media (forced-colors: active) {
+  .sar-tab[aria-selected="true"] {
+    border-color: Highlight;
+    outline: 1px solid CanvasText;
+  }
+}
+
 /* The label wraps in column 1; the switch keeps column 2 */
 .sar-field {
   display: grid;
@@ -370,6 +459,7 @@
 .sar-input:focus-visible,
 .sar-button:focus-visible,
 .sar-card-summary:focus-visible,
+.sar-tab:focus-visible,
 .sar-options a:focus-visible {
   outline: var(--sar-focus-width) solid var(--sar-focus-color);
   outline-offset: var(--sar-focus-offset);
