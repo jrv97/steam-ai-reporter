@@ -104,6 +104,8 @@ The state is per kind: a game can be disclosed for one kind and not disclosed or
 | Not disclosed | nothing | nothing | nothing | nothing |
 | Unknown | nothing | nothing | nothing | nothing |
 
+An unknown that holds for every kind with the reason `error` or `rate-limited` (a lookup that failed or was held back while the breaker was open) is asked again once the breaker has closed, at most twice. The chips, the tag section and the banner then draw from the new answer, with no reload (decision 55). Until then nothing renders, as for any unknown.
+
 A DLC follows its base game's ignore list. A kind disclosed on a DLC whose base game is ignored for that kind, or for all tags, renders as the "ignored" row above, except in the banner of the DLC's own page, which shows neither an entry nor a note for it (see "Ignored through a base game" below). Everything else about the state is per kind, as above.
 
 Each kind's settings (`kinds.<id>`: `enabled`, `badge`, `banner` and `filter`) gate its columns. `enabled` off removes everything for the kind, `badge` off removes its chips, in lists and in the tag section, `banner` off removes its entry and its note, and `filter` set to `off` leaves lists alone. All are on by default, except that PvP starts with `enabled` off, and the filter is `off`. The ignore list wins over every setting.

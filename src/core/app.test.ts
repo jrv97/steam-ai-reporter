@@ -6,17 +6,27 @@ import { basicInfo } from "../../tests/helpers/creators";
 import { clearRoot } from "../../tests/helpers/dom";
 import { fakeHttp } from "../../tests/helpers/fake-http";
 import { fixedClock } from "../../tests/helpers/fixed-clock";
-import { fixtureItems, getItemsRequest, getItemsRoute, itemAs } from "../../tests/helpers/getitems";
+import {
+  disclosedItem,
+  fixtureItems,
+  getItemsRequest,
+  getItemsRoute,
+  itemAs,
+} from "../../tests/helpers/getitems";
 import { englishI18n } from "../../tests/helpers/i18n";
 import { memoryStore } from "../../tests/helpers/memory-store";
 import { withKind, writeSettings } from "../../tests/helpers/settings";
 import { loadPage, SURFACES } from "../../tests/helpers/surfaces";
+import { T0, useTimerClock } from "../../tests/helpers/timer-clock";
 import { type App, start } from "./app";
 import type { CreatorRole } from "./creator";
+import { API_BREAKER_KEY } from "./detect/breaker";
+import { RETRY_DELAY_MS } from "./detect/retry";
 import type { JsonValue } from "./json";
 import { toHexColor } from "./kinds/color";
 import type { KindId } from "./kinds/id";
 import { KIND_BY_ID } from "./kinds/registry";
+import type { Clock } from "./ports";
 import { DEFAULT_SETTINGS, encodeSettings } from "./settings/settings";
 import { createSettingsSource } from "./settings/settings-source";
 import { ALLOW_KEY, CREATOR_ALLOW_KEYS, SETTINGS_KEY } from "./storage-keys";
@@ -35,6 +45,7 @@ let app: App | undefined;
 async function startOnSearch(
   initial: ReadonlyMap<string, JsonValue> = new Map(),
   items: readonly unknown[] = fixtureItems(searchItems),
+  clock: Clock = fixedClock(NOW),
 ) {
   loadPage(SURFACES.search);
   document.documentElement.lang = "en";
@@ -46,7 +57,7 @@ async function startOnSearch(
     http,
     store,
     settings,
-    clock: fixedClock(NOW),
+    clock,
     console: quiet,
     addPageStyles: adoptPageStyles,
   });
@@ -68,6 +79,7 @@ afterEach(() => {
   app?.stop();
   app = undefined;
   clearRoot();
+  vi.useRealTimers();
 });
 
 describe("start on the search page", () => {
@@ -116,6 +128,21 @@ describe("start on the search page", () => {
     expect(disclosed === null ? "" : getComputedStyle(disclosed).display).not.toBe("none");
     expect(line()).toBe(i18n.plural("notice_list_revealed", 1));
     expect(await store.get([SETTINGS_KEY])).toStrictEqual(stored);
+  });
+
+  it("asks again once a breaker left open by a past page closes, and tags every row", async () => {
+    const { http } = await startOnSearch(
+      new Map([[API_BREAKER_KEY, { until: T0 + 65_000 }]]),
+      SEARCH_IDS.map((id) => disclosedItem(id, "notes")),
+      useTimerClock(),
+    );
+    await vi.advanceTimersByTimeAsync(RETRY_DELAY_MS - 1000);
+    expect(http.calls).toHaveLength(0);
+    expect(document.querySelectorAll("[data-sar-kinds]")).toHaveLength(0);
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(http.calls).toHaveLength(1);
+    await expect.poll(() => SEARCH_IDS.map((id) => row(String(id))?.getAttribute("data-sar-kinds")))
+      .toEqual(SEARCH_IDS.map(() => "ai"));
   });
 
   describe("with a game that discloses several kinds", () => {

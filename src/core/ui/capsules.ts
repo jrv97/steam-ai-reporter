@@ -1,3 +1,4 @@
+import { createTransientRetry, type Delay } from "../detect/retry";
 import type { KindId } from "../kinds/id";
 import { KINDS, perKind } from "../kinds/registry";
 import type { KindVerdicts, Relations } from "../kinds/verdicts";
@@ -59,6 +60,8 @@ export interface CapsuleUiOptions {
   readonly frame?: (callback: () => void) => void;
   /** Watches image boxes that had no size when drawn; one `ResizeObserver` by default. */
   readonly watchSize?: SizeWatchFactory;
+  /** Waits out a retry round after a transient answer; `setTimeout` by default. */
+  readonly delay?: Delay;
 }
 
 /** The scanner's renderer, plus a way to draw known hosts again after a change. */
@@ -68,7 +71,7 @@ export interface CapsuleUi extends CapsuleRenderer {
    * as after an allow-list change.
    */
   refresh(ids?: ReadonlySet<AppId>): void;
-  /** Stops watching image boxes and listening for `pagehide`. */
+  /** Stops watching image boxes, cancels a pending retry and stops listening for `pagehide`. */
   stop(): void;
 }
 
@@ -127,6 +130,12 @@ export function createCapsuleUi(options: CapsuleUiOptions): CapsuleUi {
   const watchSize = options.watchSize ?? resizeWatch(doc);
   let sizeWatch: SizeWatch | undefined;
   let queued = new Set<HostRecord>();
+  const retry = createTransientRetry<HostRecord>((due) => {
+    const connected = due.filter((record) => record.host.element.isConnected);
+    if (connected.length > 0) {
+      void detect(connected);
+    }
+  }, options.delay);
 
   function slotOf(host: CapsuleHost): SlotRead {
     const { placement, anchor } = host;
@@ -181,8 +190,12 @@ export function createCapsuleUi(options: CapsuleUiOptions): CapsuleUi {
     }
   }
 
-  /** Lets go of the size watch, as on `pagehide`; a later draw starts a new one if it needs it. */
+  /**
+   * Lets go of the size watch and the pending retry, as on `pagehide`; a later draw starts a new
+   * watch if it needs it.
+   */
   function disconnect(): void {
+    retry.cancel();
     sizeWatch?.disconnect();
     sizeWatch = undefined;
     unsized = new WeakMap();
@@ -249,8 +262,12 @@ export function createCapsuleUi(options: CapsuleUiOptions): CapsuleUi {
   async function detect(found: readonly HostRecord[]): Promise<void> {
     const verdicts = await detector.detect(found.map((record) => record.host.appId));
     for (const record of found) {
-      record.verdicts = verdicts.get(record.host.appId);
+      const answer = verdicts.get(record.host.appId);
+      record.verdicts = answer;
       queue(record);
+      if (answer !== undefined) {
+        retry.offer(record, answer);
+      }
     }
   }
 

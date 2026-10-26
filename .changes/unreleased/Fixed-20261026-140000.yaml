@@ -1,0 +1,3 @@
+kind: Fixed
+body: Games on a page opened while Tag Kit was pausing its lookups to Steam, such as a search results page opened from the search box's suggestions, now get their tags once the pause ends, about a minute later, instead of staying untagged until a reload. Tag Kit asks again at most twice, and the banner on a game's page fills in the same way.
+time: 2026-10-26T14:00:00.000000+02:00

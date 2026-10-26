@@ -1,4 +1,5 @@
 import { type Creator, CREATOR_ROLES, type CreatorKey, type CreatorRole } from "./creator";
+import { createTransientRetry, type Delay } from "./detect/retry";
 import type { SteamLanguage } from "./i18n/locale";
 import { type Ignored, type IgnoreLists, isIgnored } from "./ignored";
 import type { KindId } from "./kinds/id";
@@ -132,13 +133,15 @@ export interface AppPageDeps {
   readonly onAllowChange: (id?: AppId) => void;
   readonly card: CardTriggers;
   readonly logger: Pick<Logger, "debug" | "error">;
+  /** Waits out a retry round after a transient answer; `setTimeout` by default. */
+  readonly delay?: Delay;
 }
 
 /** A running app page. */
 export interface AppPage {
   /** Draws again from the known verdicts and the current settings. */
   render(): void;
-  /** Stops a lookup that has not finished from drawing. */
+  /** Stops a lookup that has not finished from drawing, and cancels a pending retry. */
   stop(): void;
 }
 
@@ -156,6 +159,11 @@ export function startAppPage(
   const { detectors, live, logger } = deps;
   let known: KindVerdicts = live ?? UNKNOWN_KINDS.missing;
   let stopped = false;
+  /** The open page as the one item of its retry rounds. */
+  const page = { id };
+  const retry = createTransientRetry<typeof page>(() => {
+    lookUp();
+  }, deps.delay);
 
   /** The game's developers and publishers, with the scopes each is ignored in for its role. */
   function creatorRows(): readonly BannerCreator[] {
@@ -231,17 +239,23 @@ export function startAppPage(
     if (!stopped) {
       known = next;
       render();
+      retry.offer(page, detected);
     }
   }
 
+  function lookUp(): void {
+    settle().catch((problem: unknown) => {
+      logger.error(problem);
+    });
+  }
+
   render();
-  settle().catch((problem: unknown) => {
-    logger.error(problem);
-  });
+  lookUp();
   return {
     render,
     stop() {
       stopped = true;
+      retry.cancel();
     },
   };
 }

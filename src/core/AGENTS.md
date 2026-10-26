@@ -86,6 +86,7 @@ The banner adds a closed `details` per game that lists its creators, one row per
 - `readonly` by default; discriminated unions with exhaustive `never` checks for states such as `Verdict`; branded types for domain IDs (`AppId`).
 - A `Detector` answers with `KindVerdicts`, one `Verdict` per tag kind. Settings and the ignore lists are stored per kind (`v2:settings`, `v2:allow`, `v2:allow-developers`, `v2:allow-publishers`); `settings/migrate.ts` copies the `v1` keys to them the first time either is read; the `v1` keys stay.
 - CSS classes and data attributes use the prefix `sar-` and `data-sar-*`; errors are `SarError` with a catalog-key `code`.
+- A surface that detects once asks again after a transient answer (every kind unknown `error` or `rate-limited`, `isTransient` in `cache/ttl.ts`) through `createTransientRetry` in `detect/retry.ts`: one timer per round, past the longest breaker pause, two rounds per item at most. The capsule UI and the app page use it; a new surface uses it too, never a timer of its own.
 - Efficiency is a requirement (rule 13, efficiency): scan only added subtrees, batch DOM reads before writes, no per-node closures or listeners, `WeakSet` and `WeakMap` keyed by elements, bounded caches, no polling.
 - Tests sit next to the module as `*.test.ts` and use the builders in `tests/helpers/`.
 - A backup (`backup/`) is read by the same schemas that read storage. A new setting or list reaches the file through `encodeSettings` or `encodeAllow`; a change to the file's shape bumps `BACKUP_VERSION` with an upgrade step in `UPGRADES`.
