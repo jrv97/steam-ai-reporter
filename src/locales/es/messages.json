@@ -274,7 +274,7 @@
     "description": "Last line of the hover card when it lists a fact Valve states, such as a Steam Deck rating. It says Valve, not this extension or the developer, is the source of those entries. With entries of both kinds it follows the line that names the developer."
   },
   "kind_family_source": {
-    "message": "Según las características que Steam lista para este juego",
+    "message": "Según las características que Steam indica para este juego",
     "description": "Last line of the hover card when it lists Family Sharing, instead of \"According to Valve\". It says the entry comes from the feature list Steam shows for the game, which Valve computes. With entries of other kinds it follows their source lines. Unverified: our own Spain Spanish, not checked against Steam's wording."
   },
   "badge_card_service_label": {
