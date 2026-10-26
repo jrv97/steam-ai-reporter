@@ -76,6 +76,16 @@ function facetLines(verdict: AnyDisclosed): readonly KindDetail[] {
   return facet === undefined ? [] : [message(facet.word)];
 }
 
+/** Whether Valve, not the developer, states the fact a verdict reports. */
+export function fromValve(verdict: AnyDisclosed): boolean {
+  return KIND_BY_ID[verdict.kind].source === "valve";
+}
+
+/** The line under the heading of a full game's verdict shown for its demo, by who states it. */
+export function fullGameLine(verdict: AnyDisclosed): BareMessageKey {
+  return fromValve(verdict) ? "kind_full_game_valve" : "kind_full_game";
+}
+
 /**
  * What names a disclosed kind's entry where no line follows its heading (the banner, the package
  * summary): Steam's heading, and for a kind with facets the value's word after it.

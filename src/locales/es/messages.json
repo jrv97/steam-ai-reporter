@@ -245,9 +245,17 @@
     "message": "Declarado para el juego completo",
     "description": "In the hover card and in the notice on a demo's store page, right under a tag's heading when the tag is shown because the full game declared it; the demo did not declare it itself. \"The full game\" is the product the demo belongs to. Never say the demo declared it."
   },
+  "kind_full_game_valve": {
+    "message": "Valorado para el juego completo",
+    "description": "In the hover card and in the notice on a demo's store page, right under the heading of a Steam Deck or Steam Machine rating when it is shown because Valve rated the full game; Valve did not rate the demo itself. Never say the demo was rated."
+  },
   "badge_card_declared": {
     "message": "Declarado por el desarrollador en la página de la tienda",
     "description": "Last line of the hover card. It says the developer, not this extension, made the declarations above."
+  },
+  "badge_card_valve": {
+    "message": "Según Valve",
+    "description": "Last line of the hover card when it lists a fact Valve states, such as a Steam Deck rating. It says Valve, not this extension or the developer, is the source of those entries. With entries of both kinds it follows the line that names the developer."
   },
   "badge_card_service_label": {
     "message": "Servicios de IA que cita el desarrollador:",
@@ -323,7 +331,7 @@
   },
   "banner_region_label": {
     "message": "Declarado por el desarrollador",
-    "description": "Screen reader name of the notice on a game's page when it lists more than one kind, or only notes about ignored kinds."
+    "description": "Screen reader name of the notice on a game's page when it lists more than one kind, or only notes about ignored kinds, and every kind it lists comes from the developer."
   },
   "banner_expand": {
     "message": "Ver todo",
