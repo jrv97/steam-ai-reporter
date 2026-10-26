@@ -1,5 +1,6 @@
 import { BACKUP_FORMAT, BACKUP_VERSION, type BackupContents } from "../../src/core/backup/format";
 import type { CreatorKey } from "../../src/core/creator";
+import type { PickedFile } from "../../src/core/ports";
 import { type AllowEntries, type AllowScope, perScope } from "../../src/core/settings/allow-data";
 import { DEFAULT_SETTINGS } from "../../src/core/settings/settings";
 import { appId } from "./app-ids";
@@ -50,4 +51,13 @@ export function backupText(overrides: Readonly<Record<string, unknown>> = {}): s
     ignored: {},
     ...overrides,
   });
+}
+
+/** A file the person picked; `size` defaults to the byte length of the text. */
+export function pickedFile(
+  text: string,
+  name = "backup.json",
+  size = new TextEncoder().encode(text).length,
+): PickedFile {
+  return { name, size, text: () => Promise.resolve(text) };
 }
