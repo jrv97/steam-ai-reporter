@@ -35,7 +35,8 @@ Every class, attribute and custom property starts with `sar-`.
 
 - Use Steam's words for each tag: its own line for the kind ("Uses Kernel Level Anti-Cheat", "Incorporates 3rd-party DRM", "Requires 3rd-Party Account", "Requires agreement to a 3rd-party EULA", "PvP", "In-App Purchases", "Steam Deck Compatibility", "Steam Machine Compatibility", "Family Sharing") and, for AI, Steam's heading "AI Generated Content Disclosure". A rating keeps Steam's word for its value: Verified, Playable, Unsupported, and Family Sharing keeps Steam's "Family Sharing" and "Family Sharing not Available" where no source line follows, while its derived value's chip and card line are the maintainer's own words (decision 64). Valve's Unknown (0) is never shown, and never as Unsupported. Spanish follows Steam's Spain Spanish. Our own copy never says "uses AI", "AI-free" or "no AI", and never states a tag's absence ("No" and a tag's name, or "none", "free of" or "-free" beside one), in any locale; the copy test fails the build on them. The one exception is Family Sharing's derived value, by key (`kind_family_unsupported_chip`, `kind_family_unsupported_line`; ADR 0016, amended), and only with its source line in the card.
 - Plain, short, sentence case: "Ignore this game", "Ignore for this tag", "Show full report".
-- One line names a tag everywhere: Steam's line is the hover card entry title, the banner entry heading, the settings section title and the start of the chip's accessible name. The chip itself is short: AI, KLAC, Anti-Cheat, DRM, Account, EULA, PvP, IAP. A tag with values puts the value after a short device word: "Deck Unsupported", "Steam Machine Playable" (`kind_facet_chip`), and its accessible name and banner heading read "Steam Deck Compatibility: Unsupported" (`kind_facet_name`). A value with a chip of its own (`FacetDefinition.chip`) shows that chip and is named by Steam's word alone. For Family Sharing the listed value's chip is Steam's full word, "Family Sharing" (`kind_family_heading`), and the derived value's chip is the maintainer's "No Family Sharing" (`kind_family_unsupported_chip`), named "Family Sharing not Available". On a narrow compact badge the label may end in an ellipsis (`.sar-compact-label`). Chip text a person can customize is a later backlog item.
+- One line names a tag everywhere: Steam's line is the hover card entry title, the banner entry heading, the settings section title and, after the chip's visible text, the rest of the chip's accessible name. The chip itself is short: AI, KLAC, Anti-Cheat, DRM, Account, EULA, PvP, IAP. A tag with values puts the value after a short device word: "Deck Unsupported", "Steam Machine Playable" (`kind_facet_chip`), named "Deck Unsupported: Steam Deck Compatibility"; its banner heading reads "Steam Deck Compatibility: Unsupported" (`kind_facet_name`). A value with a chip of its own (`FacetDefinition.chip`) shows that chip and is named by it, then Steam's word alone. For Family Sharing the listed value's chip is Steam's full word, "Family Sharing" (`kind_family_heading`), and the derived value's chip is the maintainer's "No Family Sharing" (`kind_family_unsupported_chip`), named "No Family Sharing: Family Sharing not Available". On a narrow compact badge the label may end in an ellipsis (`.sar-compact-label`).
+- A person may name a tag's chips in their own words (decision 67, ADR 0017): `kinds.<id>.chip` for every chip and `kinds.<id>.chipCompact` for small images. The text replaces the tag's word and keeps Steam's value word ("SD Unsupported"); for Family Sharing it replaces the whole chip. It is drawn through `textContent` only and never enters a catalog. Steam's words stay in the hover card, the banner's headings, the settings heading, the package summary and every chip's accessible name after the visible text.
 - Name the source: the developer ("In the developer's own words:", "AI service named by the developer:", "Declared by the developer on the store page"), or Valve for what Valve computes: "According to Valve" for the device ratings (decision 63), and the kind's own line for Family Sharing, "According to the features Steam lists for this game" (`kind_family_source`, decision 64). Under the derived value only, the card line `kind_family_unsupported_line` reads "Family Sharing is not supported for this game", and that source line always follows it.
 - The opt-out labels are "Ignore for this tag" and "Ignore this game" (every tag). The store has its own Ignore button just above; ours only affects this extension.
 - Settings speak about games, not switches: the list filter reads "Show", "Dim", "Hide".
@@ -168,8 +169,8 @@ Preview: `previews/Badge.html`.
 </span>
 ```
 
-- The short text from `kind_<id>_chip` as real text, hidden from screen readers.
-- A visually hidden name: the chip text, then Steam's line for the kind (`kind_chip_name`), such as "DRM: Incorporates 3rd-party DRM".
+- The short text as real text, hidden from screen readers: the person's own chip text (`kinds.<id>.chip`) or `kind_<id>_chip`, with Steam's value word after it for a rating.
+- A visually hidden name that starts with that text, then gives Steam's words (`chipText` in `ui/kind-details.ts`, through `kind_chip_name`): the heading for a tag without values or a rating, the value's own word for a value with a chip of its own, and nothing more when they read the same (PvP). "DRM: Incorporates 3rd-party DRM", "Deck Unsupported: Steam Deck Compatibility", "Mine: Incorporates 3rd-party DRM".
 - The "+N" chip (`kind_chip_more`) carries no kind. Its name reads "+2: more tags" (`kind_chip_more_name`).
 - Each chip registers with the hover card (section 15), which lists every kind of the host on hover or focus. No `title`.
 
@@ -199,7 +200,7 @@ Built like the store's own tag chips, in our hue.
 
 ### Accessibility
 
-- The accessible name is the chip text followed by Steam's line for the kind, read as part of the row link. The short text itself is `aria-hidden`.
+- The accessible name starts with the visible chip text, whoever wrote it, and goes on with Steam's words (WCAG 2.5.3), read as part of the row link. The short text itself is `aria-hidden`.
 - No `role`, no `tabindex`: the chips ride inside the store's own link.
 
 ### Don't
@@ -241,7 +242,7 @@ Preview: `previews/CompactBadge.html`.
 | `text` | 180 to 399px wide | label | `sar-compact-height` 19px | `sar-text-compact` 11/17 medium | `sar-compact-inset-block` 5px, `sar-compact-inset-inline` 5px |
 | `large` | 400px wide and 150px tall | label | `sar-compact-height-lg` 22px | `sar-text-compact-lg` 12/20 medium | same |
 
-Tiers depend on image size only. A longer translation truncates inside its tier and never moves the badge to another.
+Tiers depend on image size only. A longer translation truncates inside its tier and never moves the badge to another. The `text` tier shows the person's short chip text (`kinds.<id>.chipCompact`), else their chip text, else the catalog's; the `large` tier shows their chip text, else the catalog's. The accessible name follows the label shown.
 
 ### Look and placement
 
@@ -312,7 +313,7 @@ The label's size, color and spacing are set from the tokens, not sampled from th
 
 ### Accessibility
 
-- The group is named by its visible heading. Each chip's name is the chip text and Steam's heading, "AI: AI Generated Content Disclosure" (PvP reads "PvP" once).
+- The group is named by its visible heading. Each chip's name is the chip text, the person's or the catalog's, then Steam's heading, "AI: AI Generated Content Disclosure" (PvP reads "PvP" once), as on lists.
 - Each chip is focusable and opens its card on focus, which describes the chip while it is open.
 
 ### Don't
@@ -416,7 +417,7 @@ Modeled on the store's per-app notice bubbles (the DLC notice sits in the same s
 
 #### Ignoring a developer or publisher
 
-A native `details` under the entries, closed on every load (decision 13) and open across a redraw, with `banner_creators_toggle` as its `summary`. It lists one row per name and role from `basic_info`: the name, as text, then the role in muted text (`banner_role_developer`, `banner_role_publisher`), then a link-style button for each tag the banner lists that the creator is not yet ignored for (`banner_ignore_creator_kind`, with the tag's short label) and `banner_ignore_creator_all`. A company that develops and publishes has a row for each role, and each row ignores that role only. A button is named by its text and the row's name and role. A creator without a clan ID is keyed by its name (`n:<name>`), one with an ID by `c:<id>`.
+A native `details` under the entries, closed on every load (decision 13) and open across a redraw, with `banner_creators_toggle` as its `summary`. It lists one row per name and role from `basic_info`: the name, as text, then the role in muted text (`banner_role_developer`, `banner_role_publisher`), then a link-style button for each tag the banner lists that the creator is not yet ignored for (`banner_ignore_creator_kind`, with the tag's short label, the person's chip text when set) and `banner_ignore_creator_all`. A company that develops and publishes has a row for each role, and each row ignores that role only. A button is named by its text and the row's name and role. A creator without a clan ID is keyed by its name (`n:<name>`), one with an ID by `c:<id>`.
 
 A tag silenced through a creator is a note with Undo (`banner_ignored_creator_kind`), and a creator ignored for all tags is one note (`banner_ignored_creator`), after the game's own notes. A creator note shows only while the banner would list a tag it covers. After an ignore focus lands on the note's Undo, after an Undo on the button it brought back (the summary when none is left). The polite live region announces `notice_creator_stopped`, `notice_creator_stopped_kind`, `notice_creator_restored` or `notice_creator_restored_kind`. A failed save shows `error_creator_list_save` in the error line.
 
@@ -486,7 +487,7 @@ No classes, no inline styles, no per-node writes when the mode changes.
 
 ## 6. Options page and action popup
 
-The settings form, rendered as the full options page (`data-sar-context="page"`, `data-sar-view="tabs"`) and as the toolbar popup (`data-sar-context="popup"`, `data-sar-view="list"`), dark only. The stored settings are `locale`, `debug`, `order` when the person moved a tag and, for each kind, `kinds.<id>.enabled`, `kinds.<id>.badge`, `kinds.<id>.banner`, `kinds.<id>.filter` and, when the person set one, `kinds.<id>.color`.
+The settings form, rendered as the full options page (`data-sar-context="page"`, `data-sar-view="tabs"`) and as the toolbar popup (`data-sar-context="popup"`, `data-sar-view="list"`), dark only. The stored settings are `locale`, `debug`, `order` when the person moved a tag and, for each kind, `kinds.<id>.enabled`, `kinds.<id>.badge`, `kinds.<id>.banner`, `kinds.<id>.filter` and, when the person set them, `kinds.<id>.color`, `kinds.<id>.chip` and `kinds.<id>.chipCompact`.
 
 Preview: `previews/OptionsPage.html`, and `previews/Tabs.html` for the tabs alone.
 
@@ -502,7 +503,7 @@ Preview: `previews/OptionsPage.html`, and `previews/Tabs.html` for the tabs alon
 ### Layout
 
 - Page: centered, `sar-options-max-width` (880px), `sar-space-4` padding, `sar-color-bg-panel`, `color-scheme: dark`. Below the header the tabs (section 18): from an 800px viewport a 200px rail beside the panels, narrower a row of tabs that wraps above them.
-- Popup: `sar-popup-width` (360px), `sar-space-3` padding. The header stays in view and ends in the gear. Below it one row per tag, in the tabs' order: the tag's chip word, a link to its tab; a compact Show, Dim and Hide control (`sar-control-height-xs`, `sar-text-help`); the master switch. Rows take `sar-space-1` padding with a `sar-color-divider` line between them. The popup has no ignore lists and no badge, banner, value or color controls: those live on the page.
+- Popup: `sar-popup-width` (360px), `sar-space-3` padding. The header stays in view and ends in the gear. Below it one row per tag, in the tabs' order: the tag's chip word (the person's chip text when set), a link to its tab; a compact Show, Dim and Hide control (`sar-control-height-xs`, `sar-text-help`); the master switch. Rows take `sar-space-1` padding with a `sar-color-divider` line between them. The popup has no ignore lists and no badge, banner, value or color controls: those live on the page.
 - Dialog: the popup's density (flat sections, small captions, `sar-control-height-xs` segments) with the page's tabs and the color fields, 760px wide.
 - Font: the `ext` family (a system stack). The store font is not loaded on extension pages and none is bundled.
 - Type on the full page: field labels, help and error lines in `sar-text-body` (13/18). The popup and the dialog keep help and error lines in `sar-text-help` (12/16).
@@ -518,8 +519,8 @@ Preview: `previews/OptionsPage.html`, and `previews/Tabs.html` for the tabs alon
    - Tag order (page and dialog): the order chips, banners and summaries list the tags in (below).
    - Backup (page and dialog): the Backup card (section 12).
    - Privacy (page only): four bullets.
-2. One tab per tag kind, sorted by its chip word in the UI language (`localeCompare` through `Intl.Collator`), labelled with that word and `options_state_on` or `options_state_off`. A tag that is off keeps its tab. The panel holds:
-   - The tag's card, titled with Steam's line for the kind (`kind_<id>_heading`): the master switch `options_kind_enabled` (`kinds.<id>.enabled`), then, for a tag with values, a group of native checkboxes, one per value in Steam's words (`facets`; label `options_facets_label`, help `options_facets_help`), then the switches `options_badges` (dialog `options_badges_short`; `badge`) and `options_banner` (`banner`), then, where the form has color fields, the color field (below), then a stacked SegmentedControl with Show, Dim and Hide (`filter`; label `options_filter_label`; the help follows the selection). Each switch has help. While the master switch is off, the other controls are hidden and their stored values stay.
+2. One tab per tag kind, sorted by its visible label in the UI language (`localeCompare` through `Intl.Collator`): the person's chip text when set, else the chip word, with `options_state_on` or `options_state_off`. A new text renames the tab and sorts the tabs, and the popup's rows, again. A tag that is off keeps its tab. The panel holds:
+   - The tag's card, titled with Steam's line for the kind (`kind_<id>_heading`): the master switch `options_kind_enabled` (`kinds.<id>.enabled`), then, for a tag with values, a group of native checkboxes, one per value in Steam's words (`facets`; label `options_facets_label`, help `options_facets_help`), then the switches `options_badges` (dialog `options_badges_short`; `badge`) and `options_banner` (`banner`), then the chip text fields and their preview (below), then, where the form has color fields, the color field (below), then a stacked SegmentedControl with Show, Dim and Hide (`filter`; label `options_filter_label`; the help follows the selection). Each switch has help. While the master switch is off, the other controls are hidden and their stored values stay.
    - Ignored for this tag (`options_allow_kind_title`): what is ignored for this tag alone, and the note on what all tags ignore (section 11).
 3. Footer, under the tabs: `options_unaffiliated` in `sar-text-help`, subtle. The popup and the dialog use `options_privacy_no_reports` and `options_unaffiliated_short`.
 
@@ -532,14 +533,25 @@ Preview: `previews/OptionsPage.html`, and `previews/Tabs.html` for the tabs alon
 - A tag's name in the popup is a link to `options.html#tab=<id>`. With `openTab`, a click writes `{ "tab": "<id>", "asked": <ms> }` to `v2:ui` and calls `runtime.openOptionsPage()`, which focuses an open options page or opens one; an open page hears the request through its storage listener and shows the tab, and a page that opens reads the same record. The time makes each request a new value, which `storage.onChanged` reports even for the tab already stored. Where the call fails, the link's own address opens in a new tab. No permission is needed: `options_ui` names the page.
 - The page also follows `hashchange`, so a link to `#tab=<id>` switches the tab in place.
 
+### The chip text fields
+
+Two stacked fields in each tag's tab, after the banner switch and before the color field, on the page and in the dialog, not in the toolbar popup. They set `kinds.<id>.chip` and `kinds.<id>.chipCompact` (decision 67).
+
+- "Chip text" (`options_chip_label`, help `options_chip_help`) for every chip, the tab, the popup row, the Tag order card and the banner's Ignore buttons; "Short chip text for small images" (`options_chip_compact_label`, help `options_chip_compact_help`) for the compact badge's `text` tier. Each label is a `label` for its box.
+- A row of a text box (`sar-chip-input-inline-size`, `maxlength` 32 and 16, the limits the schema cuts to, counted by the browser in UTF-16 units) and a quiet Reset (`options_color_reset`; named `options_chip_reset_label` and `options_chip_compact_reset_label`, which begin with its text) shown while a text is stored. Under it a counter, `options_chip_count` ("5 of 32"), in `sar-text-help` with tabular figures, named with the help in the box's `aria-describedby`.
+- The placeholder is the catalog's word the field replaces: the tag's chip word, or for Family Sharing the chip of the first value it picks; the short field shows the chip text instead while one is typed.
+- Text is saved on `change` (Enter or leaving the box), cleaned by the schema that reads it back (one space for whitespace, no control or format characters, trimmed, cut to the limit), and the box shows the cleaned text. An emptied box clears the field, as Reset does, and Reset returns focus to the box. Text still being typed stays when another tab saves something else.
+- Under the fields, a live preview labelled `options_chip_preview`: the full badge and the `text` tier compact chip, drawn by the store page's own `createChipElement` and chip rules (`chips.css`) in the tag's color, from the text as typed and the first value the tag picks. The compact chip is capped at `sar-chip-preview-compact-max`, the narrowest store image less its insets, where a long text ends in an ellipsis as on the store. Each preview chip carries its accessible name.
+
 ### The color field (experimental)
 
-One stacked field in each tag's options, after the banner switch and before the list filter, where the form has color fields. It sets `kinds.<id>.color`.
+One stacked field in each tag's options, after the chip text fields and before the list filter, where the form has color fields. It sets `kinds.<id>.color`.
 
 - Label `options_color_label`, "Badge color (experimental)", on a `label` for the text box, so the visible text and the accessible name are the same words. The word "experimental" stays in every locale.
-- A row of a swatch (`sar-control-height-sm` square, `sar-color-border` edge, decorative, `aria-hidden`), a plain text box and a Reset button. No native color picker, no sliders. The text box is `sar-color-input-inline-size` wide, shows `options_color_placeholder` ("Default") while empty, and reads `#rgb` or `#rrggbb`, with or without the `#`, in any case. A valid value is saved as lowercase `#rrggbb` and shown back in that form. The typed hex is the visible readout, so the swatch is never the only cue.
-- The swatch shows the picked color, or the default violet while the box is empty. Reset (`options_color_reset`, with the screen reader name `options_color_reset_label` that begins with its text) shows only while a color is set, clears it and returns focus to the text box. Emptying the box does the same.
-- Live validation: on every keystroke, text that is not a color shows `options_color_invalid` (`role="alert"`, the box gets `aria-invalid` and a `sar-color-error` edge) and a text that reads shows at once on the swatch and the page, unsaved. The value is saved when the edit is committed (Enter or leaving the box), one patch of the `color` field. Invalid text is never saved and stays as typed until fixed. A failed save reverts the field and shows `error_settings_save`.
+- A row of a color square, a plain text box and a Reset button. The square is the browser's own picker, an `input type="color"` (`sar-color-pick`, a `sar-control-height-sm` square with a `sar-color-border` edge), named `options_color_pick_label` ("Pick the badge color of `$heading$`") and marked `data-sar-picker`; clicking it opens the platform's picker (decision 68). No sliders or palette of our own. The text box is `sar-color-input-inline-size` wide, shows `options_color_placeholder` ("Default") while empty, and reads `#rgb` or `#rrggbb`, with or without the `#`, in any case. A valid value is saved as lowercase `#rrggbb` and shown back in that form. The typed hex is the visible readout, so the square is never the only cue.
+- The two stay in step: a pick while the picker is open writes the hex text and shows on the page, unsaved; a pick the picker commits saves, one patch of `color`; a valid typed hex sets the square; text that is no color leaves it. The square shows the picked color, or `DEFAULT_TAG_COLOR` (accent 400) while the box is empty. Reset (`options_color_reset`, with the screen reader name `options_color_reset_label` that begins with its text) shows only while a color is set, clears it, sets the square to the default and returns focus to the text box. Emptying the box does the same.
+- Live validation: on every keystroke, text that is not a color shows `options_color_invalid` (`role="alert"`, the box gets `aria-invalid` and a `sar-color-error` edge) and a text that reads shows at once on the square and the page, unsaved. The value is saved when the edit is committed (Enter or leaving the box), one patch of the `color` field. Invalid text is never saved and stays as typed until fixed. A failed save reverts the field and shows `error_settings_save`.
+- Never in the toolbar popup: it has no color field, and Firefox closes an extension popup when the system picker takes focus.
 - Help: under the field, `options_color_help_short` ("Contrast is not checked. See General."); the full help `options_color_help`, which always says that contrast is not checked, sits once in General, and every color field names it in `aria-describedby`.
 - Reset is the quiet text button of section 10.
 
@@ -548,7 +560,7 @@ One stacked field in each tag's options, after the banner switch and before the 
 One card in General, after Ignored for all tags. It sets `order`: every kind once, the order the chips on rows and images, the hover card, the tag section, the banner and the package summary list them in. It does not reorder the tabs or the popup rows, which stay alphabetical.
 
 - Title `options_order_title`, then `options_order_help` (badges, banners and summaries follow the order; small images show the first `OVERLAY_CHIPS`) and `options_order_how` (how to move a tag by pointer, click or keys). The handles name the second line in `aria-describedby`.
-- One `ul.sar-order-list` with an `li.sar-order-row` per kind: a grip handle, the chip word in `sar-color-text-strong` and medium weight, Steam's line in `sar-text-help` subtle (PvP shows its word once), and on the first `OVERLAY_CHIPS` rows a small outlined `options_order_small` marker. Rows are `sar-space-1` padded with a `sar-color-divider` line between them.
+- One `ul.sar-order-list` with an `li.sar-order-row` per kind: a grip handle, the chip word (the person's chip text when set) in `sar-color-text-strong` and medium weight, Steam's line in `sar-text-help` subtle (shown once when they read the same, as PvP), and on the first `OVERLAY_CHIPS` rows a small outlined `options_order_small` marker. Rows are `sar-space-1` padded with a `sar-color-divider` line between them.
 - The handle is a `button` (`sar-control-height-sm` square, an original six-square grip in `currentColor`, no text) named `options_order_handle` ("Reorder KLAC"), with `aria-pressed` while its row is held and `touch-action: none`, so a drag on it never scrolls the page.
 - Drag: a pointer press on a handle that moves 4px or more picks the row up. The row follows the pointer by a `transform`, the rows between slide aside by one row's pitch to open its gap (a `sar-duration-fast` transition, none under reduced motion), and the release drops it: only then do the rows move in the DOM. The press captures the pointer; its move, up and cancel listeners sit on the handle, with one `pagehide` listener on the window, and all go at the release. A cancel or `pagehide` puts the row back.
 - Keys and clicks: Space, Enter or a click on a handle picks its row up; the arrows move it one place, Home and End to the ends; Space, Enter or a click on the same handle drops it; Escape puts it back (and, in the userscript dialog, does not close it). A click on another row's handle while one is held puts the held row in that row's place.
@@ -1040,7 +1052,7 @@ A block at the top of a package page (`/sub/<id>/`) that sums up the chips of th
 
 ## 18. Tabs
 
-The settings' sections, as tabs: General first, then one per tag kind sorted by its chip word. On the options page and in the userscript dialog. Decision 65.
+The settings' sections, as tabs: General first, then one per tag kind sorted by its visible label, the person's chip text or the chip word. On the options page and in the userscript dialog. Decision 65.
 
 Preview: `previews/Tabs.html`.
 
@@ -1064,7 +1076,7 @@ Preview: `previews/Tabs.html`.
 ```
 
 - `createTabs` (`ui/tabs.ts`) builds the list and the panels; the form fills them. The order comes from `sortTabs` (`ui/tab-id.ts`), a pure helper; the tag order of the Tag order card does not move the tabs (decision 66).
-- A tag's tab: the chip word shown and hidden from screen readers, the full name (`kind_chip_name`, or the word once when it equals Steam's line, as PvP) read instead, then the state in words. A screen reader hears "KLAC: Uses Kernel Level Anti-Cheat On, tab, selected, 3 of 12".
+- A tag's tab: the chip word, or the person's chip text, shown and hidden from screen readers, the full name (`kind_chip_name`, or the word once when it equals Steam's line, as PvP) read instead, then the state in words. A screen reader hears "KLAC: Uses Kernel Level Anti-Cheat On, tab, selected, 3 of 12". A new chip text renames the tab and sorts the tabs again (`Tabs.order`), and the arrows follow the new order.
 
 ### Behavior
 
@@ -1134,11 +1146,11 @@ For every translator:
 | `kind_family_unsupported` | Family Sharing not Available | Steam's words for a game that cannot be shared, kept with Steam's capitalization. The derived value's banner heading, settings choice, package summary name and the chip's accessible name. |
 | `kind_family_unsupported_chip` | No Family Sharing | The derived value's chip, the maintainer's own words (ADR 0016, amended). Allowed by key in the copy test; no other key may say "No" and a tag's name. |
 | `kind_family_unsupported_line` | Family Sharing is not supported for this game | The derived value's line in the hover card, our own words, always followed by `kind_family_source`. Allowed by key in the copy test. Spanish unverified. |
-| `kind_chip_name` | `$chip$`: `$heading$` | Accessible name of a chip: the chip text, then Steam's line. |
+| `kind_chip_name` | `$chip$`: `$heading$` | Accessible name of a chip: the visible chip text, then Steam's line or a value's own word. |
 | `kind_chip_more` | +`$count$` | Chip that stands for the kinds that do not fit. |
 | `kind_chip_more_name` | more tags | After the chip text, names the hidden chips for screen readers. |
 | `kind_facet_chip` | `$chip$` `$value$` | Chip of a tag with values: the short word, then Steam's word for the value ("Deck Unsupported"). Add a colon where the two would read as one phrase. |
-| `kind_facet_name` | `$heading$`: `$value$` | Steam's heading and the value's word: the chip's accessible name, the banner entry heading and the package summary line. |
+| `kind_facet_name` | `$heading$`: `$value$` | Steam's heading and the value's word: the banner entry heading and the package summary line. |
 | `kind_full_game` | Declared for the full game | In the hover card and the banner on a demo, under a tag its full game declared. Never says the demo declared it. |
 | `kind_full_game_valve` | For the full game | The same for a fact Valve states for the full game: a Steam Deck or Steam Machine rating, Family Sharing. Never says the demo was rated or listed. |
 
@@ -1220,11 +1232,20 @@ For every translator:
 | `options_filter_hide_help` | Removes these games from lists. Where hiding would break a list, they are dimmed instead. | Help for "Hide". |
 | `options_color_label` | Badge color (experimental) | Label of a text field for a tag's hex color. It colors the tag's badge, its entry in the banner and its hover card. "(experimental)" stays in the label. |
 | `options_color_placeholder` | Default | Shown in the empty color field: the tag keeps the default violet. |
-| `options_color_help` | Type a hex code such as `#8f73f3`, with or without the `#`, in a tag's tab. It colors that tag's badge, its entry in the banner and its card. Contrast is not checked, so a very light or very dark color can be hard to read. Leave it empty for the default violet. | Once in General, under the color title. Keep the example code. |
+| `options_color_help` | In a tag's tab, pick a color with the square or type a hex code such as `#8f73f3`, with or without the `#`. It colors that tag's badge, its entry in the banner and its card. Contrast is not checked, so a very light or very dark color can be hard to read. Leave it empty for the default violet. | Once in General, under the color title. Keep the example code. |
 | `options_color_help_short` | Contrast is not checked. See General. | Under each color field; names the General tab. |
 | `options_color_invalid` | Not a color. Type three or six hex digits, such as `#8f73f3`. | Error under the color field while the text is no hex color. |
-| `options_color_reset` | Reset | Button that clears the tag's color. |
+| `options_color_reset` | Reset | Button that clears the tag's color or a chip text. |
 | `options_color_reset_label` | Reset the badge color (experimental) of `$heading$` | Screen reader name of Reset; starts with its visible word. `heading` is Steam's line for the tag. |
+| `options_color_pick_label` | Pick the badge color of `$heading$` | Screen reader name of the color square, which opens the browser's picker. |
+| `options_chip_label` | Chip text | Label of the field for the person's own chip text. |
+| `options_chip_help` | Your own words for this tag's badges, its tab and its Ignore buttons. Leave it empty for the default. Hover cards, banner headings and screen readers still give Steam's words. | Under the chip text field. |
+| `options_chip_compact_label` | Short chip text for small images | Label of the field for the chip on narrow game images. |
+| `options_chip_compact_help` | Shown on game images narrower than 400 pixels. Leave it empty to use the chip text. | Under the short chip text field. |
+| `options_chip_count` | `$count$` of `$max$` | Counter under a chip text field. |
+| `options_chip_reset_label` | Reset the chip text of `$heading$` | Screen reader name of the chip text's Reset. |
+| `options_chip_compact_reset_label` | Reset the short chip text of `$heading$` | Screen reader name of the short chip text's Reset. |
+| `options_chip_preview` | Preview | Label of the live preview of a tag's chips. |
 | `options_section_language` | Language | Section heading. |
 | `options_language_label` | Language of this extension | Label of the picker. |
 | `options_language_auto` | Automatic | First picker entry. |

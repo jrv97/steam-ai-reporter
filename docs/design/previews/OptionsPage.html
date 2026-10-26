@@ -126,11 +126,53 @@
             <span class="sar-field-label">Entry in the banner on game pages</span>
             <input class="sar-toggle" type="checkbox" role="switch" checked>
           </label>
+          <div class="sar-field" data-sar-layout="stacked">
+            <label class="sar-field-label" for="o-chip">Chip text</label>
+            <div class="sar-text-entry">
+              <input class="sar-input" id="o-chip" type="text" autocomplete="off" maxlength="32"
+                placeholder="KLAC" value="Kernel"
+                aria-describedby="o-chip-help o-chip-count">
+              <button class="sar-button" data-sar-variant="quiet" type="button"
+                aria-label="Reset the chip text of Uses Kernel Level Anti-Cheat">Reset</button>
+            </div>
+            <span class="sar-field-count" id="o-chip-count">6 of 32</span>
+            <span class="sar-field-help" id="o-chip-help">Your own words for this tag's badges,
+              its tab and its Ignore buttons. Leave it empty for the default. Hover cards, banner
+              headings and screen readers still give Steam's words.</span>
+          </div>
+          <div class="sar-field" data-sar-layout="stacked">
+            <label class="sar-field-label" for="o-chip-compact">Short chip text for small
+              images</label>
+            <div class="sar-text-entry">
+              <input class="sar-input" id="o-chip-compact" type="text" autocomplete="off"
+                maxlength="16" placeholder="Kernel"
+                aria-describedby="o-chip-compact-help o-chip-compact-count">
+              <button class="sar-button" data-sar-variant="quiet" type="button" hidden
+                aria-label="Reset the short chip text of Uses Kernel Level Anti-Cheat"
+                >Reset</button>
+            </div>
+            <span class="sar-field-count" id="o-chip-compact-count">0 of 16</span>
+            <span class="sar-field-help" id="o-chip-compact-help">Shown on game images narrower
+              than 400 pixels. Leave it empty to use the chip text.</span>
+          </div>
+          <div class="sar-field" data-sar-layout="stacked">
+            <span class="sar-field-label" id="o-preview">Preview</span>
+            <div class="sar-chip-preview" role="group" aria-labelledby="o-preview"
+              style="--sar-tag-tint: rgb(232 89 12 / 0.2); --sar-tag-text: #f5bf9f;
+                --sar-tag-edge: #e8590c; --sar-tag-solid: #331404; --sar-tag-light: #fbe3d4">
+              <span class="sar-badge"><span class="sar-badge-label"
+                  aria-hidden="true">Kernel</span><span class="sar-vh">Kernel: Uses Kernel Level
+                  Anti-Cheat</span></span>
+              <span class="sar-compact" data-sar-size="text"><span class="sar-compact-label"
+                  aria-hidden="true">Kernel</span><span class="sar-vh">Kernel: Uses Kernel Level
+                  Anti-Cheat</span></span>
+            </div>
+          </div>
           <div class="sar-field sar-color" data-sar-layout="stacked">
             <label class="sar-field-label" for="o-color">Badge color (experimental)</label>
             <div class="sar-color-entry">
-              <span class="sar-color-swatch" aria-hidden="true"
-                style="--sar-tag-edge: #e8590c"></span>
+              <input class="sar-color-pick" type="color" value="#e8590c"
+                aria-label="Pick the badge color of Uses Kernel Level Anti-Cheat">
               <input class="sar-input" id="o-color" type="text" autocomplete="off"
                 spellcheck="false" placeholder="Default" value="#e8590c">
               <button class="sar-button" data-sar-variant="quiet" type="button">Reset</button>

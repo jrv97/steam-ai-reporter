@@ -1017,23 +1017,68 @@
   accent-color: var(--sar-toggle-track-on);
 }
 
-/* A tag's color field (experimental): the swatch, the hex text and Reset in one row. In the app
-   the swatch reads the kind's color; a preview sets it by hand. */
-.sar-color-entry {
+/* A tag's color field (experimental): the color square, the hex text and Reset in one row. The
+   square is the browser's own picker (decision 68). A chip text field puts its text box and Reset
+   in a row the same way. */
+.sar-color-entry,
+.sar-text-entry {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: var(--sar-space-2);
 }
 
-.sar-color-swatch {
+.sar-color-pick {
   flex: none;
+  box-sizing: border-box;
   inline-size: var(--sar-control-height-sm);
   block-size: var(--sar-control-height-sm);
+  padding: 0;
   border: 1px solid var(--sar-color-border);
   border-radius: var(--sar-radius-sm);
-  background: var(--sar-tag-edge, var(--sar-accent-400));
-  forced-color-adjust: none;
+  background: none;
+  cursor: pointer;
+}
+
+.sar-color-pick::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.sar-color-pick::-webkit-color-swatch {
+  border: 0;
+  border-radius: var(--sar-radius-sm);
+}
+
+.sar-color-pick::-moz-color-swatch {
+  border: 0;
+  border-radius: var(--sar-radius-sm);
+}
+
+/* A tag's chip text fields (decision 67): a wider box, a counter and the live preview, whose
+   chips are the store page's own badge and compact chip */
+.sar-text-entry > .sar-input {
+  inline-size: var(--sar-chip-input-inline-size);
+  max-inline-size: 100%;
+}
+
+.sar-field-count {
+  grid-column: 1 / -1;
+  color: var(--sar-color-text-subtle);
+  font-size: var(--sar-size-sm);
+  line-height: var(--sar-leading-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.sar-chip-preview {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sar-space-2);
+  min-inline-size: 0;
+}
+
+.sar-chip-preview .sar-compact {
+  max-inline-size: var(--sar-chip-preview-compact-max);
 }
 
 .sar-input {
@@ -1062,6 +1107,7 @@
 .sar-segment input:focus-visible + label,
 .sar-select:focus-visible,
 .sar-input:focus-visible,
+.sar-color-pick:focus-visible,
 .sar-button:focus-visible,
 .sar-tab:focus-visible,
 .sar-order-handle:focus-visible,
