@@ -17,7 +17,6 @@ import {
   type SteamLanguage,
   steamLanguage,
 } from "./i18n/locale";
-import { SHIPPED_CATALOGS } from "./i18n/shipped";
 import { createI18n } from "./i18n/t";
 import { createIgnoreLists, isIgnored, loadIgnored } from "./ignored";
 import { effectiveSettings, type KindSettings } from "./kinds/kind-settings";
@@ -46,8 +45,11 @@ export interface AppDeps {
   readonly console: ConsoleSink;
   /** `navigator.language`, which the `auto` locale follows off store pages. */
   readonly browserLang?: string;
-  /** Defaults to the catalogs this build ships. */
-  readonly catalogs?: Catalogs;
+  /**
+   * The catalogs this bundle carries. A root hands in its own, so no bundle carries the messages
+   * of another surface, much as `addPageStyles` keeps the CSS text out of the extension's bundle.
+   */
+  readonly catalogs: Catalogs;
   /**
    * Puts the store page stylesheet (`TOKENS_CSS` and `PAGE_CSS`) on the page: `adoptPageStyles`,
    * or nothing where the platform loads it itself, as the extension's manifest `content.css` does.
@@ -120,7 +122,7 @@ const SHOWS_BANNER = (settings: KindSettings): boolean => settings.banner;
  */
 export async function start(deps: AppDeps): Promise<App> {
   const { document: doc, store, clock } = deps;
-  const catalogs = deps.catalogs ?? SHIPPED_CATALOGS;
+  const { catalogs } = deps;
   const root = doc.documentElement;
 
   const read = await readSettings(deps.settings);

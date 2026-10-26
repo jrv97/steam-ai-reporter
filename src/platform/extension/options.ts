@@ -1,6 +1,5 @@
 import * as v from "valibot";
 import { resolveLocale } from "../../core/i18n/locale";
-import { SHIPPED_CATALOGS } from "../../core/i18n/shipped";
 import { type BareMessageKey, createI18n, type I18n } from "../../core/i18n/t";
 import { createIgnoreLists } from "../../core/ignored";
 import { AUTO_LOCALE, parseSettings } from "../../core/settings/settings";
@@ -9,6 +8,7 @@ import { createSectionState } from "../../core/ui/section-state";
 import { mountSettingsForm, type SettingsContext } from "../../core/ui/settings-form";
 import { createFileTransfer } from "../shared/file-transfer";
 import { extensionUrl, extensionVersion, localStorageArea, onLocalChanged } from "./ext";
+import { CATALOGS } from "./options.catalogs.gen";
 import { createExtensionSettings, createExtensionStore } from "./store";
 
 // The options page and the toolbar popup: one page, options.html, which the manifest opens as
@@ -50,7 +50,7 @@ async function main(): Promise<void> {
   const settings = createExtensionSettings(store, onLocalChanged);
   const clock = { now: () => Date.now() };
   const lists = createIgnoreLists(store, clock);
-  const catalogs = SHIPPED_CATALOGS;
+  const catalogs = CATALOGS;
 
   let setting: string = AUTO_LOCALE;
   try {

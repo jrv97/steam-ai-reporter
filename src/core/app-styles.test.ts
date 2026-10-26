@@ -7,6 +7,7 @@ import { fixtureItems, getItemsRoute } from "../../tests/helpers/getitems";
 import { memoryStore } from "../../tests/helpers/memory-store";
 import { loadPage, SURFACES } from "../../tests/helpers/surfaces";
 import { type App, start } from "./app";
+import { SHIPPED_CATALOGS } from "./i18n/shipped";
 import { createSettingsSource } from "./settings/settings-source";
 
 // Its own file, so the document has adopted no sheet from an earlier `start`.
@@ -33,6 +34,7 @@ describe("start and the page stylesheet", () => {
       settings: createSettingsSource(store),
       clock: fixedClock(Date.UTC(2026, 9, 20)),
       console: quiet,
+      catalogs: SHIPPED_CATALOGS,
       addPageStyles,
     });
     await expect.poll(() => document.querySelectorAll(".sar-badge").length).toBe(1);

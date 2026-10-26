@@ -1,6 +1,5 @@
 import { type App, start } from "../../core/app";
 import { createFetchHttp, type Fetch } from "../../core/http";
-import { SHIPPED_CATALOGS } from "../../core/i18n/shipped";
 import { createIgnoreLists } from "../../core/ignored";
 import { type ConsoleSink, createLogger } from "../../core/log";
 import { createSettingsSource } from "../../core/settings/settings-source";
@@ -8,6 +7,7 @@ import { createSectionState } from "../../core/ui/section-state";
 import { adoptPageStyles, PAGE_CSS, TOKENS_CSS } from "../../core/ui/styles";
 import { createGmStore, createRemoteSettings, type GmStorage, type WatchValue } from "./gm-storage";
 import { currentI18n } from "./locale";
+import { CATALOGS } from "./main.catalogs.gen";
 import { openSettingsDialog } from "./settings-dialog";
 
 /** What the userscript manager gives the script; `main.ts` builds it from the `GM` globals. */
@@ -35,7 +35,7 @@ export async function startUserscript(env: UserscriptEnv): Promise<App | undefin
   const remote = createRemoteSettings(env.watchValue);
   const settings = createSettingsSource(store, remote);
   const clock = { now: () => Date.now() };
-  const i18n = await currentI18n(doc, settings, SHIPPED_CATALOGS, browserLang);
+  const i18n = await currentI18n(doc, settings, CATALOGS, browserLang);
   const logger = createLogger(i18n, env.console, false);
 
   // The page stylesheet goes in through GM_addStyle; core's own adoption is the fallback
@@ -55,8 +55,8 @@ export async function startUserscript(env: UserscriptEnv): Promise<App | undefin
     void (async () => {
       await openSettingsDialog({
         document: doc,
-        i18n: await currentI18n(doc, settings, SHIPPED_CATALOGS, browserLang),
-        catalogs: SHIPPED_CATALOGS,
+        i18n: await currentI18n(doc, settings, CATALOGS, browserLang),
+        catalogs: CATALOGS,
         settings,
         lists: createIgnoreLists(store, clock),
         sectionState: createSectionState(store),
@@ -76,6 +76,7 @@ export async function startUserscript(env: UserscriptEnv): Promise<App | undefin
       settings,
       clock,
       console: env.console,
+      catalogs: CATALOGS,
       addPageStyles,
       ...(browserLang === undefined ? {} : { browserLang }),
     });

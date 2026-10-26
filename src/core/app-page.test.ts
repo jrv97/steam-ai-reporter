@@ -18,6 +18,7 @@ import type { CreatorRole } from "./creator";
 import { API_BREAKER_KEY } from "./detect/breaker";
 import { GETITEMS_URL } from "./detect/getitems";
 import { RETRY_DELAY_MS } from "./detect/retry";
+import { SHIPPED_CATALOGS } from "./i18n/shipped";
 import type { JsonValue } from "./json";
 import type { Clock, Http } from "./ports";
 import { DEFAULT_SETTINGS, encodeSettings } from "./settings/settings";
@@ -85,6 +86,7 @@ async function startOnAiPage(options: StartOptions = {}) {
     settings,
     clock: options.clock ?? fixedClock(0),
     console: quiet,
+    catalogs: SHIPPED_CATALOGS,
     addPageStyles: adoptPageStyles,
   });
   const stored = async () => v.parse(AllowSchema, (await store.get([ALLOW_KEY])).get(ALLOW_KEY));

@@ -1,5 +1,6 @@
 import { start } from "../../core/app";
 import { createFetchHttp } from "../../core/http";
+import { CATALOGS } from "./content.catalogs.gen";
 import { localStorageArea, onLocalChanged } from "./ext";
 import { createExtensionSettings, createExtensionStore } from "./store";
 
@@ -18,6 +19,7 @@ void start({
   clock: { now: () => Date.now() },
   console,
   browserLang: navigator.language,
+  catalogs: CATALOGS,
   // The manifest's content.css carries the page stylesheet.
   addPageStyles: () => undefined,
 });

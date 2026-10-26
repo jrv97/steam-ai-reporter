@@ -24,6 +24,7 @@ import { type App, start } from "./app";
 import type { CreatorRole } from "./creator";
 import { API_BREAKER_KEY } from "./detect/breaker";
 import { RETRY_DELAY_MS } from "./detect/retry";
+import { SHIPPED_CATALOGS } from "./i18n/shipped";
 import type { JsonValue } from "./json";
 import { toHexColor } from "./kinds/color";
 import type { KindId } from "./kinds/id";
@@ -70,6 +71,7 @@ async function startOnLoaded(
     settings,
     clock,
     console: quiet,
+    catalogs: SHIPPED_CATALOGS,
     addPageStyles: adoptPageStyles,
   });
   return { http, settings, store };
@@ -460,6 +462,7 @@ describe("start on the search page", () => {
       },
       clock: fixedClock(NOW),
       console: quiet,
+      catalogs: SHIPPED_CATALOGS,
       addPageStyles: adoptPageStyles,
     });
     expect(quiet.error).toHaveBeenCalledWith(

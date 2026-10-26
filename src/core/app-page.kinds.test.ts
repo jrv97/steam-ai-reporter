@@ -12,6 +12,7 @@ import { memoryStore } from "../../tests/helpers/memory-store";
 import { withKind, writeSettings } from "../../tests/helpers/settings";
 import { loadPage } from "../../tests/helpers/surfaces";
 import { type App, start } from "./app";
+import { SHIPPED_CATALOGS } from "./i18n/shipped";
 import { DEFAULT_SETTINGS } from "./settings/settings";
 import { createSettingsSource } from "./settings/settings-source";
 import { ALLOW_KEY } from "./storage-keys";
@@ -54,6 +55,7 @@ async function startOnDrmPage() {
     settings,
     clock: fixedClock(0),
     console: quiet,
+    catalogs: SHIPPED_CATALOGS,
     addPageStyles: adoptPageStyles,
   });
   await expect.poll(() => headings().length).toBe(3);
