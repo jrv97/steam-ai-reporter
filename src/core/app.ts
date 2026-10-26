@@ -21,7 +21,7 @@ import {
 import { createI18n } from "./i18n/t";
 import { createIgnoreLists, isIgnored, loadIgnored } from "./ignored";
 import { taggedView } from "./kinds/facets";
-import { effectiveSettings, type KindSettings } from "./kinds/kind-settings";
+import { type ChipWords, effectiveSettings, type KindSettings } from "./kinds/kind-settings";
 import { kindsInOrder, sameOrder } from "./kinds/order";
 import { KINDS } from "./kinds/registry";
 import { coversSections, requestSections, type Section } from "./kinds/sections";
@@ -127,6 +127,11 @@ function facetsChanged(before: Settings, after: Settings): boolean {
   );
 }
 
+/** Every kind's chip text as one string, which changes when one of them does. */
+function chipTexts({ kinds }: Settings): string {
+  return JSON.stringify(KINDS.map(({ id }) => [kinds[id].chip, kinds[id].chipCompact]));
+}
+
 /** The sections `after` asks for that `before` did not, as when a kind that reads one turns on. */
 function addedSections(before: Settings, after: Settings): readonly Section[] {
   const had = requestSections(before.kinds);
@@ -184,12 +189,14 @@ export async function start(deps: AppDeps): Promise<App> {
 
   const card = createHoverCard(doc, i18n);
   const order = () => kindsInOrder(settings.order);
+  // A new object only when a chip text changed, which tells the chips to draw again
+  let words: ChipWords = settings.kinds;
   const capsules = createCapsuleUi({
     document: doc,
     detector: detectors.detector,
     renderers: [
       createHostKindsRenderer(),
-      createBadgeRenderer(doc, i18n, card, order),
+      createBadgeRenderer(doc, i18n, card, order, () => words),
       createPackageSummary(doc, i18n, order),
     ],
     isAllowed: (id, forKind, related) => isIgnored(ignored, id, forKind, related),
@@ -207,9 +214,12 @@ export async function start(deps: AppDeps): Promise<App> {
     const before = settings;
     settings = parseSettings(value);
     applyKindSettings(root, settings.kinds);
-    // Chosen values decide which hosts carry a kind and the order places chips: both draw again
+    if (chipTexts(before) !== chipTexts(settings)) {
+      words = settings.kinds;
+    }
+    // Chosen values, the order and the chip text decide what chips show: each draws again
     const badges = changed(before, settings, SHOWS_BADGE) || facetsChanged(before, settings)
-      || !sameOrder(before.order, settings.order);
+      || !sameOrder(before.order, settings.order) || words === settings.kinds;
     if (badges) {
       capsules.refresh();
     }
@@ -231,6 +241,7 @@ export async function start(deps: AppDeps): Promise<App> {
       ignored,
       lists,
       settings: () => settings,
+      words: () => words,
       onAllowChange: (id) => {
         capsules.refresh(id === undefined ? undefined : new Set([id]));
       },

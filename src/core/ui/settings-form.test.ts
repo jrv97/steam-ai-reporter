@@ -8,6 +8,7 @@ import {
   isValveKind,
   OFF_KINDS,
   STATUS_KINDS,
+  withChipText,
   withKind,
   writeSettings,
 } from "../../../tests/helpers/settings";
@@ -19,13 +20,13 @@ import { createIgnoreLists } from "../ignored";
 import { toHexColor } from "../kinds/color";
 import type { KindId } from "../kinds/id";
 import { LIST_FILTERS } from "../kinds/kind-settings";
-import { KINDS } from "../kinds/registry";
+import { KIND_BY_ID, KINDS } from "../kinds/registry";
 import { ALLOW_ALL, type AllowScope } from "../settings/allow-data";
 import { DEFAULT_SETTINGS, parseSettings } from "../settings/settings";
 import { createSettingsSource } from "../settings/settings-source";
 import { UI_STATE_KEY } from "../storage-keys";
 import { toAppId } from "../types";
-import { chipName } from "./kind-details";
+import { chipText } from "./kind-details";
 import type { SettingsFormDeps } from "./settings-form";
 import { GENERAL_TAB, sortTabs, type TabId } from "./tab-id";
 import { createUiState } from "./ui-state";
@@ -797,6 +798,16 @@ describe("the toolbar popup", () => {
     }
   });
 
+  it("names and sorts a row by the person's chip text", async () => {
+    const { root, settings } = await popup();
+    await writeSettings(settings, withChipText(DEFAULT_SETTINGS, { pvp: { chip: "Aaa" } }));
+    const first = rows(root)[0];
+    expect(first?.querySelector("[data-sar-open-tab]")?.getAttribute("data-sar-open-tab")).toBe(
+      "pvp",
+    );
+    expect(first?.querySelector(".sar-tab-label")?.textContent).toBe("Aaa");
+  });
+
   it.each(KINDS.map((kind) => kind.id))(
     "links %s's name to its tab and names its switch and filter by it",
     async (id) => {
@@ -805,7 +816,7 @@ describe("the toolbar popup", () => {
       expect(link?.getAttribute("href")).toBe(`options.html#tab=${id}`);
       expect(link?.getAttribute("target")).toBe("_blank");
       expect(link?.querySelector(".sar-vh")?.textContent).toBe(
-        chipName(i18n, link?.querySelector(".sar-tab-label")?.textContent ?? "", heading(id)),
+        chipText(i18n, KIND_BY_ID[id], undefined, undefined).name,
       );
       const enabled = row(root, id).querySelector("[data-sar-setting=enabled]");
       expect(enabled?.getAttribute("role")).toBe("switch");
@@ -950,13 +961,25 @@ describe("the tabs", () => {
       const shown = tab(id).querySelector(".sar-tab-label");
       expect([shown?.textContent, shown?.getAttribute("aria-hidden")]).toEqual([chip, "true"]);
       expect(tab(id).querySelector(".sar-vh")?.textContent).toBe(
-        chipName(i18n, chip, heading(id)),
+        chipText(i18n, KIND_BY_ID[id], undefined, undefined).name,
       );
       expect(tab(id).querySelector(".sar-tab-state")?.textContent).toBe(
         i18n.t(on ? "options_state_on" : "options_state_off"),
       );
     },
   );
+
+  it("names and sorts a tab by the person's chip text, and the arrows follow", async () => {
+    const { tab, tabIds, settings } = await setup();
+    await writeSettings(settings, withChipText(DEFAULT_SETTINGS, { pvp: { chip: "Aaa" } }));
+    expect(tabIds().slice(0, 2)).toEqual([GENERAL_TAB, "pvp"]);
+    expect(tab("pvp").querySelector(".sar-tab-label")?.textContent).toBe("Aaa");
+    expect(tab("pvp").querySelector(".sar-vh")?.textContent).toBe(
+      i18n.t("kind_chip_name", { chip: "Aaa", heading: heading("pvp") }),
+    );
+    press(tab(GENERAL_TAB), "ArrowRight");
+    expect(tab("pvp").getAttribute("aria-selected")).toBe("true");
+  });
 
   it("follows the master switch on the tab, here and from another tab", async () => {
     const { tab, input, settings } = await setup();

@@ -21,7 +21,7 @@ import {
 import { englishI18n } from "../../tests/helpers/i18n";
 import { memoryStore } from "../../tests/helpers/memory-store";
 import { packagePage } from "../../tests/helpers/package-page";
-import { withKind, writeSettings } from "../../tests/helpers/settings";
+import { withChipText, withKind, writeSettings } from "../../tests/helpers/settings";
 import { loadPage, SURFACES } from "../../tests/helpers/surfaces";
 import { T0, useTimerClock } from "../../tests/helpers/timer-clock";
 import { type App, start } from "./app";
@@ -268,6 +268,18 @@ describe("start on the search page", () => {
         i18n.t("kind_chip_more", { count: "1" }),
       ]);
       expect(row(DISCLOSED)?.getAttribute("data-sar-kinds")).toBe("ai kernel eula pvp iap");
+    });
+
+    it("draws the chips again with the person's chip text", async () => {
+      const { http, settings } = await startOnSearch(pvpOn(), several);
+      await drawn(http);
+      await writeSettings(settings, withChipText(withPvp, { kernel: { chip: "Ring 0" } }));
+      await expect.poll(() => chips()).toEqual([
+        chip("ai"),
+        "Ring 0",
+        chip("eula"),
+        i18n.t("kind_chip_more", { count: "1" }),
+      ]);
     });
 
     it("draws no chip for an ignored kind, and keeps the others", async () => {
@@ -643,7 +655,11 @@ describe("start on the search page", () => {
         row(String(id))?.querySelectorAll(".sar-chips > .sar-badge") ?? [],
         (chip) => Array.from(chip.children, (part) => part.textContent),
       );
-    const unlisted = [i18n.t("kind_family_unsupported_chip"), i18n.t("kind_family_unsupported")];
+    const unlistedChip = i18n.t("kind_family_unsupported_chip");
+    const unlisted = [
+      unlistedChip,
+      i18n.t("kind_chip_name", { chip: unlistedChip, heading: i18n.t("kind_family_unsupported") }),
+    ];
 
     it("tags a paid game its features leave out, with no new flag", async () => {
       const { http } = await startOnSearch(stored(familyOn), featured);

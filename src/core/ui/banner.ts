@@ -6,6 +6,7 @@ import {
   toCreatorKey,
 } from "../creator";
 import type { BareMessageKey } from "../i18n/t";
+import type { ChipWords } from "../kinds/kind-settings";
 import { KIND_BY_ID } from "../kinds/registry";
 import type { AnyDisclosed } from "../kinds/verdicts";
 import type { MessageCatalog } from "../ports";
@@ -68,6 +69,8 @@ export interface BannerView {
   readonly creators: readonly BannerCreator[];
   /** The notes, with an Undo, for the creators ignored in a scope the page would show. */
   readonly creatorNotes: readonly CreatorNote[];
+  /** The person's chip text, which names a tag on its Ignore button in a creator's row. */
+  readonly words?: ChipWords;
 }
 
 export interface Banner {
@@ -147,7 +150,7 @@ function sameView(a: BannerView, b: BannerView): boolean {
     && a.shown.every((verdict, index) => verdict === b.shown[index])
     && a.ignored.length === b.ignored.length
     && a.ignored.every((scope, index) => scope === b.ignored[index])
-    && sameCreators(a.creators, b.creators)
+    && a.words === b.words && sameCreators(a.creators, b.creators)
     && sameNotes(a.creatorNotes, b.creatorNotes);
 }
 
@@ -379,7 +382,7 @@ export function createBanner(
       const text = scope === ALLOW_ALL
         ? i18n.t("banner_ignore_creator_all")
         : i18n.t("banner_ignore_creator_kind", {
-          chip: i18n.t(KIND_BY_ID[scope].messages.chip),
+          chip: view.words?.[scope]?.chip ?? i18n.t(KIND_BY_ID[scope].messages.chip),
         });
       const choice = creatorButton(
         "sar-banner-link",

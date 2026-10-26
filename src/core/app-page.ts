@@ -4,7 +4,7 @@ import type { SteamLanguage } from "./i18n/locale";
 import { type Ignored, type IgnoreLists, isIgnored } from "./ignored";
 import { taggedView } from "./kinds/facets";
 import type { KindId } from "./kinds/id";
-import { effectiveSettings } from "./kinds/kind-settings";
+import { type ChipWords, effectiveSettings } from "./kinds/kind-settings";
 import { kindsInOrder } from "./kinds/order";
 import { KINDS, perKind } from "./kinds/registry";
 import {
@@ -134,6 +134,8 @@ export interface AppPageDeps {
   /** The stored lists behind `ignored`. */
   readonly lists: IgnoreLists;
   readonly settings: () => Settings;
+  /** The person's chip text, a new object only when a text changed. */
+  readonly words: () => ChipWords;
   /**
    * Called after the banner ignores or restores something, so the capsules draw again: the
    * game's ID after a change to the game, none after a change to a developer or publisher.
@@ -199,6 +201,7 @@ export function startAppPage(
       badge: perKind((kind) => effectiveSettings(kinds[kind.id]).badge),
       banner: perKind((kind) => effectiveSettings(kinds[kind.id]).banner),
       order: kindsInOrder(order),
+      words: deps.words(),
     };
   }
 

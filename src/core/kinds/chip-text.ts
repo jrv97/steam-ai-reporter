@@ -1,6 +1,6 @@
 import * as v from "valibot";
 
-/** The longest text, in code points, each chip field keeps (ADR 0017). */
+/** The longest text, in code points, each chip field keeps (ADR 0017); the schemas cut to it. */
 export const CHIP_TEXT_LIMITS = { chip: 32, chipCompact: 16 } as const;
 
 /** A kind's chip text fields: every chip, and the chip of small game images. */
@@ -27,8 +27,8 @@ function chipTextSchema(limit: number) {
 }
 
 export const CHIP_TEXT_SCHEMAS = {
-  chip: chipTextSchema(CHIP_TEXT_LIMITS.chip),
-  chipCompact: chipTextSchema(CHIP_TEXT_LIMITS.chipCompact),
+  chip: chipTextSchema(32),
+  chipCompact: chipTextSchema(16),
 } as const;
 
 /**

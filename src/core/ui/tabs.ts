@@ -26,6 +26,8 @@ export interface Tabs<Id extends string> {
   selected(): Id;
   /** Shows a tab and its panel; returns whether that changed anything. */
   select(id: Id): boolean;
+  /** Puts the tabs in a new order, the same ids, keeping the one selected; arrows follow it. */
+  order(ids: readonly Id[]): void;
   /** The tab a node switches to: a tab, or a button that names one; undefined for others. */
   idOf(node: Element): Id | undefined;
   /**
@@ -36,7 +38,8 @@ export interface Tabs<Id extends string> {
 }
 
 export function createTabs<Id extends string>(options: TabsOptions<Id>): Tabs<Id> {
-  const { doc, ids, idPrefix } = options;
+  const { doc, idPrefix } = options;
+  let { ids } = options;
   const list = doc.createElement("div");
   list.className = "sar-tablist";
   list.setAttribute("role", "tablist");
@@ -92,6 +95,11 @@ export function createTabs<Id extends string>(options: TabsOptions<Id>): Tabs<Id
   }
   select(first);
 
+  function order(next: readonly Id[]): void {
+    ids = next.filter((id) => tabs.has(id));
+    list.append(...ids.map((id) => lookup(tabs, id)));
+  }
+
   function idOf(node: Element): Id | undefined {
     const value = node.closest(`[${TAB_ATTRIBUTE}]`)?.getAttribute(TAB_ATTRIBUTE);
     return ids.find((id) => id === value);
@@ -103,6 +111,7 @@ export function createTabs<Id extends string>(options: TabsOptions<Id>): Tabs<Id
     panel: (id) => lookup(panels, id),
     selected: () => current ?? first,
     select,
+    order,
     idOf,
 
     target(event) {
@@ -119,7 +128,7 @@ export function createTabs<Id extends string>(options: TabsOptions<Id>): Tabs<Id
       if (step !== 0 && at !== -1) {
         return ids[(at + step + ids.length) % ids.length];
       }
-      return event.key === "Home" ? first : event.key === "End" ? ids.at(-1) : undefined;
+      return event.key === "Home" ? ids[0] : event.key === "End" ? ids.at(-1) : undefined;
     },
   };
 }

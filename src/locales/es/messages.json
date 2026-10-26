@@ -67,7 +67,7 @@
   },
   "kind_ai_heading": {
     "message": "Información sobre contenido generado por IA",
-    "description": "Steam's own heading of the block where a developer describes generative AI use. It titles the AI entry in the hover card, begins the screen reader name of the AI chip and heads the notice on the game's page. Use the wording Steam shows in this language."
+    "description": "Steam's own heading of the block where a developer describes generative AI use. It titles the AI entry in the hover card, follows the chip text in the AI chip's screen reader name and heads the notice on the game's page. Use the wording Steam shows in this language."
   },
   "kind_ai_chip": {
     "message": "IA",
@@ -75,7 +75,7 @@
   },
   "kind_kernel_heading": {
     "message": "Utiliza antitrampas a nivel de kernel",
-    "description": "Steam's own line for a game whose anti-cheat runs at kernel level. It titles the entry in the hover card and begins the screen reader name of the chip. Use the wording Steam shows in this language."
+    "description": "Steam's own line for a game whose anti-cheat runs at kernel level. It titles the entry in the hover card and follows the chip text in the chip's screen reader name. Use the wording Steam shows in this language."
   },
   "kind_kernel_chip": {
     "message": "Kernel",
@@ -91,7 +91,7 @@
   },
   "kind_anticheat_heading": {
     "message": "Utiliza software antitrampas",
-    "description": "Steam's own line for a game with anti-cheat software that does not run at kernel level. It titles the entry in the hover card and begins the screen reader name of the chip. Use the wording Steam shows in this language."
+    "description": "Steam's own line for a game with anti-cheat software that does not run at kernel level. It titles the entry in the hover card and follows the chip text in the chip's screen reader name. Use the wording Steam shows in this language."
   },
   "kind_anticheat_chip": {
     "message": "Antitrampas",
@@ -99,7 +99,7 @@
   },
   "kind_drm_heading": {
     "message": "DRM de terceros",
-    "description": "Steam's own line for a game whose developer declared third-party DRM. It titles the entry in the hover card and begins the screen reader name of the chip; the DRM the developer named follows in the card, untranslated."
+    "description": "Steam's own line for a game whose developer declared third-party DRM. It titles the entry in the hover card and follows the chip text in the chip's screen reader name; the DRM the developer named follows in the card, untranslated."
   },
   "kind_drm_chip": {
     "message": "DRM",
@@ -107,7 +107,7 @@
   },
   "kind_account_heading": {
     "message": "Requiere una cuenta de terceros",
-    "description": "Steam's own line for a game that needs an account with another company. It titles the entry in the hover card and begins the screen reader name of the chip; the account the developer named follows in the card, untranslated."
+    "description": "Steam's own line for a game that needs an account with another company. It titles the entry in the hover card and follows the chip text in the chip's screen reader name; the account the developer named follows in the card, untranslated."
   },
   "kind_account_chip": {
     "message": "Cuenta",
@@ -119,7 +119,7 @@
   },
   "kind_eula_heading": {
     "message": "Es necesario aceptar un ALUF de terceros",
-    "description": "Steam's own line for a game that makes the player accept an end user license agreement of another company. It titles the entry in the hover card and begins the screen reader name of the chip; the agreement names follow in the card, untranslated."
+    "description": "Steam's own line for a game that makes the player accept an end user license agreement of another company. It titles the entry in the hover card and follows the chip text in the chip's screen reader name; the agreement names follow in the card, untranslated."
   },
   "kind_eula_chip": {
     "message": "ALUF",
@@ -127,7 +127,7 @@
   },
   "kind_pvp_heading": {
     "message": "JcJ",
-    "description": "Title of the PvP entry in the hover card and start of the screen reader name of the chip. Use the abbreviation Steam uses in this language for player versus player."
+    "description": "Title of the PvP entry in the hover card and, after the chip text, the chip's screen reader name (said once when the two match). Use the abbreviation Steam uses in this language for player versus player."
   },
   "kind_pvp_chip": {
     "message": "JcJ",
@@ -151,7 +151,7 @@
   },
   "kind_iap_heading": {
     "message": "Compras dentro de la aplicación",
-    "description": "Steam's category name for a game that sells items inside it. It titles the entry in the hover card and the banner, names the settings section and begins the screen reader name of the chip. Use the name Steam's store shows for this category in this language. Unverified: compare with the features list of a game with in-app purchases on the Spanish store page (/app/730/?l=spanish) and correct it and the chip to Steam's words."
+    "description": "Steam's category name for a game that sells items inside it. It titles the entry in the hover card and the banner, names the settings section and follows the chip text in the chip's screen reader name. Use the name Steam's store shows for this category in this language. Unverified: compare with the features list of a game with in-app purchases on the Spanish store page (/app/730/?l=spanish) and correct it and the chip to Steam's words."
   },
   "kind_iap_chip": {
     "message": "Compras",
@@ -159,7 +159,7 @@
   },
   "kind_deck_heading": {
     "message": "Compatibilidad con Steam Deck",
-    "description": "Steam's own heading of the Steam Deck rating Valve gives a game. It titles the entry in the hover card, names the settings section and, with the rating word, heads the entry in the notice on the game's page and the chip's screen reader name. Use the wording Steam shows in this language. From Steam's Spanish client strings; not checked on a live store page."
+    "description": "Steam's own heading of the Steam Deck rating Valve gives a game. It titles the entry in the hover card, names the settings section with the rating word heads the entry in the notice on the game's page, and it follows the chip text in the chip's screen reader name. Use the wording Steam shows in this language. From Steam's Spanish client strings; not checked on a live store page."
   },
   "kind_deck_chip": {
     "message": "Deck",
@@ -167,7 +167,7 @@
   },
   "kind_machine_heading": {
     "message": "Compatibilidad con Steam Machine",
-    "description": "Steam's own heading of the Steam Machine rating Valve gives a game. It titles the entry in the hover card, names the settings section and, with the rating word, heads the entry in the notice on the game's page and the chip's screen reader name. Use the wording Steam shows in this language. From Steam's Spanish client strings; not checked on a live store page."
+    "description": "Steam's own heading of the Steam Machine rating Valve gives a game. It titles the entry in the hover card, names the settings section with the rating word heads the entry in the notice on the game's page, and it follows the chip text in the chip's screen reader name. Use the wording Steam shows in this language. From Steam's Spanish client strings; not checked on a live store page."
   },
   "kind_machine_chip": {
     "message": "Steam Machine",
@@ -187,15 +187,15 @@
   },
   "kind_family_heading": {
     "message": "Préstamo familiar",
-    "description": "Steam's own name of Family Sharing, the Steam feature that lets a family share a library. It titles the entry in the hover card, names the settings section, begins the screen reader name of the chip and is the choice for a game Steam lists it for. It is also the listed value's chip text, in full; the compact badge may cut it with an ellipsis when narrow. Use the word Steam shows in this language. From Steam's Spanish client strings; not checked on a live store page."
+    "description": "Steam's own name of Family Sharing, the Steam feature that lets a family share a library. It titles the entry in the hover card, names the settings section, follows the chip text in the chip's screen reader name and is the choice for a game Steam lists it for. It is also the listed value's chip text, in full; the compact badge may cut it with an ellipsis when narrow. Use the word Steam shows in this language. From Steam's Spanish client strings; not checked on a live store page."
   },
   "kind_family_unsupported": {
     "message": "Préstamo familiar no disponible",
-    "description": "Steam's own words for a game that cannot be shared in a family library. The heading of the entry in the notice on the game's page, a choice in the settings, the package summary's name for the value and the screen reader name of its chip, for a paid game whose Steam feature list leaves Family Sharing out. Keep Steam's wording and capitalization in this language. From Steam's Spanish client strings; not checked on a live store page."
+    "description": "Steam's own words for a game that cannot be shared in a family library. The heading of the entry in the notice on the game's page, a choice in the settings, the package summary's name for the value and, after the chip text, the screen reader name of its chip, for a paid game whose Steam feature list leaves Family Sharing out. Keep Steam's wording and capitalization in this language. From Steam's Spanish client strings; not checked on a live store page."
   },
   "kind_family_unsupported_chip": {
     "message": "Sin préstamo familiar",
-    "description": "Chip for a paid game whose Steam feature list leaves Family Sharing out. Our own short words, chosen by the maintainer; the chip's screen reader name gives Steam's words (\"Family Sharing not Available\"). Keep it short, it sits in a row and over game images; the compact badge may cut it with an ellipsis when narrow. Use this kind of wording only for this key and the hover card line of this value. Unverified: our own Spain Spanish, not checked against Steam's wording."
+    "description": "Chip for a paid game whose Steam feature list leaves Family Sharing out. Our own short words, chosen by the maintainer; the chip's screen reader name gives Steam's words (\"Family Sharing not Available\") after it. Keep it short, it sits in a row and over game images; the compact badge may cut it with an ellipsis when narrow. Use this kind of wording only for this key and the hover card line of this value. Unverified: our own Spain Spanish, not checked against Steam's wording."
   },
   "kind_family_unsupported_line": {
     "message": "El préstamo familiar no está disponible para este juego",
@@ -203,7 +203,7 @@
   },
   "kind_chip_name": {
     "message": "$chip$: $heading$",
-    "description": "Screen reader name of a chip: the visible chip text, then Steam's full line for the kind. $chip$ is the chip text and $heading$ the full line.",
+    "description": "Screen reader name of a chip: the visible chip text, then Steam's full line for the kind, or Steam's word for a value that names the kind by itself. $chip$ is the chip text, the person's own when they set one, and $heading$ Steam's words.",
     "placeholders": {
       "chip": {
         "content": "$1",
@@ -231,7 +231,7 @@
   },
   "kind_facet_name": {
     "message": "$heading$: $value$",
-    "description": "Steam's heading of a tag with values, then Steam's word for the value: the screen reader name of its chip, the heading of its entry in the notice on a game's page and its line in a package's summary.",
+    "description": "Steam's heading of a tag with values, then Steam's word for the value: the heading of its entry in the notice on a game's page and its line in a package's summary.",
     "placeholders": {
       "heading": {
         "content": "$1",

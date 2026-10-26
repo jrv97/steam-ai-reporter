@@ -1,6 +1,7 @@
 import { facetOf } from "../kinds/facets";
 import type { KindId } from "../kinds/id";
 import type { TagKind } from "../kinds/kind";
+import type { ChipWords } from "../kinds/kind-settings";
 import { registryOrder } from "../kinds/order";
 import { KIND_BY_ID } from "../kinds/registry";
 import { type AnyDisclosed, sameVerdicts } from "../kinds/verdicts";
@@ -8,7 +9,7 @@ import type { MessageCatalog } from "../ports";
 import type { BadgeSlot, CompactSize, HostRenderer } from "./host";
 import type { CardTriggers } from "./hover-card";
 import { KIND_ATTRIBUTE } from "./kind-attributes";
-import { facetName } from "./kind-details";
+import { type ChipText, chipText } from "./kind-details";
 
 /** Compact badge tiers by image box (components.mdx, section 2). Smaller images get none. */
 const TEXT_MIN_WIDTH = 180;
@@ -27,34 +28,25 @@ export function compactSize(width: number, height: number): CompactSize | undefi
 /** An ARIA or data token, not copy. */
 const TRUE = "true";
 
-/** A chip's visible text, and the accessible name that starts with it. */
-interface ChipText {
-  readonly label: string;
-  readonly name: string;
+/** The person's text for a kind's chips; small images (`compact`) take the short one first. */
+export function ownText(
+  words: ChipWords | undefined,
+  id: KindId,
+  compact?: boolean,
+): string | undefined {
+  const own = words?.[id];
+  return compact === true ? own?.chipCompact ?? own?.chip : own?.chip;
 }
 
-/**
- * A verdict's chip: the kind's short word, and Steam's line in the name. A kind with facets adds
- * Steam's word for the value to both, or uses the value's own chip and word.
- */
-function chipText(i18n: MessageCatalog, verdict: AnyDisclosed): ChipText {
-  const { messages } = KIND_BY_ID[verdict.kind];
-  const chip = i18n.t(messages.chip);
-  const heading = i18n.t(messages.heading);
-  const facet = facetOf(verdict);
-  if (facet !== undefined) {
-    return {
-      label: facet.chip === undefined
-        ? i18n.t("kind_facet_chip", { chip, value: i18n.t(facet.word) })
-        : i18n.t(facet.chip),
-      name: facetName(i18n, heading, facet),
-    };
-  }
-  // PvP reads the same as its heading, so its name is that word once, not "PvP: PvP".
-  return {
-    label: chip,
-    name: chip === heading ? chip : i18n.t("kind_chip_name", { chip, heading }),
-  };
+/** A verdict's chip, in the person's words for the kind when there are some. */
+function verdictText(
+  i18n: MessageCatalog,
+  verdict: AnyDisclosed,
+  words: ChipWords | undefined,
+  compact?: boolean,
+): ChipText {
+  const own = ownText(words, verdict.kind, compact);
+  return chipText(i18n, KIND_BY_ID[verdict.kind], facetOf(verdict), own);
 }
 
 /** The "+N" chip's text, for the N kinds that did not fit. */
@@ -69,7 +61,7 @@ function moreText(i18n: MessageCatalog, count: number): ChipText {
  * name starts with the visible text and goes on with Steam's full line. A kind's chip carries the
  * kind, so the style rules can switch its badges off.
  */
-function createChipElement(
+export function createChipElement(
   doc: Document,
   text: ChipText,
   className: string,
@@ -97,10 +89,11 @@ export function createChip(
   doc: Document,
   i18n: MessageCatalog,
   verdict: AnyDisclosed,
+  words?: ChipWords,
 ): HTMLElement {
   return createChipElement(
     doc,
-    chipText(i18n, verdict),
+    verdictText(i18n, verdict, words),
     "sar-badge",
     "sar-badge-label",
     verdict.kind,
@@ -122,6 +115,8 @@ interface Drawn {
   readonly present: readonly AnyDisclosed[];
   readonly slot: BadgeSlot;
   readonly maxChips: number;
+  /** The person's chip text the chips were drawn with. */
+  readonly words: ChipWords | undefined;
 }
 
 function sameSlot(a: BadgeSlot, b: BadgeSlot): boolean {
@@ -143,7 +138,8 @@ function sameChips(a: readonly AnyDisclosed[], b: readonly AnyDisclosed[]): bool
 /**
  * Draws a host's chips in the slot its placement chose: one text chip for each kind that is
  * disclosed, not ignored and shown by its settings, in the person's tag order (`order`). A
- * placement shows the first `maxChips` of them; a "+N" chip stands for the rest. Every chip
+ * placement shows the first `maxChips` of them; a "+N" chip stands for the rest. Each chip shows
+ * the person's text when there is one (`words`, a new object only when a text changed). Every chip
  * registers with the hover card, which lists all the kinds. A host with no such kind loses its
  * chips. The chips of a host sit in one group, so a refresh removes and places them as one.
  */
@@ -152,6 +148,7 @@ export function createBadgeRenderer(
   i18n: MessageCatalog,
   card: CardTriggers,
   order: () => readonly TagKind[] = registryOrder,
+  words?: () => ChipWords,
 ): HostRenderer {
   const drawn = new WeakMap<Element, Drawn>();
 
@@ -164,10 +161,16 @@ export function createBadgeRenderer(
     return chip;
   }
 
-  function build(slot: BadgeSlot, present: readonly AnyDisclosed[], maxChips: number): HTMLElement {
+  function build(
+    slot: BadgeSlot,
+    present: readonly AnyDisclosed[],
+    maxChips: number,
+    texts: ChipWords | undefined,
+  ): HTMLElement {
     const group = createChipGroup(doc, slot.kind);
+    const compact = slot.kind === "compact" && slot.size === "text";
     for (const verdict of present.slice(0, maxChips)) {
-      group.append(chipFor(slot, chipText(i18n, verdict), verdict.kind));
+      group.append(chipFor(slot, verdictText(i18n, verdict, texts, compact), verdict.kind));
     }
     if (present.length > maxChips) {
       group.append(chipFor(slot, moreText(i18n, present.length - maxChips)));
@@ -201,6 +204,7 @@ export function createBadgeRenderer(
         }
       }
       const current = drawn.get(host);
+      const texts = words?.();
       if (present === undefined || slot === undefined) {
         current?.group.remove();
         drawn.delete(host);
@@ -208,7 +212,8 @@ export function createBadgeRenderer(
       }
       if (
         current !== undefined && current.group.isConnected && sameSlot(current.slot, slot)
-        && current.maxChips === maxChips && sameChips(current.present, present)
+        && current.maxChips === maxChips && current.words === texts
+        && sameChips(current.present, present)
       ) {
         if (!sameVerdicts(current.present, present)) {
           bind(current.group, present);
@@ -217,13 +222,13 @@ export function createBadgeRenderer(
         return;
       }
       current?.group.remove();
-      const group = build(slot, present, maxChips);
+      const group = build(slot, present, maxChips, texts);
       slot.anchor.insertAdjacentElement(slot.position, group);
       if (slot.kind === "compact") {
         linkCompact(group, host);
       }
       bind(group, present);
-      drawn.set(host, { group, present, slot, maxChips });
+      drawn.set(host, { group, present, slot, maxChips, words: texts });
     },
   };
 }

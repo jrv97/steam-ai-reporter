@@ -1,7 +1,9 @@
 import { KIND_IDS, type KindId } from "../kinds/id";
+import type { ChipWords } from "../kinds/kind-settings";
 import { OVERLAY_CHIPS, sameOrder } from "../kinds/order";
 import { KIND_BY_ID } from "../kinds/registry";
 import type { MessageCatalog } from "../ports";
+import { ownText } from "./badge";
 import { createElement } from "./element";
 import { parseIcon } from "./icon";
 import { dropIndex, heldIndex, type Reorder, reorder } from "./reorder";
@@ -23,6 +25,8 @@ export interface OrderCard {
   readonly section: HTMLElement;
   /** Shows a stored order, unless a row is held. */
   sync(order: readonly KindId[]): void;
+  /** Names each row by the person's chip text, or the catalog's word where there is none. */
+  rename(words: ChipWords): void;
   /** Serves a `pointerdown`, `keydown` or `click` the form's root heard; others pass by. */
   handle(event: Event): void;
   /** Lets go of a drag or a held row, as when the form goes away. */
@@ -53,6 +57,9 @@ const KEY_STEPS: ReadonlyMap<string, (at: number, count: number) => number> = ne
 interface Row {
   readonly element: HTMLElement;
   readonly handle: HTMLButtonElement;
+  readonly chip: HTMLElement;
+  /** Steam's line, hidden while the chip reads the same (PvP). */
+  readonly heading: HTMLElement;
   /** The marker of the rows a small image shows. */
   readonly small: HTMLElement;
 }
@@ -93,26 +100,24 @@ export function createOrderCard(doc: Document, deps: OrderCardDeps): OrderCard {
   const grip = parseIcon(doc, GRIP_SVG);
   const rows = new Map<KindId, Row>();
   for (const id of KIND_IDS) {
-    const { messages } = KIND_BY_ID[id];
-    const chip = i18n.t(messages.chip);
-    const heading = i18n.t(messages.heading);
     const handle = createElement(doc, "button", "sar-order-handle");
     handle.type = "button";
     handle.setAttribute(ORDER_ATTRIBUTE, id);
-    handle.setAttribute("aria-label", i18n.t("options_order_handle", { name: chip }));
     handle.setAttribute("aria-describedby", how.id);
     if (grip !== undefined) {
       handle.append(grip.cloneNode(true));
     }
     const small = createElement(doc, "span", "sar-order-small", i18n.t("options_order_small"));
     const element = createElement(doc, "li", "sar-order-row");
-    element.append(handle, createElement(doc, "span", "sar-order-chip", chip));
-    // PvP's heading is its chip word, said once
-    if (heading !== chip) {
-      element.append(createElement(doc, "span", "sar-order-heading", heading));
-    }
-    element.append(small);
-    rows.set(id, { element, handle, small });
+    const chip = createElement(doc, "span", "sar-order-chip");
+    const heading = createElement(
+      doc,
+      "span",
+      "sar-order-heading",
+      i18n.t(KIND_BY_ID[id].messages.heading),
+    );
+    element.append(handle, chip, heading, small);
+    rows.set(id, { element, handle, chip, heading, small });
   }
   const reset = createElement(doc, "button", "sar-button", i18n.t("options_order_reset"));
   reset.type = "button";
@@ -138,7 +143,19 @@ export function createOrderCard(doc: Document, deps: OrderCardDeps): OrderCard {
   let swallowClick = false;
 
   function nameOf(id: KindId): string {
-    return i18n.t(KIND_BY_ID[id].messages.chip);
+    return rows.get(id)?.chip.textContent ?? id;
+  }
+
+  function rename(words: ChipWords): void {
+    for (const [id, row] of rows) {
+      const name = ownText(words, id) ?? i18n.t(KIND_BY_ID[id].messages.chip);
+      if (row.chip.textContent !== name) {
+        row.chip.textContent = name;
+        row.handle.setAttribute("aria-label", i18n.t("options_order_handle", { name }));
+        // PvP's heading is its chip word, said once
+        row.heading.hidden = row.heading.textContent === name;
+      }
+    }
   }
 
   function focused(): Element | null {
@@ -378,10 +395,12 @@ export function createOrderCard(doc: Document, deps: OrderCardDeps): OrderCard {
     }
   }
 
+  rename({});
   place();
 
   return {
     section,
+    rename,
     sync(order) {
       state = reorder(state, { type: "load", order });
       place();

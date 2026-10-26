@@ -29,13 +29,14 @@ import {
 } from "./allow-view";
 import { announce, POLITE } from "./announce";
 import { createBackupCard } from "./backup-card";
+import { ownText } from "./badge";
 import { createElement } from "./element";
 import { parseIcon } from "./icon";
 import { KIND_ATTRIBUTE, setColorOnce } from "./kind-attributes";
-import { chipName } from "./kind-details";
+import { chipText } from "./kind-details";
 import { createOrderCard, type OrderCard } from "./order-card";
 import { adoptStyles, SETTINGS_CSS, TOKENS_CSS } from "./styles";
-import { GENERAL_TAB, sortTabs, tabHash, type TabId, toTabId } from "./tab-id";
+import { GENERAL_TAB, type LabelledTab, sortTabs, tabHash, type TabId, toTabId } from "./tab-id";
 import { createTabs, type Tabs } from "./tabs";
 import type { UiState } from "./ui-state";
 
@@ -330,7 +331,11 @@ export async function mountSettingsForm(
     field: SwitchField,
     label: BareMessageKey,
     help: string,
-  ): { readonly row: HTMLElement; readonly input: HTMLInputElement; } {
+  ): {
+    readonly row: HTMLElement;
+    readonly input: HTMLInputElement;
+    readonly help: HTMLElement;
+  } {
     const row = element("label", "sar-field");
     const input = element("input", "sar-toggle");
     input.type = "checkbox";
@@ -339,13 +344,9 @@ export async function mountSettingsForm(
     input.setAttribute("data-sar-for", kind);
     const error = fieldError();
     errors.set(errorKey(field, kind), error);
-    row.append(
-      element("span", "sar-field-label", i18n.t(label)),
-      input,
-      element("span", "sar-field-help", help),
-      error,
-    );
-    return { row, input };
+    const helpText = element("span", "sar-field-help", help);
+    row.append(element("span", "sar-field-label", i18n.t(label)), input, helpText, error);
+    return { row, input, help: helpText };
   }
 
   /** Show, Dim and Hide: a fieldset of radios, labelled by the elements `labelledBy` names. */
@@ -473,6 +474,9 @@ export async function mountSettingsForm(
     return { row, controls: { input, reset, invalid } };
   }
 
+  /** The help under each badge switch, which names the tag's chip as it shows. */
+  const badgeHelp = new Map<KindId, HTMLElement>();
+
   /** One tag's settings, titled with Steam's line for it: the master switch, then the rest. */
   function kindCard(kind: TagKind, state: HTMLElement): HTMLElement {
     const section = card(i18n.t(kind.messages.heading), kind.id, "h2");
@@ -494,6 +498,7 @@ export async function mountSettingsForm(
       "options_banner",
       i18n.t("options_banner_help"),
     );
+    badgeHelp.set(kind.id, badge.help);
     const filter = filterField(kind);
     const color = deps.colors ? colorField(kind) : undefined;
     const facetList: readonly FacetDefinition<FacetId>[] = kind.facets ?? [];
@@ -524,12 +529,17 @@ export async function mountSettingsForm(
     return section;
   }
 
+  /** Each tag's shown chip word and full name, which `relabel` keeps to the person's text. */
+  const names = new Map<KindId, readonly [HTMLElement, HTMLElement]>();
+
   /** A tag's chip word, shown, and its full name for screen readers, which starts with it. */
   function kindName(kind: TagKind): readonly HTMLElement[] {
-    const chip = i18n.t(kind.messages.chip);
-    const label = element("span", "sar-tab-label", chip);
+    const text = chipText(i18n, kind, undefined, undefined);
+    const label = element("span", "sar-tab-label", text.label);
     label.setAttribute("aria-hidden", TRUE);
-    return [label, element("span", "sar-vh", chipName(i18n, chip, i18n.t(kind.messages.heading)))];
+    const name = element("span", "sar-vh", text.name);
+    names.set(kind.id, [label, name]);
+    return [label, name];
   }
 
   /** A popup row: the tag's name, a link to its tab, then its list filter and master switch. */
@@ -594,9 +604,12 @@ export async function mountSettingsForm(
   live.setAttribute("aria-live", POLITE);
   // The popup's rows follow the tabs' order
   const rows = element("div", "sar-kind-rows");
+  const rowOf = new Map<KindId, HTMLElement>();
   for (const id of tabs === undefined ? tabIds : []) {
     if (id !== GENERAL_TAB) {
-      rows.append(kindRow(KIND_BY_ID[id]));
+      const row = kindRow(KIND_BY_ID[id]);
+      rowOf.set(id, row);
+      rows.append(row);
     }
   }
   const built = tabs === undefined ? undefined : tabbedBody(tabs);
@@ -763,7 +776,36 @@ export async function mountSettingsForm(
     }
   }
 
+  /**
+   * Names each tag by the person's chip text, or the catalog's word, and sorts the tabs, or the
+   * popup's rows, by what they show when a name changed.
+   */
+  function relabel(): void {
+    let renamed = false;
+    const labels: LabelledTab[] = [];
+    for (const kind of KINDS) {
+      const text = chipText(i18n, kind, undefined, ownText(current.kinds, kind.id));
+      const [label, name] = names.get(kind.id) ?? [];
+      if (label !== undefined && name !== undefined && label.textContent !== text.label) {
+        label.textContent = text.label;
+        name.textContent = text.name;
+        renamed = true;
+      }
+      badgeHelp.get(kind.id)?.replaceChildren(
+        i18n.t("options_badges_help", { label: text.label }),
+      );
+      labels.push({ id: kind.id, label: text.label });
+    }
+    built?.order.rename(current.kinds);
+    if (renamed) {
+      const ids = sortTabs(labels, i18n.locale);
+      tabs?.order(ids);
+      rows.append(...ids.flatMap((id) => (id === GENERAL_TAB ? [] : rowOf.get(id) ?? [])));
+    }
+  }
+
   function sync(): void {
+    relabel();
     for (const [id, own] of controls) {
       const kind = current.kinds[id];
       for (const [field, input] of own.switches) {

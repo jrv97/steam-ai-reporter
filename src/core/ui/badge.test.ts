@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { setBody } from "../../../tests/helpers/dom";
 import { hostView, type HostViewOptions } from "../../../tests/helpers/host-view";
 import { englishI18n } from "../../../tests/helpers/i18n";
-import { STATUS_KINDS } from "../../../tests/helpers/settings";
+import { STATUS_KINDS, withChipText } from "../../../tests/helpers/settings";
 import {
   compatVerdict,
   disclosedKinds,
@@ -12,9 +12,11 @@ import {
 } from "../../../tests/helpers/verdicts";
 import { COMPAT_FACETS } from "../kinds/compat";
 import { KIND_IDS, type KindId } from "../kinds/id";
+import type { ChipWords } from "../kinds/kind-settings";
 import { kindsInOrder, OVERLAY_CHIPS, parseOrder } from "../kinds/order";
 import { KIND_BY_ID, KINDS } from "../kinds/registry";
 import type { AnyDisclosed } from "../kinds/verdicts";
+import { DEFAULT_SETTINGS } from "../settings/settings";
 import { UNKNOWN } from "../types";
 import { compactSize, createBadgeRenderer, createChip } from "./badge";
 import type { BadgeSlot } from "./host";
@@ -37,6 +39,9 @@ function capsule(): {
   }
   return { host, link, image, title };
 }
+
+/** Where a chip draws: on a row, or over an image in the text or the large tier. */
+type SlotKind = "full" | "text" | "large";
 
 function view(host: Element, slot: BadgeSlot | undefined, options: HostViewOptions = {}) {
   return hostView(host, { ...options, slot });
@@ -135,11 +140,14 @@ describe("createBadgeRenderer", () => {
     const { host, title } = capsule();
     const verdicts = { ...disclosedKinds([]), [kind]: compatVerdict(kind, facet) };
     renderer.render(view(host, full(title), { verdicts }));
-    const value = i18n.t(`kind_compat_${facet}`);
+    const label = i18n.t("kind_facet_chip", {
+      chip: chip(kind),
+      value: i18n.t(`kind_compat_${facet}`),
+    });
     const heading = i18n.t(KIND_BY_ID[kind].messages.heading);
     expect(texts(chipsIn(host)[0] ?? host)).toEqual([
-      i18n.t("kind_facet_chip", { chip: chip(kind), value }),
-      i18n.t("kind_facet_name", { heading, value }),
+      label,
+      i18n.t("kind_chip_name", { chip: label, heading }),
     ]);
   });
 
@@ -149,6 +157,59 @@ describe("createBadgeRenderer", () => {
     const [label, name] = texts(chipsIn(host)[0] ?? host);
     expect(label).toBe(i18n.t("kind_pvp_chip"));
     expect(name).toBe(i18n.t("kind_pvp_heading"));
+  });
+
+  describe("with the person's chip text", () => {
+    let words: ChipWords = {};
+
+    beforeEach(() => {
+      words = {};
+      renderer = createBadgeRenderer(
+        document,
+        i18n,
+        { bind: () => undefined },
+        undefined,
+        () => words,
+      );
+    });
+
+    /** The visible text of the first chip drawn in a slot, with these texts for AI. */
+    function drawnLabel(own: { chip?: string; chipCompact?: string; }, slot: SlotKind) {
+      words = withChipText(DEFAULT_SETTINGS, { ai: own }).kinds;
+      const { host, title, image } = capsule();
+      const at = slot === "full" ? full(title) : overlay(image, slot);
+      renderer.render(view(host, at, { verdicts: disclosedKinds(["ai"]) }));
+      return texts(chipsIn(host)[0] ?? host);
+    }
+
+    it.each<readonly [SlotKind, { chip?: string; chipCompact?: string; }, string]>([
+      ["full", { chip: "Mine", chipCompact: "Me" }, "Mine"],
+      ["large", { chip: "Mine", chipCompact: "Me" }, "Mine"],
+      ["text", { chip: "Mine", chipCompact: "Me" }, "Me"],
+      ["text", { chip: "Mine" }, "Mine"],
+    ])("shows on a %s chip, given %j, the text %s", (slot, own, expected) => {
+      expect(drawnLabel(own, slot)[0]).toBe(expected);
+    });
+
+    it.each<SlotKind>(["full", "text"])("falls back to the catalog on a %s chip", (slot) => {
+      expect(drawnLabel({}, slot)[0]).toBe(chip("ai"));
+    });
+
+    it("sets markup as literal text, never as elements", () => {
+      const [label, name] = drawnLabel({ chip: "<b>x</b>" }, "full");
+      expect(label).toBe("<b>x</b>");
+      expect(name?.startsWith("<b>x</b>")).toBe(true);
+      expect(document.querySelector(".sar-chips b")).toBeNull();
+    });
+
+    it("draws a host again when only the text changed", () => {
+      const { host, title } = capsule();
+      const drawn = view(host, full(title), { verdicts: disclosedKinds(["ai"]) });
+      renderer.render(drawn);
+      words = withChipText(DEFAULT_SETTINGS, { ai: { chip: "Mine" } }).kinds;
+      renderer.render(drawn);
+      expect(texts(chipsIn(host)[0] ?? host)[0]).toBe("Mine");
+    });
   });
 
   it("draws one chip per disclosed kind, in registry order, whatever the data order", () => {
