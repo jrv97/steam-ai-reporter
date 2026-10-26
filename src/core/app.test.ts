@@ -629,12 +629,9 @@ describe("start on the search page", () => {
         row(String(id))?.querySelectorAll(".sar-chips > .sar-badge") ?? [],
         (chip) => Array.from(chip.children, (part) => part.textContent),
       );
-    const unlisted = [
-      i18n.t("kind_family_unsupported"),
-      i18n.t("kind_family_unsupported"),
-    ];
+    const unlisted = [i18n.t("kind_family_unsupported_chip"), i18n.t("kind_family_unsupported")];
 
-    it("tags a paid game its features leave out in Steam's words, with no new flag", async () => {
+    it("tags a paid game its features leave out, with no new flag", async () => {
       const { http } = await startOnSearch(stored(familyOn), featured);
       await drawn(http);
       expect(chips(UNLISTED)).toEqual([unlisted]);

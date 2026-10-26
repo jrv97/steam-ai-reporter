@@ -69,9 +69,9 @@ export function kindDetails(verdict: AnyDisclosed): readonly KindDetail[] {
     case "machine":
       return facetLines(verdict);
     case "family":
-      // A derived value says what Steam's list shows, and nothing about the game (ADR 0016).
+      // The derived value in our words, qualified by the kind's source line (ADR 0016, amended).
       return verdict.facet === "unsupported"
-        ? [...facetLines(verdict), message("kind_family_unlisted")]
+        ? [message("kind_family_unsupported_line")]
         : facetLines(verdict);
   }
 }
@@ -90,6 +90,14 @@ export function fromValve(verdict: AnyDisclosed): boolean {
 /** The line under the heading of a full game's verdict shown for its demo, by who states it. */
 export function fullGameLine(verdict: AnyDisclosed): BareMessageKey {
   return fromValve(verdict) ? "kind_full_game_valve" : "kind_full_game";
+}
+
+/** The hover card's line naming who states a verdict's fact: the developer, or Valve's source. */
+export function sourceLine(verdict: AnyDisclosed): BareMessageKey {
+  const kind = KIND_BY_ID[verdict.kind];
+  return kind.source === "valve"
+    ? kind.messages.source ?? "badge_card_valve"
+    : "badge_card_declared";
 }
 
 /**

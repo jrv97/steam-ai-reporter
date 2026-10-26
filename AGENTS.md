@@ -30,10 +30,15 @@ These are hard rules. A change that breaks one needs an ADR first.
    is unknown; an item with them and no key for a kind is not reported. Only a kind read from
    Valve's own computed category list may derive a value from a non-empty list that lacks its
    category, under the conditions of an ADR (ADR 0016). Neither state nor a derived value renders
-   as "none", "no" and the kind, "DRM-free" or "no anti-cheat". A tag uses Steam's own words for
-   its kind and names its source: the developer, or Valve for what Valve computes. Our own copy
-   never says "uses AI", "AI-free" or "no AI", and states nothing about a game beyond Steam's
-   words and data. The developer's own text is rendered verbatim through `textContent`.
+   as "none", "no" and the kind, "DRM-free" or "no anti-cheat", with one exception (ADR 0016,
+   amended): Family Sharing's derived value may read "No Family Sharing" on its chip and "Family
+   Sharing is not supported for this game" in the hover card, which then always closes with
+   "According to the features Steam lists for this game". No other kind, and no
+   developer-declared kind, has such an exception. A tag uses Steam's own words for its kind and
+   names its source: the developer, or Valve for what Valve computes. Our own copy never says
+   "uses AI", "AI-free" or "no AI", and states nothing about a game beyond Steam's words and data,
+   apart from that qualified exception. The developer's own text is rendered verbatim through
+   `textContent`.
 5. **Core purity.** `src/core` uses only DOM and web standards and never names `chrome`, `browser`
    or `GM`. Platform code lives in `src/platform/`.
 6. **Originality and credit.** No code is copied from other AI-disclosure extensions, and nothing

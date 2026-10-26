@@ -1,8 +1,9 @@
+import type { BareMessageKey } from "../i18n/t";
 import { KIND_BY_ID } from "../kinds/registry";
 import { type AnyDisclosed, sameVerdicts } from "../kinds/verdicts";
 import type { MessageCatalog } from "../ports";
 import { KIND_ATTRIBUTE } from "./kind-attributes";
-import { fromValve, fullGameLine, type KindDetail, kindDetails } from "./kind-details";
+import { fromValve, fullGameLine, type KindDetail, kindDetails, sourceLine } from "./kind-details";
 import { normalizeBreaks } from "./notes";
 
 /** The card's id, the target of `aria-describedby` while focus holds it open. */
@@ -101,9 +102,6 @@ interface Open {
 interface Card {
   readonly root: HTMLElement;
   readonly more: HTMLElement;
-  /** The closing lines that name who states the entries: the developer, Valve. */
-  readonly declared: HTMLElement;
-  readonly valve: HTMLElement;
 }
 
 /** What a follow reuses from the last placement, so it reads only the trigger's box. */
@@ -225,10 +223,8 @@ export function createHoverCard(
     root.hidden = true;
     const more = line("sar-hovercard-more", i18n.t("badge_card_more"));
     more.hidden = true;
-    const declared = line("sar-hovercard-source", i18n.t("badge_card_declared"));
-    const valve = line("sar-hovercard-source", i18n.t("badge_card_valve"));
     doc.body.append(root);
-    card = { root, more, declared, valve };
+    card = { root, more };
     return card;
   }
 
@@ -276,16 +272,15 @@ export function createHoverCard(
     return node;
   }
 
-  /** The closing lines for the entries: the developer's, then Valve's, as each applies. */
-  function sources(target: Card, entries: readonly AnyDisclosed[]): HTMLElement[] {
-    const lines: HTMLElement[] = [];
-    if (!entries.every(fromValve)) {
-      lines.push(target.declared);
+  /** The closing lines for the entries, once each: the developer's, then each Valve kind's. */
+  function sources(entries: readonly AnyDisclosed[]): HTMLElement[] {
+    const keys = new Set<BareMessageKey>(
+      entries.every(fromValve) ? [] : ["badge_card_declared"],
+    );
+    for (const verdict of entries) {
+      keys.add(sourceLine(verdict));
     }
-    if (entries.some(fromValve)) {
-      lines.push(target.valve);
-    }
-    return lines;
+    return Array.from(keys, (key) => line("sar-hovercard-source", i18n.t(key)));
   }
 
   /** Rebuilds the shown card for other verdicts; the same verdicts keep what is there. */
@@ -296,7 +291,7 @@ export function createHoverCard(
       target.root.replaceChildren(
         ...entries.map(entry),
         target.more,
-        ...sources(target, entries),
+        ...sources(entries),
       );
       // Measured once per fill, on the shown card: the clamp depends on the text and the width.
       target.more.hidden = true;

@@ -20,6 +20,8 @@ export interface KindMessages {
    * it (`kind_facet_chip`), unless the value has a chip of its own.
    */
   readonly chip: BareMessageKey;
+  /** The hover card's line naming the source of a Valve kind; `badge_card_valve` when absent. */
+  readonly source?: BareMessageKey;
 }
 
 /** A value of a kind that a person can choose to tag, such as a rating. */

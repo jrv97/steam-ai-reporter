@@ -11,6 +11,15 @@ const FORBIDDEN = /\buses AI\b|\bAI-free\b|\bno AI\b/i;
 // "none", "free of" or "<tag>-free". Names are each kind's heading and chip in the same catalog.
 const ABSENCE = /(?<![\p{L}\p{N}])(?:none|free of)(?![\p{L}\p{N}])|-free(?![\p{L}\p{N}])/iu;
 
+// The maintainer's wording for Family Sharing's derived value (ADR 0016, amended 2026-10-26),
+// allowed by key and for nothing else: its chip and its hover card line.
+const ALLOWED: ReadonlySet<string> = new Set([
+  "kind_family_unsupported_chip",
+  "kind_family_unsupported_line",
+]);
+
+const ENGLISH = "../src/locales/en/messages.json";
+
 const CatalogSchema = v.record(v.string(), v.object({ message: v.string() }));
 
 const catalogs = import.meta.glob("../src/locales/*/messages.json", {
@@ -40,9 +49,19 @@ function claimsAbsence(message: string, names: readonly string[]): boolean {
   return bare.test(message) || (named.test(message) && ABSENCE.test(message));
 }
 
+/** The keys of the entries that state a tag's absence as a claim, outside the allowed keys. */
+function offending(
+  entries: readonly (readonly [string, string])[],
+  names: readonly string[],
+): readonly string[] {
+  return entries.flatMap(([key, message]) =>
+    !ALLOWED.has(key) && claimsAbsence(message, names) ? [key] : []
+  );
+}
+
 describe("catalog wording", () => {
   it("finds the shipped catalogs", () => {
-    expect(Object.keys(catalogs)).toContain("../src/locales/en/messages.json");
+    expect(Object.keys(catalogs)).toContain(ENGLISH);
   });
 
   it.each(Object.keys(catalogs))(
@@ -60,11 +79,16 @@ describe("catalog wording", () => {
   it.each(Object.keys(catalogs))("%s never states a tag's absence as a claim", (path) => {
     const names = tagNames(path);
     expect(names).toHaveLength(KINDS.length * 2);
-    const offending = messages(path).filter(([, message]) => claimsAbsence(message, names));
-    expect(offending).toEqual([]);
+    expect(offending(messages(path), names)).toEqual([]);
   });
 
-  const english = tagNames("../src/locales/en/messages.json");
+  const english = tagNames(ENGLISH);
+  it.each(english)("catches No %s under every key but the allowed ones", (name) => {
+    const keys = messages(ENGLISH).map(([key]) => key);
+    const negatives = keys.map((key) => [key, `No ${name}`] as const);
+    expect(offending(negatives, english)).toEqual(keys.filter((key) => !ALLOWED.has(key)));
+  });
+
   it.each<readonly [string, (name: string) => string]>([
     ["a bare negative", (name) => `No ${name}`],
     ["a negative in a sentence", (name) => `This game has no ${name}.`],
