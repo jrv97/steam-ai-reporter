@@ -12,6 +12,7 @@ import {
 } from "../../../tests/helpers/verdicts";
 import { COMPAT_FACETS } from "../kinds/compat";
 import { KIND_IDS, type KindId } from "../kinds/id";
+import { kindsInOrder, OVERLAY_CHIPS, parseOrder } from "../kinds/order";
 import { KIND_BY_ID, KINDS } from "../kinds/registry";
 import type { AnyDisclosed } from "../kinds/verdicts";
 import { UNKNOWN } from "../types";
@@ -167,6 +168,46 @@ describe("createBadgeRenderer", () => {
     for (const element of chipsIn(host)) {
       expect(bound.get(element)).toEqual(expected);
     }
+  });
+
+  describe("in the person's tag order", () => {
+    let order: readonly KindId[] = KIND_IDS;
+
+    beforeEach(() => {
+      order = KIND_IDS;
+      renderer = createBadgeRenderer(
+        document,
+        i18n,
+        { bind: (trigger, entries) => bound.set(trigger, entries) },
+        () => kindsInOrder(order),
+      );
+    });
+
+    it.each<readonly KindId[]>([KIND_IDS, parseOrder(["pvp", "eula"]), parseOrder(["drm"])])(
+      "shows the first of %j over an image and every kind in the card, in that order",
+      (...moved) => {
+        order = moved;
+        const { host, image } = capsule();
+        const listed = order.filter((id) => MANY.includes(id));
+        renderer.render(
+          view(host, overlay(image), { verdicts: disclosedKinds(MANY), maxChips: OVERLAY_CHIPS }),
+        );
+        expect(kindsOf(host)).toEqual([...listed.slice(0, OVERLAY_CHIPS), null]);
+        const more = chipsIn(host).at(-1);
+        expect(more === undefined ? undefined : bound.get(more)?.map((v) => v.kind)).toEqual(
+          listed,
+        );
+      },
+    );
+
+    it("draws a host again when only the order changed", () => {
+      const { host, title } = capsule();
+      const drawn = view(host, full(title), { verdicts: disclosedKinds(MANY), maxChips: 5 });
+      renderer.render(drawn);
+      order = parseOrder(["pvp"]);
+      renderer.render(drawn);
+      expect(kindsOf(host)).toEqual(["pvp", "ai", "kernel", "drm", "eula"]);
+    });
   });
 
   describe("past the placement's allowance", () => {

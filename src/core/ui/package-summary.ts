@@ -1,5 +1,6 @@
 import type { KindId } from "../kinds/id";
 import type { FacetDefinition, FacetId, TagKind } from "../kinds/kind";
+import { registryOrder } from "../kinds/order";
 import { KINDS, perKind } from "../kinds/registry";
 import type { MessageCatalog } from "../ports";
 import { HOST_APPID } from "../scan/marks";
@@ -21,13 +22,14 @@ function lineNames(i18n: MessageCatalog, kind: TagKind): readonly string[] {
 }
 
 /**
- * The summary's lines for the hosts in `list`, from the views drawn last; none for nothing. A kind
- * with facets has a line per value it tags.
+ * The summary's lines for the hosts in `list`, from the views drawn last, in the tag order; none
+ * for nothing. A kind with facets has a line per value it tags.
  */
 function summaryLines(
   i18n: MessageCatalog,
   list: Element,
   views: WeakMap<Element, HostView>,
+  order: readonly TagKind[],
 ): string[] {
   const tagged = new Map<string, number>();
   const known: Record<KindId, number> = perKind(() => 0);
@@ -47,7 +49,7 @@ function summaryLines(
       }
     }
   }
-  const lines = KINDS.flatMap((kind) =>
+  const lines = order.flatMap((kind) =>
     lineNames(i18n, kind).flatMap((name) => {
       const count = tagged.get(name);
       return count === undefined
@@ -64,7 +66,11 @@ function summaryLines(
  * Per kind, how many included games with a known verdict show its chip, atop a package page. It
  * keeps each host's last view and draws once per batch, following the capsule UI's own refresh.
  */
-export function createPackageSummary(doc: Document, i18n: MessageCatalog): HostRenderer {
+export function createPackageSummary(
+  doc: Document,
+  i18n: MessageCatalog,
+  order: () => readonly TagKind[] = registryOrder,
+): HostRenderer {
   const views = new WeakMap<Element, HostView>();
   let box: HTMLElement | undefined;
   let drawn = "";
@@ -73,7 +79,7 @@ export function createPackageSummary(doc: Document, i18n: MessageCatalog): HostR
   function draw(): void {
     scheduled = false;
     const found = findList(doc, SUMMARY_PLACEMENTS);
-    const lines = found === undefined ? [] : summaryLines(i18n, found.list, views);
+    const lines = found === undefined ? [] : summaryLines(i18n, found.list, views, order());
     const text = lines.join("\n");
     if (text !== drawn || found === undefined) {
       box?.remove();

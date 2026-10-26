@@ -1,10 +1,11 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { setBody } from "../../../tests/helpers/dom";
 import { hostView, type HostViewOptions } from "../../../tests/helpers/host-view";
 import { englishI18n } from "../../../tests/helpers/i18n";
 import { markedPackagePage } from "../../../tests/helpers/package-page";
 import { disclosedKinds, uniformVerdicts } from "../../../tests/helpers/verdicts";
-import type { KindId } from "../kinds/id";
+import { KIND_IDS, type KindId } from "../kinds/id";
+import { kindsInOrder, parseOrder } from "../kinds/order";
 import { KIND_BY_ID } from "../kinds/registry";
 import { HOST_APPID } from "../scan/marks";
 import type { HostRenderer } from "./host";
@@ -52,15 +53,21 @@ async function draw(
   await Promise.resolve();
 }
 
-/** A package page with one row per view, its summary drawn from them. */
+let order: readonly KindId[] = KIND_IDS;
+
+/** A package page with one row per view, its summary drawn from them in `order`. */
 async function drawnPage(views: readonly Row[]) {
   const rows = markedPackagePage(views.map((_, index) => 10 + index));
-  const renderer = createPackageSummary(document, i18n);
+  const renderer = createPackageSummary(document, i18n, () => kindsInOrder(order));
   await draw(renderer, rows, views);
   return { rows, renderer };
 }
 
 describe("createPackageSummary", () => {
+  beforeEach(() => {
+    order = KIND_IDS;
+  });
+
   it.each<[string, readonly Row[], readonly string[] | undefined]>([
     ["every game carries the kinds", [AI_DRM, AI_DRM, AI_DRM], [
       games("ai", 3, 3),
@@ -95,6 +102,23 @@ describe("createPackageSummary", () => {
     const { rows, renderer } = await drawnPage(before);
     await draw(renderer, rows, after);
     expect(lines()).toStrictEqual(expected);
+  });
+
+  it.each<readonly KindId[]>([KIND_IDS, parseOrder(["pvp", "drm"])])(
+    "lists the kinds in the tag order %j",
+    async (...moved) => {
+      order = moved;
+      await drawnPage([AI_DRM, { verdicts: disclosedKinds(["pvp"]) }]);
+      const expected = order.filter((id) => ["ai", "drm", "pvp"].includes(id));
+      expect(lines()).toStrictEqual(expected.map((id) => games(id, 1, 2)));
+    },
+  );
+
+  it("follows a new order on the next draw", async () => {
+    const { rows, renderer } = await drawnPage([AI_DRM]);
+    order = parseOrder(["drm"]);
+    await draw(renderer, rows, [AI_DRM]);
+    expect(lines()).toStrictEqual([games("drm", 1, 1), games("ai", 1, 1)]);
   });
 
   it("sits right after the package header, above the included games, inside no host", async () => {

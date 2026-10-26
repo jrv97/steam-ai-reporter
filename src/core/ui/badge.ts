@@ -1,6 +1,8 @@
 import { facetOf } from "../kinds/facets";
 import type { KindId } from "../kinds/id";
-import { KIND_BY_ID, KINDS } from "../kinds/registry";
+import type { TagKind } from "../kinds/kind";
+import { registryOrder } from "../kinds/order";
+import { KIND_BY_ID } from "../kinds/registry";
 import { type AnyDisclosed, sameVerdicts } from "../kinds/verdicts";
 import type { MessageCatalog } from "../ports";
 import type { BadgeSlot, CompactSize, HostRenderer } from "./host";
@@ -127,7 +129,10 @@ function sameSlot(a: BadgeSlot, b: BadgeSlot): boolean {
     && (a.kind === "full" ? b.kind === "full" : b.kind === "compact" && a.size === b.size);
 }
 
-/** Whether the lists draw the same chips: the same kinds and values, in the same order. */
+/**
+ * Whether the lists draw the same chips: the same kinds and values in the same order, which makes
+ * a new tag order a change.
+ */
 function sameChips(a: readonly AnyDisclosed[], b: readonly AnyDisclosed[]): boolean {
   return a.length === b.length && a.every((verdict, index) => {
     const other = b[index];
@@ -137,15 +142,16 @@ function sameChips(a: readonly AnyDisclosed[], b: readonly AnyDisclosed[]): bool
 
 /**
  * Draws a host's chips in the slot its placement chose: one text chip for each kind that is
- * disclosed, not ignored and shown by its settings, in registry order. A placement shows at most
- * `maxChips` of them; a "+N" chip stands for the rest. Every chip registers with the hover card,
- * which lists all the kinds. A host with no such kind loses its chips. The chips of a host sit in
- * one group, so a refresh removes and places them as one.
+ * disclosed, not ignored and shown by its settings, in the person's tag order (`order`). A
+ * placement shows the first `maxChips` of them; a "+N" chip stands for the rest. Every chip
+ * registers with the hover card, which lists all the kinds. A host with no such kind loses its
+ * chips. The chips of a host sit in one group, so a refresh removes and places them as one.
  */
 export function createBadgeRenderer(
   doc: Document,
   i18n: MessageCatalog,
   card: CardTriggers,
+  order: () => readonly TagKind[] = registryOrder,
 ): HostRenderer {
   const drawn = new WeakMap<Element, Drawn>();
 
@@ -188,7 +194,7 @@ export function createBadgeRenderer(
   return {
     render({ host, verdicts, allowed, badged, slot, maxChips }) {
       let present: AnyDisclosed[] | undefined;
-      for (const kind of KINDS) {
+      for (const kind of order()) {
         const verdict = verdicts[kind.id];
         if (verdict.state === "disclosed" && !allowed[kind.id] && badged[kind.id]) {
           (present ??= []).push(verdict);

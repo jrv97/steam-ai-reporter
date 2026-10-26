@@ -1,6 +1,6 @@
 import { KIND_IDS, type KindId } from "./id";
 import type { TagKind } from "./kind";
-import { KIND_BY_ID } from "./registry";
+import { KIND_BY_ID, KINDS } from "./registry";
 
 /**
  * Chips a capsule overlay shows, the first kinds of the order: the image is narrow and the store's
@@ -26,6 +26,11 @@ export function parseOrder(stored: readonly unknown[]): readonly KindId[] {
 /** Whether two orders list the same kinds in the same places. */
 export function sameOrder(a: readonly KindId[], b: readonly KindId[]): boolean {
   return a.length === b.length && a.every((id, index) => id === b[index]);
+}
+
+/** The registry's order, for a surface no setting reorders. */
+export function registryOrder(): readonly TagKind[] {
+  return KINDS;
 }
 
 const definitions = new WeakMap<readonly KindId[], readonly TagKind[]>();

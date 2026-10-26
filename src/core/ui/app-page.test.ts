@@ -12,7 +12,8 @@ import {
 } from "../../../tests/helpers/verdicts";
 import type { AiVerdict } from "../kinds/ai";
 import { taggedView } from "../kinds/facets";
-import type { KindId } from "../kinds/id";
+import { KIND_IDS, type KindId } from "../kinds/id";
+import { kindsInOrder, parseOrder } from "../kinds/order";
 import { perKind } from "../kinds/registry";
 import type { AnyDisclosed, KindVerdicts } from "../kinds/verdicts";
 import { type AllowScope, perScope } from "../settings/allow-data";
@@ -67,6 +68,8 @@ interface ViewOptions {
   readonly bannerOff?: readonly KindId[];
   /** Kinds whose badge is switched off. */
   readonly badgeOff?: readonly KindId[];
+  /** The tag order; the registry's by default. */
+  readonly order?: readonly KindId[];
 }
 
 /** What the page draws for the options, with each kind's default values and banner switch. */
@@ -85,6 +88,7 @@ function view(options: ViewOptions = {}): AppPageView {
     creators: [developer],
     badge: perKind((kind) => !badgeOff.includes(kind.id)),
     banner: perKind((kind) => kind.defaults.banner && !bannerOff.includes(kind.id)),
+    order: kindsInOrder(options.order ?? KIND_IDS),
   };
 }
 
@@ -176,6 +180,31 @@ describe("createAppPageUi", () => {
     ]);
     // Steam's features leave Family Sharing out of this paid game; its banner entry starts off.
     expect(chipKinds()).toEqual(["drm", "account", "eula", "iap", "family"]);
+  });
+
+  describe("in the tag order", () => {
+    const SHOWN: readonly KindId[] = ["ai", "kernel", "eula", "pvp"];
+    const MOVED = parseOrder(["pvp", "eula", "ai"]);
+    const shownIn = (order: readonly KindId[]) => order.filter((id) => SHOWN.includes(id));
+    const headingsOf = (ids: readonly KindId[]) =>
+      kindsInOrder(ids).map((kind) => i18n.t(kind.messages.heading));
+
+    it.each<[string, readonly KindId[]]>([["the registry's", KIND_IDS], ["a person's", MOVED]])(
+      "lists the chips and the banner entries in %s order",
+      (_case, order) => {
+        setup().render(view({ verdicts: disclosedKinds(SHOWN), order }));
+        expect(chipKinds()).toEqual(shownIn(order));
+        expect(headings()).toEqual(headingsOf(shownIn(order)));
+      },
+    );
+
+    it("draws both again when only the order changes", () => {
+      const ui = setup();
+      ui.render(view({ verdicts: disclosedKinds(SHOWN) }));
+      ui.render(view({ verdicts: disclosedKinds(SHOWN), order: MOVED }));
+      expect(chipKinds()).toEqual(shownIn(MOVED));
+      expect(headings()).toEqual(headingsOf(shownIn(MOVED)));
+    });
   });
 
   it("gives a game that declares only kernel anti-cheat a section with one chip", () => {
