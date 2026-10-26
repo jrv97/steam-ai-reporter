@@ -48,6 +48,7 @@ async function setup(games: EntriesSpec<number> = {}) {
     lists,
     uiState: createUiState(store),
     context: "page",
+    layout: "tabs",
     colors: true,
     locales: ["en"],
     backup: { files, clock },
@@ -102,6 +103,7 @@ describe("the Backup card", () => {
       lists: createIgnoreLists(store, fixedClock(0)),
       uiState: createUiState(store),
       context: "popup",
+      layout: "list",
       colors: false,
       locales: ["en"],
     });

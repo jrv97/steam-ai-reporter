@@ -32,6 +32,8 @@ import { createUiState } from "./ui-state";
 
 const DAY = 86_400_000;
 const i18n = englishI18n();
+/** The toolbar popup: compact rows, no colors. */
+const POPUP = { context: "popup", layout: "list", colors: false } as const;
 
 function isEventTarget(value: object): value is EventTarget {
   return "addEventListener" in value;
@@ -411,7 +413,7 @@ describe("the color field", () => {
     const page = await setup();
     expect(page.root.querySelectorAll("[data-sar-setting=color]")).toHaveLength(KINDS.length);
     page.form.destroy();
-    const popup = await setup({ context: "popup", colors: false });
+    const popup = await setup(POPUP);
     expect(popup.root.querySelector("[data-sar-setting=color]")).toBeNull();
     expect(popup.root.querySelector("[data-sar-color-reset]")).toBeNull();
     popup.form.destroy();
@@ -707,14 +709,13 @@ describe("the page around the tabs", () => {
     const page = await setup();
     expect(page.root.textContent).toContain(i18n.t("options_privacy_no_reports"));
     document.body.replaceChildren();
-    const popup = await setup({ context: "popup", colors: false });
+    const popup = await setup(POPUP);
     expect(popup.root.textContent).toContain(i18n.t("options_privacy_no_reports"));
   });
 
-  it("renders the product header and the popup's link to all settings when given", async () => {
+  it("renders the product header with the popup's gear to all settings when given", async () => {
     const { root } = await mountForm({
-      context: "popup",
-      colors: false,
+      ...POPUP,
       header: { version: "2026.10.20", iconUrl: "icons/icon-32.png" },
       allSettingsUrl: "options.html",
     });
@@ -726,16 +727,26 @@ describe("the page around the tabs", () => {
     );
     expect(header?.querySelector("img")?.getAttribute("src")).toBe("icons/icon-32.png");
     expect(header?.querySelector("img")?.getAttribute("alt")).toBe("");
-    const link = root.querySelector(".sar-options-footer a");
-    expect(link?.textContent).toBe(i18n.t("options_all_settings"));
-    expect(link?.getAttribute("href")).toBe("options.html");
-    expect(link?.getAttribute("target")).toBe("_blank");
+    const gear = header?.querySelector("a.sar-gear");
+    expect(gear?.getAttribute("aria-label")).toBe(i18n.t("options_all_settings"));
+    expect(gear?.getAttribute("href")).toBe("options.html");
+    expect(gear?.getAttribute("target")).toBe("_blank");
+    expect(gear?.querySelector("svg")?.getAttribute("aria-hidden")).toBe("true");
+    expect(gear?.textContent).toBe("");
+    expect(root.querySelector(".sar-options-footer a")).toBeNull();
   });
 
-  it("renders no header or link by default", async () => {
-    const { root } = await setup({ context: "popup", colors: false });
+  it("keeps the gear small: one path of fewer than 400 bytes", async () => {
+    const { root } = await mountForm({ ...POPUP, header: { version: "1" }, allSettingsUrl: "o" });
+    const svg = root.querySelector(".sar-gear svg");
+    expect(svg?.querySelectorAll("*")).toHaveLength(1);
+    expect(svg?.outerHTML.length).toBeLessThan(400);
+  });
+
+  it("renders no header or gear by default", async () => {
+    const { root } = await setup(POPUP);
     expect(root.querySelector(".sar-options-header")).toBeNull();
-    expect(root.querySelector(".sar-options-footer a")).toBeNull();
+    expect(root.querySelector(".sar-gear")).toBeNull();
   });
 
   it("reads Spanish from the shipped catalog, down to the titles and the tab labels", async () => {
@@ -751,6 +762,115 @@ describe("the page around the tabs", () => {
     }
     expect(panel("ai").textContent).toContain(spanish.t("options_kind_enabled"));
     expect(spanish.t("kind_ai_heading")).not.toBe(i18n.t("kind_ai_heading"));
+  });
+});
+
+describe("the toolbar popup", () => {
+  const rows = (root: HTMLElement) => [...root.querySelectorAll<HTMLElement>(".sar-kind-row")];
+  const row = (root: HTMLElement, id: KindId): HTMLElement => {
+    const found = rows(root).find((each) =>
+      each.querySelector(`[data-sar-open-tab="${id}"]`) !== null
+    );
+    if (found === undefined) {
+      throw new TypeError(id);
+    }
+    return found;
+  };
+  const popup = (overrides: Partial<SettingsFormDeps> = {}) =>
+    setup({ ...POPUP, allSettingsUrl: "options.html", ...overrides });
+
+  it("shows one row per tag, in the order of the tabs, and nothing else to set", async () => {
+    const { root } = await popup();
+    const chips = KINDS.map((kind) => ({ id: kind.id, label: i18n.t(kind.messages.chip) }));
+    const ids = rows(root).map((each) =>
+      each.querySelector("[data-sar-open-tab]")?.getAttribute("data-sar-open-tab")
+    );
+    expect(ids).toEqual(sortTabs(chips, "en").slice(1));
+    const settings = new Set(
+      [...root.querySelectorAll("[data-sar-setting]")].map((each) =>
+        each.getAttribute("data-sar-setting")
+      ),
+    );
+    expect(settings).toEqual(new Set(["enabled", "filter"]));
+    for (const absent of ["[role=tab]", "select", ".sar-allow-group", ".sar-empty", "section"]) {
+      expect(root.querySelector(absent), absent).toBeNull();
+    }
+  });
+
+  it.each(KINDS.map((kind) => kind.id))(
+    "links %s's name to its tab and names its switch and filter by it",
+    async (id) => {
+      const { root } = await popup();
+      const link = row(root, id).querySelector("a");
+      expect(link?.getAttribute("href")).toBe(`options.html#tab=${id}`);
+      expect(link?.getAttribute("target")).toBe("_blank");
+      expect(link?.querySelector(".sar-vh")?.textContent).toBe(
+        chipName(i18n, link?.querySelector(".sar-tab-label")?.textContent ?? "", heading(id)),
+      );
+      const enabled = row(root, id).querySelector("[data-sar-setting=enabled]");
+      expect(enabled?.getAttribute("role")).toBe("switch");
+      expect(enabled?.getAttribute("aria-labelledby")).toBe(link?.id);
+      const labels = row(root, id).querySelector("fieldset")?.getAttribute("aria-labelledby");
+      const names = (labels ?? "").split(" ").map((each) => root.querySelector(`#${each}`));
+      expect(names.map((name) => name?.textContent)).toEqual([
+        link?.textContent,
+        i18n.t("options_filter_label"),
+      ]);
+    },
+  );
+
+  it("saves the switch and the filter of a row, and disables the filter while off", async () => {
+    const { root, settings } = await popup();
+    const hide = row(root, "kernel").querySelector<HTMLInputElement>("[value=hide]");
+    if (hide === null) {
+      throw new TypeError();
+    }
+    hide.checked = true;
+    change(hide);
+    await vi.waitFor(async () => {
+      expect(parseSettings(await settings.read()).kinds.kernel.filter).toBe("hide");
+    });
+    const enabled = row(root, "kernel").querySelector<HTMLInputElement>("[role=switch]");
+    if (enabled === null) {
+      throw new TypeError();
+    }
+    enabled.checked = false;
+    change(enabled);
+    await vi.waitFor(async () => {
+      expect(parseSettings(await settings.read()).kinds.kernel.enabled).toBe(false);
+    });
+    expect(row(root, "kernel").querySelector("fieldset")?.disabled).toBe(true);
+    expect(row(root, "pvp").querySelector("fieldset")?.disabled).toBe(true);
+    expect(row(root, "ai").querySelector("fieldset")?.disabled).toBe(false);
+  });
+
+  it("hands a click on a tag's name to the page, which opens its tab", async () => {
+    const openTab = vi.fn();
+    const { root } = await popup({ openTab });
+    const link = row(root, "drm").querySelector("a");
+    const click = new MouseEvent("click", { bubbles: true, cancelable: true });
+    link?.querySelector(".sar-tab-label")?.dispatchEvent(click);
+    expect(openTab.mock.calls).toEqual([["drm"]]);
+    expect(click.defaultPrevented).toBe(true);
+  });
+
+  it("leaves the link to the browser when the page has no way to open a tab", async () => {
+    const { root } = await popup();
+    const click = new MouseEvent("click", { bubbles: true, cancelable: true });
+    row(root, "drm").querySelector("a")?.dispatchEvent(click);
+    expect(click.defaultPrevented).toBe(false);
+  });
+
+  it("reads no ignore list and no remembered tab", async () => {
+    const lists = createIgnoreLists(memoryStore(), fixedClock(0));
+    const store = countingStore(memoryStore());
+    const reads = [lists.games, ...CREATOR_ROLES.map((role) => lists.creators[role])].map((list) =>
+      vi.spyOn(list, "list")
+    );
+    const { form } = await popup({ lists, uiState: createUiState(store) });
+    await form.refreshAllowList();
+    expect(reads.flatMap((read) => read.mock.calls)).toEqual([]);
+    expect(store.calls.get).toBe(0);
   });
 });
 

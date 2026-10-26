@@ -5,10 +5,16 @@ import { createIgnoreLists } from "../../core/ignored";
 import { AUTO_LOCALE, parseSettings } from "../../core/settings/settings";
 import { ALLOW_KEY, CREATOR_ALLOW_KEYS, UI_STATE_KEY } from "../../core/storage-keys";
 import { mountSettingsForm, type SettingsContext } from "../../core/ui/settings-form";
-import { parseTabHash, tabHash } from "../../core/ui/tab-id";
-import { createUiState, decodeTabRequest } from "../../core/ui/ui-state";
+import { parseTabHash, tabHash, type TabId } from "../../core/ui/tab-id";
+import { createUiState, decodeTabRequest, type UiState } from "../../core/ui/ui-state";
 import { createFileTransfer } from "../shared/file-transfer";
-import { extensionUrl, extensionVersion, localStorageArea, onLocalChanged } from "./ext";
+import {
+  extensionUrl,
+  extensionVersion,
+  localStorageArea,
+  onLocalChanged,
+  openOptionsPage,
+} from "./ext";
 import { CATALOGS } from "./options.catalogs.gen";
 import { createExtensionSettings, createExtensionStore } from "./store";
 
@@ -45,6 +51,20 @@ function fillText(doc: Document, i18n: I18n): void {
   }
 }
 
+/**
+ * From a popup row: asks an open options page for the tab and focuses it, or opens the page,
+ * which reads the same request. Without the API, the row's own link opens the tab.
+ */
+async function openTab(uiState: UiState, id: TabId, optionsUrl: string): Promise<void> {
+  try {
+    await uiState.requestTab(id, Date.now());
+    await openOptionsPage();
+  } catch {
+    open(`${optionsUrl}${tabHash(id)}`, "_blank", "noopener");
+  }
+  close();
+}
+
 async function main(): Promise<void> {
   const context = pageContext();
   const store = createExtensionStore(localStorageArea);
@@ -69,12 +89,14 @@ async function main(): Promise<void> {
 
   const page = context === "page";
   const initialTab = page ? parseTabHash(location.hash) : undefined;
+  const optionsUrl = extensionUrl(OPTIONS_PAGE);
   const form = await mountSettingsForm(document.body, {
     i18n,
     settings,
     lists,
     uiState,
     context,
+    layout: page ? "tabs" : "list",
     colors: page,
     locales: Object.keys(catalogs),
     header: { version: extensionVersion(), iconUrl: extensionUrl(ICONS[context]) },
@@ -87,7 +109,7 @@ async function main(): Promise<void> {
           history.replaceState(null, "", tabHash(id));
         },
       }
-      : { allSettingsUrl: extensionUrl(OPTIONS_PAGE) }),
+      : { allSettingsUrl: optionsUrl, openTab: (id) => void openTab(uiState, id, optionsUrl) }),
   });
 
   // The page's own copy follows a new language on the next load; reload now.

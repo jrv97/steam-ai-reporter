@@ -58,6 +58,11 @@ export function extensionVersion(): string {
   return api.runtime.getManifest().version;
 }
 
+/** Focuses the open options page, or opens it in a tab; the manifest's `options_ui` names it. */
+export function openOptionsPage(): Promise<void> {
+  return api.runtime.openOptionsPage();
+}
+
 /** The absolute URL of a file packaged with the extension. */
 export function extensionUrl(path: string): string {
   return api.runtime.getURL(path);

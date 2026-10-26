@@ -213,6 +213,77 @@
   }
 }
 
+/* Popup: the gear at the end of the header, which stays in view, and one row per tag with its
+   name, list filter and master switch. A tag that is off keeps its filter, disabled. */
+.sar-options[data-sar-view="list"] .sar-options-header {
+  position: sticky;
+  inset-block-start: 0;
+  z-index: 1;
+  background: var(--sar-color-bg-panel);
+}
+
+.sar-gear {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  inline-size: var(--sar-control-height-sm);
+  block-size: var(--sar-control-height-sm);
+  margin-inline-start: auto;
+  border-radius: var(--sar-radius-sm);
+}
+
+.sar-gear:hover {
+  background: var(--sar-button-secondary-bg);
+}
+
+.sar-gear svg {
+  inline-size: 20px;
+  block-size: 20px;
+  fill: currentColor;
+}
+
+.sar-kind-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  column-gap: var(--sar-space-2);
+  padding-block: var(--sar-space-1);
+}
+
+.sar-kind-row + .sar-kind-row {
+  border-block-start: 1px solid var(--sar-color-divider);
+}
+
+.sar-options .sar-kind-link {
+  overflow: hidden;
+  color: var(--sar-color-text);
+  text-decoration: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sar-options .sar-kind-link:hover {
+  text-decoration: underline;
+}
+
+.sar-kind-row .sar-segment label {
+  min-block-size: var(--sar-control-height-xs);
+  padding-block: 0;
+  font-size: var(--sar-size-sm);
+}
+
+.sar-segment:disabled label {
+  color: var(--sar-color-text-subtle);
+  cursor: default;
+}
+
+.sar-segment:disabled input:checked + label {
+  border-color: var(--sar-color-border);
+  background: none;
+  color: var(--sar-color-text-subtle);
+}
+
 /* The label wraps in column 1; the switch keeps column 2 */
 .sar-field {
   display: grid;

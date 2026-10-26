@@ -21,6 +21,7 @@ export function formDeps(overrides: Partial<SettingsFormDeps> = {}): SettingsFor
     lists: createIgnoreLists(memoryStore(), fixedClock(0)),
     uiState: createUiState(memoryStore()),
     context: "page",
+    layout: "tabs",
     colors: true,
     locales: ["en"],
     ...overrides,

@@ -83,6 +83,20 @@ describe("openSettingsDialog", () => {
     expect(stored.kinds.ai.color).toBe("#00ff00");
   });
 
+  it("has the language picker in General, and its tabs keep the store's address", async () => {
+    const store = memoryStore();
+    await openSettingsDialog(deps(true, store));
+
+    const general = dialog()?.querySelector("[role=tabpanel]:not([hidden])");
+    expect(general?.querySelector("select[data-sar-setting='locale']")).not.toBeNull();
+    const before = location.href;
+    dialog()?.querySelector<HTMLElement>("[role=tab][data-sar-tab='drm']")?.click();
+    expect(location.href).toBe(before);
+    await vi.waitFor(async () => {
+      expect(await createUiState(store).read()).toBe("drm");
+    });
+  });
+
   it("opens only one dialog", async () => {
     await openSettingsDialog(deps(true));
     await openSettingsDialog(deps(true));

@@ -79,6 +79,7 @@ export async function openSettingsDialog(deps: SettingsDialogDeps): Promise<void
     lists: deps.lists,
     uiState: deps.uiState,
     context: "popup",
+    layout: "tabs",
     colors: true,
     locales: Object.keys(deps.catalogs),
     // The page around a modal dialog is inert, so the file input lives inside it

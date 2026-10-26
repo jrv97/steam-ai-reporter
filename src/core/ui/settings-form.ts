@@ -32,12 +32,15 @@ import { createBackupCard } from "./backup-card";
 import { KIND_ATTRIBUTE, setColorOnce } from "./kind-attributes";
 import { chipName } from "./kind-details";
 import { adoptStyles, SETTINGS_CSS, TOKENS_CSS } from "./styles";
-import { GENERAL_TAB, sortTabs, type TabId } from "./tab-id";
-import { createTabs } from "./tabs";
+import { GENERAL_TAB, sortTabs, tabHash, type TabId, toTabId } from "./tab-id";
+import { createTabs, type Tabs } from "./tabs";
 import type { UiState } from "./ui-state";
 
 /** The full options page, or the compact toolbar popup and userscript dialog. */
 export type SettingsContext = "page" | "popup";
+
+/** Tabs with every setting, or a row per tag with its name, list filter and master switch. */
+export type SettingsLayout = "tabs" | "list";
 
 /** The product heading above the cards: name, version and, where an icon file ships, the icon. */
 export interface SettingsHeader {
@@ -56,6 +59,8 @@ export interface SettingsFormDeps {
   readonly uiState: UiState;
   /** Density and the page-only pieces: the privacy card and the long footer. */
   readonly context: SettingsContext;
+  /** Tabs on the page and in the dialog; one row per tag in the toolbar popup. */
+  readonly layout: SettingsLayout;
   /**
    * Whether each tag gets a color field. The full page and the userscript dialog show it; the
    * toolbar popup does not. It is a capability, not a context, so the layout stays the same.
@@ -65,8 +70,10 @@ export interface SettingsFormDeps {
   readonly locales: readonly string[];
   /** Renders the product heading; omitted where the host already titles the form. */
   readonly header?: SettingsHeader;
-  /** The full options page, linked from the popup footer as "All settings". */
+  /** The full options page, behind the popup's gear and its tag names. */
   readonly allSettingsUrl?: string;
+  /** Opens a tag's tab on the options page from a popup row; the row's link does without it. */
+  readonly openTab?: (id: TabId) => void;
   /** Gives the form its Backup card; the toolbar popup has none. */
   readonly backup?: BackupFormDeps;
   /** The tab to show first, from the page's location fragment; else the stored one. */
@@ -98,6 +105,16 @@ const NO_OPENER = "noopener";
 /** ARIA tokens, not copy. */
 const TRUE = "true";
 const TAB_ROLE = "tab";
+/** Names the tab a popup row's link opens. */
+const OPEN_TAB_ATTRIBUTE = "data-sar-open-tab";
+/**
+ * An original gear, eight teeth around a hole on a 48 unit grid. HTML parsing puts it in the SVG
+ * namespace, so no namespace URL enters the bundle.
+ */
+const GEAR_SVG = '<svg viewBox="0 0 48 48" aria-hidden="true" focusable="false">'
+  + '<path fill-rule="evenodd" d="M40 26 45 30 43 35 37 34 34 37 35 43 30 45 26 40 22 40 18 45 '
+  + "13 43 14 37 11 34 5 35 3 30 8 26 8 22 3 18 5 13 11 14 14 11 13 5 18 3 22 8 26 8 30 3 35 5 34 "
+  + '11 37 14 43 13 45 18 40 22ZM31 24a7 7 0 1 0-14 0 7 7 0 1 0 14 0Z"/></svg>';
 
 /** The header icon's rendered size in CSS pixels (components.mdx section 6). */
 const ICON_SIZE = 32;
@@ -139,13 +156,13 @@ interface ColorControls {
 
 /** The controls of one kind, which `sync` sets from the stored settings. */
 interface KindControls {
-  /** The controls below the master switch; hidden while the kind is off. */
+  /** What the master switch turns off: hidden on a tab, a disabled fieldset in a popup row. */
   readonly options: HTMLElement;
-  /** The on or off cue on the kind's tab. */
-  readonly state: HTMLElement;
-  readonly switches: Readonly<Record<SwitchField, HTMLInputElement>>;
+  /** The on or off cue on the kind's tab; a popup row has none. */
+  readonly state: HTMLElement | undefined;
+  readonly switches: ReadonlyMap<SwitchField, HTMLInputElement>;
   readonly radios: ReadonlyMap<ListFilter, HTMLInputElement>;
-  readonly filterHelp: HTMLElement;
+  readonly filterHelp: HTMLElement | undefined;
   /** One checkbox per value a kind with facets can tag; empty for the other kinds. */
   readonly facets: ReadonlyMap<FacetId, HTMLInputElement>;
   /** Absent where the form has no color fields. */
@@ -223,7 +240,9 @@ export async function mountSettingsForm(
       return undefined;
     }
   }
-  const firstTab = deps.initialTab === undefined ? readTab() : Promise.resolve(deps.initialTab);
+  const firstTab = deps.initialTab !== undefined || deps.layout === "list"
+    ? Promise.resolve(deps.initialTab)
+    : readTab();
 
   function element<K extends keyof HTMLElementTagNameMap>(
     tag: K,
@@ -286,7 +305,25 @@ export async function mountSettingsForm(
       element("div", "sar-options-version", i18n.t("options_version", { version: info.version })),
     );
     node.append(text);
+    if (deps.allSettingsUrl !== undefined) {
+      node.append(gear(deps.allSettingsUrl));
+    }
     return node;
+  }
+
+  /** The popup's way to every setting: a gear link, the one icon in the settings chrome. */
+  function gear(url: string): HTMLElement {
+    const link = element("a", "sar-gear");
+    link.href = url;
+    link.target = NEW_TAB;
+    link.rel = NO_OPENER;
+    link.title = i18n.t("options_all_settings");
+    link.setAttribute("aria-label", link.title);
+    const icon = new DOMParser().parseFromString(GEAR_SVG, "text/html").body.firstElementChild;
+    if (icon !== null) {
+      link.append(doc.importNode(icon, true));
+    }
+    return link;
   }
 
   const errors = new Map<string, HTMLElement>();
@@ -315,6 +352,31 @@ export async function mountSettingsForm(
     return { row, input };
   }
 
+  /** Show, Dim and Hide: a fieldset of radios, labelled by the elements `labelledBy` names. */
+  function filterSegment(kind: TagKind, labelledBy: string): {
+    readonly segment: HTMLFieldSetElement;
+    readonly radios: ReadonlyMap<ListFilter, HTMLInputElement>;
+  } {
+    const segment = element("fieldset", "sar-segment");
+    segment.setAttribute("aria-labelledby", labelledBy);
+    const name = `${prefix}${kind.id}-filter-value`;
+    const radios = new Map<ListFilter, HTMLInputElement>();
+    for (const value of LIST_FILTERS) {
+      const input = element("input", "");
+      input.type = "radio";
+      input.name = name;
+      input.id = `${name}-${value}`;
+      input.value = value;
+      input.setAttribute("data-sar-setting", "filter");
+      input.setAttribute("data-sar-for", kind.id);
+      radios.set(value, input);
+      const text = element("label", "", i18n.t(FILTER_LABELS[value]));
+      text.htmlFor = input.id;
+      segment.append(input, text);
+    }
+    return { segment, radios };
+  }
+
   /** The list filter: a labelled fieldset of radios, with help that follows the choice. */
   function filterField(kind: TagKind): {
     readonly row: HTMLElement;
@@ -325,22 +387,7 @@ export async function mountSettingsForm(
     row.setAttribute("data-sar-layout", "stacked");
     const label = element("span", "sar-field-label", i18n.t("options_filter_label"));
     label.id = `${prefix}${kind.id}-filter`;
-    const segment = element("fieldset", "sar-segment");
-    segment.setAttribute("aria-labelledby", label.id);
-    const radios = new Map<ListFilter, HTMLInputElement>();
-    for (const value of LIST_FILTERS) {
-      const input = element("input", "");
-      input.type = "radio";
-      input.name = label.id;
-      input.id = `${label.id}-${value}`;
-      input.value = value;
-      input.setAttribute("data-sar-setting", "filter");
-      input.setAttribute("data-sar-for", kind.id);
-      radios.set(value, input);
-      const text = element("label", "", i18n.t(FILTER_LABELS[value]));
-      text.htmlFor = input.id;
-      segment.append(input, text);
-    }
+    const { segment, radios } = filterSegment(kind, label.id);
     const help = element("span", "sar-field-help");
     const error = fieldError();
     errors.set(errorKey("filter", kind.id), error);
@@ -468,13 +515,60 @@ export async function mountSettingsForm(
     controls.set(kind.id, {
       options,
       state,
-      switches: { enabled: enabled.input, badge: badge.input, banner: banner.input },
+      switches: new Map([
+        ["enabled", enabled.input],
+        ["badge", badge.input],
+        ["banner", banner.input],
+      ]),
       radios: filter.radios,
       filterHelp: filter.help,
       facets: facets?.boxes ?? new Map(),
       color: color?.controls,
     });
     return section;
+  }
+
+  /** A tag's chip word, shown, and its full name for screen readers, which starts with it. */
+  function kindName(kind: TagKind): readonly HTMLElement[] {
+    const chip = i18n.t(kind.messages.chip);
+    const label = element("span", "sar-tab-label", chip);
+    label.setAttribute("aria-hidden", TRUE);
+    return [label, element("span", "sar-vh", chipName(i18n, chip, i18n.t(kind.messages.heading)))];
+  }
+
+  /** A popup row: the tag's name, a link to its tab, then its list filter and master switch. */
+  function kindRow(kind: TagKind): HTMLElement {
+    const row = element("div", "sar-kind-row");
+    const link = element("a", "sar-kind-link");
+    link.id = `${prefix}${kind.id}-name`;
+    link.href = `${deps.allSettingsUrl ?? ""}${tabHash(kind.id)}`;
+    link.target = NEW_TAB;
+    link.rel = NO_OPENER;
+    link.setAttribute(OPEN_TAB_ATTRIBUTE, kind.id);
+    link.append(...kindName(kind));
+    const filterName = element("span", "sar-vh", i18n.t("options_filter_label"));
+    filterName.id = `${prefix}${kind.id}-filter`;
+    const { segment, radios } = filterSegment(kind, `${link.id} ${filterName.id}`);
+    const enabled = element("input", "sar-toggle");
+    enabled.type = "checkbox";
+    enabled.setAttribute("role", "switch");
+    enabled.setAttribute("aria-labelledby", link.id);
+    enabled.setAttribute("data-sar-setting", "enabled");
+    enabled.setAttribute("data-sar-for", kind.id);
+    const error = fieldError();
+    errors.set(errorKey("enabled", kind.id), error);
+    errors.set(errorKey("filter", kind.id), error);
+    row.append(link, filterName, segment, enabled, error);
+    controls.set(kind.id, {
+      options: segment,
+      state: undefined,
+      switches: new Map([["enabled", enabled]]),
+      radios,
+      filterHelp: undefined,
+      facets: new Map(),
+      color: undefined,
+    });
+    return row;
   }
 
   /** The card of what is ignored in a scope, drawn by `renderScope` from the lists. */
@@ -496,105 +590,113 @@ export async function mountSettingsForm(
     KINDS.map((kind) => ({ id: kind.id, label: i18n.t(kind.messages.chip) })),
     i18n.locale,
   );
-  const tabs = createTabs({
-    doc,
-    ids: tabIds,
-    idPrefix: prefix,
-    label: i18n.t("options_tabs_label"),
-  });
+  const tabs = deps.layout === "list"
+    ? undefined
+    : createTabs({ doc, ids: tabIds, idPrefix: prefix, label: i18n.t("options_tabs_label") });
   const scopes = new Map<AllowScope, ScopeCard>();
-
-  const general = tabs.panel(GENERAL_TAB);
-  tabs.tab(GENERAL_TAB).textContent = i18n.t("options_tab_general");
-  general.append(element("h2", "sar-panel-title", i18n.t("options_tab_general")));
-
-  for (const kind of KINDS) {
-    const chip = i18n.t(kind.messages.chip);
-    const label = element("span", "sar-tab-label", chip);
-    label.setAttribute("aria-hidden", TRUE);
-    const name = element("span", "sar-vh", chipName(i18n, chip, i18n.t(kind.messages.heading)));
-    const state = element("span", "sar-tab-state");
-    tabs.tab(kind.id).append(label, name, " ", state);
-    const ignored = scopeCard(kind.id, "options_allow_kind_title");
-    scopes.set(kind.id, ignored);
-    tabs.panel(kind.id).append(kindCard(kind, state), ignored.section);
-  }
-
-  // General: language, color help, what is ignored for all tags, backup and privacy
-  const languageCard = card(i18n.t("options_section_language"), "language");
-  const languageField = element("div", "sar-field");
-  languageField.setAttribute("data-sar-layout", "stacked");
-  const languageLabel = element("label", "sar-field-label", i18n.t("options_language_label"));
-  const picker = element("select", "sar-select");
-  picker.id = `${prefix}locale`;
-  picker.setAttribute("data-sar-setting", "locale");
-  languageLabel.htmlFor = picker.id;
-  const auto = element("option", "", i18n.t("options_language_auto"));
-  auto.value = AUTO_LOCALE;
-  picker.append(auto);
-  for (const locale of deps.locales) {
-    const option = element("option", "", autonym(locale));
-    option.value = locale;
-    option.lang = languageTag(locale);
-    picker.append(option);
-  }
-  const languageError = fieldError();
-  errors.set(errorKey("locale"), languageError);
-  languageField.append(
-    languageLabel,
-    picker,
-    element("span", "sar-field-help", i18n.t("options_language_help")),
-    languageError,
-  );
-  languageCard.append(languageField);
-  general.append(languageCard);
-
-  if (deps.colors) {
-    const colors = card(i18n.t("options_color_label"), "colors");
-    colors.append(colorHelp);
-    general.append(colors);
-  }
-
-  const allIgnored = scopeCard(ALLOW_ALL, "options_allow_all_title");
-  scopes.set(ALLOW_ALL, allIgnored);
-  general.append(allIgnored.section);
-
   const live = element("div", "sar-vh");
   live.setAttribute("aria-live", POLITE);
+  // The popup's rows follow the tabs' order
+  const rows = element("div", "sar-kind-rows");
+  for (const id of tabs === undefined ? tabIds : []) {
+    if (id !== GENERAL_TAB) {
+      rows.append(kindRow(KIND_BY_ID[id]));
+    }
+  }
+  const built = tabs === undefined ? undefined : tabbedBody(tabs);
 
-  if (deps.backup !== undefined) {
-    general.append(
-      createBackupCard(doc, {
-        ...deps.backup,
-        settings,
-        lists,
-        i18n,
-        dates,
-        idPrefix: prefix,
-        announce: (text) => {
-          announce(doc, live, text);
-        },
-        onRestored: refreshAllowList,
-      }),
+  /** General, then a tab per kind with its settings and what is ignored for it. */
+  function tabbedBody(tabs: Tabs<TabId>): {
+    readonly frame: HTMLElement;
+    readonly picker: HTMLSelectElement;
+    readonly allIgnored: ScopeCard;
+  } {
+    const general = tabs.panel(GENERAL_TAB);
+    tabs.tab(GENERAL_TAB).textContent = i18n.t("options_tab_general");
+    general.append(element("h2", "sar-panel-title", i18n.t("options_tab_general")));
+
+    for (const kind of KINDS) {
+      const state = element("span", "sar-tab-state");
+      tabs.tab(kind.id).append(...kindName(kind), " ", state);
+      const ignored = scopeCard(kind.id, "options_allow_kind_title");
+      scopes.set(kind.id, ignored);
+      tabs.panel(kind.id).append(kindCard(kind, state), ignored.section);
+    }
+
+    // General: language, color help, what is ignored for all tags, backup and privacy
+    const languageCard = card(i18n.t("options_section_language"), "language");
+    const languageField = element("div", "sar-field");
+    languageField.setAttribute("data-sar-layout", "stacked");
+    const languageLabel = element("label", "sar-field-label", i18n.t("options_language_label"));
+    const picker = element("select", "sar-select");
+    picker.id = `${prefix}locale`;
+    picker.setAttribute("data-sar-setting", "locale");
+    languageLabel.htmlFor = picker.id;
+    const auto = element("option", "", i18n.t("options_language_auto"));
+    auto.value = AUTO_LOCALE;
+    picker.append(auto);
+    for (const locale of deps.locales) {
+      const option = element("option", "", autonym(locale));
+      option.value = locale;
+      option.lang = languageTag(locale);
+      picker.append(option);
+    }
+    const languageError = fieldError();
+    errors.set(errorKey("locale"), languageError);
+    languageField.append(
+      languageLabel,
+      picker,
+      element("span", "sar-field-help", i18n.t("options_language_help")),
+      languageError,
     );
-  }
+    languageCard.append(languageField);
+    general.append(languageCard);
 
-  if (context === "page") {
-    const privacy = card(i18n.t("options_section_privacy"), "privacy");
-    const bullets = element("ul", "sar-privacy");
-    const keys: readonly BareMessageKey[] = [
-      "options_privacy_no_reports",
-      "options_privacy_storage",
-      "options_privacy_lookup",
-      "options_privacy_nothing_sent",
-    ];
-    bullets.append(...keys.map((key) => element("li", "", i18n.t(key))));
-    privacy.append(bullets);
-    general.append(privacy);
-  }
+    if (deps.colors) {
+      const colors = card(i18n.t("options_color_label"), "colors");
+      colors.append(colorHelp);
+      general.append(colors);
+    }
 
-  const frame = element("div", "sar-tabs");
-  frame.append(tabs.list, ...tabIds.map((id) => tabs.panel(id)));
+    const allIgnored = scopeCard(ALLOW_ALL, "options_allow_all_title");
+    scopes.set(ALLOW_ALL, allIgnored);
+    general.append(allIgnored.section);
+
+    if (deps.backup !== undefined) {
+      general.append(
+        createBackupCard(doc, {
+          ...deps.backup,
+          settings,
+          lists,
+          i18n,
+          dates,
+          idPrefix: prefix,
+          announce: (text) => {
+            announce(doc, live, text);
+          },
+          onRestored: refreshAllowList,
+        }),
+      );
+    }
+
+    if (context === "page") {
+      const privacy = card(i18n.t("options_section_privacy"), "privacy");
+      const bullets = element("ul", "sar-privacy");
+      const keys: readonly BareMessageKey[] = [
+        "options_privacy_no_reports",
+        "options_privacy_storage",
+        "options_privacy_lookup",
+        "options_privacy_nothing_sent",
+      ];
+      bullets.append(...keys.map((key) => element("li", "", i18n.t(key))));
+      privacy.append(bullets);
+      general.append(privacy);
+    }
+
+    const frame = element("div", "sar-tabs");
+    frame.append(tabs.list, ...tabIds.map((id) => tabs.panel(id)));
+    return { frame, picker, allIgnored };
+  }
 
   const footer = element("div", "sar-options-footer");
   if (context === "popup") {
@@ -607,22 +709,14 @@ export async function mountSettingsForm(
       i18n.t(context === "popup" ? "options_unaffiliated_short" : "options_unaffiliated"),
     ),
   );
-  if (deps.allSettingsUrl !== undefined) {
-    const link = element("a", "", i18n.t("options_all_settings"));
-    link.href = deps.allSettingsUrl;
-    link.target = NEW_TAB;
-    link.rel = NO_OPENER;
-    const line = element("p", "");
-    line.append(link);
-    footer.append(line);
-  }
 
   const top: HTMLElement[] = deps.header === undefined ? [] : [header(deps.header)];
-  tabs.select((await firstTab) ?? GENERAL_TAB);
+  tabs?.select((await firstTab) ?? GENERAL_TAB);
   root.classList.add("sar-options");
   root.setAttribute("data-sar-context", context);
+  root.setAttribute("data-sar-view", deps.layout);
   // Above the tabs, where no tab can hide it
-  root.replaceChildren(...top, loadError, frame, footer, live);
+  root.replaceChildren(...top, loadError, built?.frame ?? rows, footer, live);
 
   /** Controls stay off while the load error shows, so no save puts defaults over v1 data. */
   const settingControls = root.querySelectorAll<HTMLInputElement | HTMLSelectElement>(
@@ -656,24 +750,34 @@ export async function mountSettingsForm(
   function sync(): void {
     for (const [id, own] of controls) {
       const kind = current.kinds[id];
-      own.switches.enabled.checked = kind.enabled;
-      own.switches.badge.checked = kind.badge;
-      own.switches.banner.checked = kind.banner;
+      for (const [field, input] of own.switches) {
+        input.checked = kind[field];
+      }
       for (const [value, input] of own.radios) {
         input.checked = value === kind.filter;
       }
-      own.filterHelp.textContent = i18n.t(FILTER_HELP[kind.filter]);
+      if (own.filterHelp !== undefined) {
+        own.filterHelp.textContent = i18n.t(FILTER_HELP[kind.filter]);
+      }
       for (const [facet, box] of own.facets) {
         box.checked = kind.facets?.includes(facet) ?? false;
       }
       if (own.color !== undefined) {
         syncColor(id, own.color, kind.color);
       }
-      own.options.hidden = !kind.enabled;
-      own.state.textContent = i18n.t(kind.enabled ? "options_state_on" : "options_state_off");
-      own.state.toggleAttribute("data-sar-on", kind.enabled);
+      if (own.options instanceof HTMLFieldSetElement) {
+        own.options.disabled = !kind.enabled;
+      } else {
+        own.options.hidden = !kind.enabled;
+      }
+      if (own.state !== undefined) {
+        own.state.textContent = i18n.t(kind.enabled ? "options_state_on" : "options_state_off");
+        own.state.toggleAttribute("data-sar-on", kind.enabled);
+      }
     }
-    picker.value = current.locale;
+    if (built !== undefined) {
+      built.picker.value = current.locale;
+    }
   }
 
   /** The patch for a control's value; an invalid value becomes the default. */
@@ -880,6 +984,9 @@ export async function mountSettingsForm(
 
   /** Reads each list once, then draws every scope from what was read. */
   async function refreshAllowList(): Promise<void> {
+    if (scopes.size === 0) {
+      return;
+    }
     await Promise.all(sources.map((source) => source.refresh()));
     renderScopes();
   }
@@ -952,23 +1059,31 @@ export async function mountSettingsForm(
 
   /** Shows a tab after the first: remembered, and told to the page. */
   function show(id: TabId): void {
-    if (tabs.select(id)) {
+    if (tabs?.select(id) === true) {
       void remember(id);
       deps.onTabChange?.(id);
     }
   }
 
-  function onClick(target: EventTarget | null): void {
+  function onClick(event: Event | undefined, target: EventTarget | null): void {
     if (!(target instanceof Element)) {
       return;
     }
-    const tab = tabs.idOf(target);
+    const tab = tabs?.idOf(target);
     if (tab !== undefined) {
       show(tab);
       // Show in General leads to the list it counts
       if (target.closest(`[role=${TAB_ROLE}]`) === null) {
-        allIgnored.title.focus();
+        built?.allIgnored.title.focus();
       }
+      return;
+    }
+    const open = toTabId(
+      target.closest(`[${OPEN_TAB_ATTRIBUTE}]`)?.getAttribute(OPEN_TAB_ATTRIBUTE),
+    );
+    if (open !== undefined && event !== undefined && deps.openTab !== undefined) {
+      event.preventDefault();
+      deps.openTab(open);
       return;
     }
     const reset = target.closest<HTMLElement>(`[${COLOR_RESET_ATTRIBUTE}]`);
@@ -983,11 +1098,11 @@ export async function mountSettingsForm(
   }
 
   function onKeydown(event: KeyboardEvent): void {
-    const next = tabs.target(event);
+    const next = tabs?.target(event);
     if (next !== undefined) {
       event.preventDefault();
       show(next);
-      tabs.tab(next).focus();
+      tabs?.tab(next).focus();
     }
   }
 
@@ -1005,7 +1120,7 @@ export async function mountSettingsForm(
         }
         break;
       default:
-        onClick(event.target);
+        onClick(event, event.target);
     }
   }
 
