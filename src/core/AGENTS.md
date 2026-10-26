@@ -88,3 +88,4 @@ The banner adds a closed `details` per game that lists its creators, one row per
 - CSS classes and data attributes use the prefix `sar-` and `data-sar-*`; errors are `SarError` with a catalog-key `code`.
 - Efficiency is a requirement (rule 13, efficiency): scan only added subtrees, batch DOM reads before writes, no per-node closures or listeners, `WeakSet` and `WeakMap` keyed by elements, bounded caches, no polling.
 - Tests sit next to the module as `*.test.ts` and use the builders in `tests/helpers/`.
+- A backup (`backup/`) is read by the same schemas that read storage. A new setting or list reaches the file through `encodeSettings` or `encodeAllow`; a change to the file's shape bumps `BACKUP_VERSION` with an upgrade step in `UPGRADES`.

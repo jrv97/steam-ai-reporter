@@ -502,7 +502,7 @@ Preview: `previews/OptionsPage.html`.
 2. One section for each tag kind, in registry order (PvP starts switched off, the other kinds on), titled with Steam's line for the kind (`kind_<id>_heading`). It holds the master switch `options_kind_enabled` (`kinds.<id>.enabled`), then the switches `options_badges` (popup `options_badges_short`; `badge`) and `options_banner` (`banner`), then, on the full page and in the userscript dialog only, the color field (below), then a stacked SegmentedControl with Show, Dim and Hide (`filter`; values `off`, `dim`, `hide`; label `options_filter_label`; the help follows the selection). Each switch has help. While the master switch is off, the other three are hidden and their stored values stay. The summary shows the title and the master switch's state; the master switch and the rest sit in the body, one open away.
 3. Language (page only): a stacked Select, `Automatic` first, then each shipped locale named in its own language through `Intl.DisplayNames`.
 4. Games you ignored: the AllowList, in groups. All tags comes first, then each kind in registry order, each group titled with its scope's name and listing its games newest first. Left out of the popup while it is empty.
-5. Backup (page only): the Backup card, to download a file and restore from one.
+5. Backup (full page and userscript dialog, not the toolbar popup): the Backup card, to download a file and restore from one.
 6. Privacy (page only): four bullets.
 7. Footer: `options_unaffiliated` in `sar-text-help`, subtle. The popup uses `options_unaffiliated_short` and adds an `options_all_settings` link.
 
@@ -693,22 +693,21 @@ Preview: `previews/AllowList.html`.
 
 ## 12. Backup
 
-Saves everything the extension keeps to a file the person holds, and restores it after a reinstall or in another browser: there are no accounts and no server copy, so the file is the backup.
+Saves what the person set to a file they hold, and restores it after a reinstall, in another browser, or from the extension to the userscript and back: there are no accounts and no server copy, so the file is the backup. Built as decision 54 describes; `ui/backup-card.ts` draws it, `backup/` holds the format and the restore.
 
 Preview: `previews/Backup.html`.
 
 ### What a backup holds
 
-- Settings: badges, banner, list filter, tag colors, language.
-- Games you ignored, with their names and dates.
-- Lookup history: every game already checked, marked or not, with when it was checked, so a restored history still expires on its usual schedule.
+- Settings: each tag's switches, list filter and color, the language and the debug flag.
+- Games, developers and publishers you ignored, by scope, with their names and dates.
 
-One JSON file named `ai-reporter-backup-YYYY-MM-DD.json`, with a format version. The `ai-reporter-` prefix is a deliberate technical identifier that stays when the product name changes, like the `sar-` prefix. Its schema lives with the storage code. Nothing else goes in: no cookies, no account data, nothing from the store.
+Not the lookup history, the open sections (`v2:ui`) or anything else derived. One JSON file named `ai-reporter-backup-YYYY-MM-DD.json` (local date), with `"format": "sar-backup"` and a `version`. The `ai-reporter-` prefix is a deliberate technical identifier that stays when the product name changes, like the `sar-` prefix. The file reuses the stored shapes of `v2:settings` and `v2:allow` under names of its own, so the extension and the userscript read the same file. Nothing else goes in: no cookies, no account data, nothing from the store.
 
 ### Where it appears
 
 - The full options page: its own card, after "Games you ignored" and before "Privacy".
-- The userscript settings dialog: the same card.
+- The userscript settings dialog: the same card, with its file input inside the dialog.
 - Not the toolbar popup: opening a file picker can close an extension popup before the file arrives. The popup's "All settings" link leads to the full page.
 
 ### What the consumer provides
@@ -720,7 +719,6 @@ One JSON file named `ai-reporter-backup-YYYY-MM-DD.json`, with a format version.
   <div class="sar-backup-actions">
     <button class="sar-button" type="button">t('options_backup_download')</button>
     <button class="sar-button" type="button">t('options_backup_restore')</button>
-    <input type="file" accept=".json,application/json" hidden>
   </div>
 
   <!-- Only after a valid file is chosen -->
@@ -729,42 +727,44 @@ One JSON file named `ai-reporter-backup-YYYY-MM-DD.json`, with a format version.
       t('options_backup_summary_title', { date })
     </p>
     <ul class="sar-backup-contents">
-      <li>t('options_backup_summary_settings')</li>
-      <li>t('options_backup_summary_allow', { count })</li>
-      <li>t('options_backup_summary_history', { count })</li>
+      <li>t('options_backup_summary_list', { list: t('options_section_allow'), number })</li>
+      <li>t('options_backup_summary_list', { list: t('options_section_allow_developers'), number })</li>
+      <li>t('options_backup_summary_list', { list: t('options_section_allow_publishers'), number })</li>
+      <!-- Only when entries cannot be read -->
+      <li>plural('options_backup_summary_skipped', count)</li>
     </ul>
     <p class="sar-backup-note">t('options_backup_restore_note')</p>
-    <div class="sar-backup-actions">
+    <div class="sar-backup-actions" data-sar-align="end">
       <button class="sar-button" data-sar-variant="primary" type="button">t('options_backup_confirm')</button>
       <button class="sar-button" type="button">t('options_backup_cancel')</button>
     </div>
   </div>
 
-  <p class="sar-backup-status" hidden>t('notice_backup_restored')</p>
+  <p class="sar-backup-status" hidden>plural('notice_backup_restored', added)</p>
   <p class="sar-field-error" role="alert" hidden>t('error_backup_invalid', { name })</p>
-  <div class="sar-vh" aria-live="polite"></div>
 </section>
 ```
 
-- "Restore from a backup" is a real `button` that calls `input.click()` on a hidden file input. A styled `label` cannot take keyboard focus.
-- Counts and the date come from the file after it is validated; the date is formatted with `Intl.DateTimeFormat(locale, { dateStyle: "medium" })`. Counts use plural keys (`_one`, `_other`).
+- "Restore from a backup" is a real `button` that asks the `FileTransfer` port to open the chooser, inside the click. The port keeps one hidden `input type=file` (`accept=".json,application/json"`, named `options_backup_restore` by `aria-label`) in the page body, or in the dialog for the userscript. A styled `label` cannot take keyboard focus.
+- Counts and the date come from the file after it is validated; the date is formatted with `Intl.DateTimeFormat(locale, { dateStyle: "medium" })`. The skipped count uses plural keys (`_one`, `_other`).
+- Results go to the status line and the form's polite live region; errors to the card's `.sar-field-error`.
 
 ### Flow
 
 **Download**
 
-1. "Download backup" builds the file from storage and starts the download (an `a[download]` on a Blob URL, revoked afterwards). The browser's own download UI confirms the file; the live region announces `notice_backup_downloaded`.
-2. If the file cannot be built: `error_backup_create`. Nothing else changes.
+1. "Download backup" builds the file from storage and starts the download (an `a[download]` on a Blob URL, revoked 30 seconds later). The browser's own download UI confirms the file; the status line shows `notice_backup_downloaded` and the live region announces it.
+2. If the file cannot be built or the browser refuses it: `error_backup_create`. Nothing else changes.
 
 **Restore**
 
 1. "Restore from a backup" opens the file picker.
-2. The file is untrusted data: cap its size, parse it as JSON, validate it against the schema, and never render any of its text as HTML. Game names go in with `textContent`.
-3. Not a backup: `error_backup_invalid`. From a newer format: `error_backup_newer`. Unreadable: `error_backup_read`. Nothing changes in any of these.
+2. The file is untrusted data: cap its size at 1 MiB, parse it as JSON to `unknown`, check the format and version, read the settings and lists with the stored schemas, and never render any of its text as HTML. Names go in with `textContent`.
+3. Not a backup, or over the cap: `error_backup_invalid`. From a newer format: `error_backup_newer`. Unreadable: `error_backup_read`. Each names the file. Nothing changes in any of these.
 4. Valid: the summary opens in place, inside the card. No modal. Focus moves to its title, so a screen reader hears the date and contents.
-5. "Restore" applies everything in one write: settings are replaced; games you ignored are merged (the earlier date wins); history is merged (the newer check wins). Open store tabs update through the settings subscription, as for any settings change.
-6. Afterwards the summary closes, the status line reads `notice_backup_restored`, the live region announces it, and focus returns to "Restore from a backup".
-7. If the write fails: `error_backup_restore`. Nothing is half-applied.
+5. "Restore" merges the ignore lists (a union; the earlier date wins where both list an entry) and then replaces the settings in one patch. Open store tabs update their settings through the settings subscription, as for any settings change, and their lists on the next load.
+6. Afterwards the summary closes, the status line reads `notice_backup_restored` with the number of new entries, then `notice_backup_skipped` when entries were left out, the live region announces it, and focus returns to "Restore from a backup".
+7. If a write fails: `error_backup_restore`, and the summary stays open. Only additions can have landed; a retry is safe.
 8. "Cancel" closes the summary and returns focus to "Restore from a backup".
 
 ### Look

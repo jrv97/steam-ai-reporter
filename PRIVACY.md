@@ -6,8 +6,10 @@ Tag Kit for Steam collects nothing. It has no analytics, no telemetry, no accoun
 
 - Results per app ID: which tags the store data gives the item, the time it was checked, the developer's AI report text and its language, the name of a named AI service if there is one, and the game's name.
 - Your settings: whether badges and the banner are on, the list filter mode (off, dim or hide), the language, and a debug flag.
-- Your allow-list of games you chose to ignore (app ID, name and date).
+- Your lists of games, developers and publishers you chose to ignore (app ID or Steam's name and group ID, name and date).
 - A small internal record used to back off if Steam is limiting requests.
+
+If you use Download backup, your settings and those lists are also saved to a JSON file through your browser's own download, and Restore reads a file you pick. Neither sends the file anywhere, and the lookup results are not in it.
 
 This lives in the extension's local storage (`storage.local`) or, in the userscript, in your userscript manager's storage. It never leaves your browser, and you can clear it by removing the extension or the userscript. The extension requests only the `storage` permission and runs only on `https://store.steampowered.com/*`.
 
