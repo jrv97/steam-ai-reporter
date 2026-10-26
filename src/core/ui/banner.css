@@ -61,7 +61,8 @@
 }
 
 .sar-banner-source,
-.sar-banner-service {
+.sar-banner-service,
+.sar-banner-full-game {
   margin: var(--sar-space-1) 0 0;
   color: var(--sar-banner-fg);
   font: var(--sar-banner-meta-font);

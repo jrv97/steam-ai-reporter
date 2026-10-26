@@ -252,7 +252,10 @@ export function createHoverCard(
     }
   }
 
-  /** A kind's entry. A line that only repeats the heading, as PvP does, is left out. */
+  /**
+   * A kind's entry. A line that only repeats the heading, as PvP does, is left out. A full game's
+   * disclosure shown for its demo says so under the heading.
+   */
   function entry(verdict: AnyDisclosed): HTMLElement {
     const heading = i18n.t(KIND_BY_ID[verdict.kind].messages.heading);
     const node = doc.createElement("div");
@@ -260,6 +263,9 @@ export function createHoverCard(
     node.setAttribute(KIND_ATTRIBUTE, verdict.kind);
     node.append(
       line("sar-hovercard-title", heading),
+      ...(verdict.fullGame === true
+        ? [line("sar-hovercard-full-game", i18n.t("kind_full_game"))]
+        : []),
       ...kindDetails(verdict)
         .filter((detail) => !(detail.kind === "message" && i18n.t(detail.key) === heading))
         .map(detailLine),

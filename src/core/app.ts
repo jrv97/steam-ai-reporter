@@ -7,6 +7,7 @@ import { API_BREAKER_KEY, createBreaker, HTML_BREAKER_KEY } from "./detect/break
 import { createBudgetDetector } from "./detect/budget";
 import { createChainDetector } from "./detect/chain";
 import { createDedupingDetector } from "./detect/dedupe";
+import { createFullGameDetector } from "./detect/full-game";
 import { createGetItemsDetector } from "./detect/getitems";
 import { createThrottledHttp } from "./detect/throttle";
 import type { Catalogs } from "./i18n/catalog";
@@ -79,10 +80,10 @@ async function readSettings(source: SettingsSource): Promise<SettingsRead> {
 }
 
 /**
- * The detector stack (hand-overs of steps 7 and 8): the verdict cache outside, so cache hits never
- * touch the network, then in-flight dedupe, then the chain of GetItems and, for what it leaves
- * unknown, the English app page within a per-page budget. Each host has its own throttle and
- * breaker.
+ * The detector stack (hand-overs of steps 7 and 8): a demo's full game outside, asked through the
+ * stack below it; the verdict cache, so cache hits never touch the network; in-flight dedupe; then
+ * the chain of GetItems and, for what it leaves unknown, the English app page within a per-page
+ * budget. Each host has its own throttle and breaker.
  */
 function createDetector(
   deps: AppDeps,
@@ -96,7 +97,8 @@ function createDetector(
   const getItems = createGetItemsDetector({ http: throttled(API_BREAKER_KEY), language });
   const appPage = createBudgetDetector(createAppPageDetector(throttled(HTML_BREAKER_KEY), open));
   const chain = createDedupingDetector(createChainDetector([getItems, appPage]));
-  return { getItems, detector: cachedDetector(chain, createVerdictCache(store, clock), logger) };
+  const cached = cachedDetector(chain, createVerdictCache(store, clock), logger);
+  return { getItems, detector: createFullGameDetector(cached) };
 }
 
 /** Whether some kind's setting, as it takes effect, differs between two settings. */

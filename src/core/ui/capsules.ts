@@ -67,8 +67,8 @@ export interface CapsuleUiOptions {
 /** The scanner's renderer, plus a way to draw known hosts again after a change. */
 export interface CapsuleUi extends CapsuleRenderer {
   /**
-   * Draws every known host again, or only those of `ids` and the DLC whose base game is in `ids`,
-   * as after an allow-list change.
+   * Draws every known host again, or only those of `ids` and the DLC and demos whose base or full
+   * game is in `ids`, as after an allow-list change.
    */
   refresh(ids?: ReadonlySet<AppId>): void;
   /** Stops watching image boxes, cancels a pending retry and stops listening for `pagehide`. */
@@ -246,7 +246,7 @@ export function createCapsuleUi(options: CapsuleUiOptions): CapsuleUi {
     }
   }
 
-  /** Whether the host shows one of `ids` or a DLC of one of them. */
+  /** Whether the host shows one of `ids`, or a DLC or demo of one of them. */
   function concerns(ids: ReadonlySet<AppId>, record: HostRecord): boolean {
     const parent = record.verdicts?.parent;
     return ids.has(record.host.appId) || (parent !== undefined && ids.has(parent));

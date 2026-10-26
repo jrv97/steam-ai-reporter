@@ -4,7 +4,7 @@ import { bannerCreator, creatorNote, keyOf } from "../../../tests/helpers/creato
 import { setBody } from "../../../tests/helpers/dom";
 import { capturedVerdicts, disclosedList } from "../../../tests/helpers/fixture-verdicts";
 import { englishI18n } from "../../../tests/helpers/i18n";
-import { disclosedVerdict } from "../../../tests/helpers/verdicts";
+import { disclosedVerdict, FULL_DISCLOSED, lent } from "../../../tests/helpers/verdicts";
 import { SHIPPED_CATALOGS } from "../i18n/shipped";
 import { createI18n } from "../i18n/t";
 import { KIND_BY_ID } from "../kinds/registry";
@@ -147,6 +147,27 @@ describe("createBanner", () => {
     );
     expect(root.querySelector("svg")).toBeNull();
   });
+
+  it.each([["en", i18n], ["es", createI18n(SHIPPED_CATALOGS, "es")]] as const)(
+    "says in %s that a full game's disclosure is the full game's, before the developer's words",
+    (_locale, catalog) => {
+      setBody('<div class="game_description_column"></div>');
+      const banner = createBanner(document, catalog, manualActions().actions, {
+        frame: () => undefined,
+      });
+      banner.show(view([lent(disclosedVerdict({ notes: XSS })), FULL_DISCLOSED.anticheat]));
+      const root = banner.host.shadowRoot;
+      const lines = [...(root?.querySelectorAll(".sar-banner-entry") ?? [])].map((entry) =>
+        [...entry.querySelectorAll("p")].map((line) => line.textContent)
+      );
+      const service = `${catalog.t("badge_card_service_label")} Midjourney`;
+      const full = [catalog.t("kind_full_game"), catalog.t("banner_source"), service];
+      expect(lines).toEqual([full, []]);
+      expect(root?.querySelector("blockquote")?.textContent).toBe(
+        '<img src=x onerror="alert(1)">Backgrounds\nwere generated.',
+      );
+    },
+  );
 
   it("names the AI service as plain text, never a link", () => {
     const { banner, root } = setup();

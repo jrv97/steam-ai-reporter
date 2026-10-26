@@ -44,6 +44,11 @@ export function disclosedItem(
   });
 }
 
+/** A demo of the game `game` that declares nothing itself, as demo-parent.json captured one. */
+export function demoItem(id: number, game: number): Readonly<Record<string, unknown>> {
+  return storeItem(id, { type: 1, related_items: { parent_appid: game } });
+}
+
 /** What GetItems answers for an invalid ID (rq6, S2). */
 export function invalidItem(id: number): Readonly<Record<string, unknown>> {
   return { item_type: 0, id, success: 15, visible: false, name: "", appid: 0 };
