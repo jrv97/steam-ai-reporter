@@ -465,6 +465,7 @@
 .sar-segment input:focus-visible + label,
 .sar-select:focus-visible,
 .sar-input:focus-visible,
+.sar-color-pick:focus-visible,
 .sar-button:focus-visible,
 .sar-tab:focus-visible,
 .sar-order-handle:focus-visible,
@@ -473,9 +474,9 @@
   outline-offset: var(--sar-focus-offset);
 }
 
-/* A tag's color field: the swatch, the hex text and Reset in one row. The swatch reads the kind's
-   color through the same rules as the badges; with none set it shows the default violet. A chip
-   text field puts its text box and Reset in a row the same way. */
+/* A tag's color field: the color square, the hex text and Reset in one row; with no color set the
+   square shows the default violet. A chip text field puts its text box and Reset in a row the
+   same way. */
 .sar-color-entry,
 .sar-text-entry {
   display: flex;
@@ -512,14 +513,32 @@
   max-inline-size: var(--sar-chip-preview-compact-max);
 }
 
-.sar-color-swatch {
+/* The color square: the browser's own color picker, drawn as a square of the picked color. The
+   engines name the inner swatch differently, so each gets a rule of its own. */
+.sar-color-pick {
   flex: none;
+  box-sizing: border-box;
   inline-size: var(--sar-control-height-sm);
   block-size: var(--sar-control-height-sm);
+  padding: 0;
   border: 1px solid var(--sar-color-border);
   border-radius: var(--sar-radius-sm);
-  background: var(--sar-tag-edge, var(--sar-accent-400));
-  forced-color-adjust: none;
+  background: none;
+  cursor: pointer;
+}
+
+.sar-color-pick::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.sar-color-pick::-webkit-color-swatch {
+  border: 0;
+  border-radius: var(--sar-radius-sm);
+}
+
+.sar-color-pick::-moz-color-swatch {
+  border: 0;
+  border-radius: var(--sar-radius-sm);
 }
 
 .sar-input {

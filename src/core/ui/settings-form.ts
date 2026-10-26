@@ -143,6 +143,10 @@ const FILTER_HELP: Readonly<Record<ListFilter, BareMessageKey>> = {
 
 /** What marks the Reset button of a color field, with the kind it resets. */
 const COLOR_RESET_ATTRIBUTE = "data-sar-color-reset";
+/** What marks the color square of a color field, with its kind. */
+const PICKER_ATTRIBUTE = "data-sar-picker";
+/** The default violet, accent 400 of tokens.css, which the square shows while no color is set. */
+export const DEFAULT_TAG_COLOR = "#8f73f3";
 /** The quiet, link-like look of Reset, Stop ignoring and Show in General. */
 const QUIET = "quiet";
 const VARIANT_ATTRIBUTE = "data-sar-variant";
@@ -150,6 +154,8 @@ const VARIANT_ATTRIBUTE = "data-sar-variant";
 /** The controls of one kind's color field. */
 interface ColorControls {
   readonly input: HTMLInputElement;
+  /** The color square, the browser's own picker; the hex text stays the readout. */
+  readonly picker: HTMLInputElement;
   /** Shown only while a color is set. */
   readonly reset: HTMLButtonElement;
   /** Names the text as no hex color; shown while the text is invalid. */
@@ -432,9 +438,9 @@ export async function mountSettingsForm(
   colorHelp.id = `${prefix}color-help`;
 
   /**
-   * A tag's color field: a swatch, a text box for the hex code, and Reset. The swatch and the
-   * words are redundant on purpose, so the color is never the only cue. The row carries the kind,
-   * so the swatch reads the kind's color through the same style rules as the badges.
+   * A tag's color field: a color square that opens the browser's own picker, a text box for the
+   * hex code, and Reset. The square and the words are redundant on purpose, so the color is never
+   * the only cue, and the two stay in step both ways.
    */
   function colorField(kind: TagKind): {
     readonly row: HTMLElement;
@@ -453,16 +459,17 @@ export async function mountSettingsForm(
     input.setAttribute("data-sar-setting", "color");
     input.setAttribute("data-sar-for", kind.id);
     label.htmlFor = input.id;
-    const swatch = element("span", "sar-color-swatch");
-    swatch.setAttribute("aria-hidden", TRUE);
+    const heading = i18n.t(kind.messages.heading);
+    const picker = element("input", "sar-color-pick");
+    picker.type = "color";
+    picker.value = DEFAULT_TAG_COLOR;
+    picker.setAttribute(PICKER_ATTRIBUTE, kind.id);
+    picker.setAttribute("aria-label", i18n.t("options_color_pick_label", { heading }));
     const reset = quietButton(i18n.t("options_color_reset"));
     reset.setAttribute(COLOR_RESET_ATTRIBUTE, kind.id);
-    reset.setAttribute(
-      "aria-label",
-      i18n.t("options_color_reset_label", { heading: i18n.t(kind.messages.heading) }),
-    );
+    reset.setAttribute("aria-label", i18n.t("options_color_reset_label", { heading }));
     const entry = element("div", "sar-color-entry");
-    entry.append(swatch, input, reset);
+    entry.append(picker, input, reset);
     const help = element("span", "sar-field-help", i18n.t("options_color_help_short"));
     const invalid = element("p", "sar-field-error", i18n.t("options_color_invalid"));
     invalid.id = `${input.id}-invalid`;
@@ -472,7 +479,7 @@ export async function mountSettingsForm(
     const error = fieldError();
     errors.set(errorKey("color", kind.id), error);
     row.append(label, entry, help, invalid, error);
-    return { row, controls: { input, reset, invalid } };
+    return { row, controls: { input, picker, reset, invalid } };
   }
 
   /** The help under each badge switch, which names the tag's chip as it shows. */
@@ -770,7 +777,7 @@ export async function mountSettingsForm(
 
   /** Controls stay off while the load error shows, so no save puts defaults over v1 data. */
   const settingControls = root.querySelectorAll<HTMLInputElement | HTMLSelectElement>(
-    "[data-sar-setting]",
+    `[data-sar-setting], [${PICKER_ATTRIBUTE}]`,
   );
   function allowChanges(allowed: boolean): void {
     for (const control of settingControls) {
@@ -794,6 +801,7 @@ export async function mountSettingsForm(
     own.reset.hidden = color === undefined;
     if (own.input.getAttribute("aria-invalid") !== TRUE) {
       own.input.value = color ?? "";
+      own.picker.value = color ?? DEFAULT_TAG_COLOR;
     }
   }
 
@@ -904,15 +912,37 @@ export async function mountSettingsForm(
   }
 
   /**
-   * Live while typing: the error shows at once, and a color that reads shows on the swatch and
-   * the badge at once (the root's custom property), unsaved. Saving waits for `change`.
+   * Live while typing: the error shows at once, and a color that reads shows on the square and
+   * the badge at once (the root's custom property), unsaved. Saving waits for `change`. Text that
+   * is no color leaves the square as it was.
    */
   function onColorInput(kind: TagKind, own: ColorControls): void {
     const typed = readTypedColor(own.input.value);
     showColorValidity(own, typed.valid);
     if (typed.valid) {
       setColorOnce(root, kind.id, typed.color);
+      own.picker.value = typed.color ?? DEFAULT_TAG_COLOR;
     }
+  }
+
+  /**
+   * The color square: its value becomes the hex text, which then takes the text's way, live on
+   * `input` and saved on `change`. True when the target was a square.
+   */
+  function onPicker(target: EventTarget | null, commit: boolean): boolean {
+    if (!(target instanceof HTMLInputElement)) {
+      return false;
+    }
+    const id = v.safeParse(KindIdSchema, target.getAttribute(PICKER_ATTRIBUTE));
+    const own = id.success ? controls.get(id.output)?.color : undefined;
+    if (!id.success || own === undefined) {
+      return false;
+    }
+    if (!loadFailed) {
+      own.input.value = target.value;
+      (commit ? onColorChange : onColorInput)(KIND_BY_ID[id.output], own);
+    }
+    return true;
   }
 
   /** The text is committed (Enter or leaving the field): a valid color is saved, normalized. */
@@ -1129,6 +1159,7 @@ export async function mountSettingsForm(
       return;
     }
     showColorValidity(own, true);
+    own.picker.value = DEFAULT_TAG_COLOR;
     void save(forKind(id.output, { color: undefined }), errorKey("color", id.output)).then(() => {
       own.input.focus();
     });
@@ -1198,10 +1229,14 @@ export async function mountSettingsForm(
     }
     switch (event.type) {
       case "change":
-        onChange(event.target);
+        if (!onPicker(event.target, true)) {
+          onChange(event.target);
+        }
         break;
       case "input":
-        onInput(event.target);
+        if (!onPicker(event.target, false)) {
+          onInput(event.target);
+        }
         break;
       case "keydown":
         if (event instanceof KeyboardEvent) {

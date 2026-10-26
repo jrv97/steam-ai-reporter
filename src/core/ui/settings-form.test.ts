@@ -27,7 +27,8 @@ import { createSettingsSource } from "../settings/settings-source";
 import { UI_STATE_KEY } from "../storage-keys";
 import { toAppId } from "../types";
 import { chipText } from "./kind-details";
-import type { SettingsFormDeps } from "./settings-form";
+import { DEFAULT_TAG_COLOR, type SettingsFormDeps } from "./settings-form";
+import { TOKENS_CSS } from "./styles";
 import { GENERAL_TAB, sortTabs, type TabId } from "./tab-id";
 import { createUiState } from "./ui-state";
 
@@ -412,12 +413,109 @@ describe("the color field", () => {
   const storedColor = async (settings: { read(): Promise<unknown>; }, id: KindId) =>
     parseSettings(await settings.read()).kinds[id].color;
 
+  describe("its color square", () => {
+    /** A tag's color square and hex text box. */
+    async function square(id: KindId = "ai") {
+      const form = await setup();
+      const picker = form.root.querySelector(`[data-sar-picker=${id}]`);
+      if (!(picker instanceof HTMLInputElement)) {
+        throw new TypeError(id);
+      }
+      return { ...form, picker, text: form.input(id, "color") };
+    }
+    const fire = (target: Element, type: "input" | "change") => {
+      target.dispatchEvent(new Event(type, { bubbles: true }));
+    };
+    type Square = Awaited<ReturnType<typeof square>>;
+
+    it("is the browser's own picker, named for the tag, on the default violet", async () => {
+      const { picker } = await square();
+      expect([picker.type, picker.value]).toEqual(["color", DEFAULT_TAG_COLOR]);
+      expect(picker.getAttribute("aria-label")).toBe(
+        i18n.t("options_color_pick_label", { heading: heading("ai") }),
+      );
+    });
+
+    it("pins the default violet to accent 400 of the tokens", () => {
+      expect(DEFAULT_TAG_COLOR).toBe(/--sar-accent-400:\s*([^;]+);/.exec(TOKENS_CSS)?.[1]);
+    });
+
+    it.each<readonly [string, (form: Square) => void, string, string, string | undefined]>([
+      [
+        "a typed hex",
+        ({ text }) => {
+          text.value = "#F0a";
+          fire(text, "input");
+        },
+        "#ff00aa",
+        "#F0a",
+        undefined,
+      ],
+      [
+        "typed text that is no color",
+        ({ text }) => {
+          text.value = "#F0a";
+          fire(text, "input");
+          text.value = "#12";
+          fire(text, "input");
+        },
+        "#ff00aa",
+        "#12",
+        undefined,
+      ],
+      [
+        "a pick while the picker is open",
+        ({ picker }) => {
+          picker.value = "#00ff00";
+          fire(picker, "input");
+        },
+        "#00ff00",
+        "#00ff00",
+        undefined,
+      ],
+      [
+        "a pick the picker commits",
+        ({ picker }) => {
+          picker.value = "#00ff00";
+          fire(picker, "change");
+        },
+        "#00ff00",
+        "#00ff00",
+        "#00ff00",
+      ],
+    ])("keeps in step with the text after %s", async (_case, act, picked, typed, stored) => {
+      const form = await square();
+      const patch = vi.spyOn(form.settings, "patch");
+      act(form);
+      expect([form.picker.value, form.text.value]).toEqual([picked, typed]);
+      if (stored === undefined) {
+        expect(patch).not.toHaveBeenCalled();
+      } else {
+        await vi.waitFor(async () => {
+          expect(await storedColor(form.settings, "ai")).toBe(stored);
+        });
+      }
+    });
+
+    it("goes back to the default violet on Reset", async () => {
+      const { picker, settings, card } = await square();
+      await settings.patch({ kinds: { ai: { color: toHexColor("#123456") } } });
+      expect(picker.value).toBe("#123456");
+      card("ai").querySelector<HTMLElement>("[data-sar-color-reset]")?.click();
+      expect(picker.value).toBe(DEFAULT_TAG_COLOR);
+      await vi.waitFor(async () => {
+        expect(await storedColor(settings, "ai")).toBeUndefined();
+      });
+    });
+  });
+
   it("is on the full page and in the dialog, and not in the popup", async () => {
     const page = await setup();
     expect(page.root.querySelectorAll("[data-sar-setting=color]")).toHaveLength(KINDS.length);
     page.form.destroy();
     const popup = await setup(POPUP);
     expect(popup.root.querySelector("[data-sar-setting=color]")).toBeNull();
+    expect(popup.root.querySelector("[data-sar-picker]")).toBeNull();
     expect(popup.root.querySelector("[data-sar-color-reset]")).toBeNull();
     popup.form.destroy();
     const dialog = await setup({ context: "popup" });
