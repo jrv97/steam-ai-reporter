@@ -13,7 +13,7 @@ import { ALLOW_ALL, type AllowScope, toAllowScope } from "../settings/allow-data
 import { announce, POLITE } from "./announce";
 import { ROLE_LABELS } from "./creator-roles";
 import { KIND_ATTRIBUTE } from "./kind-attributes";
-import { type KindDetail, kindDetails } from "./kind-details";
+import { entryName, fromValve, fullGameLine, type KindDetail, kindDetails } from "./kind-details";
 import { normalizeBreaks } from "./notes";
 import { adoptStyles, BANNER_CSS } from "./styles";
 
@@ -281,8 +281,7 @@ export function createBanner(
     const entry = element("div", "sar-banner-entry");
     const titleId = partId(verdict.kind, "title");
     const ignoreId = partId(verdict.kind, "ignore");
-    const heading = i18n.t(KIND_BY_ID[verdict.kind].messages.heading);
-    const title = element("h2", "sar-banner-title", heading);
+    const title = element("h2", "sar-banner-title", entryName(i18n, verdict));
     title.id = titleId;
     const ignore = button(
       "sar-banner-action",
@@ -296,7 +295,7 @@ export function createBanner(
     head.append(title, ignore);
     entry.append(head);
     if (verdict.fullGame === true) {
-      entry.append(element("p", "sar-banner-full-game", i18n.t("kind_full_game")));
+      entry.append(element("p", "sar-banner-full-game", i18n.t(fullGameLine(verdict))));
     }
     for (const [index, detail] of kindDetails(verdict).filter(isDeveloperText).entries()) {
       appendDetail(entry, detail, `${partId(verdict.kind, "notes")}-${String(index)}`);
@@ -422,7 +421,9 @@ export function createBanner(
     if (only !== undefined && view.shown.length === 1 && single) {
       aside.setAttribute("aria-labelledby", partId(only.kind, "title"));
     } else {
-      aside.setAttribute("aria-label", i18n.t("banner_region_label"));
+      // "Declared by the developer" would be false for an entry Valve states.
+      const label = view.shown.some(fromValve) ? "badge_tags_title" : "banner_region_label";
+      aside.setAttribute("aria-label", i18n.t(label));
     }
     if (only === undefined) {
       aside.setAttribute("data-sar-variant", "ignored");

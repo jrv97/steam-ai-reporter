@@ -10,9 +10,11 @@ import { type AppId, toAppId } from "./types";
  * one entry per tag kind in each verdict. Version 3 adds the base game of a DLC, which an older
  * entry lacks, so a DLC cached before would never learn its parent. Version 4 adds the developers
  * and publishers, which an older entry lacks for the same reason. Version 5 marks a demo, so a
- * demo cached before would not show its full game's tags until its entry expired.
+ * demo cached before would not show its full game's tags until its entry expired. Version 6
+ * records the GetItems sections an entry came with; an older entry has no record, which would read
+ * as an answer without GetItems details that no section could change.
  */
-export const CACHE_SCHEMA = 5;
+export const CACHE_SCHEMA = 6;
 
 const VERDICT_PREFIX = "v1:a:";
 

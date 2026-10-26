@@ -116,8 +116,23 @@ APP_PAGES = (
 )
 
 # The tag kinds: apps that show each declaration, a package and a bundle without `extra_details`,
-# and an ID that does not exist.
-KIND_APPS = (3751950, 2807960, 1808500, 813230, 730, 570, 105600, 1245620, 1172470, 271590)
+# and an ID that does not exist. 1091500 and 1174180 carry Steam Deck ratings, and 3489340 is
+# unreleased, which Valve has not rated.
+KIND_APPS = (
+    3751950,
+    2807960,
+    1808500,
+    813230,
+    730,
+    570,
+    105600,
+    1245620,
+    1172470,
+    271590,
+    1091500,
+    1174180,
+    3489340,
+)
 # Games that declare nothing of any kind, from 2004 to 2024.
 KIND_NOTHING = (1145360, 413150, 504230, 367520, 2379780, 620)
 KIND_PACKAGE = 320795
@@ -280,11 +295,17 @@ def features_page(text: str) -> str:
     )
 
 
-def getitems_url(ids: list[dict[str, int]], language: str, country: str) -> str:
+def getitems_url(
+    ids: list[dict[str, int]], language: str, country: str, platforms: bool = False
+) -> str:
+    """The request the extension sends; `platforms` as when a Steam Deck or Machine tag is on."""
+    flags = {"include_extra_details": True, "include_basic_info": True}
+    if platforms:
+        flags["include_platforms"] = True
     request = {
         "ids": ids,
         "context": {"language": language, "country_code": country},
-        "data_request": {"include_extra_details": True, "include_basic_info": True},
+        "data_request": flags,
     }
     return f"{GETITEMS_URL}?input_json={urllib.parse.quote(json.dumps(request), safe='')}"
 
@@ -311,8 +332,9 @@ def getitems_fixture(
     language: str,
     country: str,
     removed: tuple[str, ...] = DETAILS_REMOVED,
+    platforms: bool = False,
 ) -> str:
-    envelope = json.loads(fetch(getitems_url(ids, language, country)))
+    envelope = json.loads(fetch(getitems_url(ids, language, country, platforms)))
     response = envelope.get("response") if isinstance(envelope, dict) else None
     items = response.get("store_items") if isinstance(response, dict) else None
     if not isinstance(items, list):
@@ -349,7 +371,7 @@ def capture_kinds_getitems(out: Path) -> None:
     ]
     write(
         out / "getitems" / "kinds.json",
-        getitems_fixture(ids, "english", "US", KINDS_DETAILS_REMOVED),
+        getitems_fixture(ids, "english", "US", KINDS_DETAILS_REMOVED, platforms=True),
     )
     time.sleep(SPACING_SECONDS)
 

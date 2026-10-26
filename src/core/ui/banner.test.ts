@@ -315,6 +315,12 @@ describe("the banner's accessibility", () => {
     expect(nameOf(root, query(root, "aside"))).toBe(i18n.t("banner_region_label"));
   });
 
+  it("labels the region as Tag Kit's tags when an entry comes from Valve", () => {
+    const { banner, root } = setup();
+    banner.show(view([FULL_DISCLOSED.drm, FULL_DISCLOSED.deck]));
+    expect(nameOf(root, query(root, "aside"))).toBe(i18n.t("badge_tags_title"));
+  });
+
   it("names each ignore button by its action and the kind it belongs to", () => {
     const { banner, root } = setup();
     banner.show(view(disclosedList(capturedVerdicts(3751950))));

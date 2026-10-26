@@ -6,11 +6,13 @@ import { fakeDetector } from "../../../tests/helpers/fake-detector";
 import { fixedClock } from "../../../tests/helpers/fixed-clock";
 import { memoryStore } from "../../../tests/helpers/memory-store";
 import {
+  compatVerdict,
   demoOf,
   disclosedKinds,
   dlcOf,
   FULL_DISCLOSED,
   lent,
+  NOT_DISCLOSED,
   uniformVerdicts,
 } from "../../../tests/helpers/verdicts";
 import { cachedDetector } from "../cache/cached-detector";
@@ -21,7 +23,7 @@ import { KIND_IDS, type KindId } from "../kinds/id";
 import { type KindVerdict, type KindVerdicts, UNKNOWN_KINDS } from "../kinds/verdicts";
 import type { Detector } from "../ports";
 import { verdictKey } from "../storage-keys";
-import type { AppId } from "../types";
+import { type AppId, UNKNOWN } from "../types";
 import { createFullGameDetector } from "./full-game";
 import { RETRY_DELAY_MS } from "./retry";
 
@@ -92,6 +94,26 @@ describe("createFullGameDetector", () => {
     for (const id of KIND_IDS) {
       expect(found[id], id).toStrictEqual(expected(id));
     }
+  });
+
+  it.each(
+    [
+      ["Valve has not rated the demo (0)", NOT_DISCLOSED, lent(compatVerdict("deck", "verified"))],
+      [
+        "the demo has its own rating",
+        compatVerdict("deck", "playable"),
+        compatVerdict("deck", "playable"),
+      ],
+      [
+        "the demo was asked without platforms",
+        UNKNOWN.unrequested,
+        lent(compatVerdict("deck", "verified")),
+      ],
+    ] as const,
+  )("shows a demo its full game's Steam Deck rating per kind when %s", async (_n, own, shown) => {
+    const game = { ...disclosedKinds([]), deck: compatVerdict("deck", "verified") };
+    const found = await demoAnswer({ ...disclosedKinds([]), deck: own }, game);
+    expect(found.deck).toStrictEqual(shown);
   });
 
   it("returns the demo's own object when the game discloses nothing", async () => {

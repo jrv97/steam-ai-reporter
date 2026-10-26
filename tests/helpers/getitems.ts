@@ -44,6 +44,24 @@ export function disclosedItem(
   });
 }
 
+/** Valve's ratings of an item, by device, as `platforms` carries them (0 Unknown to 3 Verified). */
+export interface Ratings {
+  readonly deck?: number;
+  readonly machine?: number;
+}
+
+/** A store item with Valve's Steam Deck and Steam Machine ratings, 0 for a device not given. */
+export function ratedItem(
+  id: number,
+  { deck = 0, machine = 0 }: Ratings,
+  overrides: Readonly<Record<string, unknown>> = {},
+): Readonly<Record<string, unknown>> {
+  return storeItem(id, {
+    platforms: { steam_deck_compat_category: deck, steam_machine_compat_category: machine },
+    ...overrides,
+  });
+}
+
 /** A demo of the game `game` that declares nothing itself, as demo-parent.json captured one. */
 export function demoItem(id: number, game: number): Readonly<Record<string, unknown>> {
   return storeItem(id, { type: 1, related_items: { parent_appid: game } });
@@ -92,6 +110,14 @@ export function getItemsRequest(url: URL | string): GetItemsRequest {
   const input = new URL(url).searchParams.get("input_json") ?? "";
   const request = v.parse(RequestSchema, parseJson(input));
   return { ids: request.ids.map(({ appid }) => appid), language: request.context.language };
+}
+
+const FlagsSchema = v.object({ data_request: v.record(v.string(), v.literal(true)) });
+
+/** The `data_request` flags a GetItems URL sets, in order. Throws when the URL is not one. */
+export function requestFlags(url: URL | string): readonly string[] {
+  const input = new URL(url).searchParams.get("input_json") ?? "";
+  return Object.keys(v.parse(FlagsSchema, parseJson(input)).data_request);
 }
 
 const ItemIdSchema = v.looseObject({ id: AppIdSchema });

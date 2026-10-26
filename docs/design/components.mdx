@@ -17,7 +17,7 @@ Component specs for everything the extension and the userscript inject into stor
 - `assets/icons/`: the extension icon (section 14).
 - `docs/design/decisions.mdx`: why each choice was made, and what is still open.
 
-Tag Kit for Steam tags games on the Steam store whose developers declared something players weigh before buying: AI use, kernel-level or other anti-cheat, third-party DRM, a required third-party account or a third-party EULA. It also tags games with a PvP mode or In-App Purchases, from Steam's own categories. Each tag is written in Steam's words, and the developer's text is quoted as written. It ships as a browser extension and a userscript. Its UI lives in two places: small pieces injected into store pages (chips, a banner, a hover card, a list filter) and its own settings pages (options page, toolbar popup, userscript dialog). This system covers both.
+Tag Kit for Steam tags games on the Steam store whose developers declared something players weigh before buying: AI use, kernel-level or other anti-cheat, third-party DRM, a required third-party account or a third-party EULA. It also tags games with a PvP mode or In-App Purchases, from Steam's own categories, and with Valve's own Steam Deck and Steam Machine ratings, for the values a person picks. Each tag is written in Steam's words, and the developer's text is quoted as written. It ships as a browser extension and a userscript. Its UI lives in two places: small pieces injected into store pages (chips, a banner, a hover card, a list filter) and its own settings pages (options page, toolbar popup, userscript dialog). This system covers both.
 
 Every class, attribute and custom property starts with `sar-`.
 
@@ -29,14 +29,14 @@ Every class, attribute and custom property starts with `sar-`.
 4. **Feel native.** Look and behave as close to the store's own UI as possible: its sizes, type, neutrals, surfaces and interaction patterns, so injected UI has no seam. Model each store-page component on its closest store element (the banner on the notice bubbles, the full badge on the tag chips, the compact badge on the corner flags, the tag section on the store's tag row). Only the violet hue marks a component as ours, so nobody mistakes it for a store feature. A person can swap the violet for their own color per tag (experimental, decision 49); the defaults stay violet.
 5. **Never block.** No modals over store pages, no overlays over content, no focus stealing, no layout shift after a component's first paint.
 6. **Copy lives in catalogs.** Components hold message keys, never text. Leave room for translations about 40% longer than English.
-7. **Cheap at scale.** Express state with `data-sar-*` attributes and CSS, never per-node inline styles. A setting change is one attribute write per kind on the root element, and a custom color is one custom property per kind on the root element.
+7. **Cheap at scale.** Express state with `data-sar-*` attributes and CSS, never per-node inline styles. A setting change is one attribute write per kind on the root element, and a custom color is one custom property per kind on the root element. The one exception is the values a tag with facets picks: a change to them draws the hosts again, writing only what changed (decision 61).
 
 ## Voice and copy
 
-- Use Steam's words for each tag: its own line for the kind ("Uses Kernel Level Anti-Cheat", "Incorporates 3rd-party DRM", "Requires 3rd-Party Account", "Requires agreement to a 3rd-party EULA", "PvP", "In-App Purchases") and, for AI, Steam's heading "AI Generated Content Disclosure". Spanish follows Steam's Spain Spanish. Our own copy never says "uses AI", "AI-free" or "no AI", in any locale; the copy test fails the build on them.
+- Use Steam's words for each tag: its own line for the kind ("Uses Kernel Level Anti-Cheat", "Incorporates 3rd-party DRM", "Requires 3rd-Party Account", "Requires agreement to a 3rd-party EULA", "PvP", "In-App Purchases", "Steam Deck Compatibility", "Steam Machine Compatibility") and, for AI, Steam's heading "AI Generated Content Disclosure". A rating keeps Steam's word for its value: Verified, Playable, Unsupported. Valve's Unknown (0) is never shown, and never as Unsupported. Spanish follows Steam's Spain Spanish. Our own copy never says "uses AI", "AI-free" or "no AI", in any locale; the copy test fails the build on them.
 - Plain, short, sentence case: "Ignore this game", "Ignore for this tag", "Show full report".
-- One line names a tag everywhere: Steam's line is the hover card entry title, the banner entry heading, the settings section title and the start of the chip's accessible name. The chip itself is short: AI, KLAC, Anti-Cheat, DRM, Account, EULA, PvP, IAP.
-- Name the developer as the source: "In the developer's own words:", "AI service named by the developer:", "Declared by the developer on the store page".
+- One line names a tag everywhere: Steam's line is the hover card entry title, the banner entry heading, the settings section title and the start of the chip's accessible name. The chip itself is short: AI, KLAC, Anti-Cheat, DRM, Account, EULA, PvP, IAP. A tag with values puts the value after a short device word: "Deck Unsupported", "Steam Machine Playable" (`kind_facet_chip`), and its accessible name and banner heading read "Steam Deck Compatibility: Unsupported" (`kind_facet_name`).
+- Name the source: the developer ("In the developer's own words:", "AI service named by the developer:", "Declared by the developer on the store page"), or Valve for what Valve computes, the device ratings ("According to Valve"; decision 63).
 - The opt-out labels are "Ignore for this tag" and "Ignore this game" (every tag). The store has its own Ignore button just above; ours only affects this extension.
 - Settings speak about games, not switches: the list filter reads "Show", "Dim", "Hide".
 - No exclamation marks, no emoji, no em dashes.
@@ -108,9 +108,11 @@ An unknown that holds for every kind with the reason `error` or `rate-limited` (
 
 A demo shows its full game's disclosed kinds beside its own, and its own disclosure of a kind wins (decision 59). A lent kind renders like the "Disclosed" row above on every surface; the hover card and the banner add `kind_full_game` under its heading. A kind whose full game is unknown is unknown for the demo too, unless the demo discloses it itself. A DLC lends nothing and borrows nothing.
 
+A tag with values (Steam Deck and Steam Machine, decision 61) is tagged for a game only when its verdict is disclosed with a value the person ticked in `kinds.<id>.facets`. A disclosed value that is not ticked renders exactly like the "Not disclosed" row, on every surface, the list filter included, so Show, Dim and Hide act on the ticked values only. Valve's Unknown (0) is not disclosed, and a request that left out the `platforms` section leaves the kind unknown (`unrequested`), never Unsupported (decision 62). A rating lent to a demo reads `kind_full_game_valve` instead of `kind_full_game`.
+
 A DLC follows its base game's ignore list. A kind disclosed on a DLC whose base game is ignored for that kind, or for all tags, renders as the "ignored" row above, except in the banner of the DLC's own page, which shows neither an entry nor a note for it (see "Ignored through a base game" below). Everything else about the state is per kind, as above.
 
-Each kind's settings (`kinds.<id>`: `enabled`, `badge`, `banner` and `filter`) gate its columns. `enabled` off removes everything for the kind, `badge` off removes its chips, in lists and in the tag section, and its line in the package summary, `banner` off removes its entry and its note, and `filter` set to `off` leaves lists alone. All are on by default, except that PvP and In-App Purchases start with `enabled` off, and the filter is `off`. The ignore list wins over every setting.
+Each kind's settings (`kinds.<id>`: `enabled`, `badge`, `banner`, `filter` and, for a tag with values, `facets`) gate its columns. `enabled` off removes everything for the kind, `badge` off removes its chips, in lists and in the tag section, and its line in the package summary, `banner` off removes its entry and its note, `filter` set to `off` leaves lists alone, and `facets` picks the values that count as tagged for all of them. All are on by default, except that PvP, In-App Purchases, Steam Deck and Steam Machine start with `enabled` off, Steam Deck and Steam Machine start with `banner` off and only Unsupported ticked, and the filter is `off`. The ignore list wins over every setting.
 
 ## Shared rules
 
@@ -329,7 +331,8 @@ Preview: `previews/Banner.html`.
 - On the app page of a game with at least one disclosed kind that is enabled and has its banner switch on, once per page view. One banner holds every such kind, in registry order.
 - A kind the game is ignored for is not listed. It becomes a one-line note with Undo. A game ignored for all tags gets one such note and nothing else.
 - Below the entries sits a closed section, "Ignore a developer or publisher", with a row for each of the game's developers and publishers (see "Ignoring a developer or publisher" below). A tag a creator is ignored for becomes a note with Undo.
-- On a demo's page, a kind the full game declared and the demo did not is listed like the others, with `kind_full_game` right under its heading and before the developer's text, which stays the full game's developer's (decision 59).
+- On a demo's page, a kind the full game declared and the demo did not is listed like the others, with `kind_full_game` right under its heading and before the developer's text, which stays the full game's developer's (decision 59). A rating lent this way reads `kind_full_game_valve`.
+- A tag with values is headed by `kind_facet_name`, Steam's heading and the value's word ("Steam Deck Compatibility: Unsupported"), and "Ignore for this tag" ignores the kind, every value.
 - A kind the game's base game is ignored for (the game is a DLC) is not listed and gets no note, since its Undo would belong to the other game's page. A DLC page whose every kind is silenced this way has no banner. "Ignore this game" on a DLC page still ignores that DLC only.
 - Never as a modal or overlay, never over content, never stealing focus.
 
@@ -400,7 +403,7 @@ Modeled on the store's per-app notice bubbles (the DLC notice sits in the same s
 - **Collapsed** (default when the AI notes are long): the quote clamps to `sar-banner-quote-lines` (3). Measure in the next frame; if it does not overflow, drop `data-sar-collapsed` and omit the link.
 - **Expanded:** the link reads `banner_collapse` with `aria-expanded="true"`. No animation; not remembered across pages.
 - **A kind ignored:** its entry gives way to one line in the banner's own type, `banner_ignored_kind` and an Undo link, after the entries that remain.
-- **Only notes left** (`data-sar-variant="ignored"`): the store's DRM-notice geometry in neutral, no violet. The note lines (`banner_ignored` for all tags, one `banner_ignored_kind` for each kind) in `sar-text-banner-note` and `sar-color-text-muted`, each with an Undo link, on `sar-banner-note-bg` with `sar-radius-xs`, `sar-space-1` by `sar-space-2` padding, labelled by `banner_region_label`.
+- **Only notes left** (`data-sar-variant="ignored"`): the store's DRM-notice geometry in neutral, no violet. The note lines (`banner_ignored` for all tags, one `banner_ignored_kind` for each kind) in `sar-text-banner-note` and `sar-color-text-muted`, each with an Undo link, on `sar-banner-note-bg` with `sar-radius-xs`, `sar-space-1` by `sar-space-2` padding, labelled by `banner_region_label`, or by `badge_tags_title` when an entry comes from Valve.
 - **Storage error:** the banner stays as it was and shows `error_allow_list_save` until the next successful action.
 - **Setting turned off:** the kind's entry and note leave, and the host leaves when nothing is left. Turned on: re-render from the known verdicts, no new request.
 
@@ -429,7 +432,7 @@ The head wraps: the heading takes `flex: 1 1 12em` and wraps first (at 24px a lo
 
 ### Accessibility
 
-An `aside` landmark. With one entry and no note it is labelled by that entry's `h2`; otherwise by `banner_region_label`. Every entry has its own `h2`. Each "Ignore for this tag" button takes its name from its text and the entry's heading, and each Undo from its text and its note, so no two buttons share a name. The notes are a `blockquote`; the source line names the speaker. No `lang` on the quote, since the developer's language is unknown. Every control is a real `button` with visible text. In forced colors the wash disappears, so the banner gets a `CanvasText` edge.
+An `aside` landmark. With one entry and no note it is labelled by that entry's `h2`; otherwise by `banner_region_label`, or by `badge_tags_title` ("Tag Kit tags for this product") when any entry comes from Valve, since "Declared by the developer" would be false for it (decision 63). Every entry has its own `h2`. Each "Ignore for this tag" button takes its name from its text and the entry's heading, and each Undo from its text and its note, so no two buttons share a name. The notes are a `blockquote`; the source line names the speaker. No `lang` on the quote, since the developer's language is unknown. Every control is a real `button` with visible text. In forced colors the wash disappears, so the banner gets a `CanvasText` edge.
 
 ### Check
 
@@ -496,7 +499,7 @@ Preview: `previews/OptionsPage.html`.
 ### Layout
 
 - Page: centered, `sar-options-max-width` (640px), `sar-space-4` padding, `sar-color-bg-panel`, `color-scheme: dark`.
-- Popup: `sar-popup-width` (360px), `sar-space-3` padding, short labels where a key exists. With a section for each of eight kinds the popup is tall and scrolls. Sections are flat, not cards: no fill, radius or inline padding, `sar-space-2` above and below, and a 1px `sar-color-divider` line between them. Section titles become captions in `sar-text-popup-caption` (11/16 medium, uppercase) and `sar-color-text-subtle`, like the store's own section labels. Rows take `sar-space-1` padding, the segmented control takes `sar-control-height-xs` (24px, the store's smallest control), and the allow-list scrolls inside 240px. An empty allow-list is left out of the popup; the full page keeps its empty state.
+- Popup: `sar-popup-width` (360px), `sar-space-3` padding, short labels where a key exists. With a section for each of ten kinds the popup is tall and scrolls. Sections are flat, not cards: no fill, radius or inline padding, `sar-space-2` above and below, and a 1px `sar-color-divider` line between them. Section titles become captions in `sar-text-popup-caption` (11/16 medium, uppercase) and `sar-color-text-subtle`, like the store's own section labels. Rows take `sar-space-1` padding, the segmented control takes `sar-control-height-xs` (24px, the store's smallest control), and the allow-list scrolls inside 240px. An empty allow-list is left out of the popup; the full page keeps its empty state.
 - Font: the `ext` family (a system stack). The store font is not loaded on extension pages and none is bundled.
 - Type on the full page: field labels, help and error lines in `sar-text-body` (13/18). The popup keeps help and error lines in `sar-text-help` (12/16).
 - On the full page, sections are `.sar-card`: `sar-color-bg-raised`, `sar-radius-md`, `sar-space-3` padding, `sar-space-2` apart, titled in `sar-text-card-title` with `sar-space-2` below the title.
@@ -506,7 +509,7 @@ Preview: `previews/OptionsPage.html`.
 ### Sections, in order
 
 1. Header.
-2. One section for each tag kind, in registry order (PvP and In-App Purchases start switched off, the other kinds on), titled with Steam's line for the kind (`kind_<id>_heading`). It holds the master switch `options_kind_enabled` (`kinds.<id>.enabled`), then the switches `options_badges` (popup `options_badges_short`; `badge`) and `options_banner` (`banner`), then, on the full page and in the userscript dialog only, the color field (below), then a stacked SegmentedControl with Show, Dim and Hide (`filter`; values `off`, `dim`, `hide`; label `options_filter_label`; the help follows the selection). Each switch has help. While the master switch is off, the other three are hidden and their stored values stay. The summary shows the title and the master switch's state; the master switch and the rest sit in the body, one open away.
+2. One section for each tag kind, in registry order (PvP, In-App Purchases, Steam Deck and Steam Machine start switched off, the other kinds on), titled with Steam's line for the kind (`kind_<id>_heading`). It holds the master switch `options_kind_enabled` (`kinds.<id>.enabled`), then, for a tag with values, a group of native checkboxes, one per value in Steam's words (Verified, Playable, Unsupported; `facets`; label `options_facets_label`, help `options_facets_help`), on the full page, in the popup and in the userscript dialog alike, since the choice decides what the tag means, then the switches `options_badges` (popup `options_badges_short`; `badge`) and `options_banner` (`banner`), then, on the full page and in the userscript dialog only, the color field (below), then a stacked SegmentedControl with Show, Dim and Hide (`filter`; values `off`, `dim`, `hide`; label `options_filter_label`; the help follows the selection). Each switch has help. While the master switch is off, the other three are hidden and their stored values stay. The summary shows the title and the master switch's state; the master switch and the rest sit in the body, one open away.
 3. Language (page only): a stacked Select, `Automatic` first, then each shipped locale named in its own language through `Intl.DisplayNames`.
 4. Games you ignored: the AllowList, in groups. All tags comes first, then each kind in registry order, each group titled with its scope's name and listing its games newest first. Left out of the popup while it is empty.
 5. Backup (full page and userscript dialog, not the toolbar popup): the Backup card, to download a file and restore from one.
@@ -866,8 +869,9 @@ Preview: `previews/HoverCard.html`.
 - Triggers register with the card when they render: a `WeakMap` from trigger element to the host's disclosed verdicts, plus whether the trigger sits on the game's own page (a tag-section chip). Nothing is set on the trigger, and no listener is added to it.
 - Opening and closing run on delegated listeners on the document: `pointerover`, `pointerout`, `focusin`, `focusout`, `keydown` and `scroll`. Their number does not depend on how many chips the page holds. One `pagehide` listener on the window closes the card.
 - The lines under each heading come from `kindDetails`, the function the banner uses, without links. The AI notes go in through `textContent` with `\r\n` turned into `\n`, never translated or cut in the DOM. The service line appears only when GetItems named one (`ai_generation_service`), the name inserted as data.
-- On a demo, an entry for a kind its full game declared has `kind_full_game` right under the title (decision 59). The demo's own entries have none.
-- A last line, `badge_card_declared`, says the developer, not this extension, made the declarations above.
+- On a demo, an entry for a kind its full game declared has `kind_full_game` right under the title (decision 59), or `kind_full_game_valve` for a rating. The demo's own entries have none.
+- A rating's entry is titled with Steam's heading, and its one line is Steam's word for the value (`kind_compat_*`).
+- The last lines name the source of the entries above: `badge_card_declared` when at least one comes from the developer, `badge_card_valve` ("According to Valve") when at least one comes from Valve, both in that order when they mix (decision 63).
 - No request: the card shows the verdicts the chips were drawn from.
 
 ### Look
@@ -878,7 +882,7 @@ Built like the store's game hover popup, sampled on the home page on 2026-10-21:
 - Each entry's title is Steam's line for the kind, in `sar-hovercard-title-font` (15/17, like the store's game name there), `sar-badge-fg`. The violet title is what marks the card as ours. Entries sit `sar-space-2` apart.
 - Detail lines (names, Steam's notes, category names) in `sar-hovercard-meta-font` (11/16) and `sar-color-text`.
 - The full game line, `kind_full_game`, in the meta font and `sar-color-text-muted`, like the source line.
-- The source line, `badge_card_declared`, ends the card in `sar-hovercard-meta-font` (11/16) and `sar-color-text-muted`, like the store's release line.
+- The source lines, `badge_card_declared` and `badge_card_valve`, end the card in `sar-hovercard-meta-font` (11/16) and `sar-color-text-muted`, like the store's release line.
 - Notes in `sar-hovercard-notes-font` (12/18 italic, like the store's own disclosure section), `sar-color-text`, `white-space: pre-line`, clamped to `sar-hovercard-notes-lines` (6) lines.
 - Service line in the meta font: label `sar-color-text-muted`, name `sar-color-text`.
 - The "more" line, `badge_card_more` in the meta font and `sar-color-text-muted`, shows only when the clamp hides text and the trigger is not on the game's own page. The app page carries Steam's own disclosure section and, when on, the banner; a tag-section chip's card never shows the line. The full notes stay in the DOM for screen readers, and the game's store page carries them in Steam's own disclosure section.
@@ -1037,16 +1041,27 @@ For every translator:
 | `kind_pvp_category_split` | Shared/Split Screen PvP | Steam's category name. |
 | `kind_iap_heading` | In-App Purchases | Steam's category name for a game that sells items inside it. Titles the entry in the hover card, the banner and the settings, and begins the chip's accessible name. Use the name Steam's store shows in your language. |
 | `kind_iap_chip` | IAP | Short chip, the initials of Steam's name. In a language without such initials, one word of that name. |
+| `kind_deck_heading` | Steam Deck Compatibility | Steam's heading of Valve's Steam Deck rating. Titles the entry in the hover card and the settings, and with the value word the banner entry and the chip's accessible name. |
+| `kind_deck_chip` | Deck | Short device word that starts a Steam Deck chip. Our short form, for chips only. |
+| `kind_machine_heading` | Steam Machine Compatibility | Steam's heading of Valve's Steam Machine rating, used like the Deck heading. |
+| `kind_machine_chip` | Steam Machine | Device word that starts a Steam Machine chip; Steam has no short form. |
+| `kind_compat_verified` | Verified | Steam's word for the best rating, shared by both devices. |
+| `kind_compat_playable` | Playable | Steam's word for the middle rating. |
+| `kind_compat_unsupported` | Unsupported | Steam's word for a game Valve rated as not working on the device. Never for a game Valve has not rated. |
 | `kind_chip_name` | `$chip$`: `$heading$` | Accessible name of a chip: the chip text, then Steam's line. |
 | `kind_chip_more` | +`$count$` | Chip that stands for the kinds that do not fit. |
 | `kind_chip_more_name` | more tags | After the chip text, names the hidden chips for screen readers. |
+| `kind_facet_chip` | `$chip$` `$value$` | Chip of a tag with values: the short word, then Steam's word for the value ("Deck Unsupported"). Add a colon where the two would read as one phrase. |
+| `kind_facet_name` | `$heading$`: `$value$` | Steam's heading and the value's word: the chip's accessible name, the banner entry heading and the package summary line. |
 | `kind_full_game` | Declared for the full game | In the hover card and the banner on a demo, under a tag its full game declared. Never says the demo declared it. |
+| `kind_full_game_valve` | Rated for the full game | The same for a Steam Deck or Steam Machine rating Valve gave the full game. Never says the demo was rated. |
 
 ### `badge_`
 
 | Key | English | Note |
 | --- | --- | --- |
 | `badge_card_declared` | Declared by the developer on the store page | Last line of the hover card. It says the developer, not this extension, made the declarations above. |
+| `badge_card_valve` | According to Valve | Last line of the hover card when it lists a rating Valve gives; after the developer's line when both apply. |
 | `badge_card_service_label` | AI service named by the developer: | Precedes a product name inserted as data. Used by the card and the banner. |
 | `badge_card_more` | The full text is on the game's store page. | Shown when the card cuts a long text short, never on the game's own page. |
 | `badge_summary_games_one`, `_other` | `$kind$`: `$tagged$` of `$count$` game(s) | A line of the package summary, one per tag: Steam's line, then how many of the games with a known answer carry it. Neutral count words only. |
@@ -1057,7 +1072,7 @@ For every translator:
 | Key | English | Note |
 | --- | --- | --- |
 | `banner_source` | In the developer's own words: | Introduces the developer's text, which follows untranslated. |
-| `banner_region_label` | Declared by the developer | Screen reader name of the banner when it lists several kinds, or only notes. |
+| `banner_region_label` | Declared by the developer | Screen reader name of the banner when it lists several kinds, or only notes, all from the developer. With an entry from Valve, `badge_tags_title` names it instead. |
 | `banner_expand` | Show full report | Expands the collapsed text. |
 | `banner_collapse` | Show less | Collapses it again. |
 | `banner_ignore` | Ignore this game | Stops every tag and the banner for one game, in this extension. The store has its own Ignore button. |
@@ -1106,8 +1121,10 @@ For every translator:
 | `options_badges_short` | Badge | The same switch in the popup. |
 | `options_badges_help` | Adds "`$label$`" to search and wishlist rows and to game images. | `label` is the kind's chip text. |
 | `options_banner` | Entry in the banner on game pages | Switch label of one tag's entry. |
-| `options_banner_help` | Shows what the developer declared above the purchase box. | Help under the switch. |
+| `options_banner_help` | Shows this tag's entry above the purchase box. | Help under the switch. |
 | `options_filter_label` | Games with this tag | Label of a three-way choice. |
+| `options_facets_label` | Values to tag | Label of the checkboxes of a tag with values; only ticked values get the tag. |
+| `options_facets_help` | Badges, banner entries and the list filter act on the values ticked here. With none ticked, the tag marks no game. | Help under them. |
 | `options_filter_off` | Show | Leave these games as they are. |
 | `options_filter_dim` | Dim | Fade these games. |
 | `options_filter_hide` | Hide | Remove these games from lists. |

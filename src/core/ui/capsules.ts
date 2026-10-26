@@ -56,6 +56,8 @@ export interface CapsuleUiOptions {
   readonly isAllowed: (id: AppId, kind: KindId, related: Relations) => boolean;
   /** Whether the kind's badges show now, by its settings. */
   readonly isBadged: (kind: KindId) => boolean;
+  /** What the renderers draw of an app's verdicts now (`taggedView`); the verdicts by default. */
+  readonly tagged?: (verdicts: KindVerdicts) => KindVerdicts;
   /** Schedules a read-then-write pass; `requestAnimationFrame` by default. */
   readonly frame?: (callback: () => void) => void;
   /** Watches image boxes that had no size when drawn; one `ResizeObserver` by default. */
@@ -71,6 +73,11 @@ export interface CapsuleUi extends CapsuleRenderer {
    * game is in `ids`, as after an allow-list change.
    */
   refresh(ids?: ReadonlySet<AppId>): void;
+  /**
+   * Asks again, in one call, about the known hosts whose verdicts are `stale`, as when a kind that
+   * reads a section their answers lack turns on. They keep drawing what they hold meanwhile.
+   */
+  redetect(stale: (verdicts: KindVerdicts) => boolean): void;
   /** Stops watching image boxes, cancels a pending retry and stops listening for `pagehide`. */
   stop(): void;
 }
@@ -116,6 +123,7 @@ const NO_SLOT: SlotRead = { slot: undefined, markAnchor: false, unsized: false }
  */
 export function createCapsuleUi(options: CapsuleUiOptions): CapsuleUi {
   const { document: doc, detector, renderers, isAllowed, isBadged } = options;
+  const tagged = options.tagged ?? ((verdicts: KindVerdicts) => verdicts);
   const frame = options.frame ?? ((callback: () => void) => {
     const view = doc.defaultView;
     if (view === null) {
@@ -207,10 +215,11 @@ export function createCapsuleUi(options: CapsuleUiOptions): CapsuleUi {
     const draws: Draw[] = [];
     // Read phase: image boxes and computed positions, only for hosts that will show a badge.
     for (const record of batch) {
-      const { host, verdicts, allowed, badged } = record;
-      if (verdicts === undefined || !host.element.isConnected) {
+      const { host, allowed, badged } = record;
+      if (record.verdicts === undefined || !host.element.isConnected) {
         continue;
       }
+      const verdicts = tagged(record.verdicts);
       let shows = false;
       for (const kind of KINDS) {
         allowed[kind.id] = isAllowed(host.appId, kind.id, verdicts);
@@ -306,6 +315,19 @@ export function createCapsuleUi(options: CapsuleUiOptions): CapsuleUi {
         if (record?.verdicts !== undefined && (ids === undefined || concerns(ids, record))) {
           queue(record);
         }
+      }
+    },
+
+    redetect(stale) {
+      const due: HostRecord[] = [];
+      for (const element of doc.querySelectorAll(`[${HOST_APPID}]`)) {
+        const record = records.get(element);
+        if (record?.verdicts !== undefined && stale(record.verdicts)) {
+          due.push(record);
+        }
+      }
+      if (due.length > 0) {
+        void detect(due);
       }
     },
 

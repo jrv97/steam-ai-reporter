@@ -49,7 +49,7 @@ export function parseSettings(stored: unknown): Settings {
   return {
     locale,
     debug,
-    kinds: perKind((kind) => parseKindSettings(kind.defaults, kinds[kind.id])),
+    kinds: perKind((kind) => parseKindSettings(kind, kinds[kind.id])),
   };
 }
 

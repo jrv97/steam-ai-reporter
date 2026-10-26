@@ -1,6 +1,7 @@
 import type { AccountDisclosed } from "../../src/core/kinds/account";
 import type { AiDisclosed, AiVerdict } from "../../src/core/kinds/ai";
 import type { AnticheatDisclosed } from "../../src/core/kinds/anticheat";
+import type { CompatDisclosed, CompatFacet } from "../../src/core/kinds/compat";
 import type { DrmDisclosed } from "../../src/core/kinds/drm";
 import { type EulaDisclosed, eulaLink, type EulaUrl } from "../../src/core/kinds/eula";
 import type { IapDisclosed } from "../../src/core/kinds/iap";
@@ -47,6 +48,16 @@ interface FullDisclosed {
   readonly eula: EulaDisclosed;
   readonly pvp: PvpDisclosed;
   readonly iap: IapDisclosed;
+  readonly deck: CompatDisclosed<"deck">;
+  readonly machine: CompatDisclosed<"machine">;
+}
+
+/** A rating Valve gives for a device kind, as its disclosed verdict. */
+export function compatVerdict<const Id extends "deck" | "machine">(
+  kind: Id,
+  facet: CompatFacet,
+): CompatDisclosed<Id> {
+  return { state: "disclosed", kind, source: "api", facet };
 }
 
 /** Each kind's disclosed verdict, with every field of its payload set. */
@@ -93,6 +104,8 @@ export const FULL_DISCLOSED: FullDisclosed = {
   },
   pvp: { state: "disclosed", kind: "pvp", source: "api", categoryIds: [49, 36] },
   iap: { state: "disclosed", kind: "iap", source: "api" },
+  deck: compatVerdict("deck", "unsupported"),
+  machine: compatVerdict("machine", "unsupported"),
 };
 
 /** Every kind in the same state, so a test sees the TTL or the storage of that state alone. */
@@ -117,6 +130,8 @@ export function disclosedKinds(kinds: readonly KindId[]): KindVerdicts {
     eula: pick("eula", FULL_DISCLOSED.eula),
     pvp: pick("pvp", FULL_DISCLOSED.pvp),
     iap: pick("iap", FULL_DISCLOSED.iap),
+    deck: pick("deck", FULL_DISCLOSED.deck),
+    machine: pick("machine", FULL_DISCLOSED.machine),
   };
 }
 

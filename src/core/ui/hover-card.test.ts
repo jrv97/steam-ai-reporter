@@ -491,12 +491,31 @@ describe("createHoverCard", () => {
       return eula.state === "disclosed" ? eula.items.map((item) => item.name) : [];
     }
 
-    it("lists every kind in the order given, then names the developer as the source", () => {
+    it("lists every kind in the order given", () => {
       open(disclosedOf(FULL_DISCLOSED));
       expect(entries().map(([title]) => title)).toEqual(KIND_IDS.map(heading));
-      expect(shown()?.children).toHaveLength(KIND_IDS.length + 2);
-      expect(shown()?.lastElementChild?.textContent).toBe(i18n.t("badge_card_declared"));
       expect(shown()?.querySelectorAll(".sar-hovercard-title")).toHaveLength(KIND_IDS.length);
+    });
+
+    it.each(
+      [
+        ["the developer's entries", ["drm", "ai"], ["badge_card_declared"]],
+        ["Valve's entries", ["deck", "machine"], ["badge_card_valve"]],
+        ["entries of both", ["deck", "drm"], ["badge_card_declared", "badge_card_valve"]],
+      ] as const,
+    )("closes %s with the lines that name their source", (_name, kinds, keys) => {
+      open(kinds.map((id) => FULL_DISCLOSED[id]));
+      const lines = [...(shown()?.querySelectorAll(".sar-hovercard-source") ?? [])];
+      expect(lines.map((line) => line.textContent)).toEqual(keys.map((key) => i18n.t(key)));
+      expect(shown()?.lastElementChild).toBe(lines.at(-1));
+    });
+
+    it("shows a rating in Steam's words, and a lent one as rated for the full game", () => {
+      open([FULL_DISCLOSED.deck, lent(FULL_DISCLOSED.machine)]);
+      expect(entries()).toEqual([
+        [heading("deck"), i18n.t("kind_compat_unsupported")],
+        [heading("machine"), i18n.t("kind_full_game_valve"), i18n.t("kind_compat_unsupported")],
+      ]);
     });
 
     it("marks each entry with its kind, so a custom color reaches its title", () => {

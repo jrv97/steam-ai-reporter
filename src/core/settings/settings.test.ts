@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { plainKinds, withKind } from "../../../tests/helpers/settings";
 import { toHexColor } from "../kinds/color";
+import type { KindSettings } from "../kinds/kind-settings";
 import { KINDS, perKind } from "../kinds/registry";
 import {
   applyPatch,
@@ -71,7 +72,10 @@ describe("parseSettings", () => {
       locale: "pt_BR",
       debug: true,
       kinds: {
-        ...perKind(() => ({ enabled: false, badge: false, banner: false, filter: "hide" })),
+        ...perKind((kind): KindSettings => {
+          const off: KindSettings = { enabled: false, badge: false, banner: false, filter: "hide" };
+          return kind.facets === undefined ? off : { ...off, facets: ["playable"] };
+        }),
         kernel: { enabled: true, badge: false, banner: true, filter: "dim" },
       },
     };
@@ -127,7 +131,7 @@ describe("encodeSettings", () => {
     locale: "es",
     debug: true,
     kinds: {
-      ...perKind(() => PLAIN),
+      ...plainKinds(PLAIN),
       ai: { enabled: true, badge: false, banner: true, filter: "dim" },
     },
   };
@@ -137,7 +141,7 @@ describe("encodeSettings", () => {
       locale: "es",
       debug: true,
       kinds: {
-        ...perKind(() => PLAIN),
+        ...plainKinds(PLAIN),
         ai: { enabled: true, badge: false, banner: true, filter: "dim" },
       },
     });

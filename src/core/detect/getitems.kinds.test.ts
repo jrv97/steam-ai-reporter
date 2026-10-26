@@ -1,11 +1,18 @@
 import { describe, expect, it } from "vitest";
 import kinds from "../../../tests/fixtures/getitems/kinds.json";
+import platforms from "../../../tests/fixtures/getitems/platforms.json";
 import { appId, appIds } from "../../../tests/helpers/app-ids";
 import { httpResult } from "../../../tests/helpers/fake-http";
-import { fixtureItems, getItemsResponse, storeItem } from "../../../tests/helpers/getitems";
+import {
+  fixtureItems,
+  getItemsResponse,
+  itemIds,
+  storeItem,
+} from "../../../tests/helpers/getitems";
 import { KIND_IDS } from "../kinds/id";
-import { perKind } from "../kinds/registry";
-import { type KindVerdicts, UNKNOWN_KINDS } from "../kinds/verdicts";
+import { KINDS, perKind } from "../kinds/registry";
+import { SECTIONS } from "../kinds/sections";
+import { type KindVerdict, type KindVerdicts, UNKNOWN_KINDS } from "../kinds/verdicts";
 import { GETITEMS_URL, parseGetItems } from "./getitems";
 
 // Every kind derived from the batch captured for the tag kinds (tests/fixtures/README.md).
@@ -47,13 +54,16 @@ const NONE = {
   eula: "not-disclosed",
   pvp: "not-disclosed",
   iap: "not-disclosed",
+  // The batch was parsed as asked without platforms, which Valve's ratings read.
+  deck: "unknown:unrequested",
+  machine: "unknown:unrequested",
 };
 
 describe("parseGetItems over the tag kind fixture", () => {
   it("answers every requested ID with a verdict for every kind", () => {
     expect(verdicts.size).toBe(IDS.length + OTHER_ITEMS.length);
     for (const found of verdicts.values()) {
-      expect(Object.keys(found)).toStrictEqual([...KIND_IDS]);
+      expect(Object.keys(found)).toStrictEqual(expect.arrayContaining([...KIND_IDS]));
     }
   });
 
@@ -161,11 +171,43 @@ describe("parseGetItems over the tag kind fixture", () => {
   });
 });
 
+describe("parseGetItems over the platforms fixture, asked with every section", () => {
+  const ids = itemIds(fixtureItems(platforms));
+  const found = parseGetItems(
+    ids,
+    httpResult(getItemsResponse(fixtureItems(platforms)), GETITEMS_URL),
+    "english",
+    SECTIONS,
+  );
+
+  it.each(
+    [
+      ["Cyberpunk 2077", 1091500, "verified", "verified"],
+      ["Counter-Strike 2", 730, "playable", "playable"],
+      ["Red Dead Redemption 2", 1174180, "playable", "playable"],
+      ["ARC Raiders, rated apart per device", 1808500, "playable", "verified"],
+      ["Assassin's Creed Black Flag Resynced", 3751950, "verified", "verified"],
+      ["Hades", 1145360, "verified", "verified"],
+      ["the unreleased ReBlade, all zeros", 3489340, undefined, undefined],
+      ["a large DLC with its own Deck rating", 2778580, "playable", undefined],
+      ["a cosmetic DLC, all zeros, with nothing from its base game", 5201760, undefined, undefined],
+    ] as const,
+  )("reads %s (%s)", (_name, id, deck, machine) => {
+    const verdicts = found.get(appId(id));
+    const facet = (verdict: KindVerdict | undefined) =>
+      verdict?.state === "disclosed" && "facet" in verdict ? verdict.facet : verdict?.state;
+    expect([facet(verdicts?.deck), facet(verdicts?.machine)]).toStrictEqual([
+      deck ?? "not-disclosed",
+      machine ?? "not-disclosed",
+    ]);
+  });
+});
+
 describe("parseGetItems with one malformed field", () => {
   function parse(item: unknown): KindVerdicts {
     const id = appId(1);
-    const found = parseGetItems([id], httpResult(getItemsResponse([item]), GETITEMS_URL), "english")
-      .get(id);
+    const result = httpResult(getItemsResponse([item]), GETITEMS_URL);
+    const found = parseGetItems([id], result, "english", SECTIONS).get(id);
     if (found === undefined) {
       throw new TypeError();
     }
@@ -181,16 +223,21 @@ describe("parseGetItems with one malformed field", () => {
   };
 
   const CATEGORIES = { supported_player_categoryids: [49], feature_categoryids: [35] };
-  // The kinds FULL and CATEGORIES disclose: a kernel anti-cheat is not the other anti-cheat kind.
-  const DISCLOSING = ["ai", "kernel", "drm", "account", "eula", "pvp", "iap"];
+  const PLATFORMS = { steam_deck_compat_category: 1, steam_machine_compat_category: 1 };
+  // What FULL, CATEGORIES and PLATFORMS disclose: a kernel anti-cheat is not the other anti-cheat.
+  const DISCLOSING = ["ai", "kernel", "drm", "account", "eula", "pvp", "iap", "deck", "machine"];
 
   function disclosedKinds(found: KindVerdicts): readonly string[] {
     return KIND_IDS.filter((id) => found[id].state === "disclosed");
   }
 
-  /** A store item with FULL and CATEGORIES, and `details` over FULL. */
-  function item(details: Readonly<Record<string, unknown>>, categories: unknown = CATEGORIES) {
-    return storeItem(1, { categories, extra_details: { ...FULL, ...details } });
+  /** A store item with FULL, CATEGORIES and PLATFORMS, and `details` over FULL. */
+  function item(
+    details: Readonly<Record<string, unknown>>,
+    categories: unknown = CATEGORIES,
+    platforms: unknown = PLATFORMS,
+  ) {
+    return storeItem(1, { categories, platforms, extra_details: { ...FULL, ...details } });
   }
 
   it.each<readonly [string, Readonly<Record<string, unknown>>, readonly string[]]>([
@@ -206,6 +253,12 @@ describe("parseGetItems with one malformed field", () => {
       ["pvp"],
     ],
     ["feature_categoryids", item({}, { ...CATEGORIES, feature_categoryids: [35, "1"] }), ["iap"]],
+    ["platforms", item({}, CATEGORIES, "Steam Deck Verified"), ["deck", "machine"]],
+    [
+      "steam_machine_compat_category",
+      item({}, CATEGORIES, { ...PLATFORMS, steam_machine_compat_category: 9 }),
+      ["machine"],
+    ],
   ])("costs only the kinds that read %s when it is malformed", (_field, raw, lost) => {
     const found = parse(raw);
     const broken = KIND_IDS.filter((id) => {
@@ -220,8 +273,8 @@ describe("parseGetItems with one malformed field", () => {
     const categories = { supported_player_categoryids: [2], feature_categoryids: [22] };
     const found = parse(storeItem(1, { extra_details: [], categories }));
     expect(disclosedKinds(found)).toStrictEqual([]);
-    for (const id of KIND_IDS) {
-      expect(found[id].state).toBe("not-disclosed");
+    for (const kind of KINDS.filter(({ sections }) => sections === undefined)) {
+      expect(found[kind.id].state).toBe("not-disclosed");
     }
   });
 

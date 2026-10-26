@@ -2,7 +2,7 @@ import { KIND_BY_ID } from "../kinds/registry";
 import { type AnyDisclosed, sameVerdicts } from "../kinds/verdicts";
 import type { MessageCatalog } from "../ports";
 import { KIND_ATTRIBUTE } from "./kind-attributes";
-import { type KindDetail, kindDetails } from "./kind-details";
+import { fromValve, fullGameLine, type KindDetail, kindDetails } from "./kind-details";
 import { normalizeBreaks } from "./notes";
 
 /** The card's id, the target of `aria-describedby` while focus holds it open. */
@@ -101,7 +101,9 @@ interface Open {
 interface Card {
   readonly root: HTMLElement;
   readonly more: HTMLElement;
-  readonly source: HTMLElement;
+  /** The closing lines that name who states the entries: the developer, Valve. */
+  readonly declared: HTMLElement;
+  readonly valve: HTMLElement;
 }
 
 /** What a follow reuses from the last placement, so it reads only the trigger's box. */
@@ -155,7 +157,7 @@ function defaultOverflows(notes: HTMLElement): boolean {
 /**
  * The hover card: one panel per page, built like the store's game hover popup, that lists every
  * kind of the chip under the pointer or focus: Steam's line for the kind, its details and the
- * developer's own text, then a line that names the developer as the source.
+ * developer's own text, then a line for each source of the entries: the developer, Valve.
  * Triggers register in a `WeakMap`; six delegated listeners on the document serve every trigger
  * on the page. The card closes on `pagehide`.
  */
@@ -223,9 +225,10 @@ export function createHoverCard(
     root.hidden = true;
     const more = line("sar-hovercard-more", i18n.t("badge_card_more"));
     more.hidden = true;
-    const source = line("sar-hovercard-source", i18n.t("badge_card_declared"));
+    const declared = line("sar-hovercard-source", i18n.t("badge_card_declared"));
+    const valve = line("sar-hovercard-source", i18n.t("badge_card_valve"));
     doc.body.append(root);
-    card = { root, more, source };
+    card = { root, more, declared, valve };
     return card;
   }
 
@@ -264,7 +267,7 @@ export function createHoverCard(
     node.append(
       line("sar-hovercard-title", heading),
       ...(verdict.fullGame === true
-        ? [line("sar-hovercard-full-game", i18n.t("kind_full_game"))]
+        ? [line("sar-hovercard-full-game", i18n.t(fullGameLine(verdict)))]
         : []),
       ...kindDetails(verdict)
         .filter((detail) => !(detail.kind === "message" && i18n.t(detail.key) === heading))
@@ -273,12 +276,28 @@ export function createHoverCard(
     return node;
   }
 
+  /** The closing lines for the entries: the developer's, then Valve's, as each applies. */
+  function sources(target: Card, entries: readonly AnyDisclosed[]): HTMLElement[] {
+    const lines: HTMLElement[] = [];
+    if (!entries.every(fromValve)) {
+      lines.push(target.declared);
+    }
+    if (entries.some(fromValve)) {
+      lines.push(target.valve);
+    }
+    return lines;
+  }
+
   /** Rebuilds the shown card for other verdicts; the same verdicts keep what is there. */
   function fill(target: Card, { entries, ownPage }: Binding): void {
     if (filled === undefined || !sameVerdicts(filled, entries)) {
       filled = entries;
       quotes = [];
-      target.root.replaceChildren(...entries.map(entry), target.more, target.source);
+      target.root.replaceChildren(
+        ...entries.map(entry),
+        target.more,
+        ...sources(target, entries),
+      );
       // Measured once per fill, on the shown card: the clamp depends on the text and the width.
       target.more.hidden = true;
       clamped = quotes.some(overflows);

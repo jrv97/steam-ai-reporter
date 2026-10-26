@@ -299,6 +299,8 @@
 [data-sar-filter-eula="dim"] [data-sar-kinds~="eula"],
 [data-sar-filter-pvp="dim"] [data-sar-kinds~="pvp"],
 [data-sar-filter-iap="dim"] [data-sar-kinds~="iap"],
+[data-sar-filter-deck="dim"] [data-sar-kinds~="deck"],
+[data-sar-filter-machine="dim"] [data-sar-kinds~="machine"],
 [data-sar-filter-ai="hide"]
   [data-sar-kinds~="ai"]:is([data-sar-hideable="false"], [data-sar-reveal] *),
 [data-sar-filter-kernel="hide"]
@@ -314,7 +316,11 @@
 [data-sar-filter-pvp="hide"]
   [data-sar-kinds~="pvp"]:is([data-sar-hideable="false"], [data-sar-reveal] *),
 [data-sar-filter-iap="hide"]
-  [data-sar-kinds~="iap"]:is([data-sar-hideable="false"], [data-sar-reveal] *) {
+  [data-sar-kinds~="iap"]:is([data-sar-hideable="false"], [data-sar-reveal] *),
+[data-sar-filter-deck="hide"]
+  [data-sar-kinds~="deck"]:is([data-sar-hideable="false"], [data-sar-reveal] *),
+[data-sar-filter-machine="hide"]
+  [data-sar-kinds~="machine"]:is([data-sar-hideable="false"], [data-sar-reveal] *) {
   filter: opacity(var(--sar-dim-opacity)) !important;
 }
 
@@ -326,6 +332,8 @@
 [data-sar-filter-eula="dim"] [data-sar-kinds~="eula"]:is(:hover, :focus-within),
 [data-sar-filter-pvp="dim"] [data-sar-kinds~="pvp"]:is(:hover, :focus-within),
 [data-sar-filter-iap="dim"] [data-sar-kinds~="iap"]:is(:hover, :focus-within),
+[data-sar-filter-deck="dim"] [data-sar-kinds~="deck"]:is(:hover, :focus-within),
+[data-sar-filter-machine="dim"] [data-sar-kinds~="machine"]:is(:hover, :focus-within),
 [data-sar-filter-ai="hide"]
   [data-sar-kinds~="ai"]:is([data-sar-hideable="false"], [data-sar-reveal]
     *):is(:hover, :focus-within),
@@ -349,6 +357,12 @@
     *):is(:hover, :focus-within),
 [data-sar-filter-iap="hide"]
   [data-sar-kinds~="iap"]:is([data-sar-hideable="false"], [data-sar-reveal]
+    *):is(:hover, :focus-within),
+[data-sar-filter-deck="hide"]
+  [data-sar-kinds~="deck"]:is([data-sar-hideable="false"], [data-sar-reveal]
+    *):is(:hover, :focus-within),
+[data-sar-filter-machine="hide"]
+  [data-sar-kinds~="machine"]:is([data-sar-hideable="false"], [data-sar-reveal]
     *):is(:hover, :focus-within) {
   filter: none !important;
   transition: filter var(--sar-duration-fast) var(--sar-ease);
@@ -369,7 +383,11 @@
 [data-sar-filter-pvp="hide"]:not([data-sar-reveal])
   [data-sar-kinds~="pvp"]:not([data-sar-hideable="false"]),
 [data-sar-filter-iap="hide"]:not([data-sar-reveal])
-  [data-sar-kinds~="iap"]:not([data-sar-hideable="false"]) {
+  [data-sar-kinds~="iap"]:not([data-sar-hideable="false"]),
+[data-sar-filter-deck="hide"]:not([data-sar-reveal])
+  [data-sar-kinds~="deck"]:not([data-sar-hideable="false"]),
+[data-sar-filter-machine="hide"]:not([data-sar-reveal])
+  [data-sar-kinds~="machine"]:not([data-sar-hideable="false"]) {
   display: none !important;
 }
 

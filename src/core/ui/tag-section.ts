@@ -1,4 +1,3 @@
-import { KIND_BY_ID } from "../kinds/registry";
 import { type AnyDisclosed, sameVerdicts } from "../kinds/verdicts";
 import type { MessageCatalog } from "../ports";
 import { createChip, createChipGroup } from "./badge";
@@ -77,7 +76,7 @@ export function createTagSection(
     const element = createTagBlock(doc, i18n, "sar-tag-section", LABEL_ID);
     const group = createChipGroup(doc, "full");
     for (const verdict of verdicts) {
-      const chip = createChip(doc, i18n, KIND_BY_ID[verdict.kind]);
+      const chip = createChip(doc, i18n, verdict);
       if (card !== undefined) {
         chip.tabIndex = 0;
         card.bind(chip, [verdict], true);

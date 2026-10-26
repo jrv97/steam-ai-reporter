@@ -5,10 +5,11 @@ import { setAttributeOnce } from "./kind-attributes";
 
 /**
  * Records on each host which kinds it carries, for the list filter and the layout rules:
- * `data-sar-kinds` holds the ids of the kinds that are disclosed and not ignored for the game, and
- * `data-sar-hideable="false"` marks hosts where hiding would break the list. The style rules turn
- * the root's per-kind filters into dim or hide on these hosts (`applyKindSettings`). Writes only
- * what changed, so a rescan or a setting change causes no mutation churn.
+ * `data-sar-kinds` holds the ids of the kinds tagged for the game (disclosed, with a chosen value
+ * for a kind with values, and not ignored), and `data-sar-hideable="false"` marks hosts where
+ * hiding would break the list. The style rules turn the root's per-kind filters into dim or hide
+ * on these hosts (`applyKindSettings`). Writes only what changed, so a rescan or a setting change
+ * causes no mutation churn.
  */
 export function createHostKindsRenderer(): HostRenderer {
   return {

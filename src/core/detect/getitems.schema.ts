@@ -131,14 +131,29 @@ const BasicInfoSchema = record({
   publishers: droppable(CreatorListSchema),
 });
 
+/** A device rating Valve computes: 0 Unknown, 1 Unsupported, 2 Playable, 3 Verified. */
+const CompatSchema = lenient(v.pipe(v.number(), v.integer(), v.minValue(0), v.maxValue(3)));
+
+/**
+ * The devices Valve rates (`include_platforms`), by the field a compatibility kind reads. Each
+ * field is lenient, so a bad one costs only its kind.
+ */
+const PlatformsSchema = record({
+  steam_deck_compat_category: CompatSchema,
+  steam_machine_compat_category: CompatSchema,
+});
+
+/** A field of `platforms` that a compatibility kind reads. */
+export type CompatField = keyof v.InferOutput<typeof PlatformsSchema>;
+
 /** Steam's `type` of a demo; a DLC is 4 and a game 0. */
 export const DEMO_TYPE = 1;
 
 /**
  * One store item. `id` echoes the requested ID; `appid` is 0 for invalid items and unused.
- * The name and the categories are lenient, and `type`, `related_items` and `basic_info` are
- * droppable. An item without a valid `id`, `success` or `extra_details` says nothing about any
- * kind.
+ * The name, the categories and the platforms are lenient, and `type`, `related_items` and
+ * `basic_info` are droppable. An item without a valid `id`, `success` or `extra_details` says
+ * nothing about any kind.
  */
 export const StoreItemSchema = v.pipe(
   v.object({
@@ -147,6 +162,7 @@ export const StoreItemSchema = v.pipe(
     name: lenient(TextSchema),
     type: droppable(v.pipe(v.number(), v.integer())),
     categories: lenient(CategoriesSchema),
+    platforms: lenient(PlatformsSchema),
     related_items: droppable(RelatedItemsSchema),
     basic_info: droppable(BasicInfoSchema),
     extra_details: v.exactOptional(ExtraDetailsSchema),

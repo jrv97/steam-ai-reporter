@@ -24,7 +24,10 @@ describe("readBackup", () => {
       color: hexColor("#ff8800"),
     });
     const contents = backupContents({
-      settings: withKind(drm, "iap", { enabled: true, filter: "dim" }),
+      settings: withKind(withKind(drm, "iap", { enabled: true, filter: "dim" }), "deck", {
+        enabled: true,
+        facets: ["verified", "playable"],
+      }),
       games: gameEntries({ all: [[10, "Ten", 1]], ai: [[20, "Twenty", 2]] }),
       creators: {
         developer: creatorEntries({ drm: [["c:4", "Studio", 3]] }),

@@ -2,6 +2,7 @@ import { type Creator, CREATOR_ROLES, type CreatorKey, type CreatorRole } from "
 import { createTransientRetry, type Delay } from "./detect/retry";
 import type { SteamLanguage } from "./i18n/locale";
 import { type Ignored, type IgnoreLists, isIgnored } from "./ignored";
+import { taggedView } from "./kinds/facets";
 import type { KindId } from "./kinds/id";
 import { effectiveSettings } from "./kinds/kind-settings";
 import { KINDS, perKind } from "./kinds/registry";
@@ -147,6 +148,8 @@ export interface AppPageDeps {
 export interface AppPage {
   /** Draws again from the known verdicts and the current settings. */
   render(): void;
+  /** Looks the game up again, as when a kind that reads a section the answer lacks turns on. */
+  redetect(): void;
   /** Stops a lookup that has not finished from drawing, and cancels a pending retry. */
   stop(): void;
 }
@@ -188,7 +191,7 @@ export function startAppPage(
   function view(): AppPageView {
     const { kinds } = deps.settings();
     return {
-      verdicts: known,
+      verdicts: taggedView(known, kinds),
       creators: creatorRows(),
       ignored: perScope((scope) => deps.ignored.games[scope].has(id)),
       suppressed: perKind((kind) => isIgnored(deps.ignored, id, kind.id, known)),
@@ -259,6 +262,7 @@ export function startAppPage(
   lookUp();
   return {
     render,
+    redetect: lookUp,
     stop() {
       stopped = true;
       retry.cancel();

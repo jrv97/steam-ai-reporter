@@ -157,6 +157,34 @@
     "message": "Compras",
     "description": "Short chip for a game with in-app purchases, as its Steam categories say. Keep it short; it sits in a row and over game images. Unverified like the heading: a short form of Steam's category name."
   },
+  "kind_deck_heading": {
+    "message": "Compatibilidad con Steam Deck",
+    "description": "Steam's own heading of the Steam Deck rating Valve gives a game. It titles the entry in the hover card, names the settings section and, with the rating word, heads the entry in the notice on the game's page and the chip's screen reader name. Use the wording Steam shows in this language. From Steam's Spanish client strings; not checked on a live store page."
+  },
+  "kind_deck_chip": {
+    "message": "Deck",
+    "description": "Short device word at the start of a Steam Deck chip, followed by Steam's rating word (kind_facet_chip): \"Deck: No compatible\". Our short form of the device name, for chips only; keep it short."
+  },
+  "kind_machine_heading": {
+    "message": "Compatibilidad con Steam Machine",
+    "description": "Steam's own heading of the Steam Machine rating Valve gives a game. It titles the entry in the hover card, names the settings section and, with the rating word, heads the entry in the notice on the game's page and the chip's screen reader name. Use the wording Steam shows in this language. From Steam's Spanish client strings; not checked on a live store page."
+  },
+  "kind_machine_chip": {
+    "message": "Steam Machine",
+    "description": "Device word at the start of a Steam Machine chip, followed by Steam's rating word (kind_facet_chip): \"Steam Machine: No compatible\". The device name, which Steam has no short form for."
+  },
+  "kind_compat_verified": {
+    "message": "Verificado",
+    "description": "Steam's word for the best Steam Deck and Steam Machine rating, shown under the heading in the hover card, after the device word on the chip and as a choice in the settings. Use the word Steam shows in this language. Steam shares the rating words between Steam Deck and Steam Machine; the Machine section was not checked live in this language."
+  },
+  "kind_compat_playable": {
+    "message": "Jugable",
+    "description": "Steam's word for the middle Steam Deck and Steam Machine rating: the game works, with some effort. Shown like Verified. Use the word Steam shows in this language. Steam shares the rating words between Steam Deck and Steam Machine; the Machine section was not checked live in this language."
+  },
+  "kind_compat_unsupported": {
+    "message": "No compatible",
+    "description": "Steam's word for a game Valve rated as not working on Steam Deck or Steam Machine. Shown like Verified. Use the word Steam shows in this language. Never use it for a game Valve has not rated. Steam shares the rating words between Steam Deck and Steam Machine; the Machine section was not checked live in this language."
+  },
   "kind_chip_name": {
     "message": "$chip$: $heading$",
     "description": "Screen reader name of a chip: the visible chip text, then Steam's full line for the kind. $chip$ is the chip text and $heading$ the full line.",
@@ -168,6 +196,34 @@
       "heading": {
         "content": "$2",
         "example": "Uses Kernel Level Anti-Cheat"
+      }
+    }
+  },
+  "kind_facet_chip": {
+    "message": "$chip$: $value$",
+    "description": "Visible text of a chip for a tag with values, such as \"Deck: No compatible\": the tag's short word, then Steam's word for the value. The colon keeps the two from reading as one phrase.",
+    "placeholders": {
+      "chip": {
+        "content": "$1",
+        "example": "Deck"
+      },
+      "value": {
+        "content": "$2",
+        "example": "No compatible"
+      }
+    }
+  },
+  "kind_facet_name": {
+    "message": "$heading$: $value$",
+    "description": "Steam's heading of a tag with values, then Steam's word for the value: the screen reader name of its chip, the heading of its entry in the notice on a game's page and its line in a package's summary.",
+    "placeholders": {
+      "heading": {
+        "content": "$1",
+        "example": "Compatibilidad con Steam Deck"
+      },
+      "value": {
+        "content": "$2",
+        "example": "No compatible"
       }
     }
   },
@@ -189,9 +245,17 @@
     "message": "Declarado para el juego completo",
     "description": "In the hover card and in the notice on a demo's store page, right under a tag's heading when the tag is shown because the full game declared it; the demo did not declare it itself. \"The full game\" is the product the demo belongs to. Never say the demo declared it."
   },
+  "kind_full_game_valve": {
+    "message": "Valorado para el juego completo",
+    "description": "In the hover card and in the notice on a demo's store page, right under the heading of a Steam Deck or Steam Machine rating when it is shown because Valve rated the full game; Valve did not rate the demo itself. Never say the demo was rated."
+  },
   "badge_card_declared": {
     "message": "Declarado por el desarrollador en la página de la tienda",
     "description": "Last line of the hover card. It says the developer, not this extension, made the declarations above."
+  },
+  "badge_card_valve": {
+    "message": "Según Valve",
+    "description": "Last line of the hover card when it lists a fact Valve states, such as a Steam Deck rating. It says Valve, not this extension or the developer, is the source of those entries. With entries of both kinds it follows the line that names the developer."
   },
   "badge_card_service_label": {
     "message": "Servicios de IA que cita el desarrollador:",
@@ -267,7 +331,7 @@
   },
   "banner_region_label": {
     "message": "Declarado por el desarrollador",
-    "description": "Screen reader name of the notice on a game's page when it lists more than one kind, or only notes about ignored kinds."
+    "description": "Screen reader name of the notice on a game's page when it lists more than one kind, or only notes about ignored kinds, and every kind it lists comes from the developer."
   },
   "banner_expand": {
     "message": "Ver todo",
@@ -504,12 +568,20 @@
     "description": "Switch label of one tag's entry in the notice on a game's page."
   },
   "options_banner_help": {
-    "message": "Muestra lo que declaró el desarrollador encima del botón de compra.",
+    "message": "Muestra la entrada de esta etiqueta encima del botón de compra.",
     "description": "Help under the banner switch."
   },
   "options_filter_label": {
     "message": "Juegos con esta etiqueta",
     "description": "Label of a three-way choice: show, dim or hide these games in lists."
+  },
+  "options_facets_label": {
+    "message": "Valores que etiquetar",
+    "description": "Label of a group of checkboxes in a tag's settings, one per value Steam gives (Verificado, Jugable, No compatible). Only the ticked values get the tag."
+  },
+  "options_facets_help": {
+    "message": "Los marcadores, las entradas del aviso y el filtro de listas actúan sobre los valores marcados aquí. Si no marcas ninguno, la etiqueta no marca ningún juego.",
+    "description": "Help under those checkboxes."
   },
   "options_filter_off": {
     "message": "Mostrar",

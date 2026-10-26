@@ -1,6 +1,6 @@
+import { facetOf } from "../kinds/facets";
 import type { KindId } from "../kinds/id";
-import type { TagKind } from "../kinds/kind";
-import { KINDS, perKind } from "../kinds/registry";
+import { KIND_BY_ID, KINDS } from "../kinds/registry";
 import { type AnyDisclosed, sameVerdicts } from "../kinds/verdicts";
 import type { MessageCatalog } from "../ports";
 import type { BadgeSlot, CompactSize, HostRenderer } from "./host";
@@ -30,12 +30,27 @@ interface ChipText {
   readonly name: string;
 }
 
-function chipText(i18n: MessageCatalog, kind: TagKind): ChipText {
-  const label = i18n.t(kind.messages.chip);
-  const heading = i18n.t(kind.messages.heading);
+/**
+ * A verdict's chip: the kind's short word, and Steam's line in the name. A kind with facets adds
+ * Steam's word for the value to both.
+ */
+function chipText(i18n: MessageCatalog, verdict: AnyDisclosed): ChipText {
+  const { messages } = KIND_BY_ID[verdict.kind];
+  const chip = i18n.t(messages.chip);
+  const heading = i18n.t(messages.heading);
+  const facet = facetOf(verdict);
+  if (facet !== undefined) {
+    const value = i18n.t(facet.word);
+    return {
+      label: i18n.t("kind_facet_chip", { chip, value }),
+      name: i18n.t("kind_facet_name", { heading, value }),
+    };
+  }
   // PvP reads the same as its heading, so its name is that word once, not "PvP: PvP".
-  const name = label === heading ? label : i18n.t("kind_chip_name", { chip: label, heading });
-  return { label, name };
+  return {
+    label: chip,
+    name: chip === heading ? chip : i18n.t("kind_chip_name", { chip, heading }),
+  };
 }
 
 /** The "+N" chip's text, for the N kinds that did not fit. */
@@ -74,8 +89,18 @@ function createChipElement(
 }
 
 /** The full badge's chip, the store's tag-chip shape in our hue. The tag section reuses it. */
-export function createChip(doc: Document, i18n: MessageCatalog, kind: TagKind): HTMLElement {
-  return createChipElement(doc, chipText(i18n, kind), "sar-badge", "sar-badge-label", kind.id);
+export function createChip(
+  doc: Document,
+  i18n: MessageCatalog,
+  verdict: AnyDisclosed,
+): HTMLElement {
+  return createChipElement(
+    doc,
+    chipText(i18n, verdict),
+    "sar-badge",
+    "sar-badge-label",
+    verdict.kind,
+  );
 }
 
 /** The `span.sar-chips` that holds chips of one size, so a row or a section places them as one. */
@@ -100,9 +125,12 @@ function sameSlot(a: BadgeSlot, b: BadgeSlot): boolean {
     && (a.kind === "full" ? b.kind === "full" : b.kind === "compact" && a.size === b.size);
 }
 
-/** Whether the lists stand for the same kinds in the same order, whatever their verdicts. */
-function sameKinds(a: readonly AnyDisclosed[], b: readonly AnyDisclosed[]): boolean {
-  return a.length === b.length && a.every((verdict, index) => verdict.kind === b[index]?.kind);
+/** Whether the lists draw the same chips: the same kinds and values, in the same order. */
+function sameChips(a: readonly AnyDisclosed[], b: readonly AnyDisclosed[]): boolean {
+  return a.length === b.length && a.every((verdict, index) => {
+    const other = b[index];
+    return other?.kind === verdict.kind && facetOf(other) === facetOf(verdict);
+  });
 }
 
 /**
@@ -118,7 +146,6 @@ export function createBadgeRenderer(
   card: CardTriggers,
 ): HostRenderer {
   const drawn = new WeakMap<Element, Drawn>();
-  const texts = perKind((kind) => chipText(i18n, kind));
 
   function chipFor(slot: BadgeSlot, text: ChipText, kind?: KindId): HTMLElement {
     if (slot.kind === "full") {
@@ -132,7 +159,7 @@ export function createBadgeRenderer(
   function build(slot: BadgeSlot, present: readonly AnyDisclosed[], maxChips: number): HTMLElement {
     const group = createChipGroup(doc, slot.kind);
     for (const verdict of present.slice(0, maxChips)) {
-      group.append(chipFor(slot, texts[verdict.kind], verdict.kind));
+      group.append(chipFor(slot, chipText(i18n, verdict), verdict.kind));
     }
     if (present.length > maxChips) {
       group.append(chipFor(slot, moreText(i18n, present.length - maxChips)));
@@ -173,7 +200,7 @@ export function createBadgeRenderer(
       }
       if (
         current !== undefined && current.group.isConnected && sameSlot(current.slot, slot)
-        && current.maxChips === maxChips && sameKinds(current.present, present)
+        && current.maxChips === maxChips && sameChips(current.present, present)
       ) {
         if (!sameVerdicts(current.present, present)) {
           bind(current.group, present);

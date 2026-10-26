@@ -4,7 +4,13 @@ import { keyOf } from "../../../tests/helpers/creators";
 import { fixedClock } from "../../../tests/helpers/fixed-clock";
 import { englishI18n } from "../../../tests/helpers/i18n";
 import { memoryStore } from "../../../tests/helpers/memory-store";
-import { OFF_KINDS, withKind, writeSettings } from "../../../tests/helpers/settings";
+import {
+  isStatusKind,
+  OFF_KINDS,
+  STATUS_KINDS,
+  withKind,
+  writeSettings,
+} from "../../../tests/helpers/settings";
 import { CREATOR_ROLES } from "../creator";
 import { SHIPPED_CATALOGS } from "../i18n/shipped";
 import { createI18n } from "../i18n/t";
@@ -146,8 +152,10 @@ describe("the section of each tag", () => {
       const settings = [...section.querySelectorAll("[data-sar-setting]")].map((control) =>
         control.getAttribute("data-sar-setting")
       );
+      const facets = (kind.facets ?? []).map(() => "facets");
       expect(settings).toEqual([
         "enabled",
+        ...facets,
         "badge",
         "banner",
         "color",
@@ -163,14 +171,52 @@ describe("the section of each tag", () => {
     }
   });
 
-  it("shows the defaults: on but PvP and IAP, badge and banner on, list untouched", async () => {
+  it("shows the defaults: on but the kinds that start off, badge on, list untouched", async () => {
     const { input } = await setup();
     for (const kind of KINDS) {
       expect(input(kind.id, "enabled").checked).toBe(!OFF_KINDS.includes(kind.id));
       expect(input(kind.id, "badge").checked).toBe(true);
-      expect(input(kind.id, "banner").checked).toBe(true);
+      expect(input(kind.id, "banner").checked).toBe(!isStatusKind(kind.id));
       expect(input(kind.id, "filter", "off").checked).toBe(true);
     }
+  });
+
+  it.each(STATUS_KINDS)(
+    "gives %s a labelled group of its values in Steam's words, Unsupported ticked",
+    async (id) => {
+      const { card, root } = await setup();
+      const group = card(id).querySelector("fieldset.sar-checks");
+      const label = root.querySelector(`#${group?.getAttribute("aria-labelledby") ?? "x"}`);
+      expect(label?.textContent).toBe(i18n.t("options_facets_label"));
+      const boxes = [...(group?.querySelectorAll("input") ?? [])];
+      expect(boxes.map((box) => box.closest("label")?.textContent)).toEqual([
+        i18n.t("kind_compat_verified"),
+        i18n.t("kind_compat_playable"),
+        i18n.t("kind_compat_unsupported"),
+      ]);
+      expect(boxes.map((box) => box.checked)).toEqual([false, false, true]);
+    },
+  );
+
+  it("saves the ticked values in the kind's order, and none when all are unticked", async () => {
+    const { input, settings } = await setup();
+    const box = (value: string) => input("deck", "facets", value);
+    box("verified").checked = true;
+    change(box("verified"));
+    await vi.waitFor(async () => {
+      expect(parseSettings(await settings.read()).kinds.deck.facets).toEqual([
+        "verified",
+        "unsupported",
+      ]);
+    });
+    for (const value of ["verified", "unsupported"]) {
+      box(value).checked = false;
+      change(box(value));
+    }
+    await vi.waitFor(async () => {
+      expect(parseSettings(await settings.read()).kinds.deck.facets).toEqual([]);
+    });
+    expect(parseSettings(await settings.read()).kinds.machine.facets).toEqual(["unsupported"]);
   });
 
   it("shows the settings stored for each kind", async () => {
@@ -776,7 +822,7 @@ describe("the accessible names of the controls", () => {
     const { card, root } = await setup();
     const names = new Set<string>();
     for (const kind of KINDS) {
-      const fieldset = card(kind.id).querySelector("fieldset");
+      const fieldset = card(kind.id).querySelector("fieldset.sar-segment");
       const label = root.querySelector(`#${fieldset?.getAttribute("aria-labelledby") ?? "x"}`);
       expect(label?.textContent).toBe(i18n.t("options_filter_label"));
       const radios = [...(fieldset?.querySelectorAll("input") ?? [])];
@@ -967,7 +1013,7 @@ describe("the ignored games", () => {
       }
     }
     expect(section?.hidden).toBe(true);
-    expect(document.activeElement?.textContent).toBe(heading("iap"));
+    expect(document.activeElement?.textContent).toBe(heading("machine"));
   });
 
   it("keeps the empty state on the full page", async () => {

@@ -70,6 +70,8 @@ const STORED_KINDS = {
   },
   pvp: { state: "disclosed", kind: "pvp", source: "api", categoryIds: [49, 36] },
   iap: { state: "disclosed", kind: "iap", source: "api" },
+  deck: { state: "disclosed", kind: "deck", source: "api", facet: "unsupported" },
+  machine: { state: "disclosed", kind: "machine", source: "api", facet: "unsupported" },
 };
 
 /** Round trips: the verdicts of one or two kinds, the rest unknown `missing`. */
@@ -123,6 +125,7 @@ describe("encodeVerdicts and decodeVerdicts", () => {
       { ...FULL_DISCLOSED, drm: UNKNOWN.malformed, pvp: UNKNOWN.malformed },
       { ...uniformVerdicts("not-disclosed"), ai: { state: "not-disclosed", source: "html" } },
       { ...FULL_DISCLOSED, drm: NOT_DISCLOSED, pvp: UNKNOWN.missing },
+      { ...uniformVerdicts("not-disclosed"), pvp: UNKNOWN.unrequested },
     ];
     for (const verdicts of all) {
       expect(decodeVerdicts(encodeVerdicts(verdicts, T))).toStrictEqual({ verdicts, time: T });
@@ -210,6 +213,23 @@ describe("encodeVerdicts and decodeVerdicts", () => {
       expect(decoded?.verdicts[id]).toBe(UNKNOWN.gated);
     }
   });
+});
+
+describe("the sections in storage", () => {
+  const asked = { ...FULL_DISCLOSED, sections: ["basic_info", "platforms"] } as const;
+
+  it("round trips the sections an answer came with, and stores none without a record", () => {
+    expect(encodeVerdicts(asked, T)).toMatchObject({ sections: ["basic_info", "platforms"] });
+    expect(decodeVerdicts(encodeVerdicts(asked, T))).toStrictEqual({ verdicts: asked, time: T });
+    expect(encodeVerdicts(FULL_DISCLOSED, T)).not.toHaveProperty("sections");
+  });
+
+  it.each([["a section it does not know", ["reviews"]], ["no list", "platforms"]])(
+    "discards an entry with %s, so the app is fetched again",
+    (_name, sections) => {
+      expect(decodeVerdicts({ time: T, kinds: STORED_KINDS, sections })).toBeUndefined();
+    },
+  );
 });
 
 describe("the demo mark in storage", () => {
@@ -365,7 +385,7 @@ describe("decodeVerdicts", () => {
   });
 
   it("discards malformed entries instead of casting them", () => {
-    const { ai, kernel, anticheat, drm, account, eula, pvp, iap } = STORED_KINDS;
+    const { ai, kernel, anticheat, drm, account, eula, pvp, iap, deck, machine } = STORED_KINDS;
     const bad: readonly unknown[] = [
       withEntry("ai", { ...ai, state: "maybe" }),
       withEntry("ai", { ...ai, state: undefined }),
@@ -410,6 +430,8 @@ describe("decodeVerdicts", () => {
       withEntry("pvp", { ...pvp, categoryIds: [49.5] }),
       withEntry("pvp", { ...pvp, categoryIds: undefined }),
       withEntry("iap", { ...iap, kind: "pvp" }),
+      withEntry("deck", { ...deck, facet: "unknown" }),
+      withEntry("machine", { ...machine, facet: undefined }),
     ];
     for (const stored of bad) {
       expect(decodeVerdicts(stored)).toBeUndefined();

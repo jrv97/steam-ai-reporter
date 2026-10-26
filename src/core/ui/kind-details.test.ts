@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { FULL_DISCLOSED } from "../../../tests/helpers/verdicts";
+import { compatVerdict, FULL_DISCLOSED } from "../../../tests/helpers/verdicts";
+import { COMPAT_FACETS } from "../kinds/compat";
 import { kindDetails } from "./kind-details";
 
 const { ai, kernel, anticheat, drm, account, eula, pvp, iap } = FULL_DISCLOSED;
@@ -72,5 +73,11 @@ describe("kindDetails", () => {
 
   it("adds no line to IAP, whose heading is Steam's category name", () => {
     expect(kindDetails(iap)).toEqual([]);
+  });
+
+  it.each(COMPAT_FACETS)("gives a device rated %s Steam's word for it as its one line", (facet) => {
+    expect(kindDetails(compatVerdict("machine", facet))).toEqual([
+      { kind: "message", key: `kind_compat_${facet}` },
+    ]);
   });
 });

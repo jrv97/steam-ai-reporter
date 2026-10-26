@@ -1,6 +1,7 @@
 import * as v from "valibot";
 import { type HexColor, HexColorSchema } from "../../src/core/kinds/color";
 import type { KindId } from "../../src/core/kinds/id";
+import type { FacetId } from "../../src/core/kinds/kind";
 import {
   type KindSettings,
   LIST_FILTERS,
@@ -16,14 +17,38 @@ export function hexColor(text: string): HexColor {
   return v.parse(HexColorSchema, text);
 }
 
-/** The kinds that start switched off, since most games would carry them. */
-export const OFF_KINDS: readonly KindId[] = ["pvp", "iap"];
+/** The kinds that start switched off: most games would carry them, or Valve rates them. */
+export const OFF_KINDS: readonly KindId[] = ["pvp", "iap", "deck", "machine"];
 
-/** Each kind's settings as `plain`, switched off for the kinds that start off. */
-export function plainKinds<T extends { readonly enabled: boolean; }>(
+/** Valve's device ratings: they start off, with no banner entry and only Unsupported tagged. */
+export const STATUS_KINDS = ["deck", "machine"] as const;
+
+export type StatusKind = (typeof STATUS_KINDS)[number];
+
+export function isStatusKind(id: KindId): id is StatusKind {
+  return id === "deck" || id === "machine";
+}
+
+/** One kind's settings as `plainKinds` gives them. */
+export type PlainKind<T> = Omit<T, "enabled" | "banner"> & {
+  readonly enabled: boolean;
+  readonly banner: boolean;
+  readonly facets?: readonly FacetId[];
+};
+
+/**
+ * Each kind's settings as `plain`, switched off for the kinds that start off, and for Valve's
+ * ratings with their banner entry off and only Unsupported chosen.
+ */
+export function plainKinds<T extends { readonly enabled: boolean; readonly banner: boolean; }>(
   plain: T,
-): Readonly<Record<KindId, T>> {
-  return perKind((kind) => OFF_KINDS.includes(kind.id) ? { ...plain, enabled: false } : plain);
+): Readonly<Record<KindId, PlainKind<T>>> {
+  return perKind((kind) => {
+    if (isStatusKind(kind.id)) {
+      return { ...plain, enabled: false, banner: false, facets: ["unsupported"] };
+    }
+    return OFF_KINDS.includes(kind.id) ? { ...plain, enabled: false } : plain;
+  });
 }
 
 /** The settings with `patch` applied to one kind's settings. */
