@@ -4,9 +4,10 @@ import {
   LIST_FILTERS,
   type ListFilter,
 } from "../../src/core/kinds/kind-settings";
-import { KINDS } from "../../src/core/kinds/registry";
+import { KINDS, perKind } from "../../src/core/kinds/registry";
 import { applyPatch, type Settings, type SettingsPatch } from "../../src/core/settings/settings";
 import type { StoredSettings } from "../../src/core/settings/settings-source";
+import { applyKindSettings } from "../../src/core/ui/kind-attributes";
 
 /** The settings with `patch` applied to one kind's settings. */
 export function withKind(settings: Settings, id: KindId, patch: Partial<KindSettings>): Settings {
@@ -28,6 +29,14 @@ function wholePatch(settings: Settings): SettingsPatch {
       }),
     ),
   };
+}
+
+/** Writes the kinds' list filters on the root element as the app does, `off` for the rest. */
+export function applyFilters(modes: Partial<Record<KindId, ListFilter>>): void {
+  applyKindSettings(
+    document.documentElement,
+    perKind((kind) => ({ ...kind.defaults, enabled: true, filter: modes[kind.id] ?? "off" })),
+  );
 }
 
 /** Stores exactly these settings, telling the source's subscribers, as another tab's save does. */

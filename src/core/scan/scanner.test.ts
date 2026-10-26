@@ -7,7 +7,15 @@ import {
   type RecordingRenderer,
   recordingRenderer,
 } from "../../../tests/helpers/recording-renderer";
-import { loadPage, nodes, setBody, SURFACES, the } from "../../../tests/helpers/surfaces";
+import {
+  loadPage,
+  nodes,
+  pageTransition,
+  searchRow,
+  setBody,
+  SURFACES,
+  the,
+} from "../../../tests/helpers/surfaces";
 import { disclosedKinds } from "../../../tests/helpers/verdicts";
 import { createHostKindsRenderer } from "../ui/list-filter";
 import { HOST_APPID, HOST_HIDEABLE, HOST_KINDS } from "./marks";
@@ -413,26 +421,6 @@ describe("marking", () => {
     expect(reports.at(-1)).toMatchObject({ kind: "page", found: 0, changed: 0 });
   });
 });
-
-/** A search row like the captured ones, for app `id`. */
-function searchRow(id: number): HTMLElement {
-  const row = document.createElement("a");
-  row.className = "search_result_row";
-  row.href = `https://store.steampowered.com/app/${String(id)}/Game/`;
-  row.dataset["dsAppid"] = String(id);
-  row.append(
-    ...nodes(
-      `<div class="search_capsule"><img></div><div class="search_name">`
-        + `<span class="title"></span></div><div class="search_platforms"></div>`,
-    ),
-  );
-  return row;
-}
-
-/** A bfcache page transition; happy-dom's `PageTransitionEvent` is a plain `Event`. */
-function pageTransition(type: "pagehide" | "pageshow"): Event {
-  return Object.assign(new Event(type), { persisted: true });
-}
 
 describe("observing", () => {
   it("scans 50 appended search rows once, touching only the new rows", async () => {

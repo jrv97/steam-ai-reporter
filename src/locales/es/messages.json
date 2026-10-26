@@ -235,6 +235,62 @@
     "message": "Deshacer",
     "description": "Reverses \"Ignore this game\"."
   },
+  "notice_list_hidden_one": {
+    "message": "Tag Kit ha ocultado $count$ resultado.",
+    "description": "One line above search results when a tag's list filter is set to Hide and it removed some of them from this list. $count$ is the number of results it hid. It names only the number: never which tags, and never that a game uses AI. Singular form.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "1"
+      }
+    }
+  },
+  "notice_list_hidden_other": {
+    "message": "Tag Kit ha ocultado $count$ resultados.",
+    "description": "One line above search results when a tag's list filter is set to Hide and it removed some of them from this list. $count$ is the number of results it hid. It names only the number: never which tags, and never that a game uses AI. Plural form.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "3"
+      }
+    }
+  },
+  "notice_list_revealed_one": {
+    "message": "Tag Kit muestra $count$ resultado oculto.",
+    "description": "Replaces notice_list_hidden after the person clicked notice_list_show: the same results show again, dimmed, on this page only. $count$ is the number of those results. Singular form.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "1"
+      }
+    }
+  },
+  "notice_list_revealed_other": {
+    "message": "Tag Kit muestra $count$ resultados ocultos.",
+    "description": "Replaces notice_list_hidden after the person clicked notice_list_show: the same results show again, dimmed, on this page only. $count$ is the number of those results. Plural form.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "3"
+      }
+    }
+  },
+  "notice_list_show_one": {
+    "message": "Mostrarlo",
+    "description": "Button after notice_list_hidden. Shows the hidden results on this page only; the settings stay as they are. \"it\" or \"them\" refers to the results. Singular form."
+  },
+  "notice_list_show_other": {
+    "message": "Mostrarlos",
+    "description": "Button after notice_list_hidden. Shows the hidden results on this page only; the settings stay as they are. \"it\" or \"them\" refers to the results. Plural form."
+  },
+  "notice_list_hide_one": {
+    "message": "Ocultarlo",
+    "description": "Button after notice_list_revealed. Hides those results again. Singular form."
+  },
+  "notice_list_hide_other": {
+    "message": "Ocultarlos",
+    "description": "Button after notice_list_revealed. Hides those results again. Plural form."
+  },
   "notice_marking_stopped": {
     "message": "Este juego será ignorado",
     "description": "Screen reader announcement after \"Ignore this game\"."

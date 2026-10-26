@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { KIND_IDS } from "../kinds/id";
 import { PLACEMENTS } from "../scan/placements";
+import { REVEAL_ATTRIBUTE } from "./hidden-notice";
 import { colorProperty } from "./kind-attributes";
 import { adoptStyles, BANNER_CSS, DIALOG_CSS, PAGE_CSS, SETTINGS_CSS, TOKENS_CSS } from "./styles";
 
@@ -72,10 +73,13 @@ describe("the per-kind page rules", () => {
   // The rules list every kind, because no selector can join an attribute on the root element with
   // one on a host. A kind missing from a group fails here instead of silently never matching.
   const dim = (id: string) => `[data-sar-filter-${id}="dim"] [data-sar-kinds~="${id}"]`;
+  // A host dims for a hide where it cannot hide, and while the page shows hidden results.
   const hold = (id: string) =>
-    `[data-sar-filter-${id}="hide"] [data-sar-kinds~="${id}"][data-sar-hideable="false"]`;
+    `[data-sar-filter-${id}="hide"] [data-sar-kinds~="${id}"]`
+    + `:is([data-sar-hideable="false"], [${REVEAL_ATTRIBUTE}] *)`;
   const hide = (id: string) =>
-    `[data-sar-filter-${id}="hide"] [data-sar-kinds~="${id}"]:not([data-sar-hideable="false"])`;
+    `[data-sar-filter-${id}="hide"]:not([${REVEAL_ATTRIBUTE}]) [data-sar-kinds~="${id}"]`
+    + `:not([data-sar-hideable="false"])`;
   const HOVER = ":is(:hover, :focus-within)";
 
   const GROUPS = [
@@ -248,6 +252,29 @@ describe("adoptStyles", () => {
     adoptStyles(shadow, BANNER_CSS);
     adoptStyles(shadow, BANNER_CSS);
     expect(shadow.adoptedStyleSheets).toHaveLength(1);
+  });
+});
+
+describe("the hidden results notice rules", () => {
+  const rule = (selector: string) => {
+    const start = PAGE_CSS.indexOf(`${selector} {`);
+    return PAGE_CSS.slice(start, PAGE_CSS.indexOf("}", start));
+  };
+
+  it("resets the notice like the other light-DOM components and keeps it hidden when told", () => {
+    expect(PAGE_CSS).toMatch(/\.sar-list-notice,\n\.sar-list-notice \*/);
+    expect(rule(".sar-list-notice[hidden]")).toContain("display: none !important");
+  });
+
+  it("gives the button the shared focus ring", () => {
+    expect(rule(".sar-list-notice-button:focus-visible")).toContain(
+      "outline: var(--sar-focus-width) solid var(--sar-focus-color)",
+    );
+  });
+
+  it("keeps the notice a distinct region in forced colors", () => {
+    const forced = PAGE_CSS.slice(PAGE_CSS.lastIndexOf("@media (forced-colors: active)"));
+    expect(forced).toMatch(/\.sar-list-notice \{\n\s+border: 1px solid CanvasText/);
   });
 });
 

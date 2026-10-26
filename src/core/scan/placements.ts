@@ -183,6 +183,23 @@ export const PLACEMENTS: readonly Placement[] = [
   GENERIC,
 ];
 
+/**
+ * A list surface where a notice counts the results the list filter hides (`ui/hidden-notice.ts`).
+ * A new surface is a new entry in `LIST_PLACEMENTS`.
+ */
+export interface ListPlacement {
+  /** A stable name for tests and debug logs. */
+  readonly id: string;
+  /** The element that holds the list's hosts; the notice goes right before it. */
+  readonly list: string;
+}
+
+/** Every list surface with a notice, most specific first; the first in the page wins. */
+export const LIST_PLACEMENTS: readonly ListPlacement[] = [
+  // Classic search results: under the store's sort bar, above the first row.
+  { id: "search-results", list: "#search_resultsRows" },
+];
+
 /** A host's placement and the element its badge attaches to. */
 export interface Placed {
   readonly placement: Placement;

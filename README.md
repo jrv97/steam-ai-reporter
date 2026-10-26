@@ -70,7 +70,7 @@ The options page has one section per tag with switches for the tag, its badge an
 
 ![The same search results with the list filter set to Dim, where the three badged rows are faded](docs/store/screenshots/list-dim.jpg)
 
-With the list filter on Dim, badged games fade in lists and come back on hover. Hide removes them from lists. Show, the default, leaves lists as they are.
+With the list filter on Dim, badged games fade in lists and come back on hover. Hide removes them from lists; on search results one line says how many it hid, and its button shows them again, dimmed, until you reload. Show, the default, leaves lists as they are.
 
 <img src="docs/store/screenshots/popup.jpg" alt="The toolbar popup with the badge and banner switches, the Show, Dim and Hide control, one game you ignored, and a link to all settings" width="360">
 
@@ -165,8 +165,8 @@ A recut after a store rejection needs a new `.N` version, because AMO never reus
 
 No code is copied from any of these projects. Ideas that shaped this one are credited here, and two projects are listed for comparison only.
 
-- [AI warning for Steam](https://github.com/seeeeew/aiwarningforsteam) by seeeeew: the low-permission manifest, separate cache lifetimes for positive and negative results, and the idea of an automated check for heading changes.
-- [Steam AI Games Indicator](https://github.com/Pierre-Demessence/SteamAIGamesIndicator) by Pierre-Demessence: badging every surface, including wishlist and home capsules, guarding against age gates before trusting a negative, and serial requests with a delay.
+- [AI warning for Steam](https://github.com/seeeeew/aiwarningforsteam) by seeeeew: the low-permission manifest, separate cache lifetimes for positive and negative results, and the idea of an automated check for heading changes, and a control for the list filter on the search page itself.
+- [Steam AI Games Indicator](https://github.com/Pierre-Demessence/SteamAIGamesIndicator) by Pierre-Demessence: badging every surface, including wishlist and home capsules, guarding against age gates before trusting a negative, serial requests with a delay, and a hide option inside the search page's own filters.
 - [AI Generated Content Filter for Steam](https://github.com/SoBloxsy/AI-Content-Hider-for-Steam) by SoBloxsy: falling back from hiding to highlighting where hiding breaks a list.
 - [Augmented Steam](https://github.com/IsThereAnyDeal/AugmentedSteam): ideas only (handling both classic and React store pages, one module per feature, and the request for a dismissible banner). It is GPL-3.0 licensed, and nothing from it is used in any form.
 - [Slop-Inator](https://github.com/Dysnomia-Studio/slopinator) by Dysnomia Studio: listed for comparison. It shaped no part of this project.

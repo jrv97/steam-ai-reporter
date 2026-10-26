@@ -16,7 +16,9 @@
 .sar-tag-section,
 .sar-tag-section *,
 .sar-hovercard,
-.sar-hovercard * {
+.sar-hovercard *,
+.sar-list-notice,
+.sar-list-notice * {
   all: unset;
   box-sizing: border-box;
 }
@@ -273,7 +275,8 @@
    host ignores a dim, and where hiding would break the list the hide dims, as the dim does. The dim
    is a filter opacity: it multiplies with the store's own opacity, so a carousel slide the store
    hides with opacity 0 stays hidden. No transition on a mode change, so every host flips in one
-   pass. */
+   pass. While data-sar-reveal is on the root, a hide dims as well: the hidden results notice sets
+   it. */
 
 [data-sar-filter-ai="dim"] [data-sar-kinds~="ai"],
 [data-sar-filter-kernel="dim"] [data-sar-kinds~="kernel"],
@@ -282,13 +285,20 @@
 [data-sar-filter-account="dim"] [data-sar-kinds~="account"],
 [data-sar-filter-eula="dim"] [data-sar-kinds~="eula"],
 [data-sar-filter-pvp="dim"] [data-sar-kinds~="pvp"],
-[data-sar-filter-ai="hide"] [data-sar-kinds~="ai"][data-sar-hideable="false"],
-[data-sar-filter-kernel="hide"] [data-sar-kinds~="kernel"][data-sar-hideable="false"],
-[data-sar-filter-anticheat="hide"] [data-sar-kinds~="anticheat"][data-sar-hideable="false"],
-[data-sar-filter-drm="hide"] [data-sar-kinds~="drm"][data-sar-hideable="false"],
-[data-sar-filter-account="hide"] [data-sar-kinds~="account"][data-sar-hideable="false"],
-[data-sar-filter-eula="hide"] [data-sar-kinds~="eula"][data-sar-hideable="false"],
-[data-sar-filter-pvp="hide"] [data-sar-kinds~="pvp"][data-sar-hideable="false"] {
+[data-sar-filter-ai="hide"]
+  [data-sar-kinds~="ai"]:is([data-sar-hideable="false"], [data-sar-reveal] *),
+[data-sar-filter-kernel="hide"]
+  [data-sar-kinds~="kernel"]:is([data-sar-hideable="false"], [data-sar-reveal] *),
+[data-sar-filter-anticheat="hide"]
+  [data-sar-kinds~="anticheat"]:is([data-sar-hideable="false"], [data-sar-reveal] *),
+[data-sar-filter-drm="hide"]
+  [data-sar-kinds~="drm"]:is([data-sar-hideable="false"], [data-sar-reveal] *),
+[data-sar-filter-account="hide"]
+  [data-sar-kinds~="account"]:is([data-sar-hideable="false"], [data-sar-reveal] *),
+[data-sar-filter-eula="hide"]
+  [data-sar-kinds~="eula"]:is([data-sar-hideable="false"], [data-sar-reveal] *),
+[data-sar-filter-pvp="hide"]
+  [data-sar-kinds~="pvp"]:is([data-sar-hideable="false"], [data-sar-reveal] *) {
   filter: opacity(var(--sar-dim-opacity)) !important;
 }
 
@@ -300,31 +310,79 @@
 [data-sar-filter-eula="dim"] [data-sar-kinds~="eula"]:is(:hover, :focus-within),
 [data-sar-filter-pvp="dim"] [data-sar-kinds~="pvp"]:is(:hover, :focus-within),
 [data-sar-filter-ai="hide"]
-  [data-sar-kinds~="ai"][data-sar-hideable="false"]:is(:hover, :focus-within),
+  [data-sar-kinds~="ai"]:is([data-sar-hideable="false"], [data-sar-reveal]
+    *):is(:hover, :focus-within),
 [data-sar-filter-kernel="hide"]
-  [data-sar-kinds~="kernel"][data-sar-hideable="false"]:is(:hover, :focus-within),
+  [data-sar-kinds~="kernel"]:is([data-sar-hideable="false"], [data-sar-reveal]
+    *):is(:hover, :focus-within),
 [data-sar-filter-anticheat="hide"]
-  [data-sar-kinds~="anticheat"][data-sar-hideable="false"]:is(:hover, :focus-within),
+  [data-sar-kinds~="anticheat"]:is([data-sar-hideable="false"], [data-sar-reveal]
+    *):is(:hover, :focus-within),
 [data-sar-filter-drm="hide"]
-  [data-sar-kinds~="drm"][data-sar-hideable="false"]:is(:hover, :focus-within),
+  [data-sar-kinds~="drm"]:is([data-sar-hideable="false"], [data-sar-reveal]
+    *):is(:hover, :focus-within),
 [data-sar-filter-account="hide"]
-  [data-sar-kinds~="account"][data-sar-hideable="false"]:is(:hover, :focus-within),
+  [data-sar-kinds~="account"]:is([data-sar-hideable="false"], [data-sar-reveal]
+    *):is(:hover, :focus-within),
 [data-sar-filter-eula="hide"]
-  [data-sar-kinds~="eula"][data-sar-hideable="false"]:is(:hover, :focus-within),
+  [data-sar-kinds~="eula"]:is([data-sar-hideable="false"], [data-sar-reveal]
+    *):is(:hover, :focus-within),
 [data-sar-filter-pvp="hide"]
-  [data-sar-kinds~="pvp"][data-sar-hideable="false"]:is(:hover, :focus-within) {
+  [data-sar-kinds~="pvp"]:is([data-sar-hideable="false"], [data-sar-reveal]
+    *):is(:hover, :focus-within) {
   filter: none !important;
   transition: filter var(--sar-duration-fast) var(--sar-ease);
 }
 
-[data-sar-filter-ai="hide"] [data-sar-kinds~="ai"]:not([data-sar-hideable="false"]),
-[data-sar-filter-kernel="hide"] [data-sar-kinds~="kernel"]:not([data-sar-hideable="false"]),
-[data-sar-filter-anticheat="hide"] [data-sar-kinds~="anticheat"]:not([data-sar-hideable="false"]),
-[data-sar-filter-drm="hide"] [data-sar-kinds~="drm"]:not([data-sar-hideable="false"]),
-[data-sar-filter-account="hide"] [data-sar-kinds~="account"]:not([data-sar-hideable="false"]),
-[data-sar-filter-eula="hide"] [data-sar-kinds~="eula"]:not([data-sar-hideable="false"]),
-[data-sar-filter-pvp="hide"] [data-sar-kinds~="pvp"]:not([data-sar-hideable="false"]) {
+[data-sar-filter-ai="hide"]:not([data-sar-reveal])
+  [data-sar-kinds~="ai"]:not([data-sar-hideable="false"]),
+[data-sar-filter-kernel="hide"]:not([data-sar-reveal])
+  [data-sar-kinds~="kernel"]:not([data-sar-hideable="false"]),
+[data-sar-filter-anticheat="hide"]:not([data-sar-reveal])
+  [data-sar-kinds~="anticheat"]:not([data-sar-hideable="false"]),
+[data-sar-filter-drm="hide"]:not([data-sar-reveal])
+  [data-sar-kinds~="drm"]:not([data-sar-hideable="false"]),
+[data-sar-filter-account="hide"]:not([data-sar-reveal])
+  [data-sar-kinds~="account"]:not([data-sar-hideable="false"]),
+[data-sar-filter-eula="hide"]:not([data-sar-reveal])
+  [data-sar-kinds~="eula"]:not([data-sar-hideable="false"]),
+[data-sar-filter-pvp="hide"]:not([data-sar-reveal])
+  [data-sar-kinds~="pvp"]:not([data-sar-hideable="false"]) {
   display: none !important;
+}
+
+/* Hidden results notice: one line above a list, shaped like the banner's ignored note and neutral,
+   since it reports what this extension did and not a tag. The button is an in-bubble link. */
+
+.sar-list-notice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: var(--sar-space-2);
+  margin-block-end: var(--sar-space-1);
+  padding-inline: var(--sar-space-2);
+  border-radius: var(--sar-radius-xs);
+  background: var(--sar-banner-note-bg);
+  color: var(--sar-color-text-muted);
+  font: var(--sar-banner-note-font);
+}
+
+.sar-list-notice[hidden] {
+  display: none !important;
+}
+
+.sar-list-notice-button {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: var(--sar-control-height-xs);
+  color: var(--sar-banner-link-color);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.sar-list-notice-button:focus-visible {
+  outline: var(--sar-focus-width) solid var(--sar-focus-color);
+  outline-offset: var(--sar-focus-offset);
 }
 
 @media (forced-colors: active) {
@@ -339,7 +397,8 @@
 
 /* The card keeps system colors; only its edge needs adding once the shadow is gone */
 @media (forced-colors: active) {
-  .sar-hovercard {
+  .sar-hovercard,
+  .sar-list-notice {
     border: 1px solid CanvasText;
   }
 }

@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { setBody } from "../../../tests/helpers/dom";
 import { capturedVerdicts, pageVerdicts } from "../../../tests/helpers/fixture-verdicts";
 import { englishI18n } from "../../../tests/helpers/i18n";
+import { manualQueue } from "../../../tests/helpers/manual-queue";
 import { disclosedVerdict, FULL_DISCLOSED } from "../../../tests/helpers/verdicts";
 import { KIND_IDS, type KindId } from "../kinds/id";
 import { KIND_BY_ID } from "../kinds/registry";
@@ -47,42 +48,24 @@ describe("placeCard", () => {
 
 describe("createHoverCard", () => {
   const i18n = englishI18n();
-  let timers: (() => void)[] = [];
+  let timers = manualQueue();
+  let frames = manualQueue();
   let overflowing = false;
   let card: HoverCard | undefined;
-
-  function delay(callback: () => void): () => void {
-    timers.push(callback);
-    return () => {
-      timers = timers.filter((timer) => timer !== callback);
-    };
-  }
-
-  function flush(): void {
-    const due = timers;
-    timers = [];
-    for (const timer of due) {
-      timer();
-    }
-  }
-
-  let frames: (() => void)[] = [];
+  const flush = () => {
+    timers.run();
+  };
+  const nextFrame = () => {
+    frames.run();
+  };
 
   function start(): HoverCard {
     card = createHoverCard(document, i18n, {
-      delay,
+      delay: timers.delay,
       overflows: () => overflowing,
-      frame: (callback) => frames.push(callback),
+      frame: frames.frame,
     });
     return card;
-  }
-
-  function nextFrame(): void {
-    const due = frames;
-    frames = [];
-    for (const callback of due) {
-      callback();
-    }
   }
 
   /** happy-dom has no layout: give the viewport and one element a box. */
@@ -127,8 +110,8 @@ describe("createHoverCard", () => {
   };
 
   beforeEach(() => {
-    timers = [];
-    frames = [];
+    timers = manualQueue();
+    frames = manualQueue();
     overflowing = false;
   });
 
@@ -425,7 +408,7 @@ describe("createHoverCard", () => {
     document.dispatchEvent(new Event("scroll"));
     document.dispatchEvent(new Event("scroll"));
     document.dispatchEvent(new Event("scroll"));
-    expect(frames).toHaveLength(1);
+    expect(frames.size).toBe(1);
     nextFrame();
     expect(moved).toHaveBeenCalledTimes(1);
     // happy-dom resolves no tokens, so the offset is 0: the card sits at the badge's bottom.
