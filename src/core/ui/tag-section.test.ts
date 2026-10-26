@@ -34,8 +34,8 @@ describe("createTagSection", () => {
   it("draws the label and one chip for every verdict, in order, with no overflow chip", () => {
     setBody(WITH_TAGS);
     createTagSection(document, i18n).render(all);
-    expect(kinds()).toEqual(["ai", "kernel", "anticheat", "drm", "account", "eula", "pvp"]);
-    expect(document.querySelectorAll(".sar-badge-label")).toHaveLength(7);
+    expect(kinds()).toEqual(["ai", "kernel", "anticheat", "drm", "account", "eula", "pvp", "iap"]);
+    expect(document.querySelectorAll(".sar-badge-label")).toHaveLength(8);
     expect(document.querySelector(".sar-tag-section-label")?.textContent).toBe(
       i18n.t("badge_tags_title"),
     );

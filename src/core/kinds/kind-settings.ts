@@ -31,6 +31,9 @@ export const DEFAULT_KIND_SETTINGS: KindSettings = {
   filter: "off",
 };
 
+/** What a kind that most games would carry starts with: the defaults, switched off. */
+export const OFF_KIND_SETTINGS: KindSettings = { ...DEFAULT_KIND_SETTINGS, enabled: false };
+
 function kindSettingsSchema(defaults: KindSettings) {
   return v.object({
     enabled: v.fallback(v.boolean(), defaults.enabled),

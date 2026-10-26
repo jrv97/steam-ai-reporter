@@ -3,6 +3,7 @@ import type { AiDisclosed, AiVerdict } from "../../src/core/kinds/ai";
 import type { AnticheatDisclosed } from "../../src/core/kinds/anticheat";
 import type { DrmDisclosed } from "../../src/core/kinds/drm";
 import { type EulaDisclosed, eulaLink, type EulaUrl } from "../../src/core/kinds/eula";
+import type { IapDisclosed } from "../../src/core/kinds/iap";
 import type { KindId } from "../../src/core/kinds/id";
 import type { KernelDisclosed } from "../../src/core/kinds/kernel";
 import type { PvpDisclosed } from "../../src/core/kinds/pvp";
@@ -45,6 +46,7 @@ interface FullDisclosed {
   readonly account: AccountDisclosed;
   readonly eula: EulaDisclosed;
   readonly pvp: PvpDisclosed;
+  readonly iap: IapDisclosed;
 }
 
 /** Each kind's disclosed verdict, with every field of its payload set. */
@@ -90,6 +92,7 @@ export const FULL_DISCLOSED: FullDisclosed = {
     ],
   },
   pvp: { state: "disclosed", kind: "pvp", source: "api", categoryIds: [49, 36] },
+  iap: { state: "disclosed", kind: "iap", source: "api" },
 };
 
 /** Every kind in the same state, so a test sees the TTL or the storage of that state alone. */
@@ -113,6 +116,7 @@ export function disclosedKinds(kinds: readonly KindId[]): KindVerdicts {
     account: pick("account", FULL_DISCLOSED.account),
     eula: pick("eula", FULL_DISCLOSED.eula),
     pvp: pick("pvp", FULL_DISCLOSED.pvp),
+    iap: pick("iap", FULL_DISCLOSED.iap),
   };
 }
 

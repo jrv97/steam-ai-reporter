@@ -1,11 +1,10 @@
 import { describe, expect, it } from "vitest";
 import type { JsonValue } from "../../src/core/json";
-import { perKind } from "../../src/core/kinds/registry";
 import type { KeyValueStore } from "../../src/core/ports";
 import { perScope } from "../../src/core/settings/allow-data";
 import { allowFromV1, migrateStorage, settingsFromV1 } from "../../src/core/settings/migrate";
 import { DEFAULT_SETTINGS, encodeSettings, parseSettings } from "../../src/core/settings/settings";
-import { withKind } from "../../tests/helpers/settings";
+import { plainKinds, withKind } from "../helpers/settings";
 
 const T = 1_000_000_000_000;
 
@@ -31,8 +30,7 @@ const V1_CUSTOM: JsonValue = {
 const V1_ALLOW: JsonValue = { "1808500": ARC, "5072580": COURAGE };
 
 const PLAIN_AI = { enabled: true, badge: true, banner: true, filter: "off" };
-// PvP starts off.
-const DEFAULT_KINDS = { ...perKind(() => PLAIN_AI), pvp: { ...PLAIN_AI, enabled: false } };
+const DEFAULT_KINDS = plainKinds(PLAIN_AI);
 const CUSTOM_AI = { enabled: true, badge: false, banner: true, filter: "hide" };
 /** The stored ignore list with no game in any scope. */
 const NO_GAMES = perScope(() => ({}));

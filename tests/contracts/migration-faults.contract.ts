@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import type { JsonValue } from "../../src/core/json";
-import { perKind } from "../../src/core/kinds/registry";
 import type { KeyValueStore } from "../../src/core/ports";
 import { perScope } from "../../src/core/settings/allow-data";
 import { migrateStorage } from "../../src/core/settings/migrate";
+import { plainKinds } from "../helpers/settings";
 import { noFaults, type StorageFaults } from "../helpers/storage-faults";
 
 const T = 1_000_000_000_000;
@@ -19,8 +19,7 @@ const SETTINGS_V2 = {
   locale: "es",
   debug: true,
   kinds: {
-    ...perKind(() => ({ enabled: true, badge: true, banner: true, filter: "off" })),
-    pvp: { enabled: false, badge: true, banner: true, filter: "off" },
+    ...plainKinds({ enabled: true, badge: true, banner: true, filter: "off" }),
     ai: { enabled: true, badge: false, banner: true, filter: "hide" },
   },
 };

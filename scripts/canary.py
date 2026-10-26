@@ -29,13 +29,16 @@ HEADING = "AI Generated Content Disclosure"
 # Apps that between them declare every kind. A page hook takes the first app that shows its
 # declaration, so only the order matters.
 SAMPLE = (1808500, 5072580, 413150, 3751950, 2807960, 730, 105600, 1245620)
-# Steam's category IDs for PvP, Online PvP, LAN PvP and Shared/Split Screen PvP.
 # Child items with their `type` and parent: each must keep answering related_items.parent_appid
 # with its parent's ID, which the ignore list follows (decision 51), and a demo shows its full
 # game's tags by `type` 1 (decision 59). ARC Raiders - Frozen Trail Collector Set, a DLC of
 # ARC Raiders, and the demo of ReBlade: The Death Spiral.
 CHILDREN = (("DLC", 5201760, 4, 1808500), ("demo", 4513800, 1, 3489340))
+# Steam's category IDs for PvP, Online PvP, LAN PvP and Shared/Split Screen PvP.
 PVP_CATEGORY_IDS = frozenset({49, 36, 47, 37})
+# Steam's feature category ID for In-App Purchases.
+IAP_CATEGORY_ID = 35
+CATEGORY_LISTS = ("supported_player_categoryids", "feature_categoryids")
 EULA_URL = re.compile(r"^https://store\.steampowered\.com/+eula/")
 APP_PATH = re.compile(r"^/app/(\d+)(?:/|$)")
 
@@ -56,6 +59,7 @@ REQUIRED_FACTS = {
     "account": "user_account_third_party with text",
     "eula": "a non-empty eula list",
     "pvp": "categories.supported_player_categoryids with a PvP category",
+    "iap": "categories.feature_categoryids with In-App Purchases (35)",
     "creator": "basic_info.developers or publishers with a named entry",
 }
 CREATOR_ROLES = ("developers", "publishers")
@@ -187,9 +191,11 @@ def creator_problems(where: str, basic_info: object) -> list[str]:
     return problems
 
 
-def category_ids(item: dict[str, object]) -> list[int] | None:
+def category_ids(
+    item: dict[str, object], name: str = "supported_player_categoryids"
+) -> list[int] | None:
     categories = as_object(item.get("categories"))
-    ids = categories.get("supported_player_categoryids") if categories else None
+    ids = categories.get(name) if categories else None
     if not isinstance(ids, list):
         return None
     return [entry for entry in ids if isinstance(entry, int)]
@@ -207,8 +213,10 @@ def item_problems(appid: int, item: dict[str, object] | None) -> list[str]:
     problems = details_problems(where, details)
     if "basic_info" in item:
         problems += creator_problems(where, item["basic_info"])
-    if "categories" in item and category_ids(item) is None:
-        problems.append(f"{where}: categories.supported_player_categoryids is not a list")
+    if "categories" in item:
+        for name in CATEGORY_LISTS:
+            if category_ids(item, name) is None:
+                problems.append(f"{where}: categories.{name} is not a list")
     return problems
 
 
@@ -227,6 +235,7 @@ def facts_of(item: dict[str, object]) -> set[str]:
             ("account", has_text(details.get("user_account_third_party"))),
             ("eula", isinstance(eula, list) and bool(eula)),
             ("pvp", bool(PVP_CATEGORY_IDS.intersection(category_ids(item) or []))),
+            ("iap", IAP_CATEGORY_ID in (category_ids(item, "feature_categoryids") or [])),
             (
                 "creator",
                 any(has_text((as_object(c) or {}).get("name")) for c in creator_entries(item)),

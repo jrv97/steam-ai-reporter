@@ -298,6 +298,7 @@
 [data-sar-filter-account="dim"] [data-sar-kinds~="account"],
 [data-sar-filter-eula="dim"] [data-sar-kinds~="eula"],
 [data-sar-filter-pvp="dim"] [data-sar-kinds~="pvp"],
+[data-sar-filter-iap="dim"] [data-sar-kinds~="iap"],
 [data-sar-filter-ai="hide"]
   [data-sar-kinds~="ai"]:is([data-sar-hideable="false"], [data-sar-reveal] *),
 [data-sar-filter-kernel="hide"]
@@ -311,7 +312,9 @@
 [data-sar-filter-eula="hide"]
   [data-sar-kinds~="eula"]:is([data-sar-hideable="false"], [data-sar-reveal] *),
 [data-sar-filter-pvp="hide"]
-  [data-sar-kinds~="pvp"]:is([data-sar-hideable="false"], [data-sar-reveal] *) {
+  [data-sar-kinds~="pvp"]:is([data-sar-hideable="false"], [data-sar-reveal] *),
+[data-sar-filter-iap="hide"]
+  [data-sar-kinds~="iap"]:is([data-sar-hideable="false"], [data-sar-reveal] *) {
   filter: opacity(var(--sar-dim-opacity)) !important;
 }
 
@@ -322,6 +325,7 @@
 [data-sar-filter-account="dim"] [data-sar-kinds~="account"]:is(:hover, :focus-within),
 [data-sar-filter-eula="dim"] [data-sar-kinds~="eula"]:is(:hover, :focus-within),
 [data-sar-filter-pvp="dim"] [data-sar-kinds~="pvp"]:is(:hover, :focus-within),
+[data-sar-filter-iap="dim"] [data-sar-kinds~="iap"]:is(:hover, :focus-within),
 [data-sar-filter-ai="hide"]
   [data-sar-kinds~="ai"]:is([data-sar-hideable="false"], [data-sar-reveal]
     *):is(:hover, :focus-within),
@@ -342,6 +346,9 @@
     *):is(:hover, :focus-within),
 [data-sar-filter-pvp="hide"]
   [data-sar-kinds~="pvp"]:is([data-sar-hideable="false"], [data-sar-reveal]
+    *):is(:hover, :focus-within),
+[data-sar-filter-iap="hide"]
+  [data-sar-kinds~="iap"]:is([data-sar-hideable="false"], [data-sar-reveal]
     *):is(:hover, :focus-within) {
   filter: none !important;
   transition: filter var(--sar-duration-fast) var(--sar-ease);
@@ -360,7 +367,9 @@
 [data-sar-filter-eula="hide"]:not([data-sar-reveal])
   [data-sar-kinds~="eula"]:not([data-sar-hideable="false"]),
 [data-sar-filter-pvp="hide"]:not([data-sar-reveal])
-  [data-sar-kinds~="pvp"]:not([data-sar-hideable="false"]) {
+  [data-sar-kinds~="pvp"]:not([data-sar-hideable="false"]),
+[data-sar-filter-iap="hide"]:not([data-sar-reveal])
+  [data-sar-kinds~="iap"]:not([data-sar-hideable="false"]) {
   display: none !important;
 }
 

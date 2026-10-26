@@ -10,7 +10,7 @@ import { GETITEMS_URL, parseGetItems } from "./getitems";
 
 // Every kind derived from the batch captured for the tag kinds (tests/fixtures/README.md).
 const DECLARING = [3751950, 2807960, 1808500, 730, 570, 105600, 1245620, 1172470, 271590];
-// Games from 2004 to 2024 that declare nothing, and have no PvP category.
+// Games from 2004 to 2024 that declare nothing, and have no PvP or In-App Purchases category.
 const NOTHING = [813230, 1145360, 413150, 504230, 367520, 2379780, 620];
 const IDS = [...DECLARING, ...NOTHING];
 const OTHER_ITEMS = [320795, 1, 99999999];
@@ -46,6 +46,7 @@ const NONE = {
   account: "not-disclosed",
   eula: "not-disclosed",
   pvp: "not-disclosed",
+  iap: "not-disclosed",
 };
 
 describe("parseGetItems over the tag kind fixture", () => {
@@ -62,6 +63,7 @@ describe("parseGetItems over the tag kind fixture", () => {
       drm: "disclosed",
       account: "disclosed",
       eula: "disclosed",
+      iap: "disclosed",
     });
     const found = of(3751950);
     expect(found.drm).toMatchObject({ text: "Denuvo Anti-tamper" });
@@ -82,6 +84,7 @@ describe("parseGetItems over the tag kind fixture", () => {
       account: "disclosed",
       eula: "disclosed",
       pvp: "disclosed",
+      iap: "disclosed",
     });
     const found = of(2807960);
     expect(found.kernel).toStrictEqual({
@@ -102,6 +105,7 @@ describe("parseGetItems over the tag kind fixture", () => {
       kernel: "disclosed",
       eula: "disclosed",
       pvp: "disclosed",
+      iap: "disclosed",
     });
     expect(of(1808500).kernel).toMatchObject({
       name: "Denuvo",
@@ -118,7 +122,7 @@ describe("parseGetItems over the tag kind fixture", () => {
 
   it("reads the VAC anti-cheat of Counter-Strike 2 and Dota 2 as non-kernel (730, 570)", () => {
     for (const id of [730, 570]) {
-      expect(states(id)).toStrictEqual({ ...NONE, anticheat: "disclosed" });
+      expect(states(id)).toStrictEqual({ ...NONE, anticheat: "disclosed", iap: "disclosed" });
       expect(of(id).anticheat).toMatchObject({
         name: "VAC (Valve Anti-Cheat)",
         nameToken: "#Store_AntiCheat_Type_vac",
@@ -136,21 +140,21 @@ describe("parseGetItems over the tag kind fixture", () => {
   });
 
   it("reads Apex Legends and a delisted game like any other (1172470, 271590)", () => {
-    for (const id of [1172470, 271590]) {
-      expect(states(id)).toStrictEqual({
-        ...NONE,
-        kernel: "disclosed",
-        account: "disclosed",
-        eula: "disclosed",
-        pvp: "disclosed",
-      });
-    }
+    const delisted = {
+      ...NONE,
+      kernel: "disclosed",
+      account: "disclosed",
+      eula: "disclosed",
+      pvp: "disclosed",
+    };
+    expect(states(271590)).toStrictEqual(delisted);
+    expect(states(1172470)).toStrictEqual({ ...delisted, iap: "disclosed" });
     expect(of(1172470).kernel).toMatchObject({ name: "Easy Anti-Cheat" });
     expect(of(271590).kernel).toMatchObject({ name: "BattlEye" });
   });
 
   it("is unknown missing for a package, a bundle and an ID that does not exist", () => {
-    // The package has categories but no extra_details, so even PvP stays unknown.
+    // The package has categories but no extra_details, so even PvP and IAP stay unknown.
     for (const id of OTHER_ITEMS) {
       expect(of(id)).toBe(UNKNOWN_KINDS.missing);
     }
@@ -176,42 +180,44 @@ describe("parseGetItems with one malformed field", () => {
     eula: [{ name: "Game terms", url: "https://store.steampowered.com//eula/1_eula_0" }],
   };
 
+  const CATEGORIES = { supported_player_categoryids: [49], feature_categoryids: [35] };
+  // The kinds FULL and CATEGORIES disclose: a kernel anti-cheat is not the other anti-cheat kind.
+  const DISCLOSING = ["ai", "kernel", "drm", "account", "eula", "pvp", "iap"];
+
   function disclosedKinds(found: KindVerdicts): readonly string[] {
     return KIND_IDS.filter((id) => found[id].state === "disclosed");
   }
 
-  it("costs only the kinds that read the field", () => {
-    const cases: readonly (readonly [string, unknown, readonly string[]])[] = [
-      ["content_survey_ai_notes", 5, ["ai"]],
-      ["anticheat", "kernel", ["kernel", "anticheat"]],
-      ["drm_third_party_type", 5, ["drm"]],
-      ["user_account_third_party", 5, ["account"]],
-      ["eula", "none", ["eula"]],
-    ];
-    for (const [field, value, lost] of cases) {
-      const found = parse(storeItem(1, {
-        categories: { supported_player_categoryids: [49] },
-        extra_details: { ...FULL, [field]: value },
-      }));
-      const broken = KIND_IDS.filter((id) => {
-        const verdict = found[id];
-        return verdict.state === "unknown" && verdict.reason === "malformed";
-      });
-      expect(broken).toStrictEqual(KIND_IDS.filter((id) => lost.includes(id)));
-      expect(disclosedKinds(found)).toStrictEqual(
-        ["ai", "kernel", "drm", "account", "eula", "pvp"].filter((id) => !lost.includes(id)),
-      );
-    }
-  });
+  /** A store item with FULL and CATEGORIES, and `details` over FULL. */
+  function item(details: Readonly<Record<string, unknown>>, categories: unknown = CATEGORIES) {
+    return storeItem(1, { categories, extra_details: { ...FULL, ...details } });
+  }
 
-  it("costs only PvP when the categories are malformed", () => {
-    const found = parse(storeItem(1, { categories: "co-op", extra_details: FULL }));
-    expect(found.pvp).toStrictEqual({ state: "unknown", reason: "malformed" });
-    expect(disclosedKinds(found)).toStrictEqual(["ai", "kernel", "drm", "account", "eula"]);
+  it.each<readonly [string, Readonly<Record<string, unknown>>, readonly string[]]>([
+    ["content_survey_ai_notes", item({ content_survey_ai_notes: 5 }), ["ai"]],
+    ["anticheat", item({ anticheat: "kernel" }), ["kernel", "anticheat"]],
+    ["drm_third_party_type", item({ drm_third_party_type: 5 }), ["drm"]],
+    ["user_account_third_party", item({ user_account_third_party: 5 }), ["account"]],
+    ["eula", item({ eula: "none" }), ["eula"]],
+    ["categories", item({}, "co-op"), ["pvp", "iap"]],
+    [
+      "supported_player_categoryids",
+      item({}, { ...CATEGORIES, supported_player_categoryids: "49" }),
+      ["pvp"],
+    ],
+    ["feature_categoryids", item({}, { ...CATEGORIES, feature_categoryids: [35, "1"] }), ["iap"]],
+  ])("costs only the kinds that read %s when it is malformed", (_field, raw, lost) => {
+    const found = parse(raw);
+    const broken = KIND_IDS.filter((id) => {
+      const verdict = found[id];
+      return verdict.state === "unknown" && verdict.reason === "malformed";
+    });
+    expect(broken).toStrictEqual(KIND_IDS.filter((id) => lost.includes(id)));
+    expect(disclosedKinds(found)).toStrictEqual(DISCLOSING.filter((id) => !lost.includes(id)));
   });
 
   it("reads an empty list for extra_details as an object that declares nothing", () => {
-    const categories = { supported_player_categoryids: [2] };
+    const categories = { supported_player_categoryids: [2], feature_categoryids: [22] };
     const found = parse(storeItem(1, { extra_details: [], categories }));
     expect(disclosedKinds(found)).toStrictEqual([]);
     for (const id of KIND_IDS) {

@@ -46,6 +46,10 @@
   --sar-kind-color: var(--sar-kind-color-pvp);
 }
 
+[data-sar-kind="iap"] {
+  --sar-kind-color: var(--sar-kind-color-iap);
+}
+
 [data-sar-kind] {
   --sar-tag-edge: var(--sar-kind-color);
   --sar-tag-tint: color-mix(

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { withKind } from "../../../tests/helpers/settings";
+import { plainKinds, withKind } from "../../../tests/helpers/settings";
 import { toHexColor } from "../kinds/color";
 import { KINDS, perKind } from "../kinds/registry";
 import {
@@ -13,11 +13,11 @@ import {
 const PLAIN = { enabled: true, badge: true, banner: true, filter: "off" } as const;
 
 describe("DEFAULT_SETTINGS", () => {
-  it("follows the page language and leaves every kind but PvP on, with a plain list", () => {
+  it("follows the page language, leaves every kind but PvP and IAP on, with a plain list", () => {
     expect(DEFAULT_SETTINGS).toStrictEqual({
       locale: "auto",
       debug: false,
-      kinds: { ...perKind(() => PLAIN), pvp: { ...PLAIN, enabled: false } },
+      kinds: plainKinds(PLAIN),
     });
   });
 

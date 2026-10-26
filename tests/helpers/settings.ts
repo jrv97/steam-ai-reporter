@@ -16,6 +16,16 @@ export function hexColor(text: string): HexColor {
   return v.parse(HexColorSchema, text);
 }
 
+/** The kinds that start switched off, since most games would carry them. */
+export const OFF_KINDS: readonly KindId[] = ["pvp", "iap"];
+
+/** Each kind's settings as `plain`, switched off for the kinds that start off. */
+export function plainKinds<T extends { readonly enabled: boolean; }>(
+  plain: T,
+): Readonly<Record<KindId, T>> {
+  return perKind((kind) => OFF_KINDS.includes(kind.id) ? { ...plain, enabled: false } : plain);
+}
+
 /** The settings with `patch` applied to one kind's settings. */
 export function withKind(settings: Settings, id: KindId, patch: Partial<KindSettings>): Settings {
   return applyPatch(settings, { kinds: { [id]: patch } });

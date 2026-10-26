@@ -4,6 +4,7 @@ import { AI_KIND } from "./ai";
 import { ANTICHEAT_KIND } from "./anticheat";
 import { DRM_KIND } from "./drm";
 import { EULA_KIND } from "./eula";
+import { IAP_KIND } from "./iap";
 import type { KindId } from "./id";
 import { KERNEL_KIND } from "./kernel";
 import type { TagKind } from "./kind";
@@ -21,6 +22,7 @@ export const KINDS = [
   ACCOUNT_KIND,
   EULA_KIND,
   PVP_KIND,
+  IAP_KIND,
 ] as const;
 
 function anyValue(): boolean {
