@@ -1,5 +1,6 @@
 // @vitest-environment-options {"url":"https://store.steampowered.com/search/?term=roguelike"}
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { BASE_ID, DLC_PATH, dlcPage } from "../../../tests/helpers/dlc-page";
 import { countDomWork, type DomWork } from "../../../tests/helpers/dom-work";
 import { hostView } from "../../../tests/helpers/host-view";
 import { PACKAGE_PATH, packagePage } from "../../../tests/helpers/package-page";
@@ -17,6 +18,7 @@ import {
   the,
 } from "../../../tests/helpers/surfaces";
 import { disclosedKinds } from "../../../tests/helpers/verdicts";
+import type { KindId } from "../kinds/id";
 import { createHostKindsRenderer } from "../ui/list-filter";
 import { HOST_APPID, HOST_HIDEABLE, HOST_KINDS } from "./marks";
 import type { CapsuleHost } from "./renderer";
@@ -67,6 +69,18 @@ function mapping(): (readonly [number, string])[] {
 
 function hostElements(): readonly Element[] {
   return found().map((host) => host.element);
+}
+
+/** Marks the found hosts as disclosing `kind` and returns what its list filter on dim dims. */
+function dimmed(kind: KindId): readonly Element[] {
+  const kindsRenderer = createHostKindsRenderer();
+  for (const host of found()) {
+    kindsRenderer.render(hostView(host.element, { verdicts: disclosedKinds([kind]) }));
+  }
+  document.documentElement.setAttribute(`data-sar-filter-${kind}`, "dim");
+  return [
+    ...document.querySelectorAll(`[data-sar-filter-${kind}="dim"] [data-sar-kinds~="${kind}"]`),
+  ];
 }
 
 describe("per-surface hosts", () => {
@@ -345,14 +359,6 @@ describe("package page", () => {
     "img.package_header",
   ];
 
-  /** What the DRM list filter on dim would dim: the rule `[data-sar-filter-drm="dim"] ...`. */
-  function dimmed(): readonly Element[] {
-    document.documentElement.setAttribute("data-sar-filter-drm", "dim");
-    return [
-      ...document.querySelectorAll(`[data-sar-filter-drm="dim"] [data-sar-kinds~="drm"]`),
-    ];
-  }
-
   it("one included game: the row is the host and its capsule image the anchor", async () => {
     history.replaceState(null, "", PACKAGE_PATH);
     setBody(packagePage([4115450]));
@@ -372,11 +378,7 @@ describe("package page", () => {
     history.replaceState(null, "", PACKAGE_PATH);
     setBody(packagePage([4115450]));
     await startScanner();
-    const kindsRenderer = createHostKindsRenderer();
-    for (const host of found()) {
-      kindsRenderer.render(hostView(host.element, { verdicts: disclosedKinds(["drm"]) }));
-    }
-    expect(dimmed()).toStrictEqual([the(ROW)]);
+    expect(dimmed("drm")).toStrictEqual([the(ROW)]);
     for (const selector of OUTSIDE) {
       expect(the(selector).hasAttribute(HOST_KINDS)).toBe(false);
     }
@@ -397,6 +399,52 @@ describe("package page", () => {
     for (const selector of OUTSIDE) {
       expect(the(selector).hasAttribute(HOST_APPID)).toBe(false);
     }
+  });
+});
+
+describe("DLC page", () => {
+  const HEADER = "#gameHeaderImageCtn";
+  /** The glance box, which holds the base game's logo link: the largest host the page allows. */
+  const GLANCE = ".glance_details";
+  /** Page areas no host may be. */
+  const AREAS = [
+    "div.rightcol",
+    "div.leftcol",
+    "div.page_content",
+    "#game_area_purchase",
+    "#game_area_description",
+  ].join(", ");
+
+  /** Whether `element` is a page area or holds the header capsule or the glance box. */
+  function tooLarge(element: Element): boolean {
+    const glance = the(GLANCE);
+    return element.matches(AREAS) || element.contains(the(HEADER))
+      || (element !== glance && element.contains(glance));
+  }
+
+  it.each(
+    [
+      { links: ["glance"], hosts: [GLANCE] },
+      { links: ["bubble"], hosts: [] },
+      { links: ["glance", "bubble"], hosts: [GLANCE] },
+      { links: ["description"], hosts: [] },
+    ] as const,
+  )("a base game link in $links: hosts $hosts", async ({ links, hosts }) => {
+    history.replaceState(null, "", DLC_PATH);
+    setBody(dlcPage(links));
+    await startScanner();
+    expect(hostElements()).toStrictEqual(hosts.map((selector) => the(selector)));
+    expect(hostElements().filter(tooLarge)).toStrictEqual([]);
+    expect(found().every((host) => host.appId === BASE_ID)).toBe(true);
+  });
+
+  it("with the AI filter on dim, nothing that holds the header capsule dims", async () => {
+    history.replaceState(null, "", DLC_PATH);
+    setBody(dlcPage(["glance", "bubble", "description"]));
+    await startScanner();
+    const faded = dimmed("ai");
+    expect(faded.filter(tooLarge)).toStrictEqual([]);
+    expect(faded).toStrictEqual([the(GLANCE)]);
   });
 });
 
