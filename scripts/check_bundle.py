@@ -16,15 +16,18 @@
   key or plural base that a string literal of its code names is in its inlined catalogs, and every
   message there is named, so a missing key fails here and never falls back to the raw key on a
   store page. scripts/gen_catalogs.py writes each entry's catalogs by the same reading.
-- Size budgets: content.js at most 200 KB, options.js at most 150 KB and the userscript at most
-  284 KB, unminified (rule 13). Each is the measured size plus a few percent of headroom; raise one
+- Size budgets: content.js at most 194 KiB, options.js at most 143 KiB and the userscript at most
+  284 KiB, unminified (rule 13). Each is the measured size plus a few percent of headroom; raise one
   only with a measurement. A message costs bytes only in the bundles that read it, and an added
   locale costs about 5 KB in content.js, 9 KB in options.js and 12 KB in the userscript. Measured
   when ignoring by developer or publisher landed (ADR 0013): content.js 186,313 B (from 169,265),
   options.js 126,147 B (from 118,688), userscript 251,440 B (from 232,227). Measured when backup
   and restore landed (decision 54): content.js 198,433 B (from 193,262, catalog text only),
   options.js 147,172 B (from 127,308), userscript 279,609 B (from 259,792); the backup code ships
-  in options.js and the userscript only.
+  in options.js and the userscript only. Measured when each bundle got its own catalogs (decision
+  58): content.js 190,090 B (from 204,338), options.js 140,579 B (from 148,242), userscript
+  285,327 B (from 285,925). The userscript reads both sets and keeps 284 KiB, which is already
+  under its size plus a few percent.
 - The STEAM_API_KEY value, when set, appears nowhere in dist/ or artifacts/ (rule 16).
 - The dev injection bundle is never packaged into artifacts/, and when artifacts/ exists it holds
   exactly the five release artifacts, with a manifest at the root of each extension zip. The source
@@ -57,8 +60,8 @@ from repo import (
 
 KIB = 1024
 BUDGETS = {
-    **{DIST / target / "content.js": 200 * KIB for target in EXTENSION_TARGETS},
-    **{DIST / target / "options.js": 150 * KIB for target in EXTENSION_TARGETS},
+    **{DIST / target / "content.js": 194 * KIB for target in EXTENSION_TARGETS},
+    **{DIST / target / "options.js": 143 * KIB for target in EXTENSION_TARGETS},
     DIST / "userscript" / f"{SLUG}.user.js": 284 * KIB,
 }
 ENGLISH = ROOT / "src" / "locales" / DEFAULT_LOCALE / "messages.json"
