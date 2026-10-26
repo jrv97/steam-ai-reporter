@@ -1,9 +1,9 @@
 import * as v from "valibot";
-import { MALFORMED } from "../detect/getitems.schema";
 import type { BareMessageKey } from "../i18n/t";
-import { NOT_DISCLOSED, UNKNOWN } from "../types";
+import { NOT_DISCLOSED } from "../types";
+import { categoryIds } from "./categories";
 import type { KindDefinition } from "./kind";
-import { DEFAULT_KIND_SETTINGS } from "./kind-settings";
+import { OFF_KIND_SETTINGS } from "./kind-settings";
 import { WEEK_TTL } from "./kind-ttl";
 import { storedDisclosed } from "./stored-disclosed";
 
@@ -41,29 +41,25 @@ export const PVP_KIND: KindDefinition<PvpDisclosed> = {
   id: "pvp",
 
   fromGetItems(item) {
-    const { categories } = item;
-    if (categories === MALFORMED) {
-      return UNKNOWN.malformed;
+    const ids = categoryIds(item, "supported_player_categoryids");
+    if ("state" in ids) {
+      return ids;
     }
-    const ids = categories?.supported_player_categoryids;
-    if (ids === undefined) {
-      return UNKNOWN.missing;
-    }
-    const categoryIds: number[] = [];
+    const matching: number[] = [];
     for (const id of ids) {
       if (PVP_CATEGORY_IDS.includes(id)) {
-        categoryIds.push(id);
+        matching.push(id);
       }
     }
-    return categoryIds.length === 0
+    return matching.length === 0
       ? NOT_DISCLOSED.api
-      : { state: "disclosed", kind: "pvp", source: "api", categoryIds };
+      : { state: "disclosed", kind: "pvp", source: "api", categoryIds: matching };
   },
 
   stored: STORED,
 
   messages: { heading: "kind_pvp_heading", chip: "kind_pvp_chip" },
   // A PvP mode is on most games, so the tag starts off until the player turns it on.
-  defaults: { ...DEFAULT_KIND_SETTINGS, enabled: false },
+  defaults: OFF_KIND_SETTINGS,
   ttl: WEEK_TTL,
 };

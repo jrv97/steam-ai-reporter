@@ -19,11 +19,12 @@ function readGames(games: Readonly<Record<string, unknown>>) {
 
 describe("readBackup", () => {
   it("reads back what encodeBackup wrote", () => {
+    const drm = withKind({ ...DEFAULT_SETTINGS, locale: "es" }, "drm", {
+      filter: "hide",
+      color: hexColor("#ff8800"),
+    });
     const contents = backupContents({
-      settings: withKind({ ...DEFAULT_SETTINGS, locale: "es" }, "drm", {
-        filter: "hide",
-        color: hexColor("#ff8800"),
-      }),
+      settings: withKind(drm, "iap", { enabled: true, filter: "dim" }),
       games: gameEntries({ all: [[10, "Ten", 1]], ai: [[20, "Twenty", 2]] }),
       creators: {
         developer: creatorEntries({ drm: [["c:4", "Studio", 3]] }),

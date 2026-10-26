@@ -4,7 +4,7 @@ import { keyOf } from "../../../tests/helpers/creators";
 import { fixedClock } from "../../../tests/helpers/fixed-clock";
 import { englishI18n } from "../../../tests/helpers/i18n";
 import { memoryStore } from "../../../tests/helpers/memory-store";
-import { withKind, writeSettings } from "../../../tests/helpers/settings";
+import { OFF_KINDS, withKind, writeSettings } from "../../../tests/helpers/settings";
 import { CREATOR_ROLES } from "../creator";
 import { SHIPPED_CATALOGS } from "../i18n/shipped";
 import { createI18n } from "../i18n/t";
@@ -163,10 +163,10 @@ describe("the section of each tag", () => {
     }
   });
 
-  it("shows the defaults: on but PvP, badge and banner on, the list left alone", async () => {
+  it("shows the defaults: on but PvP and IAP, badge and banner on, list untouched", async () => {
     const { input } = await setup();
     for (const kind of KINDS) {
-      expect(input(kind.id, "enabled").checked).toBe(kind.id !== "pvp");
+      expect(input(kind.id, "enabled").checked).toBe(!OFF_KINDS.includes(kind.id));
       expect(input(kind.id, "badge").checked).toBe(true);
       expect(input(kind.id, "banner").checked).toBe(true);
       expect(input(kind.id, "filter", "off").checked).toBe(true);
@@ -967,7 +967,7 @@ describe("the ignored games", () => {
       }
     }
     expect(section?.hidden).toBe(true);
-    expect(document.activeElement?.textContent).toBe(heading("pvp"));
+    expect(document.activeElement?.textContent).toBe(heading("iap"));
   });
 
   it("keeps the empty state on the full page", async () => {
@@ -1147,7 +1147,7 @@ describe("collapsible sections", () => {
     const { card, input, settings } = await setup();
     const cue = (id: KindId) => card(id).querySelector(".sar-card-summary .sar-card-state");
     for (const kind of KINDS) {
-      const on = kind.id !== "pvp";
+      const on = !OFF_KINDS.includes(kind.id);
       expect(cue(kind.id)?.textContent).toBe(i18n.t(on ? "options_state_on" : "options_state_off"));
       expect(cue(kind.id)?.hasAttribute("data-sar-on")).toBe(on);
     }

@@ -1,7 +1,7 @@
 # Tag Kit for Steam
 
 An MV3 extension for Chromium-based browsers and Firefox, plus a Tampermonkey/Violentmonkey
-userscript, built from one TypeScript core, that tag Steam store items: AI Generated Content Disclosure, anti-cheat, 3rd-party DRM, 3rd-Party Account, 3rd-party EULA and PvP.
+userscript, built from one TypeScript core, that tag Steam store items: AI Generated Content Disclosure, anti-cheat, 3rd-party DRM, 3rd-Party Account, 3rd-party EULA, PvP and In-App Purchases.
 
 ## Working knowledge (docs/)
 

@@ -149,6 +149,14 @@
     "message": "Shared/Split Screen PvP",
     "description": "Steam's category name for player versus player on one shared or split screen, listed in the hover card."
   },
+  "kind_iap_heading": {
+    "message": "In-App Purchases",
+    "description": "Steam's category name for a game that sells items inside it. It titles the entry in the hover card and the banner, names the settings section and begins the screen reader name of the chip. Use the name Steam's store shows for this category in this language."
+  },
+  "kind_iap_chip": {
+    "message": "IAP",
+    "description": "Short chip for a game with in-app purchases, as its Steam categories say. Keep it short; it sits in a row and over game images."
+  },
   "kind_chip_name": {
     "message": "$chip$: $heading$",
     "description": "Screen reader name of a chip: the visible chip text, then Steam's full line for the kind. $chip$ is the chip text and $heading$ the full line.",

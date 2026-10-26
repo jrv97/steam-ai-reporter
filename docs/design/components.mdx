@@ -17,7 +17,7 @@ Component specs for everything the extension and the userscript inject into stor
 - `assets/icons/`: the extension icon (section 14).
 - `docs/design/decisions.mdx`: why each choice was made, and what is still open.
 
-Tag Kit for Steam tags games on the Steam store whose developers declared something players weigh before buying: AI use, kernel-level or other anti-cheat, third-party DRM, a required third-party account or a third-party EULA. It also tags games with a PvP mode, from Steam's own categories. Each tag is written in Steam's words, and the developer's text is quoted as written. It ships as a browser extension and a userscript. Its UI lives in two places: small pieces injected into store pages (chips, a banner, a hover card, a list filter) and its own settings pages (options page, toolbar popup, userscript dialog). This system covers both.
+Tag Kit for Steam tags games on the Steam store whose developers declared something players weigh before buying: AI use, kernel-level or other anti-cheat, third-party DRM, a required third-party account or a third-party EULA. It also tags games with a PvP mode or In-App Purchases, from Steam's own categories. Each tag is written in Steam's words, and the developer's text is quoted as written. It ships as a browser extension and a userscript. Its UI lives in two places: small pieces injected into store pages (chips, a banner, a hover card, a list filter) and its own settings pages (options page, toolbar popup, userscript dialog). This system covers both.
 
 Every class, attribute and custom property starts with `sar-`.
 
@@ -33,9 +33,9 @@ Every class, attribute and custom property starts with `sar-`.
 
 ## Voice and copy
 
-- Use Steam's words for each tag: its own line for the kind ("Uses Kernel Level Anti-Cheat", "Incorporates 3rd-party DRM", "Requires 3rd-Party Account", "Requires agreement to a 3rd-party EULA", "PvP") and, for AI, Steam's heading "AI Generated Content Disclosure". Spanish follows Steam's Spain Spanish. Our own copy never says "uses AI", "AI-free" or "no AI", in any locale; the copy test fails the build on them.
+- Use Steam's words for each tag: its own line for the kind ("Uses Kernel Level Anti-Cheat", "Incorporates 3rd-party DRM", "Requires 3rd-Party Account", "Requires agreement to a 3rd-party EULA", "PvP", "In-App Purchases") and, for AI, Steam's heading "AI Generated Content Disclosure". Spanish follows Steam's Spain Spanish. Our own copy never says "uses AI", "AI-free" or "no AI", in any locale; the copy test fails the build on them.
 - Plain, short, sentence case: "Ignore this game", "Ignore for this tag", "Show full report".
-- One line names a tag everywhere: Steam's line is the hover card entry title, the banner entry heading, the settings section title and the start of the chip's accessible name. The chip itself is short: AI, KLAC, Anti-Cheat, DRM, Account, EULA, PvP.
+- One line names a tag everywhere: Steam's line is the hover card entry title, the banner entry heading, the settings section title and the start of the chip's accessible name. The chip itself is short: AI, KLAC, Anti-Cheat, DRM, Account, EULA, PvP, IAP.
 - Name the developer as the source: "In the developer's own words:", "AI service named by the developer:", "Declared by the developer on the store page".
 - The opt-out labels are "Ignore for this tag" and "Ignore this game" (every tag). The store has its own Ignore button just above; ours only affects this extension.
 - Settings speak about games, not switches: the list filter reads "Show", "Dim", "Hide".
@@ -110,7 +110,7 @@ A demo shows its full game's disclosed kinds beside its own, and its own disclos
 
 A DLC follows its base game's ignore list. A kind disclosed on a DLC whose base game is ignored for that kind, or for all tags, renders as the "ignored" row above, except in the banner of the DLC's own page, which shows neither an entry nor a note for it (see "Ignored through a base game" below). Everything else about the state is per kind, as above.
 
-Each kind's settings (`kinds.<id>`: `enabled`, `badge`, `banner` and `filter`) gate its columns. `enabled` off removes everything for the kind, `badge` off removes its chips, in lists and in the tag section, and its line in the package summary, `banner` off removes its entry and its note, and `filter` set to `off` leaves lists alone. All are on by default, except that PvP starts with `enabled` off, and the filter is `off`. The ignore list wins over every setting.
+Each kind's settings (`kinds.<id>`: `enabled`, `badge`, `banner` and `filter`) gate its columns. `enabled` off removes everything for the kind, `badge` off removes its chips, in lists and in the tag section, and its line in the package summary, `banner` off removes its entry and its note, and `filter` set to `off` leaves lists alone. All are on by default, except that PvP and In-App Purchases start with `enabled` off, and the filter is `off`. The ignore list wins over every setting.
 
 ## Shared rules
 
@@ -496,7 +496,7 @@ Preview: `previews/OptionsPage.html`.
 ### Layout
 
 - Page: centered, `sar-options-max-width` (640px), `sar-space-4` padding, `sar-color-bg-panel`, `color-scheme: dark`.
-- Popup: `sar-popup-width` (360px), `sar-space-3` padding, short labels where a key exists. With a section for each of seven kinds the popup is tall and scrolls. Sections are flat, not cards: no fill, radius or inline padding, `sar-space-2` above and below, and a 1px `sar-color-divider` line between them. Section titles become captions in `sar-text-popup-caption` (11/16 medium, uppercase) and `sar-color-text-subtle`, like the store's own section labels. Rows take `sar-space-1` padding, the segmented control takes `sar-control-height-xs` (24px, the store's smallest control), and the allow-list scrolls inside 240px. An empty allow-list is left out of the popup; the full page keeps its empty state.
+- Popup: `sar-popup-width` (360px), `sar-space-3` padding, short labels where a key exists. With a section for each of eight kinds the popup is tall and scrolls. Sections are flat, not cards: no fill, radius or inline padding, `sar-space-2` above and below, and a 1px `sar-color-divider` line between them. Section titles become captions in `sar-text-popup-caption` (11/16 medium, uppercase) and `sar-color-text-subtle`, like the store's own section labels. Rows take `sar-space-1` padding, the segmented control takes `sar-control-height-xs` (24px, the store's smallest control), and the allow-list scrolls inside 240px. An empty allow-list is left out of the popup; the full page keeps its empty state.
 - Font: the `ext` family (a system stack). The store font is not loaded on extension pages and none is bundled.
 - Type on the full page: field labels, help and error lines in `sar-text-body` (13/18). The popup keeps help and error lines in `sar-text-help` (12/16).
 - On the full page, sections are `.sar-card`: `sar-color-bg-raised`, `sar-radius-md`, `sar-space-3` padding, `sar-space-2` apart, titled in `sar-text-card-title` with `sar-space-2` below the title.
@@ -506,7 +506,7 @@ Preview: `previews/OptionsPage.html`.
 ### Sections, in order
 
 1. Header.
-2. One section for each tag kind, in registry order (PvP starts switched off, the other kinds on), titled with Steam's line for the kind (`kind_<id>_heading`). It holds the master switch `options_kind_enabled` (`kinds.<id>.enabled`), then the switches `options_badges` (popup `options_badges_short`; `badge`) and `options_banner` (`banner`), then, on the full page and in the userscript dialog only, the color field (below), then a stacked SegmentedControl with Show, Dim and Hide (`filter`; values `off`, `dim`, `hide`; label `options_filter_label`; the help follows the selection). Each switch has help. While the master switch is off, the other three are hidden and their stored values stay. The summary shows the title and the master switch's state; the master switch and the rest sit in the body, one open away.
+2. One section for each tag kind, in registry order (PvP and In-App Purchases start switched off, the other kinds on), titled with Steam's line for the kind (`kind_<id>_heading`). It holds the master switch `options_kind_enabled` (`kinds.<id>.enabled`), then the switches `options_badges` (popup `options_badges_short`; `badge`) and `options_banner` (`banner`), then, on the full page and in the userscript dialog only, the color field (below), then a stacked SegmentedControl with Show, Dim and Hide (`filter`; values `off`, `dim`, `hide`; label `options_filter_label`; the help follows the selection). Each switch has help. While the master switch is off, the other three are hidden and their stored values stay. The summary shows the title and the master switch's state; the master switch and the rest sit in the body, one open away.
 3. Language (page only): a stacked Select, `Automatic` first, then each shipped locale named in its own language through `Intl.DisplayNames`.
 4. Games you ignored: the AllowList, in groups. All tags comes first, then each kind in registry order, each group titled with its scope's name and listing its games newest first. Left out of the popup while it is empty.
 5. Backup (full page and userscript dialog, not the toolbar popup): the Backup card, to download a file and restore from one.
@@ -1035,6 +1035,8 @@ For every translator:
 | `kind_pvp_category_online` | Online PvP | Steam's category name. |
 | `kind_pvp_category_lan` | LAN PvP | Steam's category name. |
 | `kind_pvp_category_split` | Shared/Split Screen PvP | Steam's category name. |
+| `kind_iap_heading` | In-App Purchases | Steam's category name for a game that sells items inside it. Titles the entry in the hover card, the banner and the settings, and begins the chip's accessible name. Use the name Steam's store shows in your language. |
+| `kind_iap_chip` | IAP | Short chip, the initials of Steam's name. In a language without such initials, one word of that name. |
 | `kind_chip_name` | `$chip$`: `$heading$` | Accessible name of a chip: the chip text, then Steam's line. |
 | `kind_chip_more` | +`$count$` | Chip that stands for the kinds that do not fit. |
 | `kind_chip_more_name` | more tags | After the chip text, names the hidden chips for screen readers. |

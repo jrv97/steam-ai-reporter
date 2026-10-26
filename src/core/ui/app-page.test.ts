@@ -129,7 +129,7 @@ describe("createAppPageUi", () => {
   it("binds the hover card to each chip with its own kind, as on the game's own page", () => {
     const verdicts = capturedVerdicts(1808500);
     setup().render(view({ verdicts }));
-    expect(chips()).toHaveLength(4);
+    expect(chips()).toHaveLength(5);
     for (const chip of chips()) {
       const kind = chip.getAttribute("data-sar-kind");
       const entries = bound.get(chip)?.entries ?? [];
@@ -157,9 +157,10 @@ describe("createAppPageUi", () => {
       i18n.t("kind_kernel_heading"),
       i18n.t("kind_eula_heading"),
       i18n.t("kind_pvp_heading"),
+      i18n.t("kind_iap_heading"),
     ]);
     expect(document.querySelectorAll(".sar-tag-section")).toHaveLength(1);
-    expect(chipKinds()).toEqual(["ai", "kernel", "eula", "pvp"]);
+    expect(chipKinds()).toEqual(["ai", "kernel", "eula", "pvp", "iap"]);
   });
 
   it("shows a game that discloses no AI its chips and its banner entries", () => {
@@ -168,8 +169,9 @@ describe("createAppPageUi", () => {
       i18n.t("kind_drm_heading"),
       i18n.t("kind_account_heading"),
       i18n.t("kind_eula_heading"),
+      i18n.t("kind_iap_heading"),
     ]);
-    expect(chipKinds()).toEqual(["drm", "account", "eula"]);
+    expect(chipKinds()).toEqual(["drm", "account", "eula", "iap"]);
   });
 
   it("gives a game that declares only kernel anti-cheat a section with one chip", () => {
@@ -190,11 +192,12 @@ describe("createAppPageUi", () => {
 
   it("notes the AI kind ignored on its own, keeps the other entries and drops its chip", () => {
     setup().render(view({ verdicts: capturedVerdicts(1808500), ignored: ["ai"] }));
-    expect(chipKinds()).toEqual(["kernel", "eula", "pvp"]);
+    expect(chipKinds()).toEqual(["kernel", "eula", "pvp", "iap"]);
     expect(headings()).toEqual([
       i18n.t("kind_kernel_heading"),
       i18n.t("kind_eula_heading"),
       i18n.t("kind_pvp_heading"),
+      i18n.t("kind_iap_heading"),
     ]);
     expect(notes()).toEqual([
       i18n.t("banner_ignored_kind", { heading: i18n.t("kind_ai_heading") }),
@@ -203,11 +206,12 @@ describe("createAppPageUi", () => {
 
   it("shows a DLC of a base game ignored for one kind its other entries, with no note", () => {
     setup().render(view({ verdicts: capturedVerdicts(1808500), baseIgnored: ["ai"] }));
-    expect(chipKinds()).toEqual(["kernel", "eula", "pvp"]);
+    expect(chipKinds()).toEqual(["kernel", "eula", "pvp", "iap"]);
     expect(headings()).toEqual([
       i18n.t("kind_kernel_heading"),
       i18n.t("kind_eula_heading"),
       i18n.t("kind_pvp_heading"),
+      i18n.t("kind_iap_heading"),
     ]);
     expect(notes()).toEqual([]);
   });
@@ -221,7 +225,11 @@ describe("createAppPageUi", () => {
 
   it("keeps the note and Undo of a DLC ignored on its own beside a base game that is too", () => {
     setup().render(
-      view({ verdicts: capturedVerdicts(1808500), ignored: ["ai"], baseIgnored: ["ai", "pvp"] }),
+      view({
+        verdicts: capturedVerdicts(1808500),
+        ignored: ["ai"],
+        baseIgnored: ["ai", "pvp", "iap"],
+      }),
     );
     expect(chipKinds()).toEqual(["kernel", "eula"]);
     expect(notes()).toEqual([
@@ -244,8 +252,9 @@ describe("createAppPageUi", () => {
       i18n.t("kind_kernel_heading"),
       i18n.t("kind_eula_heading"),
       i18n.t("kind_pvp_heading"),
+      i18n.t("kind_iap_heading"),
     ]);
-    expect(chipKinds()).toEqual(["kernel", "eula", "pvp"]);
+    expect(chipKinds()).toEqual(["kernel", "eula", "pvp", "iap"]);
   });
 
   it("notes a developer ignored for all tags once, and keeps the Undo as the only control", () => {
@@ -281,14 +290,14 @@ describe("createAppPageUi", () => {
     const ui = setup();
     const verdicts = capturedVerdicts(1808500);
     ui.render(view({ verdicts }));
-    expect(chipKinds()).toEqual(["ai", "kernel", "eula", "pvp"]);
+    expect(chipKinds()).toEqual(["ai", "kernel", "eula", "pvp", "iap"]);
     ui.render(view({ verdicts, badgeOff: ["ai"] }));
-    expect(chipKinds()).toEqual(["kernel", "eula", "pvp"]);
-    expect(headings()).toHaveLength(4);
-    ui.render(view({ verdicts, badgeOff: ["kernel", "pvp"] }));
+    expect(chipKinds()).toEqual(["kernel", "eula", "pvp", "iap"]);
+    expect(headings()).toHaveLength(5);
+    ui.render(view({ verdicts, badgeOff: ["kernel", "pvp", "iap"] }));
     expect(chipKinds()).toEqual(["ai", "eula"]);
     ui.render(view({ verdicts }));
-    expect(chipKinds()).toEqual(["ai", "kernel", "eula", "pvp"]);
+    expect(chipKinds()).toEqual(["ai", "kernel", "eula", "pvp", "iap"]);
     expect(document.querySelectorAll(".sar-tag-section")).toHaveLength(1);
   });
 
@@ -296,19 +305,20 @@ describe("createAppPageUi", () => {
     const ui = setup();
     const verdicts = capturedVerdicts(1808500);
     ui.render(view({ verdicts }));
-    ui.render(view({ verdicts, badgeOff: ["ai", "kernel", "eula", "pvp"] }));
+    ui.render(view({ verdicts, badgeOff: ["ai", "kernel", "eula", "pvp", "iap"] }));
     expect(section()).toBeNull();
     expect(document.querySelector(".sar-tag-section-label")).toBeNull();
-    expect(headings()).toHaveLength(4);
+    expect(headings()).toHaveLength(5);
   });
 
   it("keeps the chips of the other kinds when one kind is ignored", () => {
     setup().render(view({ verdicts: capturedVerdicts(1808500), ignored: ["kernel"] }));
-    expect(chipKinds()).toEqual(["ai", "eula", "pvp"]);
+    expect(chipKinds()).toEqual(["ai", "eula", "pvp", "iap"]);
     expect(headings()).toEqual([
       i18n.t("kind_ai_heading"),
       i18n.t("kind_eula_heading"),
       i18n.t("kind_pvp_heading"),
+      i18n.t("kind_iap_heading"),
     ]);
     expect(notes()).toEqual([
       i18n.t("banner_ignored_kind", { heading: i18n.t("kind_kernel_heading") }),
@@ -320,12 +330,12 @@ describe("createAppPageUi", () => {
       view({
         verdicts: capturedVerdicts(1808500),
         ignored: ["kernel"],
-        bannerOff: ["kernel", "pvp"],
+        bannerOff: ["kernel", "pvp", "iap"],
       }),
     );
     expect(headings()).toEqual([i18n.t("kind_ai_heading"), i18n.t("kind_eula_heading")]);
     expect(notes()).toEqual([]);
-    expect(chipKinds()).toEqual(["ai", "eula", "pvp"]);
+    expect(chipKinds()).toEqual(["ai", "eula", "pvp", "iap"]);
   });
 
   it("drops the banner when every banner entry is off and keeps the chips", () => {

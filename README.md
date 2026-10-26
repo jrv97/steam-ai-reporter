@@ -9,7 +9,7 @@
 
 # Tag Kit for Steam
 
-A browser extension for Chromium-based browsers and Firefox, and a userscript (Tampermonkey and Violentmonkey) that tag items on the Steam store with what Valve's own data says about them: AI Generated Content Disclosure, Anti-Cheat (Kernel Level flagged separately), 3rd-party DRM, 3rd-Party Account, 3rd-party EULA and PvP (friend request).
+A browser extension for Chromium-based browsers and Firefox, and a userscript (Tampermonkey and Violentmonkey) that tag items on the Steam store with what Valve's own data says about them: AI Generated Content Disclosure, Anti-Cheat (Kernel Level flagged separately), 3rd-party DRM, 3rd-Party Account, 3rd-party EULA, PvP (friend request) and In-App Purchases.
 
 > Status: [releases](https://github.com/jrv97/steam-ai-reporter/releases) are on GitHub. The Firefox link below is a placeholder.
 
@@ -25,13 +25,13 @@ Once I got that working in place, I thought "why not also flag all the other ann
 
 ## What it does
 
-- Tags these kinds of items: AI Generated Content Disclosure, Kernel Level Anti-Cheat and other Anti-Cheat Software, 3rd-party DRM, 3rd-Party Account, 3rd-party EULA and PvP.
-- Adds a badge to capsules and rows (search, wishlist, home, tag and category hubs, sale pages such as Next Fest, developer and publisher pages, the discovery queue, search suggestions) for items that carry one of those tags. Each tag has a short chip (AI, KLAC, Anti-Cheat, DRM, Account, EULA, PvP), and a +N chip stands for the tags that do not fit.
+- Tags these kinds of items: AI Generated Content Disclosure, Kernel Level Anti-Cheat and other Anti-Cheat Software, 3rd-party DRM, 3rd-Party Account, 3rd-party EULA, PvP and In-App Purchases.
+- Adds a badge to capsules and rows (search, wishlist, home, tag and category hubs, sale pages such as Next Fest, developer and publisher pages, the discovery queue, search suggestions) for items that carry one of those tags. Each tag has a short chip (AI, KLAC, Anti-Cheat, DRM, Account, EULA, PvP, IAP), and a +N chip stands for the tags that do not fit.
 - Opens a card on hover or keyboard focus that lists every tag in Steam's words and ends with a line naming the developer as the source.
 - Gives a demo the tags of its full game, each marked "Declared for the full game" in the card and the banner; a tag the demo declares itself shows as its own. DLC keep their own tags only.
 - Shows a non-blocking banner on the app page that lists each tag the developer declared and quotes the developer's AI report verbatim.
 - Sums up the included games' tags at the top of a package page, one line per tag such as "AI Generated Content Disclosure: 2 of 5 games", from the lookups its rows already use.
-- Gives each tag its own switch, badge, banner entry and list filter (Show, Dim or Hide). Filters start on Show, and the strongest filter wins when a game carries several tags. The PvP tag starts switched off.
+- Gives each tag its own switch, badge, banner entry and list filter (Show, Dim or Hide). Filters start on Show, and the strongest filter wins when a game carries several tags. The PvP and In-App Purchases tags start switched off.
 - Lets you ignore a game you consider a false flag, for one tag or for all tags. Its DLC follow it. You can also ignore a developer or a publisher, apart by role, from the banner, and undo it in the settings.
 - Backs up your settings and ignore lists to a JSON file on your device and restores them after a check, in the options page and the userscript dialog. One file works in both.
 
@@ -44,6 +44,7 @@ Each tag follows Steam's own words:
 - 3rd-Party Account: the game needs an account with a third party.
 - 3rd-party EULA: the game needs agreement to a third party's EULA.
 - PvP: the game has player-versus-player play.
+- In-App Purchases: Steam lists in-app purchases among the game's features. The chip reads "IAP", and the card and the banner carry Steam's name "In-App Purchases".
 
 The AI badge does not say a game uses AI, and the absence of a badge does not mean a game is AI-free: the report comes from the developer, and the badge marks what developers chose to report.
 

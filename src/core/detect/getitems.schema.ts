@@ -94,8 +94,10 @@ const ExtraDetailsSchema = record({
   eula: lenient(list(EulaEntrySchema)),
 });
 
+/** Steam's category IDs. Each list is lenient, so a bad one costs only the kinds that read it. */
 const CategoriesSchema = record({
-  supported_player_categoryids: v.exactOptional(list(v.number())),
+  supported_player_categoryids: lenient(list(v.number())),
+  feature_categoryids: lenient(list(v.number())),
 });
 
 /**

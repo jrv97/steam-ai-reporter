@@ -236,7 +236,7 @@ describe("createBanner", () => {
 });
 
 describe("the entries of the captured games", () => {
-  it("lists DRM, the account and the EULA of a game, each as Steam's line", () => {
+  it("lists DRM, the account, the EULA and IAP of a game, each as Steam's line", () => {
     const { banner, root } = setup();
     const shown = disclosedList(capturedVerdicts(3751950));
     banner.show(view(shown));
@@ -246,6 +246,7 @@ describe("the entries of the captured games", () => {
       i18n.t("kind_drm_heading"),
       i18n.t("kind_account_heading"),
       i18n.t("kind_eula_heading"),
+      i18n.t("kind_iap_heading"),
     ]);
   });
 
@@ -280,6 +281,7 @@ describe("the entries of the captured games", () => {
       i18n.t("kind_kernel_heading"),
       i18n.t("kind_eula_heading"),
       i18n.t("kind_pvp_heading"),
+      i18n.t("kind_iap_heading"),
     ]);
     const [ai] = shown;
     expect(ai?.kind).toBe("ai");
@@ -317,13 +319,19 @@ describe("the banner's accessibility", () => {
     const { banner, root } = setup();
     banner.show(view(disclosedList(capturedVerdicts(3751950))));
     const buttons = [...root.querySelectorAll<HTMLButtonElement>(".sar-banner-action")];
-    expect(buttons.map((button) => button.tagName)).toEqual(["BUTTON", "BUTTON", "BUTTON"]);
+    expect(buttons.map((button) => button.tagName)).toEqual([
+      "BUTTON",
+      "BUTTON",
+      "BUTTON",
+      "BUTTON",
+    ]);
     expect(buttons.map((button) => nameOf(root, button))).toEqual([
       `${i18n.t("banner_ignore_kind")} ${i18n.t("kind_drm_heading")}`,
       `${i18n.t("banner_ignore_kind")} ${i18n.t("kind_account_heading")}`,
       `${i18n.t("banner_ignore_kind")} ${i18n.t("kind_eula_heading")}`,
+      `${i18n.t("banner_ignore_kind")} ${i18n.t("kind_iap_heading")}`,
     ]);
-    expect(new Set(buttons.map((button) => button.id)).size).toBe(3);
+    expect(new Set(buttons.map((button) => button.id)).size).toBe(4);
   });
 
   it("starts every accessible name with the visible text of its button", () => {
@@ -480,7 +488,7 @@ describe("ignoring from the banner", () => {
     expect(restore).toHaveBeenCalledWith("drm");
     calls[0]?.resolve();
     await vi.waitFor(() => {
-      expect(texts(root, "h2")).toHaveLength(3);
+      expect(texts(root, "h2")).toHaveLength(4);
     });
     expect(root.activeElement).toBe(query(root, '.sar-banner-action[data-sar-scope="drm"]'));
     await vi.waitFor(() => {
@@ -548,7 +556,7 @@ describe("placeBanner", () => {
 describe("the creators section", () => {
   const VALVE = bannerCreator("developer", ["Valve", 4]);
   const PUBLISHER = bannerCreator("publisher", ["Valve", 4]);
-  const chip = (id: "ai" | "drm" | "account") => i18n.t(KIND_BY_ID[id].messages.chip);
+  const chip = (id: "ai" | "drm" | "account" | "iap") => i18n.t(KIND_BY_ID[id].messages.chip);
   const shown = disclosedList(capturedVerdicts(3751950));
 
   function wired(initial: BannerView) {
@@ -575,6 +583,7 @@ describe("the creators section", () => {
       i18n.t("banner_ignore_creator_kind", { chip: chip("drm") }),
       i18n.t("banner_ignore_creator_kind", { chip: chip("account") }),
       i18n.t("banner_ignore_creator_kind", { chip: i18n.t("kind_eula_chip") }),
+      i18n.t("banner_ignore_creator_kind", { chip: chip("iap") }),
       i18n.t("banner_ignore_creator_all"),
     ];
     expect(rows(root)).toEqual([
@@ -600,11 +609,11 @@ describe("the creators section", () => {
     const all = bannerCreator("publisher", "Embark", [ALLOW_ALL]);
     banner.show(view(shown, { creators: [some, all] }));
     const [first, second] = rows(root);
-    expect(first?.buttons).toHaveLength(3);
+    expect(first?.buttons).toHaveLength(4);
     expect(first?.buttons).not.toContain(
       i18n.t("banner_ignore_creator_kind", { chip: chip("drm") }),
     );
-    expect(second?.buttons).toHaveLength(3);
+    expect(second?.buttons).toHaveLength(4);
     expect(second?.buttons).not.toContain(i18n.t("banner_ignore_creator_all"));
   });
 

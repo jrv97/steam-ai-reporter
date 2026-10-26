@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { FULL_DISCLOSED } from "../../../tests/helpers/verdicts";
 import { kindDetails } from "./kind-details";
 
-const { ai, kernel, anticheat, drm, account, eula, pvp } = FULL_DISCLOSED;
+const { ai, kernel, anticheat, drm, account, eula, pvp, iap } = FULL_DISCLOSED;
 
 describe("kindDetails", () => {
   it("quotes the AI notes and names the service the developer gave", () => {
@@ -68,5 +68,9 @@ describe("kindDetails", () => {
       { kind: "message", key: "kind_pvp_category_split" },
       { kind: "message", key: "kind_pvp_category_pvp" },
     ]);
+  });
+
+  it("adds no line to IAP, whose heading is Steam's category name", () => {
+    expect(kindDetails(iap)).toEqual([]);
   });
 });

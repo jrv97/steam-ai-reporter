@@ -514,6 +514,7 @@ describe("createHoverCard", () => {
         [heading("drm"), "Denuvo Anti-tamper"],
         [heading("account"), "Ubisoft Account", i18n.t("kind_account_links")],
         [heading("eula"), ...eulaNames(capturedVerdicts(3751950))],
+        [heading("iap")],
       ]],
       [
         "kernel anti-cheat with boot protection and no vendor (2807960)",
@@ -523,6 +524,7 @@ describe("createHoverCard", () => {
           [heading("account"), "EA Account linking required", i18n.t("kind_account_links")],
           [heading("eula"), ...eulaNames(capturedVerdicts(2807960))],
           [heading("pvp"), i18n.t("kind_pvp_category_online")],
+          [heading("iap")],
         ],
       ],
       [
@@ -533,10 +535,12 @@ describe("createHoverCard", () => {
           [heading("kernel"), "Denuvo", i18n.t("kind_kernel_uninstall")],
           [heading("eula"), ...eulaNames(capturedVerdicts(1808500))],
           [heading("pvp"), i18n.t("kind_pvp_category_online")],
+          [heading("iap")],
         ],
       ],
-      ["a named anti-cheat that is not kernel level (730)", capturedVerdicts(730), [
+      ["a named anti-cheat that is not kernel level, and IAP alone (730)", capturedVerdicts(730), [
         [heading("anticheat"), "VAC (Valve Anti-Cheat)"],
+        [heading("iap")],
       ]],
       ["two EULAs (1245620)", capturedVerdicts(1245620), [
         [heading("eula"), ...eulaNames(capturedVerdicts(1245620))],
@@ -550,6 +554,7 @@ describe("createHoverCard", () => {
           [heading("account"), "EA Account", i18n.t("kind_account_links")],
           [heading("eula"), ...eulaNames(capturedVerdicts(1172470))],
           [heading("pvp"), i18n.t("kind_pvp_category_online")],
+          [heading("iap")],
         ],
       ],
       [

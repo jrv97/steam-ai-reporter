@@ -58,5 +58,8 @@ export function kindDetails(verdict: AnyDisclosed): readonly KindDetail[] {
         const key = pvpCategoryMessage(id);
         return key === undefined ? [] : [message(key)];
       });
+    case "iap":
+      // The heading is Steam's category name, and the category says nothing more.
+      return [];
   }
 }

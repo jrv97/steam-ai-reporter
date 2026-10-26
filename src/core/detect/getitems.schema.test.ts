@@ -27,6 +27,9 @@ function detailsOf(item: unknown) {
   return details;
 }
 
+/** The category lists the kinds read. */
+const CATEGORY_LISTS = ["supported_player_categoryids", "feature_categoryids"] as const;
+
 describe("StoreItemSchema over the captured kinds", () => {
   const items = new Map<number, StoreItem>(
     fixtureItems(kinds).map((raw): [number, StoreItem] => {
@@ -59,9 +62,10 @@ describe("StoreItemSchema over the captured kinds", () => {
     });
   });
 
-  it("reads the player categories from the item, not from extra_details", () => {
-    expect(items.get(105600)?.categories).toMatchObject({
+  it("reads the player and feature categories from the item, not from extra_details", () => {
+    expect(items.get(105600)?.categories).toStrictEqual({
       supported_player_categoryids: [2, 1, 49, 36, 9, 38],
+      feature_categoryids: [22, 29, 30, 23, 41, 42, 43, 62],
     });
     expect(items.get(105600)?.extra_details).not.toHaveProperty("categories");
   });
@@ -227,12 +231,14 @@ describe("StoreItemSchema leniency", () => {
     const item = parse(storeItem(1, { categories: "co-op", name: 9 }));
     expect(item.categories).toBe(MALFORMED);
     expect(item.name).toBe(MALFORMED);
-    expect(parse(storeItem(1, { categories: { supported_player_categoryids: "49" } })).categories)
-      .toBe(MALFORMED);
-    expect(
-      parse(storeItem(1, { categories: { supported_player_categoryids: [49, "36"] } }))
-        .categories,
-    ).toBe(MALFORMED);
+  });
+
+  it.each(CATEGORY_LISTS)("marks a malformed %s and keeps the other list", (list) => {
+    const lists = { supported_player_categoryids: [2], feature_categoryids: [35] };
+    for (const bad of ["49", [49, "36"]]) {
+      const categories = parse(storeItem(1, { categories: { ...lists, [list]: bad } })).categories;
+      expect(categories).toStrictEqual({ ...lists, [list]: MALFORMED });
+    }
   });
 
   it("still rejects an item whose id, success or extra_details is unusable", () => {
@@ -291,13 +297,12 @@ describe("StoreItemSchema leniency", () => {
       expect(read(list(51))).toBe(MALFORMED);
     });
 
-    it("allows 50 category IDs and marks 51 malformed", () => {
-      const read = (ids: readonly number[]) =>
-        parse(storeItem(1, { categories: { supported_player_categoryids: ids } })).categories;
-      expect(read(Array.from({ length: 50 }, (_, i) => i))).toMatchObject({
-        supported_player_categoryids: { length: 50 },
-      });
-      expect(read(Array.from({ length: 51 }, (_, i) => i))).toBe(MALFORMED);
+    it.each(CATEGORY_LISTS)("allows 50 IDs in %s and marks 51 malformed", (list) => {
+      const read = (length: number) =>
+        parse(storeItem(1, { categories: { [list]: Array.from({ length }, (_, i) => i) } }))
+          .categories;
+      expect(read(50)).toMatchObject({ [list]: { length: 50 } });
+      expect(read(51)).toStrictEqual({ [list]: MALFORMED });
     });
   });
 

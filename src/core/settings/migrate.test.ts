@@ -2,9 +2,8 @@ import { describe, expect, it } from "vitest";
 import { migrationContract } from "../../../tests/contracts/migration.contract";
 import { countingStore } from "../../../tests/helpers/counting-store";
 import { memoryStore } from "../../../tests/helpers/memory-store";
-import { withKind } from "../../../tests/helpers/settings";
+import { plainKinds, withKind } from "../../../tests/helpers/settings";
 import type { JsonValue } from "../json";
-import { perKind } from "../kinds/registry";
 import type { KeyValueStore } from "../ports";
 import { perScope } from "./allow-data";
 import {
@@ -251,8 +250,7 @@ describe("settingsFromV1 and allowFromV1", () => {
       locale: "es",
       debug: true,
       kinds: {
-        ...perKind(() => ({ enabled: true, badge: true, banner: true, filter: "off" })),
-        pvp: { enabled: false, badge: true, banner: true, filter: "off" },
+        ...plainKinds({ enabled: true, badge: true, banner: true, filter: "off" }),
         ai: { enabled: true, badge: false, banner: true, filter: "hide" },
       },
     });
