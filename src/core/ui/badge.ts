@@ -6,6 +6,7 @@ import type { MessageCatalog } from "../ports";
 import type { BadgeSlot, CompactSize, HostRenderer } from "./host";
 import type { CardTriggers } from "./hover-card";
 import { KIND_ATTRIBUTE } from "./kind-attributes";
+import { facetName } from "./kind-details";
 
 /** Compact badge tiers by image box (components.mdx, section 2). Smaller images get none. */
 const TEXT_MIN_WIDTH = 180;
@@ -32,7 +33,7 @@ interface ChipText {
 
 /**
  * A verdict's chip: the kind's short word, and Steam's line in the name. A kind with facets adds
- * Steam's word for the value to both.
+ * Steam's word for the value to both, or uses the value's own chip and word.
  */
 function chipText(i18n: MessageCatalog, verdict: AnyDisclosed): ChipText {
   const { messages } = KIND_BY_ID[verdict.kind];
@@ -40,10 +41,11 @@ function chipText(i18n: MessageCatalog, verdict: AnyDisclosed): ChipText {
   const heading = i18n.t(messages.heading);
   const facet = facetOf(verdict);
   if (facet !== undefined) {
-    const value = i18n.t(facet.word);
     return {
-      label: i18n.t("kind_facet_chip", { chip, value }),
-      name: i18n.t("kind_facet_name", { heading, value }),
+      label: facet.chip === undefined
+        ? i18n.t("kind_facet_chip", { chip, value: i18n.t(facet.word) })
+        : i18n.t(facet.chip),
+      name: facetName(i18n, heading, facet),
     };
   }
   // PvP reads the same as its heading, so its name is that word once, not "PvP: PvP".

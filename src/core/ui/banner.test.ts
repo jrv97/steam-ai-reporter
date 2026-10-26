@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { APP_PAGES } from "../../../tests/helpers/app-page";
 import { bannerCreator, creatorNote, keyOf } from "../../../tests/helpers/creators";
 import { setBody } from "../../../tests/helpers/dom";
-import { capturedVerdicts, disclosedList } from "../../../tests/helpers/fixture-verdicts";
+import { bannerList, capturedVerdicts } from "../../../tests/helpers/fixture-verdicts";
 import { englishI18n } from "../../../tests/helpers/i18n";
 import { disclosedVerdict, FULL_DISCLOSED, lent } from "../../../tests/helpers/verdicts";
 import { SHIPPED_CATALOGS } from "../i18n/shipped";
@@ -230,7 +230,7 @@ describe("createBanner", () => {
       throw new TypeError();
     }
     const add = vi.spyOn(owner, "addEventListener");
-    banner.show(view(disclosedList(capturedVerdicts(1808500)), { ignored: ["pvp"] }));
+    banner.show(view(bannerList(capturedVerdicts(1808500)), { ignored: ["pvp"] }));
     expect(add).not.toHaveBeenCalled();
   });
 });
@@ -238,7 +238,7 @@ describe("createBanner", () => {
 describe("the entries of the captured games", () => {
   it("lists DRM, the account, the EULA and IAP of a game, each as Steam's line", () => {
     const { banner, root } = setup();
-    const shown = disclosedList(capturedVerdicts(3751950));
+    const shown = bannerList(capturedVerdicts(3751950));
     banner.show(view(shown));
 
     expect(texts(root, "h2")).toEqual(shown.map(heading));
@@ -252,7 +252,7 @@ describe("the entries of the captured games", () => {
 
   it("leaves the short lines of a kind to Steam's own boxes and the hover card", () => {
     const { banner, root } = setup();
-    banner.show(view(disclosedList(capturedVerdicts(3751950))));
+    banner.show(view(bannerList(capturedVerdicts(3751950))));
     expect(root.querySelector("a, blockquote, .sar-banner-service")).toBeNull();
     expect(root.textContent).not.toContain("Denuvo Anti-tamper");
     expect(root.textContent).not.toContain("Ubisoft Account");
@@ -263,7 +263,7 @@ describe("the entries of the captured games", () => {
     "gives each kind of game %i one line: its heading and its ignore button",
     (id) => {
       const { banner, root } = setup();
-      const shown = disclosedList(capturedVerdicts(id));
+      const shown = bannerList(capturedVerdicts(id));
       banner.show(view(shown));
       expect(texts(root, "h2")).toEqual(shown.map(heading));
       expect(root.querySelectorAll(".sar-banner-entry")).toHaveLength(shown.length);
@@ -274,7 +274,7 @@ describe("the entries of the captured games", () => {
 
   it("quotes the AI notes of a game that also declares an anti-cheat and a EULA", () => {
     const { banner, root } = setup();
-    const shown = disclosedList(capturedVerdicts(1808500));
+    const shown = bannerList(capturedVerdicts(1808500));
     banner.show(view(shown));
     expect(texts(root, "h2")).toEqual([
       i18n.t("kind_ai_heading"),
@@ -309,7 +309,7 @@ describe("the banner's accessibility", () => {
 
   it("labels the region for the developer when it shows several kinds or only notes", () => {
     const { banner, root } = setup();
-    banner.show(view(disclosedList(capturedVerdicts(3751950))));
+    banner.show(view(bannerList(capturedVerdicts(3751950))));
     expect(nameOf(root, query(root, "aside"))).toBe(i18n.t("banner_region_label"));
     banner.show(view([], { ignored: [ALLOW_ALL] }));
     expect(nameOf(root, query(root, "aside"))).toBe(i18n.t("banner_region_label"));
@@ -323,7 +323,7 @@ describe("the banner's accessibility", () => {
 
   it("names each ignore button by its action and the kind it belongs to", () => {
     const { banner, root } = setup();
-    banner.show(view(disclosedList(capturedVerdicts(3751950))));
+    banner.show(view(bannerList(capturedVerdicts(3751950))));
     const buttons = [...root.querySelectorAll<HTMLButtonElement>(".sar-banner-action")];
     expect(buttons.map((button) => button.tagName)).toEqual([
       "BUTTON",
@@ -342,7 +342,7 @@ describe("the banner's accessibility", () => {
 
   it("starts every accessible name with the visible text of its button", () => {
     const { banner, root } = setup();
-    banner.show(view(disclosedList(capturedVerdicts(3751950)), { ignored: ["pvp"] }));
+    banner.show(view(bannerList(capturedVerdicts(3751950)), { ignored: ["pvp"] }));
     const controls = [...root.querySelectorAll("button")];
     expect(controls.length).toBeGreaterThan(4);
     for (const control of controls) {
@@ -354,7 +354,7 @@ describe("the banner's accessibility", () => {
     const { banner, root } = setup();
     banner.show(view([disclosedVerdict()]));
     expect(query(root, "aside").getAttribute("data-sar-kind")).toBe("ai");
-    const several = disclosedList(capturedVerdicts(3751950));
+    const several = bannerList(capturedVerdicts(3751950));
     banner.show(view(several));
     expect(query(root, "aside").hasAttribute("data-sar-kind")).toBe(false);
     expect(query(root, "aside").hasAttribute("style")).toBe(false);
@@ -370,7 +370,7 @@ describe("the banner's accessibility", () => {
     const { banner, root } = setup();
     banner.show(view([disclosedVerdict()]));
     expect(query(root, "aside").hasAttribute("data-sar-entries")).toBe(false);
-    banner.show(view(disclosedList(capturedVerdicts(3751950))));
+    banner.show(view(bannerList(capturedVerdicts(3751950))));
     expect(query(root, "aside").getAttribute("data-sar-entries")).toBe("many");
   });
 });
@@ -382,7 +382,7 @@ describe("the banner in Spanish", () => {
     const banner = createBanner(document, spanish, manualActions().actions, {
       frame: () => undefined,
     });
-    const shown = disclosedList(capturedVerdicts(3751950));
+    const shown = bannerList(capturedVerdicts(3751950));
     banner.show(view(shown, { ignored: ["pvp"] }));
     const root = banner.host.shadowRoot;
     if (root === null) {
@@ -414,7 +414,7 @@ describe("the notes for ignored scopes", () => {
 
   it("notes a kind ignored on its own beside the entries that remain", () => {
     const { banner, root } = setup();
-    const rest = withoutDrm(disclosedList(capturedVerdicts(3751950)));
+    const rest = withoutDrm(bannerList(capturedVerdicts(3751950)));
     banner.show(view(rest, { ignored: ["drm"] }));
     expect(query(root, "aside").hasAttribute("data-sar-variant")).toBe(false);
     expect(texts(root, "h2")).toEqual(rest.map(heading));
@@ -445,7 +445,7 @@ describe("ignoring from the banner", () => {
   }
 
   it("ignores one kind, moves focus to its Undo and announces it", async () => {
-    const shown = disclosedList(capturedVerdicts(3751950));
+    const shown = bannerList(capturedVerdicts(3751950));
     const { root, ignore, calls, thenShow } = wired(view(shown));
     thenShow(view(withoutDrm(shown), { ignored: ["drm"] }));
 
@@ -467,7 +467,7 @@ describe("ignoring from the banner", () => {
   });
 
   it("ignores the game for all tags from the link below the entries", async () => {
-    const shown = disclosedList(capturedVerdicts(3751950));
+    const shown = bannerList(capturedVerdicts(3751950));
     const { root, ignore, calls, thenShow } = wired(view(shown));
     thenShow(view([], { ignored: [ALLOW_ALL] }));
 
@@ -484,7 +484,7 @@ describe("ignoring from the banner", () => {
   });
 
   it("undoes an ignored kind and puts focus on its ignore button again", async () => {
-    const shown = disclosedList(capturedVerdicts(3751950));
+    const shown = bannerList(capturedVerdicts(3751950));
     const { root, restore, calls, thenShow } = wired(
       view(withoutDrm(shown), { ignored: ["drm"] }),
     );
@@ -505,7 +505,7 @@ describe("ignoring from the banner", () => {
   });
 
   it("undoes an ignore for all tags and focuses the ignore link", async () => {
-    const shown = disclosedList(capturedVerdicts(3751950));
+    const shown = bannerList(capturedVerdicts(3751950));
     const { root, calls, thenShow } = wired(view([], { ignored: [ALLOW_ALL] }));
     thenShow(view(shown));
 
@@ -563,7 +563,7 @@ describe("the creators section", () => {
   const VALVE = bannerCreator("developer", ["Valve", 4]);
   const PUBLISHER = bannerCreator("publisher", ["Valve", 4]);
   const chip = (id: "ai" | "drm" | "account" | "iap") => i18n.t(KIND_BY_ID[id].messages.chip);
-  const shown = disclosedList(capturedVerdicts(3751950));
+  const shown = bannerList(capturedVerdicts(3751950));
 
   function wired(initial: BannerView) {
     const wiring = manualActions();

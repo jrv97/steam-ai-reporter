@@ -5,7 +5,7 @@ import type { MessageCatalog } from "../ports";
 import { HOST_APPID } from "../scan/marks";
 import { findList, placeAbove, SUMMARY_PLACEMENTS } from "../scan/placements";
 import type { HostRenderer, HostView } from "./host";
-import { entryName } from "./kind-details";
+import { entryName, facetName } from "./kind-details";
 import { createTagBlock } from "./tag-section";
 
 /** The label's id, which the summary's group points to for its name. */
@@ -17,7 +17,7 @@ function lineNames(i18n: MessageCatalog, kind: TagKind): readonly string[] {
   const facets: readonly FacetDefinition<FacetId>[] = kind.facets ?? [];
   return facets.length === 0
     ? [heading]
-    : facets.map((facet) => i18n.t("kind_facet_name", { heading, value: i18n.t(facet.word) }));
+    : facets.map((facet) => facetName(i18n, heading, facet));
 }
 
 /**

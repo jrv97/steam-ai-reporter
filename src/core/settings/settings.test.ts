@@ -74,7 +74,9 @@ describe("parseSettings", () => {
       kinds: {
         ...perKind((kind): KindSettings => {
           const off: KindSettings = { enabled: false, badge: false, banner: false, filter: "hide" };
-          return kind.facets === undefined ? off : { ...off, facets: ["playable"] };
+          return kind.facets === undefined
+            ? off
+            : { ...off, facets: kind.facets.slice(0, 1).map((facet) => facet.id) };
         }),
         kernel: { enabled: true, badge: false, banner: true, filter: "dim" },
       },

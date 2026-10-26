@@ -518,6 +518,24 @@ describe("createHoverCard", () => {
       ]);
     });
 
+    it.each(
+      [
+        ["Steam's words and what its list shows", FULL_DISCLOSED.family, []],
+        ["the same for the full game", lent(FULL_DISCLOSED.family), ["kind_full_game_valve"]],
+      ] as const,
+    )("shows the family kind's unlisted value with %s", (_name, verdict, lead) => {
+      open([verdict]);
+      expect(entries()).toEqual([
+        [
+          heading("family"),
+          ...lead.map((key) => i18n.t(key)),
+          i18n.t("kind_family_unsupported"),
+          i18n.t("kind_family_unlisted"),
+        ],
+      ]);
+      expect(shown()?.lastElementChild?.textContent).toBe(i18n.t("badge_card_valve"));
+    });
+
     it("marks each entry with its kind, so a custom color reaches its title", () => {
       open(disclosedOf(FULL_DISCLOSED));
       const kinds = [...(shown()?.querySelectorAll(".sar-hovercard-entry") ?? [])].map((entry) =>
@@ -527,6 +545,13 @@ describe("createHoverCard", () => {
       expect(shown()?.querySelector(".sar-hovercard-title")?.hasAttribute("style")).toBe(false);
     });
 
+    // Family Sharing as a paid game whose Steam features leave it out shows it.
+    const unlisted = [
+      heading("family"),
+      i18n.t("kind_family_unsupported"),
+      i18n.t("kind_family_unlisted"),
+    ];
+
     // The details of each kind, from the batch captured for the tag kinds and from its pages.
     const CASES: readonly (readonly [string, KindVerdicts, readonly (readonly string[])[]])[] = [
       ["DRM, a linkable account and a EULA (3751950)", capturedVerdicts(3751950), [
@@ -534,6 +559,7 @@ describe("createHoverCard", () => {
         [heading("account"), "Ubisoft Account", i18n.t("kind_account_links")],
         [heading("eula"), ...eulaNames(capturedVerdicts(3751950))],
         [heading("iap")],
+        unlisted,
       ]],
       [
         "kernel anti-cheat with boot protection and no vendor (2807960)",
@@ -544,6 +570,7 @@ describe("createHoverCard", () => {
           [heading("eula"), ...eulaNames(capturedVerdicts(2807960))],
           [heading("pvp"), i18n.t("kind_pvp_category_online")],
           [heading("iap")],
+          unlisted,
         ],
       ],
       [
@@ -555,6 +582,8 @@ describe("createHoverCard", () => {
           [heading("eula"), ...eulaNames(capturedVerdicts(1808500))],
           [heading("pvp"), i18n.t("kind_pvp_category_online")],
           [heading("iap")],
+          // Steam's word for the value is the heading, which the card shows once.
+          [heading("family")],
         ],
       ],
       ["a named anti-cheat that is not kernel level, and IAP alone (730)", capturedVerdicts(730), [
@@ -564,6 +593,7 @@ describe("createHoverCard", () => {
       ["two EULAs (1245620)", capturedVerdicts(1245620), [
         [heading("eula"), ...eulaNames(capturedVerdicts(1245620))],
         [heading("pvp"), i18n.t("kind_pvp_category_online")],
+        [heading("family")],
       ]],
       [
         "a named kernel anti-cheat that stays behind, an account and a EULA (1172470)",

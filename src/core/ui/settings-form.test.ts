@@ -5,7 +5,7 @@ import { fixedClock } from "../../../tests/helpers/fixed-clock";
 import { englishI18n } from "../../../tests/helpers/i18n";
 import { memoryStore } from "../../../tests/helpers/memory-store";
 import {
-  isStatusKind,
+  isValveKind,
   OFF_KINDS,
   STATUS_KINDS,
   withKind,
@@ -176,7 +176,7 @@ describe("the section of each tag", () => {
     for (const kind of KINDS) {
       expect(input(kind.id, "enabled").checked).toBe(!OFF_KINDS.includes(kind.id));
       expect(input(kind.id, "badge").checked).toBe(true);
-      expect(input(kind.id, "banner").checked).toBe(!isStatusKind(kind.id));
+      expect(input(kind.id, "banner").checked).toBe(!isValveKind(kind.id));
       expect(input(kind.id, "filter", "off").checked).toBe(true);
     }
   });
@@ -1013,7 +1013,7 @@ describe("the ignored games", () => {
       }
     }
     expect(section?.hidden).toBe(true);
-    expect(document.activeElement?.textContent).toBe(heading("machine"));
+    expect(document.activeElement?.textContent).toBe(heading("family"));
   });
 
   it("keeps the empty state on the full page", async () => {

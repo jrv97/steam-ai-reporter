@@ -185,6 +185,26 @@
     "message": "No compatible",
     "description": "Steam's word for a game Valve rated as not working on Steam Deck or Steam Machine. Shown like Verified. Use the word Steam shows in this language. Never use it for a game Valve has not rated. Steam shares the rating words between Steam Deck and Steam Machine; the Machine section was not checked live in this language."
   },
+  "kind_family_heading": {
+    "message": "Préstamo familiar",
+    "description": "Steam's own name of Family Sharing, the Steam feature that lets a family share a library. It titles the entry in the hover card, names the settings section, begins the screen reader name of the chip and is the choice for a game Steam lists it for. Use the word Steam shows in this language. From Steam's Spanish client strings; not checked on a live store page."
+  },
+  "kind_family_chip": {
+    "message": "Préstamo",
+    "description": "Short chip for a game Steam lists Family Sharing for. Our short form of Steam's name, for chips only; keep it short, it sits in a row and over game images. Steam's head noun alone (\"Préstamo familiar\"), as Steam has no short form."
+  },
+  "kind_family_unsupported": {
+    "message": "Préstamo familiar no disponible",
+    "description": "Steam's own words for a game that cannot be shared in a family library. Shown under the heading in the hover card, as the heading of the entry in the notice on the game's page and as a choice in the settings, for a paid game whose Steam feature list leaves Family Sharing out. Keep Steam's wording and capitalization in this language; never write a bare negative such as \"No Family Sharing\". From Steam's Spanish client strings; not checked on a live store page."
+  },
+  "kind_family_unsupported_chip": {
+    "message": "Préstamo no disponible",
+    "description": "Short chip for a paid game whose Steam feature list leaves Family Sharing out. A short form of Steam's words for it; keep it short and never write a bare negative such as \"No Family Sharing\". Our short form of Steam's words (\"Préstamo familiar no disponible\"); not Steam's own."
+  },
+  "kind_family_unlisted": {
+    "message": "El préstamo familiar no figura entre las características que Steam indica para este juego.",
+    "description": "In the hover card, under \"Family Sharing not Available\". It says only what Steam's data shows: Steam's feature list for this game does not include Family Sharing. Never say the game cannot be shared or blocks sharing."
+  },
   "kind_chip_name": {
     "message": "$chip$: $heading$",
     "description": "Screen reader name of a chip: the visible chip text, then Steam's full line for the kind. $chip$ is the chip text and $heading$ the full line.",
@@ -246,8 +266,8 @@
     "description": "In the hover card and in the notice on a demo's store page, right under a tag's heading when the tag is shown because the full game declared it; the demo did not declare it itself. \"The full game\" is the product the demo belongs to. Never say the demo declared it."
   },
   "kind_full_game_valve": {
-    "message": "Valorado para el juego completo",
-    "description": "In the hover card and in the notice on a demo's store page, right under the heading of a Steam Deck or Steam Machine rating when it is shown because Valve rated the full game; Valve did not rate the demo itself. Never say the demo was rated."
+    "message": "Para el juego completo",
+    "description": "In the hover card and in the notice on a demo's store page, right under the heading of a fact Valve states (a Steam Deck or Steam Machine rating, Family Sharing) when it is shown because Valve states it for the full game; Valve says nothing about the demo itself. Never say the demo was rated or listed."
   },
   "badge_card_declared": {
     "message": "Declarado por el desarrollador en la página de la tienda",
@@ -577,7 +597,7 @@
   },
   "options_facets_label": {
     "message": "Valores que etiquetar",
-    "description": "Label of a group of checkboxes in a tag's settings, one per value Steam gives (Verificado, Jugable, No compatible). Only the ticked values get the tag."
+    "description": "Label of a group of checkboxes in a tag's settings, one per value Steam gives (Verificado, Jugable, No compatible; Préstamo familiar, Préstamo familiar no disponible). Only the ticked values get the tag."
   },
   "options_facets_help": {
     "message": "Los marcadores, las entradas del aviso y el filtro de listas actúan sobre los valores marcados aquí. Si no marcas ninguno, la etiqueta no marca ningún juego.",

@@ -9,6 +9,7 @@ import { fixedClock } from "../../tests/helpers/fixed-clock";
 import {
   demoItem,
   disclosedItem,
+  featuredItem,
   fixtureItems,
   getItemsRequest,
   getItemsRoute,
@@ -113,6 +114,25 @@ describe("start on a package page", () => {
     await expect.poll(() => document.querySelector(".sar-summary-line")?.textContent).toBe(
       i18n.plural("badge_summary_games", 2, {
         kind: i18n.t("kind_facet_name", { heading, value }),
+        tagged: "1",
+      }),
+    );
+    expect(document.querySelectorAll(".sar-summary-line")).toHaveLength(1);
+  });
+
+  it("counts a paid game Steam's features leave out, never a free game or a DLC", async () => {
+    setBody(packagePage([10, 20, 30, 40]));
+    const items = [
+      featuredItem(10, [22, 29]),
+      featuredItem(20, [22, 29], { is_free: true }),
+      featuredItem(30, [22, 29], { type: 4 }),
+      storeItem(40),
+    ];
+    const familyOn = withKind(DEFAULT_SETTINGS, "family", { enabled: true });
+    await startOnLoaded(new Map([[SETTINGS_KEY, encodeSettings(familyOn)]]), items);
+    await expect.poll(() => document.querySelector(".sar-summary-line")?.textContent).toBe(
+      i18n.plural("badge_summary_games", 3, {
+        kind: i18n.t("kind_family_unsupported"),
         tagged: "1",
       }),
     );
@@ -584,6 +604,75 @@ describe("start on the search page", () => {
       expect(labels(UNSUPPORTED)).toEqual([deckChip("unsupported")]);
       expect(row(String(UNSUPPORTED))?.getAttribute("data-sar-kinds")).toBe("deck");
       expect(labels(id)).toEqual([]);
+      expect(row(String(id))?.hasAttribute("data-sar-kinds")).toBe(false);
+      expect(getComputedStyle(row(String(id)) ?? document.body).display).not.toBe("none");
+    });
+  });
+
+  describe("with the family kind", () => {
+    const [UNLISTED = 0, LISTED = 0, FREE = 0, DLC = 0, NO_LIST = 0] = SEARCH_IDS;
+    // No In-App Purchases (35), which would add its own token to the host.
+    const PAID_FEATURES = [22, 29, 41, 42];
+    // The route keeps the last item of an ID, so these replace the captured rows' items.
+    const featured = [
+      ...fixtureItems(searchItems),
+      featuredItem(UNLISTED, PAID_FEATURES),
+      featuredItem(LISTED, [...PAID_FEATURES, 62]),
+      featuredItem(FREE, PAID_FEATURES, { is_free: true }),
+      featuredItem(DLC, PAID_FEATURES, { type: 4 }),
+      storeItem(NO_LIST),
+    ];
+    const familyOn = withKind(DEFAULT_SETTINGS, "family", { enabled: true });
+    const stored = (value: Settings) => new Map([[SETTINGS_KEY, encodeSettings(value)]]);
+    const chips = (id: number) =>
+      Array.from(
+        row(String(id))?.querySelectorAll(".sar-chips > .sar-badge") ?? [],
+        (chip) => Array.from(chip.children, (part) => part.textContent),
+      );
+    const unlisted = [
+      i18n.t("kind_family_unsupported_chip"),
+      i18n.t("kind_family_unsupported"),
+    ];
+
+    it("tags a paid game its features leave out in Steam's words, with no new flag", async () => {
+      const { http } = await startOnSearch(stored(familyOn), featured);
+      await drawn(http);
+      expect(chips(UNLISTED)).toEqual([unlisted]);
+      expect(row(String(UNLISTED))?.getAttribute("data-sar-kinds")).toBe("family");
+      expect(requestFlags(http.calls[0] ?? "")).toEqual([
+        "include_extra_details",
+        "include_basic_info",
+      ]);
+    });
+
+    it("draws and marks the listed value once ticked, and drops it once unticked", async () => {
+      const { http, settings } = await startOnSearch(stored(familyOn), featured);
+      await drawn(http);
+      expect(chips(LISTED)).toEqual([]);
+      await writeSettings(settings, withKind(familyOn, "family", { facets: ["supported"] }));
+      await expect.poll(() => chips(LISTED)).toEqual([
+        [i18n.t("kind_family_chip"), i18n.t("kind_family_heading")],
+      ]);
+      expect(chips(UNLISTED)).toEqual([]);
+      await writeSettings(settings, withKind(familyOn, "family", { facets: [] }));
+      await expect.poll(() => chips(LISTED)).toEqual([]);
+      expect(row(String(LISTED))?.hasAttribute("data-sar-kinds")).toBe(false);
+      expect(http.calls).toHaveLength(1);
+    });
+
+    it.each([
+      ["a free game", FREE],
+      ["a DLC", DLC],
+      ["an item without a feature list", NO_LIST],
+    ])("never marks %s, with every value ticked and Hide on", async (_name, id) => {
+      const every = withKind(familyOn, "family", {
+        facets: ["supported", "unsupported"],
+        filter: "hide",
+      });
+      const { http } = await startOnSearch(stored(every), featured);
+      await drawn(http);
+      expect(chips(UNLISTED)).toEqual([unlisted]);
+      expect(chips(id)).toEqual([]);
       expect(row(String(id))?.hasAttribute("data-sar-kinds")).toBe(false);
       expect(getComputedStyle(row(String(id)) ?? document.body).display).not.toBe("none");
     });
