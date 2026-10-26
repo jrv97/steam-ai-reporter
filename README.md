@@ -74,7 +74,7 @@ Sale pages such as Next Fest, tag and category hubs and the home page get a comp
 
 ![The options page: switches for badges and the banner, a Show, Dim and Hide control for lists, a language picker, and a list of games you ignored](docs/store/screenshots/05-options.jpg)
 
-The options page has one section per tag with switches for the tag, its badge and its banner entry, and a Show, Dim and Hide control for lists. Each section can be closed, and the page remembers which ones. It also picks the language (automatic follows the store page) and lists the games you ignored under the scope you ignored them for, each with "Stop ignoring".
+The options page has a tab for each tag, sorted by the tag's name, with switches for the tag, its badge and its banner entry, a Show, Dim and Hide control for lists, and what you ignored for that tag alone. A General tab picks the language (automatic follows the store page) and lists what you ignored for all tags, each item with "Stop ignoring", beside the backup. The page remembers the last tab, and a link to `options.html#tab=drm` opens the DRM tab.
 
 ![The same search results with the list filter set to Dim, where the three badged rows are faded](docs/store/screenshots/list-dim.jpg)
 
@@ -82,7 +82,7 @@ With the list filter on Dim, badged games fade in lists and come back on hover. 
 
 <img src="docs/store/screenshots/popup.jpg" alt="The toolbar popup with the badge and banner switches, the Show, Dim and Hide control, one game you ignored, and a link to all settings" width="360">
 
-The toolbar popup holds the same per-tag switches and list filters and the games you ignored, with a link to the full options page. The userscript opens the same settings in a dialog from the script manager's menu.
+The toolbar popup lists every tag with its Show, Dim and Hide control and its on or off switch. A tag's name opens its tab on the options page, and the gear at the top opens all settings. The userscript opens the same tabs in a dialog from the script manager's menu.
 
 ### Known gaps
 
