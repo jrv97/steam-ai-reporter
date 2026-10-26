@@ -805,6 +805,29 @@
   font: inherit;
 }
 
+/* A tag's values: native checkboxes in a row that wraps, each labelled with Steam's word */
+.sar-checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sar-space-1) var(--sar-space-4);
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.sar-checks label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sar-space-1);
+  color: var(--sar-color-text);
+  cursor: pointer;
+}
+
+.sar-checks input {
+  margin: 0;
+  accent-color: var(--sar-toggle-track-on);
+}
+
 /* A tag's color field (experimental): the swatch, the hex text and Reset in one row. In the app
    the swatch reads the kind's color; a preview sets it by hand. */
 .sar-color-entry {

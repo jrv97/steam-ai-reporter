@@ -22,6 +22,8 @@ body:
         - 3rd-party EULA
         - PvP
         - In-App Purchases
+        - Steam Deck Compatibility
+        - Steam Machine Compatibility
         - Settings or interface
         - Other
     validations:
