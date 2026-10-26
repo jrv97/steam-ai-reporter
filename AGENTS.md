@@ -86,6 +86,12 @@ These are hard rules. A change that breaks one needs an ADR first.
 16. **Secrets.** `STEAM_API_KEY` is read only by development scripts, only from the environment.
     It is never committed, logged, written into fixtures or bundled; a build check fails if its
     value appears in `dist/` or `artifacts/`. Release secrets live in GitHub environments.
+17. **Tests.** Fewer, better tests. Build inputs with test data builders and factories in
+    `tests/helpers/` (`storeItem`, `disclosedVerdict` and the like) that take overrides, and fold
+    near-duplicate cases into one table-driven test (`it.each`) over builder output. Before
+    writing a fake, stub or mock, check `tests/helpers/` for one to reuse or extend. Repeated
+    setup moves into a helper; a test body shows only what differs for its case. Assert behavior
+    through the public surface, one idea per test, and never add a test that restates another.
 
 ## Development browsers
 
