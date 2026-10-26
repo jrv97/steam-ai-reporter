@@ -8,7 +8,7 @@ describe("KIND_IDS", () => {
     expect(new Set(KIND_IDS).size).toBe(KIND_IDS.length);
   });
 
-  it("holds the eight stable ids the settings store", () => {
+  it("holds the ten stable ids the settings store", () => {
     expect(KIND_IDS).toStrictEqual([
       "ai",
       "kernel",
@@ -18,6 +18,8 @@ describe("KIND_IDS", () => {
       "eula",
       "pvp",
       "iap",
+      "deck",
+      "machine",
     ]);
   });
 });

@@ -9,11 +9,9 @@ import {
   type Verdict,
 } from "../types";
 import type { KindId } from "./id";
-import type { KindDefinition, TagKind } from "./kind";
+import type { DisclosedOf, TagKind } from "./kind";
 import { holdsEveryKind, KINDS, perKind } from "./registry";
 import { BASE_SECTIONS, type Section } from "./sections";
-
-type DisclosedOf<Kind> = Kind extends KindDefinition<infer Disclosed> ? Disclosed : never;
 
 /**
  * Marks the full game's disclosure that its demo shows (`detect/full-game.ts`), so a surface can

@@ -50,6 +50,14 @@
   --sar-kind-color: var(--sar-kind-color-iap);
 }
 
+[data-sar-kind="deck"] {
+  --sar-kind-color: var(--sar-kind-color-deck);
+}
+
+[data-sar-kind="machine"] {
+  --sar-kind-color: var(--sar-kind-color-machine);
+}
+
 [data-sar-kind] {
   --sar-tag-edge: var(--sar-kind-color);
   --sar-tag-tint: color-mix(

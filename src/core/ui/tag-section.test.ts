@@ -4,6 +4,7 @@ import { setBody } from "../../../tests/helpers/dom";
 import { disclosedList } from "../../../tests/helpers/fixture-verdicts";
 import { englishI18n } from "../../../tests/helpers/i18n";
 import { FULL_DISCLOSED } from "../../../tests/helpers/verdicts";
+import { KIND_IDS } from "../kinds/id";
 import type { AnyDisclosed } from "../kinds/verdicts";
 import { createTagSection } from "./tag-section";
 
@@ -34,8 +35,8 @@ describe("createTagSection", () => {
   it("draws the label and one chip for every verdict, in order, with no overflow chip", () => {
     setBody(WITH_TAGS);
     createTagSection(document, i18n).render(all);
-    expect(kinds()).toEqual(["ai", "kernel", "anticheat", "drm", "account", "eula", "pvp", "iap"]);
-    expect(document.querySelectorAll(".sar-badge-label")).toHaveLength(8);
+    expect(kinds()).toEqual([...KIND_IDS]);
+    expect(document.querySelectorAll(".sar-badge-label")).toHaveLength(KIND_IDS.length);
     expect(document.querySelector(".sar-tag-section-label")?.textContent).toBe(
       i18n.t("badge_tags_title"),
     );

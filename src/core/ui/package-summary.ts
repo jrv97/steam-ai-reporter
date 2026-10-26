@@ -1,21 +1,35 @@
 import type { KindId } from "../kinds/id";
+import type { FacetDefinition, FacetId, TagKind } from "../kinds/kind";
 import { KINDS, perKind } from "../kinds/registry";
 import type { MessageCatalog } from "../ports";
 import { HOST_APPID } from "../scan/marks";
 import { findList, placeAbove, SUMMARY_PLACEMENTS } from "../scan/placements";
 import type { HostRenderer, HostView } from "./host";
+import { entryName } from "./kind-details";
 import { createTagBlock } from "./tag-section";
 
 /** The label's id, which the summary's group points to for its name. */
 const LABEL_ID = "sar-summary-label";
 
-/** The summary's lines for the hosts in `list`, from the views drawn last; none for nothing. */
+/** The names a kind's lines may take, in order: one per facet, else Steam's heading. */
+function lineNames(i18n: MessageCatalog, kind: TagKind): readonly string[] {
+  const heading = i18n.t(kind.messages.heading);
+  const facets: readonly FacetDefinition<FacetId>[] = kind.facets ?? [];
+  return facets.length === 0
+    ? [heading]
+    : facets.map((facet) => i18n.t("kind_facet_name", { heading, value: i18n.t(facet.word) }));
+}
+
+/**
+ * The summary's lines for the hosts in `list`, from the views drawn last; none for nothing. A kind
+ * with facets has a line per value it tags.
+ */
 function summaryLines(
   i18n: MessageCatalog,
   list: Element,
   views: WeakMap<Element, HostView>,
 ): string[] {
-  const tagged: Record<KindId, number> = perKind(() => 0);
+  const tagged = new Map<string, number>();
   const known: Record<KindId, number> = perKind(() => 0);
   let pending = 0;
   for (const host of list.querySelectorAll(`[${HOST_APPID}]`)) {
@@ -25,17 +39,22 @@ function summaryLines(
       continue;
     }
     for (const kind of KINDS) {
-      const { state } = view.verdicts[kind.id];
-      known[kind.id] += state === "unknown" ? 0 : 1;
-      tagged[kind.id] += state === "disclosed" && !view.allowed[kind.id] && view.badged[kind.id]
-        ? 1
-        : 0;
+      const verdict = view.verdicts[kind.id];
+      known[kind.id] += verdict.state === "unknown" ? 0 : 1;
+      if (verdict.state === "disclosed" && !view.allowed[kind.id] && view.badged[kind.id]) {
+        const name = entryName(i18n, verdict);
+        tagged.set(name, (tagged.get(name) ?? 0) + 1);
+      }
     }
   }
-  const lines = KINDS.filter((kind) => tagged[kind.id] > 0).map((kind) =>
-    i18n.plural("badge_summary_games", known[kind.id], {
-      kind: i18n.t(kind.messages.heading),
-      tagged: String(tagged[kind.id]),
+  const lines = KINDS.flatMap((kind) =>
+    lineNames(i18n, kind).flatMap((name) => {
+      const count = tagged.get(name);
+      return count === undefined
+        ? []
+        : [
+          i18n.plural("badge_summary_games", known[kind.id], { kind: name, tagged: String(count) }),
+        ];
     })
   );
   return pending > 0 ? [...lines, i18n.plural("badge_summary_pending", pending)] : lines;

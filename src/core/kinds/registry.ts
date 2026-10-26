@@ -2,12 +2,14 @@ import { SarError } from "../errors";
 import { ACCOUNT_KIND } from "./account";
 import { AI_KIND } from "./ai";
 import { ANTICHEAT_KIND } from "./anticheat";
+import { DECK_KIND } from "./deck";
 import { DRM_KIND } from "./drm";
 import { EULA_KIND } from "./eula";
 import { IAP_KIND } from "./iap";
 import type { KindId } from "./id";
 import { KERNEL_KIND } from "./kernel";
 import type { TagKind } from "./kind";
+import { MACHINE_KIND } from "./machine";
 import { PVP_KIND } from "./pvp";
 
 /**
@@ -23,6 +25,8 @@ export const KINDS = [
   EULA_KIND,
   PVP_KIND,
   IAP_KIND,
+  DECK_KIND,
+  MACHINE_KIND,
 ] as const;
 
 function anyValue(): boolean {

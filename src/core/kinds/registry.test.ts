@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { OFF_KINDS } from "../../../tests/helpers/settings";
+import { plainKinds } from "../../../tests/helpers/settings";
 import { SHIPPED_CATALOGS } from "../i18n/shipped";
 import { KIND_IDS } from "./id";
 import { holdsEveryKind, KIND_BY_ID, KINDS, perKind } from "./registry";
@@ -10,15 +10,10 @@ describe("KINDS", () => {
     expect(new Set(KIND_IDS).size).toBe(KIND_IDS.length);
   });
 
-  it("starts every kind but PvP and IAP enabled, with badge, banner and an untouched list", () => {
-    for (const kind of KINDS) {
-      expect(kind.defaults).toStrictEqual({
-        enabled: !OFF_KINDS.includes(kind.id),
-        badge: true,
-        banner: true,
-        filter: "off",
-      });
-    }
+  it("starts each kind with a badge and an untouched list, some off and without a banner", () => {
+    expect(perKind((kind) => kind.defaults)).toStrictEqual(
+      plainKinds({ enabled: true, badge: true, banner: true, filter: "off" }),
+    );
   });
 });
 

@@ -13,7 +13,7 @@ import { ALLOW_ALL, type AllowScope, toAllowScope } from "../settings/allow-data
 import { announce, POLITE } from "./announce";
 import { ROLE_LABELS } from "./creator-roles";
 import { KIND_ATTRIBUTE } from "./kind-attributes";
-import { type KindDetail, kindDetails } from "./kind-details";
+import { entryName, type KindDetail, kindDetails } from "./kind-details";
 import { normalizeBreaks } from "./notes";
 import { adoptStyles, BANNER_CSS } from "./styles";
 
@@ -281,8 +281,7 @@ export function createBanner(
     const entry = element("div", "sar-banner-entry");
     const titleId = partId(verdict.kind, "title");
     const ignoreId = partId(verdict.kind, "ignore");
-    const heading = i18n.t(KIND_BY_ID[verdict.kind].messages.heading);
-    const title = element("h2", "sar-banner-title", heading);
+    const title = element("h2", "sar-banner-title", entryName(i18n, verdict));
     title.id = titleId;
     const ignore = button(
       "sar-banner-action",

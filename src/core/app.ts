@@ -20,6 +20,7 @@ import {
 } from "./i18n/locale";
 import { createI18n } from "./i18n/t";
 import { createIgnoreLists, isIgnored, loadIgnored } from "./ignored";
+import { taggedView } from "./kinds/facets";
 import { effectiveSettings, type KindSettings } from "./kinds/kind-settings";
 import { KINDS } from "./kinds/registry";
 import { coversSections, requestSections, type Section } from "./kinds/sections";
@@ -118,6 +119,13 @@ function changed(
 const SHOWS_BADGE = (settings: KindSettings): boolean => settings.badge;
 const SHOWS_BANNER = (settings: KindSettings): boolean => settings.banner;
 
+/** Whether some kind tags other values in `after` than in `before`. */
+function facetsChanged(before: Settings, after: Settings): boolean {
+  return KINDS.some((kind) =>
+    String(before.kinds[kind.id].facets) !== String(after.kinds[kind.id].facets)
+  );
+}
+
 /** The sections `after` asks for that `before` did not, as when a kind that reads one turns on. */
 function addedSections(before: Settings, after: Settings): readonly Section[] {
   const had = requestSections(before.kinds);
@@ -184,6 +192,7 @@ export async function start(deps: AppDeps): Promise<App> {
     ],
     isAllowed: (id, forKind, related) => isIgnored(ignored, id, forKind, related),
     isBadged: (forKind) => effectiveSettings(settings.kinds[forKind]).badge,
+    tagged: (verdicts) => taggedView(verdicts, settings.kinds),
   });
   const scanner = createScanner({ document: doc, renderer: capsules });
   const notice = createHiddenNotice({ document: doc, i18n });
@@ -196,7 +205,8 @@ export async function start(deps: AppDeps): Promise<App> {
     const before = settings;
     settings = parseSettings(value);
     applyKindSettings(root, settings.kinds);
-    const badges = changed(before, settings, SHOWS_BADGE);
+    // Chosen values decide which hosts carry a kind, so a change to them draws the hosts again.
+    const badges = changed(before, settings, SHOWS_BADGE) || facetsChanged(before, settings);
     if (badges) {
       capsules.refresh();
     }

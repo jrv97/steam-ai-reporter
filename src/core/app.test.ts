@@ -13,6 +13,8 @@ import {
   getItemsRequest,
   getItemsRoute,
   itemAs,
+  ratedItem,
+  requestFlags,
   storeItem,
 } from "../../tests/helpers/getitems";
 import { englishI18n } from "../../tests/helpers/i18n";
@@ -29,10 +31,11 @@ import { DEFAULT_SPACING_MS } from "./detect/throttle";
 import { SHIPPED_CATALOGS } from "./i18n/shipped";
 import type { JsonValue } from "./json";
 import { toHexColor } from "./kinds/color";
+import { COMPAT_FACETS, type CompatFacet } from "./kinds/compat";
 import type { KindId } from "./kinds/id";
 import { KIND_BY_ID } from "./kinds/registry";
 import type { Clock } from "./ports";
-import { DEFAULT_SETTINGS, encodeSettings } from "./settings/settings";
+import { DEFAULT_SETTINGS, encodeSettings, type Settings } from "./settings/settings";
 import { createSettingsSource } from "./settings/settings-source";
 import { ALLOW_KEY, CREATOR_ALLOW_KEYS, SETTINGS_KEY } from "./storage-keys";
 import { KIND_ATTRIBUTE } from "./ui/kind-attributes";
@@ -100,6 +103,22 @@ afterEach(() => {
 });
 
 describe("start on a package page", () => {
+  it("counts a Deck rating Valve gave, never Valve's Unknown or a missing section", async () => {
+    setBody(packagePage([10, 20, 30]));
+    const items = [ratedItem(10, { deck: 0 }), storeItem(20), ratedItem(30, { deck: 1 })];
+    const deckOn = withKind(DEFAULT_SETTINGS, "deck", { enabled: true });
+    await startOnLoaded(new Map([[SETTINGS_KEY, encodeSettings(deckOn)]]), items);
+    const heading = i18n.t("kind_deck_heading");
+    const value = i18n.t("kind_compat_unsupported");
+    await expect.poll(() => document.querySelector(".sar-summary-line")?.textContent).toBe(
+      i18n.plural("badge_summary_games", 2, {
+        kind: i18n.t("kind_facet_name", { heading, value }),
+        tagged: "1",
+      }),
+    );
+    expect(document.querySelectorAll(".sar-summary-line")).toHaveLength(1);
+  });
+
   it("sums up the included games' tags above them from the one request", async () => {
     setBody(packagePage([10, 20, 30]));
     const items = [disclosedItem(10, "Concept art."), storeItem(20), storeItem(30)];
@@ -493,6 +512,81 @@ describe("start on the search page", () => {
     await writeSettings(settings, DEFAULT_SETTINGS);
     expect(rootMark("data-sar-filter-ai")).toBe("off");
     await expect.poll(() => document.querySelectorAll(".sar-badge").length).toBe(1);
+  });
+
+  describe("with Valve's device ratings", () => {
+    const [UNSUPPORTED = 0, VERIFIED = 0, UNRATED = 0, UNASKED = 0] = SEARCH_IDS;
+    // The route keeps the last item of an ID, so these replace the captured rows' items.
+    const rated = [
+      ...fixtureItems(searchItems),
+      ratedItem(UNSUPPORTED, { deck: 1, machine: 3 }),
+      ratedItem(VERIFIED, { deck: 3, machine: 3 }),
+      ratedItem(UNRATED, { deck: 0, machine: 0 }),
+    ];
+    const deckOn = withKind(DEFAULT_SETTINGS, "deck", { enabled: true });
+    const stored = (value: Settings) => new Map([[SETTINGS_KEY, encodeSettings(value)]]);
+    const labels = (id: number) =>
+      Array.from(
+        row(String(id))?.querySelectorAll(".sar-chips > .sar-badge > .sar-badge-label") ?? [],
+        (label) => label.textContent,
+      );
+    const deckChip = (facet: CompatFacet) =>
+      i18n.t("kind_facet_chip", {
+        chip: i18n.t("kind_deck_chip"),
+        value: i18n.t(`kind_compat_${facet}`),
+      });
+
+    it("asks for platforms once Deck turns on, for the rows on screen, and only once", async () => {
+      const { http, settings } = await startOnSearch(new Map(), rated);
+      await drawn(http);
+      expect(requestFlags(http.calls[0] ?? "")).not.toContain("include_platforms");
+      expect(labels(UNSUPPORTED)).toEqual([]);
+      await writeSettings(settings, deckOn);
+      // The throttle spaces requests a second apart: until the answer, the kind draws nothing.
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+      expect(http.calls).toHaveLength(1);
+      expect(labels(UNSUPPORTED)).toEqual([]);
+      expect(row(String(UNSUPPORTED))?.hasAttribute("data-sar-kinds")).toBe(false);
+      await expect.poll(() => labels(UNSUPPORTED), { timeout: 5000 }).toEqual([
+        deckChip("unsupported"),
+      ]);
+      expect(http.calls).toHaveLength(2);
+      expect(requestFlags(http.calls[1] ?? "")).toContain("include_platforms");
+      expect(getItemsRequest(http.calls[1] ?? "").ids).toEqual(SEARCH_IDS);
+      await writeSettings(settings, DEFAULT_SETTINGS);
+      await writeSettings(settings, deckOn);
+      await expect.poll(() => labels(UNSUPPORTED)).toEqual([deckChip("unsupported")]);
+      expect(http.calls).toHaveLength(2);
+    });
+
+    it("draws and marks a value once it is ticked, and drops it once unticked", async () => {
+      const { http, settings } = await startOnSearch(stored(deckOn), rated);
+      await drawn(http);
+      expect(labels(VERIFIED)).toEqual([]);
+      expect(row(String(VERIFIED))?.hasAttribute("data-sar-kinds")).toBe(false);
+      await writeSettings(settings, withKind(deckOn, "deck", { facets: ["verified"] }));
+      await expect.poll(() => labels(VERIFIED)).toEqual([deckChip("verified")]);
+      expect(row(String(VERIFIED))?.getAttribute("data-sar-kinds")).toBe("deck");
+      expect(labels(UNSUPPORTED)).toEqual([]);
+      await writeSettings(settings, withKind(deckOn, "deck", { facets: [] }));
+      await expect.poll(() => labels(VERIFIED)).toEqual([]);
+      expect(row(String(VERIFIED))?.hasAttribute("data-sar-kinds")).toBe(false);
+      expect(http.calls).toHaveLength(1);
+    });
+
+    it.each([
+      ["Valve's Unknown (0)", UNRATED],
+      ["an item without a platforms section", UNASKED],
+    ])("never marks %s, with every value ticked and Hide on", async (_name, id) => {
+      const every = withKind(deckOn, "deck", { facets: [...COMPAT_FACETS], filter: "hide" });
+      const { http } = await startOnSearch(stored(every), rated);
+      await drawn(http);
+      expect(labels(UNSUPPORTED)).toEqual([deckChip("unsupported")]);
+      expect(row(String(UNSUPPORTED))?.getAttribute("data-sar-kinds")).toBe("deck");
+      expect(labels(id)).toEqual([]);
+      expect(row(String(id))?.hasAttribute("data-sar-kinds")).toBe(false);
+      expect(getComputedStyle(row(String(id)) ?? document.body).display).not.toBe("none");
+    });
   });
 
   describe("with a custom tag color", () => {

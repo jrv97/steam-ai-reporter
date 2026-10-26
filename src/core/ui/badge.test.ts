@@ -2,14 +2,17 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { setBody } from "../../../tests/helpers/dom";
 import { hostView, type HostViewOptions } from "../../../tests/helpers/host-view";
 import { englishI18n } from "../../../tests/helpers/i18n";
+import { STATUS_KINDS } from "../../../tests/helpers/settings";
 import {
+  compatVerdict,
   disclosedKinds,
   disclosedVerdict,
   FULL_DISCLOSED,
   NOT_DISCLOSED,
 } from "../../../tests/helpers/verdicts";
+import { COMPAT_FACETS } from "../kinds/compat";
 import { KIND_IDS, type KindId } from "../kinds/id";
-import { KIND_BY_ID } from "../kinds/registry";
+import { KIND_BY_ID, KINDS } from "../kinds/registry";
 import type { AnyDisclosed } from "../kinds/verdicts";
 import { UNKNOWN } from "../types";
 import { compactSize, createBadgeRenderer, createChip } from "./badge";
@@ -110,7 +113,9 @@ describe("createBadgeRenderer", () => {
     expect(badge === null ? undefined : bound.get(badge)).toEqual([verdict]);
   });
 
-  it.each(KIND_IDS.filter((id) => id !== "pvp"))(
+  it.each(
+    KINDS.filter((kind) => kind.id !== "pvp" && kind.facets === undefined).map(({ id }) => id),
+  )(
     "gives the %s chip an accessible name that starts with its text",
     (id) => {
       const { host, title } = capsule();
@@ -122,6 +127,20 @@ describe("createBadgeRenderer", () => {
       expect(name).toContain(i18n.t(KIND_BY_ID[id].messages.heading));
     },
   );
+
+  it.each(
+    STATUS_KINDS.flatMap((kind) => COMPAT_FACETS.map((facet) => [kind, facet] as const)),
+  )("gives a %s chip rated %s the device word and Steam's value word", (kind, facet) => {
+    const { host, title } = capsule();
+    const verdicts = { ...disclosedKinds([]), [kind]: compatVerdict(kind, facet) };
+    renderer.render(view(host, full(title), { verdicts }));
+    const value = i18n.t(`kind_compat_${facet}`);
+    const heading = i18n.t(KIND_BY_ID[kind].messages.heading);
+    expect(texts(chipsIn(host)[0] ?? host)).toEqual([
+      i18n.t("kind_facet_chip", { chip: chip(kind), value }),
+      i18n.t("kind_facet_name", { heading, value }),
+    ]);
+  });
 
   it("gives the PvP chip the name PvP once, not PvP: PvP", () => {
     const { host, title } = capsule();
@@ -142,7 +161,7 @@ describe("createBadgeRenderer", () => {
 
   it("binds every chip to the verdicts of all the kinds shown", () => {
     const { host, title } = capsule();
-    renderer.render(view(host, full(title), { verdicts: FULL_DISCLOSED, maxChips: 7 }));
+    renderer.render(view(host, full(title), { verdicts: FULL_DISCLOSED, maxChips: 10 }));
     const expected = KIND_IDS.map((id) => FULL_DISCLOSED[id]);
     expect(chipsIn(host)).toHaveLength(KIND_IDS.length);
     for (const element of chipsIn(host)) {
@@ -313,7 +332,7 @@ describe("createBadgeRenderer", () => {
 describe("createChip", () => {
   it("builds a chip with the kind's text, name and id", () => {
     const i18n = englishI18n();
-    const element = createChip(document, i18n, KIND_BY_ID.drm);
+    const element = createChip(document, i18n, FULL_DISCLOSED.drm);
     expect(element.className).toBe("sar-badge");
     expect(element.getAttribute("data-sar-kind")).toBe("drm");
     expect(element.querySelector(".sar-badge-label")?.textContent).toBe(i18n.t("kind_drm_chip"));

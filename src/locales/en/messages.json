@@ -157,6 +157,34 @@
     "message": "IAP",
     "description": "Short chip for a game with in-app purchases, as its Steam categories say. Keep it short; it sits in a row and over game images."
   },
+  "kind_deck_heading": {
+    "message": "Steam Deck Compatibility",
+    "description": "Steam's own heading of the Steam Deck rating Valve gives a game. It titles the entry in the hover card, names the settings section and, with the rating word, heads the entry in the notice on the game's page and the chip's screen reader name. Use the wording Steam shows in this language."
+  },
+  "kind_deck_chip": {
+    "message": "Deck",
+    "description": "Short device word at the start of a Steam Deck chip, followed by Steam's rating word (kind_facet_chip): \"Deck Unsupported\". Our short form of the device name, for chips only; keep it short."
+  },
+  "kind_machine_heading": {
+    "message": "Steam Machine Compatibility",
+    "description": "Steam's own heading of the Steam Machine rating Valve gives a game. It titles the entry in the hover card, names the settings section and, with the rating word, heads the entry in the notice on the game's page and the chip's screen reader name. Use the wording Steam shows in this language."
+  },
+  "kind_machine_chip": {
+    "message": "Steam Machine",
+    "description": "Device word at the start of a Steam Machine chip, followed by Steam's rating word (kind_facet_chip): \"Steam Machine Unsupported\". The device name, which Steam has no short form for."
+  },
+  "kind_compat_verified": {
+    "message": "Verified",
+    "description": "Steam's word for the best Steam Deck and Steam Machine rating, shown under the heading in the hover card, after the device word on the chip and as a choice in the settings. Use the word Steam shows in this language."
+  },
+  "kind_compat_playable": {
+    "message": "Playable",
+    "description": "Steam's word for the middle Steam Deck and Steam Machine rating: the game works, with some effort. Shown like Verified. Use the word Steam shows in this language."
+  },
+  "kind_compat_unsupported": {
+    "message": "Unsupported",
+    "description": "Steam's word for a game Valve rated as not working on Steam Deck or Steam Machine. Shown like Verified. Use the word Steam shows in this language. Never use it for a game Valve has not rated."
+  },
   "kind_chip_name": {
     "message": "$chip$: $heading$",
     "description": "Screen reader name of a chip: the visible chip text, then Steam's full line for the kind. $chip$ is the chip text and $heading$ the full line.",
@@ -168,6 +196,34 @@
       "heading": {
         "content": "$2",
         "example": "Uses Kernel Level Anti-Cheat"
+      }
+    }
+  },
+  "kind_facet_chip": {
+    "message": "$chip$ $value$",
+    "description": "Visible text of a chip for a tag with values, such as \"Deck Unsupported\": the tag's short word, then Steam's word for the value. Keep the order natural in your language; add a colon if the two words would read as one phrase.",
+    "placeholders": {
+      "chip": {
+        "content": "$1",
+        "example": "Deck"
+      },
+      "value": {
+        "content": "$2",
+        "example": "Unsupported"
+      }
+    }
+  },
+  "kind_facet_name": {
+    "message": "$heading$: $value$",
+    "description": "Steam's heading of a tag with values, then Steam's word for the value: the screen reader name of its chip, the heading of its entry in the notice on a game's page and its line in a package's summary.",
+    "placeholders": {
+      "heading": {
+        "content": "$1",
+        "example": "Steam Deck Compatibility"
+      },
+      "value": {
+        "content": "$2",
+        "example": "Unsupported"
       }
     }
   },
@@ -504,12 +560,20 @@
     "description": "Switch label of one tag's entry in the notice on a game's page."
   },
   "options_banner_help": {
-    "message": "Shows what the developer declared above the purchase box.",
+    "message": "Shows this tag's entry above the purchase box.",
     "description": "Help under the banner switch."
   },
   "options_filter_label": {
     "message": "Games with this tag",
     "description": "Label of a three-way choice: show, dim or hide these games in lists."
+  },
+  "options_facets_label": {
+    "message": "Values to tag",
+    "description": "Label of a group of checkboxes in a tag's settings, one per value Steam gives (Verified, Playable, Unsupported). Only the ticked values get the tag."
+  },
+  "options_facets_help": {
+    "message": "Badges, banner entries and the list filter act on the values ticked here. With none ticked, the tag marks no game.",
+    "description": "Help under those checkboxes."
   },
   "options_filter_off": {
     "message": "Show",

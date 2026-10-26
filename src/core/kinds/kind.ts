@@ -15,9 +15,27 @@ export interface KindMessages {
    * text, the chip's accessible name.
    */
   readonly heading: BareMessageKey;
-  /** The short text of the kind's chip. */
+  /**
+   * The short text of the kind's chip. A kind with facets puts Steam's word for the value after
+   * it (`kind_facet_chip`).
+   */
   readonly chip: BareMessageKey;
 }
+
+/** A value of a kind that a person can choose to tag, such as a rating. */
+export interface FacetDefinition<Facet extends string> {
+  /** Stable; stored in the kind's `facets` setting and in the disclosed verdict. */
+  readonly id: Facet;
+  /** Steam's word for the value, under the heading and in the settings. */
+  readonly word: BareMessageKey;
+}
+
+/** The facet ids of a disclosed verdict shape; none for a kind with one value. */
+type FacetOf<Disclosed> = Disclosed extends { readonly facet: infer Facet extends string; } ? Facet
+  : never;
+
+/** Who states a kind's facts: the developer on the store page, or Valve for what it computes. */
+export type KindSource = "developer" | "valve";
 
 /**
  * One tag kind: what the extension reports about a game. `Disclosed` is the shape of its disclosed
@@ -46,6 +64,13 @@ export interface KindDefinition<Disclosed extends DisclosedBase> {
    * leaves one out makes the kind unknown `unrequested`, and an enabled kind adds them to it.
    */
   readonly sections?: readonly Section[];
+  /** Who states the kind's facts; the developer when absent. */
+  readonly source?: KindSource;
+  /**
+   * The values a person can choose to tag, in display order; absent for a kind with one value. A
+   * disclosed verdict carries one as `facet`, and only a chosen one is drawn (`kinds/facets.ts`).
+   */
+  readonly facets?: readonly FacetDefinition<FacetOf<Disclosed>>[];
   /** Reads a stored disclosed verdict back; anything that does not fit is dropped. */
   readonly stored: v.GenericSchema<unknown, Disclosed>;
   readonly messages: KindMessages;
@@ -55,3 +80,9 @@ export interface KindDefinition<Disclosed extends DisclosedBase> {
 
 /** Every registered kind. */
 export type TagKind = (typeof KINDS)[number];
+
+/** The disclosed verdict shape of a kind definition. */
+export type DisclosedOf<Kind> = Kind extends KindDefinition<infer Disclosed> ? Disclosed : never;
+
+/** Every facet id of a registered kind. */
+export type FacetId = FacetOf<DisclosedOf<TagKind>>;

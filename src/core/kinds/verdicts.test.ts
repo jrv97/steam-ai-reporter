@@ -7,6 +7,7 @@ import { FULL_DISCLOSED } from "../../../tests/helpers/verdicts";
 import { UNKNOWN, type UnknownReason } from "../types";
 import { KIND_IDS } from "./id";
 import { KINDS } from "./registry";
+import { BASE_SECTIONS, SECTIONS } from "./sections";
 import {
   type FoundRelations,
   isKindVerdicts,
@@ -100,9 +101,16 @@ describe("a disclosed verdict", () => {
 });
 
 describe("kindsFromGetItems", () => {
+  it("gives a kind whose section the request left out unknown unrequested", () => {
+    const { item, details } = parsedItem({}, { platforms: { steam_deck_compat_category: 1 } });
+    const verdicts = kindsFromGetItems(item, details, "english", BASE_SECTIONS);
+    expect(verdicts.deck).toBe(UNKNOWN.unrequested);
+    expect(verdicts.sections).toBe(BASE_SECTIONS);
+  });
+
   it("gives every kind the verdict its definition derives from the item", () => {
     const { item, details } = parsedItem({ content_survey_ai_notes: "Concept art." });
-    const verdicts = kindsFromGetItems(item, details, "english");
+    const verdicts = kindsFromGetItems(item, details, "english", SECTIONS);
     expect(Object.keys(verdicts)).toStrictEqual([...KIND_IDS, "sections"]);
     for (const kind of KINDS) {
       expect(verdicts[kind.id]).toStrictEqual(kind.fromGetItems(item, details, "english"));
