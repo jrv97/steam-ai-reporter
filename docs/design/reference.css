@@ -5,9 +5,9 @@
  * by the published design system. The UI step can lift these rules into src/core/ui/styles.css
  * as they are. Only tokens from tokens.css are used, and tokens.css loads first.
  *
- * Light-DOM components (badges, tag section, list filter) start from a reset, because store CSS
- * styles bare span, a, button and h2 in places. The banner lives in a shadow root in the real
- * build, so its rules work both inside a shadow root and in the light DOM.
+ * Light-DOM components (badges, tag section, list filter, notice) start from a reset, because
+ * store CSS styles bare span, a, button and h2 in places. The banner lives in a shadow root in the
+ * real build, so its rules work both inside a shadow root and in the light DOM.
  *
  * State lives in data-sar-* attributes, never in inline styles. Settings are attributes on the
  * root element (data-sar-filter, data-sar-badges), so changing a setting is one attribute write.
@@ -26,7 +26,9 @@
 .sar-tag-section,
 .sar-tag-section *,
 .sar-hovercard,
-.sar-hovercard * {
+.sar-hovercard *,
+.sar-list-notice,
+.sar-list-notice * {
   all: unset;
   box-sizing: border-box;
 }
@@ -260,6 +262,43 @@
   display: none !important;
 }
 
+/* Hidden results notice
+ *
+ * Our own bar in the look of the store's notice bar above search results, sampled on the live
+ * search page on 2026-10-26: its ground, yellowish text, padding, type and the column's full
+ * width. It goes right after the store's bar when the page has one. The button is an underlined
+ * link in the sentence, like the store's own link there.
+ */
+
+.sar-list-notice {
+  display: block;
+  margin-block-end: var(--sar-store-notice-margin-block-end);
+  padding: var(--sar-store-notice-pad);
+  background: var(--sar-store-notice-bg);
+  color: var(--sar-store-notice-fg);
+  font: var(--sar-store-notice-font);
+}
+
+.sar-list-notice[hidden] {
+  display: none !important;
+}
+
+.sar-list-notice-button {
+  margin-inline-start: var(--sar-space-1);
+  color: var(--sar-store-notice-fg);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.sar-list-notice-button:hover {
+  color: var(--sar-store-notice-link-hover);
+}
+
+.sar-list-notice-button:focus-visible {
+  outline: var(--sar-focus-width) solid var(--sar-focus-color);
+  outline-offset: var(--sar-focus-offset);
+}
+
 /* App page banner
  *
  * Modeled on the store's own per-app notice bubbles (the DLC notice): a hue-coded 135 degree
@@ -429,6 +468,11 @@
 
   /* The wash disappears in forced colors; an edge keeps the banner a distinct region */
   .sar-banner {
+    border: 1px solid CanvasText;
+  }
+
+  /* The notice's ground disappears too; the underline still marks its button */
+  .sar-list-notice {
     border: 1px solid CanvasText;
   }
 }

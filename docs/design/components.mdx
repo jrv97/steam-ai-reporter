@@ -1,7 +1,7 @@
 ---
 title: Tag Kit for Steam UI components (v1)
 status: draft
-updated: 2026-10-25
+updated: 2026-10-26
 ---
 
 # Tag Kit for Steam UI components (v1)
@@ -59,7 +59,7 @@ Every text pair meets WCAG 2.2 AA on the grounds its token's note names; see the
 ## Type
 
 - **Store pages:** the `page` family, which names the store's own "Motiva Sans" first. It is referenced by name only, never bundled; outside the store it falls back to Noto Sans or Arial.
-- **The summary box and the tag section:** the `summary` family (Arial), like the store's own summary rows and tag chips there.
+- **The summary box, the tag section and the hidden results notice:** the `summary` family (Arial), like the store's own summary rows, tag chips and search notice bar.
 - **Extension pages:** the `ext` family, a system UI stack. The store font is not available there.
 - Sizes follow the store's 11, 12, 13, 15, 18 and 24px steps, plus 14/21 for quoted notes, the size the store sets its own disclosure section in. The banner's title and meta lines are set light (300), like the store's own notices, and its notes italic, like the store's disclosure section. Use the named styles: `sar-text-badge`, `sar-text-compact`, `sar-text-compact-lg`, `sar-text-banner-title`, `sar-text-banner-meta`, `sar-text-banner-quote`, `sar-text-banner-button`, `sar-text-banner-note` on store pages; `sar-text-options-title`, `sar-text-card-title`, `sar-text-popup-caption`, `sar-text-body`, `sar-text-help` on extension pages.
 - Never shrink type to fit a translation; truncate a badge or let the block wrap.
@@ -909,11 +909,11 @@ Built like the store's game hover popup, sampled on the home page on 2026-10-21:
 
 ## 16. Hidden results notice
 
-One line above a list that says how many results the list filter hid there, with a button that shows them on this page and hides them again. The setting stays as it is.
+A bar above a list, in the look of the store's own notice bar above search results, that says how many titles the list filter hid there, with a link-styled button that shows them on this page and hides them again. The setting stays as it is.
 
 ### When to use
 
-- On a list surface named in `LIST_PLACEMENTS` (`scan/placements.ts`): search results first. A new surface is one entry, the selector of the element that holds its hosts.
+- On a list surface named in `LIST_PLACEMENTS` (`scan/placements.ts`): search results first. A new surface is one entry: the selector of the element that holds its hosts and, when the store shows its own notice above that list, the selector of that notice in `after`.
 - Only while at least one host in that list is hidden: a kind on `hide`, the host carries it and the host can hide. A host that dims instead does not count.
 
 ### What the consumer provides
@@ -923,14 +923,15 @@ One line above a list that says how many results the list filter hid there, with
 
 ### Look
 
-- The banner's ignored note in neutral: `sar-banner-note-bg`, `sar-color-text-muted`, `sar-banner-note-font`, `sar-radius-xs`, 8px inline padding and 4px below it. No violet: the line reports what the extension did, not a tag.
-- The button is the banner's in-bubble link: underlined `sar-banner-link-color` text, 24px tall at least.
-- It goes right before the list element, under the store's sort bar, and wraps to two lines before it truncates.
-- Light DOM with the badge reset, like the other page components.
+- The store's notice bar, sampled on the live search page on 2026-10-26 (decision 52): `sar-store-notice-bg` (black at 20%), `sar-store-notice-fg` (`#fafad2`), `sar-store-notice-pad` (10px on every side), `sar-store-notice-font` (12px Arial, Helvetica, sans-serif at a normal line height), no radius, no border, and `sar-store-notice-margin-block-end` (5px) below it. No violet: the bar reports what the extension did, not a tag.
+- Full width of the list's column, like the store's bar. The store's gear cell at the end is left out: our bar has no menu and components carry no icons.
+- The button is an underlined link inside the sentence, in `sar-store-notice-fg`, like the store's own "here" link in its bar, 4px after the text. On hover it takes `sar-store-notice-link-hover`, the store's usual link hover, which was not sampled on the bar. No minimum block size: an inline link in a sentence is exempt from the target size rule, and the bar keeps the store's height.
+- It goes right after the store's own bar (`#search_results_filtered_warning_persistent`) when the page has one, else right before the list element, under the store's sort bar. It wraps before it truncates.
+- One node of our own, never inside the store's bar and never with its classes or ids, which would pull Valve's CSS onto ours. Light DOM with the badge reset, like the other page components.
 
 ### Behavior
 
-- A click sets `data-sar-reveal` on the root element: the hide rules skip it and those hosts dim (section 5). The line becomes "Tag Kit is showing 3 hidden results." and the button "Hide them". The next click removes it.
+- A click sets `data-sar-reveal` on the root element: the hide rules skip it and those hosts dim (section 5). The bar then reads "4 hidden titles are showing." and the button "Hide them". The next click removes it.
 - Nothing is stored. A reload, a new list element from the store, `pagehide`, stopping, or the count reaching zero ends the reveal.
 - The count is one `querySelectorAll` over the list in one animation frame after a mutation that can change it: a `data-sar-kinds` write, a root filter write or a marked host leaving the page. One `MutationObserver` serves it and disconnects on `pagehide`; a page without a list surface gets no observer.
 
@@ -938,13 +939,14 @@ One line above a list that says how many results the list filter hid there, with
 
 - A real `button`, reached by Tab and pressed with Enter or Space. Its name is its text, and `aria-describedby` points at the line.
 - A polite live region inside the notice repeats the line once it has held for one second, and a burst of new rows is announced once.
-- The shared focus ring on `:focus-visible`. In forced colors the notice gets a `CanvasText` edge, and the underline still marks the button.
+- The shared focus ring on `:focus-visible`, 7.53:1 on the bar's ground. In forced colors the notice gets a `CanvasText` edge, and the underline still marks the button.
 
 ### Don't
 
-- Don't name tags or verdicts in the line: it counts results only.
+- Don't name tags or verdicts in the line: it counts titles only.
 - Don't write the reveal to settings or storage.
 - Don't scan for the count; read the marks the renderers wrote.
+- Don't edit, restyle or join the store's bar, and don't reuse its classes.
 
 ## Message catalog
 
@@ -1014,8 +1016,8 @@ For every translator:
 | `notice_marking_stopped` | This game will be ignored | Screen reader announcement. |
 | `notice_marking_restored` | This game is no longer ignored | Screen reader announcement. |
 | `notice_settings_saved` | Saved. | Screen reader announcement after a setting changes. |
-| `notice_list_hidden_one`, `_other` | Tag Kit hid `$count$` result(s). | Line above a list when Hide removed some of its results. Names the number only. |
-| `notice_list_revealed_one`, `_other` | Tag Kit is showing `$count$` hidden result(s). | Replaces the line after "Show them"; the results show again, dimmed, on this page only. |
+| `notice_list_hidden_one`, `_other` | `$count$` title(s) has/have been hidden by Tag Kit based on your settings. | Bar above a list when Hide removed some of its results, worded like the store's own notice there. Names the number only. |
+| `notice_list_revealed_one`, `_other` | `$count$` hidden title(s) is/are showing. | Replaces the line after "Show them"; the results show again, dimmed, on this page only. |
 | `notice_list_show_one`, `_other` | Show it / Show them | Button after the line. Changes no setting. |
 | `notice_list_hide_one`, `_other` | Hide it / Hide them | Button after the revealed line. |
 | `notice_backup_downloaded` | Backup downloaded. | Screen reader announcement after the file is saved. |
@@ -1138,6 +1140,9 @@ WCAG 2.2 AA: 4.5:1 for text, 3:1 for non-text. Grounds are the store's own, samp
 | Focus ring `sar-accent-300` | banner bright end | 3.69 |
 | Allow-listed note `sar-color-text-muted` | its strip | 7.68 |
 | Allow-listed Undo `sar-banner-link-color` | its strip | 11.30 |
+| Hidden results notice text and button `sar-store-notice-fg` | its bar | 15.38 |
+| Hidden results notice button hover `sar-store-notice-link-hover` | its bar | 8.14 |
+| Focus ring `sar-accent-300` | hidden results notice bar | 7.53 |
 | Focus ring `sar-accent-300` | store row hover | 4.45 |
 | Options body `sar-color-text` | raised | 10.07 |
 | Options help `sar-color-text-subtle` | raised | 5.20 |
