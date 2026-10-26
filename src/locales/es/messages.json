@@ -187,19 +187,11 @@
   },
   "kind_family_heading": {
     "message": "Préstamo familiar",
-    "description": "Steam's own name of Family Sharing, the Steam feature that lets a family share a library. It titles the entry in the hover card, names the settings section, begins the screen reader name of the chip and is the choice for a game Steam lists it for. Use the word Steam shows in this language. From Steam's Spanish client strings; not checked on a live store page."
-  },
-  "kind_family_chip": {
-    "message": "Préstamo",
-    "description": "Short chip for a game Steam lists Family Sharing for. Our short form of Steam's name, for chips only; keep it short, it sits in a row and over game images. Steam's head noun alone (\"Préstamo familiar\"), as Steam has no short form."
+    "description": "Steam's own name of Family Sharing, the Steam feature that lets a family share a library. It titles the entry in the hover card, names the settings section, begins the screen reader name of the chip and is the choice for a game Steam lists it for. It is also the chip's text, in full, as the chip does not abbreviate Steam's name; the compact badge may cut it with an ellipsis when narrow. Use the word Steam shows in this language. From Steam's Spanish client strings; not checked on a live store page."
   },
   "kind_family_unsupported": {
     "message": "Préstamo familiar no disponible",
-    "description": "Steam's own words for a game that cannot be shared in a family library. Shown under the heading in the hover card, as the heading of the entry in the notice on the game's page and as a choice in the settings, for a paid game whose Steam feature list leaves Family Sharing out. Keep Steam's wording and capitalization in this language; never write a bare negative such as \"No Family Sharing\". From Steam's Spanish client strings; not checked on a live store page."
-  },
-  "kind_family_unsupported_chip": {
-    "message": "Préstamo no disponible",
-    "description": "Short chip for a paid game whose Steam feature list leaves Family Sharing out. A short form of Steam's words for it; keep it short and never write a bare negative such as \"No Family Sharing\". Our short form of Steam's words (\"Préstamo familiar no disponible\"); not Steam's own."
+    "description": "Steam's own words for a game that cannot be shared in a family library. Shown under the heading in the hover card, as the heading of the entry in the notice on the game's page and as a choice in the settings, for a paid game whose Steam feature list leaves Family Sharing out. It is also the chip's text, in full, with no short form; the compact badge may cut it with an ellipsis when narrow. Keep Steam's wording and capitalization in this language; never write a bare negative such as \"No Family Sharing\". From Steam's Spanish client strings; not checked on a live store page."
   },
   "kind_family_unlisted": {
     "message": "El préstamo familiar no figura entre las características que Steam indica para este juego.",

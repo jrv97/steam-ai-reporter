@@ -28,10 +28,10 @@ const SUPPORTED: FamilyDisclosed = {
 };
 const UNSUPPORTED: FamilyDisclosed = { ...SUPPORTED, facet: "unsupported" };
 
-/** Steam's words, which name the kind by themselves, each with a short chip of its own. */
+/** Steam's words name the kind by themselves, so each is also its chip, unabbreviated. */
 const FACETS: readonly FacetDefinition<FamilyFacet>[] = [
-  { id: "supported", word: "kind_family_heading", chip: "kind_family_chip" },
-  { id: "unsupported", word: "kind_family_unsupported", chip: "kind_family_unsupported_chip" },
+  { id: "supported", word: "kind_family_heading", chip: "kind_family_heading" },
+  { id: "unsupported", word: "kind_family_unsupported", chip: "kind_family_unsupported" },
 ];
 
 /**
@@ -66,7 +66,7 @@ export const FAMILY_KIND: KindDefinition<FamilyDisclosed> = {
 
   stored: STORED,
 
-  messages: { heading: "kind_family_heading", chip: "kind_family_chip" },
+  messages: { heading: "kind_family_heading", chip: "kind_family_heading" },
   // Most paid games are listed, so the tag starts off, warning of the unlisted ones when turned on.
   defaults: { ...OFF_KIND_SETTINGS, banner: false, facets: ["unsupported"] },
   ttl: WEEK_TTL,
