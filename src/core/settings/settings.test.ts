@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { plainKinds, withKind } from "../../../tests/helpers/settings";
 import { toHexColor } from "../kinds/color";
+import { KIND_IDS, type KindId } from "../kinds/id";
 import type { KindSettings } from "../kinds/kind-settings";
 import { KINDS, perKind } from "../kinds/registry";
 import {
@@ -9,6 +10,7 @@ import {
   encodeSettings,
   parseSettings,
   type Settings,
+  wholePatch,
 } from "./settings";
 
 const PLAIN = { enabled: true, badge: true, banner: true, filter: "off" } as const;
@@ -19,6 +21,7 @@ describe("DEFAULT_SETTINGS", () => {
       locale: "auto",
       debug: false,
       kinds: plainKinds(PLAIN),
+      order: KIND_IDS,
     });
   });
 
@@ -80,6 +83,7 @@ describe("parseSettings", () => {
         }),
         kernel: { enabled: true, badge: false, banner: true, filter: "dim" },
       },
+      order: KIND_IDS.toReversed(),
     };
     expect(parseSettings(stored)).toStrictEqual(stored);
     expect(parseSettings({ locale: "es" }).locale).toBe("es");
@@ -136,6 +140,7 @@ describe("encodeSettings", () => {
       ...plainKinds(PLAIN),
       ai: { enabled: true, badge: false, banner: true, filter: "dim" },
     },
+    order: KIND_IDS,
   };
 
   it("stores the global fields and one object per kind", () => {
@@ -186,6 +191,37 @@ describe("a tag's color", () => {
   });
 });
 
+describe("the tag order", () => {
+  const MOVED: readonly KindId[] = ["family", ...KIND_IDS.filter((id) => id !== "family")];
+
+  it.each<[string, unknown]>([
+    ["is missing", undefined],
+    ["is no list", "family"],
+    ["is an object", { 0: "family" }],
+  ])("reads as the registry order when the stored value %s", (_case, order) => {
+    expect(parseSettings({ order }).order).toStrictEqual(KIND_IDS);
+  });
+
+  it.each<[readonly KindId[], boolean]>([[KIND_IDS, false], [MOVED, true]])(
+    "is stored only when it differs from the registry",
+    (order, stored) => {
+      const value = encodeSettings({ ...DEFAULT_SETTINGS, order });
+      expect(JSON.stringify(value).includes('"order"')).toBe(stored);
+      expect(parseSettings(value).order).toStrictEqual(order);
+    },
+  );
+
+  it("takes a patch's order with the kinds it leaves out last", () => {
+    expect(applyPatch(DEFAULT_SETTINGS, { order: ["family"] }).order).toStrictEqual(MOVED);
+    expect(applyPatch({ ...DEFAULT_SETTINGS, order: MOVED }, {}).order).toBe(MOVED);
+  });
+
+  it("is named by a whole patch", () => {
+    const settings = { ...DEFAULT_SETTINGS, order: MOVED };
+    expect(applyPatch(DEFAULT_SETTINGS, wholePatch(settings))).toStrictEqual(settings);
+  });
+});
+
 describe("withKind", () => {
   it("changes the given fields of one kind and nothing else", () => {
     const next = withKind(DEFAULT_SETTINGS, "ai", { filter: "hide", enabled: false });
@@ -203,6 +239,7 @@ describe("applyPatch", () => {
     locale: "es",
     debug: true,
     kinds: { ...perKind(() => PLAIN), kernel: { ...PLAIN, filter: "dim" } },
+    order: KIND_IDS,
   };
 
   it("replaces the fields it names and keeps every other one", () => {
@@ -211,6 +248,7 @@ describe("applyPatch", () => {
       locale: "en",
       debug: true,
       kinds: { ...stored.kinds, drm: { ...PLAIN, badge: false } },
+      order: KIND_IDS,
     });
   });
 
