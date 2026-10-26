@@ -1292,7 +1292,7 @@ describe("listeners", () => {
     const targets = new Set(add.mock.contexts);
     expect(targets).toEqual(new Set([root]));
     const types = add.mock.calls.map(([type]) => type);
-    expect(types.toSorted()).toEqual(["change", "click", "input", "keydown"]);
+    expect(types.toSorted()).toEqual(["change", "click", "input", "keydown", "pointerdown"]);
     const remove = vi.spyOn(root, "removeEventListener");
     form.destroy();
     expect(remove.mock.calls.map(([type]) => type).toSorted()).toEqual(types.toSorted());

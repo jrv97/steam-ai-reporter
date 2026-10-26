@@ -29,8 +29,11 @@ import {
 } from "./allow-view";
 import { announce, POLITE } from "./announce";
 import { createBackupCard } from "./backup-card";
+import { createElement } from "./element";
+import { parseIcon } from "./icon";
 import { KIND_ATTRIBUTE, setColorOnce } from "./kind-attributes";
 import { chipName } from "./kind-details";
+import { createOrderCard, type OrderCard } from "./order-card";
 import { adoptStyles, SETTINGS_CSS, TOKENS_CSS } from "./styles";
 import { GENERAL_TAB, sortTabs, tabHash, type TabId, toTabId } from "./tab-id";
 import { createTabs, type Tabs } from "./tabs";
@@ -107,10 +110,7 @@ const TRUE = "true";
 const TAB_ROLE = "tab";
 /** Names the tab a popup row's link opens. */
 const OPEN_TAB_ATTRIBUTE = "data-sar-open-tab";
-/**
- * An original gear, eight teeth around a hole on a 48 unit grid. HTML parsing puts it in the SVG
- * namespace, so no namespace URL enters the bundle.
- */
+/** An original gear, eight teeth around a hole on a 48 unit grid (`parseIcon`). */
 const GEAR_SVG = '<svg viewBox="0 0 48 48" aria-hidden="true" focusable="false">'
   + '<path fill-rule="evenodd" d="M40 26 45 30 43 35 37 34 34 37 35 43 30 45 26 40 22 40 18 45 '
   + "13 43 14 37 11 34 5 35 3 30 8 26 8 22 3 18 5 13 11 14 14 11 13 5 18 3 22 8 26 8 30 3 35 5 34 "
@@ -205,6 +205,9 @@ function forKind(id: KindId, settings: Partial<KindSettings>): SettingsPatch {
   return { kinds: { [id]: settings } };
 }
 
+/** The error key of the Tag order card, which holds no `data-sar-setting` control. */
+const ORDER_ERROR = "order";
+
 function errorKey(field: Field, kind?: KindId): string {
   return kind === undefined ? field : `${kind}:${field}`;
 }
@@ -249,14 +252,7 @@ export async function mountSettingsForm(
     className: string,
     text?: string,
   ): HTMLElementTagNameMap[K] {
-    const node = doc.createElement(tag);
-    if (className !== "") {
-      node.className = className;
-    }
-    if (text !== undefined) {
-      node.textContent = text;
-    }
-    return node;
+    return createElement(doc, tag, className, text);
   }
 
   function quietButton(text: string): HTMLButtonElement {
@@ -319,9 +315,9 @@ export async function mountSettingsForm(
     link.rel = NO_OPENER;
     link.title = i18n.t("options_all_settings");
     link.setAttribute("aria-label", link.title);
-    const icon = new DOMParser().parseFromString(GEAR_SVG, "text/html").body.firstElementChild;
-    if (icon !== null) {
-      link.append(doc.importNode(icon, true));
+    const icon = parseIcon(doc, GEAR_SVG);
+    if (icon !== undefined) {
+      link.append(icon);
     }
     return link;
   }
@@ -610,6 +606,7 @@ export async function mountSettingsForm(
     readonly frame: HTMLElement;
     readonly picker: HTMLSelectElement;
     readonly allIgnored: ScopeCard;
+    readonly order: OrderCard;
   } {
     const general = tabs.panel(GENERAL_TAB);
     tabs.tab(GENERAL_TAB).textContent = i18n.t("options_tab_general");
@@ -662,6 +659,25 @@ export async function mountSettingsForm(
     scopes.set(ALLOW_ALL, allIgnored);
     general.append(allIgnored.section);
 
+    const orderError = fieldError();
+    errors.set(ORDER_ERROR, orderError);
+    const order = createOrderCard(doc, {
+      i18n,
+      idPrefix: prefix,
+      announce: (text) => {
+        announce(doc, live, text);
+      },
+      save: (value, spoken) => {
+        if (loadFailed) {
+          sync();
+        } else {
+          void save({ order: value }, ORDER_ERROR, spoken);
+        }
+      },
+      error: orderError,
+    });
+    general.append(order.section);
+
     if (deps.backup !== undefined) {
       general.append(
         createBackupCard(doc, {
@@ -695,7 +711,7 @@ export async function mountSettingsForm(
 
     const frame = element("div", "sar-tabs");
     frame.append(tabs.list, ...tabIds.map((id) => tabs.panel(id)));
-    return { frame, picker, allIgnored };
+    return { frame, picker, allIgnored, order };
   }
 
   const footer = element("div", "sar-options-footer");
@@ -777,6 +793,7 @@ export async function mountSettingsForm(
     }
     if (built !== undefined) {
       built.picker.value = current.locale;
+      built.order.sync(current.order);
     }
   }
 
@@ -843,7 +860,11 @@ export async function mountSettingsForm(
     }
   }
 
-  async function save(patch: SettingsPatch, key: string): Promise<void> {
+  async function save(
+    patch: SettingsPatch,
+    key: string,
+    spoken = i18n.t("notice_settings_saved"),
+  ): Promise<void> {
     const error = errors.get(key);
     try {
       current = await settings.patch(patch);
@@ -858,7 +879,7 @@ export async function mountSettingsForm(
     if (error !== undefined) {
       error.hidden = true;
     }
-    announce(doc, live, i18n.t("notice_settings_saved"));
+    announce(doc, live, spoken);
   }
 
   function onChange(target: EventTarget | null): void {
@@ -1107,6 +1128,7 @@ export async function mountSettingsForm(
   }
 
   function onEvent(event: Event): void {
+    built?.order.handle(event);
     switch (event.type) {
       case "change":
         onChange(event.target);
@@ -1119,12 +1141,14 @@ export async function mountSettingsForm(
           onKeydown(event);
         }
         break;
+      case "pointerdown":
+        break;
       default:
         onClick(event, event.target);
     }
   }
 
-  const events = ["change", "input", "click", "keydown"] as const;
+  const events = ["change", "input", "click", "keydown", "pointerdown"] as const;
   sync();
   await refreshAllowList();
   for (const type of events) {
@@ -1142,6 +1166,7 @@ export async function mountSettingsForm(
     refreshAllowList,
     selectTab: show,
     destroy() {
+      built?.order.stop();
       unsubscribe();
       for (const type of events) {
         root.removeEventListener(type, onEvent);
