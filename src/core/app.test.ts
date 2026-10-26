@@ -630,7 +630,7 @@ describe("start on the search page", () => {
         (chip) => Array.from(chip.children, (part) => part.textContent),
       );
     const unlisted = [
-      i18n.t("kind_family_unsupported_chip"),
+      i18n.t("kind_family_unsupported"),
       i18n.t("kind_family_unsupported"),
     ];
 
@@ -651,7 +651,7 @@ describe("start on the search page", () => {
       expect(chips(LISTED)).toEqual([]);
       await writeSettings(settings, withKind(familyOn, "family", { facets: ["supported"] }));
       await expect.poll(() => chips(LISTED)).toEqual([
-        [i18n.t("kind_family_chip"), i18n.t("kind_family_heading")],
+        [i18n.t("kind_family_heading"), i18n.t("kind_family_heading")],
       ]);
       expect(chips(UNLISTED)).toEqual([]);
       await writeSettings(settings, withKind(familyOn, "family", { facets: [] }));

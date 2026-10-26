@@ -187,19 +187,11 @@
   },
   "kind_family_heading": {
     "message": "Family Sharing",
-    "description": "Steam's own name of Family Sharing, the Steam feature that lets a family share a library. It titles the entry in the hover card, names the settings section, begins the screen reader name of the chip and is the choice for a game Steam lists it for. Use the word Steam shows in this language."
-  },
-  "kind_family_chip": {
-    "message": "Family",
-    "description": "Short chip for a game Steam lists Family Sharing for. Our short form of Steam's name, for chips only; keep it short, it sits in a row and over game images."
+    "description": "Steam's own name of Family Sharing, the Steam feature that lets a family share a library. It titles the entry in the hover card, names the settings section, begins the screen reader name of the chip and is the choice for a game Steam lists it for. It is also the chip's text, in full, as the chip does not abbreviate Steam's name; the compact badge may cut it with an ellipsis when narrow. Use the word Steam shows in this language."
   },
   "kind_family_unsupported": {
     "message": "Family Sharing not Available",
-    "description": "Steam's own words for a game that cannot be shared in a family library. Shown under the heading in the hover card, as the heading of the entry in the notice on the game's page and as a choice in the settings, for a paid game whose Steam feature list leaves Family Sharing out. Keep Steam's wording and capitalization in this language; never write a bare negative such as \"No Family Sharing\"."
-  },
-  "kind_family_unsupported_chip": {
-    "message": "Family not Available",
-    "description": "Short chip for a paid game whose Steam feature list leaves Family Sharing out. A short form of Steam's words for it (\"Family Sharing not Available\"); keep it short and never write a bare negative such as \"No Family Sharing\"."
+    "description": "Steam's own words for a game that cannot be shared in a family library. Shown under the heading in the hover card, as the heading of the entry in the notice on the game's page and as a choice in the settings, for a paid game whose Steam feature list leaves Family Sharing out. It is also the chip's text, in full, with no short form; the compact badge may cut it with an ellipsis when narrow. Keep Steam's wording and capitalization in this language; never write a bare negative such as \"No Family Sharing\"."
   },
   "kind_family_unlisted": {
     "message": "Family Sharing is not in the features Steam lists for this game.",
