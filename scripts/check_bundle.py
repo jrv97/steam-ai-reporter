@@ -16,8 +16,8 @@
   key or plural base that a string literal of its code names is in its inlined catalogs, and every
   message there is named, so a missing key fails here and never falls back to the raw key on a
   store page. scripts/gen_catalogs.py writes each entry's catalogs by the same reading.
-- Size budgets: content.js at most 194 KiB, options.js at most 143 KiB and the userscript at most
-  284 KiB, unminified (rule 13). Each is the measured size plus a few percent of headroom; raise one
+- Size budgets: content.js at most 205 KiB, options.js at most 149 KiB and the userscript at most
+  304 KiB, unminified (rule 13). Each is the measured size plus a few percent of headroom; raise one
   only with a measurement. A message costs bytes only in the bundles that read it, and an added
   locale costs about 5 KB in content.js, 9 KB in options.js and 12 KB in the userscript. Measured
   when ignoring by developer or publisher landed (ADR 0013): content.js 186,313 B (from 169,265),
@@ -27,7 +27,10 @@
   in options.js and the userscript only. Measured when each bundle got its own catalogs (decision
   58): content.js 190,090 B (from 204,338), options.js 140,579 B (from 148,242), userscript
   285,327 B (from 285,925). The userscript reads both sets and keeps 284 KiB, which is already
-  under its size plus a few percent.
+  under its size plus a few percent. Measured when the Steam Deck and Steam Machine tags landed
+  (decision 62): content.js 203,934 B (from 194,020), options.js 148,073 B (from 141,935),
+  userscript 303,799 B (from 289,921); each passed its budget, which rises to the size plus 2 to 3
+  percent.
 - The STEAM_API_KEY value, when set, appears nowhere in dist/ or artifacts/ (rule 16).
 - The dev injection bundle is never packaged into artifacts/, and when artifacts/ exists it holds
   exactly the five release artifacts, with a manifest at the root of each extension zip. The source
@@ -60,9 +63,9 @@ from repo import (
 
 KIB = 1024
 BUDGETS = {
-    **{DIST / target / "content.js": 194 * KIB for target in EXTENSION_TARGETS},
-    **{DIST / target / "options.js": 143 * KIB for target in EXTENSION_TARGETS},
-    DIST / "userscript" / f"{SLUG}.user.js": 284 * KIB,
+    **{DIST / target / "content.js": 205 * KIB for target in EXTENSION_TARGETS},
+    **{DIST / target / "options.js": 149 * KIB for target in EXTENSION_TARGETS},
+    DIST / "userscript" / f"{SLUG}.user.js": 304 * KIB,
 }
 ENGLISH = ROOT / "src" / "locales" / DEFAULT_LOCALE / "messages.json"
 STORE_MATCH = ["https://store.steampowered.com/*"]
