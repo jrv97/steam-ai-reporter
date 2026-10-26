@@ -124,70 +124,6 @@
   outline: none;
 }
 
-/* A tag's card closes: a native details, so the browser owns the keyboard and the expanded state.
-   The summary keeps the title and the on or off cue in view; the arrow turns when it opens. */
-.sar-card-summary {
-  display: flex;
-  align-items: center;
-  column-gap: var(--sar-space-3);
-  min-block-size: var(--sar-control-height-sm);
-  list-style: none;
-  cursor: pointer;
-}
-
-.sar-card-summary::-webkit-details-marker {
-  display: none;
-}
-
-.sar-card-summary::after {
-  content: "";
-  flex: none;
-  inline-size: var(--sar-space-2);
-  block-size: var(--sar-space-2);
-  margin-block-end: var(--sar-space-1);
-  border-inline-end: 2px solid var(--sar-color-text-subtle);
-  border-block-end: 2px solid var(--sar-color-text-subtle);
-  transform: rotate(45deg);
-}
-
-.sar-card-details[open] > .sar-card-summary {
-  margin-block-end: var(--sar-space-2);
-}
-
-.sar-card-details[open] > .sar-card-summary::after {
-  margin-block: var(--sar-space-1) 0;
-  transform: rotate(225deg);
-}
-
-.sar-options .sar-card-summary .sar-card-title {
-  flex: 1 1 auto;
-  min-inline-size: 0;
-  margin: 0;
-}
-
-/* The cue is words, so it reads without colour: the master switch's state, off in a quieter tone */
-.sar-card-state {
-  flex: none;
-  color: var(--sar-color-text-subtle);
-  font-size: var(--sar-size-sm);
-}
-
-.sar-card-state[data-sar-on] {
-  color: var(--sar-color-text);
-}
-
-.sar-options[data-sar-context="popup"] .sar-card-summary {
-  min-block-size: var(--sar-control-height-xs);
-}
-
-.sar-options[data-sar-context="popup"] .sar-card-details[open] > .sar-card-summary {
-  margin-block-end: var(--sar-space-1);
-}
-
-.sar-options[data-sar-context="popup"] .sar-card-state {
-  font-size: var(--sar-size-xs);
-}
-
 /* Tabs: a row that wraps under the header on narrow screens, a sticky rail beside the panels from
    800px. The selected tab has a bar and strong text, so it never relies on color alone. */
 .sar-tabs {
@@ -325,7 +261,7 @@
   line-height: var(--sar-leading-sm);
 }
 
-/* The load error sits above the cards, where a closed section cannot hide it */
+/* The load error sits above the tabs, where no tab can hide it */
 .sar-options > .sar-field-error {
   margin: 0 0 var(--sar-space-2);
 }
@@ -458,7 +394,6 @@
 .sar-select:focus-visible,
 .sar-input:focus-visible,
 .sar-button:focus-visible,
-.sar-card-summary:focus-visible,
 .sar-tab:focus-visible,
 .sar-options a:focus-visible {
   outline: var(--sar-focus-width) solid var(--sar-focus-color);
@@ -527,6 +462,20 @@
   background: var(--sar-button-secondary-bg-hover);
 }
 
+/* Reset, Stop ignoring and Show in General: quiet text buttons that read as links, at the same
+   target size as the other buttons */
+.sar-button[data-sar-variant="quiet"] {
+  padding-inline: 0;
+  background: none;
+  color: var(--sar-accent-300);
+  text-decoration: underline;
+}
+
+.sar-button[data-sar-variant="quiet"]:hover {
+  background: none;
+  color: var(--sar-color-text-strong);
+}
+
 .sar-options a {
   color: var(--sar-accent-300);
 }
@@ -537,15 +486,15 @@
   list-style: none;
 }
 
-/* The games of one scope sit under its name: all tags, or one tag's line */
+/* Each list of a scope's card sits under a quiet caption: games, developers, publishers */
 .sar-allow-group + .sar-allow-group {
   margin-block-start: var(--sar-space-3);
 }
 
 .sar-allow-scope {
   margin: 0;
-  color: var(--sar-color-text-strong);
-  font: var(--sar-weight-medium) var(--sar-size-md) / var(--sar-leading-md) var(--sar-font-ext);
+  color: var(--sar-color-text-subtle);
+  font: var(--sar-weight-medium) var(--sar-size-sm) / var(--sar-leading-sm) var(--sar-font-ext);
 }
 
 .sar-options[data-sar-context="popup"] .sar-allow-list {
@@ -583,6 +532,17 @@
 .sar-empty {
   margin: 0;
   color: var(--sar-color-text-subtle);
+}
+
+/* What all tags ignore, counted under a tag's own list, with its way to General */
+.sar-allow-note {
+  margin: var(--sar-space-2) 0 0;
+  color: var(--sar-color-text-subtle);
+}
+
+.sar-allow-note .sar-button {
+  min-block-size: var(--sar-control-height-xs);
+  padding-block: 0;
 }
 
 .sar-privacy {

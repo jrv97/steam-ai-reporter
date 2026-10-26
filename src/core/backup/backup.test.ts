@@ -58,7 +58,7 @@ describe("createBackupFile", () => {
     expect(file.name).toBe("ai-reporter-backup-2026-01-05.json");
   });
 
-  it("leaves out the verdict cache and the open sections", async () => {
+  it("leaves out the verdict cache and the tab last shown", async () => {
     const store = memoryStore(
       new Map<string, JsonValue>([
         [verdictKey(appId(10)), { cached: "marker" }],

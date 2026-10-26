@@ -19,8 +19,8 @@ import { createIgnoreLists } from "../ignored";
 import type { PickedFile } from "../ports";
 import { DEFAULT_SETTINGS, parseSettings } from "../settings/settings";
 import { createSettingsSource } from "../settings/settings-source";
-import { createSectionState } from "./section-state";
 import { mountSettingsForm } from "./settings-form";
+import { createUiState } from "./ui-state";
 
 const i18n = englishI18n();
 const HIDE_AI = withKind(DEFAULT_SETTINGS, "ai", { filter: "hide" });
@@ -46,7 +46,7 @@ async function setup(games: EntriesSpec<number> = {}) {
     i18n,
     settings,
     lists,
-    sectionState: createSectionState(store),
+    uiState: createUiState(store),
     context: "page",
     colors: true,
     locales: ["en"],
@@ -100,7 +100,7 @@ describe("the Backup card", () => {
       i18n,
       settings: createSettingsSource(store),
       lists: createIgnoreLists(store, fixedClock(0)),
-      sectionState: createSectionState(store),
+      uiState: createUiState(store),
       context: "popup",
       colors: false,
       locales: ["en"],

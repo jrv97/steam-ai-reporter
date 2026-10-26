@@ -100,6 +100,11 @@ export function sourceLine(verdict: AnyDisclosed): BareMessageKey {
     : "badge_card_declared";
 }
 
+/** A kind's chip name: its word, then Steam's line, or the word once when they match (PvP). */
+export function chipName(i18n: MessageCatalog, chip: string, heading: string): string {
+  return chip === heading ? chip : i18n.t("kind_chip_name", { chip, heading });
+}
+
 /**
  * What names a kind's value, given the kind's heading: the value's word after it, or the word
  * alone when it names the kind by itself (a value with a chip of its own).

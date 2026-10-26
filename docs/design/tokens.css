@@ -292,8 +292,8 @@
   --sar-control-height-xs: 24px;
   /* The hex text box of a tag's color field: room for #rrggbb and the placeholder word. */
   --sar-color-input-inline-size: 9em;
-  /* Options page column. */
-  --sar-options-max-width: 640px;
+  /* Options page column: the tab rail and the panels beside it. */
+  --sar-options-max-width: 880px;
   /* Action popup width. */
   --sar-popup-width: 360px;
   /* Switch track inline size. */

@@ -8,7 +8,7 @@ import type { FacetDefinition, FacetId, TagKind } from "../kinds/kind";
 import { type KindSettings, LIST_FILTERS, type ListFilter } from "../kinds/kind-settings";
 import { KIND_BY_ID, KINDS } from "../kinds/registry";
 import type { Clock, FileTransfer, MessageCatalog } from "../ports";
-import { ALLOW_ALL, ALLOW_SCOPES, type AllowScope, parseGameKey } from "../settings/allow-data";
+import { ALLOW_ALL, type AllowScope, parseGameKey } from "../settings/allow-data";
 import {
   AUTO_LOCALE,
   DEFAULT_SETTINGS,
@@ -30,17 +30,13 @@ import {
 import { announce, POLITE } from "./announce";
 import { createBackupCard } from "./backup-card";
 import { KIND_ATTRIBUTE, setColorOnce } from "./kind-attributes";
-import {
-  isSectionOpen,
-  SECTION_DEFAULT_OPEN,
-  SECTION_IDS,
-  type SectionId,
-  type SectionState,
-  type SectionStates,
-} from "./section-state";
+import { chipName } from "./kind-details";
 import { adoptStyles, SETTINGS_CSS, TOKENS_CSS } from "./styles";
+import { GENERAL_TAB, sortTabs, type TabId } from "./tab-id";
+import { createTabs } from "./tabs";
+import type { UiState } from "./ui-state";
 
-/** The full options page, or the short toolbar popup (no language picker, no privacy card). */
+/** The full options page, or the compact toolbar popup and userscript dialog. */
 export type SettingsContext = "page" | "popup";
 
 /** The product heading above the cards: name, version and, where an icon file ships, the icon. */
@@ -56,8 +52,9 @@ export interface SettingsFormDeps {
   readonly settings: StoredSettings;
   /** The games, developers and publishers the user ignored. */
   readonly lists: IgnoreLists;
-  /** Which tag sections are open, kept across visits. */
-  readonly sectionState: SectionState;
+  /** The tab last shown, kept across visits. */
+  readonly uiState: UiState;
+  /** Density and the page-only pieces: the privacy card and the long footer. */
   readonly context: SettingsContext;
   /**
    * Whether each tag gets a color field. The full page and the userscript dialog show it; the
@@ -72,6 +69,10 @@ export interface SettingsFormDeps {
   readonly allSettingsUrl?: string;
   /** Gives the form its Backup card; the toolbar popup has none. */
   readonly backup?: BackupFormDeps;
+  /** The tab to show first, from the page's location fragment; else the stored one. */
+  readonly initialTab?: TabId;
+  /** Hears each tab shown after the first, for the page to mirror in its fragment. */
+  readonly onTabChange?: (id: TabId) => void;
 }
 
 /** The download and file chooser of the Backup card, and the clock that dates a backup. */
@@ -83,6 +84,8 @@ export interface BackupFormDeps {
 export interface SettingsForm {
   /** Reads the ignore lists again, after another tab changed one. */
   refreshAllowList(): Promise<void>;
+  /** Shows a tab asked for from outside: a new location fragment, or the popup's request. */
+  selectTab(id: TabId): void;
   /** Stops listening and empties the root. */
   destroy(): void;
 }
@@ -92,6 +95,9 @@ const STORE_APP_URL = "https://store.steampowered.com/app/";
 /** Link target and relation tokens, not copy. */
 const NEW_TAB = "_blank";
 const NO_OPENER = "noopener";
+/** ARIA tokens, not copy. */
+const TRUE = "true";
+const TAB_ROLE = "tab";
 
 /** The header icon's rendered size in CSS pixels (components.mdx section 6). */
 const ICON_SIZE = 32;
@@ -101,10 +107,6 @@ const FIELDS = ["enabled", "badge", "banner", "filter", "facets", "color", "loca
 type Field = (typeof FIELDS)[number];
 const FieldSchema = v.picklist(FIELDS);
 const KindIdSchema = v.picklist(KIND_IDS);
-const SectionIdSchema = v.picklist(SECTION_IDS);
-
-/** Names the collapsible section a `details` element holds. */
-const SECTION_ATTRIBUTE = "data-sar-section";
 
 /** The switches of a kind, which `data-sar-setting` names as the kind setting they flip. */
 type SwitchField = "enabled" | "badge" | "banner";
@@ -122,6 +124,9 @@ const FILTER_HELP: Readonly<Record<ListFilter, BareMessageKey>> = {
 
 /** What marks the Reset button of a color field, with the kind it resets. */
 const COLOR_RESET_ATTRIBUTE = "data-sar-color-reset";
+/** The quiet, link-like look of Reset, Stop ignoring and Show in General. */
+const QUIET = "quiet";
+const VARIANT_ATTRIBUTE = "data-sar-variant";
 
 /** The controls of one kind's color field. */
 interface ColorControls {
@@ -132,11 +137,11 @@ interface ColorControls {
   readonly invalid: HTMLElement;
 }
 
-/** The controls of one kind's section, which `sync` sets from the stored settings. */
+/** The controls of one kind, which `sync` sets from the stored settings. */
 interface KindControls {
-  /** The switches below the master switch; hidden while the kind is off. */
+  /** The controls below the master switch; hidden while the kind is off. */
   readonly options: HTMLElement;
-  /** The on or off cue in the section's summary, which stays in view while it is closed. */
+  /** The on or off cue on the kind's tab. */
   readonly state: HTMLElement;
   readonly switches: Readonly<Record<SwitchField, HTMLInputElement>>;
   readonly radios: ReadonlyMap<ListFilter, HTMLInputElement>;
@@ -147,12 +152,12 @@ interface KindControls {
   readonly color: ColorControls | undefined;
 }
 
-/** One card of ignored items: its list, and the action an empty list names. */
-interface AllowCard {
-  readonly source: AllowSource;
-  readonly card: HTMLElement;
+/** The card of what is ignored in one scope: all tags in General, one tag in its own tab. */
+interface ScopeCard {
+  readonly of: AllowScope;
+  readonly section: HTMLElement;
+  readonly title: HTMLElement;
   readonly body: HTMLElement;
-  readonly emptyAction: BareMessageKey;
 }
 
 let mounts = 0;
@@ -188,9 +193,9 @@ function errorKey(field: Field, kind?: KindId): string {
 }
 
 /**
- * Mounts the settings and the ignored games into `root`: the options page, the popup or the
- * userscript dialog. Each change is a patch of the stored settings, applied at once. One
- * delegated listener per event type on the root serves every control (rule 13).
+ * Mounts the settings and the ignore lists into `root` as tabs: General, then one per tag. Each
+ * change is a patch of the stored settings, applied at once. One delegated listener per event
+ * type on the root serves every control (rule 13).
  */
 export async function mountSettingsForm(
   root: HTMLElement,
@@ -210,6 +215,16 @@ export async function mountSettingsForm(
     adoptStyles(scope, SETTINGS_CSS);
   }
 
+  /** A stored tab that cannot be read leaves General. */
+  async function readTab(): Promise<TabId | undefined> {
+    try {
+      return await deps.uiState.read();
+    } catch {
+      return undefined;
+    }
+  }
+  const firstTab = deps.initialTab === undefined ? readTab() : Promise.resolve(deps.initialTab);
+
   function element<K extends keyof HTMLElementTagNameMap>(
     tag: K,
     className: string,
@@ -225,6 +240,13 @@ export async function mountSettingsForm(
     return node;
   }
 
+  function quietButton(text: string): HTMLButtonElement {
+    const button = element("button", "sar-button", text);
+    button.type = "button";
+    button.setAttribute(VARIANT_ATTRIBUTE, QUIET);
+    return button;
+  }
+
   function fieldError(): HTMLElement {
     const error = element("p", "sar-field-error", i18n.t("error_settings_save"));
     error.setAttribute("role", "alert");
@@ -233,48 +255,19 @@ export async function mountSettingsForm(
   }
 
   /** The title of a card; focus lands on it after a restore, so it takes focus but is no stop. */
-  function cardTitle(title: string, id: string): HTMLElement {
-    const heading = element("h2", "sar-card-title", title);
+  function cardTitle(title: string, id: string, level: "h2" | "h3"): HTMLElement {
+    const heading = element(level, "sar-card-title", title);
     heading.id = prefix + id;
     heading.tabIndex = -1;
     return heading;
   }
 
-  function card(title: string, id: string): HTMLElement {
+  function card(title: string, id: string, level: "h2" | "h3" = "h3"): HTMLElement {
     const section = element("section", "sar-card");
-    const heading = cardTitle(title, id);
+    const heading = cardTitle(title, id, level);
     section.setAttribute("aria-labelledby", heading.id);
     section.append(heading);
     return section;
-  }
-
-  const sections = new Map<SectionId, HTMLDetailsElement>();
-  /** The state each section is known to be in, so a toggle that changes nothing writes nothing. */
-  const shown = new Map<SectionId, boolean>();
-
-  /**
-   * A card the user can close: a native `details` whose `summary` holds the title and the cue.
-   * The browser gives it the disclosure role, the keyboard and the expanded state. The body goes
-   * into the returned `details`; it starts open until the stored state says otherwise.
-   */
-  function collapsibleCard(
-    title: string,
-    id: SectionId,
-    cue: HTMLElement,
-  ): { readonly section: HTMLElement; readonly body: HTMLDetailsElement; } {
-    const section = element("section", "sar-card");
-    const heading = cardTitle(title, id);
-    section.setAttribute("aria-labelledby", heading.id);
-    const body = element("details", "sar-card-details");
-    body.open = SECTION_DEFAULT_OPEN;
-    body.setAttribute(SECTION_ATTRIBUTE, id);
-    const summary = element("summary", "sar-card-summary");
-    summary.append(heading, cue);
-    body.append(summary);
-    section.append(body);
-    sections.set(id, body);
-    shown.set(id, SECTION_DEFAULT_OPEN);
-    return { section, body };
   }
 
   function header(info: SettingsHeader): HTMLElement {
@@ -389,6 +382,10 @@ export async function mountSettingsForm(
     return { row, boxes };
   }
 
+  /** The full color help, once in General; every color field points at it. */
+  const colorHelp = element("p", "sar-field-help", i18n.t("options_color_help"));
+  colorHelp.id = `${prefix}color-help`;
+
   /**
    * A tag's color field: a swatch, a text box for the hex code, and Reset. The swatch and the
    * words are redundant on purpose, so the color is never the only cue. The row carries the kind,
@@ -412,9 +409,8 @@ export async function mountSettingsForm(
     input.setAttribute("data-sar-for", kind.id);
     label.htmlFor = input.id;
     const swatch = element("span", "sar-color-swatch");
-    swatch.setAttribute("aria-hidden", String(true));
-    const reset = element("button", "sar-button", i18n.t("options_color_reset"));
-    reset.type = "button";
+    swatch.setAttribute("aria-hidden", TRUE);
+    const reset = quietButton(i18n.t("options_color_reset"));
     reset.setAttribute(COLOR_RESET_ATTRIBUTE, kind.id);
     reset.setAttribute(
       "aria-label",
@@ -422,23 +418,21 @@ export async function mountSettingsForm(
     );
     const entry = element("div", "sar-color-entry");
     entry.append(swatch, input, reset);
-    const help = element("span", "sar-field-help", i18n.t("options_color_help"));
-    help.id = `${input.id}-help`;
+    const help = element("span", "sar-field-help", i18n.t("options_color_help_short"));
     const invalid = element("p", "sar-field-error", i18n.t("options_color_invalid"));
     invalid.id = `${input.id}-invalid`;
     invalid.setAttribute("role", "alert");
     invalid.hidden = true;
-    input.setAttribute("aria-describedby", [help.id, invalid.id].join(" "));
+    input.setAttribute("aria-describedby", [colorHelp.id, invalid.id].join(" "));
     const error = fieldError();
     errors.set(errorKey("color", kind.id), error);
     row.append(label, entry, help, invalid, error);
     return { row, controls: { input, reset, invalid } };
   }
 
-  /** One tag's section, titled with Steam's line for it: the master switch, then the rest. */
-  function kindCard(kind: TagKind): HTMLElement {
-    const state = element("span", "sar-card-state");
-    const { section, body } = collapsibleCard(i18n.t(kind.messages.heading), kind.id, state);
+  /** One tag's settings, titled with Steam's line for it: the master switch, then the rest. */
+  function kindCard(kind: TagKind, state: HTMLElement): HTMLElement {
+    const section = card(i18n.t(kind.messages.heading), kind.id, "h2");
     const enabled = switchField(
       kind.id,
       "enabled",
@@ -470,7 +464,7 @@ export async function mountSettingsForm(
       options.append(color.row);
     }
     options.append(filter.row);
-    body.append(enabled.row, options);
+    section.append(enabled.row, options);
     controls.set(kind.id, {
       options,
       state,
@@ -483,80 +477,93 @@ export async function mountSettingsForm(
     return section;
   }
 
+  /** The card of what is ignored in a scope, drawn by `renderScope` from the lists. */
+  function scopeCard(of: AllowScope, title: BareMessageKey): ScopeCard {
+    const section = element("section", "sar-card");
+    const heading = cardTitle(i18n.t(title), `allow-${of}`, "h3");
+    const body = element("div", "");
+    section.setAttribute("aria-labelledby", heading.id);
+    section.append(heading, body);
+    return { of, section, title: heading, body };
+  }
+
   const loadError = element("p", "sar-field-error", i18n.t("error_settings_load"));
   loadError.setAttribute("role", "alert");
   loadError.hidden = true;
-  const kindCards = KINDS.map(kindCard);
 
-  // Above the cards, so a closed section cannot hide it
-  const cards: HTMLElement[] = deps.header === undefined
-    ? [loadError, ...kindCards]
-    : [header(deps.header), loadError, ...kindCards];
+  // One tab per kind, labelled with its chip word and sorted by it; General first
+  const tabIds = sortTabs(
+    KINDS.map((kind) => ({ id: kind.id, label: i18n.t(kind.messages.chip) })),
+    i18n.locale,
+  );
+  const tabs = createTabs({
+    doc,
+    ids: tabIds,
+    idPrefix: prefix,
+    label: i18n.t("options_tabs_label"),
+  });
+  const scopes = new Map<AllowScope, ScopeCard>();
 
-  // Language (page only)
-  let picker: HTMLSelectElement | undefined;
-  if (context === "page") {
-    const language = card(i18n.t("options_section_language"), "language");
-    const field = element("div", "sar-field");
-    field.setAttribute("data-sar-layout", "stacked");
-    const label = element("label", "sar-field-label", i18n.t("options_language_label"));
-    picker = element("select", "sar-select");
-    picker.id = `${prefix}locale`;
-    picker.setAttribute("data-sar-setting", "locale");
-    label.htmlFor = picker.id;
-    const auto = element("option", "", i18n.t("options_language_auto"));
-    auto.value = AUTO_LOCALE;
-    picker.append(auto);
-    for (const locale of deps.locales) {
-      const option = element("option", "", autonym(locale));
-      option.value = locale;
-      option.lang = languageTag(locale);
-      picker.append(option);
-    }
-    const error = fieldError();
-    errors.set(errorKey("locale"), error);
-    field.append(
-      label,
-      picker,
-      element("span", "sar-field-help", i18n.t("options_language_help")),
-      error,
-    );
-    language.append(field);
-    cards.push(language);
+  const general = tabs.panel(GENERAL_TAB);
+  tabs.tab(GENERAL_TAB).textContent = i18n.t("options_tab_general");
+  general.append(element("h2", "sar-panel-title", i18n.t("options_tab_general")));
+
+  for (const kind of KINDS) {
+    const chip = i18n.t(kind.messages.chip);
+    const label = element("span", "sar-tab-label", chip);
+    label.setAttribute("aria-hidden", TRUE);
+    const name = element("span", "sar-vh", chipName(i18n, chip, i18n.t(kind.messages.heading)));
+    const state = element("span", "sar-tab-state");
+    tabs.tab(kind.id).append(label, name, " ", state);
+    const ignored = scopeCard(kind.id, "options_allow_kind_title");
+    scopes.set(kind.id, ignored);
+    tabs.panel(kind.id).append(kindCard(kind, state), ignored.section);
   }
 
-  // Games, developers and publishers you ignored
-  const allowContext = { doc, i18n, dates, prefix, scopeName };
-  const gameSpec: AllowSpec<AppId> = {
-    id: "allow",
-    list: lists.games,
-    parseKey: parseGameKey,
-    title: "options_section_allow",
-    saveError: "error_allow_list_save",
-    loadError: "error_allow_list_load",
-    nameOf: (key, entry) => {
-      const name = element("a", "sar-allow-name", entry.name);
-      name.href = `${STORE_APP_URL}${String(key)}/`;
-      return name;
-    },
-    restored: (_name, of) =>
-      of === ALLOW_ALL
-        ? i18n.t("notice_marking_restored")
-        : i18n.t("notice_marking_restored_kind", { heading: scopeName(of) }),
-  };
-  const allowCards: readonly AllowCard[] = [
-    allowCard(createAllowSource(gameSpec, allowContext), "banner_ignore"),
-    ...CREATOR_ROLES.map((role) =>
-      allowCard(createAllowSource(creatorSpec(role), allowContext), "banner_creators_toggle")
-    ),
-  ];
-  cards.push(...allowCards.map((each) => each.card));
+  // General: language, color help, what is ignored for all tags, backup and privacy
+  const languageCard = card(i18n.t("options_section_language"), "language");
+  const languageField = element("div", "sar-field");
+  languageField.setAttribute("data-sar-layout", "stacked");
+  const languageLabel = element("label", "sar-field-label", i18n.t("options_language_label"));
+  const picker = element("select", "sar-select");
+  picker.id = `${prefix}locale`;
+  picker.setAttribute("data-sar-setting", "locale");
+  languageLabel.htmlFor = picker.id;
+  const auto = element("option", "", i18n.t("options_language_auto"));
+  auto.value = AUTO_LOCALE;
+  picker.append(auto);
+  for (const locale of deps.locales) {
+    const option = element("option", "", autonym(locale));
+    option.value = locale;
+    option.lang = languageTag(locale);
+    picker.append(option);
+  }
+  const languageError = fieldError();
+  errors.set(errorKey("locale"), languageError);
+  languageField.append(
+    languageLabel,
+    picker,
+    element("span", "sar-field-help", i18n.t("options_language_help")),
+    languageError,
+  );
+  languageCard.append(languageField);
+  general.append(languageCard);
+
+  if (deps.colors) {
+    const colors = card(i18n.t("options_color_label"), "colors");
+    colors.append(colorHelp);
+    general.append(colors);
+  }
+
+  const allIgnored = scopeCard(ALLOW_ALL, "options_allow_all_title");
+  scopes.set(ALLOW_ALL, allIgnored);
+  general.append(allIgnored.section);
 
   const live = element("div", "sar-vh");
   live.setAttribute("aria-live", POLITE);
 
   if (deps.backup !== undefined) {
-    cards.push(
+    general.append(
       createBackupCard(doc, {
         ...deps.backup,
         settings,
@@ -572,7 +579,6 @@ export async function mountSettingsForm(
     );
   }
 
-  // Privacy (page only) and footer
   if (context === "page") {
     const privacy = card(i18n.t("options_section_privacy"), "privacy");
     const bullets = element("ul", "sar-privacy");
@@ -584,8 +590,12 @@ export async function mountSettingsForm(
     ];
     bullets.append(...keys.map((key) => element("li", "", i18n.t(key))));
     privacy.append(bullets);
-    cards.push(privacy);
+    general.append(privacy);
   }
+
+  const frame = element("div", "sar-tabs");
+  frame.append(tabs.list, ...tabIds.map((id) => tabs.panel(id)));
+
   const footer = element("div", "sar-options-footer");
   if (context === "popup") {
     footer.append(element("p", "", i18n.t("options_privacy_no_reports")));
@@ -607,9 +617,12 @@ export async function mountSettingsForm(
     footer.append(line);
   }
 
+  const top: HTMLElement[] = deps.header === undefined ? [] : [header(deps.header)];
+  tabs.select((await firstTab) ?? GENERAL_TAB);
   root.classList.add("sar-options");
   root.setAttribute("data-sar-context", context);
-  root.replaceChildren(...cards, footer, live);
+  // Above the tabs, where no tab can hide it
+  root.replaceChildren(...top, loadError, frame, footer, live);
 
   /** Controls stay off while the load error shows, so no save puts defaults over v1 data. */
   const settingControls = root.querySelectorAll<HTMLInputElement | HTMLSelectElement>(
@@ -620,16 +633,6 @@ export async function mountSettingsForm(
       control.disabled = !allowed;
     }
   }
-
-  /** The stored section states; a store that cannot be read leaves every section open. */
-  async function readSections(): Promise<SectionStates> {
-    try {
-      return await deps.sectionState.read();
-    } catch {
-      return new Map();
-    }
-  }
-  const storedSections = readSections();
 
   let current: Settings = DEFAULT_SETTINGS;
   let loadFailed = false;
@@ -645,7 +648,7 @@ export async function mountSettingsForm(
   function syncColor(id: KindId, own: ColorControls, color: HexColor | undefined): void {
     setColorOnce(root, id, color);
     own.reset.hidden = color === undefined;
-    if (own.input.getAttribute("aria-invalid") !== "true") {
+    if (own.input.getAttribute("aria-invalid") !== TRUE) {
       own.input.value = color ?? "";
     }
   }
@@ -670,9 +673,7 @@ export async function mountSettingsForm(
       own.state.textContent = i18n.t(kind.enabled ? "options_state_on" : "options_state_off");
       own.state.toggleAttribute("data-sar-on", kind.enabled);
     }
-    if (picker !== undefined) {
-      picker.value = current.locale;
-    }
+    picker.value = current.locale;
   }
 
   /** The patch for a control's value; an invalid value becomes the default. */
@@ -790,7 +791,7 @@ export async function mountSettingsForm(
       : i18n.t(KIND_BY_ID[of].messages.heading);
   }
 
-  /** The spec of the developers or the publishers card. */
+  /** The spec of the developers or the publishers list. */
   function creatorSpec(role: CreatorRole): AllowSpec<CreatorKey> {
     const developer = role === "developer";
     const roleName = i18n.t(developer ? "banner_role_developer" : "banner_role_publisher");
@@ -813,68 +814,107 @@ export async function mountSettingsForm(
     };
   }
 
-  /** The card of one list of ignored items. */
-  function allowCard(source: AllowSource, emptyAction: BareMessageKey): AllowCard {
-    const section = card(i18n.t(source.title), source.id);
-    const body = element("div", "");
-    section.append(body);
-    return { source, card: section, body, emptyAction };
+  // Games, developers and publishers you ignored: each list read once, drawn in every scope
+  const allowContext = { doc, i18n, dates, prefix, scopeName };
+  const gameSpec: AllowSpec<AppId> = {
+    id: "allow",
+    list: lists.games,
+    parseKey: parseGameKey,
+    title: "options_section_allow",
+    saveError: "error_allow_list_save",
+    loadError: "error_allow_list_load",
+    nameOf: (key, entry) => {
+      const name = element("a", "sar-allow-name", entry.name);
+      name.href = `${STORE_APP_URL}${String(key)}/`;
+      return name;
+    },
+    restored: (_name, of) =>
+      of === ALLOW_ALL
+        ? i18n.t("notice_marking_restored")
+        : i18n.t("notice_marking_restored_kind", { heading: scopeName(of) }),
+  };
+  const sources: readonly AllowSource[] = [
+    createAllowSource(gameSpec, allowContext),
+    ...CREATOR_ROLES.map((role) => createAllowSource(creatorSpec(role), allowContext)),
+  ];
+
+  /** One list in a scope: its items, or that it could not be read; nothing when it is empty. */
+  function listBlock(source: AllowSource, of: AllowScope): HTMLElement | undefined {
+    const caption = i18n.t(source.title);
+    if (!source.failed()) {
+      return source.group(of, caption, "h4");
+    }
+    const block = element("div", "sar-allow-group");
+    block.append(element("h4", "sar-allow-scope", caption), source.loadError());
+    return block;
   }
 
-  /** Draws a card from its source's last read: the error, the empty state or each scope. */
-  function renderAllow({ source, card: section, body, emptyAction }: AllowCard): void {
-    // A list that cannot be read says so, in both contexts; the next refresh tries again
-    if (source.failed()) {
-      section.hidden = false;
-      body.replaceChildren(source.loadError());
+  /** The note in a tag's card on what all tags ignore, with the way to it in General. */
+  function allNote(): HTMLElement | undefined {
+    const count = sources.reduce((sum, source) => sum + source.count(ALLOW_ALL), 0);
+    if (count === 0) {
+      return undefined;
+    }
+    const note = element("p", "sar-allow-note", i18n.plural("options_allow_all_note", count));
+    // A button, not a hash link: in the userscript dialog a hash would change the store's URL
+    const show = quietButton(i18n.t("options_allow_all_show"));
+    show.setAttribute("data-sar-tab", GENERAL_TAB);
+    note.append(" ", show);
+    return note;
+  }
+
+  /** Draws a scope's card from the last reads: each list that holds items, or the empty state. */
+  function renderScope({ of, body }: ScopeCard): void {
+    const blocks = sources.flatMap((source) => listBlock(source, of) ?? []);
+    const action = of === ALLOW_ALL ? "banner_ignore" : "banner_ignore_kind";
+    const shown: HTMLElement[] = blocks.length === 0
+      ? [element("p", "sar-empty", i18n.t("options_allow_empty", { action: i18n.t(action) }))]
+      : blocks;
+    const note = of === ALLOW_ALL ? undefined : allNote();
+    body.replaceChildren(...shown, ...(note === undefined ? [] : [note]));
+  }
+
+  function renderScopes(): void {
+    scopes.forEach(renderScope);
+  }
+
+  /** Reads each list once, then draws every scope from what was read. */
+  async function refreshAllowList(): Promise<void> {
+    await Promise.all(sources.map((source) => source.refresh()));
+    renderScopes();
+  }
+
+  /** The button that stops ignoring an item, once the card is drawn again. */
+  function stopButton(body: HTMLElement, list: string | null, key: string | null) {
+    return [...body.querySelectorAll<HTMLElement>(`[${RESTORE_ATTRIBUTE}]`)].find((button) =>
+      button.getAttribute(LIST_ATTRIBUTE) === list && button.getAttribute(RESTORE_ATTRIBUTE) === key
+    );
+  }
+
+  /** Stops ignoring an item; focus moves to the next item in the card, else to its title. */
+  async function restore(button: HTMLElement): Promise<void> {
+    const source = sources.find((each) => each.id === button.getAttribute(LIST_ATTRIBUTE));
+    const of = button.getAttribute(SCOPE_ATTRIBUTE);
+    const owner = [...scopes.values()].find((each) => each.of === of);
+    if (source === undefined || owner === undefined) {
       return;
     }
-    const groups = ALLOW_SCOPES.flatMap((of) => source.group(of, scopeName(of), "h3") ?? []);
-    // The popup has no room for an empty section; the full page keeps its empty state.
-    section.hidden = context === "popup" && groups.length === 0;
-    const empty = i18n.t("options_allow_empty", { action: i18n.t(emptyAction) });
-    body.replaceChildren(...(groups.length === 0 ? [element("p", "sar-empty", empty)] : groups));
-  }
-
-  /** The card above this one that shows, for the focus to land on when this one is gone. */
-  function cardAbove(section: HTMLElement): HTMLElement | undefined {
-    return cards.slice(0, cards.indexOf(section)).findLast((above) =>
-      above.matches("section.sar-card") && above.hidden === false
-    );
-  }
-
-  /** The button that stops ignoring an item in a scope, once the list is drawn again. */
-  function stopButton(body: HTMLElement, of: string | null, key: string | null) {
-    return [...body.querySelectorAll<HTMLElement>(`[${RESTORE_ATTRIBUTE}]`)].find((button) =>
-      button.getAttribute(SCOPE_ATTRIBUTE) === of && button.getAttribute(RESTORE_ATTRIBUTE) === key
-    );
-  }
-
-  async function restore(allow: AllowCard, button: HTMLElement): Promise<void> {
-    const { body, card: section, source } = allow;
-    const buttons = [...body.querySelectorAll<HTMLElement>(`[${RESTORE_ATTRIBUTE}]`)];
+    const buttons = [...owner.body.querySelectorAll<HTMLElement>(`[${RESTORE_ATTRIBUTE}]`)];
     const at = buttons.indexOf(button);
     const neighbor = buttons[at + 1] ?? buttons[at - 1];
-    const nextScope = neighbor?.getAttribute(SCOPE_ATTRIBUTE) ?? null;
-    const nextKey = neighbor?.getAttribute(RESTORE_ATTRIBUTE) ?? null;
     const spoken = await source.restore(button);
     if (spoken === undefined) {
       return;
     }
     await source.refresh();
-    renderAllow(allow);
-    // With the last item gone, the popup hides the section, so focus lands on the one above it
-    const target = section.hidden === true ? cardAbove(section) : section;
-    const focus = stopButton(body, nextScope, nextKey)
-      ?? target?.querySelector<HTMLElement>(".sar-card-title");
-    focus?.focus();
+    renderScopes();
+    const next = neighbor === undefined ? undefined : stopButton(
+      owner.body,
+      neighbor.getAttribute(LIST_ATTRIBUTE),
+      neighbor.getAttribute(RESTORE_ATTRIBUTE),
+    );
+    (next ?? owner.title).focus();
     announce(doc, live, spoken);
-  }
-
-  /** Reads each list once, then draws every card from what was read. */
-  async function refreshAllowList(): Promise<void> {
-    await Promise.all(allowCards.map((each) => each.source.refresh()));
-    allowCards.forEach(renderAllow);
   }
 
   function onInput(target: EventTarget | null): void {
@@ -902,50 +942,52 @@ export async function mountSettingsForm(
     });
   }
 
+  async function remember(id: TabId): Promise<void> {
+    try {
+      await deps.uiState.setTab(id);
+    } catch {
+      // The tab stays on screen; only the memory of it is lost.
+    }
+  }
+
+  /** Shows a tab after the first: remembered, and told to the page. */
+  function show(id: TabId): void {
+    if (tabs.select(id)) {
+      void remember(id);
+      deps.onTabChange?.(id);
+    }
+  }
+
   function onClick(target: EventTarget | null): void {
-    const reset = target instanceof Element
-      ? target.closest<HTMLElement>(`[${COLOR_RESET_ATTRIBUTE}]`)
-      : null;
+    if (!(target instanceof Element)) {
+      return;
+    }
+    const tab = tabs.idOf(target);
+    if (tab !== undefined) {
+      show(tab);
+      // Show in General leads to the list it counts
+      if (target.closest(`[role=${TAB_ROLE}]`) === null) {
+        allIgnored.title.focus();
+      }
+      return;
+    }
+    const reset = target.closest<HTMLElement>(`[${COLOR_RESET_ATTRIBUTE}]`);
     if (reset !== null) {
       resetColor(reset);
       return;
     }
-    const button = target instanceof Element
-      ? target.closest<HTMLElement>(`[${RESTORE_ATTRIBUTE}]`)
-      : null;
-    const allow = button === null
-      ? undefined
-      : allowCards.find((each) => each.source.id === button.getAttribute(LIST_ATTRIBUTE));
-    if (button !== null && allow !== undefined) {
-      void restore(allow, button);
+    const button = target.closest<HTMLElement>(`[${RESTORE_ATTRIBUTE}]`);
+    if (button !== null) {
+      void restore(button);
     }
   }
 
-  /** Opens or closes the sections as stored. `shown` moves first, so the toggles it fires pass. */
-  function applySections(states: SectionStates): void {
-    for (const [id, details] of sections) {
-      const open = isSectionOpen(states, id);
-      shown.set(id, open);
-      details.open = open;
-    }
-  }
-
-  async function remember(id: SectionId, open: boolean): Promise<void> {
-    try {
-      await deps.sectionState.setOpen(id, open);
-    } catch {
-      // The section keeps the state on screen; only the memory of it is lost.
-    }
-  }
-
-  function onToggle(target: EventTarget | null): void {
-    if (!(target instanceof HTMLDetailsElement)) {
-      return;
-    }
-    const id = v.safeParse(SectionIdSchema, target.getAttribute(SECTION_ATTRIBUTE));
-    if (id.success && shown.get(id.output) !== target.open) {
-      shown.set(id.output, target.open);
-      void remember(id.output, target.open);
+  function onKeydown(event: KeyboardEvent): void {
+    const next = tabs.target(event);
+    if (next !== undefined) {
+      event.preventDefault();
+      show(next);
+      tabs.tab(next).focus();
     }
   }
 
@@ -957,22 +999,22 @@ export async function mountSettingsForm(
       case "input":
         onInput(event.target);
         break;
-      case "toggle":
-        onToggle(event.target);
+      case "keydown":
+        if (event instanceof KeyboardEvent) {
+          onKeydown(event);
+        }
         break;
       default:
         onClick(event.target);
     }
   }
 
+  const events = ["change", "input", "click", "keydown"] as const;
   sync();
   await refreshAllowList();
-  applySections(await storedSections);
-  root.addEventListener("change", onEvent);
-  root.addEventListener("input", onEvent);
-  root.addEventListener("click", onEvent);
-  // A toggle does not bubble, so the one listener for it takes the capture phase
-  root.addEventListener("toggle", onEvent, true);
+  for (const type of events) {
+    root.addEventListener(type, onEvent);
+  }
   const unsubscribe = settings.subscribe((value) => {
     current = parseSettings(value);
     loadFailed = false;
@@ -983,12 +1025,12 @@ export async function mountSettingsForm(
 
   return {
     refreshAllowList,
+    selectTab: show,
     destroy() {
       unsubscribe();
-      root.removeEventListener("change", onEvent);
-      root.removeEventListener("input", onEvent);
-      root.removeEventListener("click", onEvent);
-      root.removeEventListener("toggle", onEvent, true);
+      for (const type of events) {
+        root.removeEventListener(type, onEvent);
+      }
       root.replaceChildren();
     },
   };

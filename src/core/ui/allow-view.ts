@@ -104,6 +104,7 @@ export function createAllowSource<Key extends string | number>(
     );
     const stop = element("button", "sar-button", i18n.t("options_allow_restore"));
     stop.type = "button";
+    stop.setAttribute("data-sar-variant", "quiet");
     stop.setAttribute(RESTORE_ATTRIBUTE, String(key));
     stop.setAttribute(LIST_ATTRIBUTE, spec.id);
     stop.setAttribute(SCOPE_ATTRIBUTE, of);

@@ -66,7 +66,7 @@ export function createBackupCard(doc: Document, deps: BackupCardDeps): HTMLEleme
 
   const section = element("section", "sar-card");
   const title = focusTarget(
-    element("h2", "sar-card-title", i18n.t("options_section_backup")),
+    element("h3", "sar-card-title", i18n.t("options_section_backup")),
     "backup",
   );
   section.setAttribute("aria-labelledby", title.id);

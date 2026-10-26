@@ -7,7 +7,7 @@ import { createIgnoreLists } from "../../core/ignored";
 import { KINDS } from "../../core/kinds/registry";
 import { parseSettings } from "../../core/settings/settings";
 import { createSettingsSource } from "../../core/settings/settings-source";
-import { createSectionState } from "../../core/ui/section-state";
+import { createUiState } from "../../core/ui/ui-state";
 import { openSettingsDialog, type SettingsDialogDeps } from "./settings-dialog";
 
 const i18n = createI18n(SHIPPED_CATALOGS, "en");
@@ -19,7 +19,7 @@ function deps(live: boolean, store = memoryStore()): SettingsDialogDeps {
     catalogs: SHIPPED_CATALOGS,
     settings: createSettingsSource(store),
     lists: createIgnoreLists(store, fixedClock(Date.UTC(2026, 9, 20))),
-    sectionState: createSectionState(store),
+    uiState: createUiState(store),
     clock: fixedClock(Date.UTC(2026, 9, 20)),
     live,
   };
@@ -65,7 +65,9 @@ describe("openSettingsDialog", () => {
     const store = memoryStore();
     await openSettingsDialog(deps(true, store));
 
-    const field = dialog()?.querySelector<HTMLInputElement>("[data-sar-setting='color']");
+    const field = dialog()?.querySelector<HTMLInputElement>(
+      "[data-sar-setting='color'][data-sar-for='ai']",
+    );
     if (field === null || field === undefined) {
       throw new TypeError();
     }
