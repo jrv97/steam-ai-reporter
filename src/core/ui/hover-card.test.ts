@@ -502,6 +502,11 @@ describe("createHoverCard", () => {
         ["the developer's entries", ["drm", "ai"], ["badge_card_declared"]],
         ["Valve's entries", ["deck", "machine"], ["badge_card_valve"]],
         ["entries of both", ["deck", "drm"], ["badge_card_declared", "badge_card_valve"]],
+        [
+          "Valve's kinds with their own lines",
+          ["family", "drm", "deck", "machine"],
+          ["badge_card_declared", "kind_family_source", "badge_card_valve"],
+        ],
       ] as const,
     )("closes %s with the lines that name their source", (_name, kinds, keys) => {
       open(kinds.map((id) => FULL_DISCLOSED[id]));
@@ -520,7 +525,7 @@ describe("createHoverCard", () => {
 
     it.each(
       [
-        ["Steam's words and what its list shows", FULL_DISCLOSED.family, []],
+        ["its own line and its source line", FULL_DISCLOSED.family, []],
         ["the same for the full game", lent(FULL_DISCLOSED.family), ["kind_full_game_valve"]],
       ] as const,
     )("shows the family kind's unlisted value with %s", (_name, verdict, lead) => {
@@ -529,11 +534,10 @@ describe("createHoverCard", () => {
         [
           heading("family"),
           ...lead.map((key) => i18n.t(key)),
-          i18n.t("kind_family_unsupported"),
-          i18n.t("kind_family_unlisted"),
+          i18n.t("kind_family_unsupported_line"),
         ],
       ]);
-      expect(shown()?.lastElementChild?.textContent).toBe(i18n.t("badge_card_valve"));
+      expect(shown()?.lastElementChild?.textContent).toBe(i18n.t("kind_family_source"));
     });
 
     it("marks each entry with its kind, so a custom color reaches its title", () => {
@@ -546,11 +550,7 @@ describe("createHoverCard", () => {
     });
 
     // Family Sharing as a paid game whose Steam features leave it out shows it.
-    const unlisted = [
-      heading("family"),
-      i18n.t("kind_family_unsupported"),
-      i18n.t("kind_family_unlisted"),
-    ];
+    const unlisted = [heading("family"), i18n.t("kind_family_unsupported_line")];
 
     // The details of each kind, from the batch captured for the tag kinds and from its pages.
     const CASES: readonly (readonly [string, KindVerdicts, readonly (readonly string[])[]])[] = [

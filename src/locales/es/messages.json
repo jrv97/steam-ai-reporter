@@ -187,15 +187,19 @@
   },
   "kind_family_heading": {
     "message": "Préstamo familiar",
-    "description": "Steam's own name of Family Sharing, the Steam feature that lets a family share a library. It titles the entry in the hover card, names the settings section, begins the screen reader name of the chip and is the choice for a game Steam lists it for. It is also the chip's text, in full, as the chip does not abbreviate Steam's name; the compact badge may cut it with an ellipsis when narrow. Use the word Steam shows in this language. From Steam's Spanish client strings; not checked on a live store page."
+    "description": "Steam's own name of Family Sharing, the Steam feature that lets a family share a library. It titles the entry in the hover card, names the settings section, begins the screen reader name of the chip and is the choice for a game Steam lists it for. It is also the listed value's chip text, in full; the compact badge may cut it with an ellipsis when narrow. Use the word Steam shows in this language. From Steam's Spanish client strings; not checked on a live store page."
   },
   "kind_family_unsupported": {
     "message": "Préstamo familiar no disponible",
-    "description": "Steam's own words for a game that cannot be shared in a family library. Shown under the heading in the hover card, as the heading of the entry in the notice on the game's page and as a choice in the settings, for a paid game whose Steam feature list leaves Family Sharing out. It is also the chip's text, in full, with no short form; the compact badge may cut it with an ellipsis when narrow. Keep Steam's wording and capitalization in this language; never write a bare negative such as \"No Family Sharing\". From Steam's Spanish client strings; not checked on a live store page."
+    "description": "Steam's own words for a game that cannot be shared in a family library. The heading of the entry in the notice on the game's page, a choice in the settings, the package summary's name for the value and the screen reader name of its chip, for a paid game whose Steam feature list leaves Family Sharing out. Keep Steam's wording and capitalization in this language. From Steam's Spanish client strings; not checked on a live store page."
   },
-  "kind_family_unlisted": {
-    "message": "El préstamo familiar no figura entre las características que Steam indica para este juego.",
-    "description": "In the hover card, under \"Family Sharing not Available\". It says only what Steam's data shows: Steam's feature list for this game does not include Family Sharing. Never say the game cannot be shared or blocks sharing."
+  "kind_family_unsupported_chip": {
+    "message": "Sin préstamo familiar",
+    "description": "Chip for a paid game whose Steam feature list leaves Family Sharing out. Our own short words, chosen by the maintainer; the chip's screen reader name gives Steam's words (\"Family Sharing not Available\"). Keep it short, it sits in a row and over game images; the compact badge may cut it with an ellipsis when narrow. Use this kind of wording only for this key and the hover card line of this value. Unverified: our own Spain Spanish, not checked against Steam's wording."
+  },
+  "kind_family_unsupported_line": {
+    "message": "El préstamo familiar no está disponible para este juego",
+    "description": "In the hover card, under the heading \"Family Sharing\", for a paid game whose Steam feature list leaves Family Sharing out. Our own sentence; the card always closes with the line that says it comes from the features Steam lists for the game. Keep it a plain statement and say nothing about why. Unverified: our own Spain Spanish, not checked against Steam's wording."
   },
   "kind_chip_name": {
     "message": "$chip$: $heading$",
@@ -268,6 +272,10 @@
   "badge_card_valve": {
     "message": "Según Valve",
     "description": "Last line of the hover card when it lists a fact Valve states, such as a Steam Deck rating. It says Valve, not this extension or the developer, is the source of those entries. With entries of both kinds it follows the line that names the developer."
+  },
+  "kind_family_source": {
+    "message": "Según las características que Steam lista para este juego",
+    "description": "Last line of the hover card when it lists Family Sharing, instead of \"According to Valve\". It says the entry comes from the feature list Steam shows for the game, which Valve computes. With entries of other kinds it follows their source lines. Unverified: our own Spain Spanish, not checked against Steam's wording."
   },
   "badge_card_service_label": {
     "message": "Servicios de IA que cita el desarrollador:",
