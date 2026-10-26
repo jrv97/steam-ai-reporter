@@ -1,0 +1,77 @@
+---
+status: accepted
+date: 2026-10-26
+decision-makers: Jorge Rodriguez de la Vega
+---
+
+# Ask GetItems for the sections the enabled kinds read, and record them in the cache
+
+## Context and problem statement
+
+[ADR 0001](0001-detect-disclosure-via-getitems.mdx) fixed the GetItems request at `data_request.include_extra_details`, and [ADR 0013](0013-ignore-by-developer-or-publisher.mdx) added `include_basic_info` to every request. The Steam Deck and Steam Machine tags (decision 62) read Valve's ratings in `platforms`, which GetItems sends only with `include_platforms`. About 175 bytes per item, 8.8 KB per batch of 50 before compression, for a section only people who turn on a device tag need. Both tags start off.
+
+Which sections should a request ask for, and how does the verdict cache know whether a stored answer holds what the next request needs, without a second request per batch and without ever reading a missing section as "not supported"? This ADR amends ADR 0001's fixed request.
+
+## Decision drivers
+
+- One request per batch of up to 50 unseen IDs, none for cached verdicts (rule 13).
+- No payload for people who never turn on a device tag.
+- Rule 4: a section that was not asked for says nothing about a game. Its kinds are unknown, never not disclosed, and never Unsupported.
+- A kind turned on later shows its tags on the hosts on screen, without a reload and without a timer.
+- Small code: the registry, the URL builder and the cache entry shape exist.
+
+## Considered options
+
+1. Ask for each section only while an enabled kind reads it; record in each verdict and cache entry the sections it came with; a lookup that needs a section the entry lacks is a miss (chosen).
+2. Always ask for `platforms`.
+3. A second request for the device kinds only.
+4. One cache key per section.
+
+## Decision outcome
+
+Chosen option 1.
+
+- Sections: `SECTIONS` (`kinds/sections.ts`) is `basic_info` and `platforms`. `extra_details` is always asked for, since rule 4 rests on it, and `categories` needs no flag. A kind names the sections it reads (`KindDefinition.sections`; the device kinds name `platforms`).
+- Flag set: `requestSections(kinds)` gives `basic_info`, as every request asks for it in this slice, plus each section an enabled kind reads, in a fixed order. It is read once per detection, at request time, which applies a settings change to the next batch. `getItemsUrl` writes one `include_<section>` flag per section, and `planBatches` still measures its overhead from the URL builder, which counts the new flag by construction. A full batch of 50 of the longest IDs, `4294967295`, with every section comes to 1,961 characters, under half the 4,000 character split (a test pins the half).
+- Verdicts: a kind whose section the request left out is unknown `unrequested`. It is stored, which lets the rest of the entry cache; it never renders; it is not transient, and the retry of decision 55 never asks for it; and it never expires on its own, which keeps the entry's freshness to its other kinds.
+- Record: `KindVerdicts.sections` holds the sections the answer came with, and the cache stores it (`sections` in `v1:a:<id>`). An answer without GetItems details (the HTML fallback, an item Steam had no details for) carries no record, since no section would change it. `CACHE_SCHEMA` goes from 5 to 6: an entry written before has no record and would read as such an answer.
+- Lookup: `VerdictCache.lookup(ids, need)` serves an entry only when its record covers `need`, in page memory and in storage alike. Turning a device kind off keeps every entry valid, and turning one on makes the entries without `platforms` misses.
+- A kind turned on later: the settings subscriber compares the sections before and after. For a new section the capsule UI asks again, in one detection, for the hosts on screen whose verdicts lack it (still one request per 50 IDs, through the throttle and the breaker), and the app page looks its game up once. Until the answer those hosts hold `unrequested` and draw nothing for the kind. An event triggers it, never a timer. Turning the kind off and on again within the TTL sends nothing.
+- A demo borrows a section's kinds from its full game through the merge of decision 59, per kind, like any kind: each app's entry carries its own record, and a full game cached without the section is a miss like any app.
+- The canary and the fixture capture ask for `platforms` too, and the canary checks its shape.
+
+### Library check (rule 12)
+
+Nothing to adopt. The flag set is a set over the registry, and the record is a list in an existing JSON entry.
+
+### Consequences
+
+- Good: no payload and no request for people who keep the device tags off, and still one request per 50 IDs for those who turn one on.
+- Good: no stored answer ever reads as "not supported" for a section it lacks; a missing section is unknown and draws nothing.
+- Good: the next section, for Steam Frame or SteamOS or a gated `basic_info`, is one entry in `SECTIONS` and the kinds that read it, with no change to the cache shape.
+- Bad: turning a device kind on asks again about every app on screen and, while browsing, about each cached app once.
+- Bad: every cached app is fetched again once after the update (`CACHE_SCHEMA` 6), and each entry stores a few more bytes.
+- Bad: the bundles grow; the numbers are in decision 62.
+- Neutral: a host whose lookup was in flight when a device kind turned on keeps the answer it gets, without the section, until its next page view or its entry expires.
+
+## Pros and cons of the options
+
+### 1. Sections follow the enabled kinds
+
+- Good: pays for `platforms` only where it is used.
+- Bad: a record per entry and a coverage check on every lookup.
+
+### 2. Always ask for `platforms`
+
+- Good: the simplest cache: every entry holds every section.
+- Bad: 8.8 KB more per batch for everyone, while both device tags start off.
+
+### 3. A second request for the device kinds
+
+- Good: the main request stays as it is.
+- Bad: two requests per batch, against rule 13, and two answers to merge per app.
+
+### 4. One cache key per section
+
+- Good: a section is fetched and expires on its own.
+- Bad: two storage reads per app, two TTLs to reconcile, and a migration of every key.
