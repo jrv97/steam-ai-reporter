@@ -165,6 +165,20 @@
   /* The allow-listed one-line note: the store's DRM-notice geometry in neutral, no violet. */
   --sar-banner-note-bg: rgba(0, 0, 0, 0.2);
 
+  /* Hidden results notice: the look of the store's own notice bar above search results, from its
+     text cell in #search_results_filtered_warning_persistent, sampled on 2026-10-26 in Firefox. */
+
+  /* The store bar's ground: black at 20%, #16202d over the page. */
+  --sar-store-notice-bg: rgba(0, 0, 0, 0.2);
+  /* The store bar's text, also our underlined button: 15.38:1 on its ground. */
+  --sar-store-notice-fg: #fafad2;
+  /* Button hover: the store's usual link hover, not sampled on the bar. 8.14:1 on its ground. */
+  --sar-store-notice-link-hover: #66c0f4;
+  /* The store bar's padding, on every side. */
+  --sar-store-notice-pad: 10px;
+  /* The gap below the store bar, kept under ours so the rows start where they would. */
+  --sar-store-notice-margin-block-end: 5px;
+
   /* Buttons */
 
   /* Primary button fill: Restore in the backup summary, the only primary action. */
@@ -293,7 +307,7 @@
 
   /* Badges; the banner button, as the store's outlined buttons. */
   --sar-size-xs: 11px;
-  /* Help, dates, the allow-listed note, the large compact badge. */
+  /* Help, dates, the allow-listed note, the hidden results notice, the large compact badge. */
   --sar-size-sm: 12px;
   /* Body copy on extension pages; banner source and service lines. */
   --sar-size-md: 13px;
@@ -398,6 +412,9 @@
   --sar-banner-button-font: var(--sar-weight-regular) var(--sar-size-xs) /
     var(--sar-leading-xs) var(--sar-font-page);
   --sar-banner-note-font: var(--sar-weight-regular) var(--sar-size-sm) / 17px var(--sar-font-page);
+  /* The store bar's type, sampled: 12px Arial, Helvetica, sans-serif at a normal line height */
+  --sar-store-notice-font: var(--sar-weight-regular) var(--sar-size-sm) / normal
+    var(--sar-font-summary);
 
   --sar-summary-tag-font: var(--sar-weight-regular) var(--sar-size-xs) / 19px
     var(--sar-font-summary);

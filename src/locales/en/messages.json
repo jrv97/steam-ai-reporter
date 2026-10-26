@@ -300,8 +300,8 @@
     "description": "Reverses \"Ignore this game\"."
   },
   "notice_list_hidden_one": {
-    "message": "Tag Kit hid $count$ result.",
-    "description": "One line above search results when a tag's list filter is set to Hide and it removed some of them from this list. $count$ is the number of results it hid. It names only the number: never which tags, and never that a game uses AI. Singular form.",
+    "message": "$count$ title has been hidden by Tag Kit based on your settings.",
+    "description": "A bar above search results, styled like Steam's own notice there, when a tag's list filter is set to Hide and it removed some results from this list. Worded like that notice (\"2 titles have been excluded based on your preferences.\"); follow the words Steam uses for it in your language. $count$ is the number of results it hid. It names only the number: never which tags, and never that a game uses AI. Singular form.",
     "placeholders": {
       "count": {
         "content": "$1",
@@ -310,8 +310,8 @@
     }
   },
   "notice_list_hidden_other": {
-    "message": "Tag Kit hid $count$ results.",
-    "description": "One line above search results when a tag's list filter is set to Hide and it removed some of them from this list. $count$ is the number of results it hid. It names only the number: never which tags, and never that a game uses AI. Plural form.",
+    "message": "$count$ titles have been hidden by Tag Kit based on your settings.",
+    "description": "A bar above search results, styled like Steam's own notice there, when a tag's list filter is set to Hide and it removed some results from this list. Worded like that notice (\"2 titles have been excluded based on your preferences.\"); follow the words Steam uses for it in your language. $count$ is the number of results it hid. It names only the number: never which tags, and never that a game uses AI. Plural form.",
     "placeholders": {
       "count": {
         "content": "$1",
@@ -320,7 +320,7 @@
     }
   },
   "notice_list_revealed_one": {
-    "message": "Tag Kit is showing $count$ hidden result.",
+    "message": "$count$ hidden title is showing.",
     "description": "Replaces notice_list_hidden after the person clicked notice_list_show: the same results show again, dimmed, on this page only. $count$ is the number of those results. Singular form.",
     "placeholders": {
       "count": {
@@ -330,7 +330,7 @@
     }
   },
   "notice_list_revealed_other": {
-    "message": "Tag Kit is showing $count$ hidden results.",
+    "message": "$count$ hidden titles are showing.",
     "description": "Replaces notice_list_hidden after the person clicked notice_list_show: the same results show again, dimmed, on this page only. $count$ is the number of those results. Plural form.",
     "placeholders": {
       "count": {

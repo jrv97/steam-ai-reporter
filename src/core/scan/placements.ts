@@ -192,12 +192,18 @@ export interface ListPlacement {
   readonly id: string;
   /** The element that holds the list's hosts; the notice goes right before it. */
   readonly list: string;
+  /** The store's own notice above the list; when the page has it, the notice goes right after. */
+  readonly after?: string;
 }
 
 /** Every list surface with a notice, most specific first; the first in the page wins. */
 export const LIST_PLACEMENTS: readonly ListPlacement[] = [
-  // Classic search results: under the store's sort bar, above the first row.
-  { id: "search-results", list: "#search_resultsRows" },
+  // Classic search results: under the store's sort bar and its notice bar, above the first row.
+  {
+    id: "search-results",
+    list: "#search_resultsRows",
+    after: "#search_results_filtered_warning_persistent",
+  },
 ];
 
 /** A host's placement and the element its badge attaches to. */
