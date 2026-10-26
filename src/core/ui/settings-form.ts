@@ -30,6 +30,7 @@ import {
 import { announce, POLITE } from "./announce";
 import { createBackupCard } from "./backup-card";
 import { ownText } from "./badge";
+import { createChipFields } from "./chip-fields";
 import { createElement } from "./element";
 import { parseIcon } from "./icon";
 import { KIND_ATTRIBUTE, setColorOnce } from "./kind-attributes";
@@ -209,7 +210,7 @@ function forKind(id: KindId, settings: Partial<KindSettings>): SettingsPatch {
 /** The error key of the Tag order card, which holds no `data-sar-setting` control. */
 const ORDER_ERROR = "order";
 
-function errorKey(field: Field, kind?: KindId): string {
+function errorKey(field: string, kind?: KindId): string {
   return kind === undefined ? field : `${kind}:${field}`;
 }
 
@@ -477,6 +478,26 @@ export async function mountSettingsForm(
   /** The help under each badge switch, which names the tag's chip as it shows. */
   const badgeHelp = new Map<KindId, HTMLElement>();
 
+  /** Each tag's chip text fields and the preview of its chips, in its card. */
+  const chipFields = createChipFields({
+    doc,
+    i18n,
+    idPrefix: prefix,
+    quietButton,
+    error: (field, id) => {
+      const error = fieldError();
+      errors.set(errorKey(field, id), error);
+      return error;
+    },
+    save: async (patch, field, id) => {
+      if (loadFailed) {
+        sync();
+      } else {
+        await save(patch, errorKey(field, id));
+      }
+    },
+  });
+
   /** One tag's settings, titled with Steam's line for it: the master switch, then the rest. */
   function kindCard(kind: TagKind, state: HTMLElement): HTMLElement {
     const section = card(i18n.t(kind.messages.heading), kind.id, "h2");
@@ -507,7 +528,7 @@ export async function mountSettingsForm(
     if (facets !== undefined) {
       options.append(facets.row);
     }
-    options.append(badge.row, banner.row);
+    options.append(badge.row, banner.row, ...chipFields.rows(kind));
     if (color !== undefined) {
       options.append(color.row);
     }
@@ -806,6 +827,7 @@ export async function mountSettingsForm(
 
   function sync(): void {
     relabel();
+    chipFields.sync(current.kinds);
     for (const [id, own] of controls) {
       const kind = current.kinds[id];
       for (const [field, input] of own.switches) {
@@ -1171,6 +1193,9 @@ export async function mountSettingsForm(
 
   function onEvent(event: Event): void {
     built?.order.handle(event);
+    if (chipFields.handle(event)) {
+      return;
+    }
     switch (event.type) {
       case "change":
         onChange(event.target);

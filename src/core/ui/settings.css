@@ -5,6 +5,7 @@
  */
 
 @import "./shared.css";
+@import "./chips.css";
 
 .sar-options {
   box-sizing: border-box;
@@ -473,12 +474,42 @@
 }
 
 /* A tag's color field: the swatch, the hex text and Reset in one row. The swatch reads the kind's
-   color through the same rules as the badges; with none set it shows the default violet. */
-.sar-color-entry {
+   color through the same rules as the badges; with none set it shows the default violet. A chip
+   text field puts its text box and Reset in a row the same way. */
+.sar-color-entry,
+.sar-text-entry {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: var(--sar-space-2);
+}
+
+.sar-text-entry > .sar-input {
+  inline-size: var(--sar-chip-input-inline-size);
+  max-inline-size: 100%;
+}
+
+/* How many characters a chip text field holds, of the most it takes */
+.sar-field-count {
+  grid-column: 1 / -1;
+  color: var(--sar-color-text-subtle);
+  font-size: var(--sar-size-sm);
+  line-height: var(--sar-leading-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+/* The live preview of a tag's chips: the badge of a row, then the chip of a small image, drawn by
+   the store page's own chip rules (chips.css) in the tag's color */
+.sar-chip-preview {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sar-space-2);
+  min-inline-size: 0;
+}
+
+.sar-chip-preview .sar-compact {
+  max-inline-size: var(--sar-chip-preview-compact-max);
 }
 
 .sar-color-swatch {

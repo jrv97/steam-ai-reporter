@@ -645,7 +645,7 @@
   },
   "options_color_reset": {
     "message": "Restablecer",
-    "description": "Button that clears a tag's custom color and goes back to the default violet. One word."
+    "description": "Quiet button that clears one custom setting of a tag, its color or a chip text, and goes back to the default. One word."
   },
   "options_color_reset_label": {
     "message": "Restablecer el color del marcador (experimental) de $heading$",
@@ -656,6 +656,60 @@
         "example": "Utiliza antitrampas a nivel de kernel"
       }
     }
+  },
+  "options_chip_label": {
+    "message": "Texto del marcador",
+    "description": "Label of a text field in one tag's settings where the person types their own words for the tag's chip, the short label on badges, in the tag list of a game's page and on this tag's tab. Empty keeps the extension's own words, shown as the placeholder."
+  },
+  "options_chip_help": {
+    "message": "Tus propias palabras para los marcadores de esta etiqueta, su pestaña y sus botones de Ignorar. Déjalo vacío para usar el texto predeterminado. Las tarjetas, los títulos del aviso y los lectores de pantalla siguen dando las palabras de Steam.",
+    "description": "Help under the chip text field. Says where the person's words show, that empty means the default, and that the hover card, the banner's headings and screen readers keep Steam's own words after them."
+  },
+  "options_chip_compact_label": {
+    "message": "Texto corto para imágenes pequeñas",
+    "description": "Label of a second, shorter text field for the chip shown on narrow game images (180 to 399 pixels wide). Empty uses the chip text above, then the extension's own words."
+  },
+  "options_chip_compact_help": {
+    "message": "Se muestra en las imágenes de juegos de menos de 400 píxeles de ancho. Déjalo vacío para usar el texto del marcador.",
+    "description": "Help under the short chip text field. \"Chip text\" names the field above it (options_chip_label)."
+  },
+  "options_chip_count": {
+    "message": "$count$ de $max$",
+    "description": "Counter under a chip text field: how many characters the field holds and the most it takes, as numbers, such as \"5 of 32\".",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "5"
+      },
+      "max": {
+        "content": "$2",
+        "example": "32"
+      }
+    }
+  },
+  "options_chip_reset_label": {
+    "message": "Restablecer el texto del marcador de $heading$",
+    "description": "Screen reader name of the Reset button next to the chip text field. Starts with the button's visible word (options_color_reset). $heading$ is Steam's own line for the tag.",
+    "placeholders": {
+      "heading": {
+        "content": "$1",
+        "example": "Utiliza antitrampas a nivel de kernel"
+      }
+    }
+  },
+  "options_chip_compact_reset_label": {
+    "message": "Restablecer el texto corto de $heading$",
+    "description": "Screen reader name of the Reset button next to the short chip text field. Starts with the button's visible word (options_color_reset). $heading$ is Steam's own line for the tag.",
+    "placeholders": {
+      "heading": {
+        "content": "$1",
+        "example": "Utiliza antitrampas a nivel de kernel"
+      }
+    }
+  },
+  "options_chip_preview": {
+    "message": "Vista previa",
+    "description": "Label above a live preview of the tag's chips as typed: the badge on rows, then the chip on a small game image. One or two words."
   },
   "options_section_language": {
     "message": "Idioma",

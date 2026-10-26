@@ -145,7 +145,7 @@ describe("the settings of each tag", () => {
     }
   });
 
-  it("holds a master switch, a badge, a banner entry, a color and a filter in each", async () => {
+  it("holds the master switch, badge, banner, chip text, color and filter", async () => {
     const { card } = await setup();
     for (const kind of KINDS) {
       const section = card(kind.id);
@@ -158,6 +158,8 @@ describe("the settings of each tag", () => {
         ...facets,
         "badge",
         "banner",
+        "chip",
+        "chipCompact",
         "color",
         "filter",
         "filter",

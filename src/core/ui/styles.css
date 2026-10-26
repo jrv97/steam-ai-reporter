@@ -40,36 +40,7 @@
   vertical-align: middle;
 }
 
-/* Full badge: the store's tag chip in our hue */
-
-.sar-badge {
-  display: inline-flex;
-  align-items: center;
-  block-size: var(--sar-badge-height);
-  max-inline-size: var(--sar-badge-max-inline-size);
-  min-inline-size: 0;
-  padding-inline: var(--sar-badge-pad-inline);
-  border-radius: var(--sar-badge-radius);
-  background: var(--sar-tag-tint, var(--sar-badge-bg));
-  color: var(--sar-tag-text, var(--sar-badge-fg));
-  font: var(--sar-badge-font);
-  letter-spacing: normal;
-  text-transform: none;
-  white-space: nowrap;
-  vertical-align: middle;
-  flex: none;
-  cursor: default;
-}
-
-/* The label is the part that gives way to a long translation */
-.sar-badge-label,
-.sar-compact-label {
-  display: block;
-  min-inline-size: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
+@import "./chips.css";
 
 /* Search rows: right after the title. On a disclosed row the one-line title box becomes a wrapping
    flex row. A long title ends in an ellipsis, and the chips drop to a second line before the title
@@ -120,34 +91,10 @@
   pointer-events: none;
 }
 
-.sar-compact {
-  display: inline-flex;
-  align-items: center;
-  flex: 0 1 auto;
-  block-size: var(--sar-compact-height);
-  min-inline-size: 0;
-  padding-inline: var(--sar-compact-pad-inline);
-  border: 1px solid var(--sar-tag-edge, var(--sar-compact-border));
-  background: var(--sar-tag-solid, var(--sar-compact-bg));
-  box-shadow: var(--sar-compact-shadow);
-  color: var(--sar-tag-light, var(--sar-compact-fg));
-  font: var(--sar-compact-font);
-  letter-spacing: normal;
-  text-transform: none;
-  white-space: nowrap;
-  pointer-events: none;
-}
-
 /* Inside the capsule link: hovering it is hovering the link, and the hover card opens */
 .sar-compact[data-sar-in-link="true"] {
   pointer-events: auto;
   cursor: pointer;
-}
-
-.sar-compact[data-sar-size="large"] {
-  block-size: var(--sar-compact-height-lg);
-  padding-inline: var(--sar-compact-pad-inline-lg);
-  font: var(--sar-compact-font-lg);
 }
 
 /* Tag section: under the store's user-defined tags on the app page. The label is small and muted
