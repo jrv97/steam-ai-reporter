@@ -19,14 +19,13 @@ import {
 } from "./i18n/locale";
 import { SHIPPED_CATALOGS } from "./i18n/shipped";
 import { createI18n } from "./i18n/t";
-import { isIgnored, loadIgnored } from "./ignored";
+import { createIgnoreLists, isIgnored, loadIgnored } from "./ignored";
 import { effectiveSettings, type KindSettings } from "./kinds/kind-settings";
 import { KINDS } from "./kinds/registry";
 import { type ConsoleSink, createLogger, type Logger } from "./log";
 import type { Clock, Http, KeyValueStore, SettingsSource, Unsubscribe } from "./ports";
 import { appIdFromHref } from "./scan/appid";
 import { createScanner } from "./scan/scanner";
-import { createAllowList } from "./settings/allow-list";
 import { DEFAULT_SETTINGS, parseSettings, type Settings } from "./settings/settings";
 import { createBadgeRenderer } from "./ui/badge";
 import { createCapsuleUi } from "./ui/capsules";
@@ -147,8 +146,8 @@ export async function start(deps: AppDeps): Promise<App> {
     ? undefined
     : { id: pageId, verdicts: live };
   const detectors = createDetector(deps, logger, language, open);
-  const allowList = createAllowList(store, clock);
-  const ignored = await loadIgnored(allowList, logger);
+  const lists = createIgnoreLists(store, clock);
+  const ignored = await loadIgnored(lists, logger);
 
   deps.addPageStyles(doc);
   applyKindSettings(root, settings.kinds);
@@ -158,7 +157,7 @@ export async function start(deps: AppDeps): Promise<App> {
     document: doc,
     detector: detectors.detector,
     renderers: [createHostKindsRenderer(), createBadgeRenderer(doc, i18n, card)],
-    isAllowed: (id, forKind, parent) => isIgnored(ignored, id, forKind, parent),
+    isAllowed: (id, forKind, related) => isIgnored(ignored, id, forKind, related),
     isBadged: (forKind) => effectiveSettings(settings.kinds[forKind]).badge,
   });
   const scanner = createScanner({ document: doc, renderer: capsules });
@@ -187,10 +186,10 @@ export async function start(deps: AppDeps): Promise<App> {
       detectors,
       live,
       ignored,
-      allowList,
+      lists,
       settings: () => settings,
       onAllowChange: (id) => {
-        capsules.refresh(new Set([id]));
+        capsules.refresh(id === undefined ? undefined : new Set([id]));
       },
       card,
       logger,

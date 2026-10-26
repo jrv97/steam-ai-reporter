@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { SUMMARY_BOX } from "../../../tests/helpers/app-page";
+import { bannerCreator } from "../../../tests/helpers/creators";
 import { setBody } from "../../../tests/helpers/dom";
 import { capturedVerdicts } from "../../../tests/helpers/fixture-verdicts";
 import { englishI18n } from "../../../tests/helpers/i18n";
@@ -24,7 +25,13 @@ const PAGE = `${SUMMARY_BOX}
   <div class="game_description_column"><div id="game_area_purchase"></div></div>`;
 
 const i18n = englishI18n();
-const actions = { ignore: () => Promise.resolve(), restore: () => Promise.resolve() };
+const settled = () => Promise.resolve();
+const actions = {
+  ignore: settled,
+  restore: settled,
+  ignoreCreator: settled,
+  restoreCreator: settled,
+};
 
 interface Bound {
   readonly entries: readonly AnyDisclosed[];
@@ -49,6 +56,11 @@ interface ViewOptions {
   readonly ignored?: readonly AllowScope[];
   /** The scopes the base game of a DLC is ignored in, which silence the kinds they cover. */
   readonly baseIgnored?: readonly AllowScope[];
+  /**
+   * The scopes the game's developer is ignored in, which silence the kinds they cover and add
+   * a note to the banner.
+   */
+  readonly developerIgnored?: readonly AllowScope[];
   /** Kinds whose banner entry is switched off. */
   readonly bannerOff?: readonly KindId[];
   /** Kinds whose badge is switched off. */
@@ -57,13 +69,17 @@ interface ViewOptions {
 
 function view(options: ViewOptions = {}): AppPageView {
   const { verdict = disclosedVerdict(), ignored = [], bannerOff = [], badgeOff = [] } = options;
-  const { baseIgnored = [] } = options;
+  const { baseIgnored = [], developerIgnored = [] } = options;
+  const developer = bannerCreator("developer", ["Valve", 4], developerIgnored);
   const covers = (scopes: readonly AllowScope[], kind: KindId) =>
     scopes.includes("all") || scopes.includes(kind);
   return {
     verdicts: options.verdicts ?? aiVerdicts(verdict),
     ignored: perScope((scope) => ignored.includes(scope)),
-    suppressed: perKind((kind) => covers(ignored, kind.id) || covers(baseIgnored, kind.id)),
+    suppressed: perKind((kind) =>
+      covers(ignored, kind.id) || covers(baseIgnored, kind.id) || covers(developerIgnored, kind.id)
+    ),
+    creators: [developer],
     badge: perKind((kind) => !badgeOff.includes(kind.id)),
     banner: perKind((kind) => !bannerOff.includes(kind.id)),
   };
@@ -212,6 +228,53 @@ describe("createAppPageUi", () => {
       i18n.t("banner_ignored_kind", { heading: i18n.t("kind_ai_heading") }),
     ]);
     expect(headings()).toEqual([i18n.t("kind_kernel_heading"), i18n.t("kind_eula_heading")]);
+  });
+
+  it("notes a developer ignored for a kind the banner would list, and drops that entry", () => {
+    const ui = setup();
+    ui.render(view({ verdicts: capturedVerdicts(1808500), developerIgnored: ["ai"] }));
+    expect(notes()).toEqual([
+      i18n.t("banner_ignored_creator_kind", {
+        name: "Valve",
+        role: i18n.t("banner_role_developer"),
+        heading: i18n.t("kind_ai_heading"),
+      }),
+    ]);
+    expect(headings()).toEqual([
+      i18n.t("kind_kernel_heading"),
+      i18n.t("kind_eula_heading"),
+      i18n.t("kind_pvp_heading"),
+    ]);
+    expect(chipKinds()).toEqual(["kernel", "eula", "pvp"]);
+  });
+
+  it("notes a developer ignored for all tags once, and keeps the Undo as the only control", () => {
+    setup().render(view({ verdicts: capturedVerdicts(1808500), developerIgnored: ["all"] }));
+    expect(notes()).toEqual([
+      i18n.t("banner_ignored_creator", {
+        name: "Valve",
+        role: i18n.t("banner_role_developer"),
+      }),
+    ]);
+    expect(headings()).toEqual([]);
+    expect(section()).toBeNull();
+  });
+
+  it.each(
+    [
+      ["a kind the game does not declare", ["drm"], "5072580"],
+      ["a kind whose banner entry is off", ["ai"], "off"],
+    ] as const,
+  )("shows no note for a developer ignored for %s", (_name, scopes, why) => {
+    const verdicts = why === "off" ? capturedVerdicts(1808500) : aiVerdicts(disclosedVerdict());
+    const bannerOff: readonly KindId[] = why === "off" ? ["ai"] : [];
+    setup().render(view({ verdicts, developerIgnored: scopes, bannerOff }));
+    expect(notes().some((note) => note.includes("Valve"))).toBe(false);
+  });
+
+  it("shows no banner for a developer ignored for all tags when nothing is disclosed", () => {
+    setup().render(view({ verdicts: aiVerdicts(NOT_DISCLOSED), developerIgnored: ["all"] }));
+    expect(bannerHost()).toBeNull();
   });
 
   it("drops only the chip of a kind whose badge is off, and keeps its banner entry", () => {

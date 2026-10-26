@@ -1,5 +1,7 @@
 import * as v from "valibot";
+import { CREATOR_ROLES, type CreatorKey, type CreatorRole, toCreatorKey } from "../creator";
 import type { BareMessageKey } from "../i18n/t";
+import type { IgnoreLists } from "../ignored";
 import { type HexColor, readTypedColor } from "../kinds/color";
 import { KIND_IDS, type KindId } from "../kinds/id";
 import type { TagKind } from "../kinds/kind";
@@ -12,9 +14,11 @@ import {
   type AllowEntries,
   type AllowEntry,
   type AllowScope,
+  parseGameKey,
+  type ParseKey,
   toAllowScope,
 } from "../settings/allow-data";
-import type { AllowList } from "../settings/allow-list";
+import type { ScopedList } from "../settings/allow-list";
 import {
   AUTO_LOCALE,
   DEFAULT_SETTINGS,
@@ -24,7 +28,6 @@ import {
   type SettingsPatch,
 } from "../settings/settings";
 import type { StoredSettings } from "../settings/settings-source";
-import { type AppId, toAppId } from "../types";
 import { announce, POLITE } from "./announce";
 import { KIND_ATTRIBUTE, setColorOnce } from "./kind-attributes";
 import {
@@ -51,7 +54,8 @@ export interface SettingsHeader {
 export interface SettingsFormDeps {
   readonly i18n: MessageCatalog;
   readonly settings: StoredSettings;
-  readonly allowList: AllowList;
+  /** The games, developers and publishers the user ignored. */
+  readonly lists: IgnoreLists;
   /** Which tag sections are open, kept across visits. */
   readonly sectionState: SectionState;
   readonly context: SettingsContext;
@@ -69,7 +73,7 @@ export interface SettingsFormDeps {
 }
 
 export interface SettingsForm {
-  /** Reads the allow-list again, after another tab changed it. */
+  /** Reads the ignore lists again, after another tab changed one. */
   refreshAllowList(): Promise<void>;
   /** Stops listening and empties the root. */
   destroy(): void;
@@ -133,6 +137,36 @@ interface KindControls {
   readonly color: ColorControls | undefined;
 }
 
+/** What marks a "Stop ignoring" button, with the key of the item it restores. */
+const RESTORE_ATTRIBUTE = "data-sar-restore";
+/** Names the list a "Stop ignoring" button belongs to. */
+const LIST_ATTRIBUTE = "data-sar-list";
+
+/** What differs between the lists of ignored items: games, developers and publishers. */
+interface AllowSpec<Key> {
+  /** Names the card; the heading ids of its groups and its buttons' `data-sar-list` follow it. */
+  readonly id: string;
+  readonly list: ScopedList<Key>;
+  readonly parseKey: ParseKey<Key>;
+  readonly title: BareMessageKey;
+  /** Names the button that ignores an item, in the text of an empty list. */
+  readonly emptyAction: BareMessageKey;
+  readonly saveError: BareMessageKey;
+  readonly loadError: BareMessageKey;
+  /** The name of an item: a link to the game, or the creator's plain name. */
+  nameOf(key: Key, entry: AllowEntry): HTMLElement;
+  /** What a screen reader hears after "Stop ignoring" on an item named `name` in the scope. */
+  restored(name: string, of: AllowScope): string;
+}
+
+/** One card of ignored items. */
+interface AllowView {
+  readonly id: string;
+  readonly card: HTMLElement;
+  refresh(): Promise<void>;
+  restore(button: HTMLElement): Promise<void>;
+}
+
 let mounts = 0;
 
 /** A BCP 47 tag for a catalog locale code (`pt_BR` to `pt-BR`). */
@@ -174,7 +208,7 @@ export async function mountSettingsForm(
   root: HTMLElement,
   deps: SettingsFormDeps,
 ): Promise<SettingsForm> {
-  const { i18n, settings, allowList, context } = deps;
+  const { i18n, settings, lists, context } = deps;
   const doc = root.ownerDocument;
   mounts += 1;
   const prefix = `sar-${String(mounts)}-`;
@@ -463,11 +497,29 @@ export async function mountSettingsForm(
     cards.push(language);
   }
 
-  // Games you ignored
-  const allow = card(i18n.t("options_section_allow"), "allow");
-  const allowBody = element("div", "");
-  allow.append(allowBody);
-  cards.push(allow);
+  // Games, developers and publishers you ignored
+  const views: readonly AllowView[] = [
+    allowView({
+      id: "allow",
+      list: lists.games,
+      parseKey: parseGameKey,
+      title: "options_section_allow",
+      emptyAction: "banner_ignore",
+      saveError: "error_allow_list_save",
+      loadError: "error_allow_list_load",
+      nameOf: (key, entry) => {
+        const name = element("a", "sar-allow-name", entry.name);
+        name.href = `${STORE_APP_URL}${String(key)}/`;
+        return name;
+      },
+      restored: (_name, of) =>
+        of === ALLOW_ALL
+          ? i18n.t("notice_marking_restored")
+          : i18n.t("notice_marking_restored_kind", { heading: scopeName(of) }),
+    }),
+    ...CREATOR_ROLES.map((role) => allowView(creatorSpec(role))),
+  ];
+  cards.push(...views.map((view) => view.card));
 
   // Privacy (page only) and footer
   if (context === "page") {
@@ -681,118 +733,161 @@ export async function mountSettingsForm(
       : i18n.t(KIND_BY_ID[of].messages.heading);
   }
 
-  function allowItem(of: AllowScope, id: AppId, entry: AllowEntry): HTMLElement {
-    const item = element("li", "sar-allow-item");
-    const text = element("div", "");
-    const name = element("a", "sar-allow-name", entry.name);
-    name.href = `${STORE_APP_URL}${String(id)}/`;
-    const since = dates.format(new Date(entry.added));
-    text.append(
-      name,
-      element("span", "sar-allow-meta", i18n.t("options_allow_since", { date: since })),
-    );
-    const restore = element("button", "sar-button", i18n.t("options_allow_restore"));
-    restore.type = "button";
-    restore.setAttribute("data-sar-restore", String(id));
-    restore.setAttribute("data-sar-scope", of);
-    restore.setAttribute(
-      "aria-label",
-      i18n.t("options_allow_restore_label", { name: entry.name, scope: scopeName(of) }),
-    );
-    const error = element("p", "sar-field-error", i18n.t("error_allow_list_save"));
-    error.setAttribute("role", "alert");
-    error.hidden = true;
-    item.append(text, restore, error);
-    return item;
+  /** The spec of the developers or the publishers card. */
+  function creatorSpec(role: CreatorRole): AllowSpec<CreatorKey> {
+    const developer = role === "developer";
+    const roleName = i18n.t(developer ? "banner_role_developer" : "banner_role_publisher");
+    return {
+      id: `allow-${role}s`,
+      list: lists.creators[role],
+      parseKey: toCreatorKey,
+      title: developer ? "options_section_allow_developers" : "options_section_allow_publishers",
+      emptyAction: "banner_creators_toggle",
+      saveError: "error_creator_list_save",
+      loadError: "error_creator_list_load",
+      nameOf: (_key, entry) => element("span", "sar-allow-name", entry.name),
+      restored: (name, of) =>
+        of === ALLOW_ALL
+          ? i18n.t("notice_creator_restored", { name, role: roleName })
+          : i18n.t("notice_creator_restored_kind", {
+            name,
+            role: roleName,
+            heading: scopeName(of),
+          }),
+    };
   }
 
-  /** One scope's games, newest first, under the scope's name. */
-  function allowGroup(of: AllowScope, entries: ReadonlyMap<AppId, AllowEntry>): HTMLElement {
-    const group = element("div", "sar-allow-group");
-    const title = element("h3", "sar-allow-scope", scopeName(of));
-    title.id = `${prefix}allow-${of}`;
-    group.setAttribute("role", "group");
-    group.setAttribute("aria-labelledby", title.id);
-    const list = element("ul", "sar-allow-list");
-    const newestFirst = [...entries].sort(([, a], [, b]) => b.added - a.added);
-    list.append(...newestFirst.map(([id, entry]) => allowItem(of, id, entry)));
-    group.append(title, list);
-    return group;
-  }
+  /** The card of one list of ignored items, drawn and restored from its spec. */
+  function allowView<Key extends string | number>(spec: AllowSpec<Key>): AllowView {
+    const section = card(i18n.t(spec.title), spec.id);
+    const body = element("div", "");
+    section.append(body);
 
-  function renderAllowList(entries: AllowEntries): void {
-    const listed = ALLOW_SCOPES.filter((each) => entries[each].size > 0);
-    // The popup has no room for an empty section; the full page keeps its empty state.
-    allow.hidden = context === "popup" && listed.length === 0;
-    if (listed.length === 0) {
-      allowBody.replaceChildren(
-        element(
-          "p",
-          "sar-empty",
-          i18n.t("options_allow_empty", { action: i18n.t("banner_ignore") }),
-        ),
+    function item(of: AllowScope, key: Key, entry: AllowEntry): HTMLElement {
+      const node = element("li", "sar-allow-item");
+      const text = element("div", "");
+      const since = dates.format(new Date(entry.added));
+      text.append(
+        spec.nameOf(key, entry),
+        element("span", "sar-allow-meta", i18n.t("options_allow_since", { date: since })),
       );
-      return;
+      const stop = element("button", "sar-button", i18n.t("options_allow_restore"));
+      stop.type = "button";
+      stop.setAttribute(RESTORE_ATTRIBUTE, String(key));
+      stop.setAttribute(LIST_ATTRIBUTE, spec.id);
+      stop.setAttribute("data-sar-scope", of);
+      stop.setAttribute(
+        "aria-label",
+        i18n.t("options_allow_restore_label", { name: entry.name, scope: scopeName(of) }),
+      );
+      const error = element("p", "sar-field-error", i18n.t(spec.saveError));
+      error.setAttribute("role", "alert");
+      error.hidden = true;
+      node.append(text, stop, error);
+      return node;
     }
-    allowBody.replaceChildren(...listed.map((each) => allowGroup(each, entries[each])));
-  }
 
-  /** A list that cannot be read says so, in both contexts; the next refresh tries again. */
-  function renderAllowError(): void {
-    allow.hidden = false;
-    const error = element("p", "sar-field-error", i18n.t("error_allow_list_load"));
-    error.setAttribute("role", "alert");
-    allowBody.replaceChildren(error);
+    /** One scope's items, newest first, under the scope's name. */
+    function group(of: AllowScope, entries: ReadonlyMap<Key, AllowEntry>): HTMLElement {
+      const node = element("div", "sar-allow-group");
+      const title = element("h3", "sar-allow-scope", scopeName(of));
+      title.id = `${prefix}${spec.id}-${of}`;
+      node.setAttribute("role", "group");
+      node.setAttribute("aria-labelledby", title.id);
+      const list = element("ul", "sar-allow-list");
+      const newestFirst = [...entries].sort(([, a], [, b]) => b.added - a.added);
+      list.append(...newestFirst.map(([key, entry]) => item(of, key, entry)));
+      node.append(title, list);
+      return node;
+    }
+
+    function render(entries: AllowEntries<Key>): void {
+      const listed = ALLOW_SCOPES.filter((each) => entries[each].size > 0);
+      // The popup has no room for an empty section; the full page keeps its empty state.
+      section.hidden = context === "popup" && listed.length === 0;
+      if (listed.length === 0) {
+        body.replaceChildren(
+          element(
+            "p",
+            "sar-empty",
+            i18n.t("options_allow_empty", { action: i18n.t(spec.emptyAction) }),
+          ),
+        );
+        return;
+      }
+      body.replaceChildren(...listed.map((each) => group(each, entries[each])));
+    }
+
+    /** A list that cannot be read says so, in both contexts; the next refresh tries again. */
+    function renderError(): void {
+      section.hidden = false;
+      const error = element("p", "sar-field-error", i18n.t(spec.loadError));
+      error.setAttribute("role", "alert");
+      body.replaceChildren(error);
+    }
+
+    async function refresh(): Promise<void> {
+      let entries: AllowEntries<Key>;
+      try {
+        entries = await spec.list.list();
+      } catch {
+        renderError();
+        return;
+      }
+      render(entries);
+    }
+
+    /** The button that stops ignoring an item in a scope, once the list is drawn again. */
+    function stopButton(of: string | null, key: string | null): HTMLElement | undefined {
+      return [...body.querySelectorAll<HTMLElement>(`[${RESTORE_ATTRIBUTE}]`)].find((button) =>
+        button.getAttribute("data-sar-scope") === of
+        && button.getAttribute(RESTORE_ATTRIBUTE) === key
+      );
+    }
+
+    /** The card above this one that shows, for the focus to land on when this one is gone. */
+    function cardAbove(): HTMLElement | undefined {
+      return cards.slice(0, cards.indexOf(section)).findLast((above) =>
+        above.matches("section.sar-card") && above.hidden === false
+      );
+    }
+
+    async function restore(button: HTMLElement): Promise<void> {
+      const key = spec.parseKey(button.getAttribute(RESTORE_ATTRIBUTE) ?? "");
+      const of = toAllowScope(button.getAttribute("data-sar-scope"));
+      if (key === undefined || of === undefined) {
+        return;
+      }
+      const buttons = [...body.querySelectorAll<HTMLElement>(`[${RESTORE_ATTRIBUTE}]`)];
+      const at = buttons.indexOf(button);
+      const neighbor = buttons[at + 1] ?? buttons[at - 1];
+      const nextScope = neighbor?.getAttribute("data-sar-scope") ?? null;
+      const nextKey = neighbor?.getAttribute(RESTORE_ATTRIBUTE) ?? null;
+      const item = button.closest(".sar-allow-item");
+      const name = item?.querySelector(".sar-allow-name")?.textContent ?? "";
+      try {
+        await spec.list.remove(of, key);
+      } catch {
+        const error = item?.querySelector<HTMLElement>(".sar-field-error");
+        if (error !== null && error !== undefined) {
+          error.hidden = false;
+        }
+        return;
+      }
+      await refresh();
+      // With the last item gone, the popup hides the section, so focus lands on the one above it
+      const target = section.hidden === true ? cardAbove() : section;
+      const focus = stopButton(nextScope, nextKey)
+        ?? target?.querySelector<HTMLElement>(".sar-card-title");
+      focus?.focus();
+      announce(doc, live, spec.restored(name, of));
+    }
+
+    return { id: spec.id, card: section, refresh, restore };
   }
 
   async function refreshAllowList(): Promise<void> {
-    let entries: AllowEntries;
-    try {
-      entries = await allowList.list();
-    } catch {
-      renderAllowError();
-      return;
-    }
-    renderAllowList(entries);
-  }
-
-  /** The button that stops ignoring a game in a scope, once the list is drawn again. */
-  function restoreButton(of: string | null, id: string | null): HTMLElement | undefined {
-    return [...allowBody.querySelectorAll<HTMLElement>("[data-sar-restore]")].find((button) =>
-      button.getAttribute("data-sar-scope") === of && button.getAttribute("data-sar-restore") === id
-    );
-  }
-
-  async function restore(button: HTMLElement, of: AllowScope, id: AppId): Promise<void> {
-    const buttons = [...allowBody.querySelectorAll<HTMLElement>("[data-sar-restore]")];
-    const at = buttons.indexOf(button);
-    const neighbor = buttons[at + 1] ?? buttons[at - 1];
-    const nextScope = neighbor?.getAttribute("data-sar-scope") ?? null;
-    const nextId = neighbor?.getAttribute("data-sar-restore") ?? null;
-    try {
-      await allowList.remove(of, id);
-    } catch {
-      const error = button.closest(".sar-allow-item")?.querySelector<HTMLElement>(
-        ".sar-field-error",
-      );
-      if (error !== null && error !== undefined) {
-        error.hidden = false;
-      }
-      return;
-    }
-    await refreshAllowList();
-    // With the last game gone, the popup hides the section, so focus lands on the one above it
-    const section = allow.hidden === true ? kindCards.at(-1) : allow;
-    const focus = restoreButton(nextScope, nextId)
-      ?? section?.querySelector<HTMLElement>(".sar-card-title");
-    focus?.focus();
-    announce(
-      doc,
-      live,
-      of === ALLOW_ALL
-        ? i18n.t("notice_marking_restored")
-        : i18n.t("notice_marking_restored_kind", { heading: scopeName(of) }),
-    );
+    await Promise.all(views.map((view) => view.refresh()));
   }
 
   function onInput(target: EventTarget | null): void {
@@ -829,14 +924,13 @@ export async function mountSettingsForm(
       return;
     }
     const button = target instanceof Element
-      ? target.closest<HTMLElement>("[data-sar-restore]")
+      ? target.closest<HTMLElement>(`[${RESTORE_ATTRIBUTE}]`)
       : null;
-    const id = button === null
+    const view = button === null
       ? undefined
-      : toAppId(Number(button.getAttribute("data-sar-restore")));
-    const of = button === null ? undefined : toAllowScope(button.getAttribute("data-sar-scope"));
-    if (button !== null && id !== undefined && of !== undefined) {
-      void restore(button, of, id);
+      : views.find((candidate) => candidate.id === button.getAttribute(LIST_ATTRIBUTE));
+    if (button !== null && view !== undefined) {
+      void view.restore(button);
     }
   }
 

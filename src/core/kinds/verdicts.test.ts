@@ -1,17 +1,19 @@
 import * as v from "valibot";
 import { describe, expect, it } from "vitest";
 import { appId } from "../../../tests/helpers/app-ids";
+import { creatorsFor } from "../../../tests/helpers/creators";
 import { parsedItem } from "../../../tests/helpers/getitems";
 import { FULL_DISCLOSED } from "../../../tests/helpers/verdicts";
 import { UNKNOWN, type UnknownReason } from "../types";
 import { KIND_IDS } from "./id";
 import { KINDS } from "./registry";
 import {
+  type FoundRelations,
   isKindVerdicts,
   kindsFromGetItems,
   sameVerdicts,
   UNKNOWN_KINDS,
-  withParent,
+  withRelations,
 } from "./verdicts";
 
 const REASONS: readonly UnknownReason[] = ["gated", "missing", "error", "rate-limited"];
@@ -27,19 +29,29 @@ describe("UNKNOWN_KINDS", () => {
   });
 });
 
-describe("withParent", () => {
-  it("returns the same verdicts when there is no base game", () => {
-    expect(withParent(FULL_DISCLOSED, undefined)).toBe(FULL_DISCLOSED);
+describe("withRelations", () => {
+  it.each<[string, FoundRelations]>([
+    ["nothing", {}],
+    ["no parent", { parent: undefined }],
+    ["no creators", { creators: undefined }],
+    ["creators of no one", { creators: creatorsFor({}) }],
+  ])("returns the same verdicts when it is given %s", (_name, from) => {
+    expect(withRelations(FULL_DISCLOSED, from)).toBe(FULL_DISCLOSED);
   });
 
-  it("adds the base game without touching the shared objects or the verdicts", () => {
-    const dlc = withParent(UNKNOWN_KINDS.missing, appId(7));
-    expect(dlc.parent).toBe(7);
+  it.each<[string, FoundRelations]>([
+    ["the base game", { parent: appId(7) }],
+    ["the creators", { creators: creatorsFor({ developers: ["A"] }) }],
+    ["both", { parent: appId(7), creators: creatorsFor({ publishers: [["B", 2]] }) }],
+  ])("adds %s without touching the shared objects or the verdicts", (_name, from) => {
+    const related = withRelations(UNKNOWN_KINDS.missing, from);
+    expect(related).toMatchObject(from);
     expect(UNKNOWN_KINDS.missing).not.toHaveProperty("parent");
+    expect(UNKNOWN_KINDS.missing).not.toHaveProperty("creators");
     for (const id of KIND_IDS) {
-      expect(dlc[id]).toBe(UNKNOWN_KINDS.missing[id]);
+      expect(related[id]).toBe(UNKNOWN_KINDS.missing[id]);
     }
-    expect(isKindVerdicts(dlc)).toBe(true);
+    expect(isKindVerdicts(related)).toBe(true);
   });
 });
 

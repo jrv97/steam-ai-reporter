@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { APP_PAGES } from "../../../tests/helpers/app-page";
+import { bannerCreator, creatorNote, keyOf } from "../../../tests/helpers/creators";
 import { setBody } from "../../../tests/helpers/dom";
 import { capturedVerdicts, disclosedList } from "../../../tests/helpers/fixture-verdicts";
 import { englishI18n } from "../../../tests/helpers/i18n";
@@ -29,7 +30,7 @@ const ignoredKind = (kind: "drm" | "pvp") =>
   i18n.t("banner_ignored_kind", { heading: i18n.t(KIND_BY_ID[kind].messages.heading) });
 
 function view(shown: readonly AnyDisclosed[], extra: Partial<BannerView> = {}): BannerView {
-  return { shown, ignored: [], ...extra };
+  return { shown, ignored: [], creators: [], creatorNotes: [], ...extra };
 }
 
 interface Pending {
@@ -58,11 +59,15 @@ function manualActions() {
     });
   const ignore = vi.fn(settle);
   const restore = vi.fn(settle);
-  const actions: BannerActions = { ignore, restore };
+  const ignoreCreator = vi.fn(settle);
+  const restoreCreator = vi.fn(settle);
+  const actions: BannerActions = { ignore, restore, ignoreCreator, restoreCreator };
   return {
     actions,
     ignore,
     restore,
+    ignoreCreator,
+    restoreCreator,
     calls,
     /** What the owner shows once the next action settles. */
     thenShow: (next: BannerView): void => {
@@ -185,11 +190,11 @@ describe("createBanner", () => {
   it("does not rebuild for the same view", () => {
     const { banner, root } = setup();
     const verdict = disclosedVerdict();
-    banner.show({ shown: [verdict], ignored: [] });
+    banner.show(view([verdict]));
     const aside = query(root, "aside");
-    banner.show({ shown: [verdict], ignored: [] });
+    banner.show(view([verdict]));
     expect(query(root, "aside")).toBe(aside);
-    banner.show({ shown: [verdict], ignored: ["ai"] });
+    banner.show(view([verdict], { ignored: ["ai"] }));
     expect(query(root, "aside")).not.toBe(aside);
   });
 
@@ -516,5 +521,266 @@ describe("placeBanner", () => {
     const banner = createBanner(document, i18n, manualActions().actions);
     expect(placeBanner(document, banner.host)).toBe(false);
     expect(banner.host.isConnected).toBe(false);
+  });
+});
+
+describe("the creators section", () => {
+  const VALVE = bannerCreator("developer", ["Valve", 4]);
+  const PUBLISHER = bannerCreator("publisher", ["Valve", 4]);
+  const chip = (id: "ai" | "drm" | "account") => i18n.t(KIND_BY_ID[id].messages.chip);
+  const shown = disclosedList(capturedVerdicts(3751950));
+
+  function wired(initial: BannerView) {
+    const wiring = manualActions();
+    const { banner, root } = setup({}, wiring.actions);
+    wiring.attach(banner);
+    banner.show(initial);
+    return { ...wiring, banner, root };
+  }
+
+  const rows = (root: ShadowRoot) =>
+    [...root.querySelectorAll(".sar-banner-creator")].map((row) => ({
+      label: row.querySelector(".sar-banner-creator-label")?.textContent,
+      buttons: [...row.querySelectorAll("button")].map((button) => button.textContent),
+    }));
+
+  it("is a closed section with a row for each name and role, and a button for each tag", () => {
+    const { banner, root } = setup();
+    banner.show(view(shown, { creators: [VALVE, PUBLISHER] }));
+    const section = query(root, "details.sar-banner-creators");
+    expect(section.hasAttribute("open")).toBe(false);
+    expect(query(root, "summary").textContent).toBe(i18n.t("banner_creators_toggle"));
+    const tags = [
+      i18n.t("banner_ignore_creator_kind", { chip: chip("drm") }),
+      i18n.t("banner_ignore_creator_kind", { chip: chip("account") }),
+      i18n.t("banner_ignore_creator_kind", { chip: i18n.t("kind_eula_chip") }),
+      i18n.t("banner_ignore_creator_all"),
+    ];
+    expect(rows(root)).toEqual([
+      { label: `Valve ${i18n.t("banner_role_developer")}`, buttons: tags },
+      { label: `Valve ${i18n.t("banner_role_publisher")}`, buttons: tags },
+    ]);
+  });
+
+  it("names a button by its text and the creator's name and role", () => {
+    const { banner, root } = setup();
+    banner.show(view(shown, { creators: [VALVE] }));
+    const first = query(root, ".sar-banner-creator button");
+    expect(nameOf(root, first)).toBe(
+      `${first.textContent} Valve ${i18n.t("banner_role_developer")}`,
+    );
+    const ids = [...root.querySelectorAll("[id]")].map((node) => node.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it("leaves out the buttons for the scopes the creator is ignored in", () => {
+    const { banner, root } = setup();
+    const some = bannerCreator("developer", "Embark", ["drm"]);
+    const all = bannerCreator("publisher", "Embark", [ALLOW_ALL]);
+    banner.show(view(shown, { creators: [some, all] }));
+    const [first, second] = rows(root);
+    expect(first?.buttons).toHaveLength(3);
+    expect(first?.buttons).not.toContain(
+      i18n.t("banner_ignore_creator_kind", { chip: chip("drm") }),
+    );
+    expect(second?.buttons).toHaveLength(3);
+    expect(second?.buttons).not.toContain(i18n.t("banner_ignore_creator_all"));
+  });
+
+  it("shows no section without an entry to ignore or without a creator", () => {
+    const { banner, root } = setup();
+    banner.show(
+      view([], { creators: [VALVE], creatorNotes: [creatorNote("developer", "Valve", ALLOW_ALL)] }),
+    );
+    expect(root.querySelector("details")).toBeNull();
+    banner.show(view(shown));
+    expect(root.querySelector("details")).toBeNull();
+  });
+
+  it("writes the name as text, never as markup", () => {
+    const { banner, root } = setup();
+    const name = '<img src=x onerror="alert(1)">';
+    banner.show(view(shown, { creators: [bannerCreator("developer", name)] }));
+    expect(root.querySelector("img")).toBeNull();
+    expect(query(root, ".sar-banner-creator-name").textContent).toBe(name);
+  });
+
+  it("keeps the section open across a redraw, and closed on a new banner", () => {
+    const { banner, root } = setup();
+    banner.show(view(shown, { creators: [VALVE] }));
+    const section = query(root, "details");
+    section.setAttribute("open", "");
+    section.dispatchEvent(new Event("toggle"));
+    banner.show(view(shown, { creators: [VALVE], ignored: ["pvp"] }));
+    expect(query(root, "details").hasAttribute("open")).toBe(true);
+    const fresh = setup();
+    fresh.banner.show(view(shown, { creators: [VALVE] }));
+    expect(query(fresh.root, "details").hasAttribute("open")).toBe(false);
+  });
+
+  it("notes a creator ignored for all tags or for one tag, with an Undo named by the note", () => {
+    const { banner, root } = setup();
+    banner.show(
+      view(withoutDrm(shown), {
+        creatorNotes: [
+          creatorNote("developer", "Valve", ALLOW_ALL),
+          creatorNote("publisher", ["Valve", 4], "drm"),
+        ],
+      }),
+    );
+    const who = (role: "developer" | "publisher") => ({
+      name: "Valve",
+      role: i18n.t(role === "developer" ? "banner_role_developer" : "banner_role_publisher"),
+    });
+    expect(texts(root, ".sar-banner-ignored-text")).toEqual([
+      i18n.t("banner_ignored_creator", who("developer")),
+      i18n.t("banner_ignored_creator_kind", {
+        ...who("publisher"),
+        heading: i18n.t("kind_drm_heading"),
+      }),
+    ]);
+    const undo = query(root, '[data-sar-action="undo-creator"]');
+    expect(nameOf(root, undo)).toBe(
+      `${i18n.t("banner_undo")} ${i18n.t("banner_ignored_creator", who("developer"))}`,
+    );
+  });
+
+  it("ignores a creator for one tag, moves focus to its Undo and announces it", async () => {
+    const { root, ignoreCreator, calls, thenShow } = wired(view(shown, { creators: [VALVE] }));
+    thenShow(
+      view(withoutDrm(shown), {
+        creators: [bannerCreator("developer", ["Valve", 4], ["drm"])],
+        creatorNotes: [creatorNote("developer", ["Valve", 4], "drm")],
+      }),
+    );
+    const button = [...root.querySelectorAll<HTMLElement>(".sar-banner-creator button")][0];
+    button?.click();
+    button?.click();
+    expect(ignoreCreator).toHaveBeenCalledTimes(1);
+    expect(ignoreCreator).toHaveBeenCalledWith("developer", VALVE.creator, "drm");
+    calls[0]?.resolve();
+    await vi.waitFor(() => {
+      expect(root.activeElement).toBe(query(root, '[data-sar-action="undo-creator"]'));
+    });
+    await vi.waitFor(() => {
+      expect(query(root, "[aria-live]").textContent).toBe(
+        i18n.t("notice_creator_stopped_kind", {
+          name: "Valve",
+          role: i18n.t("banner_role_developer"),
+          heading: i18n.t("kind_drm_heading"),
+        }),
+      );
+    });
+  });
+
+  it("ignores a creator for all tags from its last button", async () => {
+    const { root, ignoreCreator, calls, thenShow } = wired(view(shown, { creators: [VALVE] }));
+    thenShow(view([], { creatorNotes: [creatorNote("developer", ["Valve", 4], ALLOW_ALL)] }));
+    const buttons = [...root.querySelectorAll<HTMLElement>(".sar-banner-creator button")];
+    buttons.at(-1)?.click();
+    expect(ignoreCreator).toHaveBeenCalledWith("developer", VALVE.creator, ALLOW_ALL);
+    calls[0]?.resolve();
+    await vi.waitFor(() => {
+      expect(query(root, "[aria-live]").textContent).toBe(
+        i18n.t("notice_creator_stopped", { name: "Valve", role: i18n.t("banner_role_developer") }),
+      );
+    });
+  });
+
+  it("undoes with the key that is on the list, and focuses the ignore button again", async () => {
+    const byName = { ...creatorNote("developer", ["Valve", 4], "drm"), key: keyOf("n:Valve") };
+    const row = bannerCreator("developer", ["Valve", 4]);
+    const { root, restoreCreator, calls, thenShow } = wired(
+      view(withoutDrm(shown), { creators: [row], creatorNotes: [byName] }),
+    );
+    thenShow(view(shown, { creators: [row] }));
+    query(root, '[data-sar-action="undo-creator"]').click();
+    expect(restoreCreator).toHaveBeenCalledWith("developer", keyOf("n:Valve"), "drm");
+    calls[0]?.resolve();
+    await vi.waitFor(() => {
+      expect(root.activeElement).toBe(
+        query(root, '.sar-banner-creator button[data-sar-scope="drm"]'),
+      );
+    });
+    await vi.waitFor(() => {
+      expect(query(root, "[aria-live]").textContent).toBe(
+        i18n.t("notice_creator_restored_kind", {
+          name: "Valve",
+          role: i18n.t("banner_role_developer"),
+          heading: i18n.t("kind_drm_heading"),
+        }),
+      );
+    });
+  });
+
+  it("keeps the view and shows the creator error when the list cannot be saved", async () => {
+    const { root, calls } = wired(view(shown, { creators: [VALVE] }));
+    query(root, ".sar-banner-creator button").click();
+    calls[0]?.reject();
+    await vi.waitFor(() => {
+      expect(query(root, ".sar-banner-error").hidden).toBe(false);
+    });
+    expect(query(root, ".sar-banner-error").textContent).toBe(i18n.t("error_creator_list_save"));
+    expect(root.querySelectorAll(".sar-banner-creator")).toHaveLength(1);
+  });
+
+  it.each([
+    ["a role", "data-sar-role", "other"],
+    ["a key", "data-sar-creator", "Valve"],
+    ["a creator the view lacks", "data-sar-creator", "c:5"],
+  ])("does nothing for %s it does not know", (_name, attribute, value) => {
+    const { root, ignoreCreator, restoreCreator } = wired(view(shown, { creators: [VALVE] }));
+    const button = query(root, ".sar-banner-creator button");
+    button.setAttribute(attribute, value);
+    button.click();
+    expect(ignoreCreator).not.toHaveBeenCalled();
+    expect(restoreCreator).not.toHaveBeenCalled();
+  });
+
+  it("redraws when a creator note or row changes, and not for the same view", () => {
+    const { banner, root } = setup();
+    banner.show(view(shown, { creators: [VALVE] }));
+    const aside = query(root, "aside");
+    banner.show(view(shown, { creators: [bannerCreator("developer", ["Valve", 4])] }));
+    expect(query(root, "aside")).toBe(aside);
+    banner.show(view(shown, { creators: [bannerCreator("developer", ["Valve", 4], ["pvp"])] }));
+    expect(query(root, "aside")).not.toBe(aside);
+    const other = query(root, "aside");
+    banner.show(
+      view(shown, {
+        creators: [bannerCreator("developer", ["Valve", 4], ["pvp"])],
+        creatorNotes: [creatorNote("developer", ["Valve", 4], "pvp")],
+      }),
+    );
+    expect(query(root, "aside")).not.toBe(other);
+  });
+
+  it("reads every line of the section from the Spanish catalog", () => {
+    const spanish = createI18n(SHIPPED_CATALOGS, "es");
+    setBody('<div class="game_description_column"></div>');
+    const banner = createBanner(document, spanish, manualActions().actions, {
+      frame: () => undefined,
+    });
+    banner.show(
+      view(shown, {
+        creators: [VALVE],
+        creatorNotes: [creatorNote("publisher", "Valve", ALLOW_ALL)],
+      }),
+    );
+    const root = banner.host.shadowRoot;
+    if (root === null) {
+      throw new TypeError();
+    }
+    expect(query(root, "summary").textContent).toBe(spanish.t("banner_creators_toggle"));
+    expect(query(root, ".sar-banner-creator-role").textContent).toBe(
+      spanish.t("banner_role_developer"),
+    );
+    expect(query(root, ".sar-banner-ignored-text").textContent).toBe(
+      spanish.t("banner_ignored_creator", {
+        name: "Valve",
+        role: spanish.t("banner_role_publisher"),
+      }),
+    );
+    expect(spanish.t("banner_creators_toggle")).not.toBe(i18n.t("banner_creators_toggle"));
   });
 });

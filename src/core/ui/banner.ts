@@ -1,8 +1,17 @@
+import {
+  type Creator,
+  CREATOR_ROLES,
+  type CreatorKey,
+  type CreatorRole,
+  toCreatorKey,
+} from "../creator";
+import type { BareMessageKey } from "../i18n/t";
 import { KIND_BY_ID } from "../kinds/registry";
 import type { AnyDisclosed } from "../kinds/verdicts";
 import type { MessageCatalog } from "../ports";
 import { ALLOW_ALL, type AllowScope, toAllowScope } from "../settings/allow-data";
 import { announce, POLITE } from "./announce";
+import { ROLE_LABELS } from "./creator-roles";
 import { KIND_ATTRIBUTE } from "./kind-attributes";
 import { type KindDetail, kindDetails } from "./kind-details";
 import { normalizeBreaks } from "./notes";
@@ -20,6 +29,10 @@ export interface BannerActions {
   ignore(scope: AllowScope): Promise<void>;
   /** Stops ignoring the game in the scope. */
   restore(scope: AllowScope): Promise<void>;
+  /** Ignores the game's developer or publisher in the scope. */
+  ignoreCreator(role: CreatorRole, creator: Creator, scope: AllowScope): Promise<void>;
+  /** Stops ignoring the developer or publisher whose key is on the list of the scope. */
+  restoreCreator(role: CreatorRole, key: CreatorKey, scope: AllowScope): Promise<void>;
 }
 
 export interface BannerOptions {
@@ -29,12 +42,32 @@ export interface BannerOptions {
   readonly overflows?: (quote: HTMLElement) => boolean;
 }
 
+/** One developer or publisher of the game, with the scopes it is ignored in for its role. */
+export interface BannerCreator {
+  readonly role: CreatorRole;
+  readonly creator: Creator;
+  /** Each scope with the key that is on the list, which Undo removes. */
+  readonly ignored: readonly { readonly scope: AllowScope; readonly key: CreatorKey; }[];
+}
+
+/** A developer or publisher ignored in a scope this page would otherwise show. */
+export interface CreatorNote {
+  readonly role: CreatorRole;
+  readonly creator: Creator;
+  readonly key: CreatorKey;
+  readonly scope: AllowScope;
+}
+
 /** What the banner shows for the game. */
 export interface BannerView {
   /** The disclosed kinds listed in full, in registry order. */
   readonly shown: readonly AnyDisclosed[];
   /** The scopes the game is ignored in that the banner notes with an Undo. */
   readonly ignored: readonly AllowScope[];
+  /** The game's developers and publishers, one row per name and role. */
+  readonly creators: readonly BannerCreator[];
+  /** The notes, with an Undo, for the creators ignored in a scope the page would show. */
+  readonly creatorNotes: readonly CreatorNote[];
 }
 
 export interface Banner {
@@ -44,7 +77,14 @@ export interface Banner {
   show(view: BannerView): void;
 }
 
-const ACTIONS = ["ignore", "undo", "toggle"] as const;
+/** Name the role and the key of the creator a button acts on. */
+const ROLE_ATTRIBUTE = "data-sar-role";
+const CREATOR_ATTRIBUTE = "data-sar-creator";
+
+/** What a row and a note of a creator share. */
+type BannerCreatorRef = Pick<BannerCreator, "role" | "creator">;
+
+const ACTIONS = ["ignore", "undo", "toggle", "ignore-creator", "undo-creator"] as const;
 
 type Action = (typeof ACTIONS)[number];
 
@@ -82,11 +122,37 @@ function isDeveloperText(detail: KindDetail): detail is DeveloperText {
   return detail.kind === "quote" || detail.kind === "labeled";
 }
 
+/** A row as text: its role, its key and the scopes with the keys it is ignored under. */
+function rowSignature(row: BannerCreator): string {
+  const ignored = row.ignored.map((each) => `${each.scope}=${each.key}`);
+  return [row.role, row.creator.key, ...ignored].join("|");
+}
+
+/** Whether two lists hold the same creators in the same order, with the same ignored scopes. */
+function sameCreators(a: readonly BannerCreator[], b: readonly BannerCreator[]): boolean {
+  const other = b.map(rowSignature);
+  return a.length === b.length && a.every((row, index) => rowSignature(row) === other[index]);
+}
+
+function sameNotes(a: readonly CreatorNote[], b: readonly CreatorNote[]): boolean {
+  return a.length === b.length && a.every((note, index) => {
+    const other = b[index];
+    return other !== undefined && note.role === other.role && note.key === other.key
+      && note.scope === other.scope;
+  });
+}
+
 function sameView(a: BannerView, b: BannerView): boolean {
   return a.shown.length === b.shown.length
     && a.shown.every((verdict, index) => verdict === b.shown[index])
     && a.ignored.length === b.ignored.length
-    && a.ignored.every((scope, index) => scope === b.ignored[index]);
+    && a.ignored.every((scope, index) => scope === b.ignored[index])
+    && sameCreators(a.creators, b.creators)
+    && sameNotes(a.creatorNotes, b.creatorNotes);
+}
+
+function parseRole(value: string | null): CreatorRole | undefined {
+  return CREATOR_ROLES.find((role) => role === value);
 }
 
 /**
@@ -116,6 +182,8 @@ export function createBanner(
 
   let shown: BannerView | undefined;
   let pending = false;
+  /** Whether the creators section is open; it survives a redraw but not a reload. */
+  let creatorsOpen = false;
 
   function element<K extends keyof HTMLElementTagNameMap>(
     tag: K,
@@ -142,6 +210,21 @@ export function createBanner(
     if (scope !== undefined) {
       node.setAttribute("data-sar-scope", scope);
     }
+    return node;
+  }
+
+  /** A button that acts on one developer or publisher, named by its role and key. */
+  function creatorButton(
+    className: string,
+    action: Action,
+    label: string,
+    role: CreatorRole,
+    key: CreatorKey,
+    scope: AllowScope,
+  ): HTMLButtonElement {
+    const node = button(className, action, label, scope);
+    node.setAttribute(ROLE_ATTRIBUTE, role);
+    node.setAttribute(CREATOR_ATTRIBUTE, key);
     return node;
   }
 
@@ -233,11 +316,104 @@ export function createBanner(
     return note;
   }
 
+  /** The creator's name and role, for a label or a note: "Valve (Developer)" is two arguments. */
+  function nameAndRole(role: CreatorRole, creator: Creator): { name: string; role: string; } {
+    return { name: creator.name, role: i18n.t(ROLE_LABELS[role]) };
+  }
+
+  /** What a creator note says: every game by the creator, or one tag by Steam's line. */
+  function creatorNoteText(note: CreatorNote): string {
+    const who = nameAndRole(note.role, note.creator);
+    return note.scope === ALLOW_ALL
+      ? i18n.t("banner_ignored_creator", who)
+      : i18n.t("banner_ignored_creator_kind", {
+        ...who,
+        heading: i18n.t(KIND_BY_ID[note.scope].messages.heading),
+      });
+  }
+
+  function buildCreatorNote(note: CreatorNote, index: number): HTMLElement {
+    const node = element("p", "sar-banner-note");
+    const id = partId(`creator${String(index)}`, "note");
+    const text = element("span", "sar-banner-ignored-text", creatorNoteText(note));
+    text.id = id;
+    const undo = creatorButton(
+      "sar-banner-link",
+      "undo-creator",
+      i18n.t("banner_undo"),
+      note.role,
+      note.key,
+      note.scope,
+    );
+    undo.id = partId(`creator${String(index)}`, "undo");
+    undo.setAttribute("aria-labelledby", [undo.id, id].join(" "));
+    node.append(text, undo);
+    return node;
+  }
+
+  /** One row per developer or publisher: a button for each shown tag it is not ignored for. */
+  function buildCreatorRow(row: BannerCreator, index: number, view: BannerView): HTMLElement {
+    const item = element("li", "sar-banner-creator");
+    const who = nameAndRole(row.role, row.creator);
+    const label = element("span", "sar-banner-creator-label");
+    label.append(
+      element("span", "sar-banner-creator-name", who.name),
+      " ",
+      element("span", "sar-banner-creator-role", who.role),
+    );
+    label.id = partId(`row${String(index)}`, "label");
+    const actions = element("span", "sar-banner-creator-actions");
+    const ignoredIn = new Set(row.ignored.map((each) => each.scope));
+    const choices: AllowScope[] = view.shown.map((verdict) => verdict.kind).filter((kind) =>
+      !ignoredIn.has(kind)
+    );
+    if (!ignoredIn.has(ALLOW_ALL)) {
+      choices.push(ALLOW_ALL);
+    }
+    for (const scope of choices) {
+      const text = scope === ALLOW_ALL
+        ? i18n.t("banner_ignore_creator_all")
+        : i18n.t("banner_ignore_creator_kind", {
+          chip: i18n.t(KIND_BY_ID[scope].messages.chip),
+        });
+      const choice = creatorButton(
+        "sar-banner-link",
+        "ignore-creator",
+        text,
+        row.role,
+        row.creator.key,
+        scope,
+      );
+      choice.id = partId(`row${String(index)}`, `ignore-${scope}`);
+      choice.setAttribute("aria-labelledby", [choice.id, label.id].join(" "));
+      actions.append(choice);
+    }
+    item.append(label, actions);
+    return item;
+  }
+
+  /** The closed section that lists the game's developers and publishers. */
+  function buildCreators(view: BannerView): HTMLElement {
+    const section = doc.createElement("details");
+    section.className = "sar-banner-creators";
+    section.open = creatorsOpen;
+    const summary = element(
+      "summary",
+      "sar-banner-creators-toggle",
+      i18n.t("banner_creators_toggle"),
+    );
+    const list = element("ul", "sar-banner-creator-list");
+    list.append(...view.creators.map((row, index) => buildCreatorRow(row, index, view)));
+    section.append(summary, list);
+    return section;
+  }
+
   function build(view: BannerView): HTMLElement {
     const aside = element("aside", "sar-banner");
     aside.tabIndex = -1;
     const [only] = view.shown;
-    if (only !== undefined && view.shown.length === 1 && view.ignored.length === 0) {
+    const single = view.ignored.length === 0 && view.creatorNotes.length === 0;
+    if (only !== undefined && view.shown.length === 1 && single) {
       aside.setAttribute("aria-labelledby", partId(only.kind, "title"));
     } else {
       aside.setAttribute("aria-label", i18n.t("banner_region_label"));
@@ -258,7 +434,13 @@ export function createBanner(
     for (const scope of view.ignored) {
       aside.append(buildNote(scope));
     }
+    for (const [index, note] of view.creatorNotes.entries()) {
+      aside.append(buildCreatorNote(note, index));
+    }
     if (view.shown.length > 0) {
+      if (view.creators.length > 0) {
+        aside.append(buildCreators(view));
+      }
       const foot = element("div", "sar-banner-foot");
       foot.append(button("sar-banner-link", "ignore", i18n.t("banner_ignore"), ALLOW_ALL));
       aside.append(foot);
@@ -285,10 +467,17 @@ export function createBanner(
     toggle.textContent = i18n.t(expand ? "banner_collapse" : "banner_expand");
   }
 
-  function control(action: Action, scope: AllowScope): HTMLElement | undefined {
+  /** The control with this action and scope; a creator's also names its role and key. */
+  function control(
+    action: Action,
+    scope: AllowScope,
+    creator?: { readonly role: CreatorRole; readonly key: CreatorKey; },
+  ): HTMLElement | undefined {
     return [...box.querySelectorAll<HTMLElement>("[data-sar-action]")].find((candidate) =>
       candidate.getAttribute("data-sar-action") === action
       && candidate.getAttribute("data-sar-scope") === scope
+      && (creator === undefined || (candidate.getAttribute(ROLE_ATTRIBUTE) === creator.role
+        && candidate.getAttribute(CREATOR_ATTRIBUTE) === creator.key))
     );
   }
 
@@ -304,47 +493,143 @@ export function createBanner(
       : i18n.t("notice_marking_stopped_kind", { heading });
   }
 
+  /** The same, after a developer or publisher was ignored or restored. */
+  function creatorAnnouncement(
+    action: Action,
+    role: CreatorRole,
+    creator: Creator,
+    scope: AllowScope,
+  ): string {
+    const restoring = action === "undo-creator";
+    const who = nameAndRole(role, creator);
+    if (scope === ALLOW_ALL) {
+      return i18n.t(restoring ? "notice_creator_restored" : "notice_creator_stopped", who);
+    }
+    const heading = i18n.t(KIND_BY_ID[scope].messages.heading);
+    return i18n.t(
+      restoring ? "notice_creator_restored_kind" : "notice_creator_stopped_kind",
+      { ...who, heading },
+    );
+  }
+
   /** Undo takes the focus after an ignore, and the ignore button after an undo. */
   function focusAfter(action: Action, scope: AllowScope): void {
     const next = action === "undo" ? "ignore" : "undo";
     (control(next, scope) ?? control("ignore", ALLOW_ALL) ?? box).focus();
   }
 
-  async function run(action: Action, scope: AllowScope): Promise<void> {
+  /** The same for a creator: Undo after an ignore, the ignore button after an undo. */
+  function focusAfterCreator(action: Action, creator: BannerCreatorRef, scope: AllowScope): void {
+    const next = action === "undo-creator" ? "ignore-creator" : "undo-creator";
+    const own = { role: creator.role, key: creator.creator.key };
+    const summary = box.querySelector<HTMLElement>(".sar-banner-creators-toggle");
+    (control(next, scope, own) ?? summary ?? box).focus();
+  }
+
+  /**
+   * Runs one change, one at a time. A failed save shows the error line; a saved one calls `done`
+   * for the focus and the announcement.
+   */
+  async function perform(
+    change: () => Promise<void>,
+    failure: BareMessageKey,
+    done: () => void,
+  ): Promise<void> {
     if (pending || shown === undefined) {
       return;
     }
     pending = true;
     try {
-      await (action === "undo" ? actions.restore(scope) : actions.ignore(scope));
+      await change();
     } catch {
       const error = box.querySelector<HTMLElement>(".sar-banner-error");
       if (error !== null) {
-        error.textContent = i18n.t("error_allow_list_save");
+        error.textContent = i18n.t(failure);
         error.hidden = false;
       }
       return;
     } finally {
       pending = false;
     }
-    focusAfter(action, scope);
-    announce(doc, live, announcement(action, scope));
+    done();
+  }
+
+  function run(action: Action, scope: AllowScope): Promise<void> {
+    return perform(
+      () => action === "undo" ? actions.restore(scope) : actions.ignore(scope),
+      "error_allow_list_save",
+      () => {
+        focusAfter(action, scope);
+        announce(doc, live, announcement(action, scope));
+      },
+    );
+  }
+
+  /** The row or note of the view that names this role and key. */
+  function creatorOf(role: CreatorRole, key: CreatorKey): BannerCreatorRef | undefined {
+    const known: readonly BannerCreatorRef[] = [
+      ...(shown?.creators ?? []),
+      ...(shown?.creatorNotes ?? []),
+    ];
+    return known.find((each) => each.role === role && each.creator.keys.includes(key));
+  }
+
+  function runCreator(
+    action: Action,
+    creator: BannerCreatorRef,
+    key: CreatorKey,
+    scope: AllowScope,
+  ): Promise<void> {
+    const { role } = creator;
+    return perform(
+      () =>
+        action === "undo-creator"
+          ? actions.restoreCreator(role, key, scope)
+          : actions.ignoreCreator(role, creator.creator, scope),
+      "error_creator_list_save",
+      () => {
+        focusAfterCreator(action, creator, scope);
+        announce(doc, live, creatorAnnouncement(action, role, creator.creator, scope));
+      },
+    );
+  }
+
+  function onClick(clicked: Element): void {
+    const action = parseAction(clicked.getAttribute("data-sar-action"));
+    const scope = toAllowScope(clicked.getAttribute("data-sar-scope"));
+    if (action === "toggle") {
+      toggleNotes(clicked);
+      return;
+    }
+    if (action === undefined || scope === undefined) {
+      return;
+    }
+    if (action !== "ignore-creator" && action !== "undo-creator") {
+      void run(action, scope);
+      return;
+    }
+    const role = parseRole(clicked.getAttribute(ROLE_ATTRIBUTE));
+    const key = toCreatorKey(clicked.getAttribute(CREATOR_ATTRIBUTE));
+    const creator = role === undefined || key === undefined ? undefined : creatorOf(role, key);
+    if (key !== undefined && creator !== undefined) {
+      void runCreator(action, creator, key, scope);
+    }
   }
 
   shadow.addEventListener("click", (event) => {
     const target = event.target;
     const clicked = target instanceof Element ? target.closest("[data-sar-action]") : null;
-    if (clicked === null) {
-      return;
-    }
-    const action = parseAction(clicked.getAttribute("data-sar-action"));
-    const scope = toAllowScope(clicked.getAttribute("data-sar-scope"));
-    if (action === "toggle") {
-      toggleNotes(clicked);
-    } else if (action !== undefined && scope !== undefined) {
-      void run(action, scope);
+    if (clicked !== null) {
+      onClick(clicked);
     }
   });
+
+  // A toggle does not bubble, so the one listener for it takes the capture phase
+  shadow.addEventListener("toggle", (event) => {
+    if (event.target instanceof HTMLDetailsElement) {
+      creatorsOpen = event.target.open;
+    }
+  }, true);
 
   return {
     host,

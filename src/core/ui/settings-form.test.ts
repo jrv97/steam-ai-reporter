@@ -1,18 +1,20 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { countingStore } from "../../../tests/helpers/counting-store";
+import { keyOf } from "../../../tests/helpers/creators";
 import { fixedClock } from "../../../tests/helpers/fixed-clock";
 import { englishI18n } from "../../../tests/helpers/i18n";
 import { memoryStore } from "../../../tests/helpers/memory-store";
 import { withKind, writeSettings } from "../../../tests/helpers/settings";
+import { CREATOR_ROLES } from "../creator";
 import { SHIPPED_CATALOGS } from "../i18n/shipped";
 import { createI18n } from "../i18n/t";
+import { createIgnoreLists } from "../ignored";
 import { toHexColor } from "../kinds/color";
 import type { KindId } from "../kinds/id";
 import { LIST_FILTERS } from "../kinds/kind-settings";
 import { KIND_BY_ID, KINDS } from "../kinds/registry";
 import type { KeyValueStore } from "../ports";
 import { ALLOW_ALL } from "../settings/allow-data";
-import { createAllowList } from "../settings/allow-list";
 import { DEFAULT_SETTINGS, parseSettings } from "../settings/settings";
 import { createSettingsSource } from "../settings/settings-source";
 import { SECTION_STATE_KEY } from "../storage-keys";
@@ -51,7 +53,8 @@ async function setup(
   const clock = fixedClock(Date.UTC(2026, 9, 1));
   const store = memoryStore();
   const settings = createSettingsSource(store);
-  const allowList = createAllowList(memoryStore(), clock);
+  const lists = createIgnoreLists(memoryStore(), clock);
+  const allowList = lists.games;
   await allowList.add("ai", appId(10), "Older Game");
   clock.advance(DAY);
   await allowList.add("ai", appId(20), "Newer <b>Game</b>");
@@ -64,7 +67,7 @@ async function setup(
   const form = await mountSettingsForm(root, {
     i18n,
     settings,
-    allowList,
+    lists,
     sectionState,
     context,
     colors,
@@ -105,6 +108,7 @@ async function setup(
     root,
     form,
     settings,
+    lists,
     allowList,
     store,
     sectionStore,
@@ -506,7 +510,7 @@ describe("the color field", () => {
     await mountSettingsForm(second, {
       i18n,
       settings: other,
-      allowList: createAllowList(memoryStore(), fixedClock(0)),
+      lists: createIgnoreLists(memoryStore(), fixedClock(0)),
       sectionState: createSectionState(memoryStore()),
       context: "page",
       colors: true,
@@ -542,7 +546,7 @@ describe("the color field", () => {
     await mountSettingsForm(root, {
       i18n,
       settings,
-      allowList: createAllowList(memoryStore(), fixedClock(0)),
+      lists: createIgnoreLists(memoryStore(), fixedClock(0)),
       sectionState: createSectionState(memoryStore()),
       context: "page",
       colors: true,
@@ -562,7 +566,7 @@ describe("two forms over one store", () => {
     await mountSettingsForm(root, {
       i18n,
       settings,
-      allowList: createAllowList(store, fixedClock(0)),
+      lists: createIgnoreLists(store, fixedClock(0)),
       sectionState: createSectionState(memoryStore()),
       context: "page",
       colors: true,
@@ -685,7 +689,7 @@ describe("the page around the sections", () => {
     await mountSettingsForm(root, {
       i18n,
       settings: createSettingsSource(memoryStore()),
-      allowList: createAllowList(memoryStore(), fixedClock(0)),
+      lists: createIgnoreLists(memoryStore(), fixedClock(0)),
       sectionState: createSectionState(memoryStore()),
       context: "popup",
       colors: false,
@@ -720,7 +724,7 @@ describe("the page around the sections", () => {
     await mountSettingsForm(root, {
       i18n: spanish,
       settings: createSettingsSource(memoryStore()),
-      allowList: createAllowList(memoryStore(), fixedClock(0)),
+      lists: createIgnoreLists(memoryStore(), fixedClock(0)),
       sectionState: createSectionState(memoryStore()),
       context: "page",
       colors: true,
@@ -884,12 +888,12 @@ describe("the ignored games", () => {
     for (const context of ["page", "popup"] as const) {
       const root = document.createElement("main");
       document.body.append(root);
-      const allowList = createAllowList(memoryStore(), fixedClock(0));
-      vi.spyOn(allowList, "list").mockRejectedValue(new Error());
+      const lists = createIgnoreLists(memoryStore(), fixedClock(0));
+      vi.spyOn(lists.games, "list").mockRejectedValue(new Error());
       await mountSettingsForm(root, {
         i18n,
         settings: createSettingsSource(memoryStore()),
-        allowList,
+        lists,
         sectionState: createSectionState(memoryStore()),
         context,
         colors: context === "page",
@@ -900,7 +904,7 @@ describe("the ignored games", () => {
       );
       expect(section?.hidden).toBe(false);
       expect(section?.textContent).toContain(i18n.t("error_allow_list_load"));
-      expect(root.querySelector(".sar-empty")).toBeNull();
+      expect(section?.querySelector(".sar-empty")).toBeNull();
       root.remove();
     }
   });
@@ -1010,7 +1014,7 @@ describe("a failed read of the settings", () => {
     await mountSettingsForm(root, {
       i18n,
       settings,
-      allowList: createAllowList(memoryStore(), fixedClock(0)),
+      lists: createIgnoreLists(memoryStore(), fixedClock(0)),
       sectionState: createSectionState(memoryStore()),
       context: "page",
       colors: true,
@@ -1040,7 +1044,7 @@ describe("a failed read of the settings", () => {
     await mountSettingsForm(root, {
       i18n,
       settings,
-      allowList: createAllowList(memoryStore(), fixedClock(0)),
+      lists: createIgnoreLists(memoryStore(), fixedClock(0)),
       sectionState: createSectionState(memoryStore()),
       context: "page",
       colors: true,
@@ -1083,7 +1087,7 @@ describe("a failed read of the settings", () => {
     await mountSettingsForm(root, {
       i18n,
       settings,
-      allowList: createAllowList(memoryStore(), fixedClock(0)),
+      lists: createIgnoreLists(memoryStore(), fixedClock(0)),
       sectionState: createSectionState(memoryStore()),
       context: "page",
       colors: true,
@@ -1310,5 +1314,118 @@ describe("listeners", () => {
     expect(targets).toEqual(new Set([root]));
     form.destroy();
     expect(root.childElementCount).toBe(0);
+  });
+});
+
+describe.each(CREATOR_ROLES)("the ignored %ss", (role) => {
+  const developer = role === "developer";
+  const title = i18n.t(
+    developer ? "options_section_allow_developers" : "options_section_allow_publishers",
+  );
+  const roleName = i18n.t(developer ? "banner_role_developer" : "banner_role_publisher");
+  const stop = (key: string, scope: string) =>
+    `[data-sar-list="allow-${role}s"][data-sar-restore="${key}"][data-sar-scope="${scope}"]`;
+  const NAME = "Valve <b>Software</b>";
+
+  function cardIn(root: HTMLElement, text: string): HTMLElement {
+    const found = [...root.querySelectorAll<HTMLElement>("section.sar-card")].find((section) =>
+      section.querySelector(".sar-card-title")?.textContent === text
+    );
+    if (found === undefined) {
+      throw new TypeError(text);
+    }
+    return found;
+  }
+
+  /** A form whose list of this role holds two creators. */
+  async function seeded(context: SettingsContext = "page") {
+    const made = await setup(context);
+    const list = made.lists.creators[role];
+    await list.add("ai", keyOf("c:4"), NAME);
+    await list.add(ALLOW_ALL, keyOf("n:Embark Studios"), "Embark Studios");
+    await made.form.refreshAllowList();
+    return { ...made, list, section: cardIn(made.root, title) };
+  }
+
+  it("lists the creators by scope under their own title, apart from the games", async () => {
+    const { root, section } = await seeded();
+    const scopes = [...section.querySelectorAll(".sar-allow-scope")];
+    expect(scopes.map((scope) => scope.textContent)).toEqual([
+      i18n.t("options_allow_scope_all"),
+      heading("ai"),
+    ]);
+    const names = [...section.querySelectorAll(".sar-allow-name")];
+    expect(names.map((name) => [name.tagName, name.textContent])).toEqual([
+      ["SPAN", "Embark Studios"],
+      ["SPAN", NAME],
+    ]);
+    expect(section.querySelector("a")).toBeNull();
+    expect(root.querySelectorAll('[data-sar-list="allow"]')).toHaveLength(5);
+    const ids = [...root.querySelectorAll("[role=group]")].map((group) =>
+      group.getAttribute("aria-labelledby")
+    );
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it("stops ignoring one creator without touching the other lists, and announces it", async () => {
+    const { root, list, control } = await seeded();
+    control(stop("c:4", "ai")).click();
+    await vi.waitFor(async () => {
+      expect((await list.list()).ai.size).toBe(0);
+    });
+    expect([...(await list.list())[ALLOW_ALL].keys()]).toEqual(["n:Embark Studios"]);
+    expect(root.querySelectorAll('[data-sar-list="allow"]')).toHaveLength(5);
+    expect(root.querySelector(".sar-vh")?.textContent).toBe(
+      i18n.t("notice_creator_restored_kind", {
+        name: NAME,
+        role: roleName,
+        heading: heading("ai"),
+      }),
+    );
+  });
+
+  it("names the role and not the tag when it stops ignoring a creator for all tags", async () => {
+    const { root, control } = await seeded();
+    control(stop("n:Embark Studios", "all")).click();
+    await vi.waitFor(() => {
+      expect(root.querySelector(".sar-vh")?.textContent).toBe(
+        i18n.t("notice_creator_restored", { name: "Embark Studios", role: roleName }),
+      );
+    });
+  });
+
+  it.each([["page", false], ["popup", true]] as const)(
+    "shows an empty list on the %s with the toggle's label, hidden in the popup: %s",
+    async (context, hidden) => {
+      const { root } = await setup(context);
+      const section = cardIn(root, title);
+      expect(section.hidden).toBe(hidden);
+      expect(section.querySelector(".sar-empty")?.textContent).toBe(
+        i18n.t("options_allow_empty", { action: i18n.t("banner_creators_toggle") }),
+      );
+    },
+  );
+
+  it("says that the list could not be read, not that nothing is ignored", async () => {
+    const { lists, form, root } = await setup("popup");
+    vi.spyOn(lists.creators[role], "list").mockRejectedValue(new Error());
+    await form.refreshAllowList();
+    const section = cardIn(root, title);
+    expect(section.hidden).toBe(false);
+    expect(section.textContent).toContain(i18n.t("error_creator_list_load"));
+    expect(section.querySelector(".sar-empty")).toBeNull();
+  });
+
+  it("keeps the creator and shows an error when stopping to ignore it fails", async () => {
+    const { list, control } = await seeded();
+    vi.spyOn(list, "remove").mockRejectedValue(new Error());
+    const button = control(stop("c:4", "ai"));
+    button.click();
+    const error = button.parentElement?.querySelector<HTMLElement>(".sar-field-error");
+    await vi.waitFor(() => {
+      expect(error?.hidden).toBe(false);
+    });
+    expect(error?.textContent).toBe(i18n.t("error_creator_list_save"));
+    expect((await list.list()).ai.size).toBe(1);
   });
 });

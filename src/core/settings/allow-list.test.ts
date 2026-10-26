@@ -1,12 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { appId } from "../../../tests/helpers/app-ids";
 import { countingStore } from "../../../tests/helpers/counting-store";
+import { keyOf } from "../../../tests/helpers/creators";
 import { fixedClock } from "../../../tests/helpers/fixed-clock";
 import { memoryStore } from "../../../tests/helpers/memory-store";
 import type { JsonValue } from "../json";
 import type { AppId } from "../types";
 import { type AllowEntry, type AllowScope, perScope } from "./allow-data";
-import { createAllowList } from "./allow-list";
+import { createAllowList, createCreatorList } from "./allow-list";
 
 const T = 1_000_000_000_000;
 /** The stored ignore list with no game in any scope. */
@@ -263,5 +264,67 @@ describe("createAllowList", () => {
         ]]),
       );
     });
+  });
+});
+
+describe.each(
+  [
+    ["developer", "v2:allow-developers", "v2:allow-publishers"],
+    ["publisher", "v2:allow-publishers", "v2:allow-developers"],
+  ] as const,
+)("createCreatorList for the %s role", (role, storageKey, otherKey) => {
+  const valve = keyOf("c:4");
+  const embark = keyOf("n:Embark Studios");
+
+  function creatorSetup(initial: ReadonlyMap<string, JsonValue> = new Map()) {
+    const store = countingStore(memoryStore(initial));
+    const clock = fixedClock(T);
+    return { store, clock, list: createCreatorList(store, clock, role) };
+  }
+
+  it("starts empty, and reads its own key only", async () => {
+    const { list, store } = creatorSetup();
+    expect(await list.list()).toStrictEqual(NO_ENTRIES);
+    expect(store.gets).toStrictEqual([[storageKey]]);
+  });
+
+  it("stores an object per scope from creator key to name and date, in its own key", async () => {
+    const { list, store, clock } = creatorSetup();
+    await list.add("ai", valve, "Valve");
+    clock.advance(1_000);
+    await list.add("all", embark, "Embark Studios");
+    expect((await store.get([storageKey])).get(storageKey)).toStrictEqual({
+      ...NO_GAMES,
+      ai: { "c:4": { name: "Valve", added: T } },
+      all: { "n:Embark Studios": { name: "Embark Studios", added: T + 1_000 } },
+    });
+    expect((await store.get([otherKey, "v2:allow"])).size).toBe(0);
+  });
+
+  it("removes a creator from one scope and keeps the others", async () => {
+    const { list } = creatorSetup();
+    await list.add("ai", valve, "Valve");
+    await list.add("pvp", valve, "Valve");
+    await list.remove("ai", valve);
+    const listed = await list.list();
+    expect([listed.ai.size, [...listed.pvp.keys()]]).toStrictEqual([0, ["c:4"]]);
+  });
+
+  it("drops a stored entry whose key is not a creator key", async () => {
+    const entry = { name: "Valve", added: T };
+    const { list } = creatorSetup(
+      new Map<string, JsonValue>([[
+        storageKey,
+        { ai: { "c:4": entry, "c:0": entry, "Valve": entry, "n:": entry } },
+      ]]),
+    );
+    expect([...(await list.list()).ai.keys()]).toStrictEqual(["c:4"]);
+  });
+
+  it("does not read the games' v2:allow entries", async () => {
+    const { list } = creatorSetup(
+      new Map<string, JsonValue>([["v2:allow", { ai: { "10": { name: "A", added: T } } }]]),
+    );
+    expect(await list.list()).toStrictEqual(NO_ENTRIES);
   });
 });

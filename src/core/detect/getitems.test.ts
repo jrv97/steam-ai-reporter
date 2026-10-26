@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { detectorContract } from "../../../tests/contracts/detector.contract";
+import creatorsFixture from "../../../tests/fixtures/getitems/creators.json";
 import dlc from "../../../tests/fixtures/getitems/dlc-parent.json";
 import empty from "../../../tests/fixtures/getitems/empty-response.json";
 import german from "../../../tests/fixtures/getitems/german-context.json";
 import mixed from "../../../tests/fixtures/getitems/mixed-states.json";
 import roguelike from "../../../tests/fixtures/getitems/search-roguelike-50.json";
 import { appId, appIds } from "../../../tests/helpers/app-ids";
+import { basicInfo, creatorsFor, type CreatorsSpec } from "../../../tests/helpers/creators";
 import { fakeHttp, httpResult, type Reply } from "../../../tests/helpers/fake-http";
 import {
   disclosedItem,
@@ -176,6 +178,93 @@ describe("parseGetItems and the base game of a DLC", () => {
     const found = parse(appIds(1, 2), getItemsResponse(items));
     expect(found.get(appId(1))?.parent).toBe(9);
     expect(found.get(appId(2))?.parent).toBeUndefined();
+  });
+});
+
+describe("parseGetItems and the developers and publishers", () => {
+  const one = appIds(1);
+
+  function creatorsOfItem(overrides: Readonly<Record<string, unknown>>) {
+    return parse(one, getItemsResponse([storeItem(1, overrides)])).get(appId(1));
+  }
+
+  it.each<[string, number, CreatorsSpec]>([
+    ["with a clan ID (730)", 730, { developers: [["Valve", 4]], publishers: [["Valve", 4]] }],
+    [
+      "with a long clan ID (1091500)",
+      1091500,
+      { developers: [["CD PROJEKT RED", 32989758]], publishers: [["CD PROJEKT RED", 32989758]] },
+    ],
+    [
+      "without a clan ID (1808500)",
+      1808500,
+      { developers: ["Embark Studios"], publishers: ["Embark Studios"] },
+    ],
+  ])("reads the creators of the captured app %s", (_name, id, expected) => {
+    const found = parse(appIds(id), fixtureReply(creatorsFixture)).get(appId(id));
+    expect(found?.creators).toStrictEqual(creatorsFor(expected));
+  });
+
+  it.each<[string, CreatorsSpec]>([
+    ["a developer that is not the publisher", { developers: ["Dev"], publishers: [["Pub", 7]] }],
+    ["two developers", { developers: [["One", 1], "Two"], publishers: ["Pub"] }],
+    ["a company in both roles", { developers: [["Both", 9]], publishers: [["Both", 9]] }],
+    ["a repeated entry once", { developers: ["Dev", "Dev", ["Dev", 5], ["Dev", 5]] }],
+  ])("keeps %s", (_name, spec) => {
+    expect(creatorsOfItem(basicInfo(spec))?.creators).toStrictEqual(creatorsFor(spec));
+  });
+
+  it("keeps at most eight creators of a role, in Steam's order", () => {
+    const names = Array.from({ length: 12 }, (_, index) => `Studio ${String(index)}`);
+    const found = creatorsOfItem(basicInfo({ developers: names }));
+    expect(found?.creators?.developer.map((creator) => creator.name)).toStrictEqual(
+      names.slice(0, 8),
+    );
+  });
+
+  const MANY = Array.from({ length: 51 }, () => ({ name: "A" }));
+
+  it.each<[string, unknown, CreatorsSpec | undefined]>([
+    ["basic_info as a list", [], undefined],
+    ["basic_info as text", "Valve", undefined],
+    ["basic_info as null", null, undefined],
+    ["basic_info without the lists", { short_description: "x" }, undefined],
+    ["a list as an object", { developers: { name: "A" }, publishers: [{ name: "P" }] }, {
+      publishers: ["P"],
+    }],
+    ["a list that is too long", { developers: MANY }, undefined],
+    ["entries that are no objects", { developers: ["A", 7, null, { name: "B" }] }, {
+      developers: ["B"],
+    }],
+    ["entries without a usable name", {
+      developers: [{}, { name: 3 }, { name: "" }, { name: "C" }],
+    }, {
+      developers: ["C"],
+    }],
+    ["a name too long to keep", { developers: [{ name: "x".repeat(201) }, { name: "D" }] }, {
+      developers: ["D"],
+    }],
+  ])("reads %s as the creators it can", (_name, info, expected) => {
+    const found = creatorsOfItem({ basic_info: info });
+    expect(found?.creators).toStrictEqual(
+      expected === undefined ? undefined : creatorsFor(expected),
+    );
+    expect(found?.ai.state).toBe("not-disclosed");
+  });
+
+  it.each([["a string", "4"], ["zero", 0], ["a fraction", 1.5], ["too large", 2 ** 32]])(
+    "reads a clan ID that is %s as no clan ID",
+    (_name, clan) => {
+      const found = creatorsOfItem({
+        basic_info: { developers: [{ name: "E", creator_clan_account_id: clan }] },
+      });
+      expect(found?.creators).toStrictEqual(creatorsFor({ developers: ["E"] }));
+    },
+  );
+
+  it("gives an item without details no creators", () => {
+    const item = storeItem(1, { extra_details: undefined, ...basicInfo({ developers: ["A"] }) });
+    expect(parse(one, getItemsResponse([item])).get(appId(1))).toBe(UNKNOWN_KINDS.missing);
   });
 });
 
@@ -364,14 +453,14 @@ describe("planBatches", () => {
     expect(planBatches([], "english")).toStrictEqual([]);
   });
 
-  it("asks for extra details in the caller's language", () => {
+  it("asks for extra details and basic info in the caller's language", () => {
     const [batch] = planBatches(appIds(5072580), "latam");
     const input = new URL(batch?.url ?? GETITEMS_URL).searchParams.get("input_json");
     expect(input).toBe(
       JSON.stringify({
         ids: [{ appid: 5072580 }],
         context: { language: "latam", country_code: "US" },
-        data_request: { include_extra_details: true },
+        data_request: { include_extra_details: true, include_basic_info: true },
       }),
     );
   });

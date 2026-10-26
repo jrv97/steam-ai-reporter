@@ -4,7 +4,8 @@ One GetItems call for a sample of apps and one DLC, then three `?l=english` app 
 each structural hook: the anti-cheat name line, the DRM notice with a line break and the
 non-kernel notice. Four requests in total, all without cookies, to the two Valve hosts the
 extension itself uses. Each field has the type the schemas expect when it is present, and across
-the sample some app shows each kind of declaration. The DLC must still name its base game in
+the sample some app shows each kind of declaration and names a developer or publisher (clan IDs
+are not required, as Steam omits them for some creators). The DLC must still name its base game in
 related_items.parent_appid. A page comes from an app the sample shows that declaration for, and
 is checked against what GetItems says about its own app. Exits non-zero, listing what changed,
 when an answer no longer has the expected shape. Not part of `ci`: it needs the network and
@@ -54,7 +55,9 @@ REQUIRED_FACTS = {
     "account": "user_account_third_party with text",
     "eula": "a non-empty eula list",
     "pvp": "categories.supported_player_categoryids with a PvP category",
+    "creator": "basic_info.developers or publishers with a named entry",
 }
+CREATOR_ROLES = ("developers", "publishers")
 
 
 class Response:
@@ -83,7 +86,7 @@ def getitems_url(ids: tuple[int, ...]) -> str:
     request = {
         "ids": [{"appid": appid} for appid in ids],
         "context": {"language": "english", "country_code": "US"},
-        "data_request": {"include_extra_details": True},
+        "data_request": {"include_extra_details": True, "include_basic_info": True},
     }
     return f"{GETITEMS_URL}?input_json={urllib.parse.quote(json.dumps(request), safe='')}"
 
@@ -153,6 +156,36 @@ def details_problems(where: str, details: dict[str, object]) -> list[str]:
     return problems
 
 
+def creator_entries(item: dict[str, object]) -> list[object]:
+    """The entries of basic_info.developers and basic_info.publishers that are lists."""
+    basic_info = as_object(item.get("basic_info")) or {}
+    entries: list[object] = []
+    for role in CREATOR_ROLES:
+        listed = basic_info.get(role)
+        if isinstance(listed, list):
+            entries += listed
+    return entries
+
+
+def creator_problems(where: str, basic_info: object) -> list[str]:
+    """A creator is an object with a name string; its clan ID, when sent, is an integer."""
+    fields = as_object(basic_info)
+    if fields is None:
+        return [f"{where}: basic_info is not an object"]
+    problems: list[str] = []
+    for role in CREATOR_ROLES:
+        if role in fields and not isinstance(fields[role], list):
+            problems.append(f"{where}: basic_info.{role} is not a list")
+    for entry in creator_entries({"basic_info": fields}):
+        creator = as_object(entry)
+        clan = creator.get("creator_clan_account_id") if creator else None
+        if creator is None or not isinstance(creator.get("name"), str):
+            problems.append(f"{where}: a basic_info creator is not an object with a name string")
+        elif clan is not None and (isinstance(clan, bool) or not isinstance(clan, int)):
+            problems.append(f"{where}: a basic_info creator_clan_account_id is not an integer")
+    return problems
+
+
 def category_ids(item: dict[str, object]) -> list[int] | None:
     categories = as_object(item.get("categories"))
     ids = categories.get("supported_player_categoryids") if categories else None
@@ -171,6 +204,8 @@ def item_problems(appid: int, item: dict[str, object] | None) -> list[str]:
     if details is None:
         return [f"{where}: extra_details is missing"]
     problems = details_problems(where, details)
+    if "basic_info" in item:
+        problems += creator_problems(where, item["basic_info"])
     if "categories" in item and category_ids(item) is None:
         problems.append(f"{where}: categories.supported_player_categoryids is not a list")
     return problems
@@ -191,6 +226,10 @@ def facts_of(item: dict[str, object]) -> set[str]:
             ("account", has_text(details.get("user_account_third_party"))),
             ("eula", isinstance(eula, list) and bool(eula)),
             ("pvp", bool(PVP_CATEGORY_IDS.intersection(category_ids(item) or []))),
+            (
+                "creator",
+                any(has_text((as_object(c) or {}).get("name")) for c in creator_entries(item)),
+            ),
         )
         if shown
     }

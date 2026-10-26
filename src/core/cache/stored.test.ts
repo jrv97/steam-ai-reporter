@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { appId } from "../../../tests/helpers/app-ids";
+import { creatorsFor } from "../../../tests/helpers/creators";
 import {
   aiVerdicts,
   disclosedVerdict,
@@ -10,7 +11,7 @@ import {
 import type { AiVerdict } from "../kinds/ai";
 import { KIND_IDS } from "../kinds/id";
 import { perKind } from "../kinds/registry";
-import { type KindVerdicts, UNKNOWN_KINDS, withParent } from "../kinds/verdicts";
+import { type KindVerdicts, UNKNOWN_KINDS, withRelations } from "../kinds/verdicts";
 import { NOT_DISCLOSED as NOT_DISCLOSED_VERDICT, UNKNOWN } from "../types";
 import { decodeVerdicts, encodeVerdicts } from "./stored";
 
@@ -211,12 +212,16 @@ describe("encodeVerdicts and decodeVerdicts", () => {
 
 describe("the base game of a DLC in storage", () => {
   const parent = appId(1808500);
-  const dlc = withParent(FULL_DISCLOSED, parent);
+  const dlc = withRelations(FULL_DISCLOSED, { parent });
   const stored = { time: T, kinds: STORED_KINDS };
 
   it("round trips the parent with the verdicts", () => {
     expect(decodeVerdicts(encodeVerdicts(dlc, T))).toStrictEqual({ verdicts: dlc, time: T });
-    expect(decodeVerdicts(encodeVerdicts(withParent(uniformVerdicts("not-disclosed"), parent), T)))
+    expect(
+      decodeVerdicts(
+        encodeVerdicts(withRelations(uniformVerdicts("not-disclosed"), { parent }), T),
+      ),
+    )
       .toMatchObject({ verdicts: { parent } });
   });
 
@@ -245,6 +250,52 @@ describe("the base game of a DLC in storage", () => {
     ["a list", [1808500]],
   ])("discards an entry whose parent is %s, so the app is fetched again", (_name, value) => {
     expect(decodeVerdicts({ ...stored, parent: value })).toBeUndefined();
+  });
+});
+
+describe("the developers and publishers in storage", () => {
+  const stored = { time: T, kinds: STORED_KINDS };
+  const creators = creatorsFor({
+    developers: [["Valve", 4], "Embark Studios"],
+    publishers: [["Valve", 4]],
+  });
+  const known = withRelations(FULL_DISCLOSED, { creators });
+
+  it("round trips the creators with the verdicts, clan IDs included", () => {
+    expect(decodeVerdicts(encodeVerdicts(known, T))).toStrictEqual({ verdicts: known, time: T });
+  });
+
+  it("stores each creator as its name and clan ID, and nothing for an app without creators", () => {
+    expect(encodeVerdicts(known, T)).toMatchObject({
+      developers: [{ name: "Valve", clan: 4 }, { name: "Embark Studios" }],
+      publishers: [{ name: "Valve", clan: 4 }],
+    });
+    for (const verdicts of [FULL_DISCLOSED, uniformVerdicts("missing")]) {
+      const entry = encodeVerdicts(verdicts, T);
+      expect(entry).not.toHaveProperty("developers");
+      expect(entry).not.toHaveProperty("publishers");
+    }
+  });
+
+  it("reads an entry stored before the fields existed as an app with no creators", () => {
+    expect(decodeVerdicts(stored)?.verdicts).not.toHaveProperty("creators");
+  });
+
+  it("reads a role the entry lacks as having none", () => {
+    const decoded = decodeVerdicts({ ...stored, publishers: [{ name: "Valve" }] });
+    expect(decoded?.verdicts.creators).toStrictEqual(creatorsFor({ publishers: ["Valve"] }));
+  });
+
+  it.each([
+    ["a string", "Valve"],
+    ["an object", { name: "Valve" }],
+    ["null", null],
+    ["entries without a name", [{ clan: 4 }]],
+    ["entries with a name that is no text", [{ name: 4 }]],
+    ["entries with a clan ID that is no ID", [{ name: "Valve", clan: "4" }]],
+    ["entries with a clan ID of zero", [{ name: "Valve", clan: 0 }]],
+  ])("discards an entry whose developers are %s, so the app is fetched again", (_name, value) => {
+    expect(decodeVerdicts({ ...stored, developers: value })).toBeUndefined();
   });
 });
 

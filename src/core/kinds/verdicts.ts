@@ -1,3 +1,4 @@
+import { type Creator, CREATOR_ROLES, type CreatorRole } from "../creator";
 import type { ExtraDetails, StoreItem } from "../detect/getitems.schema";
 import type { SteamLanguage } from "../i18n/locale";
 import {
@@ -20,12 +21,15 @@ export type AnyDisclosed = DisclosedOf<TagKind>;
 export type KindVerdict = Verdict<AnyDisclosed>;
 
 /**
- * The base game of a DLC, from Valve's `related_items.parent_appid`. Absent when the app has none,
- * when Valve did not send one and when the answer came from a source that does not know it (the
- * app page). The ignore list follows it (`isIgnored`); no verdict reads it.
+ * What an app is related to, from Valve's data. The ignore list follows these (`isIgnored`); no
+ * verdict reads them. Each is absent when Valve did not send it and when the answer came from a
+ * source that does not know it (the app page).
  */
-export interface BaseGame {
+export interface Relations {
+  /** The base game of a DLC, from `related_items.parent_appid`. */
   readonly parent?: AppId;
+  /** The developers and publishers, from `basic_info`; absent when there are none. */
+  readonly creators?: Readonly<Record<CreatorRole, readonly Creator[]>>;
 }
 
 /** A verdict for every registered kind, in the shape of that kind. */
@@ -35,14 +39,26 @@ type PerKindVerdicts = {
 
 /**
  * What core knows about one app: a verdict for every registered kind, in the shape of that kind,
- * and the base game when it is a DLC. A verdict has the three states of rule 4. A missing answer
- * is unknown, never not disclosed.
+ * and what the app is related to. A verdict has the three states of rule 4. A missing answer is
+ * unknown, never not disclosed.
  */
-export type KindVerdicts = PerKindVerdicts & BaseGame;
+export type KindVerdicts = PerKindVerdicts & Relations;
 
-/** The verdicts with `parent` as the base game; the same object when there is none to add. */
-export function withParent(verdicts: KindVerdicts, parent: AppId | undefined): KindVerdicts {
-  return parent === undefined ? verdicts : { ...verdicts, parent };
+/** Relations as read from data: each one may be missing. */
+export type FoundRelations = { readonly [Key in keyof Relations]?: Relations[Key] | undefined; };
+
+/** The verdicts with the relations of `from` added; the same object when there are none. */
+export function withRelations(verdicts: KindVerdicts, from: FoundRelations): KindVerdicts {
+  const { parent, creators } = from;
+  const named = creators !== undefined && CREATOR_ROLES.some((role) => creators[role].length > 0);
+  if (parent === undefined && !named) {
+    return verdicts;
+  }
+  return {
+    ...verdicts,
+    ...(parent === undefined ? {} : { parent }),
+    ...(named ? { creators } : {}),
+  };
 }
 
 function sitsUnderItsKind(id: KindId, verdict: KindVerdict): boolean {
