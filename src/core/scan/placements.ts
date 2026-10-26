@@ -184,15 +184,16 @@ export const PLACEMENTS: readonly Placement[] = [
 ];
 
 /**
- * A list surface where a notice counts the results the list filter hides (`ui/hidden-notice.ts`).
- * A new surface is a new entry in `LIST_PLACEMENTS`.
+ * A list surface where a block of ours counts the hosts the renderers drew: the hidden results
+ * notice (`LIST_PLACEMENTS`, `ui/hidden-notice.ts`) or the package summary (`SUMMARY_PLACEMENTS`,
+ * `ui/package-summary.ts`). A new surface is a new entry in one of them.
  */
 export interface ListPlacement {
   /** A stable name for tests and debug logs. */
   readonly id: string;
-  /** The element that holds the list's hosts; the notice goes right before it. */
+  /** The element that holds the list's hosts; the block goes right before it. */
   readonly list: string;
-  /** The store's own notice above the list; when the page has it, the notice goes right after. */
+  /** A store element above the list; when the page has it, the block goes right after it. */
   readonly after?: string;
 }
 
@@ -205,6 +206,49 @@ export const LIST_PLACEMENTS: readonly ListPlacement[] = [
     after: "#search_results_filtered_warning_persistent",
   },
 ];
+
+/** Every list surface with a summary of its games' tags; the first in the page wins. */
+export const SUMMARY_PLACEMENTS: readonly ListPlacement[] = [
+  // A package page (`/sub/<id>/`): under the package header, above the included games.
+  {
+    id: "package-items",
+    list: ".package_landing_page_item_list",
+    after: "#package_header_container",
+  },
+];
+
+/** A list surface in the page, and the store element above it that our block follows, if any. */
+export interface FoundList {
+  readonly list: Element;
+  readonly after: Element | null;
+}
+
+/** The first of `placements` whose list is in the page, or undefined. Reads only. */
+export function findList(
+  doc: Document,
+  placements: readonly ListPlacement[],
+): FoundList | undefined {
+  for (const placement of placements) {
+    const list = doc.querySelector(placement.list);
+    if (list !== null) {
+      const after = placement.after === undefined ? null : doc.querySelector(placement.after);
+      return { list, after };
+    }
+  }
+  return undefined;
+}
+
+/** Puts `block` where its list surface wants it, and writes nothing when it is there already. */
+export function placeAbove(found: FoundList, block: Element): void {
+  const { list, after } = found;
+  if (after === null) {
+    if (list.previousElementSibling !== block) {
+      list.before(block);
+    }
+  } else if (after.nextElementSibling !== block) {
+    after.after(block);
+  }
+}
 
 /** A host's placement and the element its badge attaches to. */
 export interface Placed {

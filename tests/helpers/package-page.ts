@@ -1,3 +1,6 @@
+import { HOST_APPID } from "../../src/core/scan/marks";
+import { setBody } from "./dom";
+
 /** The package ID of the page `packagePage` stands for. */
 export const PACKAGE_PATH = "/sub/1756458/";
 
@@ -39,4 +42,17 @@ export function packagePage(ids: readonly number[]): string {
       </div>
     </div>
   </div>`;
+}
+
+/**
+ * Loads `packagePage(ids)` into the test document with each included game's row marked as the
+ * scanner marks a host, and returns the rows in page order.
+ */
+export function markedPackagePage(ids: readonly number[]): readonly Element[] {
+  setBody(packagePage(ids));
+  const rows = [...document.querySelectorAll("[data-ds-appid]")];
+  for (const row of rows) {
+    row.setAttribute(HOST_APPID, row.getAttribute("data-ds-appid") ?? "");
+  }
+  return rows;
 }

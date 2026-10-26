@@ -175,6 +175,18 @@
   outline-offset: var(--sar-focus-offset);
 }
 
+/* Package summary: the tag section's label over one line per tag, above the included games */
+
+.sar-summary {
+  margin-block-end: var(--sar-space-2);
+}
+
+.sar-summary-line {
+  display: block;
+  color: var(--sar-color-text);
+  font: var(--sar-summary-tag-font);
+}
+
 /* Hover card: the store's game hover popup in our type. One per page, fixed to the viewport;
    hover-card.ts sets its top and left. */
 

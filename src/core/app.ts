@@ -33,6 +33,7 @@ import { createHiddenNotice } from "./ui/hidden-notice";
 import { createHoverCard } from "./ui/hover-card";
 import { applyKindSettings } from "./ui/kind-attributes";
 import { createHostKindsRenderer } from "./ui/list-filter";
+import { createPackageSummary } from "./ui/package-summary";
 
 /** What a composition root hands to core: the ports, already built for its platform. */
 export interface AppDeps {
@@ -112,10 +113,10 @@ const SHOWS_BANNER = (settings: KindSettings): boolean => settings.banner;
 
 /**
  * Starts Tag Kit for Steam on one store page: settings, locale and logger, cache upkeep, the
- * detector stack, the allow-list, the page stylesheet, the scanner with its renderers, the hidden
- * results notice and the app page's banner. Settings changes from any tab re-render at once:
- * badges, the list filter and the tag colors are one root attribute or custom property each, the
- * banner is drawn again from the known verdicts.
+ * detector stack, the allow-list, the page stylesheet, the scanner with its renderers (the package
+ * summary among them), the hidden results notice and the app page's banner. Settings changes from
+ * any tab re-render at once: badges, the list filter and the tag colors are one root attribute or
+ * custom property each, the banner is drawn again from the known verdicts.
  */
 export async function start(deps: AppDeps): Promise<App> {
   const { document: doc, store, clock } = deps;
@@ -156,7 +157,11 @@ export async function start(deps: AppDeps): Promise<App> {
   const capsules = createCapsuleUi({
     document: doc,
     detector: detectors.detector,
-    renderers: [createHostKindsRenderer(), createBadgeRenderer(doc, i18n, card)],
+    renderers: [
+      createHostKindsRenderer(),
+      createBadgeRenderer(doc, i18n, card),
+      createPackageSummary(doc, i18n),
+    ],
     isAllowed: (id, forKind, related) => isIgnored(ignored, id, forKind, related),
     isBadged: (forKind) => effectiveSettings(settings.kinds[forKind]).badge,
   });

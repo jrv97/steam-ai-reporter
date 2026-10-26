@@ -39,6 +39,28 @@ function anchorOf(doc: Document): Element | undefined {
 }
 
 /**
+ * A block of ours named by the muted `badge_tags_title` label, which it holds first. The tag
+ * section and the package summary (`package-summary.ts`) add their content after it.
+ */
+export function createTagBlock(
+  doc: Document,
+  i18n: MessageCatalog,
+  className: string,
+  labelId: string,
+): HTMLElement {
+  const element = doc.createElement("div");
+  element.className = className;
+  element.setAttribute("role", "group");
+  element.setAttribute("aria-labelledby", labelId);
+  const label = doc.createElement("div");
+  label.className = "sar-tag-section-label";
+  label.id = labelId;
+  label.textContent = i18n.t("badge_tags_title");
+  element.append(label);
+  return element;
+}
+
+/**
  * The Tag Kit section under the store's user-defined tags: a muted label and one chip for each
  * verdict, all of them, wrapping to more rows. Each chip opens the hover card for its own kind
  * and takes focus when a card is given. The chips carry no listener: the card's delegated ones
@@ -52,14 +74,7 @@ export function createTagSection(
   let drawn: Drawn | undefined;
 
   function build(verdicts: readonly AnyDisclosed[]): HTMLElement {
-    const element = doc.createElement("div");
-    element.className = "sar-tag-section";
-    element.setAttribute("role", "group");
-    element.setAttribute("aria-labelledby", LABEL_ID);
-    const label = doc.createElement("div");
-    label.className = "sar-tag-section-label";
-    label.id = LABEL_ID;
-    label.textContent = i18n.t("badge_tags_title");
+    const element = createTagBlock(doc, i18n, "sar-tag-section", LABEL_ID);
     const group = createChipGroup(doc, "full");
     for (const verdict of verdicts) {
       const chip = createChip(doc, i18n, KIND_BY_ID[verdict.kind]);
@@ -69,7 +84,7 @@ export function createTagSection(
       }
       group.append(chip);
     }
-    element.append(label, group);
+    element.append(group);
     return element;
   }
 
