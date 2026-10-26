@@ -4,6 +4,7 @@ import { createSerial } from "../serial";
 import { ALLOW_KEY, CREATOR_ALLOW_KEYS } from "../storage-keys";
 import type { AppId } from "../types";
 import {
+  ALLOW_SCOPES,
   type AllowEntries,
   type AllowEntry,
   type AllowScope,
@@ -11,6 +12,7 @@ import {
   encodeAllow,
   parseGameKey,
   type ParseKey,
+  perScope,
 } from "./allow-data";
 import { readAllowValue } from "./migrate";
 
@@ -22,6 +24,11 @@ export interface ScopedList<Key> {
   add(scope: AllowScope, key: Key, name: string): Promise<void>;
   /** Removes the item from the scope; a key that is not listed is ignored. */
   remove(scope: AllowScope, key: Key): Promise<void>;
+  /**
+   * Adds the entries of every scope in one write and returns how many were new. Where a scope
+   * holds a key on both sides, the entry ignored first stays, so merging twice changes nothing.
+   */
+  merge(entries: AllowEntries<Key>): Promise<number>;
 }
 
 /** The games the user chose to ignore. */
@@ -82,6 +89,28 @@ export function createScopedList<Key>(
       }),
 
     remove: (scope, key) => change(scope, (entries) => entries.delete(key)),
+
+    merge: (incoming) =>
+      serial(async () => {
+        const entries = await read();
+        const merged = perScope((scope) => new Map(entries[scope]));
+        let added = 0;
+        let changed = false;
+        for (const scope of ALLOW_SCOPES) {
+          for (const [key, entry] of incoming[scope]) {
+            const held = merged[scope].get(key);
+            added += held === undefined ? 1 : 0;
+            if (held === undefined || entry.added < held.added) {
+              merged[scope].set(key, entry);
+              changed = true;
+            }
+          }
+        }
+        if (changed) {
+          await write(merged);
+        }
+        return added;
+      }),
   };
 }
 
