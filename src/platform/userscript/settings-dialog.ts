@@ -1,10 +1,12 @@
 import type { Catalogs } from "../../core/i18n/catalog";
 import type { I18n } from "../../core/i18n/t";
 import type { IgnoreLists } from "../../core/ignored";
+import type { Clock } from "../../core/ports";
 import type { StoredSettings } from "../../core/settings/settings-source";
 import type { SectionState } from "../../core/ui/section-state";
 import { mountSettingsForm } from "../../core/ui/settings-form";
 import { adoptStyles, DIALOG_CSS } from "../../core/ui/styles";
+import { createFileTransfer } from "../shared/file-transfer";
 
 export interface SettingsDialogDeps {
   readonly document: Document;
@@ -13,6 +15,8 @@ export interface SettingsDialogDeps {
   readonly settings: StoredSettings;
   readonly lists: IgnoreLists;
   readonly sectionState: SectionState;
+  /** Dates a backup. */
+  readonly clock: Clock;
   /** False when the manager cannot tell other tabs about a change, so it applies on reload. */
   readonly live: boolean;
 }
@@ -76,6 +80,8 @@ export async function openSettingsDialog(deps: SettingsDialogDeps): Promise<void
     context: "popup",
     colors: true,
     locales: Object.keys(deps.catalogs),
+    // The page around a modal dialog is inert, so the file input lives inside it
+    backup: { files: createFileTransfer(dialog), clock: deps.clock },
   });
 
   // The close button and the backdrop (a click on the dialog itself) share one listener

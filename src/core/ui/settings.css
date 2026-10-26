@@ -487,3 +487,60 @@
   font-size: var(--sar-size-sm);
   line-height: var(--sar-leading-sm);
 }
+
+/* Backup: the one primary button confirms the only action that overwrites settings */
+.sar-button[data-sar-variant="primary"] {
+  background: var(--sar-button-primary-bg);
+  color: var(--sar-button-primary-fg);
+}
+
+.sar-button[data-sar-variant="primary"]:hover {
+  background: var(--sar-button-primary-bg-hover);
+}
+
+.sar-backup-help,
+.sar-backup-note {
+  margin: 0 0 var(--sar-space-2);
+  color: var(--sar-color-text-subtle);
+  font-size: var(--sar-size-sm);
+  line-height: var(--sar-leading-sm);
+}
+
+.sar-backup-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sar-space-2);
+}
+
+/* The check's Restore and Cancel sit on the right, Restore first, like the store's dialogs */
+.sar-backup-actions[data-sar-align="end"] {
+  justify-content: flex-end;
+  gap: var(--sar-space-3);
+}
+
+.sar-backup-summary {
+  margin-block-start: var(--sar-space-3);
+  padding: var(--sar-space-3);
+  border: 1px solid var(--sar-color-border);
+  border-radius: var(--sar-radius-md);
+  background: var(--sar-color-bg-sunken);
+}
+
+.sar-backup-summary-title {
+  margin: 0 0 var(--sar-space-2);
+  color: var(--sar-color-text-strong);
+  font-weight: var(--sar-weight-medium);
+}
+
+.sar-backup-contents {
+  margin: 0 0 var(--sar-space-2);
+  padding-inline-start: var(--sar-space-4);
+  color: var(--sar-color-text);
+}
+
+.sar-backup-status {
+  margin: var(--sar-space-2) 0 0;
+  color: var(--sar-color-text);
+  font-size: var(--sar-size-sm);
+  line-height: var(--sar-leading-sm);
+}

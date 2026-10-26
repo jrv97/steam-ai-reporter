@@ -7,6 +7,7 @@ import { AUTO_LOCALE, parseSettings } from "../../core/settings/settings";
 import { ALLOW_KEY, CREATOR_ALLOW_KEYS } from "../../core/storage-keys";
 import { createSectionState } from "../../core/ui/section-state";
 import { mountSettingsForm, type SettingsContext } from "../../core/ui/settings-form";
+import { createFileTransfer } from "../shared/file-transfer";
 import { extensionUrl, extensionVersion, localStorageArea, onLocalChanged } from "./ext";
 import { createExtensionSettings, createExtensionStore } from "./store";
 
@@ -47,7 +48,8 @@ async function main(): Promise<void> {
   const context = pageContext();
   const store = createExtensionStore(localStorageArea);
   const settings = createExtensionSettings(store, onLocalChanged);
-  const lists = createIgnoreLists(store, { now: () => Date.now() });
+  const clock = { now: () => Date.now() };
+  const lists = createIgnoreLists(store, clock);
   const catalogs = SHIPPED_CATALOGS;
 
   let setting: string = AUTO_LOCALE;
@@ -72,7 +74,10 @@ async function main(): Promise<void> {
     colors: context === "page",
     locales: Object.keys(catalogs),
     header: { version: extensionVersion(), iconUrl: extensionUrl(ICONS[context]) },
-    ...(context === "popup" ? { allSettingsUrl: extensionUrl(OPTIONS_PAGE) } : {}),
+    // A file chooser can close the toolbar popup before the file arrives, so backup is page only
+    ...(context === "popup"
+      ? { allSettingsUrl: extensionUrl(OPTIONS_PAGE) }
+      : { backup: { files: createFileTransfer(document.body), clock } }),
   });
 
   // The page's own copy follows a new language on the next load; reload now.

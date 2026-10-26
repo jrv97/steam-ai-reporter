@@ -15,7 +15,13 @@ import type { JsonValue } from "../json";
 import type { KeyValueStore } from "../ports";
 import { DEFAULT_SETTINGS, parseSettings, type Settings } from "../settings/settings";
 import { createSettingsSource } from "../settings/settings-source";
-import { SECTION_STATE_KEY, verdictKey } from "../storage-keys";
+import {
+  ALLOW_KEY,
+  CREATOR_ALLOW_KEYS,
+  SECTION_STATE_KEY,
+  SETTINGS_KEY,
+  verdictKey,
+} from "../storage-keys";
 import { type BackupDeps, createBackupFile, restoreBackup } from "./backup";
 import { type BackupContents, readBackup } from "./format";
 
@@ -95,6 +101,23 @@ describe("restoreBackup", () => {
     deps.settings.subscribe((value) => heard.push(parseSettings(value)));
     await restoreBackup(deps, backupContents({ settings: COLORED }));
     expect(heard).toStrictEqual([COLORED]);
+  });
+
+  it("writes the keys that open pages watch for list and settings changes", async () => {
+    const store = countingStore(memoryStore());
+    await restoreBackup(
+      backupDeps(store),
+      backupContents({
+        games: gameEntries({ all: [[10, "Ten", 1]] }),
+        creators: {
+          developer: creatorEntries({ all: [["c:4", "Studio", 1]] }),
+          publisher: creatorEntries({ all: [["c:5", "Label", 1]] }),
+        },
+      }),
+    );
+    expect(new Set(store.sets.flat())).toStrictEqual(
+      new Set([ALLOW_KEY, ...Object.values(CREATOR_ALLOW_KEYS), SETTINGS_KEY]),
+    );
   });
 
   it("adds to the lists, keeps what is here and counts both", async () => {

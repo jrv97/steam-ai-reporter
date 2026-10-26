@@ -20,6 +20,7 @@ function deps(live: boolean, store = memoryStore()): SettingsDialogDeps {
     settings: createSettingsSource(store),
     lists: createIgnoreLists(store, fixedClock(Date.UTC(2026, 9, 20))),
     sectionState: createSectionState(store),
+    clock: fixedClock(Date.UTC(2026, 9, 20)),
     live,
   };
 }
@@ -40,6 +41,14 @@ describe("openSettingsDialog", () => {
     expect(dialog()?.querySelector(".sar-dialog-title")?.textContent).toBe(i18n.t("ext_name"));
     expect(dialog()?.querySelector("[data-sar-setting='badge']")).not.toBeNull();
     expect(document.querySelector("[data-sar-setting='badge']")).toBeNull();
+  });
+
+  it("has the Backup card, whose file input stays inside the modal dialog", async () => {
+    await openSettingsDialog(deps(true));
+
+    const buttons = [...(dialog()?.querySelectorAll("button") ?? [])];
+    buttons.find((button) => button.textContent === i18n.t("options_backup_restore"))?.click();
+    expect(dialog()?.querySelector("input[type='file']")).not.toBeNull();
   });
 
   it("shows a color field for each tag, which the toolbar popup does not", async () => {

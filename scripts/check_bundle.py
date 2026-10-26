@@ -12,12 +12,14 @@
   name in the bundle has an @grant and every @grant is used; valibot's license block is in the
   body; no userscript header in any other bundle.
 - No eval( or new Function in any bundle (rule 2); no URL outside the two Valve hosts.
-- Size budgets: content.js at most 192 KB, options.js at most 130 KB and the userscript at most
-  256 KB, unminified (rule 13). Each is the measured size plus a few percent of headroom; raise one
+- Size budgets: content.js at most 200 KB, options.js at most 150 KB and the userscript at most
+  284 KB, unminified (rule 13). Each is the measured size plus a few percent of headroom; raise one
   only with a measurement. Every shipped catalog is inlined, so each added locale costs about 5 KB
   in each of them. Measured when ignoring by developer or publisher landed (ADR 0013): content.js
   186,313 B (from 169,265), options.js 126,147 B (from 118,688), userscript 251,440 B (from
-  232,227).
+  232,227). Measured when backup and restore landed (decision 54): content.js 198,433 B (from
+  193,262, catalog text only), options.js 147,172 B (from 127,308), userscript 279,609 B (from
+  259,792); the backup code ships in options.js and the userscript only.
 - The STEAM_API_KEY value, when set, appears nowhere in dist/ or artifacts/ (rule 16).
 - The dev injection bundle is never packaged into artifacts/, and when artifacts/ exists it holds
   exactly the five release artifacts, with a manifest at the root of each extension zip. The source
@@ -47,9 +49,9 @@ from repo import (
 
 KIB = 1024
 BUDGETS = {
-    **{DIST / target / "content.js": 192 * KIB for target in EXTENSION_TARGETS},
-    **{DIST / target / "options.js": 130 * KIB for target in EXTENSION_TARGETS},
-    DIST / "userscript" / f"{SLUG}.user.js": 256 * KIB,
+    **{DIST / target / "content.js": 200 * KIB for target in EXTENSION_TARGETS},
+    **{DIST / target / "options.js": 150 * KIB for target in EXTENSION_TARGETS},
+    DIST / "userscript" / f"{SLUG}.user.js": 284 * KIB,
 }
 STORE_MATCH = ["https://store.steampowered.com/*"]
 RELEASE_BASE = "https://github.com/jrv97/steam-ai-reporter/releases/latest/download"
