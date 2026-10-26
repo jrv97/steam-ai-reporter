@@ -98,7 +98,7 @@
 
 .sar-compact {
   position: absolute;
-  /* Mirrors the store's corner flags: 5px down, flush to the edge, square, solid */
+  /* Mirrors the store's corner flags: square, solid, 5px from the top and from the end edge */
   inset-block-start: var(--sar-compact-inset-block);
   inset-inline-end: var(--sar-compact-inset-inline);
   z-index: var(--sar-z-badge);
