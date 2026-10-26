@@ -1,0 +1,86 @@
+---
+status: accepted
+date: 2026-10-26
+decision-makers: Jorge Rodriguez de la Vega
+---
+
+# Derive a value from a category Valve computes when its own list leaves it out
+
+## Context and problem statement
+
+Steam lists Family Sharing among a game's features as category 62 (`category_family_sharing`) in `categories.feature_categoryids`. Unlike the categories the developer sets in Steamworks (In-App Purchases, the PvP modes), category 62 is computed by Valve (`computed: 1` in Steam's category table), and every released item GetItems answers for carries a feature list. Steam has no field that says a game cannot be shared: the client's "Family Sharing not Available" belongs to a signed-in owner's library, and the store's own exclusion reasons ("Free games cannot be shared", "This DLC is not available for Family Sharing", "This type of content cannot be shared") are per license.
+
+The warning use case is the absence: a person who shares a library wants to see which games will not reach the family. Rule 4 as written says an item with `extra_details` and no key for a kind is not reported, which rules that out. [ADR 0015](0015-kinds-valve-computes.mdx) named Valve as a source and left the rule's text for this case: "The wording that names a kind's source and a value derived from a field Steam computes for every item belongs with the Family Sharing slice."
+
+May a kind read Valve's own computed list and tag a game whose list leaves its category out, and under which conditions and in which words? This ADR amends rule 4 and the statement of [ADR 0010](0010-new-tags-from-getitems.mdx) that "an absent key stays 'not reported'", for kinds Valve computes only.
+
+## Decision drivers
+
+- Rule 4: three states; unknown is never shown as not disclosed; no negative of our own ("none", "no X", "DRM-free", "no anti-cheat"); Steam's words.
+- Principle 1: every fact is attributed to whoever states it.
+- Rule 1: Valve hosts only, no credentials, no seed lists. The client's per-owner status needs a signed-in request.
+- No false flags: a free game, a DLC whose base game decides, a demo or an unreleased game must not read as "not available" because its list lacks 62.
+- Rule 13: no new request and no section flag; the categories come with every item.
+
+## Considered options
+
+1. No Family Sharing tag.
+2. A positive-only tag: "Family Sharing" when the list holds 62, nothing else.
+3. A positive tag and a derived one: "Family Sharing" when the list holds 62, and Steam's "Family Sharing not Available" when Valve's non-empty list for a paid game leaves 62 out (chosen).
+4. The negative from the signed-in client (`FamilyGroup_GameExcluded`, the owner's library).
+
+## Decision outcome
+
+Chosen option 3, under these conditions:
+
+- The kind reads Valve's computed category list only (`source: "valve"`); no developer-declared kind derives anything from absence, and rule 4 keeps "not reported" for them.
+- Supported, the facet `supported`: the feature list holds 62.
+- Derived, the facet `unsupported`: the feature list is non-empty, it lacks 62, the item is a game (`type` 0) and it is not free (`is_free` is not true). Steam's JSON leaves `is_free` out for paid games and sends `true` for free ones (every capture on hand): an absent field reads as paid and a field that is not a boolean makes the kind unknown `malformed`.
+- Not disclosed: a non-empty list without 62 on a free game or on any other item type (a DLC, a demo, a package). Steam says free games cannot be shared, which would put the tag on every free-to-play game, and a DLC follows its base game (ARC Raiders lists 62 and its cosmetic DLC 5201760 and 4210150 do not). Not disclosed renders nothing and keeps the cache life of a known answer, a week, where an unknown answer would refetch the item every 6 hours.
+- Unknown: the categories malformed (`malformed`), and the feature list absent or empty (`missing`); a demo carries none, and an empty list says no more than an absent one, since Steam's JSON leaves an empty list out.
+- Words: the heading "Family Sharing" and the value words "Family Sharing" and "Family Sharing not Available" are Steam's (`AppDetails_Feature_FamilySharing`, `DisplayStatus_Compact_OwnerLocked`; Spanish "Prestamo familiar" and "Prestamo familiar no disponible", with the accents the catalog keeps). The hover card closes with "According to Valve", and under the derived value only our own line says what the data shows and nothing more: "Family Sharing is not in the features Steam lists for this game." Nothing renders as "No Family Sharing", "none" or a claim that the game cannot be shared.
+
+Rule 4 in `AGENTS.md` changes from:
+
+> 4. **Semantics.** Three verdict states: disclosed, not disclosed, unknown. Unknown is never stored or shown as not disclosed. An item without `extra_details` is unknown; an item with `extra_details` and no key for a kind is not reported. Neither state renders as "none", "DRM-free" or "no anti-cheat". A tag uses Steam's own words for its kind, and our own copy never says "uses AI", "AI-free" or "no AI". The developer's own text is rendered verbatim through `textContent`.
+
+to:
+
+> 4. **Semantics.** Three verdict states: disclosed, not disclosed, unknown. Unknown is never stored or shown as not disclosed. An item without `extra_details`, or without a section a kind reads, is unknown; an item with them and no key for a kind is not reported. Only a kind read from Valve's own computed category list may derive a value from a non-empty list that lacks its category, under the conditions of an ADR (ADR 0016). Neither state nor a derived value renders as "none", "no" and the kind, "DRM-free" or "no anti-cheat". A tag uses Steam's own words for its kind and names its source: the developer, or Valve for what Valve computes. Our own copy never says "uses AI", "AI-free" or "no AI", and states nothing about a game beyond Steam's words and data. The developer's own text is rendered verbatim through `textContent`.
+
+A catalog check fails on a message that starts with "No " and a tag's heading, or that says "free of" or "none" about a tag, which keeps the wording rule mechanical.
+
+### Library check (rule 12)
+
+Nothing to adopt: the kind reads one integer in a list and two item fields, and the facets, the source line and the settings are the ones of ADR 0015 and decision 61.
+
+### Consequences
+
+- Good: a person who shares a library sees which paid games Steam does not list for Family Sharing, in Steam's words, with Valve named as the source.
+- Good: no new request, flag or permission; the categories already come with every item.
+- Good: free games, DLC, demos and packages never get the derived value.
+- Bad: the derived value rests on Valve's list being complete for released paid games. A game Valve lists late (an unreleased game can list 62 before release, ReBlade 3489340 does) would read as not available until the list changes; the kind's week TTL bounds how long that lasts.
+- Bad: the store's exclusions are per license, and a game can be listed and still be excluded for one owner; the tag says what the list shows, not what one library allows.
+- Neutral: the canary checks the structure Valve sends (a feature list on every sampled game, 62 on some, a free game without it) and pins no game to a result.
+
+## Pros and cons of the options
+
+### 1. No Family Sharing tag
+
+- Good: nothing to explain.
+- Bad: the question people ask before buying a game for a family library goes unanswered, though Valve publishes the data.
+
+### 2. Positive-only tag
+
+- Good: no derived state; rule 4 unchanged.
+- Bad: most paid games list 62, so the tag marks nearly every row and the warning use case, the games that will not be shared, is not served.
+
+### 3. Positive and derived tag
+
+- Good: serves the warning use case from data Valve computes for every item, in Steam's words.
+- Bad: a rule 4 amendment and a condition list that must stay narrow.
+
+### 4. The signed-in client's status
+
+- Good: exact for one owner's library.
+- Bad: needs the person's credentials and the client's endpoints, against rule 1, and says nothing about games the person does not own.

@@ -1,7 +1,7 @@
 # Tag Kit for Steam
 
 An MV3 extension for Chromium-based browsers and Firefox, plus a Tampermonkey/Violentmonkey
-userscript, built from one TypeScript core, that tag Steam store items: AI Generated Content Disclosure, anti-cheat, 3rd-party DRM, 3rd-Party Account, 3rd-party EULA, PvP and In-App Purchases.
+userscript, built from one TypeScript core, that tag Steam store items: AI Generated Content Disclosure, anti-cheat, 3rd-party DRM, 3rd-Party Account, 3rd-party EULA, PvP, In-App Purchases, Steam Deck Compatibility, Steam Machine Compatibility and Family Sharing.
 
 ## Working knowledge (docs/)
 
@@ -26,11 +26,14 @@ These are hard rules. A change that breaks one needs an ADR first.
 3. **Permissions.** `storage` plus content-script matches on `https://store.steampowered.com/*`.
    No `host_permissions` and no background script unless an ADR says otherwise.
 4. **Semantics.** Three verdict states: disclosed, not disclosed, unknown. Unknown is never stored
-   or shown as not disclosed. An item without `extra_details` is unknown; an item with
-   `extra_details` and no key for a kind is not reported. Neither state renders as "none", "DRM-free"
-   or "no anti-cheat". A tag uses Steam's own words for its kind, and our own copy never says
-   "uses AI", "AI-free" or "no AI". The developer's own text is rendered verbatim through
-   `textContent`.
+   or shown as not disclosed. An item without `extra_details`, or without a section a kind reads,
+   is unknown; an item with them and no key for a kind is not reported. Only a kind read from
+   Valve's own computed category list may derive a value from a non-empty list that lacks its
+   category, under the conditions of an ADR (ADR 0016). Neither state nor a derived value renders
+   as "none", "no" and the kind, "DRM-free" or "no anti-cheat". A tag uses Steam's own words for
+   its kind and names its source: the developer, or Valve for what Valve computes. Our own copy
+   never says "uses AI", "AI-free" or "no AI", and states nothing about a game beyond Steam's
+   words and data. The developer's own text is rendered verbatim through `textContent`.
 5. **Core purity.** `src/core` uses only DOM and web standards and never names `chrome`, `browser`
    or `GM`. Platform code lives in `src/platform/`.
 6. **Originality and credit.** No code is copied from other AI-disclosure extensions, and nothing
