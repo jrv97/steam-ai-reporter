@@ -1,7 +1,7 @@
 import { KINDS } from "../kinds/registry";
 import type { MessageCatalog } from "../ports";
 import { HOST_HIDEABLE, HOST_KINDS } from "../scan/marks";
-import { LIST_PLACEMENTS } from "../scan/placements";
+import { findList, LIST_PLACEMENTS, placeAbove } from "../scan/placements";
 import { announce, POLITE } from "./announce";
 import { filterAttribute } from "./kind-attributes";
 
@@ -43,12 +43,6 @@ export function hiddenSelector(root: Element): string | undefined {
     }
   }
   return parts.length === 0 ? undefined : parts.join(", ");
-}
-
-/** A list surface in the page, and the store's own notice the bar follows when there is one. */
-interface FoundList {
-  readonly list: Element;
-  readonly after: Element | null;
 }
 
 /** Whether a record can change the count: a mark or a filter, or a marked host leaving. */
@@ -123,17 +117,6 @@ export function createHiddenNotice(options: HiddenNoticeOptions): HiddenNotice {
   let spoken: string | undefined;
   let cancelSpeech: (() => void) | undefined;
 
-  function findList(): FoundList | undefined {
-    for (const placement of LIST_PLACEMENTS) {
-      const list = doc.querySelector(placement.list);
-      if (list !== null) {
-        const after = placement.after === undefined ? null : doc.querySelector(placement.after);
-        return { list, after };
-      }
-    }
-    return undefined;
-  }
-
   function speak(line: string): void {
     cancelSpeech?.();
     cancelSpeech = undefined;
@@ -158,17 +141,13 @@ export function createHiddenNotice(options: HiddenNoticeOptions): HiddenNotice {
   }
 
   function draw(): void {
-    // Read phase: the list, the filters, the count and where the notice sits.
-    const found = findList();
+    // Read phase: the list, the filters and the count.
+    const found = findList(doc, LIST_PLACEMENTS);
     const list = found?.list;
-    const after = found?.after ?? null;
     const selector = hiddenSelector(root);
     const count = list === undefined || selector === undefined
       ? 0
       : list.querySelectorAll(selector).length;
-    const placed = after === null
-      ? list?.previousElementSibling === box
-      : after.nextElementSibling === box;
     const moved = list !== shownList;
     const revealed = !moved && root.hasAttribute(REVEAL_ATTRIBUTE);
     shownList = list;
@@ -176,7 +155,7 @@ export function createHiddenNotice(options: HiddenNoticeOptions): HiddenNotice {
     if (moved) {
       root.removeAttribute(REVEAL_ATTRIBUTE);
     }
-    if (list === undefined || count === 0) {
+    if (found === undefined || count === 0) {
       hide();
       return;
     }
@@ -186,13 +165,7 @@ export function createHiddenNotice(options: HiddenNoticeOptions): HiddenNotice {
     if (box.hidden !== false) {
       box.hidden = false;
     }
-    if (!placed) {
-      if (after === null) {
-        list.before(box);
-      } else {
-        after.after(box);
-      }
-    }
+    placeAbove(found, box);
     speak(line);
   }
 
@@ -218,7 +191,7 @@ export function createHiddenNotice(options: HiddenNoticeOptions): HiddenNotice {
   }
 
   function connect(): void {
-    if (findList() === undefined) {
+    if (findList(doc, LIST_PLACEMENTS) === undefined) {
       return;
     }
     connected = true;

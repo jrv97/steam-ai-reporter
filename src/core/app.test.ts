@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import kindItems from "../../tests/fixtures/getitems/kinds.json";
 import searchItems from "../../tests/fixtures/getitems/search-roguelike-50.json";
 import { basicInfo } from "../../tests/helpers/creators";
-import { clearRoot } from "../../tests/helpers/dom";
+import { clearRoot, setBody } from "../../tests/helpers/dom";
 import { fakeHttp } from "../../tests/helpers/fake-http";
 import { fixedClock } from "../../tests/helpers/fixed-clock";
 import {
@@ -12,9 +12,11 @@ import {
   getItemsRequest,
   getItemsRoute,
   itemAs,
+  storeItem,
 } from "../../tests/helpers/getitems";
 import { englishI18n } from "../../tests/helpers/i18n";
 import { memoryStore } from "../../tests/helpers/memory-store";
+import { packagePage } from "../../tests/helpers/package-page";
 import { withKind, writeSettings } from "../../tests/helpers/settings";
 import { loadPage, SURFACES } from "../../tests/helpers/surfaces";
 import { T0, useTimerClock } from "../../tests/helpers/timer-clock";
@@ -48,6 +50,15 @@ async function startOnSearch(
   clock: Clock = fixedClock(NOW),
 ) {
   loadPage(SURFACES.search);
+  return startOnLoaded(initial, items, clock);
+}
+
+/** Starts the app on the page the test document holds. */
+async function startOnLoaded(
+  initial: ReadonlyMap<string, JsonValue>,
+  items: readonly unknown[],
+  clock: Clock = fixedClock(NOW),
+) {
   document.documentElement.lang = "en";
   const store = memoryStore(initial);
   const settings = createSettingsSource(store);
@@ -80,6 +91,19 @@ afterEach(() => {
   app = undefined;
   clearRoot();
   vi.useRealTimers();
+});
+
+describe("start on a package page", () => {
+  it("sums up the included games' tags above them from the one request", async () => {
+    setBody(packagePage([10, 20, 30]));
+    const items = [disclosedItem(10, "Concept art."), storeItem(20), storeItem(30)];
+    const { http } = await startOnLoaded(new Map(), items);
+    const line = () => document.querySelector(".sar-summary .sar-summary-line")?.textContent;
+    await expect.poll(line).toBe(
+      i18n.plural("badge_summary_games", 3, { kind: i18n.t("kind_ai_heading"), tagged: "1" }),
+    );
+    expect(http.calls).toHaveLength(1);
+  });
 });
 
 describe("start on the search page", () => {

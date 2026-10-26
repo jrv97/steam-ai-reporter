@@ -191,7 +191,63 @@
   },
   "badge_tags_title": {
     "message": "Etiquetas de Tag Kit para este producto",
-    "description": "Small label above the chips this extension adds to a game's own store page, right under Steam's \"Popular user-defined tags for this product:\" block. It names the chips as ours, apart from the players' tags. Keep \"Tag Kit\" as is. No colon."
+    "description": "Small label above the chips this extension adds to a game's own store page, right under Steam's \"Popular user-defined tags for this product:\" block, and above the Tag Kit summary at the top of a package page. It names the chips as ours, apart from the players' tags. Keep \"Tag Kit\" as is. No colon."
+  },
+  "badge_summary_games_one": {
+    "message": "$kind$: $tagged$ de $count$ juego",
+    "description": "A line of the Tag Kit summary at the top of a package page, one per tag. $kind$ is Steam's own line for the tag, $count$ is how many of the package's games have a known answer for it and $tagged$ how many of those carry the tag. Neutral count words only: never say that the other games are free of it. Singular form, chosen by $count$.",
+    "placeholders": {
+      "kind": {
+        "content": "$1",
+        "example": "AI Generated Content Disclosure"
+      },
+      "tagged": {
+        "content": "$2",
+        "example": "1"
+      },
+      "count": {
+        "content": "$3",
+        "example": "1"
+      }
+    }
+  },
+  "badge_summary_games_other": {
+    "message": "$kind$: $tagged$ de $count$ juegos",
+    "description": "A line of the Tag Kit summary at the top of a package page, one per tag. $kind$ is Steam's own line for the tag, $count$ is how many of the package's games have a known answer for it and $tagged$ how many of those carry the tag. Neutral count words only: never say that the other games are free of it. Plural form, chosen by $count$.",
+    "placeholders": {
+      "kind": {
+        "content": "$1",
+        "example": "AI Generated Content Disclosure"
+      },
+      "tagged": {
+        "content": "$2",
+        "example": "2"
+      },
+      "count": {
+        "content": "$3",
+        "example": "5"
+      }
+    }
+  },
+  "badge_summary_pending_one": {
+    "message": "$count$ juego aún sin comprobar",
+    "description": "A line at the end of the same summary while some of the package's games are still being looked up. $count$ is how many. Singular form.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "1"
+      }
+    }
+  },
+  "badge_summary_pending_other": {
+    "message": "$count$ juegos aún sin comprobar",
+    "description": "A line at the end of the same summary while some of the package's games are still being looked up. $count$ is how many. Plural form.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "3"
+      }
+    }
   },
   "banner_source": {
     "message": "Citando a los desarrolladores:",

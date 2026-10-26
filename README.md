@@ -29,6 +29,7 @@ Once I got that working in place, I thought "why not also flag all the other ann
 - Adds a badge to capsules and rows (search, wishlist, home, tag and category hubs, sale pages such as Next Fest, developer and publisher pages, the discovery queue, search suggestions) for items that carry one of those tags. Each tag has a short chip (AI, KLAC, Anti-Cheat, DRM, Account, EULA, PvP), and a +N chip stands for the tags that do not fit.
 - Opens a card on hover or keyboard focus that lists every tag in Steam's words and ends with a line naming the developer as the source.
 - Shows a non-blocking banner on the app page that lists each tag the developer declared and quotes the developer's AI report verbatim.
+- Sums up the included games' tags at the top of a package page, one line per tag such as "AI Generated Content Disclosure: 2 of 5 games", from the lookups its rows already use.
 - Gives each tag its own switch, badge, banner entry and list filter (Show, Dim or Hide). Filters start on Show, and the strongest filter wins when a game carries several tags. The PvP tag starts switched off.
 - Lets you ignore a game you consider a false flag, for one tag or for all tags. Its DLC follow it. You can also ignore a developer or a publisher, apart by role, from the banner, and undo it in the settings.
 - Backs up your settings and ignore lists to a JSON file on your device and restores them after a check, in the options page and the userscript dialog. One file works in both.
@@ -169,7 +170,7 @@ No code is copied from any of these projects. Ideas that shaped this one are cre
 - [AI warning for Steam](https://github.com/seeeeew/aiwarningforsteam) by seeeeew: the low-permission manifest, separate cache lifetimes for positive and negative results, and the idea of an automated check for heading changes, and a control for the list filter on the search page itself.
 - [Steam AI Games Indicator](https://github.com/Pierre-Demessence/SteamAIGamesIndicator) by Pierre-Demessence: badging every surface, including wishlist and home capsules, guarding against age gates before trusting a negative, serial requests with a delay, and a hide option inside the search page's own filters.
 - [AI Generated Content Filter for Steam](https://github.com/SoBloxsy/AI-Content-Hider-for-Steam) by SoBloxsy: falling back from hiding to highlighting where hiding breaks a list.
-- [Augmented Steam](https://github.com/IsThereAnyDeal/AugmentedSteam): ideas only (handling both classic and React store pages, one module per feature, and the request for a dismissible banner). It is GPL-3.0 licensed, and nothing from it is used in any form.
+- [Augmented Steam](https://github.com/IsThereAnyDeal/AugmentedSteam): ideas only (handling both classic and React store pages, one module per feature, the request for a dismissible banner, and a note on package pages about what the included games carry). It is GPL-3.0 licensed, and nothing from it is used in any form.
 - [Slop-Inator](https://github.com/Dysnomia-Studio/slopinator) by Dysnomia Studio: listed for comparison. It shaped no part of this project.
 - [Enhanced Steam](https://github.com/jshackles/Enhanced_Steam) by Jason Shackles: listed for comparison. Its development ended in 2019, and Augmented Steam continues from it. It is GPL-3.0 licensed, and nothing from it is used in any form.
 
