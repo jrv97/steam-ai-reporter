@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { countingStore } from "../../../tests/helpers/counting-store";
 import { memoryStore } from "../../../tests/helpers/memory-store";
 import type { JsonValue } from "../json";
-import { SECTION_STATE_KEY } from "../storage-keys";
+import { UI_STATE_KEY } from "../storage-keys";
 import {
   createSectionState,
   decodeSectionStates,
@@ -13,7 +13,7 @@ import {
 } from "./section-state";
 
 function seeded(value: JsonValue) {
-  return countingStore(memoryStore(new Map([[SECTION_STATE_KEY, value]])));
+  return countingStore(memoryStore(new Map([[UI_STATE_KEY, value]])));
 }
 
 describe("decoding the stored section states", () => {
@@ -70,8 +70,8 @@ describe("the section state over a store", () => {
     const store = countingStore(memoryStore());
     const state = createSectionState(store);
     await state.setOpen("ai", false);
-    expect(await store.get([SECTION_STATE_KEY])).toEqual(
-      new Map([[SECTION_STATE_KEY, { open: { ai: false } }]]),
+    expect(await store.get([UI_STATE_KEY])).toEqual(
+      new Map([[UI_STATE_KEY, { open: { ai: false } }]]),
     );
     expect(isSectionOpen(await state.read(), "ai")).toBe(false);
     expect(isSectionOpen(await state.read(), "kernel")).toBe(true);

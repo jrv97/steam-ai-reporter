@@ -23,7 +23,7 @@ import type { KeyValueStore } from "../ports";
 import { ALLOW_ALL } from "../settings/allow-data";
 import { DEFAULT_SETTINGS, parseSettings } from "../settings/settings";
 import { createSettingsSource } from "../settings/settings-source";
-import { SECTION_STATE_KEY } from "../storage-keys";
+import { UI_STATE_KEY } from "../storage-keys";
 import { toAppId } from "../types";
 import { createSectionState, isSectionOpen, type SectionState } from "./section-state";
 import { mountSettingsForm, type SettingsContext } from "./settings-form";
@@ -1291,7 +1291,7 @@ describe("collapsible sections", () => {
   });
 
   it("opens every section when the stored state is bad", async () => {
-    const sectionStore = memoryStore(new Map([[SECTION_STATE_KEY, { open: "closed" }]]));
+    const sectionStore = memoryStore(new Map([[UI_STATE_KEY, { open: "closed" }]]));
     const { card } = await setup("page", sectionStore);
     for (const kind of KINDS) {
       expect(detailsOf(card(kind.id)).open).toBe(true);

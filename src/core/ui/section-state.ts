@@ -3,7 +3,7 @@ import { type JsonValue, parseWithDefaults } from "../json";
 import { KIND_IDS, type KindId } from "../kinds/id";
 import type { KeyValueStore } from "../ports";
 import { createSerial } from "../serial";
-import { SECTION_STATE_KEY } from "../storage-keys";
+import { UI_STATE_KEY } from "../storage-keys";
 
 /** A settings section the user can close. Today each tag has one, named by its kind id. */
 export type SectionId = KindId;
@@ -68,8 +68,8 @@ export function encodeSectionStates(states: SectionStates): JsonValue {
  */
 export function createSectionState(store: KeyValueStore): SectionState {
   async function read(): Promise<SectionStates> {
-    const stored = await store.get([SECTION_STATE_KEY]);
-    return decodeSectionStates(stored.get(SECTION_STATE_KEY));
+    const stored = await store.get([UI_STATE_KEY]);
+    return decodeSectionStates(stored.get(UI_STATE_KEY));
   }
 
   const serial = createSerial();
@@ -84,7 +84,7 @@ export function createSectionState(store: KeyValueStore): SectionState {
           return;
         }
         const next = new Map(states).set(id, open);
-        await store.set(new Map([[SECTION_STATE_KEY, encodeSectionStates(next)]]));
+        await store.set(new Map([[UI_STATE_KEY, encodeSectionStates(next)]]));
       }),
   };
 }
