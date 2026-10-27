@@ -1,29 +1,15 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { fixedClock } from "../../../tests/helpers/fixed-clock";
 import { memoryStore } from "../../../tests/helpers/memory-store";
+import { dialogDeps as deps } from "../../../tests/helpers/settings-dialog";
 import { SHIPPED_CATALOGS } from "../../core/i18n/shipped";
 import { createI18n } from "../../core/i18n/t";
-import { createIgnoreLists } from "../../core/ignored";
 import { KINDS } from "../../core/kinds/registry";
 import { parseSettings } from "../../core/settings/settings";
 import { createSettingsSource } from "../../core/settings/settings-source";
 import { createUiState } from "../../core/ui/ui-state";
-import { openSettingsDialog, type SettingsDialogDeps } from "./settings-dialog";
+import { openSettingsDialog } from "./settings-dialog";
 
 const i18n = createI18n(SHIPPED_CATALOGS, "en");
-
-function deps(live: boolean, store = memoryStore()): SettingsDialogDeps {
-  return {
-    document,
-    i18n,
-    catalogs: SHIPPED_CATALOGS,
-    settings: createSettingsSource(store),
-    lists: createIgnoreLists(store, fixedClock(Date.UTC(2026, 9, 20))),
-    uiState: createUiState(store),
-    clock: fixedClock(Date.UTC(2026, 9, 20)),
-    live,
-  };
-}
 
 const host = () => document.querySelector(".sar-dialog-host");
 const dialog = () => host()?.shadowRoot?.querySelector("dialog") ?? null;

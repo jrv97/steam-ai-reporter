@@ -776,6 +776,36 @@
   line-height: var(--sar-leading-sm);
 }
 
+/* Feedback links: a bar that stays at the bottom of the viewport (the dialog's scrollport in the
+   userscript) while the tabs scroll, on the page and in the dialog. It takes the panel's color so
+   nothing shows through, and wraps its links on a narrow screen. */
+.sar-feedback {
+  position: sticky;
+  inset-block-end: 0;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: var(--sar-space-4);
+  row-gap: var(--sar-space-1);
+  margin-block-start: var(--sar-space-3);
+  padding-block: var(--sar-space-1);
+  border-block-start: 1px solid var(--sar-color-divider);
+  background: var(--sar-color-bg-panel);
+  font-size: var(--sar-size-sm);
+  line-height: var(--sar-leading-sm);
+}
+
+.sar-options[data-sar-context="popup"] .sar-feedback {
+  margin-block-start: var(--sar-space-2);
+}
+
+.sar-feedback-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sar-space-1);
+  min-block-size: var(--sar-control-height-sm);
+}
+
 /* Backup: the one primary button confirms the only action that overwrites settings */
 .sar-button[data-sar-variant="primary"] {
   background: var(--sar-button-primary-bg);
