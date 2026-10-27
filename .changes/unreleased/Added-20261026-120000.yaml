@@ -1,3 +1,0 @@
-kind: Added
-body: You can back up your settings and your lists of ignored games, developers and publishers. Download backup on the settings page, or in the userscript's settings dialog, saves them to a JSON file on your device, and Restore from a backup reads such a file, shows its date and what it holds, and applies it only when you confirm. Restore replaces your settings and adds the file's ignored items to yours without removing any, so a file from the extension works in the userscript and the other way round. Damaged entries are left out and counted. The file never leaves your device, and lookup results are not in it.
-time: 2026-10-26T12:00:00.000000+02:00
