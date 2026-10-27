@@ -2,9 +2,11 @@
 
 Source text for the Chrome Web Store and addons.mozilla.org (AMO) listings of "Tag Kit for Steam" (short name "Tag Kit"). The listing text is English; the extension also ships a Spanish catalog (name "Tag Kit para Steam", short name "Tag Kit"). The userscript has no store listing; its text is the `@description` in the userscript header, which comes from the same message catalog as the manifests. Its `@name` stays "AI Reporter for Steam" for now; see [Renaming the userscript](../testing/userscript-install.mdx#renaming-the-userscript).
 
-Wording follows the project's semantics rule: a badge says "AI use reported". Nothing here says a game "uses AI" or is "AI-free", because developers report their AI use themselves.
+This copy describes the release that includes pull requests 85 to 91: the Family Sharing tag, the tag order, the chip text and colors, and the settings tabs. All of them are merged on main as of 2026-10-27, and no earlier release matches it.
 
-Limits to respect when pasting: the Chrome name is at most 75 characters and the manifest description at most 132 (both come from `src/locales/en/messages.json`); the Chrome Web Store summary field is the manifest description.
+Wording follows the project's semantics rule: the AI chip says "AI" and the card gives the developer's own words. Nothing here says a game "uses AI" or is "AI-free", because developers report their AI use themselves.
+
+Limits to respect when pasting: the Chrome name is at most 75 characters and the Chrome summary at most 132. The Chrome Web Store reads the summary from the manifest `description`, which comes from `ext_description` in `src/locales/en/messages.json`. That message needs the summary below before the next upload. The AMO short description is at most 250 characters.
 
 ## Name
 
@@ -12,43 +14,43 @@ Tag Kit for Steam
 
 Short name: Tag Kit
 
-## Summary (manifest description, 132 characters at most)
+## Summary (manifest description, 132 characters at most; this text is 128)
 
-Tags Steam games: AI Generated Content Disclosure, Anti-Cheat (kernel level first), 3rd-party DRM, account and EULA, and PvP.
+Tags Steam games with what Steam reports: AI disclosure, anti-cheat, DRM, Steam Deck, Family Sharing and more. Collects nothing.
 
-## Short description for AMO (250 characters at most)
+## Short description for AMO (250 characters at most; this text is 244)
 
-Tags Steam items: AI Generated Content Disclosure, Anti-Cheat (Kernel Level first), 3rd-party DRM, account and EULA, PvP, In-App Purchases, Family Sharing, and Valve's Deck and Machine ratings. Sends nothing anywhere. Not affiliated with Valve.
+Tags Steam items with what Steam and developers report: AI Generated Content Disclosure, anti-cheat, 3rd-party DRM, account and EULA, PvP, In-App Purchases, Steam Deck, Steam Machine and Family Sharing. Show, dim or hide them. Collects nothing.
 
 ## Detailed description
 
-Tag Kit for Steam tags items on the Steam store: AI Generated Content Disclosure, Kernel Level Anti-Cheat and Anti-Cheat Software, 3rd-party DRM, 3rd-Party Account, 3rd-party EULA, PvP, In-App Purchases, Valve's Steam Deck and Steam Machine compatibility ratings, and Family Sharing as Steam's features list it.
+Tag Kit for Steam tags items on the Steam store with what Steam and the developers report: AI Generated Content Disclosure, Kernel Level Anti-Cheat and Anti-Cheat Software, 3rd-party DRM, 3rd-Party Account, 3rd-party EULA, PvP, In-App Purchases, Family Sharing, and Valve's Steam Deck and Steam Machine ratings.
 
-It only reads what Steam's store data and developers report there. It sends no reports, collects nothing and has no server of its own.
+It reads Steam's own store data. It sends no reports, collects nothing and has no server of its own.
 
 What it does:
 
-- Adds a badge to capsules and rows in search, wishlist, home, tag and category hubs, sale pages, developer pages and search suggestions for items that carry one of those tags. The AI tag reads "AI use reported".
-- On a game's page, shows a banner that quotes the developer's AI report word for word.
-- Optionally dims or hides those items in lists. This is off by default.
-- Lets you ignore a game you consider a false flag, with a per-game allow-list.
+- Puts a short chip on capsules and rows in search, wishlist, home, tag and category hubs, sale pages, developer pages, package pages and search suggestions. Hovering a chip, or focusing it with the keyboard, opens a card with each tag in Steam's own words and its source.
+- Adds a section "Tag Kit tags for this product" on a game's page, and a banner that quotes the developer's AI disclosure word for word.
+- Lets you set each tag on its own: on or off, the badge, its entry in the banner and a list filter (Show, Dim or Hide).
+- Counts the results it hid in search and lets you reveal them on that page.
+- Lets you ignore a game, a developer or a publisher, for one tag or for all tags. Ignoring a game also covers its DLC.
+- Lets you reorder the tags by drag and drop, word your own chip text and pick badge colors.
+- Exports and imports your settings.
+- Comes in English and Spanish.
 
 What each tag means, in Steam's words:
 
-- AI Generated Content Disclosure: the developer reported generative AI use. The badge reads "AI use reported".
-- Kernel Level Anti-Cheat: the game's anti-cheat runs at the kernel level.
-- Anti-Cheat Software: the game uses anti-cheat software.
-- 3rd-party DRM: the game uses DRM from a third party.
-- 3rd-Party Account: the game needs an account with a third party.
-- 3rd-party EULA: the game needs agreement to a third party's EULA.
-- PvP: the game has player-versus-player play.
-- In-App Purchases: Steam lists in-app purchases among the game's features. This tag starts switched off.
-- Steam Deck Compatibility and Steam Machine Compatibility: Valve rated the game Verified, Playable or Unsupported on that device. These tags start switched off, and you pick which ratings to tag, Unsupported at first. A game Valve has not rated gets no tag.
-- Family Sharing: Steam lists Family Sharing among the game's features, which Valve computes; a paid game whose list leaves it out shows Steam's "Family Sharing not Available". Free games, DLC and demos never get that value. This tag starts switched off, and you pick which values to tag, "not Available" at first.
+- AI Generated Content Disclosure: the developer reported generative AI use. The chip reads "AI".
+- Kernel Level Anti-Cheat and Anti-Cheat Software: the game lists that anti-cheat.
+- 3rd-party DRM, 3rd-Party Account and 3rd-party EULA: the game lists that requirement.
+- PvP and In-App Purchases: Steam lists them among the game's features. Both tags start switched off.
+- Steam Deck and Steam Machine: Valve rated the game Verified, Playable or Unsupported on that device. Both tags start switched off, and you pick which ratings to tag, Unsupported at first. A game Valve has not rated gets no tag.
+- Family Sharing: Steam lists Family Sharing among the game's features, which Valve computes. For a paid game whose list leaves it out, the chip reads "No Family Sharing" and the card says "According to the features Steam lists for this game". Free games and non-game items show nothing. This tag starts switched off, and you pick which of the two to tag, "No Family Sharing" at first.
 
-The AI tag is self-reported. It does not say how much AI a game uses, and a game without a badge is not guaranteed to be free of AI, because developers may not have reported anything, and Steam may not have the information for every item.
+The AI tag is self-reported and says nothing about how much AI a game uses. A game without a chip may still involve AI: developers may not have reported anything, and Steam may not have the information for every item.
 
-Privacy: nothing is collected. To check the items on the page you are viewing, their app IDs go to Valve's own hosts that your browser uses (api.steampowered.com and store.steampowered.com), without cookies. Results and your settings stay in your browser. The full policy is in PRIVACY.md in the project repository.
+Privacy: nothing is collected. To check the items on the page you are viewing, their app IDs go to Valve's own hosts that your browser uses (api.steampowered.com and store.steampowered.com), without cookies. Results and your settings stay in your browser. The full policy is at https://github.com/jrv97/steam-ai-reporter/blob/main/PRIVACY.md
 
 Open source (MIT). Source and build steps: https://github.com/jrv97/steam-ai-reporter
 
@@ -56,13 +58,13 @@ Tag Kit for Steam is an independent project. It is not affiliated with, endorsed
 
 ## Single-purpose statement (Chrome Web Store)
 
-Tag Kit for Steam has one purpose: to show, on Steam store pages, which items carry tags for AI content disclosure, anti-cheat, 3rd-party DRM, account and EULA, PvP, in-app purchases, Steam Deck and Steam Machine compatibility and Family Sharing, by marking those items.
+Tag Kit for Steam has one purpose: to show which Steam store items carry tags for AI disclosure, anti-cheat, DRM, account, EULA, PvP, in-app purchases, Steam Deck and Steam Machine ratings, and Family Sharing, by marking those items.
 
 ## Permission justifications
 
 The extension asks for one permission and no host permissions. It has no background script.
 
-- `storage`: keeps the cache of results (an app is not requested again until its entry expires), your settings, the per-game allow-list, and a small record used to back off if Steam is limiting requests. All of it stays on your device in the extension's local storage.
+- `storage`: keeps the cache of results (an app is not requested again until its entry expires), your settings (including chip text, colors and tag order), your lists of ignored games, developers and publishers, the settings tab you last opened, and a small record used to back off if Steam is limiting requests. All of it stays on your device in the extension's local storage.
 - Site access (content script matches `https://store.steampowered.com/*`): the content script runs only on the Steam store, because that is where the items to mark are. Its requests to `api.steampowered.com` and `store.steampowered.com` are made from the store page's own origin, so no `host_permissions` entry is needed. Both are Valve hosts the user is already on, and every request is made with `credentials: "omit"`.
 - Remote code: none. No `eval`, no remote scripts and no remote selectors. The bundles in the package are not minified and are built from the public source.
 
@@ -72,7 +74,7 @@ These match PRIVACY.md.
 
 - Does it collect or transmit user data to the developer or any third party? No. There is no analytics, no telemetry, no account and no server of the developer.
 - Does it send any data off the device? Only app IDs of the items on the page being viewed, to Valve's own hosts `api.steampowered.com` (GetItems, in batches of up to 50) and `store.steampowered.com` (a few app pages as a fallback), without cookies. Valve sees the IP address and the app IDs, as for any store request.
-- What is stored locally? Results per app ID (which tags the store data gives the item, check time, the developer's AI report text and language, the name of a named AI service if any, the game's name), the settings, the allow-list, and a back-off record. In `storage.local`.
+- What is stored locally? Results per app ID (which tags the store data gives the item, check time, the developer's AI report text and language, the name of a named AI service if any, the game's name), the settings, the ignore lists, the last settings tab and a back-off record. In `storage.local`.
 - Does it read the Steam account, wishlist contents, library, cookies or browsing history? No.
 - Is data sold or used for purposes unrelated to the single purpose? No.
 - Chrome Web Store data usage categories: none are collected. Certify the three limited-use statements (not sold, not used for unrelated purposes, not used for creditworthiness or lending).
