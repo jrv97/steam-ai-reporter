@@ -105,7 +105,13 @@ The extension has no background script, requests no host permissions and makes n
 
 They were captured on 2026-10-22 in headless Chrome with a fresh, signed-out profile, a 1280 x 800 viewport and Steam's cookie banner hidden. The store pages run the dev bundle (`dist/dev/inject.js`) built from main at commit 59417c5. The options page and the popup are `dist/chromium/options.html` with `chrome.storage` stubbed in memory. Prices show in euros because of the capture location.
 
-## Assets still needed
+## Graphics
 
-- Chrome Web Store small promo tile 440 x 280 (optional).
-- The store icon is `assets/icons/icon-128.png`, which the build also ships.
+`docs/store/assets/` holds the Chrome Web Store graphics and their sources, made from the extension mark (`assets/icons/mark-purple.svg`), the tokens in `docs/design/tokens.css` and the full badge shape at a larger scale. They embed nothing remote and show no screenshot of Steam.
+
+- `promo-tile.png`: the small promo tile, 440 x 280, from `promo-tile.html`.
+- `marquee.png`: the marquee promo tile, 1400 x 560, from `marquee.html`.
+
+Both pages share `graphics.css`. To render one again, open its page in Chromium at the size above (device scale factor 1) and save a screenshot of the full viewport as a PNG.
+
+The store icon is `assets/icons/icon-128.png`, which the build also ships.
