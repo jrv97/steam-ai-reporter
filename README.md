@@ -93,7 +93,7 @@ The toolbar popup lists every tag with its Show, Dim and Hide control and its on
 ## Install
 
 - [Chrome Web Store](https://chromewebstore.google.com/detail/ai-reporter-for-steam/jpbjlfnkdmmdccfiocblhkjdejaihnkp).
-- Firefox Add-ons (AMO): link to follow.
+- [Firefox Add-ons (AMO)](https://addons.mozilla.org/en-US/firefox/addon/tag-kit-for-steam/).
 - Userscript: open [steam-ai-reporter.user.js](https://github.com/jrv97/steam-ai-reporter/releases/latest/download/steam-ai-reporter.user.js) from the latest release in Tampermonkey or Violentmonkey.
 
 ## Feedback
