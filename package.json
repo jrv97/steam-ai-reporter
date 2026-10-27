@@ -1,6 +1,6 @@
 {
   "name": "steam-ai-reporter",
-  "version": "2026.10.27",
+  "version": "2026.10.27.1",
   "private": true,
   "description": "Tags Steam items: AI disclosure, anti-cheat, 3rd-party DRM, account, EULA, PvP.",
   "license": "MIT",
