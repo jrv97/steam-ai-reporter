@@ -1,3 +1,0 @@
-kind: Added
-body: A package page (a store address that starts with /sub/) now sums up the tags of the games it includes, right below the package's title image and above the list of games, with one line per tag that says, in Steam's words for the tag, how many of the games carry it. It counts the games that show the tag's chip, so a tag you switched off or a game you ignored for it is left out, and a game Steam gave no answer for is not counted either way. It uses the lookups the rows already make, with no extra request, and follows your settings as you change them.
-time: 2026-10-26T18:00:00.000000+02:00
