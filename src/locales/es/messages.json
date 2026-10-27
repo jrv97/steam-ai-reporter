@@ -1039,6 +1039,22 @@
     "message": "Esta extensión no está afiliada a Valve. Ninguna información sale de tu navegador excepto peticiones a la tienda de Valve.",
     "description": "Footer of the toolbar popup."
   },
+  "options_feedback_label": {
+    "message": "Comentarios",
+    "description": "Accessible name of the group of three links at the bottom of the settings: report a bug, leave feedback, send anonymous feedback."
+  },
+  "options_feedback_bug": {
+    "message": "Informar de un error",
+    "description": "Link at the bottom of the settings that opens the project's bug report form on GitHub in a new tab. Keep it short; an emoji precedes it."
+  },
+  "options_feedback_leave": {
+    "message": "Dejar un comentario",
+    "description": "Link at the bottom of the settings that opens the project's feedback form on GitHub in a new tab. Keep it short; an emoji precedes it."
+  },
+  "options_feedback_anonymous": {
+    "message": "Comentario o informe de error anónimo",
+    "description": "Link at the bottom of the settings that opens an anonymous feedback form in a new tab, with no GitHub account needed. An emoji precedes it."
+  },
   "options_all_settings": {
     "message": "Configuración completa",
     "description": "Screen reader name and tooltip of the gear button at the top of the toolbar popup, which opens the full settings page in a tab."

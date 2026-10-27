@@ -32,6 +32,7 @@ import { createBackupCard } from "./backup-card";
 import { ownText } from "./badge";
 import { createChipFields } from "./chip-fields";
 import { createElement } from "./element";
+import { createFeedbackFooter } from "./feedback-footer";
 import { parseIcon } from "./icon";
 import { KIND_ATTRIBUTE, setColorOnce } from "./kind-attributes";
 import { chipText } from "./kind-details";
@@ -773,7 +774,9 @@ export async function mountSettingsForm(
   root.setAttribute("data-sar-context", context);
   root.setAttribute("data-sar-view", deps.layout);
   // Above the tabs, where no tab can hide it
-  root.replaceChildren(...top, loadError, built?.frame ?? rows, footer, live);
+  // The feedback bar goes with the tabs, on the page and in the dialog; the popup has none
+  const feedback = built === undefined ? [] : [createFeedbackFooter(doc, i18n)];
+  root.replaceChildren(...top, loadError, built?.frame ?? rows, footer, ...feedback, live);
 
   /** Controls stay off while the load error shows, so no save puts defaults over v1 data. */
   const settingControls = root.querySelectorAll<HTMLInputElement | HTMLSelectElement>(

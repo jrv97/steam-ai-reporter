@@ -11,7 +11,8 @@
 - Userscript: header present, no @connect, exact @match, @updateURL and @downloadURL; every `GM`
   name in the bundle has an @grant and every @grant is used; valibot's license block is in the
   body; no userscript header in any other bundle.
-- No eval( or new Function in any bundle (rule 2); no URL outside the two Valve hosts.
+- No eval( or new Function in any bundle (rule 2); no URL outside the two Valve hosts, except the
+  three feedback links of the settings footer, which options.js and the userscript may carry.
 - Catalogs: each shipped bundle carries exactly the messages its code reads (decision 58). Every
   key or plural base that a string literal of its code names is in its inlined catalogs, and every
   message there is named, so a missing key fails here and never falls back to the raw key on a
@@ -43,7 +44,10 @@
   options.js 200,213 B (from 182,687) and userscript 354,609 B (from 338,320): the chip text fields
   and their preview about 6.8 KB of code, the shared chip rules and the field rules 1.9 KB of CSS,
   their messages 1.8 KB, the picker 1.6 KB and the tabs, rows and order card that follow the text
-  2.2 KB. Their budgets rise to 200 and 355 KiB, the size plus 2.3 and 2.5 percent.
+  2.2 KB. Their budgets rise to 200 and 355 KiB, the size plus 2.3 and 2.5 percent. Measured when
+  the feedback footer landed: content.js 209,805 B (unchanged), options.js 202,937 B (from 200,204)
+  and userscript 357,333 B (from 354,600), 2,733 B each: the footer, its three links, its rule and
+  four messages in two locales. No budget changes.
 - The STEAM_API_KEY value, when set, appears nowhere in dist/ or artifacts/ (rule 16).
 - The dev injection bundle is never packaged into artifacts/, and when artifacts/ exists it holds
   exactly the five release artifacts, with a manifest at the root of each extension zip. The source
@@ -84,6 +88,13 @@ ENGLISH = ROOT / "src" / "locales" / DEFAULT_LOCALE / "messages.json"
 STORE_MATCH = ["https://store.steampowered.com/*"]
 RELEASE_BASE = "https://github.com/jrv97/steam-ai-reporter/releases/latest/download"
 ALLOWED_HOSTS = {"api.steampowered.com", "store.steampowered.com"}
+# The feedback links of the settings (src/core/feedback-links.ts): plain links a person opens in a
+# tab, never requested. Only these exact URLs, and only in the bundles that show the settings.
+FEEDBACK_URLS = (
+    "https://github.com/jrv97/steam-ai-reporter/issues/new?template=bug_report.yml",
+    "https://github.com/jrv97/steam-ai-reporter/issues/new?template=feature_request.yml",
+    "https://forms.gle/Fo652zzyFWUQn2qK9",
+)
 HEADER_START = "// ==UserScript=="
 HEADER_END = "// ==/UserScript=="
 REMOTE_CODE = re.compile(r"\beval\s*\(|\bnew\s+Function\b")
@@ -304,6 +315,9 @@ def script_problems(path: Path) -> list[str]:
         return problems
     if REMOTE_CODE.search(body):
         problems.append(f"{where}: eval( or new Function found")
+    if path.name != "content.js":
+        for link in FEEDBACK_URLS:
+            body = body.replace(link, "")
     for host in sorted(set(URL.findall(body)) - ALLOWED_HOSTS):
         problems.append(f"{where}: URL to a host outside the allowlist: {host}")
     return problems

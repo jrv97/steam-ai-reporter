@@ -1,7 +1,7 @@
 ---
 title: Tag Kit for Steam UI components (v1)
 status: draft
-updated: 2026-10-26
+updated: 2026-10-27
 ---
 
 # Tag Kit for Steam UI components (v1)
@@ -523,6 +523,7 @@ Preview: `previews/OptionsPage.html`, and `previews/Tabs.html` for the tabs alon
    - The tag's card, titled with Steam's line for the kind (`kind_<id>_heading`): the master switch `options_kind_enabled` (`kinds.<id>.enabled`), then, for a tag with values, a group of native checkboxes, one per value in Steam's words (`facets`; label `options_facets_label`, help `options_facets_help`), then the switches `options_badges` (dialog `options_badges_short`; `badge`) and `options_banner` (`banner`), then the chip text fields and their preview (below), then, where the form has color fields, the color field (below), then a stacked SegmentedControl with Show, Dim and Hide (`filter`; label `options_filter_label`; the help follows the selection). Each switch has help. While the master switch is off, the other controls are hidden and their stored values stay.
    - Ignored for this tag (`options_allow_kind_title`): what is ignored for this tag alone, and the note on what all tags ignore (section 11).
 3. Footer, under the tabs: `options_unaffiliated` in `sar-text-help`, subtle. The popup and the dialog use `options_privacy_no_reports` and `options_unaffiliated_short`.
+4. Feedback links, last on the page and in the dialog, not in the toolbar popup: `.sar-feedback`, a `nav` named `options_feedback_label` that is sticky to the bottom of the viewport (the dialog's scrollport in the userscript), so it stays in view on every tab while the panels scroll. It sits on `sar-color-bg-panel` under a `sar-color-divider` line, `sar-space-1` of padding, in `sar-text-help`, and wraps on a narrow screen. Three links in this order, each an emoji then a label: a ladybug and `options_feedback_bug` (the GitHub bug form), a memo and `options_feedback_leave` (the GitHub feedback form), a ghost and `options_feedback_anonymous` (an anonymous form that needs no account). The emoji is `aria-hidden` and the label is the link's accessible name. Links use the page's link color and focus ring, are at least `sar-control-height-sm` tall, open in a new tab with `rel="noopener noreferrer"` and are never requested by the extension. Their addresses are in `src/core/feedback-links.ts`, and the README's Feedback section lists the same three.
 
 ### Behavior
 
