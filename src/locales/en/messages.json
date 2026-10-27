@@ -8,7 +8,7 @@
     "description": "Manifest short_name, where space is tight. The brand, kept as is. At most 12 characters (Chrome recommendation)."
   },
   "ext_description": {
-    "message": "Tags Steam games: AI Generated Content Disclosure, Anti-Cheat (kernel level first), 3rd-party DRM, account and EULA, and PvP.",
+    "message": "Tags Steam games with what Steam reports: AI disclosure, anti-cheat, DRM, Steam Deck, Family Sharing and more. Collects nothing.",
     "description": "Manifest description and userscript @description. At most 132 characters (Chrome limit). Name each tag as Steam's own store in that language does."
   },
   "ext_action_title": {
