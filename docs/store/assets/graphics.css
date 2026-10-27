@@ -1,0 +1,98 @@
+/*
+ * Shared styles for the Chrome Web Store graphics (promo-tile.html, marquee.html).
+ * Colors, type and chip shapes come from docs/design/tokens.css. The chips are the full badge
+ * of docs/design/components.mdx scaled by --k, with no other change. No font is bundled: the
+ * page's own stack resolves to whatever the machine has.
+ */
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+}
+
+html,
+body {
+  inline-size: var(--w);
+  block-size: var(--h);
+  overflow: hidden;
+}
+
+body {
+  position: relative;
+  background:
+    radial-gradient(
+      ellipse 70% 120% at 12% 20%,
+      var(--sar-accent-800) 0%,
+      rgba(44, 33, 96, 0) 70%
+    ),
+    linear-gradient(135deg, var(--sar-color-bg-page) 0%, var(--sar-color-bg-page-deep) 100%);
+  color: var(--sar-color-text);
+  font-family: var(--sar-font-page);
+}
+
+.stage {
+  display: flex;
+  align-items: center;
+  block-size: 100%;
+  padding-inline: var(--pad);
+  gap: var(--gap);
+}
+
+.mark {
+  flex: none;
+  inline-size: var(--mark);
+  block-size: var(--mark);
+}
+
+.copy {
+  min-inline-size: 0;
+}
+
+.title {
+  color: var(--sar-color-text-strong);
+  font-size: var(--title);
+  font-weight: var(--sar-weight-bold);
+  letter-spacing: -0.01em;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.tagline {
+  margin-block-start: var(--tagline-gap);
+  color: var(--sar-color-text);
+  font-size: var(--tagline);
+  line-height: 1.3;
+}
+
+.more {
+  margin-block-start: calc(var(--tagline-gap) / 2);
+  color: var(--sar-color-text-muted);
+  font-size: var(--more);
+  line-height: 1.3;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--chip-gap);
+  margin-block-start: var(--chips-gap);
+}
+
+.chips.next {
+  margin-block-start: var(--chip-gap);
+}
+
+/* The full badge: the store's tag chip in our violet, scaled by --k. */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  block-size: calc(var(--sar-badge-height) * var(--k));
+  padding-inline: calc(var(--sar-badge-pad-inline) * var(--k));
+  border-radius: calc(var(--sar-radius-sm) * var(--k));
+  background: var(--sar-badge-bg);
+  color: var(--sar-badge-fg);
+  font-size: calc(var(--sar-size-xs) * var(--k));
+  font-weight: var(--sar-weight-regular);
+  line-height: 1;
+  white-space: nowrap;
+}
