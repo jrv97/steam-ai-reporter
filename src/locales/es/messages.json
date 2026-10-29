@@ -627,6 +627,14 @@
     "message": "Valores que etiquetar",
     "description": "Label of a group of checkboxes in a tag's settings, one per value Steam gives (Verificado, Jugable, No compatible; Préstamo familiar, Préstamo familiar no disponible). Only the ticked values get the tag."
   },
+  "options_facet_available": {
+    "message": "Disponible",
+    "description": "Checkbox label in Family Sharing's settings for the value Steam lists the feature for. Settings only: the chip, the hover card and the screen reader name keep Steam's own words."
+  },
+  "options_facet_unavailable": {
+    "message": "No disponible",
+    "description": "Checkbox label in Family Sharing's settings for a paid game whose Steam feature list leaves Family Sharing out. Settings only: the chip, the hover card and the screen reader name keep Steam's own words."
+  },
   "options_facets_help": {
     "message": "Los marcadores, las entradas del aviso y el filtro de listas actúan sobre los valores marcados aquí. Si no marcas ninguno, la etiqueta no marca ningún juego.",
     "description": "Help under those checkboxes."
@@ -1158,7 +1166,7 @@
     }
   },
   "options_order_how": {
-    "message": "Arrastra una etiqueta por su asa, o haz clic en el asa y luego en el asa del lugar al que va. Con el teclado, Espacio o Intro toma una etiqueta, las flechas la mueven, Espacio o Intro la suelta y Escape la devuelve a su sitio.",
+    "message": "Arrastra y suelta una etiqueta por su asa, o haz clic en el asa y luego en el asa del lugar al que va. Con el teclado, Espacio o Intro toma una etiqueta, las flechas la mueven, Espacio o Intro la suelta y Escape la devuelve a su sitio.",
     "description": "Second help line of the Tag order card, also read by screen readers on each handle: the three ways to move a tag. Space, Enter, Escape and the arrow keys are key names; use the names your keyboards print."
   },
   "options_order_handle": {

@@ -204,6 +204,18 @@ describe("the settings of each tag", () => {
     },
   );
 
+  it("gives the family kind its settings-only value words, the unlisted one ticked", async () => {
+    const { card } = await setup();
+    const boxes = [
+      ...(card("family").querySelector("fieldset.sar-checks")?.querySelectorAll("input") ?? []),
+    ];
+    expect(boxes.map((box) => box.closest("label")?.textContent)).toEqual([
+      i18n.t("options_facet_available"),
+      i18n.t("options_facet_unavailable"),
+    ]);
+    expect(boxes.map((box) => box.checked)).toEqual([false, true]);
+  });
+
   it("saves the ticked values in the kind's order, and none when all are unticked", async () => {
     const { input, settings } = await setup();
     const box = (value: string) => input("deck", "facets", value);

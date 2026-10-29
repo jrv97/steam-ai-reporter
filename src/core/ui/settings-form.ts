@@ -33,6 +33,7 @@ import { createBackupCard } from "./backup-card";
 import { ownText } from "./badge";
 import { createChipFields } from "./chip-fields";
 import { createElement } from "./element";
+import { facetChoiceKey } from "./facet-choices";
 import { createFeedbackFooter } from "./feedback-footer";
 import { parseIcon } from "./icon";
 import { KIND_ATTRIBUTE, setColorOnce } from "./kind-attributes";
@@ -421,7 +422,7 @@ export async function mountSettingsForm(
       input.setAttribute("data-sar-for", kind.id);
       boxes.set(facet.id, input);
       const text = element("label", "");
-      text.append(input, i18n.t(facet.word));
+      text.append(input, i18n.t(facetChoiceKey(kind.id, facet)));
       group.append(text);
     }
     const error = fieldError();

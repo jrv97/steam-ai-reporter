@@ -627,6 +627,14 @@
     "message": "Values to tag",
     "description": "Label of a group of checkboxes in a tag's settings, one per value Steam gives (Verified, Playable, Unsupported; Family Sharing, Family Sharing not Available). Only the ticked values get the tag."
   },
+  "options_facet_available": {
+    "message": "Available",
+    "description": "Checkbox label in Family Sharing's settings for the value Steam lists the feature for. Settings only: the chip, the hover card and the screen reader name keep Steam's own words."
+  },
+  "options_facet_unavailable": {
+    "message": "Not Available",
+    "description": "Checkbox label in Family Sharing's settings for a paid game whose Steam feature list leaves Family Sharing out. Settings only: the chip, the hover card and the screen reader name keep Steam's own words."
+  },
   "options_facets_help": {
     "message": "Badges, banner entries and the list filter act on the values ticked here. With none ticked, the tag marks no game.",
     "description": "Help under those checkboxes."
