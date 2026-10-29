@@ -324,6 +324,16 @@ describe("the settings tab rules", () => {
     expect(tabRules.filter((rule) => /transition|animation/.test(rule.body))).toEqual([]);
   });
 
+  it.each([
+    ['.sar-options[data-sar-context="page"]', /block-size: 100dvh/],
+    [".sar-tabpanel", /overflow-y: auto/],
+  ])("fixes the frame and scrolls only the panel: %s", (selector, declaration) => {
+    const found = rulesOf(SETTINGS_CSS).find(
+      (rule) => rule.selectors.includes(selector) && declaration.test(rule.body),
+    );
+    expect(found?.selectors).toContain(selector);
+  });
+
   it("gives a focused tab the shared focus ring", () => {
     const ring = rulesOf(SETTINGS_CSS).find((rule) =>
       rule.selectors.includes(".sar-tab:focus-visible")

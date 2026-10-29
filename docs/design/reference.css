@@ -696,6 +696,36 @@
   }
 }
 
+/* Fixed frame (decision 74): with room for a rail and a panel, the header, the rail, the footer and
+   the feedback bar stay in place and only the open panel scrolls. Smaller windows keep the single
+   scroll and the sticky rail above. The popup list view is not tabbed and never matches. */
+@media (min-width: 800px) and (min-height: 560px) {
+  .sar-options[data-sar-context="page"] {
+    block-size: 100dvh;
+  }
+
+  .sar-options[data-sar-view="tabs"] {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .sar-options > .sar-tabs {
+    flex: 1;
+    grid-template-rows: minmax(0, 1fr);
+    min-block-size: 0;
+  }
+
+  .sar-tablist,
+  .sar-tabpanel {
+    max-block-size: 100%;
+    overflow-y: auto;
+  }
+
+  .sar-tabpanel {
+    scrollbar-gutter: stable;
+  }
+}
+
 @media (forced-colors: active) {
   .sar-tab[aria-selected="true"] {
     border-color: Highlight;
