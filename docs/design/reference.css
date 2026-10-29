@@ -756,15 +756,15 @@
 }
 
 .sar-order-heading,
-.sar-order-small {
+.sar-order-cue {
   color: var(--sar-color-text-subtle);
   font-size: var(--sar-size-sm);
 }
 
-.sar-order-small {
-  padding-inline: var(--sar-space-1);
-  border: 1px solid var(--sar-color-border);
-  border-radius: var(--sar-radius-sm);
+/* Where small images stop: a dashed line, with the reason beneath it. It is not a focus stop. */
+.sar-order-cue {
+  padding-block: var(--sar-space-1);
+  border-block-start: 1px dashed var(--sar-accent-400);
 }
 
 .sar-order-row[data-sar-held] {
