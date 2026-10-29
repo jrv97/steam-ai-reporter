@@ -34,11 +34,11 @@ Every class, attribute and custom property starts with `sar-`.
 ## Voice and copy
 
 - Use Steam's words for each tag: its own line for the kind ("Uses Kernel Level Anti-Cheat", "Incorporates 3rd-party DRM", "Requires 3rd-Party Account", "Requires agreement to a 3rd-party EULA", "PvP", "In-App Purchases", "Steam Deck Compatibility", "Steam Machine Compatibility", "Family Sharing", "Early Access Game") and, for AI, Steam's heading "AI Generated Content Disclosure". A rating keeps Steam's word for its value: Verified, Playable, Unsupported, and Family Sharing keeps Steam's "Family Sharing" and "Family Sharing not Available" where no source line follows, while its derived value's chip and card line are the maintainer's own words (decision 64). Valve's Unknown (0) is never shown, and never as Unsupported. Spanish follows Steam's Spain Spanish. Our own copy never says "uses AI", "AI-free" or "no AI", and never states a tag's absence ("No" and a tag's name, or "none", "free of" or "-free" beside one), in any locale; the copy test fails the build on them. The one exception is Family Sharing's derived value, by key (`kind_family_unsupported_chip`, `kind_family_unsupported_line`; ADR 0016, amended), and only with its source line in the card.
-- Plain, short, sentence case: "Ignore this game", "Ignore for this tag", "Show full report".
+- Plain, short, sentence case: "Ignore this game", "Ignore tag for this game", "Show full report".
 - One line names a tag everywhere: Steam's line is the hover card entry title, the banner entry heading, the settings section title and, after the chip's visible text, the rest of the chip's accessible name. The chip itself is short: AI, KLAC, Anti-Cheat, DRM, Account, EULA, PvP, IAP, Early Access. A tag with values puts the value after a short device word: "Deck Unsupported", "Steam Machine Playable" (`kind_facet_chip`), named "Deck Unsupported: Steam Deck Compatibility"; its banner heading reads "Steam Deck Compatibility: Unsupported" (`kind_facet_name`). A value with a chip of its own (`FacetDefinition.chip`) shows that chip and is named by it, then Steam's word alone. For Family Sharing the listed value's chip is Steam's full word, "Family Sharing" (`kind_family_heading`), and the derived value's chip is the maintainer's "No Family Sharing" (`kind_family_unsupported_chip`), named "No Family Sharing: Family Sharing not Available". On a narrow compact badge the label may end in an ellipsis (`.sar-compact-label`).
 - A person may name a tag's chips in their own words (decision 67, ADR 0017): `kinds.<id>.chip` for every chip and `kinds.<id>.chipCompact` for small images. The text replaces the tag's word and keeps Steam's value word ("SD Unsupported"); for Family Sharing it replaces the whole chip. It is drawn through `textContent` only and never enters a catalog. Steam's words stay in the hover card, the banner's headings, the settings heading, the package summary and every chip's accessible name after the visible text.
 - Name the source: the developer ("In the developer's own words:", "AI service named by the developer:", "Declared by the developer on the store page"), or Valve for what Valve computes: "According to Valve" for the device ratings (decision 63), and the kind's own line for Family Sharing, "According to the features Steam lists for this game" (`kind_family_source`, decision 64). Under the derived value only, the card line `kind_family_unsupported_line` reads "Family Sharing is not supported for this game", and that source line always follows it.
-- The opt-out labels are "Ignore for this tag" and "Ignore this game" (every tag). The store has its own Ignore button just above; ours only affects this extension.
+- The opt-out labels are "Ignore tag for this game" and "Ignore this game" (every tag). The store has its own Ignore button just above; ours only affects this extension.
 - Settings speak about games, not switches: the list filter reads "Show", "Dim", "Hide".
 - No exclamation marks, no emoji, no em dashes.
 - The full catalog, with translator notes, is in the Messages section.
@@ -334,7 +334,7 @@ Preview: `previews/Banner.html`.
 - A kind the game is ignored for is not listed. It becomes a one-line note with Undo. A game ignored for all tags gets one such note and nothing else.
 - Below the entries sits a closed section, "Ignore a developer or publisher", with a row for each of the game's developers and publishers (see "Ignoring a developer or publisher" below). A tag a creator is ignored for becomes a note with Undo.
 - On a demo's page, a kind the full game declared and the demo did not is listed like the others, with `kind_full_game` right under its heading and before the developer's text, which stays the full game's developer's (decision 59). A Valve value lent this way reads `kind_full_game_valve`.
-- A tag with values is headed by `kind_facet_name`, Steam's heading and the value's word ("Steam Deck Compatibility: Unsupported"), or by Steam's word alone for a value with a chip of its own ("Family Sharing not Available"), and "Ignore for this tag" ignores the kind, every value.
+- A tag with values is headed by `kind_facet_name`, Steam's heading and the value's word ("Steam Deck Compatibility: Unsupported"), or by Steam's word alone for a value with a chip of its own ("Family Sharing not Available"), and "Ignore tag for this game" ignores the kind, every value.
 - A kind the game's base game is ignored for (the game is a DLC) is not listed and gets no note, since its Undo would belong to the other game's page. A DLC page whose every kind is silenced this way has no banner. "Ignore this game" on a DLC page still ignores that DLC only.
 - Never as a modal or overlay, never over content, never stealing focus.
 
@@ -395,7 +395,7 @@ Modeled on the store's per-app notice bubbles (the DLC notice sits in the same s
 - No border, no radius, no shadow.
 - Padding `sar-space-2` at block-start, `sar-space-3` at block-end, `sar-space-4` inline. `sar-space-4` below: the store's own 2px would glue the banner to the purchase box and read as part of the offer.
 - All text in `sar-banner-fg`. Heading `sar-text-banner-title` (24/30 light) when the banner holds one entry. With two or more, the headings step down to 18/23 light (`sar-size-2xl`) and the entries sit `sar-space-3` apart. Detail, source and service lines `sar-text-banner-meta` (13/19 light). Notes `sar-text-banner-quote` (14/21, italic like the notes in the store's own disclosure section).
-- "Ignore for this tag" matches the store's outlined buttons right below the banner ("Compare Editions", "Browse all"): `sar-text-banner-button` (11/14 regular, the store's size) in `sar-banner-button-fg`, `sar-banner-button-pad-block` (2px) and `sar-banner-button-pad-inline` (15px), a 1px `sar-banner-button-border` (white at 40%), `sar-radius-sm`, a `sar-banner-button-bg-hover` wash on hover. It stays at least `sar-control-height-xs` (24px) tall for the target size (WCAG 2.5.8), where the store's buttons are 22px. It sits at inline-end of its entry's heading.
+- "Ignore tag for this game" matches the store's outlined buttons right below the banner ("Compare Editions", "Browse all"): `sar-text-banner-button` (11/14 regular, the store's size) in `sar-banner-button-fg`, `sar-banner-button-pad-block` (2px) and `sar-banner-button-pad-inline` (15px), a 1px `sar-banner-button-border` (white at 40%), `sar-radius-sm`, a `sar-banner-button-bg-hover` wash on hover. It stays at least `sar-control-height-xs` (24px) tall for the target size (WCAG 2.5.8), where the store's buttons are 22px. It sits at inline-end of its entry's heading.
 - "Ignore this game", "Show full report" and "Undo" are the store's underlined in-bubble links, in `sar-banner-link-color`, as `button` elements with a 24px minimum target. "Ignore this game" stands alone at inline-end under the last entry. A EULA link looks the same, as an anchor.
 - Errors in `sar-banner-error`, never `sar-color-error` (4.21:1 on the bright end).
 - Never `sar-color-text-muted` or `sar-color-text-subtle` on the wash.
@@ -411,7 +411,7 @@ Modeled on the store's per-app notice bubbles (the DLC notice sits in the same s
 
 ### Behavior
 
-- "Ignore for this tag" adds the app ID (with the name and today's date) to that kind's list and swaps its entry for the note; focus moves to the note's Undo. "Ignore this game" adds the app ID to the list for all tags, and every entry gives way to one note. Neither calls the store's own ignore feature.
+- "Ignore tag for this game" adds the app ID (with the name and today's date) to that kind's list and swaps its entry for the note; focus moves to the note's Undo. "Ignore this game" adds the app ID to the list for all tags, and every entry gives way to one note. Neither calls the store's own ignore feature.
 - "Undo" removes the app ID from that list again and restores the entries. Focus returns to the ignore button of the same scope, or to "Ignore this game" after an undo for all tags.
 - Chips on the game's capsules follow the same lists, so they leave and return with the entries.
 
@@ -434,7 +434,7 @@ The head wraps: the heading takes `flex: 1 1 12em` and wraps first (at 24px a lo
 
 ### Accessibility
 
-An `aside` landmark. With one entry and no note it is labelled by that entry's `h2`; otherwise by `banner_region_label`, or by `badge_tags_title` ("Tag Kit tags for this product") when any entry comes from Valve, since "Declared by the developer" would be false for it (decision 63). Every entry has its own `h2`. Each "Ignore for this tag" button takes its name from its text and the entry's heading, and each Undo from its text and its note, so no two buttons share a name. The notes are a `blockquote`; the source line names the speaker. No `lang` on the quote, since the developer's language is unknown. Every control is a real `button` with visible text. In forced colors the wash disappears, so the banner gets a `CanvasText` edge.
+An `aside` landmark. With one entry and no note it is labelled by that entry's `h2`; otherwise by `banner_region_label`, or by `badge_tags_title` ("Tag Kit tags for this product") when any entry comes from Valve, since "Declared by the developer" would be false for it (decision 63). Every entry has its own `h2`. Each "Ignore tag for this game" button takes its name from its text and the entry's heading, and each Undo from its text and its note, so no two buttons share a name. The notes are a `blockquote`; the source line names the speaker. No `lang` on the quote, since the developer's language is unknown. Every control is a real `button` with visible text. In forced colors the wash disappears, so the banner gets a `CanvasText` edge.
 
 ### Check
 
@@ -735,7 +735,7 @@ Preview: `previews/AllowList.html`.
 - The captions are the lists' names: `options_section_allow`, `options_section_allow_developers`, `options_section_allow_publishers`. The restore button's name still names the scope (`options_allow_restore_label`), so no two are alike.
 - The game name as data, untranslated, linked to its store page; a creator's name as plain text.
 - The date formatted with `Intl.DateTimeFormat(locale, { dateStyle: "medium" })`.
-- Empty card: `<p class="sar-empty">t('options_allow_empty', { action })</p>`, where `action` is `banner_ignore` ("Ignore this game") in General and `banner_ignore_kind` ("Ignore for this tag") on a tag's tab.
+- Empty card: `<p class="sar-empty">t('options_allow_empty', { action })</p>`, where `action` is `banner_ignore` ("Ignore this game") in General and `banner_ignore_kind` ("Ignore tag for this game") on a tag's tab.
 - A tag's card ends with the note on what all tags ignore, when anything is: `options_allow_all_note` (plural) and the quiet button `options_allow_all_show`, which selects General and moves focus to the title of Ignored for all tags. It is a button, not a hash link, because in the userscript dialog a hash would change the store page's address.
 - Each list is read once per refresh, and every card draws from that read. A list that cannot be read shows its `error_*_list_load` line in every card, never the empty state. A failed removal shows `error_allow_list_save` or `error_creator_list_save` under that item.
 - One game can sit in several scopes; stopping to ignore it in one leaves the others.
@@ -1181,9 +1181,9 @@ For every translator:
 | `banner_expand` | Show full report | Expands the collapsed text. |
 | `banner_collapse` | Show less | Collapses it again. |
 | `banner_ignore` | Ignore this game | Stops every tag and the banner for one game, in this extension. The store has its own Ignore button. |
-| `banner_ignore_kind` | Ignore for this tag | On one entry: stops that tag for one game. The other tags stay. |
+| `banner_ignore_kind` | Ignore tag for this game | On one entry: stops that tag for one game. The other tags stay. |
 | `banner_ignored` | Game ignored | Replaces the banner after "Ignore this game". |
-| `banner_ignored_kind` | Ignored for this tag: `$heading$` | Replaces one entry after "Ignore for this tag". `heading` is Steam's line for the kind. |
+| `banner_ignored_kind` | Tag ignored for this game: `$heading$` | Replaces one entry after "Ignore tag for this game". `heading` is Steam's line for the kind. |
 | `banner_undo` | Undo | Reverses the action above. |
 
 ### `notice_`
@@ -1261,7 +1261,7 @@ For every translator:
 | `options_allow_scope_all` | All tags | Heading of the games ignored for every tag. The games ignored for one tag sit under Steam's line for it. |
 | `options_allow_restore` | Stop ignoring | Button next to a game. |
 | `options_allow_restore_label` | Stop ignoring `$name$` (`$scope$`) | Screen reader name of that button; `name` is untranslated and `scope` is the scope's name. |
-| `options_allow_empty` | None yet. Use "`$action$`" on a game page. | `action` is "Ignore this game" in General, "Ignore for this tag" on a tag's tab. |
+| `options_allow_empty` | None yet. Use "`$action$`" on a game page. | `action` is "Ignore this game" in General, "Ignore tag for this game" on a tag's tab. |
 | `options_allow_kind_title` | Ignored for this tag | Card title on a tag's tab. |
 | `options_allow_all_title` | Ignored for all tags | Card title in General. |
 | `options_allow_all_note_one` | `$count$` item ignored for all tags also applies here. | Plural, one: the note on a tag's tab. |
