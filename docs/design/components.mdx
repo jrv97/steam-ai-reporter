@@ -498,7 +498,7 @@ Preview: `previews/OptionsPage.html`, and `previews/Tabs.html` for the tabs alon
 - Whether to show the color fields (`colors`). It is a capability apart from the context: the full page and the dialog pass it, the toolbar popup does not.
 - The version from `package.json` for `options_version`.
 - On the full page: the tab named by the location fragment (`#tab=<id>`, read by `parseTabHash`) as `initialTab`, and `onTabChange`, which writes the fragment back with `history.replaceState`. The dialog passes neither and never touches the store page's address.
-- In the popup: `allSettingsUrl` for the gear and the row links, and `openTab`, which asks an open options page for a tab (below).
+- In the popup: `allSettingsUrl` for the gear and the row links, and `openSettings`, which opens the options page on a tag's tab, or as it was left for the gear (below).
 
 ### Layout
 
@@ -531,7 +531,7 @@ Preview: `previews/OptionsPage.html`, and `previews/Tabs.html` for the tabs alon
 - A failed write reverts the control and shows `error_settings_save` under it in `.sar-field-error` (`role="alert"`).
 - A failed read shows the defaults with `error_settings_load` above the tabs, where no tab can hide it.
 - The tab shown is remembered in the `v2:ui` record as `{ "tab": "<id>" }`, shared by the page and the popup (the userscript keeps its own in the manager's storage). It is interface state, not a setting, and it is not in the backup. The first tab is the fragment's, else the stored one, else General; a tab that is unknown, an older build's `open` map or a record that cannot be read leave General. Opening writes nothing; each tab shown after that is written once, through a serial queue that skips a tab already stored, and the first write drops the old `open` map. A write that fails loses only the memory.
-- A tag's name in the popup is a link to `options.html#tab=<id>`. With `openTab`, a click writes `{ "tab": "<id>", "asked": <ms> }` to `v2:ui` and calls `runtime.openOptionsPage()`, which focuses an open options page or opens one; an open page hears the request through its storage listener and shows the tab, and a page that opens reads the same record. The time makes each request a new value, which `storage.onChanged` reports even for the tab already stored. Where the call fails, the link's own address opens in a new tab. No permission is needed: `options_ui` names the page.
+- A tag's name in the popup is a link to `options.html#tab=<id>`. With `openSettings`, a click writes `{ "tab": "<id>", "asked": <ms> }` to `v2:ui` and calls `runtime.openOptionsPage()`, which focuses an open options page or opens one; an open page hears the request through its storage listener and shows the tab, and a page that opens reads the same record. The time makes each request a new value, which `storage.onChanged` reports even for the tab already stored. Where the call fails, the link's own address opens in a new tab. No permission is needed: `options_ui` names the page. The gear takes the same path without the tab request, so the page opens on the tab shown last. Either click closes the popup.
 - The page also follows `hashchange`, so a link to `#tab=<id>` switches the tab in place.
 
 ### The chip text fields

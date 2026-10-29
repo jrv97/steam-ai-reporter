@@ -52,15 +52,22 @@ function fillText(doc: Document, i18n: I18n): void {
 }
 
 /**
- * From a popup row: asks an open options page for the tab and focuses it, or opens the page,
- * which reads the same request. Without the API, the row's own link opens the tab.
+ * From a popup row or the gear: asks an open options page for the tab, if there is one, and
+ * focuses it, or opens the page, which reads the same request. Without the API, the link's own
+ * address opens in a new tab. The popup closes either way.
  */
-async function openTab(uiState: UiState, id: TabId, optionsUrl: string): Promise<void> {
+async function openSettings(
+  uiState: UiState,
+  id: TabId | undefined,
+  optionsUrl: string,
+): Promise<void> {
   try {
-    await uiState.requestTab(id, Date.now());
+    if (id !== undefined) {
+      await uiState.requestTab(id, Date.now());
+    }
     await openOptionsPage();
   } catch {
-    open(`${optionsUrl}${tabHash(id)}`, "_blank", "noopener");
+    open(id === undefined ? optionsUrl : `${optionsUrl}${tabHash(id)}`, "_blank", "noopener");
   }
   close();
 }
@@ -109,7 +116,10 @@ async function main(): Promise<void> {
           history.replaceState(null, "", tabHash(id));
         },
       }
-      : { allSettingsUrl: optionsUrl, openTab: (id) => void openTab(uiState, id, optionsUrl) }),
+      : {
+        allSettingsUrl: optionsUrl,
+        openSettings: (id) => void openSettings(uiState, id, optionsUrl),
+      }),
   });
 
   // The page's own copy follows a new language on the next load; reload now.

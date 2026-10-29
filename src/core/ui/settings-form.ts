@@ -79,8 +79,11 @@ export interface SettingsFormDeps {
   readonly header?: SettingsHeader;
   /** The full options page, behind the popup's gear and its tag names. */
   readonly allSettingsUrl?: string;
-  /** Opens a tag's tab on the options page from a popup row; the row's link does without it. */
-  readonly openTab?: (id: TabId) => void;
+  /**
+   * Opens the options page from the popup, on a tag's tab, or as it was left for the gear. The
+   * links do without it.
+   */
+  readonly openSettings?: (id: TabId | undefined) => void;
   /** Gives the form its Backup card; the toolbar popup has none. */
   readonly backup?: BackupFormDeps;
   /** The tab to show first, from the page's location fragment; else the stored one. */
@@ -114,6 +117,8 @@ const TRUE = "true";
 const TAB_ROLE = "tab";
 /** Names the tab a popup row's link opens. */
 const OPEN_TAB_ATTRIBUTE = "data-sar-open-tab";
+/** Marks the popup's gear, which opens the options page on the tab shown last. */
+const OPEN_SETTINGS_ATTRIBUTE = "data-sar-open-settings";
 /** An original gear, eight teeth around a hole on a 48 unit grid (`parseIcon`). */
 const GEAR_SVG = '<svg viewBox="0 0 48 48" aria-hidden="true" focusable="false">'
   + '<path fill-rule="evenodd" d="M40 26 45 30 43 35 37 34 34 37 35 43 30 45 26 40 22 40 18 45 '
@@ -317,6 +322,7 @@ export async function mountSettingsForm(
     link.href = url;
     link.target = NEW_TAB;
     link.rel = NO_OPENER;
+    link.setAttribute(OPEN_SETTINGS_ATTRIBUTE, "");
     link.title = i18n.t("options_all_settings");
     link.setAttribute("aria-label", link.title);
     const icon = parseIcon(doc, GEAR_SVG);
@@ -1201,9 +1207,10 @@ export async function mountSettingsForm(
     const open = toTabId(
       target.closest(`[${OPEN_TAB_ATTRIBUTE}]`)?.getAttribute(OPEN_TAB_ATTRIBUTE),
     );
-    if (open !== undefined && event !== undefined && deps.openTab !== undefined) {
+    const gear = target.closest(`[${OPEN_SETTINGS_ATTRIBUTE}]`) !== null;
+    if ((open !== undefined || gear) && event !== undefined && deps.openSettings !== undefined) {
       event.preventDefault();
-      deps.openTab(open);
+      deps.openSettings(open);
       return;
     }
     const reset = target.closest<HTMLElement>(`[${COLOR_RESET_ATTRIBUTE}]`);
