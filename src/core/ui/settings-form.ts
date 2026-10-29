@@ -173,8 +173,8 @@ interface ColorControls {
 
 /** The controls of one kind, which `sync` sets from the stored settings. */
 interface KindControls {
-  /** What the master switch turns off: hidden on a tab, a disabled fieldset in a popup row. */
-  readonly options: HTMLElement;
+  /** What the master switch turns off: a fieldset that stays in place, disabled and dimmed. */
+  readonly options: HTMLFieldSetElement;
   /** The on or off cue on the kind's tab; a popup row has none. */
   readonly state: HTMLElement | undefined;
   readonly switches: ReadonlyMap<SwitchField, HTMLInputElement>;
@@ -539,7 +539,7 @@ export async function mountSettingsForm(
     const color = deps.colors ? colorField(kind) : undefined;
     const facetList: readonly FacetDefinition<FacetId>[] = kind.facets ?? [];
     const facets = facetList.length === 0 ? undefined : facetsField(kind, facetList);
-    const options = element("div", "sar-kind-options");
+    const options = element("fieldset", "sar-kind-options");
     if (facets !== undefined) {
       options.append(facets.row);
     }
@@ -872,11 +872,7 @@ export async function mountSettingsForm(
       if (own.color !== undefined) {
         syncColor(id, own.color, kind.color);
       }
-      if (own.options instanceof HTMLFieldSetElement) {
-        own.options.disabled = !kind.enabled;
-      } else {
-        own.options.hidden = !kind.enabled;
-      }
+      own.options.disabled = !kind.enabled;
       if (own.state !== undefined) {
         own.state.textContent = i18n.t(kind.enabled ? "options_state_on" : "options_state_off");
         own.state.toggleAttribute("data-sar-on", kind.enabled);

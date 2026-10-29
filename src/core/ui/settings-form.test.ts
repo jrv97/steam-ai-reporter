@@ -285,26 +285,39 @@ describe("the settings of each tag", () => {
     }
   });
 
-  it("hides the other controls of a kind while its master switch is off", async () => {
-    const { settings, card, input } = await setup();
-    const options = () => card("drm").querySelector<HTMLElement>(".sar-kind-options");
-    expect(options()?.hidden).toBe(false);
-    await settings.patch({ kinds: { drm: { enabled: false, badge: false } } });
-    expect(options()?.hidden).toBe(true);
-    expect(options()?.contains(input("drm", "badge"))).toBe(true);
-    expect(card("drm").contains(input("drm", "enabled"))).toBe(true);
-    expect(input("drm", "enabled").closest(".sar-kind-options")).toBeNull();
-    expect(card("account").querySelector<HTMLElement>(".sar-kind-options")?.hidden).toBe(false);
-    await settings.patch({ kinds: { drm: { enabled: true } } });
-    expect(options()?.hidden).toBe(false);
-    expect(input("drm", "badge").checked).toBe(false);
-  });
+  it.each(KINDS.map((kind) => kind.id))(
+    "keeps every control of %s in place, disabled, while its master switch is off",
+    async (id) => {
+      const { settings, card, input, tab } = await setup();
+      await writeSettings(settings, withKind(DEFAULT_SETTINGS, id, { enabled: true }));
+      const options = () => card(id).querySelector<HTMLFieldSetElement>(".sar-kind-options");
+      const controlsOf = () => [...card(id).querySelectorAll("input, button")];
+      const before = controlsOf();
+      expect(options()?.disabled).toBe(false);
+      await writeSettings(
+        settings,
+        withKind(DEFAULT_SETTINGS, id, { enabled: false, badge: false }),
+      );
+      expect(controlsOf()).toStrictEqual(before);
+      expect(options()?.disabled).toBe(true);
+      expect(options()?.hidden).toBe(false);
+      expect(tab(id).hidden).toBe(false);
+      expect(options()?.contains(input(id, "badge"))).toBe(true);
+      expect(input(id, "enabled").closest(".sar-kind-options")).toBeNull();
+      await writeSettings(
+        settings,
+        withKind(DEFAULT_SETTINGS, id, { enabled: true, badge: false }),
+      );
+      expect(options()?.disabled).toBe(false);
+      expect(input(id, "badge").checked).toBe(false);
+    },
+  );
 
-  it("keeps PvP off and its controls hidden until the player turns it on", async () => {
+  it("keeps PvP off and its controls disabled until the player turns it on", async () => {
     const { settings, card, input } = await setup();
-    const options = () => card("pvp").querySelector<HTMLElement>(".sar-kind-options");
+    const options = () => card("pvp").querySelector<HTMLFieldSetElement>(".sar-kind-options");
     expect(input("pvp", "enabled").checked).toBe(false);
-    expect(options()?.hidden).toBe(true);
+    expect(options()?.disabled).toBe(true);
     const master = input("pvp", "enabled");
     master.checked = true;
     change(master);
@@ -316,7 +329,7 @@ describe("the settings of each tag", () => {
         filter: "off",
       });
     });
-    expect(options()?.hidden).toBe(false);
+    expect(options()?.disabled).toBe(false);
     expect(parseSettings(await settings.read()).kinds.drm.enabled).toBe(true);
   });
 
@@ -1189,16 +1202,6 @@ describe("the tabs", () => {
     await writeSettings(settings, withKind(DEFAULT_SETTINGS, "pvp", { enabled: true }));
     expect(state("pvp")?.textContent).toBe(i18n.t("options_state_on"));
     expect(state("pvp")?.hasAttribute("data-sar-on")).toBe(true);
-  });
-
-  it("keeps a tag that is off on its own tab, with only its master switch", async () => {
-    const { tab, card } = await setup();
-    expect(tab("pvp").hidden).toBe(false);
-    tab("pvp").click();
-    const shown = [...card("pvp").querySelectorAll<HTMLElement>("[data-sar-setting]")].filter(
-      (control) => control.closest("[hidden]") === null,
-    );
-    expect(shown.map((control) => control.getAttribute("data-sar-setting"))).toEqual(["enabled"]);
   });
 
   it.each<[string, TabId | undefined, unknown, TabId]>([

@@ -103,6 +103,13 @@ These are hard rules. A change that breaks one needs an ADR first.
     writing a fake, stub or mock, check `tests/helpers/` for one to reuse or extend. Repeated
     setup moves into a helper; a test body shows only what differs for its case. Assert behavior
     through the public surface, one idea per test, and never add a test that restates another.
+18. **Layout stability.** Turning something off never changes the layout of the page that shows
+    it. A control that a switch turns off stays in place at the same size, disabled (a disabled
+    `fieldset` or the `disabled` attribute) and dimmed by a CSS state selector; it is never hidden,
+    removed or collapsed, and the switch itself stays usable. An empty list draws its empty-state
+    line where the list would be. Messages for a failed save or an invalid value, and Reset buttons
+    that follow a field's own value, are outside this rule. It covers the options page, the toolbar
+    popup and the userscript dialog.
 
 ## Development browsers
 

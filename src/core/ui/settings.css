@@ -350,9 +350,18 @@
   border-block-start: 1px solid var(--sar-color-divider);
 }
 
-/* A tag's switches below its master switch: one divider above them, then the usual ones */
+/* A tag's switches below its master switch: one divider above them, then the usual ones. A tag
+   that is off keeps every control in place, disabled and dimmed (decision 75). */
 .sar-kind-options {
+  min-inline-size: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
   border-block-start: 1px solid var(--sar-color-divider);
+}
+
+.sar-kind-options:disabled {
+  opacity: var(--sar-dim-opacity);
 }
 
 .sar-kind-options > .sar-field:first-child {
