@@ -1,19 +1,30 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { createTabs, TAB_ATTRIBUTE } from "./tabs";
 
 const IDS = ["one", "two", "three", "four"] as const;
 type Id = (typeof IDS)[number];
 
 /** Tabs over the four ids, in the document, with `selected` shown. */
-function mounted(selected: Id = "one") {
-  const tabs = createTabs({ doc: document, ids: IDS, idPrefix: "t-", label: "label" });
+function mounted(selected: Id = "one", onActivate?: (id: Id) => void) {
+  const tabs = createTabs({
+    doc: document,
+    ids: IDS,
+    idPrefix: "t-",
+    label: "label",
+    ...(onActivate === undefined ? {} : { onActivate }),
+  });
   tabs.select(selected);
   document.body.append(tabs.list, ...IDS.map((id) => tabs.panel(id)));
   return tabs;
 }
 
 function key(target: Element, name: string, init: KeyboardEventInit = {}): KeyboardEvent {
-  const event = new KeyboardEvent("keydown", { key: name, bubbles: true, ...init });
+  const event = new KeyboardEvent("keydown", {
+    key: name,
+    bubbles: true,
+    cancelable: true,
+    ...init,
+  });
   target.dispatchEvent(event);
   return event;
 }
@@ -78,6 +89,15 @@ describe("the tab list", () => {
   });
 });
 
+/** The tab stops and the focused tab after a key, as a person sees them. */
+function stops(tabs: ReturnType<typeof mounted>) {
+  return {
+    focused: IDS.find((id) => tabs.tab(id) === document.activeElement),
+    stop: IDS.filter((id) => tabs.tab(id).tabIndex === 0),
+    selected: tabs.selected(),
+  };
+}
+
 describe("the keys on a tab", () => {
   it.each(
     [
@@ -92,27 +112,61 @@ describe("the keys on a tab", () => {
       ["Home", "three", "one"],
       ["End", "two", "four"],
     ] as const,
-  )("%s from %s moves to %s", (name, from, to) => {
-    const tabs = mounted(from);
-    expect(tabs.target(key(tabs.tab(from), name))).toBe(to);
+  )("%s from %s moves focus and the tab stop to %s, and selects nothing", (name, from, to) => {
+    const onActivate = vi.fn();
+    const tabs = mounted(from, onActivate);
+    tabs.tab(from).focus();
+    expect(key(tabs.tab(from), name).defaultPrevented).toBe(true);
+    expect(stops(tabs)).toEqual({ focused: to, stop: [to], selected: from });
+    expect(tabs.tab(to).getAttribute("aria-selected")).toBe("false");
+    expect(onActivate).not.toHaveBeenCalled();
+  });
+
+  it.each([["Enter"], [" "]])("%j activates the focused tab, not the selected one", (name) => {
+    const onActivate = vi.fn();
+    const tabs = mounted("one", onActivate);
+    tabs.tab("three").focus();
+    expect(key(tabs.tab("three"), name).defaultPrevented).toBe(true);
+    expect(onActivate.mock.calls).toEqual([["three"]]);
+  });
+
+  it("shows the activated tab when nothing else hears it; the tab stop follows", () => {
+    const tabs = mounted();
+    key(tabs.tab("one"), "ArrowRight");
+    key(tabs.tab("two"), "Enter");
+    expect(stops(tabs)).toEqual({ focused: "two", stop: ["two"], selected: "two" });
+    expect(tabs.panel("two").hidden).toBe(false);
+    tabs.tab("two").focus();
+    key(tabs.tab("two"), "End");
+    tabs.select("one");
+    expect(stops(tabs).stop).toEqual(["one"]);
   });
 
   it.each([
-    ["a key it does not use", "Enter", {}],
+    ["a key it does not use", "a", {}],
     ["an arrow with a modifier", "ArrowRight", { altKey: true }],
     ["an arrow with control", "ArrowRight", { ctrlKey: true }],
     ["an arrow with the meta key", "ArrowLeft", { metaKey: true }],
+    ["Enter with control", "Enter", { ctrlKey: true }],
   ])("ignores %s", (_case, name, init) => {
-    const tabs = mounted();
-    expect(tabs.target(key(tabs.tab("one"), name, init))).toBeUndefined();
+    const onActivate = vi.fn();
+    const tabs = mounted("one", onActivate);
+    tabs.tab("one").focus();
+    expect(key(tabs.tab("one"), name, init).defaultPrevented).toBe(false);
+    expect(stops(tabs)).toEqual({ focused: "one", stop: ["one"], selected: "one" });
+    expect(onActivate).not.toHaveBeenCalled();
   });
 
   it("ignores keys outside its tabs, even on a button that points at one", () => {
-    const tabs = mounted();
+    const onActivate = vi.fn();
+    const tabs = mounted("one", onActivate);
     const jump = document.createElement("button");
     jump.setAttribute(TAB_ATTRIBUTE, "two");
     tabs.panel("one").append(jump);
-    expect(tabs.target(key(jump, "ArrowRight"))).toBeUndefined();
-    expect(tabs.target(key(tabs.panel("one"), "Home"))).toBeUndefined();
+    for (const name of ["ArrowRight", "Home", "Enter"]) {
+      expect(key(jump, name).defaultPrevented).toBe(false);
+      expect(key(tabs.panel("one"), name).defaultPrevented).toBe(false);
+    }
+    expect(onActivate).not.toHaveBeenCalled();
   });
 });

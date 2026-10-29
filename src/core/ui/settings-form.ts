@@ -219,7 +219,7 @@ function errorKey(field: string, kind?: KindId): string {
 /**
  * Mounts the settings and the ignore lists into `root` as tabs: General, then one per tag. Each
  * change is a patch of the stored settings, applied at once. One delegated listener per event
- * type on the root serves every control (rule 13).
+ * type on the root serves every control (rule 13); the tab list holds the one for tab keys.
  */
 export async function mountSettingsForm(
   root: HTMLElement,
@@ -622,7 +622,13 @@ export async function mountSettingsForm(
   );
   const tabs = deps.layout === "list"
     ? undefined
-    : createTabs({ doc, ids: tabIds, idPrefix: prefix, label: i18n.t("options_tabs_label") });
+    : createTabs({
+      doc,
+      ids: tabIds,
+      idPrefix: prefix,
+      label: i18n.t("options_tabs_label"),
+      onActivate: show,
+    });
   const scopes = new Map<AllowScope, ScopeCard>();
   const live = element("div", "sar-vh");
   live.setAttribute("aria-live", POLITE);
@@ -1211,15 +1217,6 @@ export async function mountSettingsForm(
     }
   }
 
-  function onKeydown(event: KeyboardEvent): void {
-    const next = tabs?.target(event);
-    if (next !== undefined) {
-      event.preventDefault();
-      show(next);
-      tabs?.tab(next).focus();
-    }
-  }
-
   function onEvent(event: Event): void {
     built?.order.handle(event);
     if (chipFields.handle(event)) {
@@ -1237,10 +1234,6 @@ export async function mountSettingsForm(
         }
         break;
       case "keydown":
-        if (event instanceof KeyboardEvent) {
-          onKeydown(event);
-        }
-        break;
       case "pointerdown":
         break;
       default:

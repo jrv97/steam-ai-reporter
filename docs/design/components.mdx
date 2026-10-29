@@ -1082,8 +1082,8 @@ Preview: `previews/Tabs.html`.
 
 ### Behavior
 
-- The standard tabs pattern with automatic activation: the selected tab has `aria-selected="true"` and is the one tab stop (`tabindex="0"`, the others `-1`); its panel shows and the others carry `hidden`. Every panel is rendered at mount.
-- Keys on a tab: ArrowRight and ArrowDown select the next tab, ArrowLeft and ArrowUp the previous one, on either axis and wrapping at the ends; Home the first, End the last. Focus follows. A key with Alt, Control or Meta is left to the browser. One delegated `keydown` listener on the form's root serves every tab, beside the one `click` listener.
+- The standard tabs pattern with manual activation (decision 71): the selected tab has `aria-selected="true"`; its panel shows and the others carry `hidden`. Every panel is rendered at mount. The one tab stop (`tabindex="0"`, the others `-1`) follows focus while the arrows move it and returns to the selected tab with each selection.
+- Keys on a tab: ArrowRight and ArrowDown move focus to the next tab, ArrowLeft and ArrowUp to the previous one, on either axis and wrapping at the ends; Home the first, End the last. Moving focus selects nothing. Enter or Space selects the focused tab. A key with Alt, Control or Meta is left to the browser. One `keydown` listener on the tab list serves every tab; a click selects through the form root's one `click` listener.
 - No `aria-orientation`: both axes work in the rail and in the row.
 - The selection is remembered and mirrored in the page's fragment as section 6 says.
 

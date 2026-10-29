@@ -1080,8 +1080,9 @@ describe("the tabs", () => {
     expect(tab("pvp").querySelector(".sar-vh")?.textContent).toBe(
       i18n.t("kind_chip_name", { chip: "Aaa", heading: heading("pvp") }),
     );
+    tab(GENERAL_TAB).focus();
     press(tab(GENERAL_TAB), "ArrowRight");
-    expect(tab("pvp").getAttribute("aria-selected")).toBe("true");
+    expect(document.activeElement).toBe(tab("pvp"));
   });
 
   it("follows the master switch on the tab, here and from another tab", async () => {
@@ -1153,22 +1154,30 @@ describe("the tabs", () => {
     expect(onTabChange.mock.calls).toEqual([["eula"]]);
   });
 
-  it("moves the selection and the focus with the arrow keys, and remembers it", async () => {
+  it("moves focus with the arrows, selects with Enter or Space, and remembers it", async () => {
     const store = memoryStore();
-    const { tab, tabIds } = await setup({ uiState: createUiState(store) });
+    const onTabChange = vi.fn();
+    const { tab, tabIds } = await setup({ uiState: createUiState(store), onTabChange });
     const [first, second] = tabIds();
+    const last = tabIds().at(-1);
     tab(GENERAL_TAB).focus();
     press(tab(GENERAL_TAB), "ArrowDown");
-    expect(second).toBeDefined();
     expect(document.activeElement?.getAttribute("data-sar-tab")).toBe(second);
-    press(document.activeElement ?? tab(GENERAL_TAB), "ArrowLeft");
     press(document.activeElement ?? tab(GENERAL_TAB), "End");
-    expect(document.activeElement?.getAttribute("data-sar-tab")).toBe(tabIds().at(-1));
+    expect(document.activeElement?.getAttribute("data-sar-tab")).toBe(last);
+    expect(document.activeElement?.getAttribute("aria-selected")).toBe("false");
+    expect(tab(GENERAL_TAB).getAttribute("aria-selected")).toBe("true");
+    expect(onTabChange).not.toHaveBeenCalled();
+    press(document.activeElement ?? tab(GENERAL_TAB), "Enter");
     expect(document.activeElement?.getAttribute("aria-selected")).toBe("true");
+    expect(tab(GENERAL_TAB).getAttribute("aria-selected")).toBe("false");
     expect(first).toBe(GENERAL_TAB);
     await vi.waitFor(async () => {
-      expect(await createUiState(store).read()).toBe(tabIds().at(-1));
+      expect(await createUiState(store).read()).toBe(last);
     });
+    expect(onTabChange.mock.calls).toEqual([[last]]);
+    press(tab(GENERAL_TAB), " ");
+    expect(tab(GENERAL_TAB).getAttribute("aria-selected")).toBe("true");
   });
 
   it("shows a tab asked for from outside, and tells the page", async () => {
@@ -1404,7 +1413,7 @@ describe("a failed read of the settings", () => {
 });
 
 describe("listeners", () => {
-  it("listens on the root only, one listener per event type, until destroyed", async () => {
+  it("listens on the root, one per event type, and on the tab list for keys", async () => {
     // happy-dom defines addEventListener on its own prototype; spy where it actually lives.
     let owner = Reflect.getPrototypeOf(document.createElement("div"));
     while (owner !== null && !Object.hasOwn(owner, "addEventListener")) {
@@ -1415,13 +1424,17 @@ describe("listeners", () => {
     }
     const add = vi.spyOn(owner, "addEventListener");
     const { root, form } = await setup();
-    const targets = new Set(add.mock.contexts);
-    expect(targets).toEqual(new Set([root]));
-    const types = add.mock.calls.map(([type]) => type);
-    expect(types.toSorted()).toEqual(["change", "click", "input", "keydown", "pointerdown"]);
+    const list = root.querySelector("[role=tablist]");
+    expect(new Set(add.mock.contexts)).toEqual(new Set([root, list]));
+    const typesOn = (target: unknown) =>
+      add.mock.calls.flatMap(([type], at) => (add.mock.contexts[at] === target ? [type] : []));
+    expect(typesOn(root).toSorted()).toEqual(
+      ["change", "click", "input", "keydown", "pointerdown"],
+    );
+    expect(typesOn(list)).toEqual(["keydown"]);
     const remove = vi.spyOn(root, "removeEventListener");
     form.destroy();
-    expect(remove.mock.calls.map(([type]) => type).toSorted()).toEqual(types.toSorted());
+    expect(remove.mock.calls.map(([type]) => type).toSorted()).toEqual(typesOn(root).toSorted());
     expect(root.childElementCount).toBe(0);
   });
 });
