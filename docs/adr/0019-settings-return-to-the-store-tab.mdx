@@ -114,33 +114,33 @@ Tests. A table-driven test over the `goBack` builder with a typed fake of the na
 
 Run by hand before the status changes. Use the build of the branch that adds the button, with `permissions` still `["storage"]`. Part 1 needs no button and can run on any build. Mark each box when the result matches. Write what differs under the box.
 
-Chromium: `mise run run-chromium` (project profile). Firefox Nightly: `mise run run-gecko` (dedicated profile). Chromium version: ______. Firefox Nightly build: ______.
+Chromium: `mise run run-chromium` (project profile). Firefox Nightly: `mise run run-gecko` (dedicated profile). Chromium version: 155.0.8059.84 (ungoogled-chromium, 64-bit). Firefox Nightly build: 161.0a1 (2026-10-26, 64-bit).
 
 ### Part 1: the calls need no permission
 
 Use `chrome` in Chromium and `browser` in Firefox Nightly. Open `https://store.steampowered.com/app/730/` in a tab, then open All Settings from the popup's gear and open the developer console on the settings tab.
 
-1. Run `await chrome.tabs.query({})`. Expect every item to carry `id` and `windowId` and none to carry `url`, `title` or `favIconUrl`.
-   - [ ] Chromium
-   - [ ] Firefox Nightly
+1. Run `await chrome.tabs.query({})`. Expect every item to carry `id` and `windowId`, and the settings tab itself (an extension page) to carry `url`, `title` and `favIconUrl`. Write whether the store tab carries them.
+   - [x] Chromium: only the two settings tabs carried the three properties. The store tab and the other tabs carried none.
+   - [x] Firefox Nightly: the store tab carried all three as well. The cause was not checked, and the button never reads them.
 2. Run `await chrome.tabs.update(<ID of the store tab>, { active: true })`. Expect a resolved `Tab` and the store tab in front.
-   - [ ] Chromium
-   - [ ] Firefox Nightly
+   - [x] Chromium
+   - [x] Firefox Nightly
 3. Run `await chrome.windows.update(<its windowId>, { focused: true })` with the store tab in a second window. Expect that window in front.
-   - [ ] Chromium
-   - [ ] Firefox Nightly
-4. Run `await chrome.tabs.update(999999, { active: true })`. Expect a rejection or an `undefined` result, and no permission error. Write the message here: ______
-   - [ ] Chromium
-   - [ ] Firefox Nightly
+   - [ ] Chromium: the call resolved with `focused: true`. The window coming to the front was not confirmed.
+   - [x] Firefox Nightly
+4. Run `await chrome.tabs.update(999999, { active: true })`. Expect a rejection or an `undefined` result, and no permission error. Write the message here: Chromium rejected with `No tab with id: 999999.` and Firefox Nightly with `Invalid tab ID: 999999`.
+   - [x] Chromium
+   - [x] Firefox Nightly
 5. Open a blank tab, note its ID, run `await chrome.tabs.remove(<that ID>)`. Expect the tab to close.
-   - [ ] Chromium
-   - [ ] Firefox Nightly
+   - [x] Chromium
+   - [x] Firefox Nightly
 6. Run `await chrome.tabs.getCurrent()` on the settings tab. Expect a `Tab` with the settings tab's `id`.
-   - [ ] Chromium
-   - [ ] Firefox Nightly
-7. On the settings tab run `chrome.storage.onChanged.addListener((c, area) => console.log(area, c))`. Open the same address with `?context=popup` added in a second tab and run `await chrome.storage.session.set({ probe: 1 })` there. Expect a log line on the settings tab, and `await chrome.storage.session.get("probe")` to return `{ probe: 1 }` on either tab. Write the area name from the log line here: ______
-   - [ ] Chromium
-   - [ ] Firefox Nightly
+   - [x] Chromium
+   - [x] Firefox Nightly
+7. On the settings tab run `chrome.storage.onChanged.addListener((c, area) => console.log(area, c))`. Open the same address with `?context=popup` added in a second tab and run `await chrome.storage.session.set({ probe: 1 })` there. Expect a log line on the settings tab, and `await chrome.storage.session.get("probe")` to return `{ probe: 1 }` on either tab. Write the area name from the log line here: `session` in both browsers.
+   - [x] Chromium
+   - [x] Firefox Nightly
 
 If a call fails with a permission error, stop. Write the call and the message here: ______. Try `activeTab` in the manifest and run the part again. The docs do not list these calls under `activeTab`, and the `tabs` permission carries Chrome's browsing-history warning. A failure then most likely leaves option 1 alone.
 
