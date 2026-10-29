@@ -336,7 +336,9 @@ describe("parseGetItems with one malformed field", () => {
       return verdict.state === "unknown" && verdict.reason === "malformed";
     });
     expect(broken).toStrictEqual(KIND_IDS.filter((id) => lost.includes(id)));
-    expect(disclosedKinds(found)).toStrictEqual(DISCLOSING.filter((id) => !lost.includes(id)));
+    expect(disclosedKinds(found)).toStrictEqual(
+      KIND_IDS.filter((id) => DISCLOSING.includes(id) && !lost.includes(id)),
+    );
   });
 
   it("reads an empty list for extra_details as an object that declares nothing", () => {

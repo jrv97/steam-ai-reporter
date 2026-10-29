@@ -331,7 +331,7 @@ describe("start on an English app page", () => {
     // declares AI notes, a kernel anti-cheat, a EULA and PvP (off by default).
     const GAME = 1808500;
     const route = getItemsRoute([demoItem(5072580, GAME), itemAs(kindItems, GAME, GAME)]);
-    const kinds = ["kind_ai_heading", "kind_kernel_heading", "kind_eula_heading"] as const;
+    const kinds = ["kind_ai_heading", "kind_eula_heading", "kind_kernel_heading"] as const;
     const lines = () =>
       [...(banner()?.querySelectorAll(".sar-banner-full-game") ?? [])].map((line) =>
         line.textContent

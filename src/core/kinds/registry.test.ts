@@ -2,12 +2,20 @@ import { describe, expect, it } from "vitest";
 import { plainKinds } from "../../../tests/helpers/settings";
 import { SHIPPED_CATALOGS } from "../i18n/shipped";
 import { KIND_IDS } from "./id";
+import type { TagKind } from "./kind";
 import { holdsEveryKind, KIND_BY_ID, KINDS, perKind } from "./registry";
 
 describe("KINDS", () => {
   it("holds one definition for each kind id, in order, and each one knows its id", () => {
     expect(KINDS.map((kind) => kind.id)).toStrictEqual([...KIND_IDS]);
     expect(new Set(KIND_IDS).size).toBe(KIND_IDS.length);
+  });
+
+  it("lists the kinds alphabetically by Steam's English heading, the default tag order", () => {
+    const english = SHIPPED_CATALOGS["en"];
+    const heading = (kind: TagKind) => english?.[kind.messages.heading]?.message ?? "";
+    const collator = new Intl.Collator("en");
+    expect(KINDS.map(heading)).toStrictEqual(KINDS.map(heading).toSorted(collator.compare));
   });
 
   it("starts each kind with a badge and an untouched list, some off and without a banner", () => {

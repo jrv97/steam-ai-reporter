@@ -9,19 +9,19 @@ describe("KIND_IDS", () => {
   });
 
   it("holds the stable ids the settings store", () => {
-    expect(KIND_IDS).toStrictEqual([
-      "ai",
-      "kernel",
-      "anticheat",
-      "drm",
+    expect([...KIND_IDS].sort()).toStrictEqual([
       "account",
-      "eula",
-      "pvp",
-      "iap",
+      "ai",
+      "anticheat",
       "deck",
-      "machine",
-      "family",
+      "drm",
       "earlyaccess",
+      "eula",
+      "family",
+      "iap",
+      "kernel",
+      "machine",
+      "pvp",
     ]);
   });
 });

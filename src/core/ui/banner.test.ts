@@ -243,10 +243,10 @@ describe("the entries of the captured games", () => {
 
     expect(texts(root, "h2")).toEqual(shown.map(heading));
     expect(texts(root, "h2")).toEqual([
+      i18n.t("kind_iap_heading"),
       i18n.t("kind_drm_heading"),
       i18n.t("kind_account_heading"),
       i18n.t("kind_eula_heading"),
-      i18n.t("kind_iap_heading"),
     ]);
   });
 
@@ -278,10 +278,10 @@ describe("the entries of the captured games", () => {
     banner.show(view(shown));
     expect(texts(root, "h2")).toEqual([
       i18n.t("kind_ai_heading"),
-      i18n.t("kind_kernel_heading"),
-      i18n.t("kind_eula_heading"),
-      i18n.t("kind_pvp_heading"),
       i18n.t("kind_iap_heading"),
+      i18n.t("kind_pvp_heading"),
+      i18n.t("kind_eula_heading"),
+      i18n.t("kind_kernel_heading"),
     ]);
     const [ai] = shown;
     expect(ai?.kind).toBe("ai");
@@ -332,10 +332,10 @@ describe("the banner's accessibility", () => {
       "BUTTON",
     ]);
     expect(buttons.map((button) => nameOf(root, button))).toEqual([
+      `${i18n.t("banner_ignore_kind")} ${i18n.t("kind_iap_heading")}`,
       `${i18n.t("banner_ignore_kind")} ${i18n.t("kind_drm_heading")}`,
       `${i18n.t("banner_ignore_kind")} ${i18n.t("kind_account_heading")}`,
       `${i18n.t("banner_ignore_kind")} ${i18n.t("kind_eula_heading")}`,
-      `${i18n.t("banner_ignore_kind")} ${i18n.t("kind_iap_heading")}`,
     ]);
     expect(new Set(buttons.map((button) => button.id)).size).toBe(4);
   });
@@ -460,7 +460,7 @@ describe("ignoring from the banner", () => {
     expect(root.activeElement).toBe(query(root, '[data-sar-action="undo"]'));
     await vi.waitFor(() => {
       expect(query(root, "[aria-live]").textContent).toBe(
-        i18n.t("notice_marking_stopped_kind", { heading: heading(shown[0] ?? disclosedVerdict()) }),
+        i18n.t("notice_marking_stopped_kind", { heading: i18n.t("kind_drm_heading") }),
       );
     });
     expect(texts(root, "h2")).toEqual(withoutDrm(shown).map(heading));
@@ -586,10 +586,10 @@ describe("the creators section", () => {
     expect(section.hasAttribute("open")).toBe(false);
     expect(query(root, "summary").textContent).toBe(i18n.t("banner_creators_toggle"));
     const tags = [
+      i18n.t("banner_ignore_creator_kind", { chip: chip("iap") }),
       i18n.t("banner_ignore_creator_kind", { chip: chip("drm") }),
       i18n.t("banner_ignore_creator_kind", { chip: chip("account") }),
       i18n.t("banner_ignore_creator_kind", { chip: i18n.t("kind_eula_chip") }),
-      i18n.t("banner_ignore_creator_kind", { chip: chip("iap") }),
       i18n.t("banner_ignore_creator_all"),
     ];
     expect(rows(root)).toEqual([
@@ -689,7 +689,9 @@ describe("the creators section", () => {
         creatorNotes: [creatorNote("developer", ["Valve", 4], "drm")],
       }),
     );
-    const button = [...root.querySelectorAll<HTMLElement>(".sar-banner-creator button")][0];
+    const button = [...root.querySelectorAll<HTMLElement>(".sar-banner-creator button")].find(
+      (each) => each.textContent === i18n.t("banner_ignore_creator_kind", { chip: chip("drm") }),
+    );
     button?.click();
     button?.click();
     expect(ignoreCreator).toHaveBeenCalledTimes(1);

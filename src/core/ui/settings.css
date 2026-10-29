@@ -169,8 +169,25 @@
   font-weight: var(--sar-weight-medium);
 }
 
+/* Steam's long heading for the tag wraps inside the tab, so the rail never scrolls sideways */
+.sar-tab {
+  max-inline-size: 100%;
+}
+
+.sar-tab-label {
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
+}
+
+/* General stands apart from the tags: heavier text and room before the first tag */
+.sar-tab-general {
+  margin-inline-end: var(--sar-space-2);
+  font-weight: var(--sar-weight-medium);
+}
+
 /* The tag's state in words beside its label, off in a quieter tone */
 .sar-tab-state {
+  flex: none;
   color: var(--sar-color-text-subtle);
   font-size: var(--sar-size-sm);
   font-weight: var(--sar-weight-regular);
@@ -187,7 +204,7 @@
 }
 
 @media (min-width: 800px) {
-  /* Room for the longest tag label and its state */
+  /* Room for a long heading and its state, which wrap to a second line */
   .sar-tabs {
     grid-template-columns: 200px minmax(0, 1fr);
     align-items: start;
@@ -204,6 +221,11 @@
     border-block-end: 0;
     border-inline-start: 2px solid transparent;
     border-radius: 0 var(--sar-radius-sm) var(--sar-radius-sm) 0;
+  }
+
+  .sar-tab-general {
+    margin-block-end: var(--sar-space-2);
+    margin-inline-end: 0;
   }
 }
 

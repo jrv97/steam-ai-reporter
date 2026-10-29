@@ -16,21 +16,22 @@ import { PVP_KIND } from "./pvp";
 
 /**
  * The one place that lists the kinds. The kind ids, the settings defaults and every per-kind
- * record derive from it. A new kind is one entry here and its definition.
+ * record derive from it. A new kind is one entry here and its definition. The entries sit in
+ * alphabetical order of Steam's English heading for the kind, the default tag order.
  */
 export const KINDS = [
   AI_KIND,
-  KERNEL_KIND,
-  ANTICHEAT_KIND,
+  EARLY_ACCESS_KIND,
+  FAMILY_KIND,
+  IAP_KIND,
   DRM_KIND,
+  PVP_KIND,
   ACCOUNT_KIND,
   EULA_KIND,
-  PVP_KIND,
-  IAP_KIND,
   DECK_KIND,
   MACHINE_KIND,
-  FAMILY_KIND,
-  EARLY_ACCESS_KIND,
+  ANTICHEAT_KIND,
+  KERNEL_KIND,
 ] as const;
 
 function anyValue(): boolean {

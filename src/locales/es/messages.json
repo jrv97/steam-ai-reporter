@@ -719,10 +719,10 @@
   },
   "options_chip_label": {
     "message": "Texto del marcador",
-    "description": "Label of a text field in one tag's settings where the person types their own words for the tag's chip, the short label on badges, in the tag list of a game's page and on this tag's tab. Empty keeps the extension's own words, shown as the placeholder."
+    "description": "Label of a text field in one tag's settings where the person types their own words for the tag's chip, the short label on badges, in the tag list of a game's page and in the toolbar popup. Empty keeps the extension's own words, shown as the placeholder."
   },
   "options_chip_help": {
-    "message": "Tus propias palabras para los marcadores de esta etiqueta, su pestaña y sus botones de Ignorar. Déjalo vacío para usar el texto predeterminado. Las tarjetas, los títulos del aviso y los lectores de pantalla siguen dando las palabras de Steam.",
+    "message": "Tus propias palabras para los marcadores de esta etiqueta, su fila en la ventana emergente y sus botones de Ignorar. Déjalo vacío para usar el texto predeterminado. Las tarjetas, los títulos del aviso y los lectores de pantalla siguen dando las palabras de Steam.",
     "description": "Help under the chip text field. Says where the person's words show, that empty means the default, and that the hover card, the banner's headings and screen readers keep Steam's own words after them."
   },
   "options_chip_compact_label": {
@@ -1170,8 +1170,8 @@
     "description": "Title of the card in the General settings tab where a person puts the tags in the order badges, banners and summaries list them."
   },
   "options_order_help": {
-    "message": "Los marcadores, los avisos y los resúmenes muestran las etiquetas en este orden. Las imágenes pequeñas de los juegos muestran las $count$ primeras.",
-    "description": "Help under the Tag order title. $count$ is how many tags fit on a small game image, as a number (2); a +N badge stands for the rest.",
+    "message": "Los marcadores, los avisos y los resúmenes muestran las etiquetas en este orden, igual que las pestañas de la configuración y la ventana emergente. Las imágenes pequeñas de los juegos muestran las $count$ primeras.",
+    "description": "Help under the Tag order title. $count$ is how many tags fit on a small game image, as a number (2); a +N badge stands for the rest. The tabs and the popup's rows follow the same order.",
     "placeholders": {
       "count": {
         "content": "$1",

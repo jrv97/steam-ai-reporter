@@ -245,10 +245,10 @@ describe("start on the search page", () => {
     it("draws the placement's allowance of chips and a +N chip for the rest", async () => {
       const { http } = await startOnSearch(pvpOn(), several);
       await drawn(http);
-      expect(row(DISCLOSED)?.getAttribute("data-sar-kinds")).toBe("ai kernel eula pvp iap");
+      expect(row(DISCLOSED)?.getAttribute("data-sar-kinds")).toBe("ai iap pvp eula kernel");
       expect(chips()).toEqual([
         chip("ai"),
-        chip("kernel"),
+        chip("pvp"),
         chip("eula"),
         i18n.t("kind_chip_more", { count: "1" }),
       ]);
@@ -260,10 +260,10 @@ describe("start on the search page", () => {
       await writeSettings(settings, withKind(withPvp, "kernel", { badge: false }));
       await expect.poll(() => chips()).toEqual([
         chip("ai"),
-        chip("eula"),
         chip("pvp"),
+        chip("eula"),
       ]);
-      expect(row(DISCLOSED)?.getAttribute("data-sar-kinds")).toBe("ai kernel eula pvp iap");
+      expect(row(DISCLOSED)?.getAttribute("data-sar-kinds")).toBe("ai iap pvp eula kernel");
     });
 
     it("draws the chips again in a new tag order, the allowance from its start", async () => {
@@ -276,16 +276,16 @@ describe("start on the search page", () => {
         chip("ai"),
         i18n.t("kind_chip_more", { count: "1" }),
       ]);
-      expect(row(DISCLOSED)?.getAttribute("data-sar-kinds")).toBe("ai kernel eula pvp iap");
+      expect(row(DISCLOSED)?.getAttribute("data-sar-kinds")).toBe("ai iap pvp eula kernel");
     });
 
     it("draws the chips again with the person's chip text", async () => {
       const { http, settings } = await startOnSearch(pvpOn(), several);
       await drawn(http);
-      await writeSettings(settings, withChipText(withPvp, { kernel: { chip: "Ring 0" } }));
+      await writeSettings(settings, withChipText(withPvp, { pvp: { chip: "Versus" } }));
       await expect.poll(() => chips()).toEqual([
         chip("ai"),
-        "Ring 0",
+        "Versus",
         chip("eula"),
         i18n.t("kind_chip_more", { count: "1" }),
       ]);
@@ -298,11 +298,11 @@ describe("start on the search page", () => {
       });
       const { http } = await startOnSearch(ignored, several);
       await drawn(http);
-      expect(row(DISCLOSED)?.getAttribute("data-sar-kinds")).toBe("ai eula pvp iap");
+      expect(row(DISCLOSED)?.getAttribute("data-sar-kinds")).toBe("ai iap pvp eula");
       expect(chips()).toEqual([
         chip("ai"),
-        chip("eula"),
         chip("pvp"),
+        chip("eula"),
       ]);
     });
 
@@ -316,7 +316,7 @@ describe("start on the search page", () => {
       ]);
       const { http } = await startOnSearch(ignored, several);
       await drawn(http);
-      expect(row(DISCLOSED)?.getAttribute("data-sar-kinds")).toBe("ai eula pvp iap");
+      expect(row(DISCLOSED)?.getAttribute("data-sar-kinds")).toBe("ai iap pvp eula");
       expect(getComputedStyle(row(DISCLOSED) ?? document.body).display).not.toBe("none");
     });
 
@@ -355,16 +355,16 @@ describe("start on the search page", () => {
     it("draws every chip while the base game is not ignored", async () => {
       const { http } = await startOnSearch(new Map(), dlc);
       await drawn(http);
-      expect(row(DISCLOSED)?.getAttribute("data-sar-kinds")).toBe("ai kernel eula pvp iap");
-      expect(chips()).toEqual([chip("ai"), chip("kernel"), chip("eula")]);
+      expect(row(DISCLOSED)?.getAttribute("data-sar-kinds")).toBe("ai iap pvp eula kernel");
+      expect(chips()).toEqual([chip("ai"), chip("eula"), chip("kernel")]);
     });
 
     it("drops the chip and the list mark of the kind the base game is ignored for", async () => {
       const { http } = await startOnSearch(ignoring("ai"), dlc);
       await drawn(http);
       expect(http.calls).toHaveLength(1);
-      expect(row(DISCLOSED)?.getAttribute("data-sar-kinds")).toBe("kernel eula pvp iap");
-      expect(chips()).toEqual([chip("kernel"), chip("eula")]);
+      expect(row(DISCLOSED)?.getAttribute("data-sar-kinds")).toBe("iap pvp eula kernel");
+      expect(chips()).toEqual([chip("eula"), chip("kernel")]);
     });
 
     it("marks nothing for a base game ignored for all kinds", async () => {
@@ -397,7 +397,7 @@ describe("start on the search page", () => {
       ]);
       const { http } = await startOnSearch(own, dlc);
       await drawn(http);
-      expect(row(DISCLOSED)?.getAttribute("data-sar-kinds")).toBe("kernel eula pvp iap");
+      expect(row(DISCLOSED)?.getAttribute("data-sar-kinds")).toBe("iap pvp eula kernel");
     });
   });
 
@@ -437,11 +437,11 @@ describe("start on the search page", () => {
 
     it("lends the game's tags to its demo rows after one more request, for it alone", async () => {
       const { http } = await startDemos();
-      await expect.poll(() => marks(DISCLOSED)).toBe("ai kernel eula pvp iap");
-      expect(marks(SIBLING)).toBe("ai kernel eula pvp iap");
+      await expect.poll(() => marks(DISCLOSED)).toBe("ai iap pvp eula kernel");
+      expect(marks(SIBLING)).toBe("ai iap pvp eula kernel");
       expect(row(ROW_DEMO)?.hasAttribute("data-sar-kinds")).toBe(false);
       expect(asked(http)).toStrictEqual([SEARCH_IDS, [GAME]]);
-      expect(chips()).toStrictEqual([chip("ai"), chip("kernel"), chip("eula")]);
+      expect(chips()).toStrictEqual([chip("ai"), chip("eula"), chip("kernel")]);
       row(DISCLOSED)?.dispatchEvent(new FocusEvent("focusin", { bubbles: true }));
       const lines = [...document.querySelectorAll(".sar-hovercard-full-game")];
       expect(lines.map((line) => line.textContent)).toStrictEqual(
@@ -454,8 +454,8 @@ describe("start on the search page", () => {
       ["the demo", DISCLOSED],
     ])("drops the lent AI chip and mark when %s is ignored for AI", async (_name, id) => {
       await startDemos(listing(id));
-      await expect.poll(() => marks(DISCLOSED)).toBe("kernel eula pvp iap");
-      expect(chips()).toStrictEqual([chip("kernel"), chip("eula")]);
+      await expect.poll(() => marks(DISCLOSED)).toBe("iap pvp eula kernel");
+      expect(chips()).toStrictEqual([chip("eula"), chip("kernel")]);
     });
 
     it("follows the lent kind's switch and list filter", async () => {
@@ -463,7 +463,7 @@ describe("start on the search page", () => {
         enabled: false,
       });
       await startDemos(new Map([[SETTINGS_KEY, encodeSettings(settings)]]));
-      await expect.poll(() => marks(DISCLOSED)).toBe("ai kernel eula pvp iap");
+      await expect.poll(() => marks(DISCLOSED)).toBe("ai iap pvp eula kernel");
       expect(chips()).toStrictEqual([chip("ai"), chip("eula")]);
       expect(getComputedStyle(row(DISCLOSED) ?? document.body).display).toBe("none");
     });
@@ -482,7 +482,7 @@ describe("start on the search page", () => {
       await expect.poll(() => http.calls.length).toBe(2);
       expect(row(DISCLOSED)?.hasAttribute("data-sar-kinds")).toBe(false);
       await vi.advanceTimersByTimeAsync(RETRY_DELAY_MS);
-      await expect.poll(() => marks(DISCLOSED)).toBe("ai kernel eula pvp iap");
+      await expect.poll(() => marks(DISCLOSED)).toBe("ai iap pvp eula kernel");
       expect(asked(http)).toStrictEqual([SEARCH_IDS, [GAME], [GAME]]);
     });
   });
@@ -497,7 +497,7 @@ describe("start on the search page", () => {
         ...basicInfo({ developers: [["Dev Studio", 7]], publishers: ["Big Publisher"] }),
       },
     ];
-    const ALL = "ai kernel eula pvp iap";
+    const ALL = "ai iap pvp eula kernel";
     const marks = () => row(DISCLOSED)?.getAttribute("data-sar-kinds") ?? "";
     const listing = (key: string, creator: string, scope: string): Map<string, JsonValue> =>
       new Map<string, JsonValue>([
@@ -505,20 +505,20 @@ describe("start on the search page", () => {
       ]);
 
     it.each<[string, CreatorRole, string, string, string]>([
-      ["a developer by clan ID, for one kind", "developer", "c:7", "ai", "kernel eula pvp iap"],
+      ["a developer by clan ID, for one kind", "developer", "c:7", "ai", "iap pvp eula kernel"],
       [
         "a developer by name, for one kind",
         "developer",
         "n:Dev Studio",
         "ai",
-        "kernel eula pvp iap",
+        "iap pvp eula kernel",
       ],
       [
         "a publisher by name, for one kind",
         "publisher",
         "n:Big Publisher",
         "kernel",
-        "ai eula pvp iap",
+        "ai iap pvp eula",
       ],
       ["a developer for all kinds", "developer", "c:7", "all", ""],
       ["the publisher's name on the developer list", "developer", "n:Big Publisher", "ai", ALL],

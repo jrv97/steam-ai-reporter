@@ -166,25 +166,25 @@ describe("createAppPageUi", () => {
     setup().render(view({ verdicts: capturedVerdicts(1808500) }));
     expect(headings()).toEqual([
       i18n.t("kind_ai_heading"),
-      i18n.t("kind_kernel_heading"),
-      i18n.t("kind_eula_heading"),
-      i18n.t("kind_pvp_heading"),
       i18n.t("kind_iap_heading"),
+      i18n.t("kind_pvp_heading"),
+      i18n.t("kind_eula_heading"),
+      i18n.t("kind_kernel_heading"),
     ]);
     expect(document.querySelectorAll(".sar-tag-section")).toHaveLength(1);
-    expect(chipKinds()).toEqual(["ai", "kernel", "eula", "pvp", "iap"]);
+    expect(chipKinds()).toEqual(["ai", "iap", "pvp", "eula", "kernel"]);
   });
 
   it("shows a game that discloses no AI its chips and its banner entries", () => {
     setup().render(view({ verdicts: capturedVerdicts(3751950) }));
     expect(headings()).toEqual([
+      i18n.t("kind_iap_heading"),
       i18n.t("kind_drm_heading"),
       i18n.t("kind_account_heading"),
       i18n.t("kind_eula_heading"),
-      i18n.t("kind_iap_heading"),
     ]);
     // Steam's features leave Family Sharing out of this paid game; its banner entry starts off.
-    expect(chipKinds()).toEqual(["drm", "account", "eula", "iap", "family"]);
+    expect(chipKinds()).toEqual(["family", "iap", "drm", "account", "eula"]);
   });
 
   describe("with the person's chip text", () => {
@@ -249,12 +249,12 @@ describe("createAppPageUi", () => {
 
   it("notes the AI kind ignored on its own, keeps the other entries and drops its chip", () => {
     setup().render(view({ verdicts: capturedVerdicts(1808500), ignored: ["ai"] }));
-    expect(chipKinds()).toEqual(["kernel", "eula", "pvp", "iap"]);
+    expect(chipKinds()).toEqual(["iap", "pvp", "eula", "kernel"]);
     expect(headings()).toEqual([
-      i18n.t("kind_kernel_heading"),
-      i18n.t("kind_eula_heading"),
-      i18n.t("kind_pvp_heading"),
       i18n.t("kind_iap_heading"),
+      i18n.t("kind_pvp_heading"),
+      i18n.t("kind_eula_heading"),
+      i18n.t("kind_kernel_heading"),
     ]);
     expect(notes()).toEqual([
       i18n.t("banner_ignored_kind", { heading: i18n.t("kind_ai_heading") }),
@@ -263,12 +263,12 @@ describe("createAppPageUi", () => {
 
   it("shows a DLC of a base game ignored for one kind its other entries, with no note", () => {
     setup().render(view({ verdicts: capturedVerdicts(1808500), baseIgnored: ["ai"] }));
-    expect(chipKinds()).toEqual(["kernel", "eula", "pvp", "iap"]);
+    expect(chipKinds()).toEqual(["iap", "pvp", "eula", "kernel"]);
     expect(headings()).toEqual([
-      i18n.t("kind_kernel_heading"),
-      i18n.t("kind_eula_heading"),
-      i18n.t("kind_pvp_heading"),
       i18n.t("kind_iap_heading"),
+      i18n.t("kind_pvp_heading"),
+      i18n.t("kind_eula_heading"),
+      i18n.t("kind_kernel_heading"),
     ]);
     expect(notes()).toEqual([]);
   });
@@ -288,11 +288,11 @@ describe("createAppPageUi", () => {
         baseIgnored: ["ai", "pvp", "iap"],
       }),
     );
-    expect(chipKinds()).toEqual(["kernel", "eula"]);
+    expect(chipKinds()).toEqual(["eula", "kernel"]);
     expect(notes()).toEqual([
       i18n.t("banner_ignored_kind", { heading: i18n.t("kind_ai_heading") }),
     ]);
-    expect(headings()).toEqual([i18n.t("kind_kernel_heading"), i18n.t("kind_eula_heading")]);
+    expect(headings()).toEqual([i18n.t("kind_eula_heading"), i18n.t("kind_kernel_heading")]);
   });
 
   it("notes a developer ignored for a kind the banner would list, and drops that entry", () => {
@@ -306,12 +306,12 @@ describe("createAppPageUi", () => {
       }),
     ]);
     expect(headings()).toEqual([
-      i18n.t("kind_kernel_heading"),
-      i18n.t("kind_eula_heading"),
-      i18n.t("kind_pvp_heading"),
       i18n.t("kind_iap_heading"),
+      i18n.t("kind_pvp_heading"),
+      i18n.t("kind_eula_heading"),
+      i18n.t("kind_kernel_heading"),
     ]);
-    expect(chipKinds()).toEqual(["kernel", "eula", "pvp", "iap"]);
+    expect(chipKinds()).toEqual(["iap", "pvp", "eula", "kernel"]);
   });
 
   it("notes a developer ignored for all tags once, and keeps the Undo as the only control", () => {
@@ -347,14 +347,14 @@ describe("createAppPageUi", () => {
     const ui = setup();
     const verdicts = capturedVerdicts(1808500);
     ui.render(view({ verdicts }));
-    expect(chipKinds()).toEqual(["ai", "kernel", "eula", "pvp", "iap"]);
+    expect(chipKinds()).toEqual(["ai", "iap", "pvp", "eula", "kernel"]);
     ui.render(view({ verdicts, badgeOff: ["ai"] }));
-    expect(chipKinds()).toEqual(["kernel", "eula", "pvp", "iap"]);
+    expect(chipKinds()).toEqual(["iap", "pvp", "eula", "kernel"]);
     expect(headings()).toHaveLength(5);
     ui.render(view({ verdicts, badgeOff: ["kernel", "pvp", "iap"] }));
     expect(chipKinds()).toEqual(["ai", "eula"]);
     ui.render(view({ verdicts }));
-    expect(chipKinds()).toEqual(["ai", "kernel", "eula", "pvp", "iap"]);
+    expect(chipKinds()).toEqual(["ai", "iap", "pvp", "eula", "kernel"]);
     expect(document.querySelectorAll(".sar-tag-section")).toHaveLength(1);
   });
 
@@ -370,12 +370,12 @@ describe("createAppPageUi", () => {
 
   it("keeps the chips of the other kinds when one kind is ignored", () => {
     setup().render(view({ verdicts: capturedVerdicts(1808500), ignored: ["kernel"] }));
-    expect(chipKinds()).toEqual(["ai", "eula", "pvp", "iap"]);
+    expect(chipKinds()).toEqual(["ai", "iap", "pvp", "eula"]);
     expect(headings()).toEqual([
       i18n.t("kind_ai_heading"),
-      i18n.t("kind_eula_heading"),
-      i18n.t("kind_pvp_heading"),
       i18n.t("kind_iap_heading"),
+      i18n.t("kind_pvp_heading"),
+      i18n.t("kind_eula_heading"),
     ]);
     expect(notes()).toEqual([
       i18n.t("banner_ignored_kind", { heading: i18n.t("kind_kernel_heading") }),
@@ -392,7 +392,7 @@ describe("createAppPageUi", () => {
     );
     expect(headings()).toEqual([i18n.t("kind_ai_heading"), i18n.t("kind_eula_heading")]);
     expect(notes()).toEqual([]);
-    expect(chipKinds()).toEqual(["ai", "eula", "pvp", "iap"]);
+    expect(chipKinds()).toEqual(["ai", "iap", "pvp", "eula"]);
   });
 
   it("drops the banner when every banner entry is off and keeps the chips", () => {

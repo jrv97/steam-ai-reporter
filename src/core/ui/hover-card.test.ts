@@ -571,22 +571,22 @@ describe("createHoverCard", () => {
     // The details of each kind, from the batch captured for the tag kinds and from its pages.
     const CASES: readonly (readonly [string, KindVerdicts, readonly (readonly string[])[]])[] = [
       ["DRM, a linkable account and a EULA (3751950)", capturedVerdicts(3751950), [
+        unlisted,
+        [heading("iap")],
         [heading("drm"), "Denuvo Anti-tamper"],
         [heading("account"), "Ubisoft Account", i18n.t("kind_account_links")],
         [heading("eula"), ...eulaNames(capturedVerdicts(3751950))],
-        [heading("iap")],
-        unlisted,
       ]],
       [
         "kernel anti-cheat with boot protection and no vendor (2807960)",
         capturedVerdicts(2807960),
         [
-          [heading("kernel"), i18n.t("kind_kernel_boot")],
+          unlisted,
+          [heading("iap")],
+          [heading("pvp"), i18n.t("kind_pvp_category_online")],
           [heading("account"), "EA Account linking required", i18n.t("kind_account_links")],
           [heading("eula"), ...eulaNames(capturedVerdicts(2807960))],
-          [heading("pvp"), i18n.t("kind_pvp_category_online")],
-          [heading("iap")],
-          unlisted,
+          [heading("kernel"), i18n.t("kind_kernel_boot")],
         ],
       ],
       [
@@ -594,44 +594,44 @@ describe("createHoverCard", () => {
         capturedVerdicts(1808500),
         [
           [heading("ai"), notesOf(capturedVerdicts(1808500))],
-          [heading("kernel"), "Denuvo", i18n.t("kind_kernel_uninstall")],
-          [heading("eula"), ...eulaNames(capturedVerdicts(1808500))],
-          [heading("pvp"), i18n.t("kind_pvp_category_online")],
-          [heading("iap")],
           // Steam's word for the value is the heading, which the card shows once.
           [heading("family")],
+          [heading("iap")],
+          [heading("pvp"), i18n.t("kind_pvp_category_online")],
+          [heading("eula"), ...eulaNames(capturedVerdicts(1808500))],
+          [heading("kernel"), "Denuvo", i18n.t("kind_kernel_uninstall")],
         ],
       ],
       ["a named anti-cheat that is not kernel level, and IAP alone (730)", capturedVerdicts(730), [
-        [heading("anticheat"), "VAC (Valve Anti-Cheat)"],
         [heading("iap")],
+        [heading("anticheat"), "VAC (Valve Anti-Cheat)"],
       ]],
       ["two EULAs (1245620)", capturedVerdicts(1245620), [
-        [heading("eula"), ...eulaNames(capturedVerdicts(1245620))],
-        [heading("pvp"), i18n.t("kind_pvp_category_online")],
         [heading("family")],
+        [heading("pvp"), i18n.t("kind_pvp_category_online")],
+        [heading("eula"), ...eulaNames(capturedVerdicts(1245620))],
       ]],
       [
         "a named kernel anti-cheat that stays behind, an account and a EULA (1172470)",
         capturedVerdicts(1172470),
         [
-          [heading("kernel"), "Easy Anti-Cheat", i18n.t("kind_kernel_uninstall")],
+          [heading("iap")],
+          [heading("pvp"), i18n.t("kind_pvp_category_online")],
           [heading("account"), "EA Account", i18n.t("kind_account_links")],
           [heading("eula"), ...eulaNames(capturedVerdicts(1172470))],
-          [heading("pvp"), i18n.t("kind_pvp_category_online")],
-          [heading("iap")],
+          [heading("kernel"), "Easy Anti-Cheat", i18n.t("kind_kernel_uninstall")],
         ],
       ],
       [
         "the developer's note and the release date of an early access game (2514910)",
         capturedVerdicts(2514910),
         [
-          [heading("family")],
           [
             heading("earlyaccess"),
             earlyAccessNote(capturedVerdicts(2514910)),
             i18n.t("kind_earlyaccess_released", { date: day(1731596424) }),
           ],
+          [heading("family")],
         ],
       ],
       [
@@ -730,10 +730,10 @@ describe("createHoverCard", () => {
       const node = shown()?.firstElementChild;
       pointerOver(second);
       expect(shown()?.firstElementChild).toBe(node);
-      hover.bind(second, disclosedOf(FULL_DISCLOSED).slice(2, 3));
+      hover.bind(second, disclosedOf(FULL_DISCLOSED).slice(3, 4));
       pointerOver(badge);
       pointerOver(second);
-      expect(entries()).toEqual([[heading("anticheat"), FULL_DISCLOSED.anticheat.name]]);
+      expect(entries()).toEqual([[heading("iap")]]);
     });
 
     it("opens nothing for a trigger bound to no kind", () => {

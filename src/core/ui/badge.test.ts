@@ -70,7 +70,7 @@ describe("createBadgeRenderer", () => {
     return chip(id) === heading ? heading : i18n.t("kind_chip_name", { chip: chip(id), heading });
   };
   const AI_NAME = nameOf("ai");
-  const MANY: readonly KindId[] = ["ai", "kernel", "drm", "eula", "pvp"];
+  const MANY: readonly KindId[] = ["ai", "drm", "pvp", "eula", "kernel"];
 
   let bound = new Map<Element, readonly AnyDisclosed[]>();
   let renderer = createBadgeRenderer(document, i18n, { bind: () => undefined });
@@ -269,7 +269,7 @@ describe("createBadgeRenderer", () => {
       renderer.render(drawn);
       order = parseOrder(["pvp"]);
       renderer.render(drawn);
-      expect(kindsOf(host)).toEqual(["pvp", "ai", "kernel", "drm", "eula"]);
+      expect(kindsOf(host)).toEqual(["pvp", ...MANY.filter((id) => id !== "pvp")]);
     });
   });
 
@@ -277,7 +277,7 @@ describe("createBadgeRenderer", () => {
     it("shows the allowed chips and a +N chip for the rest", () => {
       const { host, title } = capsule();
       renderer.render(view(host, full(title), { verdicts: disclosedKinds(MANY), maxChips: 2 }));
-      expect(kindsOf(host)).toEqual(["ai", "kernel", null]);
+      expect(kindsOf(host)).toEqual([...MANY.slice(0, 2), null]);
       const more = chipsIn(host)[2];
       const label = i18n.t("kind_chip_more", { count: "3" });
       expect(more?.classList.contains("sar-badge")).toBe(true);

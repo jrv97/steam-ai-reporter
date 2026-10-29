@@ -719,10 +719,10 @@
   },
   "options_chip_label": {
     "message": "Chip text",
-    "description": "Label of a text field in one tag's settings where the person types their own words for the tag's chip, the short label on badges, in the tag list of a game's page and on this tag's tab. Empty keeps the extension's own words, shown as the placeholder."
+    "description": "Label of a text field in one tag's settings where the person types their own words for the tag's chip, the short label on badges, in the tag list of a game's page and in the toolbar popup. Empty keeps the extension's own words, shown as the placeholder."
   },
   "options_chip_help": {
-    "message": "Your own words for this tag's badges, its tab and its Ignore buttons. Leave it empty for the default. Hover cards, banner headings and screen readers still give Steam's words.",
+    "message": "Your own words for this tag's badges, its row in the popup and its Ignore buttons. Leave it empty for the default. Hover cards, banner headings and screen readers still give Steam's words.",
     "description": "Help under the chip text field. Says where the person's words show, that empty means the default, and that the hover card, the banner's headings and screen readers keep Steam's own words after them."
   },
   "options_chip_compact_label": {
@@ -1170,8 +1170,8 @@
     "description": "Title of the card in the General settings tab where a person puts the tags in the order badges, banners and summaries list them."
   },
   "options_order_help": {
-    "message": "Badges, banners and summaries list tags in this order. Small game images show the first $count$.",
-    "description": "Help under the Tag order title. $count$ is how many tags fit on a small game image, as a number (2); a +N badge stands for the rest.",
+    "message": "Badges, banners and summaries list tags in this order, and so do the settings tabs and the popup. Small game images show the first $count$.",
+    "description": "Help under the Tag order title. $count$ is how many tags fit on a small game image, as a number (2); a +N badge stands for the rest. The tabs and the popup's rows follow the same order.",
     "placeholders": {
       "count": {
         "content": "$1",

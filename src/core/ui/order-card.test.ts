@@ -114,8 +114,8 @@ describe("the Tag order card", () => {
 
   it.each<[string, readonly ([string, KindId] | string)[], readonly KindId[], string]>([
     ["moves down with the arrows", [["pick", "ai"], "ArrowDown", "ArrowDown", ["pick", "ai"]], [
-      "kernel",
-      "anticheat",
+      "earlyaccess",
+      "family",
       "ai",
     ], i18n.t("options_order_dropped", { name: chip("ai"), position: "3", count: KIND_COUNT })],
     [
@@ -180,16 +180,22 @@ describe("the Tag order card", () => {
 
   it("says where a picked up row is and marks its handle pressed", async () => {
     const { handle, spoken } = await setup();
+    const at = String(KIND_IDS.indexOf("eula") + 1);
     handle("eula").click();
     expect(handle("eula").getAttribute("aria-pressed")).toBe("true");
     await vi.waitFor(() => {
       expect(spoken()).toBe(
-        i18n.t("options_order_picked", { name: chip("eula"), position: "6", count: KIND_COUNT }),
+        i18n.t("options_order_picked", { name: chip("eula"), position: at, count: KIND_COUNT }),
       );
     });
     press(handle("eula"), "ArrowUp");
     await vi.waitFor(() => {
-      expect(spoken()).toBe(i18n.t("options_order_moved", { position: "5", count: KIND_COUNT }));
+      expect(spoken()).toBe(
+        i18n.t("options_order_moved", {
+          position: String(KIND_IDS.indexOf("eula")),
+          count: KIND_COUNT,
+        }),
+      );
     });
   });
 
@@ -218,7 +224,7 @@ describe("the Tag order card", () => {
     ]);
     pointer(handle, "pointerup", 0);
     handle.click();
-    const expected = parseOrder(["kernel", "anticheat", "ai"]);
+    const expected = parseOrder(["earlyaccess", "family", "ai"]);
     expect(card.shown()).toEqual(expected);
     expect(transforms(card).every((value) => value === "")).toBe(true);
     expect(card.root.querySelector("[aria-pressed=true]")).toBeNull();
