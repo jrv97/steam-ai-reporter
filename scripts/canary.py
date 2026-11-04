@@ -1,21 +1,24 @@
 """Check that Steam still answers in the shape the detectors rely on (live, keyless).
 
-One GetItems call for a sample of apps, a DLC and a demo, then three `?l=english` app pages, one for
-each structural hook: the anti-cheat name line, the DRM notice with a line break and the non-kernel
-notice. Four requests in total, all without cookies, to the two Valve hosts the extension itself
-uses. Each field has the type the schemas expect when it is present, and across the sample some app
-shows each kind of declaration and names a developer or publisher (clan IDs are not required, as
-Steam omits them for some creators). The call asks for `platforms`, as the extension does while a
-Steam Deck or Steam Machine tag is on: each sample app must carry it, with each device rating an
-integer from 0 to 3 when present, and some app must have a Deck and a Machine rating above 0. No
-single game is held to a rating. Every sampled game must carry categories.feature_categoryids,
-which Family Sharing reads, and `is_free` must be a boolean when present; across the sample some
-app lists Family Sharing (62) and some paid game's list leaves it out, again with no game held
-to either. The DLC and the demo must still name their base or full game in
-related_items.parent_appid, with `type` 4 for the DLC and 1 for the demo. A page comes from an app
-the sample shows that declaration for, and is checked against what GetItems says about its own app.
-Exits non-zero, listing what changed, when an answer no longer has the expected shape. Not part of
-`ci`: it needs the network and Steam's mood. Run it before a release.
+One GetItems call for a sample of apps, a DLC and a demo, then four `?l=english` app pages, one for
+each structural hook: the anti-cheat name line, the DRM notice with a line break, the non-kernel
+notice and the Early Access update time in an inline script. Five requests in total, all without
+cookies, to the two Valve hosts the extension itself uses. Each field has the type the schemas
+expect when it is present, and across the sample some app shows each kind of declaration and names a
+developer or publisher (clan IDs are not required, as Steam omits them for some creators). The call
+asks for `platforms`, as the extension does while a Steam Deck or Steam Machine tag is on: each
+sample app must carry it, with each device rating an integer from 0 to 3 when present, and some app
+must have a Deck and a Machine rating above 0. No single game is held to a rating. Every sampled
+game must carry categories.feature_categoryids, which Family Sharing reads, and `is_free` must be a
+boolean when present; across the sample some app lists Family Sharing (62) and some paid game's list
+leaves it out, again with no game held to either. The call also asks for `release`, as the extension
+does while the Early Access tag is on: `is_early_access` must be a boolean and
+`release.steam_release_date` an integer when present, and some sampled app must be flagged. The DLC
+and the demo must still name their base or full game in related_items.parent_appid, with `type` 4
+for the DLC and 1 for the demo. A page comes from an app the sample shows that declaration for, and
+is checked against what GetItems says about its own app. Exits non-zero, listing what changed, when
+an answer no longer has the expected shape. Not part of `ci`: it needs the network and Steam's mood.
+Run it before a release.
 """
 
 import json
@@ -34,7 +37,12 @@ TIMEOUT_SECONDS = 30
 HEADING = "AI Generated Content Disclosure"
 # Apps that between them declare every kind. A page hook takes the first app that shows its
 # declaration, so only the order matters.
-SAMPLE = (1808500, 5072580, 413150, 3751950, 2807960, 730, 105600, 1245620, 1145360, 1091500)
+SAMPLE = (
+    *(1808500, 5072580, 413150, 3751950, 2807960, 730, 105600, 1245620, 1145360, 1091500),
+    # In Early Access on 2026-11-04: KIKICAPS and Refill your Roguelike. Two keep the check going
+    # when one leaves Early Access; replace both when neither is flagged any more.
+    *(2514910, 949910),
+)
 # Child items with their `type` and parent: each must keep answering related_items.parent_appid
 # with its parent's ID, which the ignore list follows (decision 51), and a demo shows its full
 # game's tags by `type` 1 (decision 59). ARC Raiders - Frozen Trail Collector Set, a DLC of
@@ -53,6 +61,11 @@ DECK_FIELD = "steam_deck_compat_category"
 MACHINE_FIELD = "steam_machine_compat_category"
 COMPAT_FIELDS = (DECK_FIELD, MACHINE_FIELD)
 COMPAT_VALUES = range(4)
+# The flag of a game in Early Access, and the release date `include_release` adds.
+EARLY_ACCESS_FIELD = "is_early_access"
+RELEASE_DATE_FIELD = "steam_release_date"
+# The app page embeds the developer's latest update post in an inline script.
+UPDATE_EVENT = re.compile(r'"last_update_event"\s*:\s*\{\s*"rtime"\s*:\s*\d+')
 EULA_URL = re.compile(r"^https://store\.steampowered\.com/+eula/")
 APP_PATH = re.compile(r"^/app/(\d+)(?:/|$)")
 
@@ -79,6 +92,7 @@ REQUIRED_FACTS = {
     "creator": "basic_info.developers or publishers with a named entry",
     "deck": f"platforms.{DECK_FIELD} above 0",
     "machine": f"platforms.{MACHINE_FIELD} above 0",
+    "earlyaccess": f"{EARLY_ACCESS_FIELD} true",
 }
 CREATOR_ROLES = ("developers", "publishers")
 
@@ -113,6 +127,7 @@ def getitems_url(ids: tuple[int, ...]) -> str:
             "include_extra_details": True,
             "include_basic_info": True,
             "include_platforms": True,
+            "include_release": True,
         },
     }
     return f"{GETITEMS_URL}?input_json={urllib.parse.quote(json.dumps(request), safe='')}"
@@ -240,6 +255,20 @@ def platform_problems(where: str, item: dict[str, object]) -> list[str]:
     ]
 
 
+def early_access_problems(where: str, item: dict[str, object]) -> list[str]:
+    """`is_early_access` is a boolean and `release.steam_release_date` an integer, when sent."""
+    problems = type_problems(where, item, (EARLY_ACCESS_FIELD,), bool)
+    if "release" not in item:
+        return problems
+    release = as_object(item["release"])
+    if release is None:
+        return [*problems, f"{where}: release is not an object"]
+    date = release.get(RELEASE_DATE_FIELD)
+    if date is not None and (isinstance(date, bool) or not isinstance(date, int)):
+        problems.append(f"{where}: release.{RELEASE_DATE_FIELD} is not an integer")
+    return problems
+
+
 def item_problems(appid: int, item: dict[str, object] | None) -> list[str]:
     where = f"GetItems app {appid}"
     if item is None:
@@ -256,7 +285,7 @@ def item_problems(appid: int, item: dict[str, object] | None) -> list[str]:
         for name in CATEGORY_LISTS:
             if category_ids(item, name) is None:
                 problems.append(f"{where}: categories.{name} is not a list")
-    return problems + family_problems(where, item)
+    return problems + family_problems(where, item) + early_access_problems(where, item)
 
 
 def family_problems(where: str, item: dict[str, object]) -> list[str]:
@@ -302,6 +331,7 @@ def facts_of(item: dict[str, object]) -> set[str]:
             ),
             ("deck", rating(item, DECK_FIELD) in (1, 2, 3)),
             ("machine", rating(item, MACHINE_FIELD) in (1, 2, 3)),
+            ("earlyaccess", item.get(EARLY_ACCESS_FIELD) is True),
         )
         if shown
     }
@@ -371,6 +401,7 @@ PAGE_HOOKS = (
     ("name line", ({"kernel", "ai"}, {"kernel"})),
     ("line break", ({"drm"},)),
     ("non-kernel notice", ({"nonkernel"},)),
+    ("update time", ({"earlyaccess"},)),
 )
 
 
@@ -398,6 +429,9 @@ class PageScan(HTMLParser):
         self.plain_notices = 0
         self.break_notices = 0
         self.break_notices_with_markup = 0
+        self.update_events = 0
+        self._in_script = False
+        self._script = ""
         self._block_depth = 0
         self._in_h2 = False
         self._text = ""
@@ -412,6 +446,8 @@ class PageScan(HTMLParser):
         classes = {name for key, value in attrs if key == "class" for name in (value or "").split()}
         roles = {value for key, value in attrs if key == "role"}
         self.has_app_name = self.has_app_name or "appHubAppName" in ids
+        if tag == "script" and not any(key == "src" for key, _ in attrs):
+            self._in_script, self._script = True, ""
         self.kernel_sections += {"anticheat_section", "DRM_notice"} <= classes
         self.nonkernel_notices += "anticheat_nonkernel_notice" in classes
         self._scan_name_line(classes)
@@ -447,6 +483,9 @@ class PageScan(HTMLParser):
             self._block_depth = 1
 
     def handle_endtag(self, tag: str) -> None:
+        if tag == "script" and self._in_script:
+            self._in_script = False
+            self.update_events += len(UPDATE_EVENT.findall(self._script))
         if self._notice_depth and tag == "div":
             self._notice_depth -= 1
             if not self._notice_depth and "br" in self._notice_tags:
@@ -466,6 +505,8 @@ class PageScan(HTMLParser):
             self._block_depth -= 1
 
     def handle_data(self, data: str) -> None:
+        if self._in_script:
+            self._script += data
         if self._in_h2:
             self._text += data
         if self._in_name_line and not self._in_removal_note:
@@ -487,6 +528,8 @@ def hook_problems(where: str, scan: PageScan, hook: str, item: dict[str, object]
         return [f"{where}: no .DRM_notice made of a text, a <br> and a text"]
     elif hook == "non-kernel notice" and (scan.nonkernel_notices == 0 or not scan.name_lines):
         return [f"{where}: no .anticheat_nonkernel_notice with an .anticheat_name"]
+    elif hook == "update time" and scan.update_events == 0:
+        return [f'{where}: no inline script with "last_update_event":{{"rtime":<digits>']
     return []
 
 

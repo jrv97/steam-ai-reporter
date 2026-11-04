@@ -6,7 +6,7 @@ import { KINDS } from "./registry";
  * The GetItems sections a request can ask for besides `extra_details`, which every request asks
  * for, in request order. `categories` comes with every item and needs no flag.
  */
-export const SECTIONS = ["basic_info", "platforms"] as const;
+export const SECTIONS = ["basic_info", "platforms", "release"] as const;
 
 export type Section = (typeof SECTIONS)[number];
 

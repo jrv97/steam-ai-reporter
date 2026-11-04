@@ -15,6 +15,11 @@ describe("parseOrder", () => {
     ["the kinds a list lacks after it, by registry", ["family", "drm"], first("family", "drm")],
     ["no unknown id", ["future", "drm", 7, null, { id: "ai" }], first("drm")],
     ["the first of a repeated id", ["pvp", "ai", "pvp"], first("pvp", "ai")],
+    [
+      "an order stored before the kind existed, with early access last",
+      KIND_IDS.filter((id) => id !== "earlyaccess").toReversed(),
+      [...KIND_IDS.filter((id) => id !== "earlyaccess").toReversed(), "earlyaccess"],
+    ],
   ])("keeps %s", (_case, stored, expected) => {
     expect(parseOrder(stored)).toStrictEqual(expected);
   });

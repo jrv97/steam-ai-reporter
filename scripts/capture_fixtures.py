@@ -41,15 +41,19 @@ ITEM_REMOVED = ("best_purchase_option",)
 BASIC_INFO_KEPT = ("developers", "publishers")
 KINDS_DETAILS_REMOVED = (
     "system_requirements",
-    "early_access",
     "partner_awards_bbcode",
     "links_and_info",
     "press_review",
     "legal_notice_bbcode",
     "section",
 )
-# The AI fixtures drop the EULA links; the kinds fixture keeps them.
-DETAILS_REMOVED = (*KINDS_DETAILS_REMOVED, "eula")
+# The Early Access kind reads `extra_details.early_access.why_bbcode` (ADR 0018); the five
+# sibling fields of that object go. The AI fixtures drop the whole object, and the EULA links.
+EARLY_ACCESS_KEPT = ("why_bbcode",)
+DETAILS_REMOVED = (*KINDS_DETAILS_REMOVED, "early_access", "eula")
+# `release` comes with `include_release`; the Early Access kind reads the Steam release date, and
+# `is_early_access` repeats the item's own flag (ADR 0018).
+RELEASE_KEPT = ("steam_release_date", "is_early_access")
 
 VOID_TAGS = frozenset(
     [
@@ -140,6 +144,11 @@ KIND_APPS = (
 )
 # Games that declare nothing of any kind, from 2004 to 2024.
 KIND_NOTHING = (1145360, 413150, 504230, 367520, 2379780, 620)
+# Early Access: KIKICAPS is flagged and has every field the kind reads; Slay the Spire left Early
+# Access, so it has no flag and still answers the developer's note.
+KIND_EARLY_ACCESS = (2514910, 646570)
+# The flags the kinds fixture asks for beyond the extension's base request.
+KINDS_SECTIONS = ("include_platforms", "include_release")
 KIND_PACKAGE = 320795
 KIND_BUNDLE = 1
 KIND_MISSING = 99999999
@@ -301,12 +310,16 @@ def features_page(text: str) -> str:
 
 
 def getitems_url(
-    ids: list[dict[str, int]], language: str, country: str, platforms: bool = False
+    ids: list[dict[str, int]],
+    language: str,
+    country: str,
+    sections: tuple[str, ...] = (),
 ) -> str:
-    """The request the extension sends; `platforms` as when a Steam Deck or Machine tag is on."""
+    """The request the extension sends; `sections` are the flags of the kinds that are on, such as
+    `include_platforms` for a Steam Deck or Machine tag and `include_release` for Early Access."""
     flags = {"include_extra_details": True, "include_basic_info": True}
-    if platforms:
-        flags["include_platforms"] = True
+    for section in sections:
+        flags[section] = True
     request = {
         "ids": ids,
         "context": {"language": language, "country_code": country},
@@ -322,9 +335,17 @@ def trim_item(entry: object, removed: tuple[str, ...]) -> object:
     basic_info = item.get("basic_info")
     if isinstance(basic_info, dict):
         item["basic_info"] = {k: v for k, v in basic_info.items() if k in BASIC_INFO_KEPT}
+    release = item.get("release")
+    if isinstance(release, dict):
+        item["release"] = {k: v for k, v in release.items() if k in RELEASE_KEPT}
     details = item.get("extra_details")
     if isinstance(details, dict):
         item["extra_details"] = {k: v for k, v in details.items() if k not in removed}
+        early_access = item["extra_details"].get("early_access")
+        if isinstance(early_access, dict):
+            item["extra_details"]["early_access"] = {
+                k: v for k, v in early_access.items() if k in EARLY_ACCESS_KEPT
+            }
     return item
 
 
@@ -337,9 +358,9 @@ def getitems_fixture(
     language: str,
     country: str,
     removed: tuple[str, ...] = DETAILS_REMOVED,
-    platforms: bool = False,
+    sections: tuple[str, ...] = (),
 ) -> str:
-    envelope = json.loads(fetch(getitems_url(ids, language, country, platforms)))
+    envelope = json.loads(fetch(getitems_url(ids, language, country, sections)))
     response = envelope.get("response") if isinstance(envelope, dict) else None
     items = response.get("store_items") if isinstance(response, dict) else None
     if not isinstance(items, list):
@@ -369,14 +390,14 @@ def capture_getitems(out: Path) -> None:
 
 def capture_kinds_getitems(out: Path) -> None:
     ids = [
-        *app_ids([*KIND_APPS, *KIND_NOTHING]),
+        *app_ids([*KIND_APPS, *KIND_NOTHING, *KIND_EARLY_ACCESS]),
         {"packageid": KIND_PACKAGE},
         {"bundleid": KIND_BUNDLE},
         *app_ids([KIND_MISSING]),
     ]
     write(
         out / "getitems" / "kinds.json",
-        getitems_fixture(ids, "english", "US", KINDS_DETAILS_REMOVED, platforms=True),
+        getitems_fixture(ids, "english", "US", KINDS_DETAILS_REMOVED, KINDS_SECTIONS),
     )
     time.sleep(SPACING_SECONDS)
 

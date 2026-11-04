@@ -73,6 +73,13 @@ const STORED_KINDS = {
   deck: { state: "disclosed", kind: "deck", source: "api", facet: "unsupported" },
   machine: { state: "disclosed", kind: "machine", source: "api", facet: "unsupported" },
   family: { state: "disclosed", kind: "family", source: "api", facet: "unsupported" },
+  earlyaccess: {
+    state: "disclosed",
+    kind: "earlyaccess",
+    source: "api",
+    note: "We ship early to hear from players.\r\nExpect changes.",
+    released: 1731596424,
+  },
 };
 
 /** Round trips: the verdicts of one or two kinds, the rest unknown `missing`. */

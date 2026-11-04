@@ -10,12 +10,27 @@ import { httpResult } from "./fake-http";
 import { fixtureItems, getItemsResponse } from "./getitems";
 
 /** The apps of the batch captured for the tag kinds (tests/fixtures/README.md). */
-const CAPTURED = [3751950, 2807960, 1808500, 813230, 730, 570, 105600, 1245620, 1172470, 271590];
+const CAPTURED = [
+  3751950,
+  2807960,
+  1808500,
+  813230,
+  730,
+  570,
+  105600,
+  1245620,
+  1172470,
+  271590,
+  2514910,
+  646570,
+];
 
 const captured = parseGetItems(
   appIds(...CAPTURED),
   httpResult(getItemsResponse(fixtureItems(kinds)), GETITEMS_URL),
   "english",
+  // What the default settings ask for: the base sections and Early Access's release dates.
+  ["basic_info", "release"],
 );
 
 /** The verdicts GetItems gave for an app of the captured kinds batch. Throws for any other. */

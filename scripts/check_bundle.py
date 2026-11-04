@@ -17,8 +17,8 @@
   key or plural base that a string literal of its code names is in its inlined catalogs, and every
   message there is named, so a missing key fails here and never falls back to the raw key on a
   store page. scripts/gen_catalogs.py writes each entry's catalogs by the same reading.
-- Size budgets: content.js at most 205 KiB, options.js at most 200 KiB and the userscript at most
-  355 KiB, unminified (rule 13). Each is the measured size plus a few percent of headroom; raise one
+- Size budgets: content.js at most 215 KiB, options.js at most 206 KiB and the userscript at most
+  363 KiB, unminified (rule 13). Each is the measured size plus a few percent of headroom; raise one
   only with a measurement. A message costs bytes only in the bundles that read it, and an added
   locale costs about 5 KB in content.js, 9 KB in options.js and 12 KB in the userscript. Measured
   when ignoring by developer or publisher landed (ADR 0013): content.js 186,313 B (from 169,265),
@@ -47,7 +47,11 @@
   2.2 KB. Their budgets rise to 200 and 355 KiB, the size plus 2.3 and 2.5 percent. Measured when
   the feedback footer landed: content.js 209,805 B (unchanged), options.js 202,937 B (from 200,204)
   and userscript 357,333 B (from 354,600), 2,733 B each: the footer, its three links, its rule and
-  four messages in two locales. No budget changes.
+  four messages in two locales. No budget changes. Measured when the Early Access tag landed (ADR
+  0018): content.js 214,132 B (from 209,805), options.js 205,109 B (from 202,937) and userscript
+  362,174 B (from 357,333): the kind, its schema fields, the dated hover line, the date format and
+  the update-time reader, plus four messages in two locales. Their budgets rise to 215, 206 and
+  363 KiB, the size plus 2.8, 2.8 and 2.6 percent.
 - The STEAM_API_KEY value, when set, appears nowhere in dist/ or artifacts/ (rule 16).
 - The dev injection bundle is never packaged into artifacts/, and when artifacts/ exists it holds
   exactly the five release artifacts, with a manifest at the root of each extension zip. The source
@@ -80,9 +84,9 @@ from repo import (
 
 KIB = 1024
 BUDGETS = {
-    **{DIST / target / "content.js": 205 * KIB for target in EXTENSION_TARGETS},
-    **{DIST / target / "options.js": 200 * KIB for target in EXTENSION_TARGETS},
-    DIST / "userscript" / f"{SLUG}.user.js": 355 * KIB,
+    **{DIST / target / "content.js": 215 * KIB for target in EXTENSION_TARGETS},
+    **{DIST / target / "options.js": 206 * KIB for target in EXTENSION_TARGETS},
+    DIST / "userscript" / f"{SLUG}.user.js": 363 * KIB,
 }
 ENGLISH = ROOT / "src" / "locales" / DEFAULT_LOCALE / "messages.json"
 STORE_MATCH = ["https://store.steampowered.com/*"]

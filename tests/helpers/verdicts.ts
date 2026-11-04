@@ -3,6 +3,7 @@ import type { AiDisclosed, AiVerdict } from "../../src/core/kinds/ai";
 import type { AnticheatDisclosed } from "../../src/core/kinds/anticheat";
 import type { CompatDisclosed, CompatFacet } from "../../src/core/kinds/compat";
 import type { DrmDisclosed } from "../../src/core/kinds/drm";
+import type { EarlyAccessDisclosed } from "../../src/core/kinds/early-access";
 import { type EulaDisclosed, eulaLink, type EulaUrl } from "../../src/core/kinds/eula";
 import type { FamilyDisclosed, FamilyFacet } from "../../src/core/kinds/family";
 import type { IapDisclosed } from "../../src/core/kinds/iap";
@@ -52,6 +53,7 @@ interface FullDisclosed {
   readonly deck: CompatDisclosed<"deck">;
   readonly machine: CompatDisclosed<"machine">;
   readonly family: FamilyDisclosed;
+  readonly earlyaccess: EarlyAccessDisclosed;
 }
 
 /** A rating Valve gives for a device kind, as its disclosed verdict. */
@@ -65,6 +67,20 @@ export function compatVerdict<const Id extends "deck" | "machine">(
 /** The value Steam's feature list gives for Family Sharing, as its disclosed verdict. */
 export function familyVerdict(facet: FamilyFacet): FamilyDisclosed {
   return { state: "disclosed", kind: "family", source: "api", facet };
+}
+
+/** A game in Early Access with the stored details set; override what a test cares about. */
+export function earlyAccessVerdict(
+  overrides: Partial<EarlyAccessDisclosed> = {},
+): EarlyAccessDisclosed {
+  return {
+    state: "disclosed",
+    kind: "earlyaccess",
+    source: "api",
+    note: "We ship early to hear from players.\r\nExpect changes.",
+    released: 1731596424,
+    ...overrides,
+  };
 }
 
 /** Each kind's disclosed verdict, with every field of its payload set. */
@@ -114,6 +130,7 @@ export const FULL_DISCLOSED: FullDisclosed = {
   deck: compatVerdict("deck", "unsupported"),
   machine: compatVerdict("machine", "unsupported"),
   family: familyVerdict("unsupported"),
+  earlyaccess: earlyAccessVerdict(),
 };
 
 /** Every kind in the same state, so a test sees the TTL or the storage of that state alone. */
@@ -141,6 +158,7 @@ export function disclosedKinds(kinds: readonly KindId[]): KindVerdicts {
     deck: pick("deck", FULL_DISCLOSED.deck),
     machine: pick("machine", FULL_DISCLOSED.machine),
     family: pick("family", FULL_DISCLOSED.family),
+    earlyaccess: pick("earlyaccess", FULL_DISCLOSED.earlyaccess),
   };
 }
 

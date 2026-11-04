@@ -8,6 +8,7 @@ import {
 import { DEFAULT_BACKOFF } from "../detect/breaker";
 import { RETRY_DELAY_MS } from "../detect/retry";
 import { AI_KIND } from "../kinds/ai";
+import { EARLY_ACCESS_KIND } from "../kinds/early-access";
 import { DAY_MS, HOUR_MS, WEEK_TTL } from "../kinds/kind-ttl";
 import { KINDS } from "../kinds/registry";
 import { type KindVerdicts, UNKNOWN_KINDS } from "../kinds/verdicts";
@@ -22,15 +23,24 @@ import {
 } from "./ttl";
 
 const T = 1_000_000_000_000;
+// An app whose kinds are all disclosed expires with Early Access, the shortest-lived disclosure.
+const FULL_TTL_MS = EARLY_ACCESS_KIND.ttl.disclosed;
 
 describe("kind TTLs", () => {
   it("keep the AI notes for 7 days and a missing disclosure for 12 hours", () => {
     expect(AI_KIND.ttl).toStrictEqual({ disclosed: 7 * DAY_MS, notDisclosed: 12 * HOUR_MS });
   });
 
+  it("keep early access for 2 days when disclosed and 7 when not", () => {
+    expect(EARLY_ACCESS_KIND.ttl).toStrictEqual({
+      disclosed: 2 * DAY_MS,
+      notDisclosed: 7 * DAY_MS,
+    });
+  });
+
   it("keep every other kind for 7 days, disclosed or not", () => {
     for (const kind of KINDS) {
-      if (kind.id !== "ai") {
+      if (kind.id !== "ai" && kind.id !== "earlyaccess") {
         expect(kind.ttl).toBe(WEEK_TTL);
       }
     }
@@ -117,7 +127,7 @@ describe("isTransient", () => {
 
 describe("isFresh", () => {
   const cases: readonly (readonly [string, KindVerdicts, number])[] = [
-    ["disclosed", uniformVerdicts("disclosed"), 7 * DAY_MS],
+    ["disclosed", uniformVerdicts("disclosed"), FULL_TTL_MS],
     ["not disclosed", uniformVerdicts("not-disclosed"), 12 * HOUR_MS],
     ["unknown gated", uniformVerdicts("gated"), UNKNOWN_TTL_MS],
     ["unknown missing", uniformVerdicts("missing"), UNKNOWN_TTL_MS],
@@ -156,8 +166,8 @@ describe("isFresh across kinds", () => {
 
   it("does not shorten an app because a non-AI kind is not disclosed", () => {
     for (const kind of KINDS) {
-      if (kind.id !== "ai") {
-        expiresAt({ ...FULL_DISCLOSED, [kind.id]: NOT_DISCLOSED }, 7 * DAY_MS);
+      if (kind.id !== "ai" && kind.id !== "earlyaccess") {
+        expiresAt({ ...FULL_DISCLOSED, [kind.id]: NOT_DISCLOSED }, FULL_TTL_MS);
       }
     }
   });
@@ -185,10 +195,14 @@ describe("isFresh across kinds", () => {
 
   it("leaves the TTL to the other kinds when a kind's section was left out", () => {
     expiresAt({ ...notDisclosed, pvp: UNKNOWN.unrequested }, 12 * HOUR_MS);
-    expiresAt({ ...FULL_DISCLOSED, pvp: UNKNOWN.unrequested }, 7 * DAY_MS);
+    expiresAt({ ...FULL_DISCLOSED, pvp: UNKNOWN.unrequested }, FULL_TTL_MS);
   });
 
-  it("keeps disclosed kinds for 7 days when no kind is shorter", () => {
-    expiresAt(FULL_DISCLOSED, 7 * DAY_MS);
+  it("keeps disclosed kinds for 2 days, the shortest disclosed TTL of any kind", () => {
+    expiresAt(FULL_DISCLOSED, FULL_TTL_MS);
+  });
+
+  it("keeps an early access game for 7 days once Steam stops flagging it", () => {
+    expiresAt({ ...FULL_DISCLOSED, earlyaccess: NOT_DISCLOSED }, 7 * DAY_MS);
   });
 });

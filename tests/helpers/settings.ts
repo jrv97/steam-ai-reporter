@@ -48,6 +48,9 @@ export function withChipText(
 /** The kinds that start switched off: most games would carry them, or Valve states them. */
 export const OFF_KINDS: readonly KindId[] = ["pvp", "iap", "deck", "machine", "family"];
 
+/** The kinds that start on without a banner entry, since the page already says it. */
+export const BANNERLESS_KINDS: readonly KindId[] = ["earlyaccess"];
+
 /** Valve's device ratings, each with Steam's three rating words. */
 export const STATUS_KINDS = ["deck", "machine"] as const;
 
@@ -77,6 +80,9 @@ export function plainKinds<T extends { readonly enabled: boolean; readonly banne
   return perKind((kind) => {
     if (isValveKind(kind.id)) {
       return { ...plain, enabled: false, banner: false, facets: ["unsupported"] };
+    }
+    if (BANNERLESS_KINDS.includes(kind.id)) {
+      return { ...plain, banner: false };
     }
     return OFF_KINDS.includes(kind.id) ? { ...plain, enabled: false } : plain;
   });

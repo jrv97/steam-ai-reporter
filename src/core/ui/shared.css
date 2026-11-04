@@ -62,6 +62,10 @@
   --sar-kind-color: var(--sar-kind-color-family);
 }
 
+[data-sar-kind="earlyaccess"] {
+  --sar-kind-color: var(--sar-kind-color-earlyaccess);
+}
+
 [data-sar-kind] {
   --sar-tag-edge: var(--sar-kind-color);
   --sar-tag-tint: color-mix(

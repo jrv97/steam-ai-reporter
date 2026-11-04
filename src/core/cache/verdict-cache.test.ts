@@ -12,6 +12,7 @@ import {
 } from "../../../tests/helpers/verdicts";
 import type { JsonValue } from "../json";
 import { AI_KIND, type AiVerdict } from "../kinds/ai";
+import { EARLY_ACCESS_KIND } from "../kinds/early-access";
 import { perKind } from "../kinds/registry";
 import { type KindVerdicts, withRelations } from "../kinds/verdicts";
 import { type AppId, UNKNOWN } from "../types";
@@ -20,7 +21,9 @@ import { createVerdictCache } from "./verdict-cache";
 
 const T = 1_000_000_000_000;
 const FULL = uniformVerdicts("disclosed");
-const { disclosed: DISCLOSED_TTL_MS, notDisclosed: NOT_DISCLOSED_TTL_MS } = AI_KIND.ttl;
+// A fully disclosed app expires with Early Access, a fully undisclosed one with the AI kind.
+const DISCLOSED_TTL_MS = EARLY_ACCESS_KIND.ttl.disclosed;
+const NOT_DISCLOSED_TTL_MS = AI_KIND.ttl.notDisclosed;
 
 function setup(capacity?: number) {
   const store = countingStore(memoryStore());

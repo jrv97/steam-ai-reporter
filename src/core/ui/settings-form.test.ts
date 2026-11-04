@@ -5,6 +5,7 @@ import { fixedClock } from "../../../tests/helpers/fixed-clock";
 import { englishI18n } from "../../../tests/helpers/i18n";
 import { memoryStore } from "../../../tests/helpers/memory-store";
 import {
+  BANNERLESS_KINDS,
   isValveKind,
   OFF_KINDS,
   STATUS_KINDS,
@@ -179,7 +180,9 @@ describe("the settings of each tag", () => {
     for (const kind of KINDS) {
       expect(input(kind.id, "enabled").checked).toBe(!OFF_KINDS.includes(kind.id));
       expect(input(kind.id, "badge").checked).toBe(true);
-      expect(input(kind.id, "banner").checked).toBe(!isValveKind(kind.id));
+      expect(input(kind.id, "banner").checked).toBe(
+        !isValveKind(kind.id) && !BANNERLESS_KINDS.includes(kind.id),
+      );
       expect(input(kind.id, "filter", "off").checked).toBe(true);
     }
   });

@@ -13,6 +13,8 @@ import { SETTINGS_KEY } from "../../core/storage-keys";
 import { startUserscript, type UserscriptEnv } from "./userscript";
 
 const i18n = englishI18n();
+// The captured row of 4461450 carries the AI and the Early Access tags.
+const DISCLOSED_BADGES = 2;
 const quiet = { error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() };
 
 let app: App | undefined;
@@ -48,7 +50,7 @@ describe("startUserscript", () => {
   it("badges the search rows with one cookie-less GetItems request", async () => {
     const { env, server, gm, added } = setup();
     app = await startUserscript(env);
-    await expect.poll(() => document.querySelectorAll(".sar-badge").length).toBe(1);
+    await expect.poll(() => document.querySelectorAll(".sar-badge").length).toBe(DISCLOSED_BADGES);
 
     expect(server.calls).toHaveLength(1);
     expect(server.calls[0]?.init.credentials).toBe("omit");

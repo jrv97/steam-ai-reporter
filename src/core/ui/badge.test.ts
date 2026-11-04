@@ -223,7 +223,9 @@ describe("createBadgeRenderer", () => {
 
   it("binds every chip to the verdicts of all the kinds shown", () => {
     const { host, title } = capsule();
-    renderer.render(view(host, full(title), { verdicts: FULL_DISCLOSED, maxChips: 10 }));
+    renderer.render(
+      view(host, full(title), { verdicts: FULL_DISCLOSED, maxChips: KIND_IDS.length }),
+    );
     const expected = KIND_IDS.map((id) => FULL_DISCLOSED[id]);
     expect(chipsIn(host)).toHaveLength(KIND_IDS.length);
     for (const element of chipsIn(host)) {

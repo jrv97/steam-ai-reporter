@@ -70,7 +70,7 @@ A kind can list `facets`, each an id and Steam's word for it (`FacetDefinition`)
 
 ### Request sections
 
-`requestSections(kinds)` (`kinds/sections.ts`) is what the next GetItems request asks for: `basic_info`, and each section an enabled kind names in `sections`. The GetItems detector reads it once per detection; a kind whose section was left out is unknown `unrequested`, which is stored, never drawn, never transient and never expires on its own (`cache/ttl.ts`). Each answer records its sections (`KindVerdicts.sections`, stored with the entry), and a cache lookup that needs a section the entry lacks is a miss. When a kind that reads a new section turns on, `app.ts` calls `capsules.redetect` for the hosts whose answers lack it and `appPage.redetect()`; there is no timer. A new section is an entry in `SECTIONS` and its flag in `getitems.ts`.
+`requestSections(kinds)` (`kinds/sections.ts`) is what the next GetItems request asks for: `basic_info`, and each section an enabled kind names in `sections` (`release`, flag `include_release`, is the one Early Access reads). The GetItems detector reads it once per detection; a kind whose section was left out is unknown `unrequested`, which is stored, never drawn, never transient and never expires on its own (`cache/ttl.ts`). Each answer records its sections (`KindVerdicts.sections`, stored with the entry), and a cache lookup that needs a section the entry lacks is a miss. When a kind that reads a new section turns on, `app.ts` calls `capsules.redetect` for the hosts whose answers lack it and `appPage.redetect()`; there is no timer. A new section is an entry in `SECTIONS` and its flag in `getitems.ts`.
 
 ### The DOM marks
 

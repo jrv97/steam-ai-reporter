@@ -1,0 +1,100 @@
+---
+status: accepted
+date: 2026-11-04
+decision-makers: Jorge Rodriguez de la Vega
+---
+
+# Tag Early Access from GetItems' item flag, with the developer's note, the release date and the latest update post
+
+## Context and problem statement
+
+Steam marks a game in Early Access with `is_early_access: true` on the item that GetItems returns. A live call on 2026-11-04 (KIKICAPS 2514910, Refill your Roguelike 949910, Roguelike Chess 2792900) and the 50-item search fixture (6 flagged items) show three facts that shape the kind:
+
+- The flag is `true` on flagged items and absent on every other item, with or without `extra_details`. Stardew Valley, Hades and ARC Raiders all answer `extra_details` and carry no `is_early_access` key.
+- The developer's Early Access explanation lives in `extra_details.early_access.why_bbcode` (plus five sibling fields) and stays after a game leaves Early Access. Hades (1145360) and Slay the Spire (646570) have left Early Access, have no flag and still answer a full `why_bbcode`.
+- `release.steam_release_date` is a Unix time and needs the `include_release` flag. `release.is_early_access` repeats the item flag.
+
+The open app page also embeds `EventWebRowEmbed.last_update_event` with an `rtime`. On KIKICAPS the embedded `rtime` 1793121240 is 2026-10-27 17:14 UTC, and the page's own "Recent Events & Announcements" panel shows its latest REGULAR UPDATE post as "Tue, October 27, 2026" and "See all updates (Latest: Oct 27)". The signed-out DOM has no row labelled "Last update", so the embedded value matches the event panel and nothing else. It is the time of a post the developer made in the community hub, not the time of a depot build.
+
+Rule 4 asks for three states and Steam's words, and says an item with `extra_details` and no key for a kind is not reported. Three questions follow: what an absent flag means, how the developer's text and the two dates are shown, and where the latest update comes from.
+
+## Decision drivers
+
+- Rule 4: unknown is never shown as not disclosed, and no copy of ours says a game is not in Early Access.
+- Rules 1 and 3: no new host, request or permission.
+- Rule 13: no polling and no request for a value that is in a response or on the open page.
+- A stale `why_bbcode` must never label a game that left Early Access.
+- Rule 9: every string comes from the catalog, and dates are formatted with `Intl` in the catalog's locale.
+
+## Considered options
+
+1. Read the flag only, no detail.
+2. Read the flag, the note and the release date from GetItems, and the latest update from the open app page (chosen).
+3. Request the latest update for every game, from its app page or the community hub's feed.
+4. Derive Early Access from `extra_details.early_access` being present.
+
+## Decision outcome
+
+Chosen option 2.
+
+### Absence of the flag
+
+An item with `extra_details`, `success` 1 and a flag that is absent or `false` is not disclosed. Steam leaves false booleans out, as it does for `is_free`, and every non-flagged capture on hand shows it. Not disclosed draws nothing, and no string of ours names it. An item without `extra_details` stays unknown `missing` through the existing path, and a flag that is not a boolean makes the kind unknown `malformed`. The flag alone decides the state. The kind never reads `extra_details.early_access` or `release` for that, so a leftover note cannot tag a released game (option 4 fails on Hades and Slay the Spire).
+
+Rule 4 needs no new exception. The kind is developer-declared (the developer sets the release state in Steamworks), derives nothing from absence and keeps Steam's words.
+
+### Words and source
+
+The heading is "Early Access Game", the line Steam's store page puts above its notice (`#earlyAccessHeader h2`), and the chip reads "Early Access" (Spanish "Juego de acceso anticipado" and "Acceso anticipado"). The hover card closes with the developer line, "Declared by the developer on the store page". The release date and the latest update post sit on that page and come from the developer's Steamworks entries, so one source line covers the entry.
+
+### The developer's note
+
+`extra_details.early_access.why_bbcode`, trimmed of outer blanks, is a detail of the disclosed verdict and is read only for a flagged item. A note that is longer than the shared text limit or not a string is dropped, and the chip stays. The hover card sets it verbatim through `textContent` as a clamped quote, with the same "more" handling as the AI notes. BBCode tags (`[b]`, `[list]`) show as typed: rule 4 asks for the developer's text verbatim, and a markup parser would rewrite it.
+
+### The release date
+
+The kind reads `release.steam_release_date` and so declares the `release` request section (`include_release`), as the Steam Deck and Steam Machine kinds declare `platforms`. The hover card line reads "Release date: <date>" (Steam's own label, Spanish "Fecha de lanzamiento"). A missing or malformed value drops the line and keeps the chip. With the kind switched off, the request carries no `include_release` flag.
+
+### The latest update
+
+The latest update appears only in the hover card of the game's own app page, read from the open document with no request. The source is the `rtime` inside `last_update_event` in the page's embedded script, found with one anchored pattern, never parsed as JSON and never stored with the verdict. It applies to a disclosed verdict that is the page's own game (never a demo's lent full-game verdict) and works in every page language, since it reads a number. The line reads "Latest update post: <date>" (Spanish "Ultima publicacion de actualizacion") because the value is the developer's latest event of that type and says nothing about builds. Other surfaces never show it, and a page without the value shows no line.
+
+### Defaults, cache, filters
+
+The kind starts on with the badge shown, the banner off (Steam's own Early Access box already tops the page) and the list filter off. Its entries keep two days when disclosed and a week when not, so a game that leaves Early Access loses its chip within two days. Filters, ignore scopes, colors, chip text and order come from the registry like every other kind.
+
+### Library check (rule 12)
+
+Nothing to adopt. The kind reads one boolean, one number and one string. `Intl.DateTimeFormat` formats the dates, valibot validates the fields, and the update time needs one pattern. A BBCode parser such as `@bbob/parser` would render markup that the rule says to leave verbatim, and it would add bytes to a bundle that is not minified.
+
+### Consequences
+
+- Good: a person sees which games are in Early Access on every surface, in Steam's words, with the developer's own plan one hover away.
+- Good: no new host, request or permission. The only added cost is the `include_release` flag on the batch that already goes out.
+- Good: a stale note never tags a released game.
+- Bad: raw BBCode tags show in the note, until a later decision changes that.
+- Bad: the latest update post is a community event time, not the time of the last build. The wording says so, and it can lag behind a silent patch.
+- Bad: hover cards on lists never show the latest update, since that needs the open page.
+- Neutral: a stored lookup from before lacks the `earlyaccess` slot and the `release` section, so it is looked up again once as the person browses.
+
+## Pros and cons of the options
+
+### 1. Flag only
+
+- Good: smallest change, nothing to word.
+- Bad: drops the developer's plan and the dates, which a person deciding whether to wait for 1.0 reads first.
+
+### 2. Flag, note, release date and page-only last update
+
+- Good: every fact comes from a response or a page already loaded.
+- Bad: two more parsing paths, one of which depends on Valve's page script.
+
+### 3. A request per game for the latest update
+
+- Good: the value on every surface.
+- Bad: one request per game against rule 13, and a new host or path for the feed against rule 1.
+
+### 4. Early Access from the presence of `extra_details.early_access`
+
+- Good: no item field to read and no `include_release`.
+- Bad: wrong for every game that left Early Access, as the Hades and Slay the Spire answers show.

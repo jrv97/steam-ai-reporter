@@ -12,6 +12,9 @@ import { createSettingsSource } from "./settings/settings-source";
 
 // Its own file, so the document has adopted no sheet from an earlier `start`.
 
+// The captured row of 4461450 carries the AI and the Early Access tags.
+const DISCLOSED_BADGES = 2;
+
 const quiet = { error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() };
 
 let app: App | undefined;
@@ -37,7 +40,7 @@ describe("start and the page stylesheet", () => {
       catalogs: SHIPPED_CATALOGS,
       addPageStyles,
     });
-    await expect.poll(() => document.querySelectorAll(".sar-badge").length).toBe(1);
+    await expect.poll(() => document.querySelectorAll(".sar-badge").length).toBe(DISCLOSED_BADGES);
     expect(addPageStyles).toHaveBeenCalledExactlyOnceWith(document);
     expect(document.adoptedStyleSheets).toHaveLength(0);
     expect(document.querySelector("style.sar-styles")).toBeNull();

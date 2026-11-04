@@ -21,6 +21,8 @@ const DECLARING = [3751950, 2807960, 1808500, 730, 570, 105600, 1245620, 1172470
 const NOTHING = [813230, 1145360, 413150, 504230, 367520, 2379780, 620];
 const IDS = [...DECLARING, ...NOTHING];
 const OTHER_ITEMS = [320795, 1, 99999999];
+// A game in Early Access, and one that left it and still answers the developer's note.
+const EARLY_ACCESS = [2514910, 646570];
 
 const verdicts = parseGetItems(
   appIds(...IDS, ...OTHER_ITEMS),
@@ -62,6 +64,8 @@ const NONE = {
   machine: "unknown:unrequested",
   // Valve lists Family Sharing for most paid games; the tests name the ones it leaves out.
   family: "disclosed:supported",
+  // Nor was the release section, which Early Access reads.
+  earlyaccess: "unknown:unrequested",
 };
 
 describe("parseGetItems over the tag kind fixture", () => {
@@ -185,6 +189,38 @@ describe("parseGetItems over the tag kind fixture", () => {
     for (const id of OTHER_ITEMS) {
       expect(of(id)).toBe(UNKNOWN_KINDS.missing);
     }
+  });
+});
+
+describe("parseGetItems over the early access captures, asked with the release section", () => {
+  const found = parseGetItems(
+    appIds(...EARLY_ACCESS),
+    httpResult(getItemsResponse(fixtureItems(kinds)), GETITEMS_URL),
+    "english",
+    ["basic_info", "release"],
+  );
+
+  it("reads a flagged game with the developer's note and the Steam release date (2514910)", () => {
+    const verdict = found.get(appId(2514910))?.earlyaccess;
+    if (verdict?.state !== "disclosed") {
+      throw new TypeError();
+    }
+    const { note, ...rest } = verdict;
+    expect(rest).toStrictEqual({
+      state: "disclosed",
+      kind: "earlyaccess",
+      source: "api",
+      released: 1731596424,
+    });
+    expect(note).toMatch(/^You can also experience the special systems/);
+  });
+
+  it("reads a game that left early access as not disclosed, whatever its note (646570)", () => {
+    // The capture still holds the developer's note, which the schema test reads.
+    expect(found.get(appId(646570))?.earlyaccess).toStrictEqual({
+      state: "not-disclosed",
+      source: "api",
+    });
   });
 });
 

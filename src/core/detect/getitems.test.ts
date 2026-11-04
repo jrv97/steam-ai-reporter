@@ -471,7 +471,22 @@ describe("planBatches", () => {
   it.each(
     [
       ["the base sections", undefined, ["include_extra_details", "include_basic_info"]],
-      ["platforms", SECTIONS, ["include_extra_details", "include_basic_info", "include_platforms"]],
+      ["platforms", ["basic_info", "platforms"], [
+        "include_extra_details",
+        "include_basic_info",
+        "include_platforms",
+      ]],
+      ["the release dates", ["basic_info", "release"], [
+        "include_extra_details",
+        "include_basic_info",
+        "include_release",
+      ]],
+      ["every section", SECTIONS, [
+        "include_extra_details",
+        "include_basic_info",
+        "include_platforms",
+        "include_release",
+      ]],
     ] as const,
   )("asks for extra details and %s", (_name, sections, flags) => {
     const [batch] = planBatches(appIds(730), "english", DEFAULT_BATCH_LIMITS, sections);

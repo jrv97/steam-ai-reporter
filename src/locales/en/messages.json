@@ -201,6 +201,34 @@
     "message": "Family Sharing is not supported for this game",
     "description": "In the hover card, under the heading \"Family Sharing\", for a paid game whose Steam feature list leaves Family Sharing out. Our own sentence; the card always closes with the line that says it comes from the features Steam lists for the game. Keep it a plain statement and say nothing about why."
   },
+  "kind_earlyaccess_heading": {
+    "message": "Early Access Game",
+    "description": "Steam's own line for a game in Early Access, the heading of the notice at the top of its store page. It titles the entry in the hover card, names the settings section and begins the screen reader name of the chip. Use the line Steam's store shows in this language."
+  },
+  "kind_earlyaccess_chip": {
+    "message": "Early Access",
+    "description": "Short chip for a game in Early Access, as Steam's own tag and filter call it. Keep it short; it sits in a row and over game images."
+  },
+  "kind_earlyaccess_released": {
+    "message": "Release date: $date$",
+    "description": "In the hover card, under the heading for a game in Early Access: the release date the store page lists, Steam's own label. $date$ is a date formatted for the language.",
+    "placeholders": {
+      "date": {
+        "content": "$1",
+        "example": "Nov 14, 2024"
+      }
+    }
+  },
+  "kind_earlyaccess_updated": {
+    "message": "Latest update post: $date$",
+    "description": "In the hover card on a game's own store page, under the heading for a game in Early Access: the date of the developer's latest post of the update type in the community hub. It says nothing about builds, so keep it about the post. $date$ is a date formatted for the language.",
+    "placeholders": {
+      "date": {
+        "content": "$1",
+        "example": "Oct 27, 2026"
+      }
+    }
+  },
   "kind_chip_name": {
     "message": "$chip$: $heading$",
     "description": "Screen reader name of a chip: the visible chip text, then Steam's full line for the kind, or Steam's word for a value that names the kind by itself. $chip$ is the chip text, the person's own when they set one, and $heading$ Steam's words.",

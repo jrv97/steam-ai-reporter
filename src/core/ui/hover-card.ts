@@ -1,3 +1,4 @@
+import { dateFormat } from "../i18n/date-format";
 import type { BareMessageKey } from "../i18n/t";
 import { KIND_BY_ID } from "../kinds/registry";
 import { type AnyDisclosed, sameVerdicts } from "../kinds/verdicts";
@@ -19,6 +20,8 @@ const TRIGGER_SELECTOR = ".sar-badge, .sar-compact";
 const OPEN_DELAY = 150;
 /** Grace after the pointer leaves, so it can cross the offset onto the card. */
 const CLOSE_DELAY = 100;
+
+const MS_PER_SECOND = 1000;
 
 const DESCRIBED_BY = "aria-describedby";
 const ESCAPE = "Escape";
@@ -201,6 +204,14 @@ export function createHoverCard(
   /** A follow is queued for the next frame. */
   let following = false;
 
+  /** The date format of the catalog's locale, made when the first date is drawn. */
+  let dateFormatter: Intl.DateTimeFormat | undefined;
+
+  function dates(): Intl.DateTimeFormat {
+    dateFormatter ??= dateFormat(i18n.locale);
+    return dateFormatter;
+  }
+
   function line(className: string, text: string): HTMLElement {
     const node = doc.createElement("p");
     node.className = className;
@@ -248,6 +259,11 @@ export function createHoverCard(
         labeled.append(" ", name);
         return labeled;
       }
+      case "dated":
+        return line(
+          "sar-hovercard-detail",
+          i18n.t(detail.key, { date: dates().format(detail.time * MS_PER_SECOND) }),
+        );
     }
   }
 
