@@ -64,6 +64,8 @@ COMPAT_VALUES = range(4)
 # The flag of a game in Early Access, and the release date `include_release` adds.
 EARLY_ACCESS_FIELD = "is_early_access"
 RELEASE_DATE_FIELD = "steam_release_date"
+# The last second of year 9999, the bound the GetItems schema puts on a release time.
+MAX_UNIX_SECONDS = 253_402_300_799
 # The app page embeds the developer's latest update post in an inline script.
 UPDATE_EVENT = re.compile(r'"last_update_event":\{[^{}]*?"rtime":\d{1,10}\b')
 EULA_URL = re.compile(r"^https://store\.steampowered\.com/+eula/")
@@ -258,18 +260,36 @@ def platform_problems(where: str, item: dict[str, object]) -> list[str]:
 def early_access_problems(where: str, item: dict[str, object]) -> list[str]:
     """`is_early_access` is a boolean and `release.steam_release_date` an integer, when sent."""
     problems = type_problems(where, item, (EARLY_ACCESS_FIELD,), bool)
-    early = as_object((as_object(item.get("extra_details")) or {}).get("early_access"))
-    if early is not None and not isinstance(early.get("why_bbcode", ""), str):
-        problems.append(f"{where}: extra_details.early_access.why_bbcode is not a string")
+    problems += note_problems(where, as_object(item.get("extra_details")) or {})
     if "release" not in item:
         return problems
     release = as_object(item["release"])
     if release is None:
         return [*problems, f"{where}: release is not an object"]
     date = release.get(RELEASE_DATE_FIELD)
-    if date is not None and (isinstance(date, bool) or not isinstance(date, int)):
-        problems.append(f"{where}: release.{RELEASE_DATE_FIELD} is not an integer")
+    if date is not None and not is_release_time(date):
+        problems.append(
+            f"{where}: release.{RELEASE_DATE_FIELD} is not an integer from 0 to {MAX_UNIX_SECONDS}"
+        )
     return problems
+
+
+def is_release_time(value: object) -> bool:
+    """An integer Unix time the hover card can format, as the GetItems schema requires."""
+    return isinstance(value, int) and not isinstance(value, bool) and 0 <= value <= MAX_UNIX_SECONDS
+
+
+def note_problems(where: str, details: dict[str, object]) -> list[str]:
+    """`early_access` is an object (Steam sends `[]` for an empty one) with a text note, if sent."""
+    if "early_access" not in details:
+        return []
+    value = details["early_access"]
+    early = as_object(value)
+    if early is None:
+        return [] if value == [] else [f"{where}: extra_details.early_access is not an object"]
+    if not isinstance(early.get("why_bbcode", ""), str):
+        return [f"{where}: extra_details.early_access.why_bbcode is not a string"]
+    return []
 
 
 def item_problems(appid: int, item: dict[str, object] | None) -> list[str]:
