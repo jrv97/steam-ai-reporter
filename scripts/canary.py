@@ -65,7 +65,7 @@ COMPAT_VALUES = range(4)
 EARLY_ACCESS_FIELD = "is_early_access"
 RELEASE_DATE_FIELD = "steam_release_date"
 # The app page embeds the developer's latest update post in an inline script.
-UPDATE_EVENT = re.compile(r'"last_update_event"\s*:\s*\{\s*"rtime"\s*:\s*\d+')
+UPDATE_EVENT = re.compile(r'"last_update_event":\{[^{}]*?"rtime":\d{1,10}\b')
 EULA_URL = re.compile(r"^https://store\.steampowered\.com/+eula/")
 APP_PATH = re.compile(r"^/app/(\d+)(?:/|$)")
 
@@ -258,6 +258,9 @@ def platform_problems(where: str, item: dict[str, object]) -> list[str]:
 def early_access_problems(where: str, item: dict[str, object]) -> list[str]:
     """`is_early_access` is a boolean and `release.steam_release_date` an integer, when sent."""
     problems = type_problems(where, item, (EARLY_ACCESS_FIELD,), bool)
+    early = as_object((as_object(item.get("extra_details")) or {}).get("early_access"))
+    if early is not None and not isinstance(early.get("why_bbcode", ""), str):
+        problems.append(f"{where}: extra_details.early_access.why_bbcode is not a string")
     if "release" not in item:
         return problems
     release = as_object(item["release"])

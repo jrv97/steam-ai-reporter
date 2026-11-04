@@ -150,12 +150,17 @@ const PlatformsSchema = record({
 /** A field of `platforms` that a compatibility kind reads. */
 export type CompatField = keyof v.InferOutput<typeof PlatformsSchema>;
 
+/** The last second of year 9999, the latest time `Intl.DateTimeFormat` formats without throwing. */
+export const MAX_UNIX_SECONDS = 253_402_300_799;
+
 /**
  * The release dates (`include_release`). The Steam release date is a Unix time in seconds. It only
  * adds detail to a verdict, so a bad value reads as absent.
  */
 const ReleaseSchema = record({
-  steam_release_date: droppable(v.pipe(v.number(), v.integer(), v.minValue(0))),
+  steam_release_date: droppable(
+    v.pipe(v.number(), v.integer(), v.minValue(0), v.maxValue(MAX_UNIX_SECONDS)),
+  ),
 });
 
 /** Steam's `type` of a game; a demo is 1 and a DLC 4. */

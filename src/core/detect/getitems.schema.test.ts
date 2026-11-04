@@ -181,6 +181,7 @@ describe("StoreItemSchema early access fields", () => {
   it.each<readonly [string, unknown]>([
     ["a negative time", -1],
     ["a fraction", 1.5],
+    ["a time no date format can show", 9_000_000_000_000],
     ["text", "1731596424"],
     ["null", null],
   ])("reads a release date that is %s as absent, and keeps the item", (_name, value) => {

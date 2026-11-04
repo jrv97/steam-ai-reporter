@@ -167,6 +167,7 @@ describe("EARLY_ACCESS_KIND in storage", () => {
     ["a note that is no text", { note: 5 }],
     ["a negative release date", { released: -1 }],
     ["a release date with a fraction", { released: 1.5 }],
+    ["a release date no date format can show", { released: 9_000_000_000_000 }],
   ])("discards an entry that holds %s, so the app is fetched again", (_name, fields) => {
     const kinds = {
       ...perKind(() => ({ state: "not-disclosed", source: "api" })),

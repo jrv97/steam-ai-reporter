@@ -1,5 +1,5 @@
 import * as v from "valibot";
-import { MALFORMED } from "../detect/getitems.schema";
+import { MALFORMED, MAX_UNIX_SECONDS } from "../detect/getitems.schema";
 import { optionalText, trimNotes } from "../detect/notes";
 import { NOT_DISCLOSED, UNKNOWN } from "../types";
 import type { KindDefinition } from "./kind";
@@ -11,7 +11,9 @@ const STORED = storedDisclosed("earlyaccess", {
   /** The developer's explanation of why the game is in Early Access, trimmed, verbatim inside. */
   note: v.exactOptional(v.pipe(v.string(), v.minLength(1))),
   /** The Steam release date, a Unix time in seconds (`release.steam_release_date`). */
-  released: v.exactOptional(v.pipe(v.number(), v.integer(), v.minValue(0))),
+  released: v.exactOptional(
+    v.pipe(v.number(), v.integer(), v.minValue(0), v.maxValue(MAX_UNIX_SECONDS)),
+  ),
 });
 
 /**
