@@ -38,6 +38,21 @@ export function withDescriptionColumn(html: string): string {
   return html.replace("</body>", `${DESCRIPTION_COLUMN}</body>`);
 }
 
+/**
+ * The inline script text Steam embeds with the developer's latest update post, as on the store
+ * page of Early Access game 2514910 on 2026-11-04. Its `rtime` is 2026-10-27 17:14 UTC.
+ */
+export const LAST_UPDATE_SCRIPT = [
+  'var EventsData = {"EventWebRowEmbed":{"events":[]},',
+  '"last_update_event":{"rtime":1793121240,"event_gid":"668380030964867042",',
+  '"announcement_gid":"668380030964867043","clan_account_id":44369828}};',
+].join("");
+
+/** The page with the inline script that holds the developer's latest update post. */
+export function withLastUpdateScript(html: string, script: string = LAST_UPDATE_SCRIPT): string {
+  return html.replace("</body>", `<script>${script}</script></body>`);
+}
+
 /** The summary box rows under which the tag section falls back to when the page has no tags. */
 export const DEV_ROWS = `
     <div class="dev_row" id="developer"><div class="subtitle">Developer:</div></div>

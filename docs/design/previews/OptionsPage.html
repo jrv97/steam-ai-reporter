@@ -64,6 +64,12 @@
         <span class="sar-vh">DRM: Includes 3rd-party DRM</span>
         <span class="sar-tab-state" data-sar-on>On</span>
       </button>
+      <button class="sar-tab" type="button" role="tab" id="o-t-earlyaccess"
+        aria-controls="o-p-earlyaccess" aria-selected="false" tabindex="-1">
+        <span class="sar-tab-label" aria-hidden="true">Early Access</span>
+        <span class="sar-vh">Early Access: Early Access Game</span>
+        <span class="sar-tab-state" data-sar-on>On</span>
+      </button>
       <button class="sar-tab" type="button" role="tab" id="o-t-eula"
         aria-controls="o-p-eula" aria-selected="false" tabindex="-1">
         <span class="sar-tab-label" aria-hidden="true">EULA</span>
@@ -235,6 +241,8 @@
       aria-labelledby="o-t-deck" hidden></div>
     <div class="sar-tabpanel" role="tabpanel" id="o-p-drm"
       aria-labelledby="o-t-drm" hidden></div>
+    <div class="sar-tabpanel" role="tabpanel" id="o-p-earlyaccess"
+      aria-labelledby="o-t-earlyaccess" hidden></div>
     <div class="sar-tabpanel" role="tabpanel" id="o-p-eula"
       aria-labelledby="o-t-eula" hidden></div>
     <div class="sar-tabpanel" role="tabpanel" id="o-p-family"
@@ -348,6 +356,23 @@
         </fieldset>
         <input class="sar-toggle" type="checkbox" role="switch"
           aria-labelledby="q-drm" checked>
+      </div>
+      <div class="sar-kind-row">
+        <a class="sar-kind-link" id="q-earlyaccess" href="#tab=earlyaccess">
+          <span class="sar-tab-label" aria-hidden="true">Early Access</span>
+          <span class="sar-vh">Early Access: Early Access Game</span>
+        </a>
+        <span class="sar-vh" id="q-earlyaccess-f">Games with this tag</span>
+        <fieldset class="sar-segment" aria-labelledby="q-earlyaccess q-earlyaccess-f">
+          <input type="radio" name="q-earlyaccess" id="q-earlyaccess-off" checked>
+          <label for="q-earlyaccess-off">Show</label>
+          <input type="radio" name="q-earlyaccess" id="q-earlyaccess-dim">
+          <label for="q-earlyaccess-dim">Dim</label>
+          <input type="radio" name="q-earlyaccess" id="q-earlyaccess-hide">
+          <label for="q-earlyaccess-hide">Hide</label>
+        </fieldset>
+        <input class="sar-toggle" type="checkbox" role="switch"
+          aria-labelledby="q-earlyaccess" checked>
       </div>
       <div class="sar-kind-row">
         <a class="sar-kind-link" id="q-eula" href="#tab=eula">
@@ -575,6 +600,16 @@
             <path d="M2 1h2v2H2zm4 0h2v2H6zM2 7h2v2H2zm4 0h2v2H6zM2 13h2v2H2zm4 0h2v2H6z"/></svg>
         </button>
         <span class="sar-order-chip">Family Sharing</span>
+        <span class="sar-order-small" hidden>small image</span>
+      </li>
+      <li class="sar-order-row">
+        <button class="sar-order-handle" type="button" data-sar-order="earlyaccess"
+          aria-label="Reorder Early Access" aria-describedby="g-order-how" aria-pressed="false">
+          <svg viewBox="0 0 10 16" aria-hidden="true" focusable="false">
+            <path d="M2 1h2v2H2zm4 0h2v2H6zM2 7h2v2H2zm4 0h2v2H6zM2 13h2v2H2zm4 0h2v2H6z"/></svg>
+        </button>
+        <span class="sar-order-chip">Early Access</span>
+        <span class="sar-order-heading">Early Access Game</span>
         <span class="sar-order-small" hidden>small image</span>
       </li>
       </ul>

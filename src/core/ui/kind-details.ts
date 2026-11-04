@@ -15,7 +15,12 @@ export type KindDetail =
   /** The developer's long text, set verbatim and clamped. */
   | { readonly kind: "quote"; readonly text: string; }
   /** A catalog label followed by the developer's text. */
-  | { readonly kind: "labeled"; readonly key: BareMessageKey; readonly text: string; };
+  | { readonly kind: "labeled"; readonly key: BareMessageKey; readonly text: string; }
+  /** A catalog line holding a date, given in Unix seconds and formatted by the surface. */
+  | { readonly kind: "dated"; readonly key: DateMessageKey; readonly time: number; };
+
+/** The catalog lines that hold a date as `$date$`. */
+export type DateMessageKey = "kind_earlyaccess_released" | "kind_earlyaccess_updated";
 
 const message = (key: BareMessageKey): KindDetail => ({ kind: "message", key });
 const text = (value: string): KindDetail => ({ kind: "text", text: value });
@@ -25,6 +30,11 @@ const labeled = (key: BareMessageKey, value: string): KindDetail => ({
   key,
   text: value,
 });
+
+/** A line for the date when there is one. */
+function dated(key: DateMessageKey, time: number | undefined): readonly KindDetail[] {
+  return time === undefined ? [] : [{ kind: "dated", key, time }];
+}
 
 function present(value: string | undefined): value is string {
   return value !== undefined && value !== "";
@@ -73,6 +83,13 @@ export function kindDetails(verdict: AnyDisclosed): readonly KindDetail[] {
       return verdict.facet === "unsupported"
         ? [message("kind_family_unsupported_line")]
         : facetLines(verdict);
+    case "earlyaccess":
+      // The developer's note verbatim, then the release date, then the app page's latest update.
+      return [
+        ...(present(verdict.note) ? [quote(verdict.note)] : []),
+        ...dated("kind_earlyaccess_released", verdict.released),
+        ...dated("kind_earlyaccess_updated", verdict.updated),
+      ];
   }
 }
 

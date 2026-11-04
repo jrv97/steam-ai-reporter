@@ -2,6 +2,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import kindItems from "../../tests/fixtures/getitems/kinds.json";
 import searchItems from "../../tests/fixtures/getitems/search-roguelike-50.json";
+import { LAST_UPDATE_SCRIPT } from "../../tests/helpers/app-page";
 import { basicInfo } from "../../tests/helpers/creators";
 import { clearRoot, setBody } from "../../tests/helpers/dom";
 import { fakeHttp, type Route } from "../../tests/helpers/fake-http";
@@ -9,6 +10,7 @@ import { fixedClock } from "../../tests/helpers/fixed-clock";
 import {
   demoItem,
   disclosedItem,
+  earlyAccessItem,
   featuredItem,
   fixtureItems,
   getItemsRequest,
@@ -29,6 +31,7 @@ import type { CreatorRole } from "./creator";
 import { API_BREAKER_KEY } from "./detect/breaker";
 import { RETRY_DELAY_MS } from "./detect/retry";
 import { DEFAULT_SPACING_MS } from "./detect/throttle";
+import { dateFormat } from "./i18n/date-format";
 import { SHIPPED_CATALOGS } from "./i18n/shipped";
 import type { JsonValue } from "./json";
 import { toHexColor } from "./kinds/color";
@@ -40,11 +43,15 @@ import type { Clock } from "./ports";
 import { DEFAULT_SETTINGS, encodeSettings, type Settings } from "./settings/settings";
 import { createSettingsSource } from "./settings/settings-source";
 import { ALLOW_KEY, CREATOR_ALLOW_KEYS, SETTINGS_KEY } from "./storage-keys";
+import { HOVER_CARD_ID } from "./ui/hover-card";
 import { KIND_ATTRIBUTE } from "./ui/kind-attributes";
 import { adoptPageStyles } from "./ui/styles";
 
 const i18n = englishI18n();
 const DISCLOSED = "4461450";
+// The captured row is in Early Access too, so it carries both tags on the default settings.
+const DISCLOSED_KINDS = "ai earlyaccess";
+const DISCLOSED_BADGES = DISCLOSED_KINDS.split(" ").length;
 const SEARCH_IDS = [4075620, 3934270, 3784030, 1045010, 3432110, 3664320, 4461450, 2624160];
 const NOW = Date.UTC(2026, 9, 20);
 
@@ -155,13 +162,13 @@ describe("start on a package page", () => {
 describe("start on the search page", () => {
   it("badges the disclosed row after one GetItems request for the page", async () => {
     const { http } = await startOnSearch();
-    await expect.poll(() => document.querySelectorAll(".sar-badge").length).toBe(1);
+    await expect.poll(() => document.querySelectorAll(".sar-badge").length).toBe(DISCLOSED_BADGES);
 
     expect(http.calls).toHaveLength(1);
     expect(getItemsRequest(http.calls[0] ?? "").ids).toEqual(SEARCH_IDS);
     const badge = row(DISCLOSED)?.querySelector(".search_name > .title + .sar-chips > .sar-badge");
     expect(badge?.querySelector(".sar-badge-label")?.textContent).toBe(i18n.t("kind_ai_chip"));
-    expect(row(DISCLOSED)?.getAttribute("data-sar-kinds")).toBe("ai");
+    expect(row(DISCLOSED)?.getAttribute("data-sar-kinds")).toBe(DISCLOSED_KINDS);
     const others = SEARCH_IDS.filter((id) => String(id) !== DISCLOSED);
     expect(others.map((id) => row(String(id))?.hasAttribute("data-sar-kinds"))).toEqual(
       others.map(() => false),
@@ -171,7 +178,9 @@ describe("start on the search page", () => {
 
   it("switches one kind to hide mode with one root attribute per setting", async () => {
     const { settings } = await startOnSearch();
-    await expect.poll(() => row(DISCLOSED)?.getAttribute("data-sar-kinds")).toBe("ai");
+    await expect.poll(() => row(DISCLOSED)?.getAttribute("data-sar-kinds")).toBe(
+      DISCLOSED_KINDS,
+    );
     expect(rootMark("data-sar-filter-ai")).toBe("off");
 
     await writeSettings(
@@ -524,15 +533,16 @@ describe("start on the search page", () => {
     });
   });
 
-  it("marks nothing for an allow-listed game, in lists or on badges", async () => {
+  it("leaves out the ignored kind of an allow-listed game, in lists and on badges", async () => {
     const { http } = await startOnSearch(
       new Map<string, JsonValue>([
         [ALLOW_KEY, { all: {}, ai: { [DISCLOSED]: { name: "Ignored", added: NOW } } }],
       ]),
     );
     await drawn(http);
-    expect(row(DISCLOSED)?.hasAttribute("data-sar-kinds")).toBe(false);
-    expect(document.querySelector(".sar-badge")).toBeNull();
+    expect(row(DISCLOSED)?.getAttribute("data-sar-kinds")).toBe("earlyaccess");
+    expect(document.querySelectorAll(".sar-badge")).toHaveLength(1);
+    expect(document.querySelector(".sar-badge")?.getAttribute(KIND_ATTRIBUTE)).toBe("earlyaccess");
   });
 
   it("marks nothing for a game ignored for all kinds", async () => {
@@ -548,16 +558,56 @@ describe("start on the search page", () => {
 
   it("shows no badge and filters nothing while the kind is disabled", async () => {
     const { settings } = await startOnSearch();
-    await expect.poll(() => document.querySelectorAll(".sar-badge").length).toBe(1);
+    await expect.poll(() => document.querySelectorAll(".sar-badge").length).toBe(DISCLOSED_BADGES);
     await writeSettings(
       settings,
       withKind(DEFAULT_SETTINGS, "ai", { enabled: false, filter: "hide" }),
     );
     expect(rootMark("data-sar-filter-ai")).toBe("off");
-    await expect.poll(() => document.querySelectorAll(".sar-badge").length).toBe(0);
+    await expect.poll(() => document.querySelectorAll(".sar-badge").length).toBe(1);
+    expect(document.querySelector(".sar-badge")?.getAttribute(KIND_ATTRIBUTE)).toBe("earlyaccess");
     await writeSettings(settings, DEFAULT_SETTINGS);
     expect(rootMark("data-sar-filter-ai")).toBe("off");
-    await expect.poll(() => document.querySelectorAll(".sar-badge").length).toBe(1);
+    await expect.poll(() => document.querySelectorAll(".sar-badge").length).toBe(DISCLOSED_BADGES);
+  });
+
+  describe("with the early access kind", () => {
+    const NOTE = "We plan to leave early access in a year.";
+    const RELEASED = 1731596424;
+    const flagged = [
+      ...fixtureItems(searchItems),
+      earlyAccessItem(Number(DISCLOSED), { note: NOTE, released: RELEASED }),
+    ];
+    const off = withKind(DEFAULT_SETTINGS, "earlyaccess", { enabled: false });
+
+    it.each([
+      ["on", DEFAULT_SETTINGS, true],
+      ["off", off, false],
+    ])("sends include_release only while the kind is %s", async (_state, value, sent) => {
+      const stored = new Map([[SETTINGS_KEY, encodeSettings(value)]]);
+      const { http } = await startOnSearch(stored, flagged);
+      await drawn(http);
+      expect(requestFlags(http.calls[0] ?? "").includes("include_release")).toBe(sent);
+    });
+
+    it("leaves the latest update post out of a list card, whatever the page holds", async () => {
+      loadPage(SURFACES.search);
+      const script = document.createElement("script");
+      script.textContent = LAST_UPDATE_SCRIPT;
+      document.body.append(script);
+      const { http } = await startOnLoaded(new Map(), flagged);
+      await drawn(http);
+      await expect.poll(() => row(DISCLOSED)?.getAttribute("data-sar-kinds")).toBe("earlyaccess");
+      row(DISCLOSED)?.dispatchEvent(new FocusEvent("focusin", { bubbles: true }));
+      const entry = document.querySelector(`#${HOVER_CARD_ID} .sar-hovercard-entry`);
+      expect(Array.from(entry?.children ?? [], (line) => line.textContent)).toEqual([
+        i18n.t("kind_earlyaccess_heading"),
+        NOTE,
+        i18n.t("kind_earlyaccess_released", {
+          date: dateFormat(i18n.locale).format(RELEASED * 1000),
+        }),
+      ]);
+    });
   });
 
   describe("with Valve's device ratings", () => {
@@ -669,6 +719,7 @@ describe("start on the search page", () => {
       expect(requestFlags(http.calls[0] ?? "")).toEqual([
         "include_extra_details",
         "include_basic_info",
+        "include_release",
       ]);
     });
 
@@ -712,7 +763,9 @@ describe("start on the search page", () => {
 
     it("sets nothing by default, so the badges keep the violet", async () => {
       await startOnSearch();
-      await expect.poll(() => document.querySelectorAll(".sar-badge").length).toBe(1);
+      await expect.poll(() => document.querySelectorAll(".sar-badge").length).toBe(
+        DISCLOSED_BADGES,
+      );
       expect(colorOnRoot()).toBe("");
       expect(document.documentElement.hasAttribute("style")).toBe(false);
     });
@@ -720,7 +773,9 @@ describe("start on the search page", () => {
     it("applies a stored color at start as one root property", async () => {
       const stored = encodeSettings(withKind(DEFAULT_SETTINGS, "ai", { color: red }));
       await startOnSearch(new Map([[SETTINGS_KEY, stored]]));
-      await expect.poll(() => document.querySelectorAll(".sar-badge").length).toBe(1);
+      await expect.poll(() => document.querySelectorAll(".sar-badge").length).toBe(
+        DISCLOSED_BADGES,
+      );
       expect(colorOnRoot()).toBe("#ff0000");
       expect(document.querySelector(".sar-badge")?.getAttribute(KIND_ATTRIBUTE)).toBe("ai");
       expect(document.querySelector(".sar-badge")?.hasAttribute("style")).toBe(false);
@@ -729,7 +784,9 @@ describe("start on the search page", () => {
 
     it("follows a change and its removal without drawing a badge again", async () => {
       const { settings } = await startOnSearch();
-      await expect.poll(() => document.querySelectorAll(".sar-badge").length).toBe(1);
+      await expect.poll(() => document.querySelectorAll(".sar-badge").length).toBe(
+        DISCLOSED_BADGES,
+      );
       const badge = document.querySelector(".sar-badge");
       await writeSettings(settings, withKind(DEFAULT_SETTINGS, "ai", { color: red }));
       expect(colorOnRoot()).toBe("#ff0000");
@@ -778,7 +835,7 @@ describe("start on the search page", () => {
       problem,
     );
     expect(rootMark("data-sar-filter-ai")).toBe("off");
-    await expect.poll(() => document.querySelectorAll(".sar-badge").length).toBe(1);
+    await expect.poll(() => document.querySelectorAll(".sar-badge").length).toBe(DISCLOSED_BADGES);
   });
 
   it("starts on the settings and the ignored games a v1 install stored", async () => {
@@ -789,7 +846,8 @@ describe("start on the search page", () => {
       ]),
     );
     await drawn(http);
-    expect(row(DISCLOSED)?.hasAttribute("data-sar-kinds")).toBe(false);
+    // The v1 install knew the AI kind only, so the row keeps its Early Access tag.
+    expect(row(DISCLOSED)?.getAttribute("data-sar-kinds")).toBe("earlyaccess");
     expect(rootMark("data-sar-filter-ai")).toBe("dim");
     expect(rootMark("data-sar-filter-kernel")).toBe("off");
     const keys = await store.keys();

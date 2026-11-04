@@ -1,4 +1,5 @@
 import { type Creator, CREATOR_ROLES, type CreatorKey, type CreatorRole } from "./creator";
+import { withLastUpdate } from "./detect/early-access-update";
 import { createTransientRetry, type Delay } from "./detect/retry";
 import type { SteamLanguage } from "./i18n/locale";
 import { type Ignored, type IgnoreLists, isIgnored } from "./ignored";
@@ -247,9 +248,12 @@ export function startAppPage(
 
   async function settle(): Promise<void> {
     const detected = (await detectors.detector.detect([id])).get(id) ?? UNKNOWN_KINDS.missing;
-    const next = live === undefined
-      ? await translatedVerdicts(id, deps.language, detected, detectors.getItems)
-      : mergeVerdicts(live, detected, disagree);
+    const next = withLastUpdate(
+      live === undefined
+        ? await translatedVerdicts(id, deps.language, detected, detectors.getItems)
+        : mergeVerdicts(live, detected, disagree),
+      doc,
+    );
     if (!stopped) {
       known = next;
       render();

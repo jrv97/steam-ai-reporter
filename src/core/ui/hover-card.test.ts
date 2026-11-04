@@ -3,7 +3,13 @@ import { setBody } from "../../../tests/helpers/dom";
 import { capturedVerdicts, pageVerdicts } from "../../../tests/helpers/fixture-verdicts";
 import { englishI18n } from "../../../tests/helpers/i18n";
 import { manualQueue } from "../../../tests/helpers/manual-queue";
-import { disclosedVerdict, FULL_DISCLOSED, lent } from "../../../tests/helpers/verdicts";
+import {
+  disclosedVerdict,
+  earlyAccessVerdict,
+  FULL_DISCLOSED,
+  lent,
+} from "../../../tests/helpers/verdicts";
+import { dateFormat } from "../i18n/date-format";
 import { KIND_IDS, type KindId } from "../kinds/id";
 import { KIND_BY_ID } from "../kinds/registry";
 import type { AnyDisclosed, KindVerdicts } from "../kinds/verdicts";
@@ -486,6 +492,16 @@ describe("createHoverCard", () => {
       return ai.state === "disclosed" ? ai.notes : "";
     }
 
+    /** A Unix time as the card writes a date in the catalog's language. */
+    const day = (seconds: number) => dateFormat(i18n.locale).format(seconds * 1000);
+
+    /** The developer's Early Access note as the card shows it, with CRLF breaks read as LF. */
+    function earlyAccessNote(verdicts: KindVerdicts): string {
+      const { earlyaccess } = verdicts;
+      const note = earlyaccess.state === "disclosed" ? (earlyaccess.note ?? "") : "";
+      return note.replaceAll("\r\n", "\n");
+    }
+
     function eulaNames(verdicts: KindVerdicts): string[] {
       const { eula } = verdicts;
       return eula.state === "disclosed" ? eula.items.map((item) => item.name) : [];
@@ -607,6 +623,18 @@ describe("createHoverCard", () => {
         ],
       ],
       [
+        "the developer's note and the release date of an early access game (2514910)",
+        capturedVerdicts(2514910),
+        [
+          [heading("family")],
+          [
+            heading("earlyaccess"),
+            earlyAccessNote(capturedVerdicts(2514910)),
+            i18n.t("kind_earlyaccess_released", { date: day(1731596424) }),
+          ],
+        ],
+      ],
+      [
         "the AI notes read from a captured app page (5072580)",
         pageVerdicts("5072580-ai-first.html", 5072580),
         [[heading("ai"), notesOf(pageVerdicts("5072580-ai-first.html", 5072580))]],
@@ -620,6 +648,43 @@ describe("createHoverCard", () => {
         expect(entries()).toEqual(lines);
       },
     );
+
+    describe("for early access", () => {
+      const NOTE = "We ship early to hear from players.";
+      const RELEASED = 1731596424;
+      const UPDATED = 1793121240;
+      const released = i18n.t("kind_earlyaccess_released", { date: day(RELEASED) });
+      const updated = i18n.t("kind_earlyaccess_updated", { date: day(UPDATED) });
+      const { note: _note, released: _released, ...bare } = earlyAccessVerdict();
+
+      it.each<readonly [string, AnyDisclosed, readonly string[]]>([
+        [
+          "the note, the release date and the latest update, in that order",
+          earlyAccessVerdict({ note: NOTE, released: RELEASED, updated: UPDATED }),
+          [NOTE, released, updated],
+        ],
+        [
+          "the note and the release date, without an update the page did not give",
+          earlyAccessVerdict({ note: NOTE, released: RELEASED }),
+          [NOTE, released],
+        ],
+        ["the dates without a note", { ...bare, released: RELEASED, updated: UPDATED }, [
+          released,
+          updated,
+        ]],
+        ["the heading alone when nothing else is known", bare, []],
+      ])("shows %s", (_name, verdict, lines) => {
+        open([verdict]);
+        expect(entries()).toEqual([[heading("earlyaccess"), ...lines]]);
+        expect(shown()?.lastElementChild?.textContent).toBe(i18n.t("badge_card_declared"));
+      });
+
+      it("sets the developer's note as text, with its BBCode tags as typed", () => {
+        open([earlyAccessVerdict({ note: `[b]${XSS}[/b]` })]);
+        expect(document.querySelector(".sar-hovercard img")).toBeNull();
+        expect(entries()[0]?.[1]).toBe(`[b]${XSS}[/b]`);
+      });
+    });
 
     it("sets the developer's text as text for every kind", () => {
       const markup = [

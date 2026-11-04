@@ -1,5 +1,6 @@
 import * as v from "valibot";
 import { CREATOR_ROLES, type CreatorKey, type CreatorRole, toCreatorKey } from "../creator";
+import { dateFormat } from "../i18n/date-format";
 import type { BareMessageKey } from "../i18n/t";
 import type { IgnoreLists } from "../ignored";
 import { type HexColor, readTypedColor } from "../kinds/color";
@@ -201,12 +202,6 @@ function autonym(locale: string): string {
   } catch {
     return locale;
   }
-}
-
-function dateFormat(locale: string): Intl.DateTimeFormat {
-  const tag = languageTag(locale);
-  const supported = Intl.DateTimeFormat.supportedLocalesOf(tag).length > 0 ? tag : undefined;
-  return new Intl.DateTimeFormat(supported, { dateStyle: "medium" });
 }
 
 /** The patch that sets some fields of one kind. */

@@ -9,7 +9,7 @@
 
 # Tag Kit for Steam
 
-A browser extension for Chromium-based browsers and Firefox, and a userscript (Tampermonkey and Violentmonkey) that tag items on the Steam store with what Valve's own data says about them: AI Generated Content Disclosure, Anti-Cheat (Kernel Level flagged separately), 3rd-party DRM, 3rd-Party Account, 3rd-party EULA, PvP (friend request), In-App Purchases, Valve's Steam Deck and Steam Machine compatibility ratings, and Family Sharing as Steam's features list it.
+A browser extension for Chromium-based browsers and Firefox, and a userscript (Tampermonkey and Violentmonkey) that tag items on the Steam store with what Valve's own data says about them: AI Generated Content Disclosure, Anti-Cheat (Kernel Level flagged separately), 3rd-party DRM, 3rd-Party Account, 3rd-party EULA, PvP (friend request), In-App Purchases, Valve's Steam Deck and Steam Machine compatibility ratings, Family Sharing as Steam's features list it, and Early Access.
 
 > Status: [releases](https://github.com/jrv97/steam-ai-reporter/releases) are on GitHub. The Firefox link below is a placeholder.
 
@@ -28,12 +28,13 @@ Once I got that working in place, I thought "why not also flag all the other ann
 - Tags these kinds of items: AI Generated Content Disclosure, Kernel Level Anti-Cheat and other Anti-Cheat Software, 3rd-party DRM, 3rd-Party Account, 3rd-party EULA, PvP and In-App Purchases.
 - Tags Steam Deck and Steam Machine compatibility as Valve rates it (Verified, Playable, Unsupported). These tags start switched off. Each lets you pick which ratings to tag, Unsupported at first, and its chips and list filter act on those ratings only. A game Valve has not rated gets no tag.
 - Tags Family Sharing from the features Valve computes for each game: Steam's "Family Sharing" when the list holds it, and Steam's "Family Sharing not Available" for a paid game whose list leaves it out. Free games, DLC, demos and games whose features Steam does not send never get the second value. The tag starts switched off, with only the second value ticked. Its chip reads "No Family Sharing", and the card reads "Family Sharing is not supported for this game" and names its source as the features Steam lists for the game.
-- Adds a badge to capsules and rows (search, wishlist, home, tag and category hubs, sale pages such as Next Fest, developer and publisher pages, the discovery queue, search suggestions) for items that carry one of those tags. Each tag has a short chip (AI, KLAC, Anti-Cheat, DRM, Account, EULA, PvP, IAP, a rating such as "Deck Unsupported", "Family Sharing" and "No Family Sharing"), and a +N chip stands for the tags that do not fit. You can rename a tag's chips in your own words in the settings.
+- Tags Early Access from the flag Steam sends for a game in Early Access. The card shows the developer's own note on the Early Access plan and the release date, and on a game's own page it adds the date of the developer's latest update post, read from the open page. The tag starts switched on, with the badge shown and without a banner entry.
+- Adds a badge to capsules and rows (search, wishlist, home, tag and category hubs, sale pages such as Next Fest, developer and publisher pages, the discovery queue, search suggestions) for items that carry one of those tags. Each tag has a short chip (AI, KLAC, Anti-Cheat, DRM, Account, EULA, PvP, IAP, Early Access, a rating such as "Deck Unsupported", "Family Sharing" and "No Family Sharing"), and a +N chip stands for the tags that do not fit. You can rename a tag's chips in your own words in the settings.
 - Opens a card on hover or keyboard focus that lists every tag in Steam's words and ends with a line naming the source: the developer, Valve for the device ratings ("According to Valve"), or for Family Sharing the features Steam lists for the game ("According to the features Steam lists for this game").
 - Gives a demo the tags of its full game, each marked "Declared for the full game" in the card and the banner ("For the full game" for what Valve states); a tag the demo declares itself shows as its own. DLC keep their own tags only.
 - Shows a non-blocking banner on the app page that lists each tag the developer declared and quotes the developer's AI report verbatim.
 - Sums up the included games' tags at the top of a package page, one line per tag such as "AI Generated Content Disclosure: 2 of 5 games", from the lookups its rows already use.
-- Gives each tag its own switch, badge, banner entry and list filter (Show, Dim or Hide). Filters start on Show, and the strongest filter wins when a game carries several tags. The PvP, In-App Purchases, Steam Deck, Steam Machine and Family Sharing tags start switched off, and the device and Family Sharing tags start without a banner entry.
+- Gives each tag its own switch, badge, banner entry and list filter (Show, Dim or Hide). Filters start on Show, and the strongest filter wins when a game carries several tags. The PvP, In-App Purchases, Steam Deck, Steam Machine and Family Sharing tags start switched off, and the device, Family Sharing and Early Access tags start without a banner entry.
 - Lets you ignore a game you consider a false flag, for one tag or for all tags. Its DLC follow it. You can also ignore a developer or a publisher, apart by role, from the banner, and undo it in the settings.
 - Backs up your settings and ignore lists to a JSON file on your device and restores them after a check, in the options page and the userscript dialog. One file works in both.
 
@@ -49,6 +50,7 @@ Each tag follows Steam's own words:
 - In-App Purchases: Steam lists in-app purchases among the game's features. The chip reads "IAP", and the card and the banner carry Steam's name "In-App Purchases".
 - Steam Deck Compatibility and Steam Machine Compatibility: Valve rated the game Verified, Playable or Unsupported on that device. The chip reads "Deck Unsupported" or "Steam Machine Playable", and the card carries Steam's heading and Steam's word for the rating.
 - Family Sharing: Steam lists Family Sharing among the game's features, which Valve computes. The chip reads "Family Sharing", or "No Family Sharing" for a paid game whose list leaves it out. For that game the card reads "Family Sharing is not supported for this game" and "According to the features Steam lists for this game", and the banner and the settings keep Steam's words, "Family Sharing not Available".
+- Early Access: the developer set the game's release state to Early Access, and Steam flags the game. The chip reads "Early Access", and the card carries Steam's line "Early Access Game", the developer's note, the release date and, on the game's own page, the latest update post.
 
 The AI badge does not say a game uses AI, and the absence of a badge does not mean a game is AI-free: the report comes from the developer, and the badge marks what developers chose to report.
 
@@ -127,7 +129,7 @@ Main tasks:
 - `mise run ci`: everything CI runs. The pre-push hook runs `prepush`, which is the same without the reproducibility check and `web-ext lint`.
 - `mise run dev`: rebuild on change. In another terminal, `mise run run-gecko` (Firefox Nightly only) or `mise run run-chromium` loads the build with auto-reload.
 - `mise run package`: write the Chromium and Gecko zips, the userscript and its `.meta.js`, and the source archive for store reviewers to `artifacts/`, then check them.
-- `mise run canary`: before a release, check that live Steam still answers in the shape the detectors expect (four requests). It is not part of `ci`.
+- `mise run canary`: before a release, check that live Steam still answers in the shape the detectors expect (five requests). It is not part of `ci`.
 - `mise run capture-fixtures`: refresh the public test fixtures from the live store.
 - `mise run icons`: render the extension icon PNGs in `assets/icons/` from `mark-purple.svg` with headless Chromium (`SAR_CHROMIUM_BIN`).
 - `mise run change-new`: add a changelog fragment. A pull request that changes `src/` needs one, unless it carries the `no-changelog-fragment` label.

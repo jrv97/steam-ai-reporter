@@ -5,14 +5,17 @@ import { memoryStore } from "../../../tests/helpers/memory-store";
 import { uniformVerdicts } from "../../../tests/helpers/verdicts";
 import type { JsonValue } from "../json";
 import { AI_KIND } from "../kinds/ai";
+import { EARLY_ACCESS_KIND } from "../kinds/early-access";
 import { CACHE_SCHEMA, META_KEY } from "../storage-keys";
 import { maintainCache } from "./maintenance";
 import { encodeVerdicts } from "./stored";
 import { DAY_MS } from "./ttl";
 
 const T = 1_000_000_000_000;
-// An app whose kinds are all in one state expires with the AI kind, the shortest-lived.
-const { disclosed: DISCLOSED_TTL_MS, notDisclosed: NOT_DISCLOSED_TTL_MS } = AI_KIND.ttl;
+// An app whose kinds are all in one state expires with the shortest-lived kind: Early Access when
+// disclosed, the AI kind when not.
+const DISCLOSED_TTL_MS = EARLY_ACCESS_KIND.ttl.disclosed;
+const NOT_DISCLOSED_TTL_MS = AI_KIND.ttl.notDisclosed;
 const BREAKER: JsonValue = { openUntil: T + 60_000 };
 const SETTINGS: JsonValue = { badges: false };
 const ALLOW: JsonValue = { "10": { name: "Ignored", added: T } };

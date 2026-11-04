@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { englishI18n } from "../../../tests/helpers/i18n";
 import { STATUS_KINDS } from "../../../tests/helpers/settings";
-import { compatVerdict, familyVerdict, FULL_DISCLOSED } from "../../../tests/helpers/verdicts";
+import {
+  compatVerdict,
+  earlyAccessVerdict,
+  familyVerdict,
+  FULL_DISCLOSED,
+} from "../../../tests/helpers/verdicts";
 import { SHIPPED_CATALOGS } from "../i18n/shipped";
 import { createI18n } from "../i18n/t";
 import { COMPAT_FACETS } from "../kinds/compat";
@@ -9,7 +14,8 @@ import { facetOf } from "../kinds/facets";
 import { FAMILY_FACETS, FAMILY_KIND } from "../kinds/family";
 import type { FacetDefinition, FacetId, TagKind } from "../kinds/kind";
 import { KIND_BY_ID, KINDS } from "../kinds/registry";
-import { chipText, kindDetails } from "./kind-details";
+import type { AnyDisclosed } from "../kinds/verdicts";
+import { chipText, type KindDetail, kindDetails } from "./kind-details";
 
 const { ai, kernel, anticheat, drm, account, eula, pvp, iap } = FULL_DISCLOSED;
 
@@ -81,6 +87,36 @@ describe("kindDetails", () => {
 
   it("adds no line to IAP, whose heading is Steam's category name", () => {
     expect(kindDetails(iap)).toEqual([]);
+  });
+
+  describe("for early access", () => {
+    const { note: _note, released: _released, ...bare } = earlyAccessVerdict();
+    const { note, released } = earlyAccessVerdict();
+
+    it.each<readonly [string, AnyDisclosed, readonly KindDetail[]]>([
+      ["the note, the release date and the latest update, in that order", {
+        ...earlyAccessVerdict(),
+        updated: 1793121240,
+      }, [
+        { kind: "quote", text: note ?? "" },
+        { kind: "dated", key: "kind_earlyaccess_released", time: released ?? 0 },
+        { kind: "dated", key: "kind_earlyaccess_updated", time: 1793121240 },
+      ]],
+      ["no update line without the page's time", earlyAccessVerdict(), [
+        { kind: "quote", text: note ?? "" },
+        { kind: "dated", key: "kind_earlyaccess_released", time: released ?? 0 },
+      ]],
+      ["the dates without a note", { ...bare, released: 1731596424, updated: 1793121240 }, [
+        { kind: "dated", key: "kind_earlyaccess_released", time: 1731596424 },
+        { kind: "dated", key: "kind_earlyaccess_updated", time: 1793121240 },
+      ]],
+      ["nothing for a flag with no detail", bare, []],
+      ["no quote for an empty note", earlyAccessVerdict({ note: "" }), [
+        { kind: "dated", key: "kind_earlyaccess_released", time: released ?? 0 },
+      ]],
+    ])("gives %s", (_name, verdict, lines) => {
+      expect(kindDetails(verdict)).toEqual(lines);
+    });
   });
 
   it.each(COMPAT_FACETS)("gives a device rated %s Steam's word for it as its one line", (facet) => {

@@ -71,6 +71,31 @@ export function featuredItem(
   return storeItem(id, { categories: { feature_categoryids: features }, ...overrides });
 }
 
+/** What Steam sends for a game in Early Access beyond a plain item. */
+export interface EarlyAccessFields {
+  /** `extra_details.early_access.why_bbcode`. */
+  readonly note?: string;
+  /** `release.steam_release_date`, in Unix seconds. */
+  readonly released?: number;
+}
+
+/** A game Steam flags as Early Access, with the developer's note and release date when given. */
+export function earlyAccessItem(
+  id: number,
+  { note, released }: EarlyAccessFields = {},
+  overrides: Readonly<Record<string, unknown>> = {},
+): Readonly<Record<string, unknown>> {
+  return storeItem(id, {
+    is_early_access: true,
+    ...(released === undefined ? {} : { release: { steam_release_date: released } }),
+    extra_details: {
+      vetted: true,
+      ...(note === undefined ? {} : { early_access: { why_bbcode: note } }),
+    },
+    ...overrides,
+  });
+}
+
 /** A demo of the game `game` that declares nothing itself, as demo-parent.json captured one. */
 export function demoItem(id: number, game: number): Readonly<Record<string, unknown>> {
   return storeItem(id, { type: 1, related_items: { parent_appid: game } });

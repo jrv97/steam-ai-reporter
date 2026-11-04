@@ -18,13 +18,13 @@ Short name: Tag Kit
 
 Tags Steam games with what Steam reports: AI disclosure, anti-cheat, DRM, Steam Deck, Family Sharing and more. Collects nothing.
 
-## Short description for AMO (250 characters at most; this text is 244)
+## Short description for AMO (250 characters at most; this text is 240)
 
-Tags Steam items with what Steam and developers report: AI Generated Content Disclosure, anti-cheat, 3rd-party DRM, account and EULA, PvP, In-App Purchases, Steam Deck, Steam Machine and Family Sharing. Show, dim or hide them. Collects nothing.
+Tags Steam items with what Steam and developers report: AI disclosure, anti-cheat, 3rd-party DRM, account and EULA, PvP, In-App Purchases, Early Access, Steam Deck, Steam Machine and Family Sharing. Show, dim or hide them. Collects nothing.
 
 ## Detailed description
 
-Tag Kit for Steam tags items on the Steam store with what Steam and the developers report: AI Generated Content Disclosure, Kernel Level Anti-Cheat and Anti-Cheat Software, 3rd-party DRM, 3rd-Party Account, 3rd-party EULA, PvP, In-App Purchases, Family Sharing, and Valve's Steam Deck and Steam Machine ratings.
+Tag Kit for Steam tags items on the Steam store with what Steam and the developers report: AI Generated Content Disclosure, Kernel Level Anti-Cheat and Anti-Cheat Software, 3rd-party DRM, 3rd-Party Account, 3rd-party EULA, PvP, In-App Purchases, Early Access, Family Sharing, and Valve's Steam Deck and Steam Machine ratings.
 
 It reads Steam's own store data. It sends no reports, collects nothing and has no server of its own.
 
@@ -47,6 +47,7 @@ What each tag means, in Steam's words:
 - PvP and In-App Purchases: Steam lists them among the game's features. Both tags start switched off.
 - Steam Deck and Steam Machine: Valve rated the game Verified, Playable or Unsupported on that device. Both tags start switched off, and you pick which ratings to tag, Unsupported at first. A game Valve has not rated gets no tag.
 - Family Sharing: Steam lists Family Sharing among the game's features, which Valve computes. For a paid game whose list leaves it out, the chip reads "No Family Sharing" and the card says "According to the features Steam lists for this game". Free games and non-game items show nothing. This tag starts switched off, and you pick which of the two to tag, "No Family Sharing" at first.
+- Early Access: the developer set the game's release state to Early Access, and Steam flags the game. The chip reads "Early Access", and the card gives the developer's note, the release date and, on the game's own page, the date of the latest update post. This tag starts switched on, without a banner entry.
 
 The AI tag is self-reported and says nothing about how much AI a game uses. A game without a chip may still involve AI: developers may not have reported anything, and Steam may not have the information for every item.
 
@@ -58,7 +59,7 @@ Tag Kit for Steam is an independent project. It is not affiliated with, endorsed
 
 ## Single-purpose statement (Chrome Web Store)
 
-Tag Kit for Steam has one purpose: to show which Steam store items carry tags for AI disclosure, anti-cheat, DRM, account, EULA, PvP, in-app purchases, Steam Deck and Steam Machine ratings, and Family Sharing, by marking those items.
+Tag Kit for Steam has one purpose: to show which Steam store items carry tags for AI disclosure, anti-cheat, DRM, account, EULA, PvP, in-app purchases, Early Access, Steam Deck and Steam Machine ratings, and Family Sharing, by marking those items.
 
 ## Permission justifications
 
@@ -74,7 +75,7 @@ These match PRIVACY.md.
 
 - Does it collect or transmit user data to the developer or any third party? No. There is no analytics, no telemetry, no account and no server of the developer.
 - Does it send any data off the device? Only app IDs of the items on the page being viewed, to Valve's own hosts `api.steampowered.com` (GetItems, in batches of up to 50) and `store.steampowered.com` (a few app pages as a fallback), without cookies. Valve sees the IP address and the app IDs, as for any store request.
-- What is stored locally? Results per app ID (which tags the store data gives the item, check time, the developer's AI report text and language, the name of a named AI service if any, the game's name), the settings, the ignore lists, the last settings tab and a back-off record. In `storage.local`.
+- What is stored locally? Results per app ID (which tags the store data gives the item, check time, the developer's AI report text and language, the name of a named AI service if any, the developer's Early Access note and the release date for a game in Early Access, the game's name), the settings, the ignore lists, the last settings tab and a back-off record. In `storage.local`.
 - Does it read the Steam account, wishlist contents, library, cookies or browsing history? No.
 - Is data sold or used for purposes unrelated to the single purpose? No.
 - Chrome Web Store data usage categories: none are collected. Certify the three limited-use statements (not sold, not used for unrelated purposes, not used for creditworthiness or lending).

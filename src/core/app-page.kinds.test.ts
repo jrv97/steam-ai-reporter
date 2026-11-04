@@ -2,7 +2,12 @@
 import * as v from "valibot";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import kindItems from "../../tests/fixtures/getitems/kinds.json";
-import { APP_PAGES, withDescriptionColumn, withSummaryBox } from "../../tests/helpers/app-page";
+import {
+  APP_PAGES,
+  withDescriptionColumn,
+  withLastUpdateScript,
+  withSummaryBox,
+} from "../../tests/helpers/app-page";
 import { clearRoot } from "../../tests/helpers/dom";
 import { fakeHttp } from "../../tests/helpers/fake-http";
 import { fixedClock } from "../../tests/helpers/fixed-clock";
@@ -12,6 +17,7 @@ import { memoryStore } from "../../tests/helpers/memory-store";
 import { withKind, writeSettings } from "../../tests/helpers/settings";
 import { loadPage } from "../../tests/helpers/surfaces";
 import { type App, start } from "./app";
+import { dateFormat } from "./i18n/date-format";
 import { SHIPPED_CATALOGS } from "./i18n/shipped";
 import type { JsonValue } from "./json";
 import { COMPAT_FACETS } from "./kinds/compat";
@@ -19,6 +25,7 @@ import type { KindSettings } from "./kinds/kind-settings";
 import { DEFAULT_SETTINGS, encodeSettings } from "./settings/settings";
 import { createSettingsSource } from "./settings/settings-source";
 import { ALLOW_KEY, SETTINGS_KEY } from "./storage-keys";
+import { HOVER_CARD_ID } from "./ui/hover-card";
 import { adoptPageStyles } from "./ui/styles";
 
 // Game 3751950 declares DRM, a third-party
@@ -45,11 +52,16 @@ const chipKinds = () =>
   );
 const control = (selector: string) => banner()?.querySelector<HTMLElement>(selector);
 
+const DRM_PAGE = withSummaryBox(withDescriptionColumn(APP_PAGES["3751950-drm-account-eula.html"]));
+
+/** Starts on the page, which shows `entries` banner entries once GetItems has answered. */
 async function startOnDrmPage(
   initial: ReadonlyMap<string, JsonValue> = new Map(),
   items: readonly unknown[] = fixtureItems(kindItems),
+  page: string = DRM_PAGE,
+  entries = 3,
 ) {
-  loadPage(withSummaryBox(withDescriptionColumn(APP_PAGES["3751950-drm-account-eula.html"])));
+  loadPage(page);
   document.documentElement.lang = "en";
   const store = memoryStore(initial);
   const settings = createSettingsSource(store);
@@ -64,7 +76,7 @@ async function startOnDrmPage(
     catalogs: SHIPPED_CATALOGS,
     addPageStyles: adoptPageStyles,
   });
-  await expect.poll(() => headings().length).toBeGreaterThanOrEqual(3);
+  await expect.poll(() => headings().length).toBeGreaterThanOrEqual(entries);
   const ignored = async (scope: string) =>
     Object.keys(v.parse(AllowSchema, (await store.get([ALLOW_KEY])).get(ALLOW_KEY))[scope] ?? {});
   return { http, settings, ignored };
@@ -167,5 +179,48 @@ describe("start on an English app page of a game with no AI", () => {
     expect(headings()).toHaveLength(3);
     await writeSettings(settings, DEFAULT_SETTINGS);
     expect(chipKinds()).toEqual(["drm", "account", "eula"]);
+  });
+});
+
+describe("start on the app page of a game in early access", () => {
+  // KIKICAPS's captured item with its note and release date, served as the page's game.
+  const flagged = [itemAs(kindItems, 2514910, 3751950)];
+  const RELEASED = 1731596424;
+  const UPDATED = 1793121240;
+  const day = (seconds: number) => dateFormat(i18n.locale).format(seconds * 1000);
+
+  /** Opens the hover card of the page's Early Access chip and returns the entry's lines. */
+  async function cardLines(): Promise<readonly (string | null)[]> {
+    const chip = '.sar-tag-section .sar-badge[data-sar-kind="earlyaccess"]';
+    await expect.poll(() => document.querySelector(chip)).not.toBeNull();
+    document.querySelector(chip)?.dispatchEvent(new FocusEvent("focusin", { bubbles: true }));
+    const entry = document.querySelector(
+      `#${HOVER_CARD_ID} .sar-hovercard-entry[data-sar-kind="earlyaccess"]`,
+    );
+    return Array.from(entry?.children ?? [], (line) => line.textContent);
+  }
+
+  it("puts the latest update post of the page after the note and the release date", async () => {
+    await startOnDrmPage(new Map(), flagged, withLastUpdateScript(DRM_PAGE), 0);
+    const lines = await cardLines();
+    expect(lines).toHaveLength(4);
+    expect(lines.slice(0, 1)).toEqual([i18n.t("kind_earlyaccess_heading")]);
+    expect(lines.slice(2)).toEqual([
+      i18n.t("kind_earlyaccess_released", { date: day(RELEASED) }),
+      i18n.t("kind_earlyaccess_updated", { date: day(UPDATED) }),
+    ]);
+  });
+
+  it("shows the note and the release date alone when the page holds no update post", async () => {
+    await startOnDrmPage(new Map(), flagged, DRM_PAGE, 0);
+    const lines = await cardLines();
+    expect(lines).toHaveLength(3);
+    expect(lines.slice(2)).toEqual([i18n.t("kind_earlyaccess_released", { date: day(RELEASED) })]);
+  });
+
+  it("leaves early access out of the banner, which Steam's own box already tops", async () => {
+    await startOnDrmPage(new Map(), flagged, DRM_PAGE, 0);
+    await expect.poll(() => chipKinds()).toEqual(["earlyaccess"]);
+    expect(headings()).toEqual([]);
   });
 });

@@ -83,7 +83,11 @@ const AnticheatSchema = record({
 
 const EulaEntrySchema = record({ name: TextSchema, url: v.exactOptional(TextSchema) });
 
+/** The developer's Early Access explanation. It only adds detail, so a bad note reads as absent. */
+const EarlyAccessSchema = record({ why_bbcode: droppable(TextSchema) });
+
 const ExtraDetailsSchema = record({
+  early_access: droppable(EarlyAccessSchema),
   content_survey_ai_notes: lenient(TextSchema),
   ai_generation_service: lenient(record({ name: v.exactOptional(TextSchema) })),
   anticheat: lenient(AnticheatSchema),
@@ -146,6 +150,19 @@ const PlatformsSchema = record({
 /** A field of `platforms` that a compatibility kind reads. */
 export type CompatField = keyof v.InferOutput<typeof PlatformsSchema>;
 
+/** The last second of year 9999, the latest time `Intl.DateTimeFormat` formats without throwing. */
+export const MAX_UNIX_SECONDS = 253_402_300_799;
+
+/**
+ * The release dates (`include_release`). The Steam release date is a Unix time in seconds. It only
+ * adds detail to a verdict, so a bad value reads as absent.
+ */
+const ReleaseSchema = record({
+  steam_release_date: droppable(
+    v.pipe(v.number(), v.integer(), v.minValue(0), v.maxValue(MAX_UNIX_SECONDS)),
+  ),
+});
+
 /** Steam's `type` of a game; a demo is 1 and a DLC 4. */
 export const GAME_TYPE = 0;
 /** Steam's `type` of a demo. */
@@ -153,9 +170,10 @@ export const DEMO_TYPE = 1;
 
 /**
  * One store item. `id` echoes the requested ID; `appid` is 0 for invalid items and unused.
- * The name, `is_free`, the categories and the platforms are lenient, and `type`, `related_items`
- * and `basic_info` are droppable. An item without a valid `id`, `success` or `extra_details` says
- * nothing about any kind. Steam sends `is_free` for free items only.
+ * The name, `is_free`, `is_early_access`, the categories and the platforms are lenient, and
+ * `type`, `related_items`, `basic_info` and `release` are droppable. An item without a valid `id`,
+ * `success` or `extra_details` says nothing about any kind. Steam sends `is_free` and
+ * `is_early_access` for the items they hold for only.
  */
 export const StoreItemSchema = v.pipe(
   v.object({
@@ -164,8 +182,10 @@ export const StoreItemSchema = v.pipe(
     name: lenient(TextSchema),
     type: droppable(v.pipe(v.number(), v.integer())),
     is_free: lenient(v.boolean()),
+    is_early_access: lenient(v.boolean()),
     categories: lenient(CategoriesSchema),
     platforms: lenient(PlatformsSchema),
+    release: droppable(ReleaseSchema),
     related_items: droppable(RelatedItemsSchema),
     basic_info: droppable(BasicInfoSchema),
     extra_details: v.exactOptional(ExtraDetailsSchema),

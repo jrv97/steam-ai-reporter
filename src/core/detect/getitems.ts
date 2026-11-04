@@ -54,6 +54,7 @@ export interface GetItemsBatch {
 const SECTION_FLAGS: Readonly<Record<Section, string>> = {
   basic_info: "include_basic_info",
   platforms: "include_platforms",
+  release: "include_release",
 };
 
 /**

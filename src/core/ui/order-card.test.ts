@@ -14,6 +14,8 @@ import { createSettingsSource } from "../settings/settings-source";
 const i18n = englishI18n();
 /** The pitch of the rows a drag test lays out, in CSS pixels. */
 const ROW = 30;
+/** The number of tags the card announces, as the catalog parameter holds it. */
+const KIND_COUNT = String(KIND_IDS.length);
 
 const chip = (id: KindId) => i18n.t(KIND_BY_ID[id].messages.chip);
 
@@ -115,14 +117,14 @@ describe("the Tag order card", () => {
       "kernel",
       "anticheat",
       "ai",
-    ], i18n.t("options_order_dropped", { name: chip("ai"), position: "3", count: "11" })],
+    ], i18n.t("options_order_dropped", { name: chip("ai"), position: "3", count: KIND_COUNT })],
     [
       "goes first with Home",
       [["pick", "drm"], "Home", ["pick", "drm"]],
       ["drm"],
       i18n.t(
         "options_order_dropped",
-        { name: chip("drm"), position: "1", count: "11" },
+        { name: chip("drm"), position: "1", count: KIND_COUNT },
       ),
     ],
     [
@@ -131,7 +133,7 @@ describe("the Tag order card", () => {
       KIND_IDS.slice(1),
       i18n.t(
         "options_order_dropped",
-        { name: chip("ai"), position: "11", count: "11" },
+        { name: chip("ai"), position: KIND_COUNT, count: KIND_COUNT },
       ),
     ],
     [
@@ -140,7 +142,7 @@ describe("the Tag order card", () => {
       [],
       i18n.t(
         "options_order_dropped",
-        { name: chip("ai"), position: "1", count: "11" },
+        { name: chip("ai"), position: "1", count: KIND_COUNT },
       ),
     ],
     [
@@ -157,7 +159,7 @@ describe("the Tag order card", () => {
       [["pick", "pvp"], ["pick", "ai"]],
       ["pvp"],
       i18n
-        .t("options_order_dropped", { name: chip("pvp"), position: "1", count: "11" }),
+        .t("options_order_dropped", { name: chip("pvp"), position: "1", count: KIND_COUNT }),
     ],
   ])("%s", async (_case, steps, first, said) => {
     const card = await setup();
@@ -182,12 +184,12 @@ describe("the Tag order card", () => {
     expect(handle("eula").getAttribute("aria-pressed")).toBe("true");
     await vi.waitFor(() => {
       expect(spoken()).toBe(
-        i18n.t("options_order_picked", { name: chip("eula"), position: "6", count: "11" }),
+        i18n.t("options_order_picked", { name: chip("eula"), position: "6", count: KIND_COUNT }),
       );
     });
     press(handle("eula"), "ArrowUp");
     await vi.waitFor(() => {
-      expect(spoken()).toBe(i18n.t("options_order_moved", { position: "5", count: "11" }));
+      expect(spoken()).toBe(i18n.t("options_order_moved", { position: "5", count: KIND_COUNT }));
     });
   });
 

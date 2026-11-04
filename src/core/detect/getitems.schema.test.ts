@@ -137,6 +137,100 @@ describe("StoreItemSchema type", () => {
   );
 });
 
+describe("StoreItemSchema early access fields", () => {
+  const captured = (id: number) => {
+    const item = fixtureItems(kinds).map(parse).find((each) => each.id === id);
+    if (item === undefined) {
+      throw new TypeError(String(id));
+    }
+    return item;
+  };
+  const noteOf = (item: StoreItem) => item.extra_details?.early_access?.why_bbcode;
+
+  it("reads the flag, the release date and the note of a game in early access (2514910)", () => {
+    const item = captured(2514910);
+    expect(item.is_early_access).toBe(true);
+    expect(item.release?.steam_release_date).toBe(1731596424);
+    expect(noteOf(item)).toMatch(/^You can also experience the special systems/);
+  });
+
+  it("reads the note and the date of a game that left early access, with no flag (646570)", () => {
+    const item = captured(646570);
+    expect(item.is_early_access).toBeUndefined();
+    expect(item.release?.steam_release_date).toBe(1548258674);
+    expect(noteOf(item)).toMatch(/^\[b\]TL;DR:/);
+  });
+
+  it.each<readonly [string, unknown, unknown]>([
+    ["true", true, true],
+    ["false", false, false],
+    ["text", "yes", MALFORMED],
+    ["a number", 1, MALFORMED],
+    ["null", null, MALFORMED],
+    ["a list", [true], MALFORMED],
+  ])("reads a flag that is %s as %s, and keeps the item", (_name, value, expected) => {
+    const item = parse(storeItem(1, { is_early_access: value }));
+    expect(item.is_early_access).toBe(expected);
+    expect(item.extra_details).toBeDefined();
+  });
+
+  it("leaves the flag out when the item has none", () => {
+    expect(parse(storeItem(1))).not.toHaveProperty("is_early_access");
+  });
+
+  it.each<readonly [string, unknown]>([
+    ["a negative time", -1],
+    ["a fraction", 1.5],
+    ["a time no date format can show", 9_000_000_000_000],
+    ["text", "1731596424"],
+    ["null", null],
+  ])("reads a release date that is %s as absent, and keeps the item", (_name, value) => {
+    const item = parse(storeItem(1, { release: { steam_release_date: value } }));
+    expect(item.release?.steam_release_date).toBeUndefined();
+    expect(item.extra_details).toBeDefined();
+  });
+
+  it.each<readonly [string, unknown]>([
+    ["text", "2024"],
+    ["a list with entries", [1]],
+    ["null", null],
+  ])("reads a release section that is %s as absent, and keeps the item", (_name, value) => {
+    const item = parse(storeItem(1, { release: value }));
+    expect(item.release).toBeUndefined();
+    expect(item.id).toBe(1);
+  });
+
+  it.each<readonly [string, unknown]>([
+    ["a number", { why_bbcode: 5 }],
+    ["null", { why_bbcode: null }],
+    ["over the text limit", { why_bbcode: "x".repeat(MAX_TEXT_LENGTH + 1) }],
+  ])("reads a note that is %s as absent, and keeps the item", (_name, early_access) => {
+    const details = detailsOf(storeItem(1, { extra_details: { early_access } }));
+    expect(details.early_access?.why_bbcode).toBeUndefined();
+  });
+
+  it.each<readonly [string, unknown]>([
+    ["text", "yes"],
+    ["a list with entries", [1]],
+    ["null", null],
+  ])("reads an early_access value that is %s as absent, and keeps the item", (_name, value) => {
+    const details = detailsOf(storeItem(1, { extra_details: { early_access: value } }));
+    expect(details.early_access).toBeUndefined();
+  });
+
+  it("allows a note of 4,000 characters", () => {
+    const why_bbcode = "x".repeat(MAX_TEXT_LENGTH);
+    const details = detailsOf(storeItem(1, { extra_details: { early_access: { why_bbcode } } }));
+    expect(details.early_access?.why_bbcode).toBe(why_bbcode);
+  });
+
+  it("drops the sibling fields of the note, which no kind reads", () => {
+    const early_access = { why_bbcode: "Note.", what_is_planned_bbcode: "Plans." };
+    const details = detailsOf(storeItem(1, { extra_details: { early_access } }));
+    expect(details.early_access).toStrictEqual({ why_bbcode: "Note." });
+  });
+});
+
 describe("StoreItemSchema leniency", () => {
   type Read = (details: ExtraDetails) => unknown;
   const bad: readonly (readonly [string, unknown, Read])[] = [

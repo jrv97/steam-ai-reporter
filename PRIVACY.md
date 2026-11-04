@@ -4,7 +4,7 @@ Tag Kit for Steam collects nothing. It has no analytics, no telemetry, no accoun
 
 ## What is stored on your device
 
-- Results per app ID: which tags the store data gives the item, the time it was checked, the developer's AI report text and its language, the name of a named AI service if there is one, and the game's name.
+- Results per app ID: which tags the store data gives the item, the time it was checked, the developer's AI report text and its language, the name of a named AI service if there is one, the developer's Early Access note and the release date for a game in Early Access, and the game's name.
 - Your settings: whether badges and the banner are on, the list filter mode (off, dim or hide), the language, and a debug flag.
 - Your lists of games, developers and publishers you chose to ignore (app ID or Steam's name and group ID, name and date).
 - A small internal record used to back off if Steam is limiting requests.
