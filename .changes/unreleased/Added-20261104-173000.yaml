@@ -1,3 +1,0 @@
-kind: Added
-body: A new tag, Early Access, marks games that Steam flags as in Early Access. It starts switched on with the badge shown and no banner entry, and it has its own list filter (Show, Dim or Hide), color and ignore lists like every other tag. The chip reads Early Access, and the hover card gives the developer's note on why the game is in Early Access, quoted as written, and the release date. On a game's own page the card also shows the date of the developer's latest update post, read from the open page. Tag Kit reads the rest from the data it fetches for each game, with one more flag on that request and no new request or permission. Stored lookup results from before are checked again once as you browse.
-time: 2026-11-04T17:30:00.000000+01:00
