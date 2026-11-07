@@ -86,7 +86,12 @@ export function createTabs<Id extends string>(options: TabsOptions<Id>): Tabs<Id
   }
 
   function select(id: Id): boolean {
-    if (id === current || !tabs.has(id)) {
+    if (!tabs.has(id)) {
+      return false;
+    }
+    if (id === current) {
+      // The arrows may have moved the tab stop away from the selected tab
+      rove(id);
       return false;
     }
     current = id;
