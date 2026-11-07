@@ -7,6 +7,7 @@ import { type HexColor, readTypedColor } from "../kinds/color";
 import { KIND_IDS, type KindId } from "../kinds/id";
 import type { FacetDefinition, FacetId, TagKind } from "../kinds/kind";
 import { type KindSettings, LIST_FILTERS, type ListFilter } from "../kinds/kind-settings";
+import { sameOrder } from "../kinds/order";
 import { KIND_BY_ID, KINDS } from "../kinds/registry";
 import type { Clock, FileTransfer, MessageCatalog } from "../ports";
 import { ALLOW_ALL, type AllowScope, parseGameKey } from "../settings/allow-data";
@@ -40,7 +41,7 @@ import { KIND_ATTRIBUTE, setColorOnce } from "./kind-attributes";
 import { chipText } from "./kind-details";
 import { createOrderCard, type OrderCard } from "./order-card";
 import { adoptStyles, SETTINGS_CSS, TOKENS_CSS } from "./styles";
-import { GENERAL_TAB, type LabelledTab, sortTabs, tabHash, type TabId, toTabId } from "./tab-id";
+import { GENERAL_TAB, TAB_IDS, tabHash, type TabId, tabsInOrder, toTabId } from "./tab-id";
 import { createTabs, type Tabs } from "./tabs";
 import type { UiState } from "./ui-state";
 
@@ -626,16 +627,12 @@ export async function mountSettingsForm(
   loadError.setAttribute("role", "alert");
   loadError.hidden = true;
 
-  // One tab per kind, labelled with its chip word and sorted by it; General first
-  const tabIds = sortTabs(
-    KINDS.map((kind) => ({ id: kind.id, label: i18n.t(kind.messages.chip) })),
-    i18n.locale,
-  );
+  // General, then one tab per kind; `arrange` puts them in the person's tag order
   const tabs = deps.layout === "list"
     ? undefined
     : createTabs({
       doc,
-      ids: tabIds,
+      ids: TAB_IDS,
       idPrefix: prefix,
       label: i18n.t("options_tabs_label"),
       onActivate: show,
@@ -643,15 +640,13 @@ export async function mountSettingsForm(
   const scopes = new Map<AllowScope, ScopeCard>();
   const live = element("div", "sar-vh");
   live.setAttribute("aria-live", POLITE);
-  // The popup's rows follow the tabs' order
+  // The popup's rows follow the same order as the tabs
   const rows = element("div", "sar-kind-rows");
   const rowOf = new Map<KindId, HTMLElement>();
-  for (const id of tabs === undefined ? tabIds : []) {
-    if (id !== GENERAL_TAB) {
-      const row = kindRow(KIND_BY_ID[id]);
-      rowOf.set(id, row);
-      rows.append(row);
-    }
+  for (const kind of tabs === undefined ? KINDS : []) {
+    const row = kindRow(kind);
+    rowOf.set(kind.id, row);
+    rows.append(row);
   }
   const built = tabs === undefined ? undefined : tabbedBody(tabs);
 
@@ -663,12 +658,19 @@ export async function mountSettingsForm(
     readonly order: OrderCard;
   } {
     const general = tabs.panel(GENERAL_TAB);
+    // General stands apart from the tags: it has a style of its own and no state
+    tabs.tab(GENERAL_TAB).classList.add("sar-tab-general");
     tabs.tab(GENERAL_TAB).textContent = i18n.t("options_tab_general");
     general.append(element("h2", "sar-panel-title", i18n.t("options_tab_general")));
 
     for (const kind of KINDS) {
       const state = element("span", "sar-tab-state");
-      tabs.tab(kind.id).append(...kindName(kind), " ", state);
+      // Steam's long heading for the tag, fixed, then its state in words
+      tabs.tab(kind.id).append(
+        element("span", "sar-tab-label", i18n.t(kind.messages.heading)),
+        " ",
+        state,
+      );
       const ignored = scopeCard(kind.id, "options_allow_kind_title");
       scopes.set(kind.id, ignored);
       tabs.panel(kind.id).append(kindCard(kind, state), ignored.section);
@@ -764,7 +766,7 @@ export async function mountSettingsForm(
     }
 
     const frame = element("div", "sar-tabs");
-    frame.append(tabs.list, ...tabIds.map((id) => tabs.panel(id)));
+    frame.append(tabs.list, ...TAB_IDS.map((id) => tabs.panel(id)));
     return { frame, picker, allIgnored, order };
   }
 
@@ -820,36 +822,38 @@ export async function mountSettingsForm(
     }
   }
 
-  /**
-   * Names each tag by the person's chip text, or the catalog's word, and sorts the tabs, or the
-   * popup's rows, by what they show when a name changed.
-   */
+  /** Names each popup row and badge help by the person's chip text, or the catalog's word. */
   function relabel(): void {
-    let renamed = false;
-    const labels: LabelledTab[] = [];
     for (const kind of KINDS) {
       const text = chipText(i18n, kind, undefined, ownText(current.kinds, kind.id));
       const [label, name] = names.get(kind.id) ?? [];
       if (label !== undefined && name !== undefined && label.textContent !== text.label) {
         label.textContent = text.label;
         name.textContent = text.name;
-        renamed = true;
       }
       badgeHelp.get(kind.id)?.replaceChildren(
         i18n.t("options_badges_help", { label: text.label }),
       );
-      labels.push({ id: kind.id, label: text.label });
     }
     built?.order.rename(current.kinds);
-    if (renamed) {
-      const ids = sortTabs(labels, i18n.locale);
-      tabs?.order(ids);
-      rows.append(...ids.flatMap((id) => (id === GENERAL_TAB ? [] : rowOf.get(id) ?? [])));
+  }
+
+  /** The tag order the tabs and the popup's rows show now. */
+  let arranged: readonly KindId[] = KIND_IDS;
+
+  /** Puts the tabs, or the popup's rows, in the person's tag order when it changed. */
+  function arrange(): void {
+    if (sameOrder(arranged, current.order)) {
+      return;
     }
+    arranged = current.order;
+    tabs?.order(tabsInOrder(arranged));
+    rows.append(...arranged.flatMap((id) => rowOf.get(id) ?? []));
   }
 
   function sync(): void {
     relabel();
+    arrange();
     chipFields.sync(current.kinds);
     for (const [id, own] of controls) {
       const kind = current.kinds[id];

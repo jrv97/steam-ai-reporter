@@ -19,8 +19,9 @@ import { SHIPPED_CATALOGS } from "../i18n/shipped";
 import { createI18n } from "../i18n/t";
 import { createIgnoreLists } from "../ignored";
 import { toHexColor } from "../kinds/color";
-import type { KindId } from "../kinds/id";
+import { KIND_IDS, type KindId } from "../kinds/id";
 import { LIST_FILTERS } from "../kinds/kind-settings";
+import { parseOrder } from "../kinds/order";
 import { KIND_BY_ID, KINDS } from "../kinds/registry";
 import { ALLOW_ALL, type AllowScope } from "../settings/allow-data";
 import { DEFAULT_SETTINGS, parseSettings } from "../settings/settings";
@@ -30,7 +31,7 @@ import { toAppId } from "../types";
 import { chipText } from "./kind-details";
 import { DEFAULT_TAG_COLOR, type SettingsFormDeps } from "./settings-form";
 import { TOKENS_CSS } from "./styles";
-import { GENERAL_TAB, sortTabs, type TabId } from "./tab-id";
+import { GENERAL_TAB, type TabId } from "./tab-id";
 import { createUiState } from "./ui-state";
 
 const DAY = 86_400_000;
@@ -888,10 +889,12 @@ describe("the page around the tabs", () => {
   it("reads Spanish from the shipped catalog, down to the titles and the tab labels", async () => {
     const spanish = createI18n(SHIPPED_CATALOGS, "es");
     const { panel, tab, tabIds } = await mountForm({ i18n: spanish, locales: ["en", "es"] });
-    const chips = KINDS.map((kind) => ({ id: kind.id, label: spanish.t(kind.messages.chip) }));
-    expect(tabIds()).toEqual(sortTabs(chips, "es"));
+    expect(tabIds()).toEqual([GENERAL_TAB, ...KIND_IDS]);
     expect(tab(GENERAL_TAB).textContent).toBe(spanish.t("options_tab_general"));
     for (const kind of KINDS) {
+      expect(tab(kind.id).querySelector(".sar-tab-label")?.textContent).toBe(
+        spanish.t(kind.messages.heading),
+      );
       expect(panel(kind.id).querySelector(".sar-card-title")?.textContent).toBe(
         spanish.t(kind.messages.heading),
       );
@@ -915,13 +918,12 @@ describe("the toolbar popup", () => {
   const popup = (overrides: Partial<SettingsFormDeps> = {}) =>
     setup({ ...POPUP, allSettingsUrl: "options.html", ...overrides });
 
-  it("shows one row per tag, in the order of the tabs, and nothing else to set", async () => {
+  it("shows one row per tag, in the default order, and nothing else to set", async () => {
     const { root } = await popup();
-    const chips = KINDS.map((kind) => ({ id: kind.id, label: i18n.t(kind.messages.chip) }));
     const ids = rows(root).map((each) =>
       each.querySelector("[data-sar-open-tab]")?.getAttribute("data-sar-open-tab")
     );
-    expect(ids).toEqual(sortTabs(chips, "en").slice(1));
+    expect(ids).toEqual(KIND_IDS);
     const settings = new Set(
       [...root.querySelectorAll("[data-sar-setting]")].map((each) =>
         each.getAttribute("data-sar-setting")
@@ -933,14 +935,11 @@ describe("the toolbar popup", () => {
     }
   });
 
-  it("names and sorts a row by the person's chip text", async () => {
+  it("names a row by the person's chip text and keeps its place", async () => {
     const { root, settings } = await popup();
     await writeSettings(settings, withChipText(DEFAULT_SETTINGS, { pvp: { chip: "Aaa" } }));
-    const first = rows(root)[0];
-    expect(first?.querySelector("[data-sar-open-tab]")?.getAttribute("data-sar-open-tab")).toBe(
-      "pvp",
-    );
-    expect(first?.querySelector(".sar-tab-label")?.textContent).toBe("Aaa");
+    expect(row(root, "pvp").querySelector(".sar-tab-label")?.textContent).toBe("Aaa");
+    expect(rows(root).indexOf(row(root, "pvp"))).toBe(KIND_IDS.indexOf("pvp"));
   });
 
   it.each(KINDS.map((kind) => kind.id))(
@@ -1090,41 +1089,88 @@ describe("the accessible names of the controls", () => {
   });
 });
 
+/** Each surface that lists the tags, with the ids it shows from the first tag on. */
+const SURFACES: readonly (readonly [
+  string,
+  Partial<SettingsFormDeps>,
+  (root: HTMLElement) => readonly (string | null)[],
+])[] = [
+  [
+    "the tabs",
+    {},
+    (root) =>
+      [...root.querySelectorAll("[role=tab]")].slice(1).map((each) =>
+        each.getAttribute("data-sar-tab")
+      ),
+  ],
+  [
+    "the popup rows",
+    { ...POPUP, allSettingsUrl: "options.html" },
+    (root) =>
+      [...root.querySelectorAll("[data-sar-open-tab]")].map((each) =>
+        each.getAttribute("data-sar-open-tab")
+      ),
+  ],
+];
+
+describe("the tag order", () => {
+  const MOVED = parseOrder(["pvp", "family", "drm"]);
+  const collator = new Intl.Collator("en");
+
+  it.each(SURFACES)("%s start alphabetical by Steam's heading", async (_name, deps, ids) => {
+    const { root } = await setup(deps);
+    expect(ids(root)).toEqual(
+      KIND_IDS.toSorted((a, b) => collator.compare(heading(a), heading(b))),
+    );
+  });
+
+  it.each(SURFACES)(
+    "%s follow the stored order, and the default after a reset",
+    async (_name, deps, ids) => {
+      const source = createSettingsSource(memoryStore());
+      await writeSettings(source, { ...DEFAULT_SETTINGS, order: MOVED });
+      const { root } = await setup({ ...deps, settings: source });
+      expect(ids(root)).toEqual(MOVED);
+      await writeSettings(source, { ...DEFAULT_SETTINGS, order: parseOrder(["machine"]) });
+      expect(ids(root).slice(0, 2)).toEqual(["machine", KIND_IDS[0]]);
+      await writeSettings(source, DEFAULT_SETTINGS);
+      expect(ids(root)).toEqual(KIND_IDS);
+    },
+  );
+});
+
 describe("the tabs", () => {
-  it("shows General first, then each tag by its chip word in alphabetical order", async () => {
+  it("shows General first, built apart from the tags, then each tag by default", async () => {
     const { tabIds, tab } = await setup();
-    const chips = KINDS.map((kind) => ({ id: kind.id, label: i18n.t(kind.messages.chip) }));
-    expect(tabIds()).toEqual(sortTabs(chips, "en"));
-    expect(tabIds()[0]).toBe(GENERAL_TAB);
+    expect(tabIds()).toEqual([GENERAL_TAB, ...KIND_IDS]);
     expect(tab(GENERAL_TAB).textContent).toBe(i18n.t("options_tab_general"));
+    expect(tab(GENERAL_TAB).classList.contains("sar-tab-general")).toBe(true);
+    expect(tab(GENERAL_TAB).querySelector(".sar-tab-state")).toBeNull();
+    for (const id of KIND_IDS) {
+      expect(tab(id).classList.contains("sar-tab-general")).toBe(false);
+      expect(tab(id).querySelector(".sar-tab-state")).not.toBeNull();
+    }
   });
 
   it.each(KINDS.map((kind) => kind.id))(
-    "names the %s tab by its chip and Steam's line, then its state, the chip shown",
+    "names the %s tab by Steam's heading, then its state, whatever the chip says",
     async (id) => {
-      const { tab } = await setup();
-      const kind = KINDS.find((each) => each.id === id);
-      const chip = i18n.t(kind?.messages.chip ?? "kind_ai_chip");
+      const { tab, settings } = await setup();
+      await writeSettings(settings, withChipText(DEFAULT_SETTINGS, { [id]: { chip: "Mine" } }));
       const on = !OFF_KINDS.includes(id);
-      const shown = tab(id).querySelector(".sar-tab-label");
-      expect([shown?.textContent, shown?.getAttribute("aria-hidden")]).toEqual([chip, "true"]);
-      expect(tab(id).querySelector(".sar-vh")?.textContent).toBe(
-        chipText(i18n, KIND_BY_ID[id], undefined, undefined).name,
-      );
+      expect(tab(id).querySelector(".sar-tab-label")?.textContent).toBe(heading(id));
+      expect(tab(id).querySelector(".sar-vh")).toBeNull();
       expect(tab(id).querySelector(".sar-tab-state")?.textContent).toBe(
         i18n.t(on ? "options_state_on" : "options_state_off"),
       );
+      expect(tab(id).textContent).not.toContain("Mine");
     },
   );
 
-  it("names and sorts a tab by the person's chip text, and the arrows follow", async () => {
+  it("moves the arrows along the tag order", async () => {
     const { tab, tabIds, settings } = await setup();
-    await writeSettings(settings, withChipText(DEFAULT_SETTINGS, { pvp: { chip: "Aaa" } }));
+    await writeSettings(settings, { ...DEFAULT_SETTINGS, order: parseOrder(["pvp"]) });
     expect(tabIds().slice(0, 2)).toEqual([GENERAL_TAB, "pvp"]);
-    expect(tab("pvp").querySelector(".sar-tab-label")?.textContent).toBe("Aaa");
-    expect(tab("pvp").querySelector(".sar-vh")?.textContent).toBe(
-      i18n.t("kind_chip_name", { chip: "Aaa", heading: heading("pvp") }),
-    );
     tab(GENERAL_TAB).focus();
     press(tab(GENERAL_TAB), "ArrowRight");
     expect(document.activeElement).toBe(tab("pvp"));

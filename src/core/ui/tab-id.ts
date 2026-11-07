@@ -27,29 +27,7 @@ export function tabHash(id: TabId): string {
   return `#${new URLSearchParams({ [TAB_PARAM]: id }).toString()}`;
 }
 
-/** A kind's tab and the label it shows. */
-export interface LabelledTab {
-  readonly id: KindId;
-  readonly label: string;
-}
-
-/**
- * The order of the tabs: General, then the kinds by their visible label in the UI language. The
- * kinds `first` lists, a later order of the person's own, come before the rest, in that order.
- */
-export function sortTabs(
-  tabs: readonly LabelledTab[],
-  locale: string,
-  first: readonly KindId[] = [],
-): readonly TabId[] {
-  const collator = new Intl.Collator(locale.replaceAll("_", "-"));
-  const rank = (id: KindId): number => {
-    const at = first.indexOf(id);
-    return at === -1 ? first.length : at;
-  };
-  const sorted = [...tabs].sort((a, b) => {
-    const ranked = rank(a.id) - rank(b.id);
-    return ranked === 0 ? collator.compare(a.label, b.label) : ranked;
-  });
-  return [GENERAL_TAB, ...sorted.map((tab) => tab.id)];
+/** The order of the tabs: General first, outside the order, then the kinds in the tag order. */
+export function tabsInOrder(order: readonly KindId[]): readonly TabId[] {
+  return [GENERAL_TAB, ...order];
 }

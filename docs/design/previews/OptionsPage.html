@@ -30,81 +30,69 @@
     </header>
   <div class="sar-tabs">
     <div class="sar-tablist" role="tablist" aria-label="Settings sections">
-      <button class="sar-tab" type="button" role="tab" id="o-t-general"
+      <button class="sar-tab sar-tab-general" type="button" role="tab" id="o-t-general"
         aria-controls="o-p-general" aria-selected="false" tabindex="-1">
         General
       </button>
-      <button class="sar-tab" type="button" role="tab" id="o-t-account"
-        aria-controls="o-p-account" aria-selected="false" tabindex="-1">
-        <span class="sar-tab-label" aria-hidden="true">Account</span>
-        <span class="sar-vh">Account: Requires 3rd-Party Account</span>
-        <span class="sar-tab-state" data-sar-on>On</span>
-      </button>
       <button class="sar-tab" type="button" role="tab" id="o-t-ai"
         aria-controls="o-p-ai" aria-selected="false" tabindex="-1">
-        <span class="sar-tab-label" aria-hidden="true">AI</span>
-        <span class="sar-vh">AI: AI Generated Content Disclosure</span>
-        <span class="sar-tab-state" data-sar-on>On</span>
-      </button>
-      <button class="sar-tab" type="button" role="tab" id="o-t-anticheat"
-        aria-controls="o-p-anticheat" aria-selected="false" tabindex="-1">
-        <span class="sar-tab-label" aria-hidden="true">Anti-Cheat</span>
-        <span class="sar-vh">Anti-Cheat: Uses Anti-Cheat</span>
-        <span class="sar-tab-state" data-sar-on>On</span>
-      </button>
-      <button class="sar-tab" type="button" role="tab" id="o-t-deck"
-        aria-controls="o-p-deck" aria-selected="false" tabindex="-1">
-        <span class="sar-tab-label" aria-hidden="true">Deck</span>
-        <span class="sar-vh">Deck: Steam Deck Compatibility</span>
-        <span class="sar-tab-state">Off</span>
-      </button>
-      <button class="sar-tab" type="button" role="tab" id="o-t-drm"
-        aria-controls="o-p-drm" aria-selected="false" tabindex="-1">
-        <span class="sar-tab-label" aria-hidden="true">DRM</span>
-        <span class="sar-vh">DRM: Includes 3rd-party DRM</span>
+        <span class="sar-tab-label">AI Generated Content Disclosure</span>
         <span class="sar-tab-state" data-sar-on>On</span>
       </button>
       <button class="sar-tab" type="button" role="tab" id="o-t-earlyaccess"
         aria-controls="o-p-earlyaccess" aria-selected="false" tabindex="-1">
-        <span class="sar-tab-label" aria-hidden="true">Early Access</span>
-        <span class="sar-vh">Early Access: Early Access Game</span>
-        <span class="sar-tab-state" data-sar-on>On</span>
-      </button>
-      <button class="sar-tab" type="button" role="tab" id="o-t-eula"
-        aria-controls="o-p-eula" aria-selected="false" tabindex="-1">
-        <span class="sar-tab-label" aria-hidden="true">EULA</span>
-        <span class="sar-vh">EULA: Requires agreement to a 3rd-party EULA</span>
+        <span class="sar-tab-label">Early Access Game</span>
         <span class="sar-tab-state" data-sar-on>On</span>
       </button>
       <button class="sar-tab" type="button" role="tab" id="o-t-family"
         aria-controls="o-p-family" aria-selected="false" tabindex="-1">
-        <span class="sar-tab-label" aria-hidden="true">Family Sharing</span>
-        <span class="sar-vh">Family Sharing</span>
+        <span class="sar-tab-label">Family Sharing</span>
         <span class="sar-tab-state">Off</span>
       </button>
       <button class="sar-tab" type="button" role="tab" id="o-t-iap"
         aria-controls="o-p-iap" aria-selected="false" tabindex="-1">
-        <span class="sar-tab-label" aria-hidden="true">IAP</span>
-        <span class="sar-vh">IAP: In-App Purchases</span>
+        <span class="sar-tab-label">In-App Purchases</span>
         <span class="sar-tab-state">Off</span>
       </button>
-      <button class="sar-tab" type="button" role="tab" id="o-t-kernel"
-        aria-controls="o-p-kernel" aria-selected="true" tabindex="0">
-        <span class="sar-tab-label" aria-hidden="true">KLAC</span>
-        <span class="sar-vh">KLAC: Uses Kernel Level Anti-Cheat</span>
+      <button class="sar-tab" type="button" role="tab" id="o-t-drm"
+        aria-controls="o-p-drm" aria-selected="false" tabindex="-1">
+        <span class="sar-tab-label">Incorporates 3rd-party DRM</span>
         <span class="sar-tab-state" data-sar-on>On</span>
       </button>
       <button class="sar-tab" type="button" role="tab" id="o-t-pvp"
         aria-controls="o-p-pvp" aria-selected="false" tabindex="-1">
-        <span class="sar-tab-label" aria-hidden="true">PvP</span>
-        <span class="sar-vh">PvP</span>
+        <span class="sar-tab-label">PvP</span>
+        <span class="sar-tab-state">Off</span>
+      </button>
+      <button class="sar-tab" type="button" role="tab" id="o-t-account"
+        aria-controls="o-p-account" aria-selected="false" tabindex="-1">
+        <span class="sar-tab-label">Requires 3rd-Party Account</span>
+        <span class="sar-tab-state" data-sar-on>On</span>
+      </button>
+      <button class="sar-tab" type="button" role="tab" id="o-t-eula"
+        aria-controls="o-p-eula" aria-selected="false" tabindex="-1">
+        <span class="sar-tab-label">Requires agreement to a 3rd-party EULA</span>
+        <span class="sar-tab-state" data-sar-on>On</span>
+      </button>
+      <button class="sar-tab" type="button" role="tab" id="o-t-deck"
+        aria-controls="o-p-deck" aria-selected="false" tabindex="-1">
+        <span class="sar-tab-label">Steam Deck Compatibility</span>
         <span class="sar-tab-state">Off</span>
       </button>
       <button class="sar-tab" type="button" role="tab" id="o-t-machine"
         aria-controls="o-p-machine" aria-selected="false" tabindex="-1">
-        <span class="sar-tab-label" aria-hidden="true">Steam Machine</span>
-        <span class="sar-vh">Steam Machine: Steam Machine Compatibility</span>
+        <span class="sar-tab-label">Steam Machine Compatibility</span>
         <span class="sar-tab-state">Off</span>
+      </button>
+      <button class="sar-tab" type="button" role="tab" id="o-t-anticheat"
+        aria-controls="o-p-anticheat" aria-selected="false" tabindex="-1">
+        <span class="sar-tab-label">Uses Anti-Cheat Software</span>
+        <span class="sar-tab-state" data-sar-on>On</span>
+      </button>
+      <button class="sar-tab" type="button" role="tab" id="o-t-kernel"
+        aria-controls="o-p-kernel" aria-selected="true" tabindex="0">
+        <span class="sar-tab-label">Uses Kernel Level Anti-Cheat</span>
+        <span class="sar-tab-state" data-sar-on>On</span>
       </button>
     </div>
     <div class="sar-tabpanel" role="tabpanel" id="o-p-general"
