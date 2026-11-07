@@ -33,6 +33,7 @@ import { createBackupCard } from "./backup-card";
 import { ownText } from "./badge";
 import { createChipFields } from "./chip-fields";
 import { createElement } from "./element";
+import { facetChoiceKey } from "./facet-choices";
 import { createFeedbackFooter } from "./feedback-footer";
 import { parseIcon } from "./icon";
 import { KIND_ATTRIBUTE, setColorOnce } from "./kind-attributes";
@@ -413,6 +414,7 @@ export async function mountSettingsForm(
     const group = element("fieldset", "sar-checks");
     group.setAttribute("aria-labelledby", label.id);
     const boxes = new Map<FacetId, HTMLInputElement>();
+    const heading = i18n.t(kind.messages.heading);
     for (const facet of facets) {
       const input = element("input", "");
       input.type = "checkbox";
@@ -420,8 +422,11 @@ export async function mountSettingsForm(
       input.setAttribute("data-sar-setting", "facets");
       input.setAttribute("data-sar-for", kind.id);
       boxes.set(facet.id, input);
+      const choice = i18n.t(facetChoiceKey(kind.id, facet));
+      // The name adds the tag, which the group's label leaves out
+      input.setAttribute("aria-label", i18n.t("options_facet_choice_label", { choice, heading }));
       const text = element("label", "");
-      text.append(input, i18n.t(facet.word));
+      text.append(input, choice);
       group.append(text);
     }
     const error = fieldError();
