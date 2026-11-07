@@ -204,6 +204,38 @@ describe("the settings of each tag", () => {
     },
   );
 
+  it("gives the family kind its settings-only value words, the unlisted one ticked", async () => {
+    const { card } = await setup();
+    const boxes = [
+      ...(card("family").querySelector("fieldset.sar-checks")?.querySelectorAll("input") ?? []),
+    ];
+    expect(boxes.map((box) => box.closest("label")?.textContent)).toEqual([
+      i18n.t("options_facet_available"),
+      i18n.t("options_facet_unavailable"),
+    ]);
+    expect(boxes.map((box) => box.checked)).toEqual([false, true]);
+  });
+
+  it.each(KINDS.filter((kind) => kind.facets !== undefined).map((kind) => kind.id))(
+    "names each value checkbox of %s by its text, then Steam's line for the tag",
+    async (id) => {
+      const { card } = await setup();
+      const boxes = [
+        ...(card(id).querySelector("fieldset.sar-checks")?.querySelectorAll("input") ?? []),
+      ];
+      const tag = i18n.t(KIND_BY_ID[id].messages.heading);
+      expect(boxes.length).toBeGreaterThan(0);
+      expect(boxes.map((box) => box.getAttribute("aria-label"))).toEqual(
+        boxes.map((box) =>
+          i18n.t("options_facet_choice_label", {
+            choice: box.closest("label")?.textContent ?? "",
+            heading: tag,
+          })
+        ),
+      );
+    },
+  );
+
   it("saves the ticked values in the kind's order, and none when all are unticked", async () => {
     const { input, settings } = await setup();
     const box = (value: string) => input("deck", "facets", value);
