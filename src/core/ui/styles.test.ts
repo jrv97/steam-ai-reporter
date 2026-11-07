@@ -61,6 +61,20 @@ function rulesOf(css: string): readonly Rule[] {
   }));
 }
 
+/** The media condition of the fixed settings frame; smaller windows scroll the whole page. */
+const FIXED_FRAME = "(min-width: 800px) and (min-height: 560px)";
+
+/** The rules inside the `@media` block with `condition`; none when the sheet lacks that block. */
+function mediaRules(css: string, condition: string): readonly Rule[] {
+  const head = css.indexOf(`@media ${condition} {\n`);
+  if (head === -1) {
+    return [];
+  }
+  // The block's own closing brace is the first one at the start of a line.
+  const start = css.indexOf("{", head) + 1;
+  return rulesOf(css.slice(start, css.indexOf("\n}", start)));
+}
+
 /** The filter selectors of the rules that declare `declaration`, in the order written. */
 function filterSelectors(declaration: string): readonly string[] {
   return rulesOf(PAGE_CSS)
@@ -322,6 +336,19 @@ describe("the settings tab rules", () => {
   it("moves nothing: no transition or animation on a tab", () => {
     expect(tabRules.length).toBeGreaterThan(3);
     expect(tabRules.filter((rule) => /transition|animation/.test(rule.body))).toEqual([]);
+  });
+
+  it.each(
+    [
+      ["SETTINGS_CSS", '.sar-options[data-sar-context="page"]', /block-size: 100dvh/],
+      ["SETTINGS_CSS", ".sar-tabpanel", /overflow-y: auto/],
+      ["DIALOG_CSS", "dialog[open]", /block-size: calc\(100vh/],
+    ] as const,
+  )("fixes the frame only from 800 by 560: %s %s", (sheet, selector, declaration) => {
+    const found = mediaRules(RULES[sheet], FIXED_FRAME).find(
+      (rule) => rule.selectors.includes(selector) && declaration.test(rule.body),
+    );
+    expect(found?.selectors).toContain(selector);
   });
 
   it("gives a focused tab the shared focus ring", () => {

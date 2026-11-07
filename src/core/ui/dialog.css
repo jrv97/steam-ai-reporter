@@ -52,3 +52,26 @@ dialog::backdrop {
   font-size: var(--sar-size-sm);
   line-height: var(--sar-leading-sm);
 }
+
+/* Fixed frame (decision 74): the dialog keeps one height, its head, rail, footer and feedback bar
+   stay in place, and only the open panel scrolls. Smaller windows scroll the whole dialog. */
+@media (min-width: 800px) and (min-height: 560px) {
+  dialog[open] {
+    display: flex;
+    flex-direction: column;
+    block-size: calc(100vh - var(--sar-space-6));
+    overflow: hidden;
+  }
+
+  .sar-dialog-body {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-block-size: 0;
+  }
+
+  .sar-dialog-body .sar-options {
+    flex: 1 1 auto;
+    min-block-size: 0;
+  }
+}
