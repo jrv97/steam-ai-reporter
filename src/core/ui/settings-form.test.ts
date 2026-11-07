@@ -958,20 +958,33 @@ describe("the toolbar popup", () => {
     expect(row(root, "ai").querySelector("fieldset")?.disabled).toBe(false);
   });
 
-  it("hands a click on a tag's name to the page, which opens its tab", async () => {
-    const openTab = vi.fn();
-    const { root } = await popup({ openTab });
-    const link = row(root, "drm").querySelector("a");
+  it.each([
+    [
+      "a tag's name",
+      (root: HTMLElement) => row(root, "drm").querySelector(".sar-tab-label"),
+      "drm",
+    ],
+    ["the gear", (root: HTMLElement) => root.querySelector(".sar-gear svg"), undefined],
+  ])("hands a click on %s to the page, which opens the settings", async (_name, find, tab) => {
+    const openSettings = vi.fn();
+    const { root } = await popup({
+      openSettings,
+      header: { version: "1" },
+      allSettingsUrl: "options.html",
+    });
     const click = new MouseEvent("click", { bubbles: true, cancelable: true });
-    link?.querySelector(".sar-tab-label")?.dispatchEvent(click);
-    expect(openTab.mock.calls).toEqual([["drm"]]);
+    find(root)?.dispatchEvent(click);
+    expect(openSettings.mock.calls).toEqual([[tab]]);
     expect(click.defaultPrevented).toBe(true);
   });
 
-  it("leaves the link to the browser when the page has no way to open a tab", async () => {
-    const { root } = await popup();
+  it.each([
+    ["a tag's name", (root: HTMLElement) => row(root, "drm").querySelector("a")],
+    ["the gear", (root: HTMLElement) => root.querySelector("a.sar-gear")],
+  ])("leaves %s to the browser when the page has no way to open the settings", async (_n, find) => {
+    const { root } = await popup({ header: { version: "1" }, allSettingsUrl: "options.html" });
     const click = new MouseEvent("click", { bubbles: true, cancelable: true });
-    row(root, "drm").querySelector("a")?.dispatchEvent(click);
+    find(root)?.dispatchEvent(click);
     expect(click.defaultPrevented).toBe(false);
   });
 

@@ -1,0 +1,3 @@
+kind: Fixed
+body: In the toolbar popup, clicking the gear now closes the popup and opens the settings page, the same as clicking a tag's name.
+time: 2026-10-29T10:34:45.5318115+01:00
