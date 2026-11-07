@@ -16,6 +16,10 @@ const i18n = englishI18n();
 const ROW = 30;
 /** The number of tags the card announces, as the catalog parameter holds it. */
 const KIND_COUNT = String(KIND_IDS.length);
+/** The room the cue takes after the last row a small image shows. */
+const CUE = 10;
+/** Where row `index` sits laid out: `ROW` apart, with the cue after `OVERLAY_CHIPS` rows. */
+const topOf = (index: number) => index * ROW + (index >= OVERLAY_CHIPS ? CUE : 0);
 
 const chip = (id: KindId) => i18n.t(KIND_BY_ID[id].messages.chip);
 
@@ -59,7 +63,7 @@ function layOut(card: Card): void {
     const row = card.root.querySelector(`[data-sar-order="${id ?? ""}"]`)?.closest("li");
     if (row !== null && row !== undefined) {
       vi.spyOn(row, "getBoundingClientRect").mockReturnValue(
-        DOMRect.fromRect({ x: 0, y: index * ROW, width: 300, height: ROW }),
+        DOMRect.fromRect({ x: 0, y: topOf(index), width: 300, height: ROW }),
       );
     }
   });
@@ -69,7 +73,7 @@ function layOut(card: Card): void {
 function drag(card: Card, id: KindId, by: number): HTMLElement {
   layOut(card);
   const handle = card.handle(id);
-  const start = KIND_IDS.indexOf(id) * ROW + ROW / 2;
+  const start = topOf(KIND_IDS.indexOf(id)) + ROW / 2;
   pointer(handle, "pointerdown", start);
   pointer(handle, "pointermove", start + by);
   return handle;
@@ -96,7 +100,7 @@ describe("the Tag order card", () => {
     expect(root.querySelector(".sar-order-row .sar-order-chip")?.textContent).toBe(chip("ai"));
   });
 
-  it("lists every kind in the stored order, with a named handle and the small marks", async () => {
+  it("lists every kind in the stored order, with a named handle and the cue", async () => {
     const order = parseOrder(["family", "pvp"]);
     const { root, handle, shown } = await setup(order);
     expect(shown()).toEqual(order);
@@ -106,10 +110,23 @@ describe("the Tag order card", () => {
     );
     const how = root.querySelector(`#${handle("family").getAttribute("aria-describedby") ?? ""}`);
     expect(how?.textContent).toBe(i18n.t("options_order_how"));
-    const marked = [...root.querySelectorAll(".sar-order-small")].map((mark) =>
-      !mark.hasAttribute("hidden")
-    );
-    expect(marked).toEqual(order.map((_, index) => index < OVERLAY_CHIPS));
+  });
+
+  it("marks where small images stop with a line that no key or reader stops at", async () => {
+    const { root, shown, handle } = await setup();
+    const list = root.querySelector(".sar-order-list");
+    const cues = root.querySelectorAll(".sar-order-cue");
+    expect(cues).toHaveLength(1);
+    expect(list?.children[OVERLAY_CHIPS]).toBe(cues[0]);
+    expect(cues[0]?.textContent).toBe(i18n.t("options_order_cue"));
+    expect(cues[0]?.getAttribute("aria-hidden")).toBe("true");
+    expect(list?.querySelectorAll("button, [tabindex]")).toHaveLength(KIND_IDS.length);
+    handle("ai").click();
+    press(handle("ai"), "End");
+    press(handle("ai"), "Enter");
+    expect(shown()).toEqual([...KIND_IDS.slice(1), "ai"]);
+    expect(list?.children[OVERLAY_CHIPS]).toBe(cues[0]);
+    expect(list?.children).toHaveLength(KIND_IDS.length + 1);
   });
 
   it.each<[string, readonly ([string, KindId] | string)[], readonly KindId[], string]>([
@@ -213,13 +230,14 @@ describe("the Tag order card", () => {
 
   it("drags a row with the pointer, the rows between opening its gap, and drops it", async () => {
     const card = await setup();
-    const handle = drag(card, "ai", 2 * ROW + 5);
+    const handle = drag(card, "ai", 2 * ROW + CUE + 5);
     expect(card.root.querySelector("[data-sar-dragging]")).not.toBeNull();
     expect(card.shown()).toEqual(KIND_IDS);
+    // The row that crosses the cue moves by the room it takes too
     expect(transforms(card).slice(0, 4)).toEqual([
-      `translateY(${String(2 * ROW + 5)}px)`,
+      `translateY(${String(2 * ROW + CUE + 5)}px)`,
       `translateY(-${String(ROW)}px)`,
-      `translateY(-${String(ROW)}px)`,
+      `translateY(-${String(ROW + CUE)}px)`,
       "",
     ]);
     pointer(handle, "pointerup", 0);

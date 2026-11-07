@@ -39,6 +39,7 @@ const RESET_ATTRIBUTE = "data-sar-order-reset";
 const HELD_ATTRIBUTE = "data-sar-held";
 const DRAGGING_ATTRIBUTE = "data-sar-dragging";
 const PRESSED = "aria-pressed";
+const TRUE = "true";
 /** How far a pressed pointer moves before the press is a drag, in CSS pixels. */
 const DRAG_THRESHOLD = 4;
 /** An original grip: six squares in two columns. */
@@ -60,8 +61,6 @@ interface Row {
   readonly chip: HTMLElement;
   /** Steam's line, hidden while the chip reads the same (PvP). */
   readonly heading: HTMLElement;
-  /** The marker of the rows a small image shows. */
-  readonly small: HTMLElement;
 }
 
 /** A pointer drag of one row, from its press to its release. */
@@ -73,9 +72,9 @@ interface Drag {
   /** The rows in their order when the press began, and their middles then. */
   readonly rows: readonly HTMLElement[];
   readonly middles: readonly number[];
+  /** The top of each row's place, so a row crossing the cue moves by its true distance. */
+  readonly tops: readonly number[];
   readonly from: number;
-  /** How far the other rows shift to open the gap: the dragged row's pitch. */
-  readonly step: number;
   /** Past the threshold: a press that never gets there is a click. */
   readonly moving: boolean;
 }
@@ -107,7 +106,6 @@ export function createOrderCard(doc: Document, deps: OrderCardDeps): OrderCard {
     if (grip !== undefined) {
       handle.append(grip.cloneNode(true));
     }
-    const small = createElement(doc, "span", "sar-order-small", i18n.t("options_order_small"));
     const element = createElement(doc, "li", "sar-order-row");
     const chip = createElement(doc, "span", "sar-order-chip");
     const heading = createElement(
@@ -116,9 +114,12 @@ export function createOrderCard(doc: Document, deps: OrderCardDeps): OrderCard {
       "sar-order-heading",
       i18n.t(KIND_BY_ID[id].messages.heading),
     );
-    element.append(handle, chip, heading, small);
-    rows.set(id, { element, handle, chip, heading, small });
+    element.append(handle, chip, heading);
+    rows.set(id, { element, handle, chip, heading });
   }
+  // A line after the last row a small image shows; the help line says the same for screen readers
+  const cue = createElement(doc, "li", "sar-order-cue", i18n.t("options_order_cue"));
+  cue.setAttribute("aria-hidden", TRUE);
   const reset = createElement(doc, "button", "sar-button", i18n.t("options_order_reset"));
   reset.type = "button";
   reset.setAttribute("data-sar-variant", "quiet");
@@ -163,21 +164,22 @@ export function createOrderCard(doc: Document, deps: OrderCardDeps): OrderCard {
     return scope instanceof Document || scope instanceof ShadowRoot ? scope.activeElement : null;
   }
 
-  /** Puts the rows in the state's order, keeping focus, and marks the held and the small rows. */
+  /** Puts the rows in the state's order, the cue after `OVERLAY_CHIPS` of them, keeping focus. */
   function place(): void {
     const { order } = state;
-    const placed = order.every((id, index) => list.children[index] === rows.get(id)?.element);
+    const sequence: HTMLElement[] = order.flatMap((id) => rows.get(id)?.element ?? []);
+    sequence.splice(OVERLAY_CHIPS, 0, cue);
+    const placed = sequence.every((element, index) => list.children[index] === element);
     if (!placed) {
       const active = focused();
-      list.append(...order.flatMap((id) => rows.get(id)?.element ?? []));
+      list.append(...sequence);
       if (active instanceof HTMLElement && list.contains(active)) {
         active.focus();
       }
     }
-    order.forEach((id, index) => {
+    order.forEach((id) => {
       const row = rows.get(id);
       const held = state.mode === "held" && state.held === id;
-      row?.small.toggleAttribute("hidden", index >= OVERLAY_CHIPS);
       row?.element.toggleAttribute(HELD_ATTRIBUTE, held);
       row?.handle.setAttribute(PRESSED, String(held));
     });
@@ -293,14 +295,16 @@ export function createOrderCard(doc: Document, deps: OrderCardDeps): OrderCard {
   /** Shifts the dragged row with the pointer and the rows between to open its gap. */
   function shift(current: Drag, offset: number): void {
     const to = heldIndex(state);
+    const toward = (index: number, slot: number): number =>
+      (current.tops[slot] ?? 0) - (current.tops[index] ?? 0);
     current.rows.forEach((row, index) => {
       let by = 0;
       if (index === current.from) {
         by = offset;
       } else if (index > current.from && index <= to) {
-        by = -current.step;
+        by = toward(index, index - 1);
       } else if (index < current.from && index >= to) {
-        by = current.step;
+        by = toward(index, index + 1);
       }
       row.style.transform = by === 0 ? "" : `translateY(${String(by)}px)`;
     });
@@ -337,8 +341,6 @@ export function createOrderCard(doc: Document, deps: OrderCardDeps): OrderCard {
     const elements = state.order.flatMap((id) => rows.get(id)?.element ?? []);
     const boxes = elements.map((row) => row.getBoundingClientRect());
     const from = state.order.indexOf(found.id);
-    const box = boxes[from];
-    const near = boxes[from + 1] ?? boxes[from - 1];
     drag = {
       handle: found.handle,
       pointer: event.pointerId,
@@ -346,8 +348,8 @@ export function createOrderCard(doc: Document, deps: OrderCardDeps): OrderCard {
       startY: event.clientY,
       rows: elements,
       middles: boxes.map((each) => each.top + each.height / 2),
+      tops: boxes.map((each) => each.top),
       from,
-      step: box === undefined || near === undefined ? 0 : Math.abs(near.top - box.top),
       moving: false,
     };
     found.handle.setPointerCapture(event.pointerId);

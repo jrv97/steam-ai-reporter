@@ -1193,9 +1193,9 @@
       }
     }
   },
-  "options_order_small": {
-    "message": "small image",
-    "description": "Small marker on the first rows of the Tag order card: these tags are the ones a small game image shows. Lowercase, a few words."
+  "options_order_cue": {
+    "message": "Small images show only the tags above this line",
+    "description": "Line in the Tag order card, after the last tag a small game image shows: the tags above it appear on small images, the ones below it do not. The line is a divider and the copy sits just under it. Keep it to one short sentence."
   },
   "options_order_reset": {
     "message": "Reset order",
