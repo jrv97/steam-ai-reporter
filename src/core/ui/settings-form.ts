@@ -1260,6 +1260,7 @@ export async function mountSettingsForm(
     selectTab: show,
     destroy() {
       built?.order.stop();
+      tabs?.stop();
       unsubscribe();
       for (const type of events) {
         root.removeEventListener(type, onEvent);

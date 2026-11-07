@@ -36,6 +36,8 @@ export interface Tabs<Id extends string> {
   order(ids: readonly Id[]): void;
   /** The tab a node switches to: a tab, or a button that names one; undefined for others. */
   idOf(node: Element): Id | undefined;
+  /** Removes the tab list's key listener; the tabs hear no key after it. */
+  stop(): void;
 }
 
 export function createTabs<Id extends string>(options: TabsOptions<Id>): Tabs<Id> {
@@ -126,7 +128,7 @@ export function createTabs<Id extends string>(options: TabsOptions<Id>): Tabs<Id
   }
 
   const activate = options.onActivate ?? select;
-  list.addEventListener("keydown", (event) => {
+  function onKeydown(event: KeyboardEvent): void {
     const node = event.target;
     if (
       !(node instanceof Element) || node.getAttribute("role") !== TAB_ROLE
@@ -149,7 +151,8 @@ export function createTabs<Id extends string>(options: TabsOptions<Id>): Tabs<Id
       rove(next);
       lookup(tabs, next).focus();
     }
-  });
+  }
+  list.addEventListener("keydown", onKeydown);
 
   return {
     list,
@@ -159,5 +162,8 @@ export function createTabs<Id extends string>(options: TabsOptions<Id>): Tabs<Id
     select,
     order,
     idOf,
+    stop: () => {
+      list.removeEventListener("keydown", onKeydown);
+    },
   };
 }

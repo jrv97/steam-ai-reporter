@@ -169,4 +169,16 @@ describe("the keys on a tab", () => {
     }
     expect(onActivate).not.toHaveBeenCalled();
   });
+
+  it("hears no key after stop", () => {
+    const onActivate = vi.fn();
+    const tabs = mounted("one", onActivate);
+    tabs.stop();
+    tabs.tab("two").focus();
+    for (const name of ["Enter", "ArrowRight", "End"]) {
+      expect(key(tabs.tab("two"), name).defaultPrevented).toBe(false);
+    }
+    expect(stops(tabs)).toEqual({ focused: "two", stop: ["one"], selected: "one" });
+    expect(onActivate).not.toHaveBeenCalled();
+  });
 });
