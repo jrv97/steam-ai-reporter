@@ -394,7 +394,7 @@
     "description": "Button on the notice that stops every tag and this notice for one game, in this extension only. The store has its own Ignore button; this one does not touch it."
   },
   "banner_ignore_kind": {
-    "message": "Ignore for this tag",
+    "message": "Ignore tag for this game",
     "description": "Button on one kind's entry in the notice. It stops that kind's badge and entry for one game, in this extension only; the game's other tags stay."
   },
   "banner_ignored": {
@@ -402,8 +402,8 @@
     "description": "Replaces the notice after \"Ignore this game\"."
   },
   "banner_ignored_kind": {
-    "message": "Ignored for this tag: $heading$",
-    "description": "Replaces one kind's entry in the notice after \"Ignore for this tag\". $heading$ is Steam's line for the kind.",
+    "message": "Tag ignored for this game: $heading$",
+    "description": "Replaces one kind's entry in the notice after \"Ignore tag for this game\". $heading$ is Steam's line for the kind.",
     "placeholders": {
       "heading": {
         "content": "$1",
@@ -541,7 +541,7 @@
   },
   "notice_marking_stopped_kind": {
     "message": "This game will be ignored for $heading$",
-    "description": "Screen reader announcement after \"Ignore for this tag\". $heading$ is Steam's line for the tag.",
+    "description": "Screen reader announcement after \"Ignore tag for this game\". $heading$ is Steam's line for the tag.",
     "placeholders": {
       "heading": {
         "content": "$1",
@@ -803,7 +803,7 @@
   },
   "options_allow_empty": {
     "message": "None yet. Use \"$action$\" on a game page.",
-    "description": "Shown in a card of ignored items when it lists nothing. $action$ is the label of the button that ignores: \"Ignore this game\" for all tags, \"Ignore for this tag\" for one tag.",
+    "description": "Shown in a card of ignored items when it lists nothing. $action$ is the label of the button that ignores: \"Ignore this game\" for all tags, \"Ignore tag for this game\" for one tag.",
     "placeholders": {
       "action": {
         "content": "$1",
