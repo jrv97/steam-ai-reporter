@@ -30,6 +30,7 @@ export interface ExtensionBrowser {
 
 const TIMEOUT_MS = 10_000;
 const POLL_MS = 100;
+const EXIT_MS = 5_000;
 const LOCALE = "en-US";
 
 function envPath(name: string): string {
@@ -97,9 +98,19 @@ function exited(child: ChildProcess | null | undefined): Promise<void> {
   });
 }
 
-/** Waits for the browser process to exit, then deletes its profile. */
+/** Waits for the browser process to exit, kills it when it lingers, then deletes its profile. */
 async function removeProfile(profile: string, child: ChildProcess | null | undefined) {
-  await exited(child);
+  // A failed reconnect leaves no session to close the browser with.
+  const done = exited(child);
+  const late = new Promise<"late">((resolve) => {
+    AbortSignal.timeout(EXIT_MS).addEventListener("abort", () => {
+      resolve("late");
+    });
+  });
+  if ((await Promise.race([done, late])) === "late") {
+    child?.kill();
+    await done;
+  }
   await rm(profile, { recursive: true, force: true, maxRetries: 5 });
 }
 
