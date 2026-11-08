@@ -128,6 +128,7 @@ Main tasks:
 - `mise run check`: text, catalog, version and bundle checks on top of the build.
 - `mise run ci`: everything CI runs. The pre-push hook runs `prepush`, which is the same without the reproducibility check and `web-ext lint`.
 - `mise run dev`: rebuild on change. In another terminal, `mise run run-gecko` (Firefox Nightly only) or `mise run run-chromium` loads the build with auto-reload.
+- `mise run e2e`: build, then drive the extension in Chromium and Firefox Nightly (`SAR_CHROMIUM_BIN`, `SAR_GECKO_BIN`) with puppeteer-core, on a fresh profile per run. It opens real windows and is not part of `ci` (ADR 0020).
 - `mise run package`: write the Chromium and Gecko zips, the userscript and its `.meta.js`, and the source archive for store reviewers to `artifacts/`, then check them.
 - `mise run canary`: before a release, check that live Steam still answers in the shape the detectors expect (five requests). It is not part of `ci`.
 - `mise run capture-fixtures`: refresh the public test fixtures from the live store.

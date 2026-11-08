@@ -2,9 +2,9 @@
 # ignores) and fill in the paths for this machine. mise loads it on top of mise.toml.
 
 [env]
-# Firefox Nightly only, used by `mise run run-gecko` and checked by `mise run setup`. Never point
-# this at the regular Firefox: run_browser.py refuses a binary whose update channel is not
-# "nightly", and there is no fallback to a Firefox on PATH.
+# Firefox Nightly only, used by `mise run run-gecko` and `mise run e2e` and checked by
+# `mise run setup`. Never point this at the regular Firefox: run_browser.py refuses a binary whose
+# update channel is not "nightly", and there is no fallback to a Firefox on PATH.
 SAR_GECKO_BIN = "C:/Program Files/Firefox Nightly/firefox.exe"
 # A profile directory dedicated to this project, outside the repo, so the Steam login survives
 # restarts. An absolute path; it is created on first run. A profile last used by another Firefox
@@ -12,6 +12,7 @@ SAR_GECKO_BIN = "C:/Program Files/Firefox Nightly/firefox.exe"
 SAR_GECKO_PROFILE = "C:/Users/you/dev-profiles/steam-ai-reporter-nightly"
 
 # Chromium and a profile directory dedicated to this project, used by `mise run run-chromium`.
+# `mise run e2e` uses the binary with a fresh profile on each run.
 SAR_CHROMIUM_BIN = "C:/Users/you/AppData/Local/Chromium/Application/chrome.exe"
 SAR_CHROMIUM_PROFILE = "C:/Users/you/dev-profiles/steam-ai-reporter-chromium"
 

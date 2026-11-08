@@ -141,4 +141,4 @@ These are hard rules. A change that breaks one needs an ADR first.
 - Plans in `docs/plans/` and research in `docs/research/` stay committed in this repo, since ADRs
   link to the research. Code never references either.
 - Main tasks: `mise run setup` once per clone, then `fmt`, `lint`, `typecheck`, `test`, `build`,
-  `check`, `ci`; `dev`, `run-gecko`, `run-chromium` to try builds; `change-new` for changelog notes.
+  `check`, `ci`; `dev`, `run-gecko`, `run-chromium` to try builds; `e2e` (local only) to drive them; `change-new` for changelog notes.

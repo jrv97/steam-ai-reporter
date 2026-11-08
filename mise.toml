@@ -177,6 +177,15 @@ description = "Run the Chromium build in Chromium ($SAR_CHROMIUM_BIN) with auto-
 depends = ["build"]
 run = "python scripts/run_browser.py chromium"
 
+[tasks.e2e]
+description = "Drive the built extension in Chromium and Firefox Nightly (local only; not in ci)"
+depends = ["build"]
+run = [
+  "python scripts/run_browser.py chromium --check",
+  "python scripts/run_browser.py gecko --check",
+  "vitest run --config vitest.e2e.config.ts",
+]
+
 [tasks.package]
 description = "Write the store zips, the userscript and the AMO source archive to artifacts/"
 depends = ["build"]

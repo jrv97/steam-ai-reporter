@@ -1,0 +1,102 @@
+---
+status: accepted
+date: 2026-11-08
+decision-makers: Jorge Rodriguez de la Vega
+---
+
+# Drive the built extension in Chromium and Firefox Nightly with puppeteer-core
+
+## Context and problem statement
+
+The spike in [ADR 0019 (settings return to the store tab)](0019-settings-return-to-the-store-tab.mdx) has 13 cases that open tabs and windows, close them, reload extension pages and restart the browser, each in Chromium and in Firefox Nightly. Run by hand, every change to the button means running them all again. The unit tests run in happy-dom and never see a real tab, and the desktop app's built-in browser cannot load an extension.
+
+Which driver installs the unpacked build from `dist/` into the project's own Chromium and Firefox Nightly, drives real tabs, windows and extension pages, and fits a permanent `mise run e2e` task?
+
+## Decision drivers
+
+- Firefox Nightly only, and Chromium (not Chrome), both from `SAR_GECKO_BIN` and `SAR_CHROMIUM_BIN` in `mise.local.toml`. `run_browser.py --check` guards the Nightly channel today.
+- No browser download. The driver uses the binaries named above.
+- Rule 14: the task runs through mise, the library is exact-pinned in `package.json` and the lockfile, and `package.json` gets no scripts.
+- Rules 9, 10 and 17: tests read copy through `t()`, there is no `any` and no type assertion, and the runner is the pinned vitest.
+- Local only. CI has neither browser, and the task stays out of `prepush` and `ci`.
+- Each run starts clean: the dedicated dev profiles stay as the dev loop left them.
+
+## Considered options
+
+1. Playwright.
+2. puppeteer-core, over CDP for Chromium and WebDriver BiDi for Firefox (chosen).
+3. Selenium with geckodriver and chromedriver.
+4. `web-ext run`, as the dev tasks use it.
+
+## Decision outcome
+
+Chosen option 2. A learning test on 2026-11-08 ran puppeteer-core 25.16.0 against Chromium 155.0.8059.84 (ungoogled-chromium) and Firefox Nightly 162.0a1 on Windows 11, with the binaries from `mise.local.toml` and a fresh profile per launch.
+
+- Chromium: `launch({ pipe: true, enableExtensions: true })` and `installExtension("dist/chromium")` loaded the build and returned its ID. The popup's gear opened `options.html` as a page target. `action.openPopup()` from an extension page resolved with no gesture, and the popup showed up as a page target that the driver can click. `windows.getAll()` reported which window had focus.
+- Firefox Nightly: `installExtension("dist/gecko")` installed the build as a temporary add-on through BiDi `webExtension.install`. The extension pages rendered, the gear opened `options.html`, and `action.openPopup()` resolved with the `extensions.openPopupWithoutUserGesture.enabled` pref. A puppeteer browser context became a container tab (`cookieStoreId` `firefox-container-6`).
+
+Firefox needs three workarounds, all inside `tests/e2e/browser.ts`:
+
+- Firefox counts extension pages as privileged. BiDi refuses to open or script them unless the browser starts with `MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1`, which also opens chrome-scope access to the driver. The profile is a throwaway one, and the session listens on localhost only.
+- Firefox sends no BiDi events for extension tabs (bug 1755014). `page.goto()` then waits for a load that never arrives, and a tab the extension opens never reaches puppeteer. The harness opens a page with a raw `browsingContext.navigate`, finds new tabs with `browsingContext.getTree`, then reconnects. A new session reads the whole tree and adopts every tab; it took 24 ms. Pages returned before a reconnect stop working, and `Page.url()` stays `about:blank`, so the harness matches pages by `location.href`.
+- After a reconnect puppeteer skips its own profile cleanup. The harness creates the profile, waits for the browser process to exit and removes it.
+
+The raw BiDi calls go through `BidiBrowser.connection` from `puppeteer-core/internal/bidi/Browser.js`, the one internal path in use. Its type declarations import `rxjs`, which puppeteer bundles in its JavaScript but lists as a development dependency. `rxjs` 7.8.2 is exact-pinned as a development dependency for those types alone.
+
+What lands:
+
+- `mise run e2e` depends on `build`, runs `run_browser.py --check` for both engines, then `vitest run --config vitest.e2e.config.ts`. Files match `tests/e2e/**/*.e2e.ts`, which the unit config does not pick up.
+- `tests/e2e/browser.ts` exports `launch(engine)`, returning `open(path)`, `openedBy(path, action)` and `close()`. On Gecko, `openedBy` reconnects only after the action settles, which keeps a reconnect from cutting off a pending click. Both engines run headed, with a fresh profile and the `en-US` locale.
+- One smoke test, parametrized over both engines with a fresh browser per case: the popup page's gear opens the settings page, found by its catalog label, and the page title is the catalog's extension name.
+
+### Library check (rule 12)
+
+- puppeteer-core 25.16.0 (published 2026-10-22): Apache-2.0, maintained by the Chrome team with releases every few weeks, ships its own types and needs Node 22.12 or later. It never downloads a browser. Installed size is about 8 MB, plus chromium-bidi (10 MB), devtools-protocol (4 MB), @puppeteer/browsers, ws and webdriver-bidi-protocol (about 1 MB together). It is a development dependency and never reaches `dist/`.
+- rxjs 7.8.2: Apache-2.0, 11 MB, types only.
+- Playwright: Apache-2.0. Its Firefox is a patched build driven over its own protocol, it cannot install extensions in Firefox, and it cannot be Firefox Nightly. For Chromium, extensions load only through `launchPersistentContext`, its docs steer to the bundled Chromium, and microsoft/playwright-python issue 2963 reports extensions failing to load with other binaries.
+- selenium-webdriver: Apache-2.0. geckodriver installs temporary add-ons and the Marionette code carries the same privileged-page check, which would ask for the same system access in Firefox. Chromium needs a chromedriver matching 155, which Selenium Manager downloads.
+- web-ext 10.8.0, pinned in `mise.toml`: installs and reloads the build, but exposes no driver for pages.
+
+### Consequences
+
+- Good: one TypeScript driver for both engines, run by the pinned vitest, reading copy from the catalog like the unit tests.
+- Good: no browser download. The task uses the browsers the dev loop uses, and the dev profiles stay untouched.
+- Good: the cases of ADR 0019 that need tabs, windows and extension pages can run in seconds. The smoke test takes about 6 seconds for both engines.
+- Bad: the Firefox side rests on an internal puppeteer path and on Firefox's behavior for extension tabs. A puppeteer update or a fix for bug 1755014 can break `browser.ts`, and the smoke test shows it.
+- Bad: system access gives the driver chrome scope in the test browser.
+- Bad: 23 new packages in the lockfile, all development only.
+- Neutral: CI does not run the task. A failing e2e test blocks nothing until someone runs it.
+
+## The ADR 0019 cases
+
+No driver can press the toolbar button. The harness stands in with `action.openPopup()`, called from an extension page in a background tab, which opens the real popup on the active tab of that window. Chromium exposes the popup as a page the driver clicks. In Firefox the popup is no BiDi context, and a test reaches its document through `extension.getViews({ type: "popup" })` from another extension page; a click sent that way is not a user gesture, and `openOptionsPage()` asks for none. The driver reads focus through `windows.getAll()` and `document.hasFocus()`. Whether a window is in front on screen stays a manual check.
+
+The button code lives on `feat/back-to-steam`, and its e2e cases land there. The table says what the harness makes possible.
+
+| Case                              | Chromium                                                                                                                | Firefox Nightly                                                                                              |
+| --------------------------------- | ----------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| Part 1, step 3 (`windows.update`) | Focus state only; on-screen front stays manual.                                                                         | Focus state only; on-screen front stays manual.                                                              |
+| 1. Basic path                     | Yes, through `openPopup()`.                                                                                             | Yes, through `openPopup()` and `getViews()`.                                                                 |
+| 2. Tag path                       | Yes, as case 1 with a tag row.                                                                                          | Yes, as case 1 with a tag row.                                                                               |
+| 3. Focus path                     | Yes.                                                                                                                    | Yes.                                                                                                         |
+| 4. Origin tab closed              | Yes. Console errors through the page's console events.                                                                  | Yes for the page state. Console events from extension pages were not checked.                                |
+| 5. Origin navigated away          | Yes, with any non-store page as the second address.                                                                     | Yes, with any non-store page as the second address.                                                          |
+| 6. No origin                      | Opens `options.html` directly in place of "Extension options". The menu stays manual.                                   | Opens `options.html` directly in place of the `about:addons` entry. The menu stays manual.                   |
+| 7. Reload                         | Yes.                                                                                                                    | Yes, through a raw reload or `location.reload()` and a reconnect.                                            |
+| 8. Two windows                    | Yes, windows from `windows.create()` or the driver.                                                                     | Yes, windows from `windows.create()` or the driver.                                                          |
+| 9. Popup on the settings tab      | Yes, `openPopup()` with the settings tab active.                                                                        | Yes, `openPopup()` with the settings tab active.                                                             |
+| 10. Private window                | Likely: `installExtension(path, { enabledInIncognito: true })`, then an incognito window. Not tried.                    | Manual for now. BiDi install has no private-window option; granting it needs chrome-scope code.              |
+| 11. Container tab                 | Not applicable.                                                                                                         | Yes: a puppeteer browser context is a container tab (seen in the learning test).                             |
+| 12. Restart                       | Needs a `launch` option for a kept profile and a relaunch. Whether a CDP-loaded build survives a restart was not tried. | Manual. A temporary add-on is removed when the browser quits, and the restored tab loads before a reinstall. |
+| 13. Non-store origin              | Yes, `openPopup()` on a blank tab.                                                                                      | Yes, `openPopup()` on a blank tab.                                                                           |
+
+A case that opens a store page loads `store.steampowered.com` with the content script running, which calls GetItems like a person browsing would.
+
+## More information
+
+- Firefox's privileged-page rule: `isPrivilegedContext` and `isWebdriverSafeNavigationURL` in `remote/shared/BrowsingContextUtils.sys.mjs`, and `MOZ_REMOTE_ALLOW_SYSTEM_ACCESS` in `remote/components/RemoteAgent.sys.mjs` (Firefox Nightly 162 `omni.ja`).
+- Firefox's skipped events for extension contexts: bug 1755014, cited in `remote/webdriver-bidi/modules/root/browsingContext.sys.mjs`.
+- Firefox source docs, WebDriver BiDi extensions: https://firefox-source-docs.mozilla.org/remote/webdriver-bidi/Extensions.html
+- Puppeteer, Chrome extensions guide (`enableExtensions`, `installExtension`): https://pptr.dev/guides/chrome-extensions
+- Playwright, Chrome extensions: https://playwright.dev/docs/chrome-extensions
+- microsoft/playwright-python issue 2963: https://github.com/microsoft/playwright-python/issues/2963
