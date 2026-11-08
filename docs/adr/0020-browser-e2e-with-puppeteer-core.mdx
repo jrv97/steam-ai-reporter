@@ -46,7 +46,7 @@ The raw BiDi calls go through `BidiBrowser.connection` from `puppeteer-core/inte
 What lands:
 
 - `mise run e2e` depends on `build`, runs `run_browser.py --check` for both engines, then `vitest run --config vitest.e2e.config.ts`. Files match `tests/e2e/**/*.e2e.ts`, which the unit config does not pick up.
-- `tests/e2e/browser.ts` exports `launch(engine)`, returning `open(path)`, `waitForPage(path)` and `close()`. Both engines run headed, with a fresh profile and the `en-US` locale.
+- `tests/e2e/browser.ts` exports `launch(engine)`, returning `open(path)`, `openedBy(path, action)` and `close()`. On Gecko, `openedBy` reconnects only after the action settles, which keeps a reconnect from cutting off a pending click. Both engines run headed, with a fresh profile and the `en-US` locale.
 - One smoke test, parametrized over both engines with a fresh browser per case: the popup page's gear opens the settings page, found by its catalog label, and the page title is the catalog's extension name.
 
 ### Library check (rule 12)

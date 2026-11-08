@@ -21,10 +21,10 @@ export interface ExtensionBrowser {
   /** Opens an extension page, such as `options.html`, in a new tab once it has loaded. */
   open(path: string): Promise<Page>;
   /**
-   * Resolves with the tab the extension opens at exactly `path`. Call it before the action that
-   * opens the tab. On Gecko it reconnects, and pages returned earlier stop working.
+   * Runs `action` and resolves with the tab the extension opens at exactly `path`. On Gecko it
+   * reconnects after the action settles, and pages returned earlier stop working.
    */
-  waitForPage(path: string): Promise<Page>;
+  openedBy(path: string, action: () => Promise<void>): Promise<Page>;
   close(): Promise<void>;
 }
 
@@ -75,10 +75,12 @@ async function launchChromium(): Promise<ExtensionBrowser> {
       await page.goto(url(path));
       return page;
     },
-    async waitForPage(path) {
-      const target = await browser.waitForTarget((t) => t.url() === url(path), {
-        timeout: TIMEOUT_MS,
-      });
+    async openedBy(path, action) {
+      // Listen first: the target can appear before the action resolves.
+      const [target] = await Promise.all([
+        browser.waitForTarget((t) => t.url() === url(path), { timeout: TIMEOUT_MS }),
+        action(),
+      ]);
       return target.asPage();
     },
     close: () => browser.close(),
@@ -184,7 +186,9 @@ async function launchGecko(): Promise<ExtensionBrowser> {
       });
       return adopt(url(path));
     },
-    async waitForPage(path) {
+    async openedBy(path, action) {
+      // A reconnect would cut off a command of the action that is still in flight.
+      await action();
       const href = url(path);
       const deadline = Date.now() + TIMEOUT_MS;
       while (!(await contextUrls()).includes(href)) {
