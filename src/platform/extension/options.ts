@@ -2,6 +2,7 @@ import * as v from "valibot";
 import { resolveLocale } from "../../core/i18n/locale";
 import { type BareMessageKey, createI18n, type I18n } from "../../core/i18n/t";
 import { createIgnoreLists } from "../../core/ignored";
+import type { KeyValueStore } from "../../core/ports";
 import { AUTO_LOCALE, parseSettings } from "../../core/settings/settings";
 import { ALLOW_KEY, CREATOR_ALLOW_KEYS, UI_STATE_KEY } from "../../core/storage-keys";
 import { mountSettingsForm, type SettingsContext } from "../../core/ui/settings-form";
@@ -9,13 +10,17 @@ import { parseTabHash, tabHash, type TabId } from "../../core/ui/tab-id";
 import { createUiState, decodeTabRequest, type UiState } from "../../core/ui/ui-state";
 import { createFileTransfer } from "../shared/file-transfer";
 import {
+  browserTabs,
   extensionUrl,
   extensionVersion,
   localStorageArea,
   onLocalChanged,
+  onSessionChanged,
   openOptionsPage,
+  sessionStorageArea,
 } from "./ext";
 import { CATALOGS } from "./options.catalogs.gen";
+import { createGoBack, recordOrigin } from "./origin-tab";
 import { createExtensionSettings, createExtensionStore } from "./store";
 
 // The options page and the toolbar popup: one page, options.html, which the manifest opens as
@@ -54,13 +59,16 @@ function fillText(doc: Document, i18n: I18n): void {
 /**
  * From a popup row or the gear: asks an open options page for the tab, if there is one, and
  * focuses it, or opens the page, which reads the same request. Without the API, the link's own
- * address opens in a new tab. The popup closes either way.
+ * address opens in a new tab. The popup closes either way. The store tab under the popup goes
+ * first to the session area, outside the try, so a failed write opens no second settings tab.
  */
 async function openSettings(
   uiState: UiState,
+  session: KeyValueStore,
   id: TabId | undefined,
   optionsUrl: string,
 ): Promise<void> {
+  await recordOrigin(browserTabs, session);
   try {
     if (id !== undefined) {
       await uiState.requestTab(id, Date.now());
@@ -79,6 +87,7 @@ async function main(): Promise<void> {
   const clock = { now: () => Date.now() };
   const lists = createIgnoreLists(store, clock);
   const uiState = createUiState(store);
+  const session = createExtensionStore(sessionStorageArea());
   const catalogs = CATALOGS;
 
   let setting: string = AUTO_LOCALE;
@@ -112,13 +121,21 @@ async function main(): Promise<void> {
     ...(page
       ? {
         backup: { files: createFileTransfer(document.body), clock },
+        goBack: createGoBack({
+          tabs: browserTabs,
+          session,
+          onChanged: onSessionChanged,
+          navigate: (url) => {
+            location.assign(url);
+          },
+        }),
         onTabChange: (id) => {
           history.replaceState(null, "", tabHash(id));
         },
       }
       : {
         allSettingsUrl: optionsUrl,
-        openSettings: (id) => void openSettings(uiState, id, optionsUrl),
+        openSettings: (id) => void openSettings(uiState, session, id, optionsUrl),
       }),
   });
 

@@ -498,7 +498,8 @@ Preview: `previews/OptionsPage.html`, and `previews/Tabs.html` for the tabs alon
 - Whether to show the color fields (`colors`). It is a capability apart from the context: the full page and the dialog pass it, the toolbar popup does not.
 - The version from `package.json` for `options_version`.
 - On the full page: the tab named by the location fragment (`#tab=<id>`, read by `parseTabHash`) as `initialTab`, and `onTabChange`, which writes the fragment back with `history.replaceState`. The dialog passes neither and never touches the store page's address.
-- In the popup: `allSettingsUrl` for the gear and the row links, and `openSettings`, which opens the options page on a tag's tab, or as it was left for the gear (below).
+- In the popup: `allSettingsUrl` for the gear and the row links, and `openSettings`, which opens the options page on a tag's tab, or as it was left for the gear (below). Before it opens the page, it writes the ID of the active tab to `storage.session` (`v2:origin`).
+- On the extension's full page: `goBack`, which switches to the tab the popup was opened on, focuses its window and closes the settings tab, or opens the store home in the settings tab when that tab is gone or was never recorded ([ADR 0019](../adr/0019-settings-return-to-the-store-tab.mdx)). The popup and the userscript dialog pass none.
 
 ### Layout
 
@@ -508,7 +509,7 @@ Preview: `previews/OptionsPage.html`, and `previews/Tabs.html` for the tabs alon
 - Font: the `ext` family (a system stack). The store font is not loaded on extension pages and none is bundled.
 - Type on the full page: field labels, help and error lines in `sar-text-body` (13/18). The popup and the dialog keep help and error lines in `sar-text-help` (12/16).
 - Cards are `.sar-card`: `sar-color-bg-raised`, `sar-radius-md`, `sar-space-3` padding, `sar-space-2` apart, titled in `sar-text-card-title` with `sar-space-2` below the title. A tag's card title is an `h2`; the cards of General sit under the panel's `h2` (`options_tab_general`) and take `h3`. Every card title takes focus with `tabindex="-1"`, so focus can land on it.
-- Header: the 32px icon (48px source), `ext_name` in `sar-text-options-title`, the version in `sar-color-text-subtle`.
+- Header: the 32px icon (48px source), `ext_name` in `sar-text-options-title`, the version in `sar-color-text-subtle`. With `goBack`, the header ends in Go back to Steam (`options_back_to_steam`): the secondary `.sar-button`, no icon, pushed to the end with `margin-inline-start: auto`. It is drawn at mount and never added or removed later, and it stays usable when the settings fail to load (decision 76).
 
 ### Tabs, in order
 
@@ -1291,6 +1292,7 @@ For every translator:
 | `options_unaffiliated` | Not affiliated with or endorsed by Valve Corporation. Steam is a trademark of Valve Corporation. | Legal line; keep the names as they are. |
 | `options_unaffiliated_short` | Not affiliated with Valve. Nothing leaves your browser except lookups to Valve's store. | Popup footer. |
 | `options_all_settings` | All settings | Name and tooltip of the popup's gear to the full page. |
+| `options_back_to_steam` | Go back to Steam | The full page header's button back to the store tab the popup was opened on. |
 | `options_tabs_label` | Settings sections | Name of the tab list. |
 | `options_tab_general` | General | The first tab and its heading. |
 | `options_state_on` | On | A tag's state on its tab. |

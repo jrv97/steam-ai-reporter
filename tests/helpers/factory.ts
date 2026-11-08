@@ -50,6 +50,7 @@ import {
 } from "./creators";
 import { BASE_ID, DLC_PATH, dlcPage } from "./dlc-page";
 import { httpResult } from "./fake-http";
+import { tabIds } from "./fake-tabs";
 import {
   EARLY_ACCESS_RELEASED,
   FIXTURE_APPS,
@@ -113,6 +114,7 @@ import {
   badGameKeys,
   badLocales,
   badScopes,
+  badTabIds,
   corruptNumber,
   corruptText,
   junkValues,
@@ -162,6 +164,8 @@ export const make = {
     version: freshVersion,
     fileName: freshFileName,
   },
+  /** Fresh browser IDs: the origin tab, the settings tab and the origin's window. */
+  tabs: tabIds,
   /** A fresh instant in milliseconds since the epoch, later than the one before. */
   time: freshTime,
   /** A fresh span in milliseconds. */
@@ -291,6 +295,7 @@ export const make = {
     badChipTexts,
     appIdBounds,
     badAppIds,
+    badTabIds,
     json: storedJson,
     v2Kinds: plainKinds,
   },

@@ -66,6 +66,13 @@ function press(target: Element, key: string): void {
   target.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true, cancelable: true }));
 }
 
+/** Settings on a store of their own whose every read rejects. */
+function unreadableSettings() {
+  const settings = createSettingsSource(fake.store());
+  vi.spyOn(settings, "read").mockRejectedValue(new Error());
+  return settings;
+}
+
 /** A form on stores of its own, with the games the tests ignore already listed. */
 async function setup(overrides: Partial<SettingsFormDeps> = {}) {
   const clock = fake.clock(make.time());
@@ -855,6 +862,7 @@ describe("the page around the tabs", () => {
     expect(gear?.querySelector("svg")?.getAttribute("aria-hidden")).toBe("true");
     expect(gear?.textContent).toBe("");
     expect(root.querySelector(".sar-options-footer a")).toBeNull();
+    expect(header?.querySelector("button")).toBeNull();
   });
 
   it("keeps the gear small: one path of fewer than 400 bytes", async () => {
@@ -866,6 +874,26 @@ describe("the page around the tabs", () => {
     const svg = root.querySelector(".sar-gear svg");
     expect(svg?.querySelectorAll("*")).toHaveLength(1);
     expect(svg?.outerHTML.length).toBeLessThan(400);
+  });
+
+  it.each([
+    ["a loaded page", () => createSettingsSource(fake.store())],
+    ["a failed load", unreadableSettings],
+  ])("draws the way back to the store at the header's end on %s", async (_name, settings) => {
+    const goBack = vi.fn();
+    const { root } = await mountForm({
+      settings: settings(),
+      header: { version: make.text.version() },
+      goBack,
+    });
+    const back = root.querySelector<HTMLButtonElement>(".sar-options-header > button");
+    expect(back).toBe(root.querySelector(".sar-options-header")?.lastElementChild);
+    expect(back?.type).toBe("button");
+    expect(back?.textContent).toBe(i18n.t("options_back_to_steam"));
+    expect(back?.hasAttribute("aria-label")).toBe(false);
+    expect(back?.disabled).toBe(false);
+    back?.click();
+    expect(goBack).toHaveBeenCalledTimes(1);
   });
 
   it("renders no header or gear by default", async () => {
@@ -1431,9 +1459,7 @@ describe("the note on what all tags ignore", () => {
 
 describe("a failed read of the settings", () => {
   it("shows the defaults and an error above the tabs when settings cannot be read", async () => {
-    const settings = createSettingsSource(fake.store());
-    vi.spyOn(settings, "read").mockRejectedValue(new Error());
-    const { root } = await mountForm({ settings });
+    const { root } = await mountForm({ settings: unreadableSettings() });
     const error = root.querySelector<HTMLElement>(":scope > .sar-field-error");
     expect(error?.hidden).toBe(false);
     expect(error?.textContent).toBe(i18n.t("error_settings_load"));

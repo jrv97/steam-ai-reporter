@@ -1,8 +1,8 @@
 import type { JsonValue } from "../../src/core/json";
 import type {
-  LocalChanges,
-  OnLocalChanged,
+  OnStorageChanged,
   StorageArea,
+  StorageChanges,
 } from "../../src/platform/extension/storage-area";
 import { failsWrite, type StorageFaults, storedValue } from "./storage-faults";
 
@@ -61,17 +61,17 @@ export function faultyArea(faults: StorageFaults): StorageArea {
   };
 }
 
-/** A fake `storage.onChanged` for the `local` area, which a test fires by hand. */
+/** A fake `storage.onChanged` for one storage area, which a test fires by hand. */
 export interface FakeChanges {
-  readonly subscribe: OnLocalChanged;
+  readonly subscribe: OnStorageChanged;
   /** Reports `changes` to every listener, as the browser does after a write in any context. */
-  readonly fire: (changes: LocalChanges) => void;
+  readonly fire: (changes: StorageChanges) => void;
   /** The listeners registered now. */
   readonly size: () => number;
 }
 
 export function fakeChanges(): FakeChanges {
-  const listeners = new Set<(changes: LocalChanges) => void>();
+  const listeners = new Set<(changes: StorageChanges) => void>();
   return {
     subscribe(listener) {
       listeners.add(listener);

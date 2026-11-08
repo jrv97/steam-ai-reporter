@@ -117,3 +117,8 @@ export function appIdBounds(): readonly number[] {
 export function badAppIds(): readonly unknown[] {
   return [0, -1, 1.5, 0x1_00_00_00_00, Number.NaN, "10", null, undefined];
 }
+
+/** Stored values that are no browser tab ID: a string, `TAB_ID_NONE` (-1), a fraction, null. */
+export function badTabIds(): readonly JsonValue[] {
+  return ["5", -1, 1.5, null];
+}
