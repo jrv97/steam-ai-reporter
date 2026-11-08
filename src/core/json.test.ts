@@ -10,10 +10,6 @@ describe("parseJson", () => {
   it("throws on malformed text", () => {
     expect(() => parseJson("{")).toThrow(SyntaxError);
   });
-
-  it("runs in happy-dom", () => {
-    expect(document.createElement("div").tagName).toBe("DIV");
-  });
 });
 
 describe("parseWithDefaults", () => {
@@ -29,11 +25,12 @@ describe("parseWithDefaults", () => {
     });
   });
 
-  it("gives the defaults for input that is not an object", () => {
-    for (const input of [undefined, null, 7, "x", true]) {
+  it.each<unknown>([undefined, null, 7, "x", true])(
+    "gives the defaults for %j, which is not an object",
+    (input) => {
       expect(parseWithDefaults(schema, input)).toStrictEqual({ on: true, name: "none" });
-    }
-  });
+    },
+  );
 });
 
 describe("toJsonValue", () => {
@@ -58,10 +55,16 @@ describe("toJsonValue", () => {
     expect(toJsonValue({ a: 1, b: undefined })).toStrictEqual({ a: 1 });
   });
 
-  it("gives undefined for what JSON cannot carry, at any depth", () => {
-    for (const value of [undefined, Symbol("s"), () => 1, Number.NaN, 1n, { a: () => 1 }, [1n]]) {
-      expect(toJsonValue(value)).toBeUndefined();
-    }
-    expect(toJsonValue([Number.POSITIVE_INFINITY])).toBeUndefined();
+  it.each<readonly [string, unknown]>([
+    ["undefined", undefined],
+    ["a symbol", Symbol("s")],
+    ["a function", () => 1],
+    ["NaN", Number.NaN],
+    ["a bigint", 1n],
+    ["an object holding a function", { a: () => 1 }],
+    ["an array holding a bigint", [1n]],
+    ["an array holding Infinity", [Number.POSITIVE_INFINITY]],
+  ])("gives undefined for %s, which JSON cannot carry", (_name, value) => {
+    expect(toJsonValue(value)).toBeUndefined();
   });
 });

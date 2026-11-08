@@ -1,33 +1,36 @@
 import { describe, expect, it } from "vitest";
-import { appId, appIds } from "../../../tests/helpers/app-ids";
-import { countingStore } from "../../../tests/helpers/counting-store";
-import { creatorsFor } from "../../../tests/helpers/creators";
-import { fixedClock } from "../../../tests/helpers/fixed-clock";
-import { memoryStore } from "../../../tests/helpers/memory-store";
-import {
-  aiVerdicts,
-  disclosedVerdict,
-  NOT_DISCLOSED,
-  uniformVerdicts,
-} from "../../../tests/helpers/verdicts";
+import { make } from "../../../tests/helpers/factory";
+import { fake } from "../../../tests/helpers/fakes";
+import { DEFAULT_BATCH_LIMITS } from "../detect/getitems";
 import type { JsonValue } from "../json";
 import { AI_KIND, type AiVerdict } from "../kinds/ai";
 import { EARLY_ACCESS_KIND } from "../kinds/early-access";
 import { perKind } from "../kinds/registry";
 import { type KindVerdicts, withRelations } from "../kinds/verdicts";
-import { type AppId, UNKNOWN } from "../types";
+import { verdictKey } from "../storage-keys";
+import type { AppId } from "../types";
 import { TRANSIENT_TTL_MS, UNKNOWN_TTL_MS } from "./ttl";
 import { createVerdictCache } from "./verdict-cache";
 
-const T = 1_000_000_000_000;
-const FULL = uniformVerdicts("disclosed");
+const T = make.time();
+const FULL = make.verdicts.full();
 // A fully disclosed app expires with Early Access, a fully undisclosed one with the AI kind.
 const DISCLOSED_TTL_MS = EARLY_ACCESS_KIND.ttl.disclosed;
 const NOT_DISCLOSED_TTL_MS = AI_KIND.ttl.notDisclosed;
 
+/** Verdicts with this AI verdict and every other kind unknown `missing`. */
+function ai(verdict: AiVerdict): KindVerdicts {
+  return make.verdicts({ ai: verdict });
+}
+
+/** Verdicts whose AI kind is not disclosed. */
+function notDisclosed(): KindVerdicts {
+  return ai(make.verdict.notDisclosed());
+}
+
 function setup(capacity?: number) {
-  const store = countingStore(memoryStore());
-  const clock = fixedClock(T);
+  const store = fake.countingStore(fake.store());
+  const clock = fake.clock(T);
   return {
     store,
     clock,
@@ -40,75 +43,82 @@ function setup(capacity?: number) {
 describe("VerdictCache", () => {
   it("returns saved verdicts from memory without reading storage", async () => {
     const { cache, store } = setup();
-    const verdicts = aiVerdicts(disclosedVerdict());
-    await cache.save(new Map([[appId(10), verdicts]]));
-    expect(await cache.lookup(appIds(10))).toStrictEqual(new Map([[10, verdicts]]));
+    const id = make.appId();
+    const verdicts = ai(make.verdict.disclosed("ai"));
+    await cache.save(new Map([[id, verdicts]]));
+    expect(await cache.lookup([id])).toStrictEqual(new Map([[id, verdicts]]));
     expect(store.calls.get).toBe(0);
   });
 
   it("keeps what an app is related to in memory and for another tab", async () => {
     const { cache, another, store } = setup();
-    const verdicts = withRelations(aiVerdicts(disclosedVerdict()), {
-      parent: appId(1808500),
-      creators: creatorsFor({ developers: [["Valve", 4]], publishers: ["Embark Studios"] }),
+    const id = make.appId();
+    const verdicts = withRelations(ai(make.verdict.disclosed("ai")), {
+      parent: make.appId(),
+      creators: make.creator.forItem({
+        developers: [[make.text.creator(), make.creator.clan()]],
+        publishers: [make.text.creator()],
+      }),
     });
-    await cache.save(new Map([[appId(5201760), verdicts]]));
-    expect((await cache.lookup(appIds(5201760))).get(appId(5201760))).toStrictEqual(verdicts);
+    await cache.save(new Map([[id, verdicts]]));
+    expect((await cache.lookup([id])).get(id)).toStrictEqual(verdicts);
     const tab = another();
-    expect((await tab.lookup(appIds(5201760))).get(appId(5201760))).toStrictEqual(verdicts);
+    expect((await tab.lookup([id])).get(id)).toStrictEqual(verdicts);
     expect(store.calls.get).toBe(1);
   });
 
-  it("serves another tab from storage and then from its memory", async () => {
+  it("serves another tab from storage, language included, and then from its memory", async () => {
     const { cache, another, store } = setup();
-    const verdicts = aiVerdicts(disclosedVerdict({ language: "german" }));
-    await cache.save(new Map([[appId(10), verdicts]]));
+    const id = make.appId();
+    const verdicts = ai(make.verdict.disclosed("ai", { language: "german" }));
+    await cache.save(new Map([[id, verdicts]]));
     const tab = another();
-    expect(await tab.lookup(appIds(10))).toStrictEqual(new Map([[10, verdicts]]));
+    expect(await tab.lookup([id])).toStrictEqual(new Map([[id, verdicts]]));
     expect(store.calls.get).toBe(1);
-    await tab.lookup(appIds(10));
+    await tab.lookup([id]);
     expect(store.calls.get).toBe(1);
   });
 
   it("stores one entry per app, holding the fetch time and a verdict for each kind", async () => {
     const { cache, store } = setup();
-    await cache.save(new Map([[appId(10), uniformVerdicts("not-disclosed")]]));
+    const id = make.appId();
+    await cache.save(new Map([[id, make.verdicts.uniform("not-disclosed")]]));
     const entry = { time: T, kinds: perKind(() => ({ state: "not-disclosed", source: "api" })) };
-    expect(await store.get(["v1:a:10"])).toStrictEqual(new Map([["v1:a:10", entry]]));
+    expect(await store.get([verdictKey(id)])).toStrictEqual(new Map([[verdictKey(id), entry]]));
   });
 
   it("answers only the fresh IDs and leaves the rest out", async () => {
     const { cache, another } = setup();
-    await cache.save(new Map([[appId(10), aiVerdicts(NOT_DISCLOSED)]]));
-    const got = await another().lookup(appIds(10, 20));
-    expect([...got.keys()]).toStrictEqual([10]);
+    const saved = make.appId();
+    await cache.save(new Map([[saved, notDisclosed()]]));
+    const got = await another().lookup([saved, make.appId()]);
+    expect([...got.keys()]).toStrictEqual([saved]);
   });
 
   it("reads storage once for a whole batch and writes it once", async () => {
     const { cache, another, store } = setup();
-    const ids = Array.from({ length: 50 }, (_, n) => appId(1000 + n));
-    await cache.save(new Map(ids.map((id) => [id, aiVerdicts(NOT_DISCLOSED)])));
+    const ids = make.appIds(DEFAULT_BATCH_LIMITS.maxIds);
+    await cache.save(new Map(ids.map((id) => [id, notDisclosed()])));
     expect(store.calls.set).toBe(1);
     expect(store.calls.get).toBe(0);
 
-    const found = await another().lookup([...ids, appId(2000)]);
-    expect(found.size).toBe(50);
+    const asked = [...ids, make.appId()];
+    const found = await another().lookup(asked);
+    expect(found.size).toBe(ids.length);
     expect(store.calls.get).toBe(1);
-    expect(store.gets[0]).toHaveLength(51);
+    expect(store.gets[0]).toHaveLength(asked.length);
   });
 
   it("asks storage only for the IDs memory does not hold", async () => {
     const { cache, another, store } = setup();
+    const [first, second] = [make.appId(), make.appId()];
     await cache.save(
-      new Map<AppId, KindVerdicts>([
-        [appId(1), aiVerdicts(NOT_DISCLOSED)],
-        [appId(2), aiVerdicts(NOT_DISCLOSED)],
-      ]),
+      new Map<AppId, KindVerdicts>([[first, notDisclosed()], [second, notDisclosed()]]),
     );
     const tab = another();
-    await tab.lookup(appIds(1));
-    await tab.lookup(appIds(1, 2));
-    expect(store.gets).toStrictEqual([["v1:a:1"], ["v1:a:2"]]);
+    await tab.lookup([first]);
+    await tab.lookup([first, second]);
+    expect(store.gets).toStrictEqual([[verdictKey(first)], [verdictKey(second)]]);
   });
 
   it("makes no storage call for nothing to look up or to save", async () => {
@@ -118,111 +128,116 @@ describe("VerdictCache", () => {
     expect(store.calls).toStrictEqual({ get: 0, set: 0, remove: 0, keys: 0 });
   });
 
-  it.each(
-    [
-      ["holds the section", ["basic_info", "platforms"], true],
-      ["lacks the section", ["basic_info"], false],
-      ["came without GetItems details", undefined, true],
-    ] as const,
-  )("serves an entry that %s to a lookup that needs it: %s", async (_n, had, hit) => {
+  it.each<readonly [string, KindVerdicts, boolean]>([
+    ["holds the section", { ...FULL, sections: ["basic_info", "platforms"] }, true],
+    ["lacks the section", { ...FULL, sections: ["basic_info"] }, false],
+    ["came without GetItems details", FULL, true],
+  ])("serves an entry that %s to a lookup that needs it: %s", async (_n, verdicts, hit) => {
     const { cache, another } = setup();
-    const verdicts = had === undefined ? FULL : { ...FULL, sections: had };
-    await cache.save(new Map([[appId(10), verdicts]]));
+    const id = make.appId();
+    await cache.save(new Map([[id, verdicts]]));
     for (const tab of [cache, another()]) {
-      expect((await tab.lookup(appIds(10), ["platforms"])).has(appId(10))).toBe(hit);
-      expect((await tab.lookup(appIds(10))).has(appId(10))).toBe(true);
+      expect((await tab.lookup([id], ["platforms"])).has(id)).toBe(hit);
+      expect((await tab.lookup([id])).has(id)).toBe(true);
     }
   });
 
   describe("TTL edges", () => {
-    const cases: readonly (readonly [string, KindVerdicts, number])[] = [
-      ["disclosed", uniformVerdicts("disclosed"), DISCLOSED_TTL_MS],
-      ["not disclosed", uniformVerdicts("not-disclosed"), NOT_DISCLOSED_TTL_MS],
-      ["unknown gated", uniformVerdicts("gated"), UNKNOWN_TTL_MS],
-      ["unknown missing", uniformVerdicts("missing"), UNKNOWN_TTL_MS],
-    ];
-
-    it.each(cases)("%s: stored for its TTL, gone at exactly the TTL", async (_n, verdicts, ttl) => {
+    it.each<readonly [string, KindVerdicts, number]>([
+      ["disclosed", make.verdicts.uniform("disclosed"), DISCLOSED_TTL_MS],
+      ["not disclosed", make.verdicts.uniform("not-disclosed"), NOT_DISCLOSED_TTL_MS],
+      ["unknown gated", make.verdicts.uniform("gated"), UNKNOWN_TTL_MS],
+      ["unknown missing", make.verdicts.uniform("missing"), UNKNOWN_TTL_MS],
+    ])("%s: stored for its TTL, gone at exactly the TTL", async (_n, verdicts, ttl) => {
       const { cache, another, clock } = setup();
-      await cache.save(new Map([[appId(10), verdicts]]));
+      const id = make.appId();
+      await cache.save(new Map([[id, verdicts]]));
 
       clock.set(T + ttl - 1);
-      expect((await another().lookup(appIds(10))).has(appId(10))).toBe(true);
-      expect((await cache.lookup(appIds(10))).has(appId(10))).toBe(true);
+      expect((await another().lookup([id])).has(id)).toBe(true);
+      expect((await cache.lookup([id])).has(id)).toBe(true);
 
       clock.set(T + ttl);
-      expect((await another().lookup(appIds(10))).has(appId(10))).toBe(false);
-      expect((await cache.lookup(appIds(10))).has(appId(10))).toBe(false);
+      expect((await another().lookup([id])).has(id)).toBe(false);
+      expect((await cache.lookup([id])).has(id)).toBe(false);
     });
   });
 
   describe("verdicts that are not stored", () => {
-    const cases: readonly (readonly [string, AiVerdict])[] = [
-      ["unknown error", UNKNOWN.error],
-      ["unknown rate-limited", UNKNOWN["rate-limited"]],
-    ];
-
-    it.each(cases)("%s: page memory only, for a short while", async (_name, verdict) => {
+    it.each<readonly [string, AiVerdict]>([
+      ["unknown error", make.verdict.unknown("error")],
+      ["unknown rate-limited", make.verdict.unknown("rate-limited")],
+    ])("%s: page memory only, for a short while", async (_name, verdict) => {
       const { cache, another, store, clock } = setup();
-      const verdicts = aiVerdicts(verdict);
-      await cache.save(new Map([[appId(10), verdicts]]));
+      const id = make.appId();
+      const verdicts = ai(verdict);
+      await cache.save(new Map([[id, verdicts]]));
       expect(store.calls.set).toBe(0);
       expect(await store.keys()).toStrictEqual([]);
-      expect(await another().lookup(appIds(10))).toStrictEqual(new Map());
+      expect(await another().lookup([id])).toStrictEqual(new Map());
 
       clock.set(T + TRANSIENT_TTL_MS - 1);
-      expect(await cache.lookup(appIds(10))).toStrictEqual(new Map([[10, verdicts]]));
+      expect(await cache.lookup([id])).toStrictEqual(new Map([[id, verdicts]]));
       clock.set(T + TRANSIENT_TTL_MS);
-      expect(await cache.lookup(appIds(10))).toStrictEqual(new Map());
+      expect(await cache.lookup([id])).toStrictEqual(new Map());
     });
 
     it("writes only the stored verdicts of a mixed batch", async () => {
       const { cache, store } = setup();
-      const verdicts: readonly (readonly [AppId, KindVerdicts])[] = [
-        [appId(1), aiVerdicts(NOT_DISCLOSED)],
-        [appId(2), aiVerdicts(UNKNOWN.error)],
-        [appId(3), aiVerdicts(UNKNOWN.gated)],
-      ];
-      await cache.save(new Map(verdicts));
+      const [answered, failed, gated] = [make.appId(), make.appId(), make.appId()];
+      await cache.save(
+        new Map<AppId, KindVerdicts>([
+          [answered, notDisclosed()],
+          [failed, ai(make.verdict.unknown("error"))],
+          [gated, ai(make.verdict.unknown("gated"))],
+        ]),
+      );
       expect(store.calls.set).toBe(1);
-      expect((await store.keys()).toSorted()).toStrictEqual(["v1:a:1", "v1:a:3"]);
+      expect((await store.keys()).toSorted()).toStrictEqual(
+        [verdictKey(answered), verdictKey(gated)].toSorted(),
+      );
     });
   });
 
   describe("invalid stored values", () => {
     // Which entries are invalid is up to decodeVerdicts; these two show the cache drops them.
-    const invalid: readonly (readonly [string, JsonValue])[] = [
+    it.each<readonly [string, JsonValue]>([
       ["a string", "disclosed"],
       ["an entry without kinds", { time: T, kinds: {} }],
-    ];
-
-    it.each(invalid)("discards %s", async (_name, value) => {
-      const store = countingStore(memoryStore(new Map([["v1:a:10", value]])));
-      const cache = createVerdictCache(store, fixedClock(T));
-      expect(await cache.lookup(appIds(10))).toStrictEqual(new Map());
+    ])("discards %s", async (_name, value) => {
+      const id = make.appId();
+      const store = fake.countingStore(fake.store(new Map([[verdictKey(id), value]])));
+      const cache = createVerdictCache(store, fake.clock(T));
+      expect(await cache.lookup([id])).toStrictEqual(new Map());
     });
   });
 
   describe("memory cap", () => {
     it("evicts the least recently used entries and falls back to storage", async () => {
+      const [oldest, second, third, fourth, newest] = [
+        make.appId(),
+        make.appId(),
+        make.appId(),
+        make.appId(),
+        make.appId(),
+      ];
       const { cache, store } = setup(3);
-      const ids = appIds(1, 2, 3, 4, 5);
-      await cache.save(new Map(ids.map((id) => [id, aiVerdicts(NOT_DISCLOSED)])));
+      await cache.save(
+        new Map([oldest, second, third, fourth, newest].map((id) => [id, notDisclosed()])),
+      );
 
-      await cache.lookup(appIds(5));
+      await cache.lookup([newest]);
       expect(store.calls.get).toBe(0);
 
-      const oldest = await cache.lookup(appIds(1));
-      expect(oldest.has(appId(1))).toBe(true);
-      expect(store.gets).toStrictEqual([["v1:a:1"]]);
+      expect((await cache.lookup([oldest])).has(oldest)).toBe(true);
+      expect(store.gets).toStrictEqual([[verdictKey(oldest)]]);
     });
 
     it("never holds more than the cap in memory", async () => {
+      const ids = make.appIds(4);
       const { cache, store } = setup(2);
-      await cache.save(
-        new Map(appIds(1, 2, 3, 4).map((id) => [id, aiVerdicts(UNKNOWN["rate-limited"])])),
-      );
-      expect((await cache.lookup(appIds(1, 2, 3, 4))).size).toBe(2);
+      await cache.save(new Map(ids.map((id) => [id, ai(make.verdict.unknown("rate-limited"))])));
+      expect((await cache.lookup(ids)).size).toBe(2);
       expect(store.calls.get).toBe(1);
     });
   });

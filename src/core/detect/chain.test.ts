@@ -1,61 +1,25 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { detectorContract } from "../../../tests/contracts/detector.contract";
-import { appId, appIds } from "../../../tests/helpers/app-ids";
-import { fakeDetector } from "../../../tests/helpers/fake-detector";
-import { fakeHttp, type Route } from "../../../tests/helpers/fake-http";
-import { memoryStore } from "../../../tests/helpers/memory-store";
-import { recordingLogger } from "../../../tests/helpers/recording-logger";
-import { T0, useTimerClock } from "../../../tests/helpers/timer-clock";
-import { aiVerdicts } from "../../../tests/helpers/verdicts";
+import { make } from "../../../tests/helpers/factory";
+import { PAGE_URL } from "../../../tests/helpers/fake-detector";
+import type { Route } from "../../../tests/helpers/fake-http";
+import { fake } from "../../../tests/helpers/fakes";
+import { T0 } from "../../../tests/helpers/timer-clock";
 import { KIND_IDS } from "../kinds/id";
-import { type KindVerdicts, UNKNOWN_KINDS } from "../kinds/verdicts";
-import type { Detector, Http } from "../ports";
-import { type AppId, NOT_DISCLOSED as NOT_DISCLOSED_VERDICT } from "../types";
+import type { KindVerdicts } from "../kinds/verdicts";
+import type { AppId } from "../types";
 import { createBreaker, HTML_BREAKER_KEY } from "./breaker";
-import { createBudgetDetector } from "./budget";
+import { createBudgetDetector, DEFAULT_HTML_BUDGET } from "./budget";
 import { createChainDetector } from "./chain";
-import { createThrottledHttp } from "./throttle";
+import { createThrottledHttp, DEFAULT_SPACING_MS } from "./throttle";
 
-const DISCLOSED = aiVerdicts({
-  state: "disclosed",
-  kind: "ai",
-  notes: "Art",
-  language: "english",
-  source: "api",
-});
-const NOT_DISCLOSED = aiVerdicts({ state: "not-disclosed", source: "html" });
-const PAGE = "https://store.steampowered.com/app/";
+const DISCLOSED = make.verdicts({ ai: make.verdict.disclosed("ai") });
+const NOT_DISCLOSED = make.verdicts({ ai: make.verdict.notDisclosed("html") });
+const RATE_LIMITED = make.verdicts.uniform("rate-limited");
 
 /** Every ID unknown `missing`, like GetItems for IDs it has no item for. */
 function allMissing() {
-  return fakeDetector(() => UNKNOWN_KINDS.missing);
-}
-
-/**
- * A stand-in for the HTML fallback detector, built in its own step: one app page request per ID,
- * all sent at once (the worst case for pacing). 200 is not disclosed; withheld is rate-limited.
- */
-function pageDetector(http: Http): Detector {
-  return {
-    async detect(ids) {
-      const distinct = [...new Set(ids)];
-      const results = await Promise.all(distinct.map((id) => http.get(`${PAGE}${String(id)}/`)));
-      return new Map(
-        distinct.map((id, index): [AppId, KindVerdicts] => {
-          const result = results[index];
-          if (result?.kind === "withheld") {
-            return [id, UNKNOWN_KINDS["rate-limited"]];
-          }
-          return [
-            id,
-            result?.kind === "response" && result.status === 200
-              ? NOT_DISCLOSED
-              : UNKNOWN_KINDS.error,
-          ];
-        }),
-      );
-    },
-  };
+  return fake.detector(() => make.verdicts());
 }
 
 afterEach(() => {
@@ -64,120 +28,124 @@ afterEach(() => {
 
 detectorContract(
   "createChainDetector",
-  () => createChainDetector([allMissing(), fakeDetector(() => NOT_DISCLOSED)]),
+  () => createChainDetector([allMissing(), fake.detector(() => NOT_DISCLOSED)]),
 );
 detectorContract("createChainDetector with no links", () => createChainDetector([]));
 detectorContract(
   "createChainDetector over a rejecting link",
-  () => createChainDetector([{ detect: () => Promise.reject(new Error()) }]),
+  () => createChainDetector([fake.rejectingDetector()]),
 );
 
 describe("createChainDetector", () => {
   it("sends only the IDs a link left unknown missing to the next link", async () => {
-    const verdictFor = new Map<number, KindVerdicts>([
-      [1, DISCLOSED],
-      [2, UNKNOWN_KINDS.missing],
-      [3, UNKNOWN_KINDS.error],
-      [4, UNKNOWN_KINDS["rate-limited"]],
-      [5, UNKNOWN_KINDS.missing],
+    const ids = [make.appId(), make.appId(), make.appId(), make.appId(), make.appId()] as const;
+    const [disclosed, missing, failed, limited, otherMissing] = ids;
+    const answers = new Map<AppId, KindVerdicts>([
+      [disclosed, DISCLOSED],
+      [missing, make.verdicts()],
+      [failed, make.verdicts.uniform("error")],
+      [limited, RATE_LIMITED],
+      [otherMissing, make.verdicts()],
     ]);
-    const api = fakeDetector((id) => verdictFor.get(id) ?? UNKNOWN_KINDS.error);
-    const html = fakeDetector(() => NOT_DISCLOSED);
-    const verdicts = await createChainDetector([api, html]).detect(appIds(1, 2, 3, 4, 5, 2));
-    expect(api.calls).toStrictEqual([appIds(1, 2, 3, 4, 5)]);
-    expect(html.calls).toStrictEqual([appIds(2, 5)]);
+    const api = fake.detector((id) => answers.get(id) ?? make.verdicts.uniform("error"));
+    const html = fake.detector(() => NOT_DISCLOSED);
+    const verdicts = await createChainDetector([api, html]).detect([...ids, missing]);
+    expect(api.calls).toStrictEqual([ids]);
+    expect(html.calls).toStrictEqual([[missing, otherMissing]]);
     expect(verdicts).toStrictEqual(
       new Map<AppId, KindVerdicts>([
-        [appId(1), DISCLOSED],
-        [appId(2), NOT_DISCLOSED],
-        [appId(3), UNKNOWN_KINDS.error],
-        [appId(4), UNKNOWN_KINDS["rate-limited"]],
-        [appId(5), NOT_DISCLOSED],
+        [disclosed, DISCLOSED],
+        [missing, NOT_DISCLOSED],
+        [failed, make.verdicts.uniform("error")],
+        [limited, RATE_LIMITED],
+        [otherMissing, NOT_DISCLOSED],
       ]),
     );
   });
 
   it.each(KIND_IDS)("does not pass an ID on when only %s has an answer", async (kind) => {
-    const partly = { ...UNKNOWN_KINDS.missing, [kind]: NOT_DISCLOSED_VERDICT };
+    const partly = make.verdicts({ [kind]: make.verdict.notDisclosed() });
     const html = allMissing();
-    const verdicts = await createChainDetector([fakeDetector(() => partly), html]).detect(
-      appIds(1),
-    );
+    const id = make.appId();
+    const verdicts = await createChainDetector([fake.detector(() => partly), html]).detect([id]);
     expect(html.calls).toStrictEqual([]);
-    expect(verdicts).toStrictEqual(new Map([[appId(1), partly]]));
+    expect(verdicts).toStrictEqual(new Map([[id, partly]]));
   });
 
   it("does not call a link when nothing is left for it", async () => {
-    const html = fakeDetector(() => NOT_DISCLOSED);
-    await createChainDetector([fakeDetector(() => DISCLOSED), html]).detect(appIds(1, 2));
+    const html = fake.detector(() => NOT_DISCLOSED);
+    await createChainDetector([fake.detector(() => DISCLOSED), html]).detect(make.appIds(2));
     expect(html.calls).toStrictEqual([]);
   });
 
   it("keeps missing when the last link also has nothing", async () => {
-    const verdicts = await createChainDetector([allMissing(), allMissing()]).detect(appIds(7));
-    expect(verdicts).toStrictEqual(new Map([[appId(7), UNKNOWN_KINDS.missing]]));
+    const id = make.appId();
+    const verdicts = await createChainDetector([allMissing(), allMissing()]).detect([id]);
+    expect(verdicts).toStrictEqual(new Map([[id, make.verdicts()]]));
   });
 
   it("answers unknown error for IDs a faulty link rejected or left out", async () => {
-    const partial: Detector = { detect: () => Promise.resolve(new Map([[appId(1), DISCLOSED]])) };
-    const verdicts = await createChainDetector([partial]).detect(appIds(1, 2));
+    const [answered, left] = [make.appId(), make.appId()];
+    const partial = fake.partialDetector(new Map([[answered, DISCLOSED]]));
+    const verdicts = await createChainDetector([partial]).detect([answered, left]);
     expect(verdicts).toStrictEqual(
-      new Map<AppId, KindVerdicts>([[appId(1), DISCLOSED], [appId(2), UNKNOWN_KINDS.error]]),
+      new Map([[answered, DISCLOSED], [left, make.verdicts.uniform("error")]]),
     );
   });
 });
 
 describe("the HTML fallback budget in a chain", () => {
-  const ids = appIds(...Array.from({ length: 15 }, (_, index) => 4_000_000 + index));
+  const ids = make.appIds(DEFAULT_HTML_BUDGET + 5);
 
   function setup(routes: readonly Route[]) {
-    const clock = useTimerClock();
-    const server = fakeHttp(routes);
-    const sent: number[] = [];
-    const timed: Http = {
-      get(url) {
-        sent.push(clock.now() - T0);
-        return server.get(url);
-      },
-    };
+    const clock = fake.timerClock();
+    const server = fake.timedHttp(routes, clock);
     const breaker = createBreaker({
-      store: memoryStore(),
+      store: fake.store(),
       clock,
-      logger: recordingLogger().logger,
+      logger: fake.logger().logger,
       key: HTML_BREAKER_KEY,
       random: () => 0,
     });
-    const html = pageDetector(createThrottledHttp({ http: timed, breaker, clock }));
+    const html = fake.pageDetector(
+      createThrottledHttp({ http: server.http, breaker, clock }),
+      NOT_DISCLOSED,
+    );
     const chain = createChainDetector([allMissing(), createBudgetDetector(html)]);
-    return { chain, server, sent };
+    return { chain, server, sent: () => server.sent.map(({ at }) => at - T0) };
   }
 
-  it("fetches at most 10 app pages per page view, one at a time, 1 s apart", async () => {
-    const { chain, server, sent } = setup([[PAGE, { status: 200 }]]);
+  it("fetches at most the budget of app pages per page view, one at a time, spaced", async () => {
+    const { chain, server, sent } = setup([[PAGE_URL, { status: 200 }]]);
     const first = chain.detect(ids);
-    await vi.advanceTimersByTimeAsync(20_000);
+    await vi.advanceTimersByTimeAsync(2 * DEFAULT_HTML_BUDGET * DEFAULT_SPACING_MS);
     const verdicts = await first;
-    expect(sent).toStrictEqual(Array.from({ length: 10 }, (_, index) => index * 1_000));
-    expect(server.maxInFlight).toBe(1);
+    expect(sent()).toStrictEqual(
+      Array.from({ length: DEFAULT_HTML_BUDGET }, (_, index) => index * DEFAULT_SPACING_MS),
+    );
+    expect(server.inner.maxInFlight).toBe(1);
     const states = [...verdicts.values()];
-    expect(states.filter((verdict) => verdict === NOT_DISCLOSED)).toHaveLength(10);
-    expect(states.filter((verdict) => verdict === UNKNOWN_KINDS["rate-limited"])).toHaveLength(5);
+    expect(states.filter((verdict) => verdict === NOT_DISCLOSED)).toHaveLength(
+      DEFAULT_HTML_BUDGET,
+    );
+    expect(states.filter((verdict) => verdict === RATE_LIMITED)).toHaveLength(
+      ids.length - DEFAULT_HTML_BUDGET,
+    );
 
     // The budget is spent for this page view: later scans send nothing.
-    const later = chain.detect(appIds(5_000_000));
-    await vi.advanceTimersByTimeAsync(5_000);
-    expect(await later).toStrictEqual(new Map([[appId(5_000_000), UNKNOWN_KINDS["rate-limited"]]]));
-    expect(sent).toHaveLength(10);
+    const later = make.appId();
+    const pending = chain.detect([later]);
+    await vi.advanceTimersByTimeAsync(5 * DEFAULT_SPACING_MS);
+    expect(await pending).toStrictEqual(new Map([[later, RATE_LIMITED]]));
+    expect(sent()).toHaveLength(DEFAULT_HTML_BUDGET);
   });
 
   it("stops at the first 429 from an app page", async () => {
-    const { chain, sent } = setup([[PAGE, { status: 429 }]]);
+    const { chain, sent } = setup([[PAGE_URL, { status: 429 }]]);
     const pending = chain.detect(ids);
-    await vi.advanceTimersByTimeAsync(20_000);
+    await vi.advanceTimersByTimeAsync(2 * DEFAULT_HTML_BUDGET * DEFAULT_SPACING_MS);
     const verdicts = await pending;
-    expect(sent).toStrictEqual([0]);
-    expect([...verdicts.values()].filter((v) => v === UNKNOWN_KINDS["rate-limited"])).toHaveLength(
-      14,
-    );
+    expect(sent()).toStrictEqual([0]);
+    expect([...verdicts.values()].filter((v) => v === RATE_LIMITED)).toHaveLength(ids.length - 1);
   });
 });

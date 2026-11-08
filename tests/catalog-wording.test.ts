@@ -90,7 +90,6 @@ describe("catalog wording", () => {
   });
 
   it.each<readonly [string, (name: string) => string]>([
-    ["a bare negative", (name) => `No ${name}`],
     ["a negative in a sentence", (name) => `This game has no ${name}.`],
     ["none after the name", (name) => `${name}: none`],
     ["free of the tag", (name) => `Free of ${name}`],

@@ -99,6 +99,48 @@ export function disclosed<Id extends KindId>(
   return { ...DISCLOSED_DEFAULTS[kind], ...overrides };
 }
 
+/** The kind's disclosed verdict with no payload field but those in `fields`. */
+export function bareDisclosed<Id extends KindId>(
+  kind: Id,
+  fields: Partial<DisclosedFor<Id>> = {},
+): DisclosedBase<Id> & Partial<DisclosedFor<Id>> {
+  return { state: "disclosed", kind, source: "api", ...fields };
+}
+
+/** The payload of the kind `Id`: its disclosed verdict without state, kind, source and mark. */
+type PayloadFor<Id extends KindId> = Omit<DisclosedFor<Id>, keyof DisclosedBase | "fullGame">;
+
+/** Each kind's disclosed verdict holding the given payload and no other field. */
+const MINIMAL: {
+  readonly [Id in KindId]: (payload: PayloadFor<Id>) => DisclosedFor<Id>;
+} = {
+  ai: (payload) => ({ state: "disclosed", kind: "ai", source: "api", ...payload }),
+  kernel: (payload) => ({ state: "disclosed", kind: "kernel", source: "api", ...payload }),
+  anticheat: (payload) => ({ state: "disclosed", kind: "anticheat", source: "api", ...payload }),
+  drm: (payload) => ({ state: "disclosed", kind: "drm", source: "api", ...payload }),
+  account: (payload) => ({ state: "disclosed", kind: "account", source: "api", ...payload }),
+  eula: (payload) => ({ state: "disclosed", kind: "eula", source: "api", ...payload }),
+  pvp: (payload) => ({ state: "disclosed", kind: "pvp", source: "api", ...payload }),
+  iap: (payload) => ({ state: "disclosed", kind: "iap", source: "api", ...payload }),
+  deck: (payload) => ({ state: "disclosed", kind: "deck", source: "api", ...payload }),
+  machine: (payload) => ({ state: "disclosed", kind: "machine", source: "api", ...payload }),
+  family: (payload) => ({ state: "disclosed", kind: "family", source: "api", ...payload }),
+  earlyaccess: (payload) => ({
+    state: "disclosed",
+    kind: "earlyaccess",
+    source: "api",
+    ...payload,
+  }),
+};
+
+/** The kind's disclosed verdict with its required payload and only the optional fields given. */
+export function minimalDisclosed<Id extends KindId>(
+  kind: Id,
+  payload: PayloadFor<Id>,
+): DisclosedFor<Id> {
+  return MINIMAL[kind](payload);
+}
+
 /** A disclosed AI verdict with the optional fields filled in; override what a test cares about. */
 export function disclosedVerdict(overrides: Partial<AiDisclosed> = {}): AiDisclosed {
   return disclosed("ai", overrides);

@@ -1,5 +1,5 @@
 import type { Fetch } from "../../src/core/http";
-import type { Http, HttpResult } from "../../src/core/ports";
+import type { Clock, Http, HttpResult } from "../../src/core/ports";
 
 /** What a fake server answers to one request. */
 export type Reply =
@@ -78,6 +78,38 @@ export function fakeHttp(routes: readonly Route[]): FakeHttp {
       return httpResult(replyFor(routes, url), url);
     },
   };
+}
+
+/** One request a `timedHttp` sent, and the clock's time when it went out. */
+export interface SentRequest {
+  readonly url: string;
+  readonly at: number;
+}
+
+export interface TimedHttp {
+  readonly http: Http;
+  /** Every request, in order, with the time it went out. */
+  readonly sent: readonly SentRequest[];
+  /** The fake server under it. */
+  readonly inner: FakeHttp;
+}
+
+/** A `fakeHttp` over `routes` that also records when each request went out by `clock`. */
+export function timedHttp(routes: readonly Route[], clock: Clock): TimedHttp {
+  const inner = fakeHttp(routes);
+  const sent: SentRequest[] = [];
+  const http: Http = {
+    get(url) {
+      sent.push({ url, at: clock.now() });
+      return inner.get(url);
+    },
+  };
+  return { http, sent, inner };
+}
+
+/** An `Http` that withholds every request, like a throttle behind an open breaker. */
+export function withheldHttp(): Http {
+  return { get: () => Promise.resolve({ kind: "withheld" }) };
 }
 
 export interface FetchCall {

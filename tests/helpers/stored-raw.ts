@@ -59,3 +59,61 @@ export function noGames(): Readonly<Record<AllowScope, Readonly<Record<string, n
 export function junkValues(): readonly JsonValue[] {
   return ["garbage", 7, null, true, [], ["x"]];
 }
+
+/** A stored v2 ignore list, of games or of creators, holding `keys` in one scope. */
+export function v2Allow(
+  scope: AllowScope,
+  ...keys: readonly (number | string)[]
+): Readonly<Record<string, Readonly<Record<string, StoredAllowEntry>>>> {
+  return { [scope]: Object.fromEntries(keys.map((key) => [String(key), storedAllowEntry()])) };
+}
+
+/** A fresh stored value with nesting: an object holding a string, a number and a list. */
+export function storedJson(): Readonly<Record<string, JsonValue>> {
+  return { name: freshName(), added: freshTime(), list: [freshName()] };
+}
+
+/** A text that no stored field takes as its value. */
+export function corruptText(): string {
+  return "garbage";
+}
+
+/** A number that no stored field takes as its value. */
+export function corruptNumber(): number {
+  return 7;
+}
+
+/** Stored locales that are not language codes. */
+export function badLocales(): readonly JsonValue[] {
+  return ["", " ", "english", "e", "en US", "../en", 5, null];
+}
+
+/** Texts that name no app ID: empty, zero, a leading zero, a fraction, negative, past 32 bits. */
+export function badGameKeys(): readonly string[] {
+  return ["", "0", "012", "1.5", "-3", "abc", "4294967296"];
+}
+
+/** Stored ignore entries without a date, without a text name, or not an object. */
+export function badAllowEntries(): readonly JsonValue[] {
+  return [{ name: freshName() }, { name: 5, added: freshTime() }, corruptText(), null];
+}
+
+/** Stored values that name no ignore scope. */
+export function badScopes(): readonly (string | null)[] {
+  return [null, "", "kinds", "all ", "__proto__"];
+}
+
+/** Stored chip texts that are not text, or blank. */
+export function badChipTexts(): readonly JsonValue[] {
+  return [corruptNumber(), "   ", [corruptText()]];
+}
+
+/** The smallest and the largest app ID. */
+export function appIdBounds(): readonly number[] {
+  return [1, 0xff_ff_ff_ff];
+}
+
+/** Values that are no app ID: zero, negative, a fraction, past 32 bits, not a number. */
+export function badAppIds(): readonly unknown[] {
+  return [0, -1, 1.5, 0x1_00_00_00_00, Number.NaN, "10", null, undefined];
+}

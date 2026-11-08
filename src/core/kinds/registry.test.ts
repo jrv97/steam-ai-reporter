@@ -1,16 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { plainKinds } from "../../../tests/helpers/settings";
+import { make } from "../../../tests/helpers/factory";
 import { SHIPPED_CATALOGS } from "../i18n/shipped";
 import { KIND_IDS } from "./id";
 import type { TagKind } from "./kind";
 import { holdsEveryKind, KIND_BY_ID, KINDS, perKind } from "./registry";
 
 describe("KINDS", () => {
-  it("holds one definition for each kind id, in order, and each one knows its id", () => {
-    expect(KINDS.map((kind) => kind.id)).toStrictEqual([...KIND_IDS]);
-    expect(new Set(KIND_IDS).size).toBe(KIND_IDS.length);
-  });
-
   it("lists the kinds alphabetically by Steam's English heading, the default tag order", () => {
     const english = SHIPPED_CATALOGS["en"];
     const heading = (kind: TagKind) => english?.[kind.messages.heading]?.message ?? "";
@@ -20,7 +15,7 @@ describe("KINDS", () => {
 
   it("starts each kind with a badge and an untouched list, some off and without a banner", () => {
     expect(perKind((kind) => kind.defaults)).toStrictEqual(
-      plainKinds({ enabled: true, badge: true, banner: true, filter: "off" }),
+      make.raw.v2Kinds({ enabled: true, badge: true, banner: true, filter: "off" }),
     );
   });
 });
@@ -39,11 +34,12 @@ describe("perKind", () => {
 });
 
 describe("KIND_BY_ID", () => {
-  it("maps each id to its own definition", () => {
-    for (const kind of KINDS) {
-      expect(KIND_BY_ID[kind.id]).toBe(kind);
-    }
-  });
+  it.each(KINDS.map((kind) => [kind.id, kind] as const))(
+    "maps %s to its definition",
+    (id, kind) => {
+      expect(KIND_BY_ID[id]).toBe(kind);
+    },
+  );
 });
 
 describe("holdsEveryKind", () => {

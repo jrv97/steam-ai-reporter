@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { make } from "../../../tests/helpers/factory";
 import { verdictOf } from "../../../tests/helpers/getitems";
-import { UNKNOWN } from "../types";
 import { EULA_KIND, eulaLink } from "./eula";
 
 function fromEula(eula: unknown) {
@@ -71,69 +71,76 @@ describe("eulaLink", () => {
 
 describe("EULA_KIND.fromGetItems", () => {
   it("is disclosed with every entry, in order, as for Elden Ring", () => {
+    const [first, second] = [make.text.name(), make.text.name()];
     const verdict = fromEula([
-      { name: "ELDEN RING EULA", url: "https://store.steampowered.com//eula/1245620_eula_0" },
-      { name: "ELDEN RING EULA (JP)", url: "https://store.steampowered.com//eula/1245620_eula_1" },
+      { name: first, url: `${STORE}//eula/1245620_eula_0` },
+      { name: second, url: `${STORE}//eula/1245620_eula_1` },
     ]);
-    expect(verdict).toStrictEqual({
-      state: "disclosed",
-      kind: "eula",
-      source: "api",
-      items: [
-        { name: "ELDEN RING EULA", url: "https://store.steampowered.com/eula/1245620_eula_0" },
-        { name: "ELDEN RING EULA (JP)", url: "https://store.steampowered.com/eula/1245620_eula_1" },
-      ],
-    });
+    expect(verdict).toStrictEqual(
+      {
+        ...make.verdict.bare("eula"),
+        items: [
+          { name: first, url: `${STORE}/eula/1245620_eula_0` },
+          { name: second, url: `${STORE}/eula/1245620_eula_1` },
+        ],
+      },
+    );
   });
 
-  it("keeps the name and drops the link of an entry whose URL is not an EULA link", () => {
+  it("keeps the name and drops the link of an entry without an EULA link", () => {
+    const names = [make.text.name(), make.text.name(), make.text.name(), make.text.name()];
+    const [noLink, otherHost, script, empty] = names;
+    const good = make.text.name();
     const verdict = fromEula([
-      { name: "Terms", url: "https://example.com//eula/1" },
-      { name: "More terms", url: "javascript:alert(1)" },
-      { name: "Other", url: "" },
-      { name: "Good", url: "https://store.steampowered.com//eula/9_eula_0" },
+      { name: noLink },
+      { name: otherHost, url: "https://example.com//eula/1" },
+      { name: script, url: "javascript:alert(1)" },
+      { name: empty, url: "" },
+      { name: good, url: `${STORE}//eula/9_eula_0` },
     ]);
-    expect(verdict).toStrictEqual({
-      state: "disclosed",
-      kind: "eula",
-      source: "api",
-      items: [
-        { name: "Terms" },
-        { name: "More terms" },
-        { name: "Other" },
-        { name: "Good", url: "https://store.steampowered.com/eula/9_eula_0" },
-      ],
-    });
+    expect(verdict).toStrictEqual(
+      {
+        ...make.verdict.bare("eula"),
+        items: [
+          ...names.map((name) => ({ name })),
+          { name: good, url: `${STORE}/eula/9_eula_0` },
+        ],
+      },
+    );
   });
 
   it("keeps the name verbatim, markup and spacing included", () => {
-    const name = " <img src=x onerror=alert(1)> EULA\n";
-    const verdict = fromEula([{ name, url: "https://store.steampowered.com/eula/1" }]);
+    const name = ` ${make.text.markup()}\n`;
+    const verdict = fromEula([{ name, url: `${STORE}/eula/1` }]);
     expect(verdict).toMatchObject({ items: [{ name }] });
   });
 
   it("drops the entries with a blank name and keeps the others in order", () => {
+    const [first, second] = [make.text.name(), make.text.name()];
     const verdict = fromEula([
-      { name: "", url: "https://store.steampowered.com/eula/1" },
-      { name: "First" },
+      { name: "", url: `${STORE}/eula/1` },
+      { name: first },
       { name: " \n" },
-      { name: "Second", url: "https://store.steampowered.com/eula/2" },
+      { name: second, url: `${STORE}/eula/2` },
     ]);
-    expect(verdict).toMatchObject({
-      state: "disclosed",
-      items: [{ name: "First" }, { name: "Second", url: "https://store.steampowered.com/eula/2" }],
-    });
+    expect(verdict).toStrictEqual(
+      {
+        ...make.verdict.bare("eula"),
+        items: [{ name: first }, { name: second, url: `${STORE}/eula/2` }],
+      },
+    );
   });
 
   it("allows 50 entries and is unknown malformed at 51", () => {
-    const entries = (count: number) => Array.from({ length: count }, () => ({ name: "Agreement" }));
+    const name = make.text.name();
+    const entries = (count: number) => Array.from({ length: count }, () => ({ name }));
     expect(fromEula(entries(50))).toMatchObject({ state: "disclosed" });
-    expect(fromEula(entries(51))).toBe(UNKNOWN.malformed);
+    expect(fromEula(entries(51))).toBe(make.verdict.unknown("malformed"));
   });
 
   it("allows a name of 4,000 characters and is unknown malformed at 4,001", () => {
     expect(fromEula([{ name: "x".repeat(4000) }]).state).toBe("disclosed");
-    expect(fromEula([{ name: "x".repeat(4001) }])).toBe(UNKNOWN.malformed);
+    expect(fromEula([{ name: "x".repeat(4001) }])).toBe(make.verdict.unknown("malformed"));
   });
 
   it.each<readonly [string, Readonly<Record<string, unknown>>]>([
@@ -141,18 +148,25 @@ describe("EULA_KIND.fromGetItems", () => {
     ["no entries", { eula: [] }],
     [
       "only entries with a blank name",
-      { eula: [{ name: "" }, { name: "  ", url: "https://store.steampowered.com/eula/1" }] },
+      { eula: [{ name: "" }, { name: "  ", url: `${STORE}/eula/1` }] },
     ],
   ])("is not disclosed for %s", (_name, details) => {
-    expect(verdictOf(EULA_KIND, details)).toStrictEqual({ state: "not-disclosed", source: "api" });
+    expect(verdictOf(EULA_KIND, details)).toStrictEqual(make.verdict.notDisclosed());
   });
 
-  it("is unknown malformed when the field is malformed, and only then", () => {
-    for (const eula of ["none", {}, [3], [{ url: "https://x" }], [{ name: 4 }]]) {
-      expect(fromEula(eula)).toBe(UNKNOWN.malformed);
-    }
+  it.each<readonly [string, unknown]>([
+    ["text", "none"],
+    ["an object", {}],
+    ["a list of numbers", [3]],
+    ["an entry without a name", [{ url: "https://x" }]],
+    ["an entry whose name is a number", [{ name: 4 }]],
+  ])("is unknown malformed for a field that is %s", (_name, eula) => {
+    expect(fromEula(eula)).toBe(make.verdict.unknown("malformed"));
+  });
+
+  it("ignores malformed fields of other kinds", () => {
     const others = { drm_third_party_type: 4, anticheat: "x" };
-    const eula = [{ name: "Game terms", url: "https://store.steampowered.com/eula/1" }];
+    const eula = [{ name: make.text.name(), url: `${STORE}/eula/1` }];
     expect(verdictOf(EULA_KIND, { ...others, eula }).state).toBe("disclosed");
   });
 });

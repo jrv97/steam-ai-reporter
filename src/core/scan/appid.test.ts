@@ -1,63 +1,62 @@
 import { describe, expect, it } from "vitest";
+import { make } from "../../../tests/helpers/factory";
 import { appIdFromDataAttribute, appIdFromHref } from "./appid";
 
 const STORE = "https://store.steampowered.com/search/?term=roguelike";
 const COMMUNITY = "https://steamcommunity.com/id/someone/wishlist/";
+const ID = make.appId();
 
 describe("appIdFromDataAttribute", () => {
-  it("reads a single numeric ID", () => {
-    expect(appIdFromDataAttribute("5072580")).toBe(5072580);
-    expect(appIdFromDataAttribute(" 413150 ")).toBe(413150);
+  it.each([String(ID), ` ${String(ID)} `])("reads a single numeric ID from %j", (value) => {
+    expect(appIdFromDataAttribute(value)).toBe(ID);
   });
 
-  it("skips comma lists, which belong to packages and bundles", () => {
-    expect(appIdFromDataAttribute("1245620,2778580")).toBeUndefined();
-  });
-
-  it("skips values that are not app IDs", () => {
-    for (const value of ["", "abc", "12abc", "-5", "1.5", "0", "4294967296"]) {
-      expect(appIdFromDataAttribute(value)).toBeUndefined();
-    }
+  it.each([
+    // Comma lists belong to packages and bundles.
+    make.appIds(2).join(","),
+    "",
+    "abc",
+    "12abc",
+    "-5",
+    "1.5",
+    "0",
+    "4294967296",
+  ])("skips %j, which is not one app ID", (value) => {
+    expect(appIdFromDataAttribute(value)).toBeUndefined();
   });
 });
 
 describe("appIdFromHref", () => {
-  it("reads relative and absolute store links, with or without a trailing slash", () => {
-    expect(appIdFromHref("/app/1808500", STORE)).toBe(1808500);
-    expect(appIdFromHref("/app/1808500/", STORE)).toBe(1808500);
-    expect(appIdFromHref("https://store.steampowered.com/app/1808500", STORE)).toBe(1808500);
-    expect(appIdFromHref("https://store.steampowered.com/app/1808500/", COMMUNITY)).toBe(1808500);
-    expect(appIdFromHref("//store.steampowered.com/app/1808500", STORE)).toBe(1808500);
+  const path = `/app/${String(ID)}`;
+
+  it.each([
+    [path, STORE],
+    [`${path}/`, STORE],
+    [`https://store.steampowered.com${path}`, STORE],
+    [`https://store.steampowered.com${path}/`, COMMUNITY],
+    [`//store.steampowered.com${path}`, STORE],
+    [`${path}/ARC_Raiders/?snr=1_7_7_151_150_1`, STORE],
+    [`${path}?curator_clanid=1`, STORE],
+    [`${path}/#app_reviews_hash`, STORE],
+    [`${path}#app_reviews_hash`, STORE],
+  ])("reads the app ID of %j on %s", (href, base) => {
+    expect(appIdFromHref(href, base)).toBe(ID);
   });
 
-  it("allows a slug, a query and a hash after the ID", () => {
-    expect(appIdFromHref("/app/1808500/ARC_Raiders/?snr=1_7_7_151_150_1", STORE)).toBe(1808500);
-    expect(appIdFromHref("/app/1808500?curator_clanid=1", STORE)).toBe(1808500);
-    expect(appIdFromHref("/app/1808500/#app_reviews_hash", STORE)).toBe(1808500);
-    expect(appIdFromHref("/app/1808500#app_reviews_hash", STORE)).toBe(1808500);
-  });
-
-  it("ignores steamcommunity.com and other hosts", () => {
-    expect(appIdFromHref("https://steamcommunity.com/app/1808500", STORE)).toBeUndefined();
-    expect(appIdFromHref("/app/1808500", COMMUNITY)).toBeUndefined();
-    expect(appIdFromHref("https://example.com/app/1808500", STORE)).toBeUndefined();
-  });
-
-  it("ignores store paths that are not an app page", () => {
-    for (
-      const href of [
-        "/agecheck/app/1808500/",
-        "/apps/1808500",
-        "/app/",
-        "/app/12abc",
-        "/app/0",
-        "/sub/12345/",
-        "/bundle/232/",
-        "javascript:void(0)",
-        "",
-      ]
-    ) {
-      expect(appIdFromHref(href, STORE)).toBeUndefined();
-    }
+  it.each([
+    [`https://steamcommunity.com${path}`, STORE],
+    [path, COMMUNITY],
+    [`${make.text.url()}${path}`, STORE],
+    [`/agecheck${path}/`, STORE],
+    [`/apps/${String(ID)}`, STORE],
+    ["/app/", STORE],
+    ["/app/12abc", STORE],
+    ["/app/0", STORE],
+    [`/sub/${String(ID)}/`, STORE],
+    [`/bundle/${String(ID)}/`, STORE],
+    ["javascript:void(0)", STORE],
+    ["", STORE],
+  ])("ignores %j on %s, which is no store app page", (href, base) => {
+    expect(appIdFromHref(href, base)).toBeUndefined();
   });
 });

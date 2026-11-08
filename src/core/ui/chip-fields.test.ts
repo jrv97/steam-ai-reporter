@@ -1,7 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { make } from "../../../tests/helpers/factory";
+import { fake } from "../../../tests/helpers/fakes";
 import { englishI18n } from "../../../tests/helpers/i18n";
-import { memoryStore } from "../../../tests/helpers/memory-store";
-import { withChipText, withKind, writeSettings } from "../../../tests/helpers/settings";
+import { writeSettings } from "../../../tests/helpers/settings";
 import { mountForm } from "../../../tests/helpers/settings-form";
 import { CATALOGS as CONTENT } from "../../platform/extension/content.catalogs.gen";
 import { CATALOGS as OPTIONS } from "../../platform/extension/options.catalogs.gen";
@@ -11,14 +12,14 @@ import type { BareMessageKey } from "../i18n/t";
 import { CHIP_TEXT_LIMITS, type ChipTextField } from "../kinds/chip-text";
 import type { KindId } from "../kinds/id";
 import { KIND_BY_ID } from "../kinds/registry";
-import { DEFAULT_SETTINGS, parseSettings, type Settings } from "../settings/settings";
+import { parseSettings, type Settings } from "../settings/settings";
 import { createSettingsSource } from "../settings/settings-source";
 
 const i18n = englishI18n();
 
 /** The options page over a store holding `settings`, with ways to reach a tag's chip fields. */
-async function setup(settings: Settings = DEFAULT_SETTINGS) {
-  const source = createSettingsSource(memoryStore());
+async function setup(settings: Settings = make.settings()) {
+  const source = createSettingsSource(fake.store());
   await writeSettings(source, settings);
   const { root, tab } = await mountForm({ settings: source });
   const box = (id: KindId, field: ChipTextField): HTMLInputElement => {
@@ -55,10 +56,10 @@ afterEach(() => {
 
 describe("the chip text fields", () => {
   it.each<readonly [KindId, Settings, string]>([
-    ["ai", DEFAULT_SETTINGS, i18n.t("kind_ai_chip")],
-    ["deck", DEFAULT_SETTINGS, i18n.t("kind_deck_chip")],
-    ["family", DEFAULT_SETTINGS, i18n.t("kind_family_unsupported_chip")],
-    ["family", withKind(DEFAULT_SETTINGS, "family", { facets: [] }), i18n.t("kind_family_heading")],
+    ["ai", make.settings(), i18n.t("kind_ai_chip")],
+    ["deck", make.settings(), i18n.t("kind_deck_chip")],
+    ["family", make.settings(), i18n.t("kind_family_unsupported_chip")],
+    ["family", make.settings.kind("family", { facets: [] }), i18n.t("kind_family_heading")],
   ])(
     "show the catalog's word for %s, the default, as each placeholder",
     async (id, settings, word) => {
@@ -82,24 +83,25 @@ describe("the chip text fields", () => {
 
   it("save the text cleaned on change, and clear it once emptied", async () => {
     const { box, stored } = await setup();
-    type(box("ai", "chip"), "  My   tag ", true);
+    const text = make.chipText();
+    type(box("ai", "chip"), `  ${text.split(" ").join("   ")} `, true);
     await vi.waitFor(async () => {
-      expect((await stored("ai")).chip).toBe("My tag");
+      expect((await stored("ai")).chip).toBe(text);
     });
-    expect(box("ai", "chip").value).toBe("My tag");
+    expect(box("ai", "chip").value).toBe(text);
     type(box("ai", "chip"), " ", true);
     await vi.waitFor(async () => {
       expect(await stored("ai")).not.toHaveProperty("chip");
     });
   });
 
+  const own = make.chipText();
+  const short = make.chipText();
+
   it.each<readonly [string, readonly (readonly [ChipTextField, string])[], readonly string[]]>([
     ["the catalog's word on both", [], [i18n.t("kind_ai_chip"), i18n.t("kind_ai_chip")]],
-    ["the chip text on both", [["chip", "Mine"]], ["Mine", "Mine"]],
-    ["the short text on the small image", [["chip", "Mine"], ["chipCompact", "Me"]], [
-      "Mine",
-      "Me",
-    ]],
+    ["the chip text on both", [["chip", own]], [own, own]],
+    ["the short text on the small image", [["chip", own], ["chipCompact", short]], [own, short]],
   ])("preview, as typed, %s", async (_case, typed, labels) => {
     const { box, preview } = await setup();
     for (const [field, text] of typed) {
@@ -110,24 +112,31 @@ describe("the chip text fields", () => {
 
   it("preview a tag with values by its first picked value", async () => {
     const { box, preview } = await setup(
-      withKind(DEFAULT_SETTINGS, "deck", { facets: ["playable"] }),
+      make.settings.kind("deck", { facets: ["playable"] }),
     );
-    type(box("deck", "chip"), "SD");
-    const label = i18n.t("kind_facet_chip", { chip: "SD", value: i18n.t("kind_compat_playable") });
+    const text = make.chipText();
+    type(box("deck", "chip"), text);
+    const label = i18n.t("kind_facet_chip", { chip: text, value: i18n.t("kind_compat_playable") });
     expect(preview("deck")).toEqual([["sar-badge", label], ["sar-compact", label]]);
   });
 
   it("count what each box holds, of the most it takes", async () => {
     const { root, box } = await setup();
-    type(box("ai", "chipCompact"), "Mine");
+    const text = make.chipText();
+    type(box("ai", "chipCompact"), text);
     const count = root.querySelector(`#${box("ai", "chipCompact").id}-count`);
-    expect(count?.textContent).toBe(i18n.t("options_chip_count", { count: "4", max: "16" }));
+    expect(count?.textContent).toBe(
+      i18n.t("options_chip_count", {
+        count: String(text.length),
+        max: String(CHIP_TEXT_LIMITS.chipCompact),
+      }),
+    );
     expect(box("ai", "chipCompact").getAttribute("aria-describedby")).toContain(count?.id);
   });
 
   it("offer Reset only for stored text, which clears it and returns focus", async () => {
     const { box, reset, stored } = await setup(
-      withChipText(DEFAULT_SETTINGS, { ai: { chipCompact: "Me" } }),
+      make.settings.chipText({ ai: { chipCompact: make.chipText() } }),
     );
     expect(reset("ai", "chip")?.hidden).toBe(true);
     expect(reset("ai", "chipCompact")?.getAttribute("aria-label")).toBe(
@@ -145,26 +154,29 @@ describe("the chip text fields", () => {
 
   it("keep text still being typed when another tab saves something else", async () => {
     const { box, source } = await setup();
-    type(box("ai", "chip"), "Mi");
-    await writeSettings(source, withKind(DEFAULT_SETTINGS, "drm", { filter: "dim" }));
-    expect(box("ai", "chip").value).toBe("Mi");
+    const text = make.chipText();
+    type(box("ai", "chip"), text);
+    await writeSettings(source, make.settings.kind("drm", { filter: "dim" }));
+    expect(box("ai", "chip").value).toBe(text);
   });
 
   it("show text another tab stored", async () => {
     const { box, source } = await setup();
-    await writeSettings(source, withChipText(DEFAULT_SETTINGS, { drm: { chip: "Locks" } }));
-    expect(box("drm", "chip").value).toBe("Locks");
+    const text = make.chipText();
+    await writeSettings(source, make.settings.chipText({ drm: { chip: text } }));
+    expect(box("drm", "chip").value).toBe(text);
   });
 
   it("keep the person's text out of every catalog", async () => {
     const catalogs = () => JSON.stringify([SHIPPED_CATALOGS, CONTENT, OPTIONS, USERSCRIPT]);
     const before = catalogs();
     const { box, stored } = await setup();
-    type(box("ai", "chip"), "Zq own words", true);
+    const text = make.chipText();
+    type(box("ai", "chip"), text, true);
     await vi.waitFor(async () => {
-      expect((await stored("ai")).chip).toBe("Zq own words");
+      expect((await stored("ai")).chip).toBe(text);
     });
     expect(catalogs()).toBe(before);
-    expect(before).not.toContain("Zq own words");
+    expect(before).not.toContain(text);
   });
 });

@@ -1,12 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { countingStore } from "../../../tests/helpers/counting-store";
-import { memoryStore } from "../../../tests/helpers/memory-store";
+import { make } from "../../../tests/helpers/factory";
+import { fake } from "../../../tests/helpers/fakes";
+import { readKey } from "../../../tests/helpers/store-read";
 import type { JsonValue } from "../json";
 import { UI_STATE_KEY } from "../storage-keys";
 import { createUiState, decodeTab, decodeTabRequest } from "./ui-state";
 
 function seeded(value: JsonValue) {
-  return countingStore(memoryStore(new Map([[UI_STATE_KEY, value]])));
+  return fake.countingStore(fake.store(new Map([[UI_STATE_KEY, value]])));
 }
 
 describe("decoding the stored tab", () => {
@@ -14,9 +15,9 @@ describe("decoding the stored tab", () => {
     [undefined, undefined, undefined],
     [{ tab: "drm" }, "drm", undefined],
     [{ tab: "general" }, "general", undefined],
-    [{ tab: "pvp", asked: 5 }, "pvp", "pvp"],
-    [{ tab: "gone", asked: 5 }, undefined, undefined],
-    [{ tab: "ai", asked: "now" }, "ai", undefined],
+    [{ tab: "pvp", asked: make.time() }, "pvp", "pvp"],
+    [{ tab: "gone", asked: make.time() }, undefined, undefined],
+    [{ tab: "ai", asked: String(make.time()) }, "ai", undefined],
     [{ open: { ai: false } }, undefined, undefined],
     [{ open: { ai: false }, tab: "eula" }, "eula", undefined],
     [null, undefined, undefined],
@@ -30,7 +31,7 @@ describe("decoding the stored tab", () => {
 
 describe("the tab memory over a store", () => {
   it("reads nothing from an empty store, and does not write", async () => {
-    const store = countingStore(memoryStore());
+    const store = fake.countingStore(fake.store());
     expect(await createUiState(store).read()).toBeUndefined();
     expect(store.calls.set).toBe(0);
   });
@@ -39,7 +40,7 @@ describe("the tab memory over a store", () => {
     const store = seeded({ open: { ai: false } });
     const state = createUiState(store);
     await state.setTab("kernel");
-    expect(await store.get([UI_STATE_KEY])).toEqual(new Map([[UI_STATE_KEY, { tab: "kernel" }]]));
+    expect(await readKey(store, UI_STATE_KEY)).toEqual({ tab: "kernel" });
     expect(await state.read()).toBe("kernel");
   });
 
@@ -54,11 +55,10 @@ describe("the tab memory over a store", () => {
   it("writes a request for the stored tab too, as a new value each time", async () => {
     const store = seeded({ tab: "eula" });
     const state = createUiState(store);
-    await state.requestTab("eula", 1);
-    await state.requestTab("eula", 2);
+    await state.requestTab("eula", make.time());
+    await state.requestTab("eula", make.time());
     expect(store.calls.set).toBe(2);
-    const stored = (await store.get([UI_STATE_KEY])).get(UI_STATE_KEY);
-    expect(decodeTabRequest(stored)).toBe("eula");
+    expect(decodeTabRequest(await readKey(store, UI_STATE_KEY))).toBe("eula");
     expect(await state.read()).toBe("eula");
   });
 

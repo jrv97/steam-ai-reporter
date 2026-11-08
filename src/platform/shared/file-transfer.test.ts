@@ -3,6 +3,7 @@ import {
   fileTransferContract,
   type FileTransferHarness,
 } from "../../../tests/contracts/file-transfer.contract";
+import { make } from "../../../tests/helpers/factory";
 import { createFileTransfer } from "./file-transfer";
 
 /** The container, with the Blob URLs it made and the downloads it started. */
@@ -65,7 +66,7 @@ describe("createFileTransfer", () => {
   it("leaves no link behind and revokes the Blob URL later", () => {
     vi.useFakeTimers();
     const { container, transfer, revoke } = domSetup();
-    transfer.save("backup.json", "{}");
+    transfer.save(make.text.fileName(), make.http.body());
     expect(container.querySelector("a")).toBeNull();
     expect(revoke).not.toHaveBeenCalled();
     vi.runAllTimers();
@@ -74,11 +75,12 @@ describe("createFileTransfer", () => {
 
   it("keeps one hidden, labelled JSON file input in the container", () => {
     const { container, transfer } = domSetup();
-    transfer.pick("first", () => undefined);
-    transfer.pick("second", () => undefined);
+    const latest = make.text.note();
+    transfer.pick(make.text.note(), () => undefined);
+    transfer.pick(latest, () => undefined);
     const inputs = [...container.querySelectorAll("input")];
     const seen = inputs.map((input) => [input.type, input.accept, input.hidden]);
     expect(seen).toStrictEqual([["file", ".json,application/json", true]]);
-    expect(inputs[0]?.getAttribute("aria-label")).toBe("second");
+    expect(inputs[0]?.getAttribute("aria-label")).toBe(latest);
   });
 });

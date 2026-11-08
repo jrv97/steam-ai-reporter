@@ -62,7 +62,48 @@ export const FIXTURE_APPS = {
   hubCarousel: appId(632360),
   /** The second row of the wishlist capture (the first is 5072580). */
   wishlisted: appId(3664320),
+  /** A package in `kinds.json`: `categories` and no `extra_details`. */
+  packageItem: appId(320795),
+  /** A bundle in `kinds.json`: `success: 15`, neither `categories` nor `extra_details`. */
+  bundle: appId(1),
+  /** A disclosed row of `search-roguelike-50.json` whose notes hold `
+` line breaks. */
+  roguelikeLineBreaks: appId(4431800),
+  /** A disclosed row of `search-roguelike-50.json` whose notes hold zero-width spaces. */
+  roguelikeZeroWidth: appId(5269270),
 } as const;
+
+/** The 10 disclosed rows of `search-roguelike-50.json`, in row order. */
+export const ROGUELIKE_DISCLOSED = appIds(
+  4461450,
+  5269270,
+  4829430,
+  4431800,
+  5245850,
+  5000470,
+  4529660,
+  5383550,
+  5271980,
+  5081750,
+);
+
+/** Games of `kinds.json` that declare nothing and have no PvP or In-App Purchases category. */
+export const KINDS_DECLARING_NOTHING = appIds(
+  813230,
+  1145360,
+  413150,
+  504230,
+  367520,
+  2379780,
+  620,
+);
+
+/** Items of `kinds.json` without `extra_details`: package 320795, bundle 1 and an invalid ID. */
+export const KINDS_WITHOUT_DETAILS = [
+  FIXTURE_APPS.packageItem,
+  FIXTURE_APPS.bundle,
+  FIXTURE_APPS.invalid,
+] as const;
 
 /** The apps of the search capture's rows, in page order. */
 export const SEARCH_ROWS = appIds(
@@ -78,6 +119,19 @@ export const SEARCH_ROWS = appIds(
 
 /** The apps of the search suggestions capture, in order. */
 export const SUGGESTIONS = appIds(4075620, 3934270, 3784030);
+
+/** The apps of the other captured surfaces, in the order the scanner finds their hosts. */
+export const SURFACE_APPS = {
+  /** Two main carousel slides, two discount capsules and two tab rows. */
+  home: appIds(4356430, 1867240, 466560, 1121640, 1091500, 1174180),
+  /** Three sale capsules; the first one's app also fills the large carousel capsule. */
+  tagHub: appIds(632360, 3845070, 2124120),
+  nextFest: appIds(5053640, 4783070, 4631870),
+  developer: appIds(1902490, 546560),
+  wishlist: appIds(5072580, 3664320),
+  /** The DLC rows of the ARC Raiders page in `SURFACES["dlc-rows"]`. */
+  dlcRows: appIds(5201760, 3948510, 4920260, 4210150, 4424920, 4741040),
+} as const;
 
 /** Clan IDs that `creators.json` holds. */
 export const FIXTURE_CLANS = { valve: 4, cdProjektRed: 32989758 } as const;

@@ -1,6 +1,6 @@
 // @vitest-environment-options {"url":"https://store.steampowered.com/search/?term=roguelike"}
 import { afterEach, describe, expect, it } from "vitest";
-import { appId } from "../../../tests/helpers/app-ids";
+import { make } from "../../../tests/helpers/factory";
 import { setBody, the } from "../../../tests/helpers/surfaces";
 import { createHostFinder } from "./hosts";
 
@@ -8,45 +8,47 @@ afterEach(() => {
   document.body.replaceChildren();
 });
 
-const APP = appId(10);
+const APP = make.appId();
+const ITEM = `data-ds-appid="${String(APP)}"`;
+const LINK = `href="/app/${String(APP)}/"`;
 
 describe("createHostFinder", () => {
-  it("is a data-ds-appid element's own host", () => {
-    setBody(`<main><div data-ds-appid="10"><img></div></main>`);
-    expect(createHostFinder(document).hostOf(the("[data-ds-appid]"), APP)).toBe(
-      the("[data-ds-appid]"),
-    );
-  });
-
-  it("climbs from a link to the lowest image ancestor and joins siblings, 3 levels at most", () => {
-    setBody(
+  it.each([
+    [
+      "is a data-ds-appid element's own host",
+      `<main><div class="item" ${ITEM}><img></div></main>`,
+      "[data-ds-appid]",
+      ".item",
+    ],
+    [
+      "climbs from a link to the lowest image ancestor and joins siblings, 3 levels at most",
       `<main><div class="l4"><div class="l3"><div class="l2"><div class="l1">`
-        + `<a href="/app/10/"><img></a></div><a href="/app/10/">Title</a></div></div></div></main>`,
-    );
-    expect(createHostFinder(document).hostOf(the("a"), APP)).toBe(the(".l3"));
-  });
-
-  it("stops at the first data-ds-appid element: the item is the largest host", () => {
-    setBody(
-      `<main><div class="column"><div class="list"><div class="item" data-ds-appid="10">`
-        + `<div class="cap"><img></div><a href="/app/10/"><img></a></div></div></div></main>`,
-    );
-    expect(createHostFinder(document).hostOf(the("a"), APP)).toBe(the(".item"));
-  });
-
-  it("does not climb from a host that is a data-ds-appid element", () => {
-    setBody(
-      `<main><div class="column"><div class="item" data-ds-appid="10"><img>`
-        + `<a href="/app/10/"></a></div></div></main>`,
-    );
-    expect(createHostFinder(document).hostOf(the("a"), APP)).toBe(the(".item"));
-  });
-
-  it("still climbs past elements that only link, where nothing marks an item", () => {
-    setBody(
+      + `<a ${LINK}><img></a></div><a ${LINK}>Title</a></div></div></div></main>`,
+      "a",
+      ".l3",
+    ],
+    [
+      "stops at the first data-ds-appid element: the item is the largest host",
+      `<main><div class="column"><div class="list"><div class="item" ${ITEM}>`
+      + `<div class="cap"><img></div><a ${LINK}><img></a></div></div></div></main>`,
+      "a",
+      ".item",
+    ],
+    [
+      "does not climb from a host that is a data-ds-appid element",
+      `<main><div class="column"><div class="item" ${ITEM}><img><a ${LINK}></a></div></div></main>`,
+      "a",
+      ".item",
+    ],
+    [
+      "still climbs past elements that only link, where nothing marks an item",
       `<main><div class="column"><div class="list"><div class="item">`
-        + `<a href="/app/10/"><img></a></div></div></div></main>`,
-    );
-    expect(createHostFinder(document).hostOf(the("a"), APP)).toBe(the(".column"));
+      + `<a ${LINK}><img></a></div></div></div></main>`,
+      "a",
+      ".column",
+    ],
+  ])("%s", (_name, markup, from, host) => {
+    setBody(markup);
+    expect(createHostFinder(document).hostOf(the(from), APP)).toBe(the(host));
   });
 });

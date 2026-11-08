@@ -1,14 +1,14 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { APP_PAGES } from "../../../tests/helpers/app-page";
-import { bannerCreator, creatorNote, keyOf } from "../../../tests/helpers/creators";
 import { setBody } from "../../../tests/helpers/dom";
-import { bannerList, capturedVerdicts } from "../../../tests/helpers/fixture-verdicts";
+import { make } from "../../../tests/helpers/factory";
+import { bannerList } from "../../../tests/helpers/fixture-verdicts";
 import { englishI18n } from "../../../tests/helpers/i18n";
-import { disclosedVerdict, FULL_DISCLOSED, lent } from "../../../tests/helpers/verdicts";
+import type { CreatorRole } from "../creator";
 import { SHIPPED_CATALOGS } from "../i18n/shipped";
 import { createI18n } from "../i18n/t";
 import { KIND_BY_ID } from "../kinds/registry";
 import type { AnyDisclosed } from "../kinds/verdicts";
+import type { MessageCatalog } from "../ports";
 import { ALLOW_ALL } from "../settings/allow-data";
 import {
   type Banner,
@@ -24,10 +24,29 @@ function isEventTarget(value: object): value is EventTarget {
 }
 
 const i18n = englishI18n();
-const XSS = '<img src=x onerror="alert(1)">Backgrounds\r\nwere generated.';
+const spanish = createI18n(SHIPPED_CATALOGS, "es");
+const { app } = make.fixture;
+const captured = make.fixture.verdicts;
+/** The banner entries of a game with DRM, an account, a EULA and IAP. */
+const SEVERAL = bannerList(captured(app.drmAccountEula));
+/** Developer notes with markup and a CRLF break, and the text the banner shows for them. */
+const NOTE_LINES = [make.text.markup(), make.text.note()];
+const NOTES = NOTE_LINES.join("\r\n");
+const SHOWN_NOTES = NOTE_LINES.join("\n");
+/** A developer and publisher in the creators section, with a clan ID. */
+const CREATOR_NAME = make.text.creator();
+const CREATOR_SPEC = [CREATOR_NAME, make.creator.clan()] as const;
+const DEVELOPER = make.creator.banner("developer", CREATOR_SPEC);
+const PUBLISHER = make.creator.banner("publisher", CREATOR_SPEC);
+const ROLE_KEY = {
+  developer: "banner_role_developer",
+  publisher: "banner_role_publisher",
+} as const;
+
 const heading = (verdict: AnyDisclosed) => i18n.t(KIND_BY_ID[verdict.kind].messages.heading);
 const ignoredKind = (kind: "drm" | "pvp") =>
   i18n.t("banner_ignored_kind", { heading: i18n.t(KIND_BY_ID[kind].messages.heading) });
+const role = (which: CreatorRole) => i18n.t(ROLE_KEY[which]);
 
 function view(shown: readonly AnyDisclosed[], extra: Partial<BannerView> = {}): BannerView {
   return { shown, ignored: [], creators: [], creatorNotes: [], ...extra };
@@ -79,10 +98,14 @@ function manualActions() {
   };
 }
 
-function setup(options: BannerOptions = {}, actions: BannerActions = manualActions().actions) {
+function setup(
+  options: BannerOptions = {},
+  actions: BannerActions = manualActions().actions,
+  catalog: MessageCatalog = i18n,
+) {
   setBody('<div class="game_description_column"><div id="game_area_purchase"></div></div>');
   const frames: (() => void)[] = [];
-  const banner = createBanner(document, i18n, actions, {
+  const banner = createBanner(document, catalog, actions, {
     frame: (callback) => frames.push(callback),
     ...options,
   });
@@ -97,6 +120,15 @@ function setup(options: BannerOptions = {}, actions: BannerActions = manualActio
     }
   };
   return { banner, root, runFrames };
+}
+
+/** A banner on actions the test settles by hand, showing `initial`. */
+function wired(initial: BannerView) {
+  const wiring = manualActions();
+  const { banner, root } = setup({}, wiring.actions);
+  wiring.attach(banner);
+  banner.show(initial);
+  return { ...wiring, banner, root };
 }
 
 function query(root: ShadowRoot, selector: string): HTMLElement {
@@ -129,16 +161,15 @@ afterEach(() => {
 describe("createBanner", () => {
   it("renders the developer's notes verbatim, markup included, as plain text", () => {
     const { banner, root } = setup();
-    banner.show(view([disclosedVerdict({ notes: XSS })]));
+    banner.show(view([make.verdict.disclosed("ai", { notes: NOTES })]));
     const quote = query(root, "blockquote.sar-banner-quote");
-    expect(quote.textContent).toBe('<img src=x onerror="alert(1)">Backgrounds\nwere generated.');
+    expect(quote.textContent).toBe(SHOWN_NOTES);
     expect(quote.children).toHaveLength(0);
-    expect(root.querySelector("img")).toBeNull();
   });
 
   it("uses catalog copy and the developer as the source", () => {
     const { banner, root } = setup();
-    banner.show(view([disclosedVerdict()]));
+    banner.show(view([make.verdict.disclosed("ai")]));
     expect(query(root, "h2").textContent).toBe(i18n.t("kind_ai_heading"));
     expect(query(root, ".sar-banner-source").textContent).toBe(i18n.t("banner_source"));
     expect(query(root, ".sar-banner-action").textContent).toBe(i18n.t("banner_ignore_kind"));
@@ -148,44 +179,44 @@ describe("createBanner", () => {
     expect(root.querySelector("svg")).toBeNull();
   });
 
-  it.each([["en", i18n], ["es", createI18n(SHIPPED_CATALOGS, "es")]] as const)(
+  it.each([["en", i18n], ["es", spanish]] as const)(
     "says in %s that a full game's disclosure is the full game's, before the developer's words",
     (_locale, catalog) => {
-      setBody('<div class="game_description_column"></div>');
-      const banner = createBanner(document, catalog, manualActions().actions, {
-        frame: () => undefined,
-      });
-      banner.show(view([lent(disclosedVerdict({ notes: XSS })), FULL_DISCLOSED.anticheat]));
-      const root = banner.host.shadowRoot;
-      const lines = [...(root?.querySelectorAll(".sar-banner-entry") ?? [])].map((entry) =>
+      const { banner, root } = setup({}, manualActions().actions, catalog);
+      const service = make.text.service();
+      const lent = make.verdict.lent(make.verdict.disclosed("ai", { notes: NOTES, service }));
+      banner.show(view([lent, make.verdict.disclosed("anticheat")]));
+      const lines = [...root.querySelectorAll(".sar-banner-entry")].map((entry) =>
         [...entry.querySelectorAll("p")].map((line) => line.textContent)
       );
-      const service = `${catalog.t("badge_card_service_label")} Midjourney`;
-      const full = [catalog.t("kind_full_game"), catalog.t("banner_source"), service];
+      const full = [
+        catalog.t("kind_full_game"),
+        catalog.t("banner_source"),
+        `${catalog.t("badge_card_service_label")} ${service}`,
+      ];
       expect(lines).toEqual([full, []]);
-      expect(root?.querySelector("blockquote")?.textContent).toBe(
-        '<img src=x onerror="alert(1)">Backgrounds\nwere generated.',
-      );
+      expect(root.querySelector("blockquote")?.textContent).toBe(SHOWN_NOTES);
     },
   );
 
   it("names the AI service as plain text, never a link", () => {
     const { banner, root } = setup();
-    banner.show(view([disclosedVerdict({ service: "<b>Midjourney</b>" })]));
-    const service = query(root, ".sar-banner-service");
-    expect(service.textContent).toBe(`${i18n.t("badge_card_service_label")} <b>Midjourney</b>`);
-    expect(service.querySelector("a, b")).toBeNull();
+    const service = make.text.markup();
+    banner.show(view([make.verdict.disclosed("ai", { service })]));
+    const line = query(root, ".sar-banner-service");
+    expect(line.textContent).toBe(`${i18n.t("badge_card_service_label")} ${service}`);
+    expect(line.querySelector("a, b")).toBeNull();
   });
 
   it("omits the service line when the developer named none", () => {
     const { banner, root } = setup();
-    banner.show(view([disclosedVerdict({ service: "" })]));
+    banner.show(view([make.verdict.disclosed("ai", { service: "" })]));
     expect(root.querySelector(".sar-banner-service")).toBeNull();
   });
 
   it("keeps long notes collapsed behind a toggle", () => {
     const { banner, root, runFrames } = setup({ overflows: () => true });
-    banner.show(view([disclosedVerdict()]));
+    banner.show(view([make.verdict.disclosed("ai")]));
     const quote = query(root, ".sar-banner-quote");
     const toggle = query(root, '[data-sar-action="toggle"]');
     expect(toggle.hidden).toBe(true);
@@ -202,20 +233,39 @@ describe("createBanner", () => {
 
   it("drops the clamp and the toggle for short notes", () => {
     const { banner, root, runFrames } = setup({ overflows: () => false });
-    banner.show(view([disclosedVerdict()]));
+    banner.show(view([make.verdict.disclosed("ai")]));
     runFrames();
     expect(query(root, ".sar-banner-quote").hasAttribute("data-sar-collapsed")).toBe(false);
     expect(root.querySelector('[data-sar-action="toggle"]')).toBeNull();
   });
 
-  it("does not rebuild for the same view", () => {
+  const ai = make.verdict.disclosed("ai");
+  const ignoredRow = make.creator.banner("developer", CREATOR_SPEC, ["pvp"]);
+
+  it.each([
+    ["an ignored scope", view([ai]), view([ai]), view([ai], { ignored: ["ai"] })],
+    [
+      "a creator row",
+      view(SEVERAL, { creators: [DEVELOPER] }),
+      view(SEVERAL, { creators: [make.creator.banner("developer", CREATOR_SPEC)] }),
+      view(SEVERAL, { creators: [ignoredRow] }),
+    ],
+    [
+      "a creator note",
+      view(SEVERAL, { creators: [ignoredRow] }),
+      view(SEVERAL, { creators: [make.creator.banner("developer", CREATOR_SPEC, ["pvp"])] }),
+      view(SEVERAL, {
+        creators: [ignoredRow],
+        creatorNotes: [make.creator.note("developer", CREATOR_SPEC, "pvp")],
+      }),
+    ],
+  ])("keeps the drawing for an equal view and redraws for %s", (_name, first, same, changed) => {
     const { banner, root } = setup();
-    const verdict = disclosedVerdict();
-    banner.show(view([verdict]));
+    banner.show(first);
     const aside = query(root, "aside");
-    banner.show(view([verdict]));
+    banner.show(same);
     expect(query(root, "aside")).toBe(aside);
-    banner.show(view([verdict], { ignored: ["ai"] }));
+    banner.show(changed);
     expect(query(root, "aside")).not.toBe(aside);
   });
 
@@ -230,51 +280,41 @@ describe("createBanner", () => {
       throw new TypeError();
     }
     const add = vi.spyOn(owner, "addEventListener");
-    banner.show(view(bannerList(capturedVerdicts(1808500)), { ignored: ["pvp"] }));
+    banner.show(view(bannerList(captured(app.arcRaiders)), { ignored: ["pvp"] }));
     expect(add).not.toHaveBeenCalled();
   });
 });
 
 describe("the entries of the captured games", () => {
-  it("lists DRM, the account, the EULA and IAP of a game, each as Steam's line", () => {
-    const { banner, root } = setup();
-    const shown = bannerList(capturedVerdicts(3751950));
-    banner.show(view(shown));
-
-    expect(texts(root, "h2")).toEqual(shown.map(heading));
-    expect(texts(root, "h2")).toEqual([
-      i18n.t("kind_iap_heading"),
-      i18n.t("kind_drm_heading"),
-      i18n.t("kind_account_heading"),
-      i18n.t("kind_eula_heading"),
-    ]);
-  });
-
   it("leaves the short lines of a kind to Steam's own boxes and the hover card", () => {
     const { banner, root } = setup();
-    banner.show(view(bannerList(capturedVerdicts(3751950))));
+    banner.show(view(SEVERAL));
     expect(root.querySelector("a, blockquote, .sar-banner-service")).toBeNull();
     expect(root.textContent).not.toContain("Denuvo Anti-tamper");
     expect(root.textContent).not.toContain("Ubisoft Account");
     expect(root.textContent).not.toContain(i18n.t("kind_account_links"));
   });
 
-  it.each([2807960, 1172470, 730, 105600, 1245620])(
-    "gives each kind of game %i one line: its heading and its ignore button",
-    (id) => {
-      const { banner, root } = setup();
-      const shown = bannerList(capturedVerdicts(id));
-      banner.show(view(shown));
-      expect(texts(root, "h2")).toEqual(shown.map(heading));
-      expect(root.querySelectorAll(".sar-banner-entry")).toHaveLength(shown.length);
-      expect(root.querySelectorAll(".sar-banner-action")).toHaveLength(shown.length);
-      expect(root.querySelector("p:not(.sar-banner-error)")).toBeNull();
-    },
-  );
+  it.each([
+    app.drmAccountEula,
+    app.kernelBootProtection,
+    app.easyAntiCheat,
+    app.vac,
+    app.pvp,
+    app.pvpOther,
+  ])("gives each kind of game %i one line: its heading and its ignore button", (id) => {
+    const { banner, root } = setup();
+    const shown = bannerList(captured(id));
+    banner.show(view(shown));
+    expect(texts(root, "h2")).toEqual(shown.map(heading));
+    expect(root.querySelectorAll(".sar-banner-entry")).toHaveLength(shown.length);
+    expect(root.querySelectorAll(".sar-banner-action")).toHaveLength(shown.length);
+    expect(root.querySelector("p:not(.sar-banner-error)")).toBeNull();
+  });
 
   it("quotes the AI notes of a game that also declares an anti-cheat and a EULA", () => {
     const { banner, root } = setup();
-    const shown = bannerList(capturedVerdicts(1808500));
+    const shown = bannerList(captured(app.arcRaiders));
     banner.show(view(shown));
     expect(texts(root, "h2")).toEqual([
       i18n.t("kind_ai_heading"),
@@ -283,14 +323,14 @@ describe("the entries of the captured games", () => {
       i18n.t("kind_eula_heading"),
       i18n.t("kind_kernel_heading"),
     ]);
-    const [ai] = shown;
-    expect(ai?.kind).toBe("ai");
-    expect(texts(root, "blockquote")).toEqual([ai?.kind === "ai" ? ai.notes : ""]);
+    const quotes = texts(root, "blockquote");
+    expect(quotes).toHaveLength(1);
+    expect(shown[0]).toMatchObject({ kind: "ai", notes: quotes[0] });
   });
 
   it("gives a quote an id of its own", () => {
     const { banner, root } = setup();
-    banner.show(view([disclosedVerdict()]));
+    banner.show(view([make.verdict.disclosed("ai")]));
     const quote = query(root, "blockquote");
     expect(query(root, '[data-sar-action="toggle"]').getAttribute("aria-controls")).toBe(quote.id);
     expect(root.querySelectorAll(`[id="${quote.id}"]`)).toHaveLength(1);
@@ -300,30 +340,36 @@ describe("the entries of the captured games", () => {
 describe("the banner's accessibility", () => {
   it("labels the region by its heading when it shows one kind", () => {
     const { banner, root } = setup();
-    banner.show(view([disclosedVerdict()]));
+    banner.show(view([make.verdict.disclosed("ai")]));
     const aside = query(root, "aside");
     expect(nameOf(root, aside)).toBe(i18n.t("kind_ai_heading"));
     expect(aside.hasAttribute("aria-label")).toBe(false);
     expect(aside.tabIndex).toBe(-1);
   });
 
-  it("labels the region for the developer when it shows several kinds or only notes", () => {
+  it.each(
+    [
+      ["for the developer when it shows several kinds", view(SEVERAL), "banner_region_label"],
+      [
+        "for the developer when it shows only notes",
+        view([], { ignored: [ALLOW_ALL] }),
+        "banner_region_label",
+      ],
+      [
+        "as Tag Kit's tags when an entry comes from Valve",
+        view([make.verdict.disclosed("drm"), make.verdict.disclosed("deck")]),
+        "badge_tags_title",
+      ],
+    ] as const,
+  )("labels the region %s", (_name, shown, key) => {
     const { banner, root } = setup();
-    banner.show(view(bannerList(capturedVerdicts(3751950))));
-    expect(nameOf(root, query(root, "aside"))).toBe(i18n.t("banner_region_label"));
-    banner.show(view([], { ignored: [ALLOW_ALL] }));
-    expect(nameOf(root, query(root, "aside"))).toBe(i18n.t("banner_region_label"));
-  });
-
-  it("labels the region as Tag Kit's tags when an entry comes from Valve", () => {
-    const { banner, root } = setup();
-    banner.show(view([FULL_DISCLOSED.drm, FULL_DISCLOSED.deck]));
-    expect(nameOf(root, query(root, "aside"))).toBe(i18n.t("badge_tags_title"));
+    banner.show(shown);
+    expect(nameOf(root, query(root, "aside"))).toBe(i18n.t(key));
   });
 
   it("names each ignore button by its action and the kind it belongs to", () => {
     const { banner, root } = setup();
-    banner.show(view(bannerList(capturedVerdicts(3751950))));
+    banner.show(view(SEVERAL));
     const buttons = [...root.querySelectorAll<HTMLButtonElement>(".sar-banner-action")];
     expect(buttons.map((button) => button.tagName)).toEqual([
       "BUTTON",
@@ -342,7 +388,7 @@ describe("the banner's accessibility", () => {
 
   it("starts every accessible name with the visible text of its button", () => {
     const { banner, root } = setup();
-    banner.show(view(bannerList(capturedVerdicts(3751950)), { ignored: ["pvp"] }));
+    banner.show(view(SEVERAL, { ignored: ["pvp"] }));
     const controls = [...root.querySelectorAll("button")];
     expect(controls.length).toBeGreaterThan(4);
     for (const control of controls) {
@@ -350,49 +396,41 @@ describe("the banner's accessibility", () => {
     }
   });
 
-  it("marks a one-tag banner with its kind and a several-tag banner with none", () => {
+  it.each(
+    [
+      ["a one-tag banner with its kind", view([make.verdict.disclosed("ai")]), "ai"],
+      ["a several-tag banner with no kind", view(SEVERAL), null],
+      [
+        "a banner with only notes for ignored scopes with no kind",
+        view([], { ignored: ["pvp"] }),
+        null,
+      ],
+    ] as const,
+  )("marks %s", (_name, shown, kind) => {
     const { banner, root } = setup();
-    banner.show(view([disclosedVerdict()]));
-    expect(query(root, "aside").getAttribute("data-sar-kind")).toBe("ai");
-    const several = bannerList(capturedVerdicts(3751950));
-    banner.show(view(several));
-    expect(query(root, "aside").hasAttribute("data-sar-kind")).toBe(false);
+    banner.show(shown);
+    expect(query(root, "aside").getAttribute("data-sar-kind")).toBe(kind);
     expect(query(root, "aside").hasAttribute("style")).toBe(false);
-  });
-
-  it("marks a banner with only notes for ignored scopes with no kind", () => {
-    const { banner, root } = setup();
-    banner.show(view([], { ignored: ["pvp"] }));
-    expect(query(root, "aside").hasAttribute("data-sar-kind")).toBe(false);
   });
 
   it("steps the headings down when it lists several kinds", () => {
     const { banner, root } = setup();
-    banner.show(view([disclosedVerdict()]));
+    banner.show(view([make.verdict.disclosed("ai")]));
     expect(query(root, "aside").hasAttribute("data-sar-entries")).toBe(false);
-    banner.show(view(bannerList(capturedVerdicts(3751950))));
+    banner.show(view(SEVERAL));
     expect(query(root, "aside").getAttribute("data-sar-entries")).toBe("many");
   });
 });
 
 describe("the banner in Spanish", () => {
   it("reads every line of the entries and the buttons from the Spanish catalog", () => {
-    const spanish = createI18n(SHIPPED_CATALOGS, "es");
-    setBody('<div class="game_description_column"></div>');
-    const banner = createBanner(document, spanish, manualActions().actions, {
-      frame: () => undefined,
-    });
-    const shown = bannerList(capturedVerdicts(3751950));
-    banner.show(view(shown, { ignored: ["pvp"] }));
-    const root = banner.host.shadowRoot;
-    if (root === null) {
-      throw new TypeError();
-    }
+    const { banner, root } = setup({}, manualActions().actions, spanish);
+    banner.show(view(SEVERAL, { ignored: ["pvp"] }));
     expect(texts(root, "h2")).toEqual(
-      shown.map((verdict) => spanish.t(KIND_BY_ID[verdict.kind].messages.heading)),
+      SEVERAL.map((verdict) => spanish.t(KIND_BY_ID[verdict.kind].messages.heading)),
     );
     expect(texts(root, ".sar-banner-action")).toEqual(
-      shown.map(() => spanish.t("banner_ignore_kind")),
+      SEVERAL.map(() => spanish.t("banner_ignore_kind")),
     );
     expect(texts(root, ".sar-banner-ignored-text")).toEqual([
       spanish.t("banner_ignored_kind", { heading: spanish.t("kind_pvp_heading") }),
@@ -414,7 +452,7 @@ describe("the notes for ignored scopes", () => {
 
   it("notes a kind ignored on its own beside the entries that remain", () => {
     const { banner, root } = setup();
-    const rest = withoutDrm(bannerList(capturedVerdicts(3751950)));
+    const rest = withoutDrm(SEVERAL);
     banner.show(view(rest, { ignored: ["drm"] }));
     expect(query(root, "aside").hasAttribute("data-sar-variant")).toBe(false);
     expect(texts(root, "h2")).toEqual(rest.map(heading));
@@ -436,18 +474,9 @@ describe("the notes for ignored scopes", () => {
 });
 
 describe("ignoring from the banner", () => {
-  function wired(initial: BannerView) {
-    const wiring = manualActions();
-    const { banner, root } = setup({}, wiring.actions);
-    wiring.attach(banner);
-    banner.show(initial);
-    return { ...wiring, banner, root };
-  }
-
   it("ignores one kind, moves focus to its Undo and announces it", async () => {
-    const shown = bannerList(capturedVerdicts(3751950));
-    const { root, ignore, calls, thenShow } = wired(view(shown));
-    thenShow(view(withoutDrm(shown), { ignored: ["drm"] }));
+    const { root, ignore, calls, thenShow } = wired(view(SEVERAL));
+    thenShow(view(withoutDrm(SEVERAL), { ignored: ["drm"] }));
 
     query(root, '.sar-banner-action[data-sar-scope="drm"]').click();
     query(root, '.sar-banner-action[data-sar-scope="drm"]').click();
@@ -463,12 +492,11 @@ describe("ignoring from the banner", () => {
         i18n.t("notice_marking_stopped_kind", { heading: i18n.t("kind_drm_heading") }),
       );
     });
-    expect(texts(root, "h2")).toEqual(withoutDrm(shown).map(heading));
+    expect(texts(root, "h2")).toEqual(withoutDrm(SEVERAL).map(heading));
   });
 
   it("ignores the game for all tags from the link below the entries", async () => {
-    const shown = bannerList(capturedVerdicts(3751950));
-    const { root, ignore, calls, thenShow } = wired(view(shown));
+    const { root, ignore, calls, thenShow } = wired(view(SEVERAL));
     thenShow(view([], { ignored: [ALLOW_ALL] }));
 
     query(root, '.sar-banner-foot [data-sar-action="ignore"]').click();
@@ -484,17 +512,16 @@ describe("ignoring from the banner", () => {
   });
 
   it("undoes an ignored kind and puts focus on its ignore button again", async () => {
-    const shown = bannerList(capturedVerdicts(3751950));
     const { root, restore, calls, thenShow } = wired(
-      view(withoutDrm(shown), { ignored: ["drm"] }),
+      view(withoutDrm(SEVERAL), { ignored: ["drm"] }),
     );
-    thenShow(view(shown));
+    thenShow(view(SEVERAL));
 
     query(root, '[data-sar-action="undo"]').click();
     expect(restore).toHaveBeenCalledWith("drm");
     calls[0]?.resolve();
     await vi.waitFor(() => {
-      expect(texts(root, "h2")).toHaveLength(4);
+      expect(texts(root, "h2")).toHaveLength(SEVERAL.length);
     });
     expect(root.activeElement).toBe(query(root, '.sar-banner-action[data-sar-scope="drm"]'));
     await vi.waitFor(() => {
@@ -505,9 +532,8 @@ describe("ignoring from the banner", () => {
   });
 
   it("undoes an ignore for all tags and focuses the ignore link", async () => {
-    const shown = bannerList(capturedVerdicts(3751950));
     const { root, calls, thenShow } = wired(view([], { ignored: [ALLOW_ALL] }));
-    thenShow(view(shown));
+    thenShow(view(SEVERAL));
 
     query(root, '[data-sar-action="undo"]').click();
     calls[0]?.resolve();
@@ -517,33 +543,68 @@ describe("ignoring from the banner", () => {
     expect(root.activeElement).toBe(query(root, '.sar-banner-foot [data-sar-action="ignore"]'));
   });
 
-  it("keeps the entries and shows an error when the ignore list cannot be saved", async () => {
-    const { root, calls } = wired(view([disclosedVerdict()]));
-    query(root, ".sar-banner-action").click();
-    calls[0]?.reject();
-    await vi.waitFor(() => {
-      expect(query(root, ".sar-banner-error").hidden).toBe(false);
-    });
-    expect(query(root, ".sar-banner-error").textContent).toBe(i18n.t("error_allow_list_save"));
-    expect(query(root, ".sar-banner-error").getAttribute("role")).toBe("alert");
-    expect(root.querySelector("blockquote")).not.toBeNull();
-  });
+  it.each(
+    [
+      [
+        "the ignore list",
+        view([make.verdict.disclosed("ai")]),
+        ".sar-banner-action",
+        "error_allow_list_save",
+        "blockquote",
+      ],
+      [
+        "the creator list",
+        view(SEVERAL, { creators: [DEVELOPER] }),
+        ".sar-banner-creator button",
+        "error_creator_list_save",
+        ".sar-banner-creator",
+      ],
+    ] as const,
+  )(
+    "keeps the view and shows an alert when %s cannot be saved",
+    async (_name, initial, button, error, kept) => {
+      const { root, calls } = wired(initial);
+      query(root, button).click();
+      calls[0]?.reject();
+      await vi.waitFor(() => {
+        expect(query(root, ".sar-banner-error").hidden).toBe(false);
+      });
+      expect(query(root, ".sar-banner-error").textContent).toBe(i18n.t(error));
+      expect(query(root, ".sar-banner-error").getAttribute("role")).toBe("alert");
+      expect(root.querySelectorAll(kept)).toHaveLength(1);
+    },
+  );
 
-  it("ignores a click that carries no known action or scope", () => {
-    const { root, ignore } = wired(view([disclosedVerdict()]));
-    const button = query(root, ".sar-banner-action");
-    button.setAttribute("data-sar-scope", "nothing");
-    button.click();
-    button.setAttribute("data-sar-scope", "ai");
-    button.setAttribute("data-sar-action", "other");
-    button.click();
+  const kindView = view([make.verdict.disclosed("ai")]);
+  const creatorView = view(SEVERAL, { creators: [DEVELOPER] });
+
+  it.each([
+    ["a scope", kindView, ".sar-banner-action", "data-sar-scope", "nothing"],
+    ["an action", kindView, ".sar-banner-action", "data-sar-action", "other"],
+    ["a role", creatorView, ".sar-banner-creator button", "data-sar-role", "other"],
+    ["a key", creatorView, ".sar-banner-creator button", "data-sar-creator", CREATOR_NAME],
+    [
+      "a creator the view lacks",
+      creatorView,
+      ".sar-banner-creator button",
+      "data-sar-creator",
+      `c:${String(make.creator.clan())}`,
+    ],
+  ])("does nothing for %s it does not know", (_name, initial, button, attribute, value) => {
+    const { root, ignore, restore, ignoreCreator, restoreCreator } = wired(initial);
+    const control = query(root, button);
+    control.setAttribute(attribute, value);
+    control.click();
     expect(ignore).not.toHaveBeenCalled();
+    expect(restore).not.toHaveBeenCalled();
+    expect(ignoreCreator).not.toHaveBeenCalled();
+    expect(restoreCreator).not.toHaveBeenCalled();
   });
 });
 
 describe("placeBanner", () => {
   it("puts the banner first in the description column, above the purchase box", () => {
-    setBody(APP_PAGES["5072580-ai-first.html"]);
+    setBody(make.page.app("5072580-ai-first.html"));
     const banner = createBanner(document, i18n, manualActions().actions);
     expect(placeBanner(document, banner.host)).toBe(true);
     const column = document.querySelector(".game_description_column");
@@ -560,18 +621,7 @@ describe("placeBanner", () => {
 });
 
 describe("the creators section", () => {
-  const VALVE = bannerCreator("developer", ["Valve", 4]);
-  const PUBLISHER = bannerCreator("publisher", ["Valve", 4]);
   const chip = (id: "ai" | "drm" | "account" | "iap") => i18n.t(KIND_BY_ID[id].messages.chip);
-  const shown = bannerList(capturedVerdicts(3751950));
-
-  function wired(initial: BannerView) {
-    const wiring = manualActions();
-    const { banner, root } = setup({}, wiring.actions);
-    wiring.attach(banner);
-    banner.show(initial);
-    return { ...wiring, banner, root };
-  }
 
   const rows = (root: ShadowRoot) =>
     [...root.querySelectorAll(".sar-banner-creator")].map((row) => ({
@@ -581,7 +631,7 @@ describe("the creators section", () => {
 
   it("is a closed section with a row for each name and role, and a button for each tag", () => {
     const { banner, root } = setup();
-    banner.show(view(shown, { creators: [VALVE, PUBLISHER] }));
+    banner.show(view(SEVERAL, { creators: [DEVELOPER, PUBLISHER] }));
     const section = query(root, "details.sar-banner-creators");
     expect(section.hasAttribute("open")).toBe(false);
     expect(query(root, "summary").textContent).toBe(i18n.t("banner_creators_toggle"));
@@ -593,27 +643,26 @@ describe("the creators section", () => {
       i18n.t("banner_ignore_creator_all"),
     ];
     expect(rows(root)).toEqual([
-      { label: `Valve ${i18n.t("banner_role_developer")}`, buttons: tags },
-      { label: `Valve ${i18n.t("banner_role_publisher")}`, buttons: tags },
+      { label: `${CREATOR_NAME} ${role("developer")}`, buttons: tags },
+      { label: `${CREATOR_NAME} ${role("publisher")}`, buttons: tags },
     ]);
   });
 
   it("names a button by its text and the creator's name and role", () => {
     const { banner, root } = setup();
-    banner.show(view(shown, { creators: [VALVE] }));
+    banner.show(view(SEVERAL, { creators: [DEVELOPER] }));
     const first = query(root, ".sar-banner-creator button");
-    expect(nameOf(root, first)).toBe(
-      `${first.textContent} Valve ${i18n.t("banner_role_developer")}`,
-    );
+    expect(nameOf(root, first)).toBe(`${first.textContent} ${CREATOR_NAME} ${role("developer")}`);
     const ids = [...root.querySelectorAll("[id]")].map((node) => node.id);
     expect(new Set(ids).size).toBe(ids.length);
   });
 
   it("leaves out the buttons for the scopes the creator is ignored in", () => {
     const { banner, root } = setup();
-    const some = bannerCreator("developer", "Embark", ["drm"]);
-    const all = bannerCreator("publisher", "Embark", [ALLOW_ALL]);
-    banner.show(view(shown, { creators: [some, all] }));
+    const name = make.text.creator();
+    const some = make.creator.banner("developer", name, ["drm"]);
+    const all = make.creator.banner("publisher", name, [ALLOW_ALL]);
+    banner.show(view(SEVERAL, { creators: [some, all] }));
     const [first, second] = rows(root);
     expect(first?.buttons).toHaveLength(4);
     expect(first?.buttons).not.toContain(
@@ -626,48 +675,48 @@ describe("the creators section", () => {
   it("shows no section without an entry to ignore or without a creator", () => {
     const { banner, root } = setup();
     banner.show(
-      view([], { creators: [VALVE], creatorNotes: [creatorNote("developer", "Valve", ALLOW_ALL)] }),
+      view([], {
+        creators: [DEVELOPER],
+        creatorNotes: [make.creator.note("developer", CREATOR_NAME, ALLOW_ALL)],
+      }),
     );
     expect(root.querySelector("details")).toBeNull();
-    banner.show(view(shown));
+    banner.show(view(SEVERAL));
     expect(root.querySelector("details")).toBeNull();
   });
 
   it("writes the name as text, never as markup", () => {
     const { banner, root } = setup();
-    const name = '<img src=x onerror="alert(1)">';
-    banner.show(view(shown, { creators: [bannerCreator("developer", name)] }));
-    expect(root.querySelector("img")).toBeNull();
+    const name = make.text.markup();
+    banner.show(view(SEVERAL, { creators: [make.creator.banner("developer", name)] }));
+    expect(root.querySelector(".sar-banner-creator b")).toBeNull();
     expect(query(root, ".sar-banner-creator-name").textContent).toBe(name);
   });
 
   it("keeps the section open across a redraw, and closed on a new banner", () => {
     const { banner, root } = setup();
-    banner.show(view(shown, { creators: [VALVE] }));
+    banner.show(view(SEVERAL, { creators: [DEVELOPER] }));
     const section = query(root, "details");
     section.setAttribute("open", "");
     section.dispatchEvent(new Event("toggle"));
-    banner.show(view(shown, { creators: [VALVE], ignored: ["pvp"] }));
+    banner.show(view(SEVERAL, { creators: [DEVELOPER], ignored: ["pvp"] }));
     expect(query(root, "details").hasAttribute("open")).toBe(true);
     const fresh = setup();
-    fresh.banner.show(view(shown, { creators: [VALVE] }));
+    fresh.banner.show(view(SEVERAL, { creators: [DEVELOPER] }));
     expect(query(fresh.root, "details").hasAttribute("open")).toBe(false);
   });
 
   it("notes a creator ignored for all tags or for one tag, with an Undo named by the note", () => {
     const { banner, root } = setup();
     banner.show(
-      view(withoutDrm(shown), {
+      view(withoutDrm(SEVERAL), {
         creatorNotes: [
-          creatorNote("developer", "Valve", ALLOW_ALL),
-          creatorNote("publisher", ["Valve", 4], "drm"),
+          make.creator.note("developer", CREATOR_NAME, ALLOW_ALL),
+          make.creator.note("publisher", CREATOR_SPEC, "drm"),
         ],
       }),
     );
-    const who = (role: "developer" | "publisher") => ({
-      name: "Valve",
-      role: i18n.t(role === "developer" ? "banner_role_developer" : "banner_role_publisher"),
-    });
+    const who = (which: CreatorRole) => ({ name: CREATOR_NAME, role: role(which) });
     expect(texts(root, ".sar-banner-ignored-text")).toEqual([
       i18n.t("banner_ignored_creator", who("developer")),
       i18n.t("banner_ignored_creator_kind", {
@@ -682,11 +731,13 @@ describe("the creators section", () => {
   });
 
   it("ignores a creator for one tag, moves focus to its Undo and announces it", async () => {
-    const { root, ignoreCreator, calls, thenShow } = wired(view(shown, { creators: [VALVE] }));
+    const { root, ignoreCreator, calls, thenShow } = wired(
+      view(SEVERAL, { creators: [DEVELOPER] }),
+    );
     thenShow(
-      view(withoutDrm(shown), {
-        creators: [bannerCreator("developer", ["Valve", 4], ["drm"])],
-        creatorNotes: [creatorNote("developer", ["Valve", 4], "drm")],
+      view(withoutDrm(SEVERAL), {
+        creators: [make.creator.banner("developer", CREATOR_SPEC, ["drm"])],
+        creatorNotes: [make.creator.note("developer", CREATOR_SPEC, "drm")],
       }),
     );
     const button = [...root.querySelectorAll<HTMLElement>(".sar-banner-creator button")].find(
@@ -695,7 +746,7 @@ describe("the creators section", () => {
     button?.click();
     button?.click();
     expect(ignoreCreator).toHaveBeenCalledTimes(1);
-    expect(ignoreCreator).toHaveBeenCalledWith("developer", VALVE.creator, "drm");
+    expect(ignoreCreator).toHaveBeenCalledWith("developer", DEVELOPER.creator, "drm");
     calls[0]?.resolve();
     await vi.waitFor(() => {
       expect(root.activeElement).toBe(query(root, '[data-sar-action="undo-creator"]'));
@@ -703,8 +754,8 @@ describe("the creators section", () => {
     await vi.waitFor(() => {
       expect(query(root, "[aria-live]").textContent).toBe(
         i18n.t("notice_creator_stopped_kind", {
-          name: "Valve",
-          role: i18n.t("banner_role_developer"),
+          name: CREATOR_NAME,
+          role: role("developer"),
           heading: i18n.t("kind_drm_heading"),
         }),
       );
@@ -712,28 +763,32 @@ describe("the creators section", () => {
   });
 
   it("ignores a creator for all tags from its last button", async () => {
-    const { root, ignoreCreator, calls, thenShow } = wired(view(shown, { creators: [VALVE] }));
-    thenShow(view([], { creatorNotes: [creatorNote("developer", ["Valve", 4], ALLOW_ALL)] }));
+    const { root, ignoreCreator, calls, thenShow } = wired(
+      view(SEVERAL, { creators: [DEVELOPER] }),
+    );
+    thenShow(
+      view([], { creatorNotes: [make.creator.note("developer", CREATOR_SPEC, ALLOW_ALL)] }),
+    );
     const buttons = [...root.querySelectorAll<HTMLElement>(".sar-banner-creator button")];
     buttons.at(-1)?.click();
-    expect(ignoreCreator).toHaveBeenCalledWith("developer", VALVE.creator, ALLOW_ALL);
+    expect(ignoreCreator).toHaveBeenCalledWith("developer", DEVELOPER.creator, ALLOW_ALL);
     calls[0]?.resolve();
     await vi.waitFor(() => {
       expect(query(root, "[aria-live]").textContent).toBe(
-        i18n.t("notice_creator_stopped", { name: "Valve", role: i18n.t("banner_role_developer") }),
+        i18n.t("notice_creator_stopped", { name: CREATOR_NAME, role: role("developer") }),
       );
     });
   });
 
   it("undoes with the key that is on the list, and focuses the ignore button again", async () => {
-    const byName = { ...creatorNote("developer", ["Valve", 4], "drm"), key: keyOf("n:Valve") };
-    const row = bannerCreator("developer", ["Valve", 4]);
+    const key = make.creator.key(`n:${CREATOR_NAME}`);
+    const byName = { ...make.creator.note("developer", CREATOR_SPEC, "drm"), key };
     const { root, restoreCreator, calls, thenShow } = wired(
-      view(withoutDrm(shown), { creators: [row], creatorNotes: [byName] }),
+      view(withoutDrm(SEVERAL), { creators: [DEVELOPER], creatorNotes: [byName] }),
     );
-    thenShow(view(shown, { creators: [row] }));
+    thenShow(view(SEVERAL, { creators: [DEVELOPER] }));
     query(root, '[data-sar-action="undo-creator"]').click();
-    expect(restoreCreator).toHaveBeenCalledWith("developer", keyOf("n:Valve"), "drm");
+    expect(restoreCreator).toHaveBeenCalledWith("developer", key, "drm");
     calls[0]?.resolve();
     await vi.waitFor(() => {
       expect(root.activeElement).toBe(
@@ -743,79 +798,29 @@ describe("the creators section", () => {
     await vi.waitFor(() => {
       expect(query(root, "[aria-live]").textContent).toBe(
         i18n.t("notice_creator_restored_kind", {
-          name: "Valve",
-          role: i18n.t("banner_role_developer"),
+          name: CREATOR_NAME,
+          role: role("developer"),
           heading: i18n.t("kind_drm_heading"),
         }),
       );
     });
   });
 
-  it("keeps the view and shows the creator error when the list cannot be saved", async () => {
-    const { root, calls } = wired(view(shown, { creators: [VALVE] }));
-    query(root, ".sar-banner-creator button").click();
-    calls[0]?.reject();
-    await vi.waitFor(() => {
-      expect(query(root, ".sar-banner-error").hidden).toBe(false);
-    });
-    expect(query(root, ".sar-banner-error").textContent).toBe(i18n.t("error_creator_list_save"));
-    expect(root.querySelectorAll(".sar-banner-creator")).toHaveLength(1);
-  });
-
-  it.each([
-    ["a role", "data-sar-role", "other"],
-    ["a key", "data-sar-creator", "Valve"],
-    ["a creator the view lacks", "data-sar-creator", "c:5"],
-  ])("does nothing for %s it does not know", (_name, attribute, value) => {
-    const { root, ignoreCreator, restoreCreator } = wired(view(shown, { creators: [VALVE] }));
-    const button = query(root, ".sar-banner-creator button");
-    button.setAttribute(attribute, value);
-    button.click();
-    expect(ignoreCreator).not.toHaveBeenCalled();
-    expect(restoreCreator).not.toHaveBeenCalled();
-  });
-
-  it("redraws when a creator note or row changes, and not for the same view", () => {
-    const { banner, root } = setup();
-    banner.show(view(shown, { creators: [VALVE] }));
-    const aside = query(root, "aside");
-    banner.show(view(shown, { creators: [bannerCreator("developer", ["Valve", 4])] }));
-    expect(query(root, "aside")).toBe(aside);
-    banner.show(view(shown, { creators: [bannerCreator("developer", ["Valve", 4], ["pvp"])] }));
-    expect(query(root, "aside")).not.toBe(aside);
-    const other = query(root, "aside");
-    banner.show(
-      view(shown, {
-        creators: [bannerCreator("developer", ["Valve", 4], ["pvp"])],
-        creatorNotes: [creatorNote("developer", ["Valve", 4], "pvp")],
-      }),
-    );
-    expect(query(root, "aside")).not.toBe(other);
-  });
-
   it("reads every line of the section from the Spanish catalog", () => {
-    const spanish = createI18n(SHIPPED_CATALOGS, "es");
-    setBody('<div class="game_description_column"></div>');
-    const banner = createBanner(document, spanish, manualActions().actions, {
-      frame: () => undefined,
-    });
+    const { banner, root } = setup({}, manualActions().actions, spanish);
     banner.show(
-      view(shown, {
-        creators: [VALVE],
-        creatorNotes: [creatorNote("publisher", "Valve", ALLOW_ALL)],
+      view(SEVERAL, {
+        creators: [DEVELOPER],
+        creatorNotes: [make.creator.note("publisher", CREATOR_NAME, ALLOW_ALL)],
       }),
     );
-    const root = banner.host.shadowRoot;
-    if (root === null) {
-      throw new TypeError();
-    }
     expect(query(root, "summary").textContent).toBe(spanish.t("banner_creators_toggle"));
     expect(query(root, ".sar-banner-creator-role").textContent).toBe(
       spanish.t("banner_role_developer"),
     );
     expect(query(root, ".sar-banner-ignored-text").textContent).toBe(
       spanish.t("banner_ignored_creator", {
-        name: "Valve",
+        name: CREATOR_NAME,
         role: spanish.t("banner_role_publisher"),
       }),
     );

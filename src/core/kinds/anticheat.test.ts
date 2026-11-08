@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { make } from "../../../tests/helpers/factory";
 import { verdictOf } from "../../../tests/helpers/getitems";
-import { UNKNOWN } from "../types";
 import { ANTICHEAT_KIND } from "./anticheat";
 import { KERNEL_KIND } from "./kernel";
 
@@ -10,16 +10,10 @@ function fromDetails(details: Readonly<Record<string, unknown>>) {
 
 describe("ANTICHEAT_KIND.fromGetItems", () => {
   it("is disclosed with the vendor Steam names, as for Counter-Strike 2", () => {
-    const verdict = fromDetails({
-      anticheat: { name: "VAC (Valve Anti-Cheat)", name_loc: "#Store_AntiCheat_Type_vac" },
-    });
-    expect(verdict).toStrictEqual({
-      state: "disclosed",
-      kind: "anticheat",
-      source: "api",
-      name: "VAC (Valve Anti-Cheat)",
-      nameToken: "#Store_AntiCheat_Type_vac",
-    });
+    const name = make.text.service();
+    const nameToken = make.text.token();
+    const verdict = fromDetails({ anticheat: { name, name_loc: nameToken } });
+    expect(verdict).toStrictEqual(make.verdict.disclosed("anticheat", { name, nameToken }));
   });
 
   it.each<readonly [string, unknown]>([
@@ -29,49 +23,56 @@ describe("ANTICHEAT_KIND.fromGetItems", () => {
     ["a malformed name", { name: {}, name_loc: 4 }],
     ["an empty list, read as no object", []],
   ])("is disclosed with no name for %s", (_name, anticheat) => {
-    expect(fromDetails({ anticheat })).toStrictEqual({
-      state: "disclosed",
-      kind: "anticheat",
-      source: "api",
-    });
+    expect(fromDetails({ anticheat })).toStrictEqual(make.verdict.bare("anticheat"));
   });
 
   it("keeps the vendor text as Steam sent it", () => {
-    expect(fromDetails({ anticheat: { name: " BattlEye " } })).toMatchObject({
-      name: " BattlEye ",
-    });
+    const name = ` ${make.text.service()} `;
+    expect(fromDetails({ anticheat: { name } })).toMatchObject({ name });
   });
 
-  it("is not disclosed without an anti-cheat, or with a kernel one", () => {
-    const none = { state: "not-disclosed", source: "api" };
-    expect(fromDetails({})).toStrictEqual(none);
-    expect(fromDetails({ anticheat: { kernel_mode: true } })).toStrictEqual(none);
-    expect(fromDetails({ anticheat: { kernel_mode: true, name: "BattlEye" } })).toStrictEqual(none);
+  it.each<readonly [string, Readonly<Record<string, unknown>>]>([
+    ["no anti-cheat", {}],
+    ["a kernel anti-cheat", { anticheat: { kernel_mode: true } }],
+    ["a named kernel anti-cheat", { anticheat: { kernel_mode: true, name: make.text.service() } }],
+  ])("is not disclosed for %s", (_name, details) => {
+    expect(fromDetails(details)).toStrictEqual(make.verdict.notDisclosed());
   });
 
-  it("is unknown malformed when the anti-cheat field is malformed", () => {
-    for (const anticheat of [0, "VAC", null, [{}], { kernel_mode: 1 }]) {
-      expect(fromDetails({ anticheat })).toBe(UNKNOWN.malformed);
-    }
+  it.each<readonly [string, unknown]>([
+    ["a number", 0],
+    ["text", "VAC"],
+    ["null", null],
+    ["a list of objects", [{}]],
+    ["an object with a kernel flag that is no boolean", { kernel_mode: 1 }],
+  ])("is unknown malformed for an anti-cheat field that is %s", (_name, anticheat) => {
+    expect(fromDetails({ anticheat })).toBe(make.verdict.unknown("malformed"));
   });
 });
 
 describe("the kernel and anti-cheat kinds", () => {
-  const anticheats: readonly Record<string, unknown>[] = [
-    {},
-    { kernel_mode: true },
-    { kernel_mode: false },
-    { name: "VAC (Valve Anti-Cheat)", name_loc: "#Store_AntiCheat_Type_vac" },
-    { kernel_mode: true, name: "BattlEye", name_loc: "#Store_AntiCheat_Type_battleye" },
-    { kernel_mode: true, uninstall_completely: true, boot_protection: true },
-  ];
+  const KERNEL = { kernel: "disclosed", anticheat: "not-disclosed" } as const;
+  const OTHER = { kernel: "not-disclosed", anticheat: "disclosed" } as const;
 
-  it("never disclose the same anti-cheat object together, and always one of them", () => {
-    for (const anticheat of anticheats) {
-      const kernel = verdictOf(KERNEL_KIND, { anticheat }).state;
-      const other = verdictOf(ANTICHEAT_KIND, { anticheat }).state;
-      expect([kernel, other].toSorted()).toStrictEqual(["disclosed", "not-disclosed"]);
-      expect(kernel === "disclosed").toBe(anticheat["kernel_mode"] === true);
-    }
+  it.each<readonly [string, Readonly<Record<string, unknown>>, typeof KERNEL | typeof OTHER]>([
+    ["an empty object", {}, OTHER],
+    ["a kernel flag alone", { kernel_mode: true }, KERNEL],
+    ["a false kernel flag", { kernel_mode: false }, OTHER],
+    ["a named vendor", { name: make.text.service(), name_loc: make.text.token() }, OTHER],
+    [
+      "a named kernel vendor",
+      { kernel_mode: true, name: make.text.service(), name_loc: make.text.token() },
+      KERNEL,
+    ],
+    [
+      "a kernel with boot protection",
+      { kernel_mode: true, uninstall_completely: true, boot_protection: true },
+      KERNEL,
+    ],
+  ])("disclose exactly one of them for %s", (_name, anticheat, states) => {
+    expect({
+      kernel: verdictOf(KERNEL_KIND, { anticheat }).state,
+      anticheat: verdictOf(ANTICHEAT_KIND, { anticheat }).state,
+    }).toStrictEqual(states);
   });
 });

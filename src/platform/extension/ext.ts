@@ -1,37 +1,16 @@
-import type { JsonValue } from "../../core/json";
-import type { Unsubscribe } from "../../core/ports";
+import type { LocalChanges, OnLocalChanged, StorageArea, StorageChange } from "./storage-area";
+
+export type { LocalChanges, OnLocalChanged, StorageArea, StorageChange };
 
 // The one module that names the WebExtension APIs. Everything else in the extension takes the
-// narrow interfaces below, so tests pass typed fakes and the rest of the code never sees `chrome`
-// or `browser`.
+// narrow interfaces of storage-area.ts, so tests pass typed fakes and the rest of the code never
+// sees `chrome` or `browser`.
 
 /**
  * Firefox's promise-based `browser`, else Chrome's `chrome`. `@types/chrome` declares `browser` as
  * always present, so the shorter `browser ?? chrome` would read as an unnecessary condition.
  */
 const api: typeof chrome = "browser" in globalThis ? globalThis.browser : globalThis.chrome;
-
-/**
- * The part of `storage.local` the store adapter uses. Reads stay `unknown`: the type argument of
- * `get<T>()` is never passed, since it would be an unchecked assertion (rule 10).
- */
-export interface StorageArea {
-  /** The stored items of `keys`, or every item for `null`. */
-  get(keys: string[] | null): Promise<Readonly<Record<string, unknown>>>;
-  set(items: Readonly<Record<string, JsonValue>>): Promise<void>;
-  remove(keys: string[]): Promise<void>;
-}
-
-/** One key's change, as `storage.onChanged` reports it. */
-export interface StorageChange {
-  readonly newValue?: unknown;
-}
-
-/** The changes of one `storage.onChanged` event in the `local` area, by key. */
-export type LocalChanges = Readonly<Record<string, StorageChange>>;
-
-/** Subscribes to changes in `storage.local`, from any context of this extension. */
-export type OnLocalChanged = (listener: (changes: LocalChanges) => void) => Unsubscribe;
 
 const LOCAL_AREA = "local";
 

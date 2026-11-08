@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { make } from "../../tests/helpers/factory";
 import { createSerial } from "./serial";
 
 /** A promise the test settles by hand. */
@@ -33,15 +34,17 @@ describe("createSerial", () => {
 
   it("hands each task's result to its own caller", async () => {
     const serial = createSerial();
-    expect(await Promise.all([serial(() => Promise.resolve(1)), serial(() => Promise.resolve(2))]))
-      .toEqual([1, 2]);
+    const results = [make.text.note(), make.text.note()];
+    expect(await Promise.all(results.map((result) => serial(() => Promise.resolve(result)))))
+      .toEqual(results);
   });
 
   it("rejects the failed task and still runs the next one", async () => {
     const serial = createSerial();
     const failed = serial(() => Promise.reject(new Error()));
-    const next = serial(() => Promise.resolve("ran"));
+    const result = make.text.note();
+    const next = serial(() => Promise.resolve(result));
     await expect(failed).rejects.toBeInstanceOf(Error);
-    expect(await next).toBe("ran");
+    expect(await next).toBe(result);
   });
 });

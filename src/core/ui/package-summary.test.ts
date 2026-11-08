@@ -1,9 +1,8 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { setBody } from "../../../tests/helpers/dom";
+import { make } from "../../../tests/helpers/factory";
 import { hostView, type HostViewOptions } from "../../../tests/helpers/host-view";
 import { englishI18n } from "../../../tests/helpers/i18n";
 import { markedPackagePage } from "../../../tests/helpers/package-page";
-import { disclosedKinds, uniformVerdicts } from "../../../tests/helpers/verdicts";
 import { KIND_IDS, type KindId } from "../kinds/id";
 import { kindsInOrder, parseOrder } from "../kinds/order";
 import { KIND_BY_ID } from "../kinds/registry";
@@ -23,10 +22,10 @@ const games = (kind: KindId, tagged: number, count: number) =>
   });
 const pending = (count: number) => i18n.plural("badge_summary_pending", count);
 
-const AI = { verdicts: disclosedKinds(["ai"]) };
-const AI_DRM = { verdicts: disclosedKinds(["ai", "drm"]) };
-const NOTHING = { verdicts: disclosedKinds([]) };
-const UNKNOWN = { verdicts: uniformVerdicts("missing") };
+const AI = { verdicts: make.verdicts.only(["ai"]) };
+const AI_DRM = { verdicts: make.verdicts.only(["ai", "drm"]) };
+const NOTHING = { verdicts: make.verdicts.only([]) };
+const UNKNOWN = { verdicts: make.verdicts.uniform("missing") };
 
 const summary = () => document.querySelector(".sar-summary");
 
@@ -57,7 +56,7 @@ let order: readonly KindId[] = KIND_IDS;
 
 /** A package page with one row per view, its summary drawn from them in `order`. */
 async function drawnPage(views: readonly Row[]) {
-  const rows = markedPackagePage(views.map((_, index) => 10 + index));
+  const rows = markedPackagePage(make.appIds(views.length));
   const renderer = createPackageSummary(document, i18n, () => kindsInOrder(order));
   await draw(renderer, rows, views);
   return { rows, renderer };
@@ -73,7 +72,7 @@ describe("createPackageSummary", () => {
       games("ai", 3, 3),
       games("drm", 3, 3),
     ]],
-    ["a mix of kinds", [AI, NOTHING, { verdicts: disclosedKinds(["ai", "pvp"]) }], [
+    ["a mix of kinds", [AI, NOTHING, { verdicts: make.verdicts.only(["ai", "pvp"]) }], [
       games("ai", 2, 3),
       games("pvp", 1, 3),
     ]],
@@ -108,7 +107,7 @@ describe("createPackageSummary", () => {
     "lists the kinds in the tag order %j",
     async (...moved) => {
       order = moved;
-      await drawnPage([AI_DRM, { verdicts: disclosedKinds(["pvp"]) }]);
+      await drawnPage([AI_DRM, { verdicts: make.verdicts.only(["pvp"]) }]);
       const expected = order.filter((id) => ["ai", "drm", "pvp"].includes(id));
       expect(lines()).toStrictEqual(expected.map((id) => games(id, 1, 2)));
     },
@@ -137,9 +136,11 @@ describe("createPackageSummary", () => {
   });
 
   it("draws nothing on a page without the included games list", async () => {
-    setBody(`<div ${HOST_APPID}="10"><img></div>`);
-    const host = document.querySelector(`[${HOST_APPID}]`);
-    await draw(createPackageSummary(document, i18n), host === null ? [] : [host], [AI]);
+    const host = document.createElement("div");
+    host.setAttribute(HOST_APPID, String(make.appId()));
+    host.append(document.createElement("img"));
+    document.body.replaceChildren(host);
+    await draw(createPackageSummary(document, i18n), [host], [AI]);
     expect(summary()).toBeNull();
   });
 });

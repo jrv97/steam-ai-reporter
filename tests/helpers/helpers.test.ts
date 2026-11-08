@@ -1,70 +1,65 @@
 import * as v from "valibot";
 import { describe, expect, it } from "vitest";
-import { LIST_FILTERS } from "../../src/core/kinds/kind-settings";
+import { LIST_FILTERS, type ListFilter } from "../../src/core/kinds/kind-settings";
 import { KINDS } from "../../src/core/kinds/registry";
+import { LEGACY_SETTINGS_KEY } from "../../src/core/storage-keys";
 import { fileTransferContract } from "../contracts/file-transfer.contract";
 import { httpContract } from "../contracts/http.contract";
 import { keyValueStoreContract } from "../contracts/key-value-store.contract";
 import { make } from "./factory";
-import { fakeFileTransferHarness } from "./fake-file-transfer";
-import { fakeHttp } from "./fake-http";
-import { fixedClock } from "./fixed-clock";
-import { memoryStore } from "./memory-store";
+import { fake } from "./fakes";
 import { strongestFilter } from "./settings";
 
-keyValueStoreContract("memoryStore", () => memoryStore());
-httpContract("fakeHttp", fakeHttp);
-fileTransferContract("fakeFileTransfer", fakeFileTransferHarness);
+keyValueStoreContract("memoryStore", () => fake.store());
+httpContract("fakeHttp", fake.http);
+fileTransferContract("fakeFileTransfer", fake.fileTransferHarness);
 
 describe("memoryStore", () => {
   it("starts from initial values", async () => {
-    const store = memoryStore(new Map([["v1:settings", { badges: true }]]));
-    expect(await store.get(["v1:settings"])).toStrictEqual(
-      new Map([["v1:settings", { badges: true }]]),
-    );
+    const initial = new Map([[LEGACY_SETTINGS_KEY, make.raw.v1Settings()]]);
+    expect(await fake.store(initial).get([LEGACY_SETTINGS_KEY])).toStrictEqual(initial);
   });
 });
 
 describe("fakeHttp", () => {
   it("records calls and answers unrouted URLs with 404", async () => {
-    const http = fakeHttp([]);
-    const got = await http.get("https://store.steampowered.com/nothing");
-    expect(got.kind === "response" ? got.status : undefined).toBe(404);
-    expect(http.calls).toStrictEqual(["https://store.steampowered.com/nothing"]);
+    const http = fake.http([]);
+    const url = make.text.url();
+    const got = await http.get(url);
+    expect(got).toMatchObject({ kind: "response", status: 404 });
+    expect(http.calls).toStrictEqual([url]);
   });
 
   it("counts overlapping requests", async () => {
-    const http = fakeHttp([]);
-    await Promise.all([http.get("https://a.test/"), http.get("https://b.test/")]);
+    const http = fake.http([]);
+    await Promise.all([http.get(make.text.url()), http.get(make.text.url())]);
     expect(http.maxInFlight).toBe(2);
   });
 });
 
 describe("fixedClock", () => {
   it("stands still until moved", () => {
-    const clock = fixedClock(1_000);
-    expect(clock.now()).toBe(1_000);
-    clock.advance(500);
-    expect(clock.now()).toBe(1_500);
-    clock.set(10);
-    expect(clock.now()).toBe(10);
+    const [start, step, later] = [make.time(), make.duration(), make.time()];
+    const clock = fake.clock(start);
+    const seen = [clock.now()];
+    clock.advance(step);
+    seen.push(clock.now());
+    clock.set(later);
+    seen.push(clock.now());
+    expect(seen).toStrictEqual([start, start + step, later]);
   });
 });
 
 describe("strongestFilter", () => {
-  it("is off for no kind at all", () => {
-    expect(strongestFilter([])).toBe("off");
-  });
-
-  it.each(LIST_FILTERS)("is %s for a single %s", (mode) => {
-    expect(strongestFilter([mode])).toBe(mode);
-  });
-
-  it("lets hide win over dim over off, whatever the order", () => {
-    expect(strongestFilter(["dim", "hide", "off"])).toBe("hide");
-    expect(strongestFilter(["hide", "off", "dim"])).toBe("hide");
-    expect(strongestFilter(["off", "off", "dim", "off"])).toBe("dim");
-    expect(strongestFilter(new Set<"off" | "dim" | "hide">(["dim", "off"]))).toBe("dim");
+  it.each<readonly [Iterable<ListFilter>, ListFilter]>([
+    [[], "off"],
+    ...LIST_FILTERS.map((mode) => [[mode], mode] as const),
+    [["dim", "hide", "off"], "hide"],
+    [["hide", "off", "dim"], "hide"],
+    [["off", "off", "dim", "off"], "dim"],
+    [new Set<ListFilter>(["dim", "off"]), "dim"],
+  ])("is the strongest of %j, hide over dim over off: %s", (modes, strongest) => {
+    expect(strongestFilter(modes)).toBe(strongest);
   });
 });
 
@@ -75,6 +70,9 @@ describe("make", () => {
     ["text.note", make.text.note],
     ["text.service", make.text.service],
     ["text.url", make.text.url],
+    ["text.fileName", make.text.fileName],
+    ["http.body", make.http.body],
+    ["raw.json", make.raw.json],
     ["time", make.time],
     ["duration", make.duration],
     ["color", make.color],

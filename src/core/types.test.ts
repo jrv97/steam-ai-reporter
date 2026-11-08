@@ -1,17 +1,14 @@
 import { describe, expect, it } from "vitest";
+import { make } from "../../tests/helpers/factory";
 import { toAppId, UNKNOWN } from "./types";
 
 describe("toAppId", () => {
-  it("accepts unsigned 32-bit integers above zero", () => {
-    expect(toAppId(1)).toBe(1);
-    expect(toAppId(5072580)).toBe(5072580);
-    expect(toAppId(0xffff_ffff)).toBe(0xffff_ffff);
+  it.each([...make.raw.appIdBounds(), make.appId()])("accepts %i", (value) => {
+    expect(toAppId(value)).toBe(value);
   });
 
-  it("rejects everything else", () => {
-    for (const value of [0, -1, 1.5, 0x1_0000_0000, Number.NaN, "10", null, undefined]) {
-      expect(toAppId(value)).toBeUndefined();
-    }
+  it.each(make.raw.badAppIds())("rejects %j", (value) => {
+    expect(toAppId(value)).toBeUndefined();
   });
 });
 

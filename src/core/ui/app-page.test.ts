@@ -1,16 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { SUMMARY_BOX } from "../../../tests/helpers/app-page";
-import { bannerCreator } from "../../../tests/helpers/creators";
 import { setBody } from "../../../tests/helpers/dom";
-import { capturedVerdicts } from "../../../tests/helpers/fixture-verdicts";
+import { make } from "../../../tests/helpers/factory";
 import { englishI18n } from "../../../tests/helpers/i18n";
-import { withChipText } from "../../../tests/helpers/settings";
-import {
-  aiVerdicts,
-  disclosedKinds,
-  disclosedVerdict,
-  NOT_DISCLOSED,
-} from "../../../tests/helpers/verdicts";
 import type { AiVerdict } from "../kinds/ai";
 import { taggedView } from "../kinds/facets";
 import { KIND_IDS, type KindId } from "../kinds/id";
@@ -20,16 +11,19 @@ import { KIND_BY_ID, perKind } from "../kinds/registry";
 import type { AnyDisclosed, KindVerdicts } from "../kinds/verdicts";
 import { type AllowScope, perScope } from "../settings/allow-data";
 import { DEFAULT_SETTINGS } from "../settings/settings";
-import { UNKNOWN } from "../types";
 import { type AppPageView, createAppPageUi } from "./app-page";
 import { BANNER_ID } from "./banner";
 
 // The summary box with Steam's user-defined tags block, and the description column of an app page
 // (components.mdx, section 3).
-const PAGE = `${SUMMARY_BOX}
+const PAGE = `${make.page.summaryBox}
   <div class="game_description_column"><div id="game_area_purchase"></div></div>`;
 
 const i18n = englishI18n();
+/** The captured verdicts of a game that discloses five kinds. */
+const ARC = make.fixture.verdicts(make.fixture.app.arcRaiders);
+/** The game's developer, the one creator each view lists. */
+const DEVELOPER = make.text.creator();
 const settled = () => Promise.resolve();
 const actions = {
   ignore: settled,
@@ -78,13 +72,17 @@ interface ViewOptions {
 
 /** What the page draws for the options, with each kind's default values and banner switch. */
 function view(options: ViewOptions = {}): AppPageView {
-  const { verdict = disclosedVerdict(), ignored = [], bannerOff = [], badgeOff = [] } = options;
+  const { verdict = make.verdict.disclosed("ai"), ignored = [], bannerOff = [] } = options;
+  const { badgeOff = [] } = options;
   const { baseIgnored = [], developerIgnored = [] } = options;
-  const developer = bannerCreator("developer", ["Valve", 4], developerIgnored);
+  const developer = make.creator.banner("developer", DEVELOPER, developerIgnored);
   const covers = (scopes: readonly AllowScope[], kind: KindId) =>
     scopes.includes("all") || scopes.includes(kind);
   return {
-    verdicts: taggedView(options.verdicts ?? aiVerdicts(verdict), DEFAULT_SETTINGS.kinds),
+    verdicts: taggedView(
+      options.verdicts ?? make.verdicts({ ai: verdict }),
+      DEFAULT_SETTINGS.kinds,
+    ),
     ignored: perScope((scope) => ignored.includes(scope)),
     suppressed: perKind((kind) =>
       covers(ignored, kind.id) || covers(baseIgnored, kind.id) || covers(developerIgnored, kind.id)
@@ -138,12 +136,12 @@ describe("createAppPageUi", () => {
   });
 
   it("leaves nothing under Publisher", () => {
-    setup().render(view({ verdicts: capturedVerdicts(1808500) }));
+    setup().render(view({ verdicts: ARC }));
     expect(document.getElementById("publisher")?.nextElementSibling?.id).toBe("tags");
   });
 
   it("binds the hover card to each chip with its own kind, as on the game's own page", () => {
-    const verdicts = capturedVerdicts(1808500);
+    const verdicts = ARC;
     setup().render(view({ verdicts }));
     expect(chips()).toHaveLength(5);
     for (const chip of chips()) {
@@ -158,8 +156,8 @@ describe("createAppPageUi", () => {
 
   it.each(
     [
-      ["not disclosed", NOT_DISCLOSED],
-      ["unknown", UNKNOWN.missing],
+      ["not disclosed", make.verdict.notDisclosed()],
+      ["unknown", make.verdict.unknown()],
     ] as const,
   )("renders nothing for %s", (_name, verdict: AiVerdict) => {
     setup().render(view({ verdict }));
@@ -167,7 +165,7 @@ describe("createAppPageUi", () => {
   });
 
   it("shows a game that discloses no AI its chips and its banner entries", () => {
-    setup().render(view({ verdicts: capturedVerdicts(3751950) }));
+    setup().render(view({ verdicts: make.fixture.verdicts(make.fixture.app.drmAccountEula) }));
     expect(headings()).toEqual([
       i18n.t("kind_iap_heading"),
       i18n.t("kind_drm_heading"),
@@ -179,7 +177,8 @@ describe("createAppPageUi", () => {
   });
 
   describe("with the person's chip text", () => {
-    const words = withChipText(DEFAULT_SETTINGS, { ai: { chip: "Mine" } }).kinds;
+    const MINE = make.chipText();
+    const words = make.settings.chipText({ ai: { chip: MINE } }).kinds;
     const ignoreAi = () =>
       bannerRoot()?.querySelector(
         "[data-sar-action=ignore-creator][data-sar-scope=ai]",
@@ -190,9 +189,9 @@ describe("createAppPageUi", () => {
       ui.render(view());
       ui.render(view({ words }));
       expect(chips().map((chip) => chip.querySelector(".sar-badge-label")?.textContent)).toEqual([
-        "Mine",
+        MINE,
       ]);
-      expect(ignoreAi()).toBe(i18n.t("banner_ignore_creator_kind", { chip: "Mine" }));
+      expect(ignoreAi()).toBe(i18n.t("banner_ignore_creator_kind", { chip: MINE }));
       expect(headings()).toEqual([i18n.t("kind_ai_heading")]);
     });
   });
@@ -205,7 +204,7 @@ describe("createAppPageUi", () => {
     it.each<[string, readonly KindId[]]>([["the registry's", KIND_IDS], ["a person's", MOVED]])(
       "lists the chips and the banner entries in %s order",
       (_case, order) => {
-        setup().render(view({ verdicts: disclosedKinds(SHOWN), order }));
+        setup().render(view({ verdicts: make.verdicts.only(SHOWN), order }));
         expect(chipKinds()).toEqual(shownIn(order));
         expect(headings()).toEqual(headingsOf(shownIn(order)));
       },
@@ -213,15 +212,15 @@ describe("createAppPageUi", () => {
 
     it("draws both again when only the order changes", () => {
       const ui = setup();
-      ui.render(view({ verdicts: disclosedKinds(SHOWN) }));
-      ui.render(view({ verdicts: disclosedKinds(SHOWN), order: MOVED }));
+      ui.render(view({ verdicts: make.verdicts.only(SHOWN) }));
+      ui.render(view({ verdicts: make.verdicts.only(SHOWN), order: MOVED }));
       expect(chipKinds()).toEqual(shownIn(MOVED));
       expect(headings()).toEqual(headingsOf(shownIn(MOVED)));
     });
   });
 
   it("shows a game ignored for all tags only the note, with no section", () => {
-    setup().render(view({ verdicts: capturedVerdicts(1808500), ignored: ["all"] }));
+    setup().render(view({ verdicts: ARC, ignored: ["all"] }));
     expect(section()).toBeNull();
     expect(headings()).toEqual([]);
     expect(notes()).toEqual([i18n.t("banner_ignored")]);
@@ -232,7 +231,7 @@ describe("createAppPageUi", () => {
     const NO_AI: readonly KindId[] = ["iap", "pvp", "eula", "kernel"];
     const NO_KERNEL: readonly KindId[] = ["ai", "iap", "pvp", "eula"];
     const DEVELOPER_AI = i18n.t("banner_ignored_creator_kind", {
-      name: "Valve",
+      name: DEVELOPER,
       role: i18n.t("banner_role_developer"),
       heading: i18n.t("kind_ai_heading"),
     });
@@ -263,7 +262,7 @@ describe("createAppPageUi", () => {
         ],
       ],
     )("with %s, draws the chips, banner entries and notes", (_name, options, ids, entries, all) => {
-      setup().render(view({ verdicts: capturedVerdicts(1808500), ...options }));
+      setup().render(view({ verdicts: ARC, ...options }));
       expect(chipKinds()).toEqual(ids);
       expect(headings()).toEqual(headingsOf(entries));
       expect(notes()).toEqual(all);
@@ -271,17 +270,17 @@ describe("createAppPageUi", () => {
   });
 
   it("shows a DLC of a base game ignored for all tags no banner and no section", () => {
-    setup().render(view({ verdicts: capturedVerdicts(1808500), baseIgnored: ["all"] }));
+    setup().render(view({ verdicts: ARC, baseIgnored: ["all"] }));
     expect(bannerHost()).toBeNull();
     expect(section()).toBeNull();
     expect(document.body.innerHTML).toBe(PAGE);
   });
 
   it("notes a developer ignored for all tags once, and keeps the Undo as the only control", () => {
-    setup().render(view({ verdicts: capturedVerdicts(1808500), developerIgnored: ["all"] }));
+    setup().render(view({ verdicts: ARC, developerIgnored: ["all"] }));
     expect(notes()).toEqual([
       i18n.t("banner_ignored_creator", {
-        name: "Valve",
+        name: DEVELOPER,
         role: i18n.t("banner_role_developer"),
       }),
     ]);
@@ -289,26 +288,32 @@ describe("createAppPageUi", () => {
     expect(section()).toBeNull();
   });
 
-  it.each(
+  it.each<readonly [string, readonly AllowScope[], KindVerdicts, readonly KindId[]]>([
     [
-      ["a kind the game does not declare", ["drm"], "5072580"],
-      ["a kind whose banner entry is off", ["ai"], "off"],
-    ] as const,
-  )("shows no note for a developer ignored for %s", (_name, scopes, why) => {
-    const verdicts = why === "off" ? capturedVerdicts(1808500) : aiVerdicts(disclosedVerdict());
-    const bannerOff: readonly KindId[] = why === "off" ? ["ai"] : [];
+      "a kind the game does not declare",
+      ["drm"],
+      make.verdicts({ ai: make.verdict.disclosed("ai") }),
+      [],
+    ],
+    ["a kind whose banner entry is off", ["ai"], ARC, ["ai"]],
+  ])("shows no note for a developer ignored for %s", (_name, scopes, verdicts, bannerOff) => {
     setup().render(view({ verdicts, developerIgnored: scopes, bannerOff }));
-    expect(notes().some((note) => note.includes("Valve"))).toBe(false);
+    expect(notes().some((note) => note.includes(DEVELOPER))).toBe(false);
   });
 
   it("shows no banner for a developer ignored for all tags when nothing is disclosed", () => {
-    setup().render(view({ verdicts: aiVerdicts(NOT_DISCLOSED), developerIgnored: ["all"] }));
+    setup().render(
+      view({
+        verdicts: make.verdicts({ ai: make.verdict.notDisclosed() }),
+        developerIgnored: ["all"],
+      }),
+    );
     expect(bannerHost()).toBeNull();
   });
 
   it("drops only the chip of a kind whose badge is off, and keeps its banner entry", () => {
     const ui = setup();
-    const verdicts = capturedVerdicts(1808500);
+    const verdicts = ARC;
     ui.render(view({ verdicts }));
     expect(chipKinds()).toEqual(["ai", "iap", "pvp", "eula", "kernel"]);
     ui.render(view({ verdicts, badgeOff: ["ai"] }));
@@ -323,7 +328,7 @@ describe("createAppPageUi", () => {
 
   it("removes the section and its label when every badge is off", () => {
     const ui = setup();
-    const verdicts = capturedVerdicts(1808500);
+    const verdicts = ARC;
     ui.render(view({ verdicts }));
     ui.render(view({ verdicts, badgeOff: ["ai", "kernel", "eula", "pvp", "iap"] }));
     expect(section()).toBeNull();
@@ -365,7 +370,7 @@ describe("createAppPageUi", () => {
     const ui = setup();
     ui.render(view());
     const root = section();
-    ui.render(view({ verdict: disclosedVerdict({ notes: "Other notes." }) }));
+    ui.render(view({ verdict: make.verdict.disclosed("ai", { notes: make.text.note() }) }));
     expect(section()).not.toBe(root);
     expect(document.querySelectorAll(".sar-tag-section")).toHaveLength(1);
     expect(chipKinds()).toEqual(["ai"]);

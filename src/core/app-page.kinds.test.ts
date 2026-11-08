@@ -1,20 +1,14 @@
 // @vitest-environment-options {"url":"https://store.steampowered.com/app/3751950/"}
 import * as v from "valibot";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import kindItems from "../../tests/fixtures/getitems/kinds.json";
-import {
-  APP_PAGES,
-  withDescriptionColumn,
-  withLastUpdateScript,
-  withSummaryBox,
-} from "../../tests/helpers/app-page";
 import { clearRoot } from "../../tests/helpers/dom";
-import { fakeHttp } from "../../tests/helpers/fake-http";
-import { fixedClock } from "../../tests/helpers/fixed-clock";
-import { fixtureItems, getItemsRequest, getItemsRoute, itemAs } from "../../tests/helpers/getitems";
+import { make } from "../../tests/helpers/factory";
+import { fake } from "../../tests/helpers/fakes";
+import { getItemsRequest } from "../../tests/helpers/getitems";
 import { englishI18n } from "../../tests/helpers/i18n";
-import { memoryStore } from "../../tests/helpers/memory-store";
-import { withKind, writeSettings } from "../../tests/helpers/settings";
+import { writeSettings } from "../../tests/helpers/settings";
+import { readKey } from "../../tests/helpers/store-read";
 import { loadPage } from "../../tests/helpers/surfaces";
 import { type App, start } from "./app";
 import { dateFormat } from "./i18n/date-format";
@@ -22,17 +16,17 @@ import { SHIPPED_CATALOGS } from "./i18n/shipped";
 import type { JsonValue } from "./json";
 import { COMPAT_FACETS } from "./kinds/compat";
 import type { KindSettings } from "./kinds/kind-settings";
-import { DEFAULT_SETTINGS, encodeSettings } from "./settings/settings";
+import { DEFAULT_SETTINGS, encodeSettings, type Settings } from "./settings/settings";
 import { createSettingsSource } from "./settings/settings-source";
 import { ALLOW_KEY, SETTINGS_KEY } from "./storage-keys";
 import { HOVER_CARD_ID } from "./ui/hover-card";
 import { adoptPageStyles } from "./ui/styles";
 
-// Game 3751950 declares DRM, a third-party
-// account and a EULA, and no AI. Its English page can answer none of them: they come from GetItems.
+// The game of the open page declares DRM, a third-party account and a EULA, and no AI. Its
+// English page can answer none of them: they come from GetItems.
+const GAME = make.fixture.app.drmAccountEula;
 
 const i18n = englishI18n();
-const quiet = { error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() };
 const AllowSchema = v.record(v.string(), v.record(v.string(), v.unknown()));
 
 let app: App | undefined;
@@ -51,34 +45,38 @@ const chipKinds = () =>
     chip.getAttribute("data-sar-kind")
   );
 const control = (selector: string) => banner()?.querySelector<HTMLElement>(selector);
+const storing = (settings: Settings) =>
+  new Map<string, JsonValue>([[SETTINGS_KEY, encodeSettings(settings)]]);
 
-const DRM_PAGE = withSummaryBox(withDescriptionColumn(APP_PAGES["3751950-drm-account-eula.html"]));
+const DRM_PAGE = make.page.withSummaryBox(
+  make.page.withDescriptionColumn(make.page.app("3751950-drm-account-eula.html")),
+);
 
 /** Starts on the page, which shows `entries` banner entries once GetItems has answered. */
 async function startOnDrmPage(
   initial: ReadonlyMap<string, JsonValue> = new Map(),
-  items: readonly unknown[] = fixtureItems(kindItems),
+  items: readonly unknown[] = make.fixture.items(kindItems),
   page: string = DRM_PAGE,
   entries = 3,
 ) {
   loadPage(page);
   document.documentElement.lang = "en";
-  const store = memoryStore(initial);
+  const store = fake.store(initial);
   const settings = createSettingsSource(store);
-  const http = fakeHttp([getItemsRoute(items)]);
+  const http = fake.http([make.item.route(items)]);
   app = await start({
     document,
     http,
     store,
     settings,
-    clock: fixedClock(0),
-    console: quiet,
+    clock: fake.clock(make.time()),
+    console: fake.console(),
     catalogs: SHIPPED_CATALOGS,
     addPageStyles: adoptPageStyles,
   });
   await expect.poll(() => headings().length).toBeGreaterThanOrEqual(entries);
   const ignored = async (scope: string) =>
-    Object.keys(v.parse(AllowSchema, (await store.get([ALLOW_KEY])).get(ALLOW_KEY))[scope] ?? {});
+    Object.keys(v.parse(AllowSchema, await readKey(store, ALLOW_KEY))[scope] ?? {});
   return { http, settings, ignored };
 }
 
@@ -87,7 +85,7 @@ describe("start on an English app page of a game with no AI", () => {
     const { http } = await startOnDrmPage();
 
     expect(http.calls).toHaveLength(1);
-    expect(getItemsRequest(http.calls[0] ?? "").ids).toEqual([3751950]);
+    expect(getItemsRequest(http.calls[0] ?? "").ids).toEqual([GAME]);
     expect(headings()).toEqual([
       i18n.t("kind_drm_heading"),
       i18n.t("kind_account_heading"),
@@ -101,7 +99,7 @@ describe("start on an English app page of a game with no AI", () => {
 
     control('.sar-banner-action[data-sar-scope="drm"]')?.click();
     await expect.poll(() => control('[data-sar-action="undo"]') !== undefined).toBe(true);
-    expect(await ignored("drm")).toEqual(["3751950"]);
+    expect(await ignored("drm")).toEqual([String(GAME)]);
     expect(await ignored("all")).toEqual([]);
     expect(headings()).toEqual([i18n.t("kind_account_heading"), i18n.t("kind_eula_heading")]);
     expect(chipKinds()).toEqual(["account", "eula"]);
@@ -115,10 +113,10 @@ describe("start on an English app page of a game with no AI", () => {
   it("leaves out a kind whose banner entry is switched off", async () => {
     const { settings } = await startOnDrmPage();
 
-    await writeSettings(settings, withKind(DEFAULT_SETTINGS, "eula", { banner: false }));
+    await writeSettings(settings, make.settings.kind("eula", { banner: false }));
     expect(headings()).toEqual([i18n.t("kind_drm_heading"), i18n.t("kind_account_heading")]);
     expect(chipKinds()).toEqual(["drm", "account", "eula"]);
-    await writeSettings(settings, withKind(DEFAULT_SETTINGS, "drm", { enabled: false }));
+    await writeSettings(settings, make.settings.kind("drm", { enabled: false }));
     expect(headings()).toEqual([i18n.t("kind_account_heading"), i18n.t("kind_eula_heading")]);
     expect(chipKinds()).toEqual(["account", "eula"]);
   });
@@ -127,32 +125,36 @@ describe("start on an English app page of a game with no AI", () => {
     // Valve rates the game Unsupported on Steam Deck and has not rated it for Steam Machine.
     const rated = [
       {
-        ...itemAs(kindItems, 3751950, 3751950),
+        ...make.fixture.itemAs(kindItems, GAME, GAME),
         platforms: { steam_deck_compat_category: 1, steam_machine_compat_category: 0 },
       },
     ];
     const devices = (patch: Partial<KindSettings>) =>
-      withKind(withKind(DEFAULT_SETTINGS, "deck", patch), "machine", patch);
-    const start = (patch: Partial<KindSettings>) =>
-      startOnDrmPage(new Map([[SETTINGS_KEY, encodeSettings(devices(patch))]]), rated);
+      make.settings.kind("machine", patch, make.settings.kind("deck", patch));
+    const startRated = (patch: Partial<KindSettings>) =>
+      startOnDrmPage(storing(devices(patch)), rated);
     const deckEntry = i18n.t("kind_facet_name", {
       heading: i18n.t("kind_deck_heading"),
       value: i18n.t("kind_compat_unsupported"),
     });
 
     it("puts a rating in the tag section and, by default, not in the banner", async () => {
-      await start({ enabled: true });
+      await startRated({ enabled: true });
       expect(chipKinds()).toEqual(["drm", "account", "eula", "deck"]);
       expect(headings()).toHaveLength(3);
     });
 
     it("heads a rating's entry with Steam's heading and word, and ignores that tag", async () => {
-      const { ignored } = await start({ enabled: true, banner: true, facets: [...COMPAT_FACETS] });
+      const { ignored } = await startRated({
+        enabled: true,
+        banner: true,
+        facets: [...COMPAT_FACETS],
+      });
       await expect.poll(() => headings().length).toBe(4);
       expect(headings()[3]).toBe(deckEntry);
       control('.sar-banner-action[data-sar-scope="deck"]')?.click();
       await expect.poll(() => control('[data-sar-action="undo"]') !== undefined).toBe(true);
-      expect(await ignored("deck")).toEqual(["3751950"]);
+      expect(await ignored("deck")).toEqual([String(GAME)]);
       expect(control(".sar-banner-ignored-text")?.textContent).toBe(
         i18n.t("banner_ignored_kind", { heading: i18n.t("kind_deck_heading") }),
       );
@@ -162,11 +164,11 @@ describe("start on an English app page of a game with no AI", () => {
 
   it("tags a paid game whose features lack category 62, in Steam's words", async () => {
     // The game's feature list in the capture leaves out category 62.
-    const on = withKind(DEFAULT_SETTINGS, "family", { enabled: true });
-    const { settings } = await startOnDrmPage(new Map([[SETTINGS_KEY, encodeSettings(on)]]));
+    const on = make.settings.kind("family", { enabled: true });
+    const { settings } = await startOnDrmPage(storing(on));
     expect(chipKinds()).toEqual(["family", "drm", "account", "eula"]);
     expect(headings()).toHaveLength(3);
-    await writeSettings(settings, withKind(on, "family", { banner: true }));
+    await writeSettings(settings, make.settings.kind("family", { banner: true }, on));
     await expect.poll(() => headings().length).toBe(4);
     expect(headings()[0]).toBe(i18n.t("kind_family_unsupported"));
   });
@@ -174,7 +176,7 @@ describe("start on an English app page of a game with no AI", () => {
   it("draws only the chips whose badge switch is on", async () => {
     const { settings } = await startOnDrmPage();
 
-    await writeSettings(settings, withKind(DEFAULT_SETTINGS, "account", { badge: false }));
+    await writeSettings(settings, make.settings.kind("account", { badge: false }));
     expect(chipKinds()).toEqual(["drm", "eula"]);
     expect(headings()).toHaveLength(3);
     await writeSettings(settings, DEFAULT_SETTINGS);
@@ -183,11 +185,11 @@ describe("start on an English app page of a game with no AI", () => {
 });
 
 describe("start on the app page of a game in early access", () => {
-  // KIKICAPS's captured item with its note and release date, served as the page's game.
-  const flagged = [itemAs(kindItems, 2514910, 3751950)];
-  const RELEASED = 1731596424;
-  const UPDATED = 1793121240;
+  // The captured Early Access item with its note and release date, served as the page's game.
+  const flagged = [make.fixture.itemAs(kindItems, make.fixture.app.earlyAccess, GAME)];
   const day = (seconds: number) => dateFormat(i18n.locale).format(seconds * 1000);
+  const released = i18n.t("kind_earlyaccess_released", { date: day(make.fixture.released) });
+  const updated = i18n.t("kind_earlyaccess_updated", { date: day(make.fixture.updated) });
 
   /** Opens the hover card of the page's Early Access chip and returns the entry's lines. */
   async function cardLines(): Promise<readonly (string | null)[]> {
@@ -200,22 +202,19 @@ describe("start on the app page of a game in early access", () => {
     return Array.from(entry?.children ?? [], (line) => line.textContent);
   }
 
-  it("puts the latest update post of the page after the note and the release date", async () => {
-    await startOnDrmPage(new Map(), flagged, withLastUpdateScript(DRM_PAGE), 0);
-    const lines = await cardLines();
-    expect(lines).toHaveLength(4);
-    expect(lines.slice(0, 1)).toEqual([i18n.t("kind_earlyaccess_heading")]);
-    expect(lines.slice(2)).toEqual([
-      i18n.t("kind_earlyaccess_released", { date: day(RELEASED) }),
-      i18n.t("kind_earlyaccess_updated", { date: day(UPDATED) }),
+  it.each([
+    ["then the latest update post the page holds", make.page.withLastUpdateScript(DRM_PAGE), [
+      released,
+      updated,
+    ]],
+    ["and nothing more when the page holds no update post", DRM_PAGE, [released]],
+  ])("shows the note and the release date, %s", async (_name, page, dates) => {
+    await startOnDrmPage(new Map(), flagged, page, 0);
+    expect(await cardLines()).toEqual([
+      i18n.t("kind_earlyaccess_heading"),
+      expect.any(String),
+      ...dates,
     ]);
-  });
-
-  it("shows the note and the release date alone when the page holds no update post", async () => {
-    await startOnDrmPage(new Map(), flagged, DRM_PAGE, 0);
-    const lines = await cardLines();
-    expect(lines).toHaveLength(3);
-    expect(lines.slice(2)).toEqual([i18n.t("kind_earlyaccess_released", { date: day(RELEASED) })]);
   });
 
   it("leaves early access out of the banner, which Steam's own box already tops", async () => {

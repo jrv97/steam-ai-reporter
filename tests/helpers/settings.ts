@@ -93,6 +93,14 @@ export function withKind(settings: Settings, id: KindId, patch: Partial<KindSett
   return applyPatch(settings, { kinds: { [id]: patch } });
 }
 
+/** Every kind switched on over its defaults, with `patch`, then each kind's own `byKind` patch. */
+export function switchedOnKinds(
+  patch: Partial<KindSettings> = {},
+  byKind: Partial<Record<KindId, Partial<KindSettings>>> = {},
+): Readonly<Record<KindId, KindSettings>> {
+  return perKind((kind) => ({ ...kind.defaults, enabled: true, ...patch, ...byKind[kind.id] }));
+}
+
 /** Writes the kinds' list filters on the root element as the app does, `off` for the rest. */
 export function applyFilters(modes: Partial<Record<KindId, ListFilter>>): void {
   applyKindSettings(

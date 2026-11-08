@@ -1,19 +1,20 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { DEV_ROWS, USER_TAGS } from "../../../tests/helpers/app-page";
 import { setBody } from "../../../tests/helpers/dom";
+import { make } from "../../../tests/helpers/factory";
 import { disclosedList } from "../../../tests/helpers/fixture-verdicts";
 import { englishI18n } from "../../../tests/helpers/i18n";
-import { FULL_DISCLOSED } from "../../../tests/helpers/verdicts";
 import { KIND_IDS } from "../kinds/id";
 import type { AnyDisclosed } from "../kinds/verdicts";
 import { createTagSection } from "./tag-section";
 
 const i18n = englishI18n();
-const { ai, kernel, drm } = FULL_DISCLOSED;
-const all: readonly AnyDisclosed[] = disclosedList(FULL_DISCLOSED);
+const full = make.verdicts.full();
+const { ai, kernel, drm } = full;
+const all: readonly AnyDisclosed[] = disclosedList(full);
 
-const WITH_TAGS = `<div class="glance_ctn_responsive_left">${DEV_ROWS}${USER_TAGS}</div>`;
-const WITHOUT_TAGS = `<div class="glance_ctn_responsive_left">${DEV_ROWS}</div>`;
+const WITH_TAGS =
+  `<div class="glance_ctn_responsive_left">${make.page.devRows}${make.page.userTags}</div>`;
+const WITHOUT_TAGS = `<div class="glance_ctn_responsive_left">${make.page.devRows}</div>`;
 
 const sections = () => [...document.querySelectorAll(".sar-tag-section")];
 const chips = () => [...document.querySelectorAll(".sar-tag-section .sar-badge")];
@@ -121,7 +122,7 @@ describe("createTagSection", () => {
     const section = mounted(WITHOUT_TAGS);
     section.render([ai]);
     const first = sections()[0];
-    document.getElementById("publisher")?.insertAdjacentHTML("afterend", USER_TAGS);
+    document.getElementById("publisher")?.insertAdjacentHTML("afterend", make.page.userTags);
     section.render([ai]);
     expect(sections()[0]).toBe(first);
     expect(document.getElementById("tags")?.nextElementSibling).toBe(first);

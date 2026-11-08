@@ -1,15 +1,15 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { memoryStore } from "../../../tests/helpers/memory-store";
+import { make } from "../../../tests/helpers/factory";
+import { fake } from "../../../tests/helpers/fakes";
+import { englishI18n } from "../../../tests/helpers/i18n";
 import { dialogDeps as deps } from "../../../tests/helpers/settings-dialog";
-import { SHIPPED_CATALOGS } from "../../core/i18n/shipped";
-import { createI18n } from "../../core/i18n/t";
 import { KINDS } from "../../core/kinds/registry";
 import { parseSettings } from "../../core/settings/settings";
 import { createSettingsSource } from "../../core/settings/settings-source";
 import { createUiState } from "../../core/ui/ui-state";
 import { openSettingsDialog } from "./settings-dialog";
 
-const i18n = createI18n(SHIPPED_CATALOGS, "en");
+const i18n = englishI18n();
 
 const host = () => document.querySelector(".sar-dialog-host");
 const dialog = () => host()?.shadowRoot?.querySelector("dialog") ?? null;
@@ -48,7 +48,7 @@ describe("openSettingsDialog", () => {
   });
 
   it("saves a typed color and applies it inside the dialog", async () => {
-    const store = memoryStore();
+    const store = fake.store();
     await openSettingsDialog(deps(true, store));
 
     const field = dialog()?.querySelector<HTMLInputElement>(
@@ -57,20 +57,22 @@ describe("openSettingsDialog", () => {
     if (field === null || field === undefined) {
       throw new TypeError();
     }
-    field.value = "0F0";
+    const color = make.color();
+    // Typed without the hash and in capitals; the saved value comes back in normal form
+    field.value = color.slice(1).toUpperCase();
     field.dispatchEvent(new Event("input", { bubbles: true }));
     field.dispatchEvent(new Event("change", { bubbles: true }));
     await vi.waitFor(() => {
-      expect(field.value).toBe("#00ff00");
+      expect(field.value).toBe(color);
     });
     const form = dialog()?.querySelector<HTMLElement>(".sar-options");
-    expect(form?.style.getPropertyValue("--sar-kind-color-ai")).toBe("#00ff00");
+    expect(form?.style.getPropertyValue("--sar-kind-color-ai")).toBe(color);
     const stored = parseSettings(await createSettingsSource(store).read());
-    expect(stored.kinds.ai.color).toBe("#00ff00");
+    expect(stored.kinds.ai.color).toBe(color);
   });
 
   it("has the language picker in General, and its tabs keep the store's address", async () => {
-    const store = memoryStore();
+    const store = fake.store();
     await openSettingsDialog(deps(true, store));
 
     const general = dialog()?.querySelector("[role=tabpanel]:not([hidden])");
@@ -111,14 +113,11 @@ describe("openSettingsDialog", () => {
     expect(host()).toBeNull();
   });
 
-  it("notes that changes apply on reload only where they cannot apply live", async () => {
-    await openSettingsDialog(deps(false));
-    expect(dialog()?.querySelector(".sar-dialog-note")?.textContent).toBe(
-      i18n.t("userscript_reload_note"),
-    );
-    host()?.remove();
-
-    await openSettingsDialog(deps(true));
-    expect(dialog()?.querySelector(".sar-dialog-note")).toBeNull();
+  it.each([
+    [false, i18n.t("userscript_reload_note")],
+    [true, undefined],
+  ])("with live changes %s, notes %j about applying on reload", async (live, note) => {
+    await openSettingsDialog(deps(live));
+    expect(dialog()?.querySelector(".sar-dialog-note")?.textContent).toBe(note);
   });
 });
