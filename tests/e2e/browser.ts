@@ -97,7 +97,7 @@ function exited(child: ChildProcess | null): Promise<void> {
 }
 
 async function launchGecko(): Promise<ExtensionBrowser> {
-  // A fixed internal UUID gives the extension pages a known moz-extension:// origin.
+  // A random UUID per launch, preset through a pref, gives a known moz-extension:// origin.
   const uuid = crypto.randomUUID();
   // After a reconnect puppeteer skips its own profile cleanup, so this module owns the profile.
   const profile = await mkdtemp(join(tmpdir(), "sar-e2e-gecko-"));
