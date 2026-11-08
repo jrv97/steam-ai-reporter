@@ -2,6 +2,7 @@ import * as v from "valibot";
 import { describe, expect, it } from "vitest";
 import { LIST_FILTERS, type ListFilter } from "../../src/core/kinds/kind-settings";
 import { KINDS } from "../../src/core/kinds/registry";
+import { DEFAULT_SETTINGS } from "../../src/core/settings/settings";
 import { LEGACY_SETTINGS_KEY } from "../../src/core/storage-keys";
 import { fileTransferContract } from "../contracts/file-transfer.contract";
 import { httpContract } from "../contracts/http.contract";
@@ -94,6 +95,23 @@ describe("make", () => {
   ])("lets an override win in %s", (_name, build) => {
     const value = make.text.name();
     expect(build(value)).toBe(value);
+  });
+
+  it.each([
+    ["verdicts.full", () => make.verdicts.full().eula.items],
+    ["verdict.disclosed", () => make.verdict.disclosed("eula").items],
+  ])("gives a deep copy from %s on every call", (_name, items) => {
+    expect(items()).not.toBe(items());
+  });
+
+  it("changes the given fields of one kind and nothing else in settings.kind", () => {
+    const defaults = structuredClone(DEFAULT_SETTINGS);
+    const next = make.settings.kind("ai", { filter: "hide", enabled: false });
+    expect(next).toStrictEqual({
+      ...defaults,
+      kinds: { ...defaults.kinds, ai: { ...defaults.kinds.ai, filter: "hide", enabled: false } },
+    });
+    expect(DEFAULT_SETTINGS).toStrictEqual(defaults);
   });
 
   it.each(KINDS)("builds a disclosed $id verdict that the kind stores as it is", (kind) => {

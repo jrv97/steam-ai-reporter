@@ -98,12 +98,24 @@ describe("encodeVerdicts and decodeVerdicts", () => {
     expect(Object.keys(perKind(() => 0))).toStrictEqual([...KIND_IDS]);
   });
 
-  it("stores a disclosed verdict as itself, and the unknown ones as their reason", () => {
-    expect(encodeVerdicts(FULL, T)).toStrictEqual({ time: T, kinds: FULL });
-    expect(encodeVerdicts(make.verdicts.uniform("gated"), T)).toStrictEqual({
-      time: T,
-      kinds: perKind(() => ({ state: "unknown", reason: "gated" })),
-    });
+  it.each<readonly [string, KindVerdicts, unknown]>([
+    ["every kind disclosed", FULL, FULL],
+    [
+      "every kind gated",
+      make.verdicts.uniform("gated"),
+      perKind(() => ({ state: "unknown", reason: "gated" })),
+    ],
+    [
+      "a malformed EULA beside disclosed kinds",
+      { ...FULL, eula: make.verdict.unknown("malformed") },
+      { ...FULL, eula: { state: "unknown", reason: "malformed" } },
+    ],
+  ])("stores %s: a disclosed verdict as itself, an unknown one as its reason", (
+    _name,
+    verdicts,
+    kinds,
+  ) => {
+    expect(encodeVerdicts(verdicts, T)).toStrictEqual({ time: T, kinds });
   });
 
   it("leaves out the fields a payload does not have instead of storing them empty", () => {

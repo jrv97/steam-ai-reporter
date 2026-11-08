@@ -42,10 +42,10 @@ describe("toHexColor", () => {
 });
 
 describe("readTypedColor", () => {
-  it.each<readonly [string, string, ReturnType<typeof readTypedColor>]>([
+  it.each<readonly [string, string, unknown]>([
     ["empty text as the default, which is valid", "", { valid: true, color: undefined }],
     ["blank text as the default, which is valid", "   ", { valid: true, color: undefined }],
-    ["a color in its normal form", "F00", { valid: true, color: toHexColor("#ff0000") }],
+    ["a color in its normal form", "F00", { valid: true, color: "#ff0000" }],
     ["text that is no color as invalid", "#12", { valid: false }],
   ])("reads %s", (_name, typed, reading) => {
     expect(readTypedColor(typed)).toStrictEqual(reading);

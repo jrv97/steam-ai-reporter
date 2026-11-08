@@ -8,6 +8,7 @@ import { isTransient } from "../cache/ttl";
 import { createVerdictCache } from "../cache/verdict-cache";
 import { KIND_IDS, type KindId } from "../kinds/id";
 import type { KindVerdict, KindVerdicts } from "../kinds/verdicts";
+import type { Detector } from "../ports";
 import { verdictKey } from "../storage-keys";
 import type { AppId } from "../types";
 import { createFullGameDetector } from "./full-game";
@@ -32,13 +33,18 @@ function setup(entries: readonly (readonly [AppId, KindVerdicts])[]) {
   return { inner, detector: createFullGameDetector(inner) };
 }
 
-async function demoAnswer(own: KindVerdicts, game: KindVerdicts): Promise<KindVerdicts> {
-  const { detector } = setup([[DEMO, demoOf(GAME, own)], [GAME, game]]);
-  const found = (await detector.detect([DEMO])).get(DEMO);
+/** The verdicts `detector` gives for `id` alone; throws when it gives none. */
+async function detectOne(detector: Detector, id: AppId): Promise<KindVerdicts> {
+  const found = (await detector.detect([id])).get(id);
   if (found === undefined) {
-    throw new TypeError();
+    throw new TypeError(String(id));
   }
   return found;
+}
+
+async function demoAnswer(own: KindVerdicts, game: KindVerdicts): Promise<KindVerdicts> {
+  const { detector } = setup([[DEMO, demoOf(GAME, own)], [GAME, game]]);
+  return detectOne(detector, DEMO);
 }
 
 detectorContract("createFullGameDetector", () => setup([]).detector);
@@ -173,8 +179,7 @@ describe("createFullGameDetector over the verdict cache", () => {
   it("asks again for a full game whose lookup failed, once its memory entry expired", async () => {
     let gameAnswer: KindVerdicts = uniform("error");
     const { clock, inner, detector } = cachedSetup((id) => id === GAME ? gameAnswer : demoOf(GAME));
-    const first = (await detector.detect([DEMO])).get(DEMO);
-    expect(first === undefined ? false : isTransient(first)).toBe(true);
+    expect(isTransient(await detectOne(detector, DEMO))).toBe(true);
     gameAnswer = FULL;
     clock.advance(RETRY_DELAY_MS);
     const retried = (await detector.detect([DEMO])).get(DEMO);

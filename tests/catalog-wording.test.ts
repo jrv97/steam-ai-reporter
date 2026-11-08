@@ -95,8 +95,6 @@ describe("catalog wording", () => {
     ["free of the tag", (name) => `Free of ${name}`],
     ["the tag with -free", (name) => `${name}-free`],
   ])("catches %s for every tag", (_name, phrase) => {
-    for (const name of english) {
-      expect(claimsAbsence(phrase(name), english)).toBe(true);
-    }
+    expect(english.filter((name) => !claimsAbsence(phrase(name), english))).toEqual([]);
   });
 });

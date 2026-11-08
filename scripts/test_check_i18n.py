@@ -4,7 +4,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from catalogs import load, static_parts
+from catalogs import Catalog, load, static_parts
 from check_i18n import (
     MIN_WILDCARD_TEXT,
     SHIPPED,
@@ -32,19 +32,29 @@ class MatchTest(unittest.TestCase):
         self.assertEqual(keys(index, CheckI18n.HEADING), ["banner_heading"])
 
 
+def telling_parts(shipped: dict[str, Catalog]) -> list[tuple[str, str, str, tuple[str, ...]]]:
+    """Each shipped locale, key, message and static parts that a literal can be told from."""
+    every = [
+        (locale, key, entry.message, tuple(static_parts(entry.message)))
+        for locale, messages in shipped.items()
+        for key, entry in messages.items()
+    ]
+    # A message of only placeholders and punctuation tells no literal apart.
+    return [
+        case
+        for case in every
+        if len(case[3]) <= 1 or len("".join(case[3]).strip()) >= MIN_WILDCARD_TEXT
+    ]
+
+
 class ShippedCatalogsTest(unittest.TestCase):
     def test_every_shipped_message_is_caught_as_a_string_and_as_a_template(self) -> None:
         shipped = {path.parent.name: load(path) for path in SHIPPED.glob("*/messages.json")}
         index = copy_index(shipped)
-        for locale, messages in shipped.items():
-            for key, entry in messages.items():
-                parts = tuple(static_parts(entry.message))
-                if len(parts) > 1 and len("".join(parts).strip()) < MIN_WILDCARD_TEXT:
-                    # Only placeholders and punctuation: no literal can be told from it.
-                    continue
-                with self.subTest(locale=locale, key=key):
-                    self.assertTrue(index.matches(("x".join(parts),)), entry.message)
-                    self.assertTrue(index.matches(parts), entry.message)
+        for locale, key, message, parts in telling_parts(shipped):
+            with self.subTest(locale=locale, key=key):
+                self.assertTrue(index.matches(("x".join(parts),)), message)
+                self.assertTrue(index.matches(parts), message)
 
 
 class ScanTest(unittest.TestCase):
@@ -59,7 +69,8 @@ class ScanTest(unittest.TestCase):
         path.write_text(text, encoding="utf-8")
 
     def test_reports_each_literal_with_its_line_and_keys(self) -> None:
-        self.write(CheckI18n.REPORTED_FILE, CheckI18n.REPORTED_SOURCE)
+        for name, source in CheckI18n.REPORTED_FILES:
+            self.write(name, source)
         self.assertEqual(copy_problems(self.root, CheckI18n.CATALOGS), list(CheckI18n.REPORTED))
 
     def test_a_detection_constant_may_repeat_a_message(self) -> None:

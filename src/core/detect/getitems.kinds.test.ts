@@ -187,12 +187,17 @@ describe("parseGetItems over the early access captures, asked with the release s
     ["basic_info", "release"],
   );
 
-  it("reads a flagged game with the developer's note and the Steam release date (2514910)", () => {
-    const verdict = found.get(app.earlyAccess)?.earlyaccess;
-    if (verdict?.state !== "disclosed") {
-      throw new TypeError();
+  /** The Early Access verdict of `id`; throws when it is not disclosed. */
+  function disclosedEarlyAccess(id: AppId) {
+    const verdict = of(id, found).earlyaccess;
+    if (verdict.state !== "disclosed") {
+      throw new TypeError(verdict.state);
     }
-    const { note, ...rest } = verdict;
+    return verdict;
+  }
+
+  it("reads a flagged game with the developer's note and the Steam release date (2514910)", () => {
+    const { note, ...rest } = disclosedEarlyAccess(app.earlyAccess);
     expect(rest).toStrictEqual({
       state: "disclosed",
       kind: "earlyaccess",

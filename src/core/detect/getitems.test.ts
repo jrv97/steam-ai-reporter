@@ -57,9 +57,13 @@ function stateOf(verdicts: ReadonlyMap<AppId, KindVerdicts>, id: AppId): string 
   return verdict?.state === "unknown" ? `unknown:${verdict.reason}` : verdict?.state;
 }
 
-function notesOf(verdicts: ReadonlyMap<AppId, KindVerdicts>, id: AppId): string | undefined {
+/** The AI notes of `id`; throws when its AI kind is not disclosed. */
+function notesOf(verdicts: ReadonlyMap<AppId, KindVerdicts>, id: AppId): string {
   const verdict = verdicts.get(id)?.ai;
-  return verdict?.state === "disclosed" ? verdict.notes : undefined;
+  if (verdict?.state !== "disclosed") {
+    throw new TypeError(verdict?.state);
+  }
+  return verdict.notes;
 }
 
 describe("parseGetItems over the captured fixtures", () => {
@@ -120,10 +124,8 @@ describe("parseGetItems over the captured fixtures", () => {
       "Partily AI Assets:\r\nWaifus\r\nBackgrounds\r\nMusics",
     );
     expect(notesOf(verdicts, app.roguelikeZeroWidth)).toContain("\u200b\u200b");
-    for (const [id] of disclosed) {
-      const notes = notesOf(verdicts, id);
-      expect(notes).toBe(notes?.trim());
-    }
+    const notes = disclosed.map(([id]) => notesOf(verdicts, id));
+    expect(notes).toStrictEqual(notes.map((text) => text.trim()));
   });
 
   it("treats the body without store_items as a batch error (empty-response.json)", () => {

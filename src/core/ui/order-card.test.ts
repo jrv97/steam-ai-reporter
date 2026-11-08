@@ -72,13 +72,14 @@ function pointer(target: EventTarget, type: string, clientY: number): void {
 
 /** Lays the rows out `ROW` pixels apart in their order, as a browser would. */
 function layOut(card: Card): void {
-  card.shown().forEach((id, index) => {
-    const row = card.root.querySelector(`[data-sar-order="${id ?? ""}"]`)?.closest("li");
-    if (row !== null && row !== undefined) {
-      vi.spyOn(row, "getBoundingClientRect").mockReturnValue(
-        DOMRect.fromRect({ x: 0, y: topOf(index), width: 300, height: ROW }),
-      );
+  card.root.querySelectorAll(".sar-order-handle").forEach((handle, index) => {
+    const row = handle.closest("li");
+    if (row === null) {
+      throw new TypeError(String(index));
     }
+    vi.spyOn(row, "getBoundingClientRect").mockReturnValue(
+      DOMRect.fromRect({ x: 0, y: topOf(index), width: 300, height: ROW }),
+    );
   });
 }
 

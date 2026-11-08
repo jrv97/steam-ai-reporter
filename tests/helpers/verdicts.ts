@@ -1,4 +1,3 @@
-import type { AiDisclosed, AiVerdict } from "../../src/core/kinds/ai";
 import { eulaLink, type EulaUrl } from "../../src/core/kinds/eula";
 import type { KindId } from "../../src/core/kinds/id";
 import { perKind } from "../../src/core/kinds/registry";
@@ -93,7 +92,7 @@ export function disclosed<Id extends KindId>(
   kind: Id,
   overrides: Partial<DisclosedFor<Id>> = {},
 ): DisclosedFor<Id> {
-  return { ...DISCLOSED_DEFAULTS[kind], ...overrides };
+  return { ...structuredClone(DISCLOSED_DEFAULTS[kind]), ...overrides };
 }
 
 /** The kind's disclosed verdict with no payload field but those in `fields`. */
@@ -138,11 +137,6 @@ export function minimalDisclosed<Id extends KindId>(
   return MINIMAL[kind](payload);
 }
 
-/** A disclosed AI verdict with the optional fields filled in; override what a test cares about. */
-export function disclosedVerdict(overrides: Partial<AiDisclosed> = {}): AiDisclosed {
-  return disclosed("ai", overrides);
-}
-
 export const NOT_DISCLOSED: NotDisclosedVerdict = TYPES_NOT_DISCLOSED.api;
 
 /** An app's verdicts: the given ones, and unknown `missing` for every other kind. */
@@ -150,40 +144,38 @@ export function verdictsWith(given: Partial<KindVerdicts> = {}): KindVerdicts {
   return { ...UNKNOWN_KINDS.missing, ...given };
 }
 
-/** An app's verdicts where the AI kind has this verdict and no other kind has an answer. */
-export function aiVerdicts(ai: AiVerdict): KindVerdicts {
-  return verdictsWith({ ai });
+/** Each kind's disclosed verdict with every field of its payload set, as a fresh copy. */
+export function fullDisclosed(): DisclosedByKind {
+  return structuredClone(DISCLOSED_DEFAULTS);
 }
-
-/** Each kind's disclosed verdict, with every field of its payload set. */
-export const FULL_DISCLOSED: DisclosedByKind = DISCLOSED_DEFAULTS;
 
 /** Every kind in the same state, so a test sees the TTL or the storage of that state alone. */
 export function uniformVerdicts(
   state: "disclosed" | "not-disclosed" | UnknownReason,
 ): KindVerdicts {
   if (state === "disclosed") {
-    return FULL_DISCLOSED;
+    return fullDisclosed();
   }
   return state === "not-disclosed" ? perKind(() => NOT_DISCLOSED) : UNKNOWN_KINDS[state];
 }
 
 /** The kinds in `kinds` disclosed with a full payload, every other kind not disclosed. */
 export function disclosedKinds(kinds: readonly KindId[]): KindVerdicts {
+  const full = fullDisclosed();
   const pick = <T>(id: KindId, verdict: T) => kinds.includes(id) ? verdict : NOT_DISCLOSED;
   return {
-    ai: pick("ai", FULL_DISCLOSED.ai),
-    kernel: pick("kernel", FULL_DISCLOSED.kernel),
-    anticheat: pick("anticheat", FULL_DISCLOSED.anticheat),
-    drm: pick("drm", FULL_DISCLOSED.drm),
-    account: pick("account", FULL_DISCLOSED.account),
-    eula: pick("eula", FULL_DISCLOSED.eula),
-    pvp: pick("pvp", FULL_DISCLOSED.pvp),
-    iap: pick("iap", FULL_DISCLOSED.iap),
-    deck: pick("deck", FULL_DISCLOSED.deck),
-    machine: pick("machine", FULL_DISCLOSED.machine),
-    family: pick("family", FULL_DISCLOSED.family),
-    earlyaccess: pick("earlyaccess", FULL_DISCLOSED.earlyaccess),
+    ai: pick("ai", full.ai),
+    kernel: pick("kernel", full.kernel),
+    anticheat: pick("anticheat", full.anticheat),
+    drm: pick("drm", full.drm),
+    account: pick("account", full.account),
+    eula: pick("eula", full.eula),
+    pvp: pick("pvp", full.pvp),
+    iap: pick("iap", full.iap),
+    deck: pick("deck", full.deck),
+    machine: pick("machine", full.machine),
+    family: pick("family", full.family),
+    earlyaccess: pick("earlyaccess", full.earlyaccess),
   };
 }
 

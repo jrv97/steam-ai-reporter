@@ -112,6 +112,15 @@ function host(id: AppId, placement: Placement = ROW): CapsuleHost {
   return { element, appId: id, placement, anchor };
 }
 
+/** The view the renderers drew at `index`, counted from the end when negative. */
+function viewAt(views: readonly HostView[], index: number): HostView {
+  const view = views.at(index);
+  if (view === undefined) {
+    throw new RangeError(String(index));
+  }
+  return view;
+}
+
 /** A host whose image box measures `size`, for compact badges. */
 function imageHost(id: AppId, size: DOMRect) {
   const found = host(id, {
@@ -136,8 +145,12 @@ describe("createCapsuleUi", () => {
     await flush();
     expect(detect).toHaveBeenCalledTimes(1);
     expect(views).toHaveLength(1);
-    expect(views[0]?.slot).toEqual({ kind: "full", anchor: found.anchor, position: "afterend" });
-    expect(views[0]?.hideable).toBe(false);
+    expect(viewAt(views, 0).slot).toEqual({
+      kind: "full",
+      anchor: found.anchor,
+      position: "afterend",
+    });
+    expect(viewAt(views, 0).hideable).toBe(false);
   });
 
   it.each(
@@ -152,7 +165,7 @@ describe("createCapsuleUi", () => {
     const { ui, views, flush } = setup(new Map([[id, ai]]), { others, unbadged: new Set(off) });
     ui.render({ found: [host(id)], changed: [] });
     await flush();
-    expect(views[0]?.slot?.kind).toBe(slot);
+    expect(viewAt(views, 0).slot?.kind).toBe(slot);
   });
 
   it("passes the chip allowance and the badge settings to the renderers", async () => {
@@ -162,8 +175,9 @@ describe("createCapsuleUi", () => {
     });
     ui.render({ found: [host(id, { ...ROW, maxChips: 2 })], changed: [] });
     await flush();
-    expect(views[0]?.maxChips).toBe(2);
-    expect(KIND_IDS.filter((kind) => views[0]?.badged[kind] === false)).toEqual(["drm", "pvp"]);
+    const { maxChips, badged } = viewAt(views, 0);
+    expect(maxChips).toBe(2);
+    expect(KIND_IDS.filter((kind) => !badged[kind])).toEqual(["drm", "pvp"]);
   });
 
   it("draws a full badge of an end slot as the anchor's last child", async () => {
@@ -172,7 +186,11 @@ describe("createCapsuleUi", () => {
     const found = host(id, { ...ROW, slot: "end" });
     ui.render({ found: [found], changed: [] });
     await flush();
-    expect(views[0]?.slot).toEqual({ kind: "full", anchor: found.anchor, position: "beforeend" });
+    expect(viewAt(views, 0).slot).toEqual({
+      kind: "full",
+      anchor: found.anchor,
+      position: "beforeend",
+    });
   });
 
   it("measures the image box for a compact badge and anchors a static box", async () => {
@@ -181,7 +199,11 @@ describe("createCapsuleUi", () => {
     const { found } = imageHost(id, TEXT_TIER);
     ui.render({ found: [found], changed: [] });
     await flush();
-    expect(views[0]?.slot).toMatchObject({ kind: "compact", size: "text", position: "beforeend" });
+    expect(viewAt(views, 0).slot).toMatchObject({
+      kind: "compact",
+      size: "text",
+      position: "beforeend",
+    });
     expect(found.anchor.hasAttribute("data-sar-anchor")).toBe(true);
   });
 
@@ -190,7 +212,7 @@ describe("createCapsuleUi", () => {
     const { ui, views, flush } = setup(new Map([[id, AI]]));
     ui.render({ found: [imageHost(id, SMALL).found], changed: [] });
     await flush();
-    expect(views[0]?.slot).toBeUndefined();
+    expect(viewAt(views, 0).slot).toBeUndefined();
   });
 
   it("watches an image box with no size until a compact badge fits, then draws it", async () => {
@@ -201,17 +223,17 @@ describe("createCapsuleUi", () => {
     const { found, box } = imageHost(id, NO_SIZE);
     ui.render({ found: [found], changed: [] });
     await flush();
-    expect(views[0]?.slot).toBeUndefined();
+    expect(viewAt(views, 0).slot).toBeUndefined();
     expect([...watched]).toEqual([found.anchor]);
     box.mockReturnValue(NARROW);
     sized([found.anchor]);
     await flush();
-    expect(views[1]?.slot).toBeUndefined();
+    expect(viewAt(views, 1).slot).toBeUndefined();
     expect([...watched]).toEqual([found.anchor]);
     box.mockReturnValue(TEXT_TIER);
     sized([found.anchor]);
     await flush();
-    expect(views[2]?.slot).toMatchObject({ kind: "compact", size: "text" });
+    expect(viewAt(views, 2).slot).toMatchObject({ kind: "compact", size: "text" });
     expect(watched.size).toBe(0);
     expect(detect).toHaveBeenCalledTimes(1);
   });
@@ -269,8 +291,8 @@ describe("createCapsuleUi", () => {
     const { ui, views, flush } = setup(new Map([[id, AI]]));
     ui.render({ found: [host(id)], changed: [] });
     await flush();
-    expect(Object.keys(views[0]?.verdicts ?? {})).toStrictEqual([...KIND_IDS]);
-    expect(Object.keys(views[0]?.allowed ?? {})).toStrictEqual([...KIND_IDS]);
+    expect(Object.keys(viewAt(views, 0).verdicts)).toStrictEqual([...KIND_IDS]);
+    expect(Object.keys(viewAt(views, 0).allowed)).toStrictEqual([...KIND_IDS]);
   });
 
   it("redraws the hosts of an app after an allow-list change", async () => {
@@ -333,9 +355,9 @@ describe("createCapsuleUi", () => {
       });
       ui.render({ found: [host(DLC)], changed: [] });
       await flush();
-      expect(views[0]?.allowed.ai).toBe(true);
-      expect(views[0]?.allowed.pvp).toBe(false);
-      expect(views[0]?.slot).toMatchObject({ kind: "full" });
+      expect(viewAt(views, 0).allowed.ai).toBe(true);
+      expect(viewAt(views, 0).allowed.pvp).toBe(false);
+      expect(viewAt(views, 0).slot).toMatchObject({ kind: "full" });
     });
 
     it("gives a DLC whose only disclosure is ignored through its base game no slot", async () => {
@@ -346,8 +368,9 @@ describe("createCapsuleUi", () => {
       });
       ui.render({ found: [host(DLC)], changed: [] });
       await flush();
-      expect(views[0]?.slot).toBeUndefined();
-      expect(KIND_IDS.every((kind) => views[0]?.allowed[kind] === true)).toBe(true);
+      const { slot, allowed } = viewAt(views, 0);
+      expect(slot).toBeUndefined();
+      expect(KIND_IDS.every((kind) => allowed[kind])).toBe(true);
     });
 
     it("draws the DLC again when its base game is ignored or restored, and only then", async () => {
@@ -374,7 +397,7 @@ describe("createCapsuleUi", () => {
       const { ui, views, flush } = setup(new Map([[DLC, AI]]), { isAllowed });
       ui.render({ found: [host(DLC)], changed: [] });
       await flush();
-      expect(views[0]?.allowed.ai).toBe(false);
+      expect(viewAt(views, 0).allowed.ai).toBe(false);
     });
   });
 
@@ -432,7 +455,7 @@ describe("createCapsuleUi", () => {
       }
       expect(detector.calls).toHaveLength(calls);
       expect(timers.size).toBe(0);
-      expect(views.at(-1)?.slot !== undefined).toBe(chips);
+      expect(viewAt(views, -1).slot !== undefined).toBe(chips);
     });
 
     it.each<readonly [string, (ui: CapsuleUi) => void]>([

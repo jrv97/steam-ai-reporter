@@ -14,13 +14,13 @@ function region(): HTMLElement {
 }
 
 describe("announce", () => {
-  it("empties the region again for a message that repeats, so it is heard twice", async () => {
+  it.each([
+    { case: "a new message over other text", earlier: () => make.text.note() },
+    { case: "a message that repeats, so it is heard twice", earlier: (message: string) => message },
+  ])("empties the region at once and fills it on the next frame for $case", async ({ earlier }) => {
     const live = region();
     const message = make.text.note();
-    announce(document, live, message);
-    await vi.waitFor(() => {
-      expect(live.textContent).toBe(message);
-    });
+    live.textContent = earlier(message);
     announce(document, live, message);
     expect(live.textContent).toBe("");
     await vi.waitFor(() => {

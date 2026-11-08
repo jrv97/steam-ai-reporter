@@ -138,11 +138,15 @@ class CheckI18n:
         "en": catalog(ext_description=f"Tags: {HEADING}, PvP.", banner_heading=HEADING)
     }
 
-    REPORTED_FILE: Final = "tests/helpers/a.ts"
-    REPORTED_SOURCE: Final = 'const a = 1;\nconst b = `Saved.${x}`;\nf("Deshacer");\n'
+    # (file, source): a test file under src and a helper under tests, each with seeded copy.
+    REPORTED_FILES: Final = (
+        ("src/core/ui/banner.test.ts", 'expect(button.textContent).toBe("Undo");\n'),
+        ("tests/helpers/a.ts", 'const a = 1;\nconst b = `Saved.${x}`;\nf("Deshacer");\n'),
+    )
     REPORTED: Final = (
-        f"{REPORTED_FILE}:2: notice_settings_saved: {HIT}",
-        f"{REPORTED_FILE}:3: banner_undo (es): {HIT}",
+        f"src/core/ui/banner.test.ts:1: banner_undo: {HIT}",
+        f"tests/helpers/a.ts:2: notice_settings_saved: {HIT}",
+        f"tests/helpers/a.ts:3: banner_undo (es): {HIT}",
     )
 
     HEADING_FILE: Final = "src/core/kinds/ai.ts"

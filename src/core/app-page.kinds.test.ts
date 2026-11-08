@@ -98,7 +98,7 @@ describe("start on an English app page of a game with no AI", () => {
     const { ignored } = await startOnDrmPage();
 
     control('.sar-banner-action[data-sar-scope="drm"]')?.click();
-    await expect.poll(() => control('[data-sar-action="undo"]') !== undefined).toBe(true);
+    await expect.poll(() => control('[data-sar-action="undo"]')).toBeInstanceOf(HTMLElement);
     expect(await ignored("drm")).toEqual([String(GAME)]);
     expect(await ignored("all")).toEqual([]);
     expect(headings()).toEqual([i18n.t("kind_account_heading"), i18n.t("kind_eula_heading")]);
@@ -153,7 +153,7 @@ describe("start on an English app page of a game with no AI", () => {
       await expect.poll(() => headings().length).toBe(4);
       expect(headings()[3]).toBe(deckEntry);
       control('.sar-banner-action[data-sar-scope="deck"]')?.click();
-      await expect.poll(() => control('[data-sar-action="undo"]') !== undefined).toBe(true);
+      await expect.poll(() => control('[data-sar-action="undo"]')).toBeInstanceOf(HTMLElement);
       expect(await ignored("deck")).toEqual([String(GAME)]);
       expect(control(".sar-banner-ignored-text")?.textContent).toBe(
         i18n.t("banner_ignored_kind", { heading: i18n.t("kind_deck_heading") }),

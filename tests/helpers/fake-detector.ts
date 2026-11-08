@@ -45,23 +45,25 @@ export function partialDetector(answers: ReadonlyMap<AppId, KindVerdicts>): Dete
 }
 
 export interface HeldDetector extends FakeDetector {
-  /** Lets the pending call answer. */
+  /** Lets every pending call answer. */
   release(): void;
 }
 
-/** A `Detector` whose call answers with `verdictsFor(id)` only once the test calls `release`. */
+/** A `Detector` whose calls answer with `verdictsFor(id)` only once the test calls `release`. */
 export function heldDetector(verdictsFor: (id: AppId) => KindVerdicts): HeldDetector {
   const calls: (readonly AppId[])[] = [];
-  let release = (): void => undefined;
+  const pending: (() => void)[] = [];
   return {
     calls,
     release: () => {
-      release();
+      for (const resolve of pending.splice(0)) {
+        resolve();
+      }
     },
     async detect(ids) {
       calls.push(ids);
       await new Promise<void>((resolve) => {
-        release = resolve;
+        pending.push(resolve);
       });
       return new Map(ids.map((id): [AppId, KindVerdicts] => [id, verdictsFor(id)]));
     },

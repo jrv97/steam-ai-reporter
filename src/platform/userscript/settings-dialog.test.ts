@@ -118,6 +118,7 @@ describe("openSettingsDialog", () => {
     [true, undefined],
   ])("with live changes %s, notes %j about applying on reload", async (live, note) => {
     await openSettingsDialog(deps(live));
+    expect(dialog()?.open).toBe(true);
     expect(dialog()?.querySelector(".sar-dialog-note")?.textContent).toBe(note);
   });
 });

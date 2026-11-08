@@ -29,6 +29,7 @@ import type { AllowScope } from "./settings/allow-data";
 import { DEFAULT_SETTINGS, encodeSettings, type Settings } from "./settings/settings";
 import { createSettingsSource } from "./settings/settings-source";
 import { ALLOW_KEY, CREATOR_ALLOW_KEYS, SETTINGS_KEY } from "./storage-keys";
+import type { AppId } from "./types";
 import { HOVER_CARD_ID } from "./ui/hover-card";
 import { KIND_ATTRIBUTE } from "./ui/kind-attributes";
 import { adoptPageStyles } from "./ui/styles";
@@ -88,19 +89,28 @@ async function startOnLoaded(options: StartOptions = {}) {
   return { http, settings, store };
 }
 
-const row = (id: number | undefined) =>
+/** The ID of the captured search row at `index`; throws past the last row. */
+function searchId(index: number): AppId {
+  const id = SEARCH_IDS[index];
+  if (id === undefined) {
+    throw new RangeError(String(index));
+  }
+  return id;
+}
+
+const row = (id: number) =>
   document.querySelector(`a.search_result_row[data-ds-appid="${String(id)}"]`);
 const rootMark = (name: string) => document.documentElement.getAttribute(name);
-/** The row's marks, empty when it has none. */
-const marks = (id: number | undefined) => row(id)?.getAttribute("data-sar-kinds") ?? "";
-const labels = (id: number | undefined) =>
+/** The row's marks: null when the row carries no mark attribute. */
+const marks = (id: number) => row(id)?.getAttribute("data-sar-kinds");
+const labels = (id: number) =>
   Array.from(
     row(id)?.querySelectorAll(".sar-chips > .sar-badge > .sar-badge-label") ?? [],
     (label) => label.textContent,
   );
 const chip = (id: KindId) => i18n.t(KIND_BY_ID[id].messages.chip);
 const more = (count: number) => i18n.t("kind_chip_more", { count: String(count) });
-const display = (id: number | undefined) => getComputedStyle(row(id) ?? document.body).display;
+const display = (id: number) => getComputedStyle(row(id) ?? document.body).display;
 const storing = (settings: Settings) =>
   new Map<string, JsonValue>([[SETTINGS_KEY, encodeSettings(settings)]]);
 /** A store whose ignore list under `key` holds `keys` in `scope`. */
@@ -203,7 +213,7 @@ describe("start on the search page", () => {
     expect(rootMark("data-sar-filter-ai")).toBe("hide");
     expect(rootMark("data-sar-filter-kernel")).toBe("off");
     expect(display(DISCLOSED)).toBe("none");
-    expect(display(SEARCH_IDS[0])).not.toBe("none");
+    expect(display(searchId(0))).not.toBe("none");
   });
 
   it("counts the hidden row and shows it again without touching the settings", async () => {
@@ -312,7 +322,7 @@ describe("start on the search page", () => {
     });
     const fewer = "iap pvp eula kernel";
 
-    it.each<[string, ReadonlyMap<string, JsonValue>, string, readonly string[]]>([
+    it.each<[string, ReadonlyMap<string, JsonValue>, string | null, readonly string[]]>([
       [
         "draws every chip while the base game is not ignored",
         new Map(),
@@ -328,7 +338,7 @@ describe("start on the search page", () => {
       [
         "marks nothing for a base game ignored for all kinds",
         ignoring("all", [ARC_RAIDERS]),
-        "",
+        null,
         [],
       ],
       [
@@ -345,23 +355,29 @@ describe("start on the search page", () => {
       expect(labels(DISCLOSED)).toEqual(expectedChips);
     });
 
-    it("leaves the row when the kind that would hide it is ignored for its base game", async () => {
-      const initial = ignoring("ai", [ARC_RAIDERS]).set(
+    it.each<[string, ReadonlyMap<string, JsonValue>, boolean]>([
+      [
+        "leaves the row when the kind that would hide it is ignored for its base game",
+        ignoring("ai", [ARC_RAIDERS]),
+        false,
+      ],
+      ["hides the row when the kind is not ignored, so the mark is what decides", new Map(), true],
+    ])("%s", async (_name, ignored, hidden) => {
+      const initial = new Map(ignored).set(
         SETTINGS_KEY,
         encodeSettings(make.settings.kind("ai", { filter: "hide" })),
       );
       const { http } = await startOnSearch({ initial, items: dlc });
       await drawn(http);
       expect(rootMark("data-sar-filter-ai")).toBe("hide");
-      expect(display(DISCLOSED)).not.toBe("none");
+      expect(display(DISCLOSED) === "none").toBe(hidden);
     });
   });
 
   describe("with demo rows of a full game that declares several kinds", () => {
     // Two rows become demos of ARC Raiders, which is not on the page; a third is a demo of
     // another row's game.
-    const [SIBLING = make.appId(), ROW_DEMO = make.appId(), , , ROW_GAME = make.appId()] =
-      SEARCH_IDS;
+    const [SIBLING, ROW_DEMO, ROW_GAME] = [searchId(0), searchId(1), searchId(4)];
     const demos = [
       ...SEARCH_ITEMS,
       make.item.demo(DISCLOSED, ARC_RAIDERS),
@@ -449,7 +465,7 @@ describe("start on the search page", () => {
       ...make.item.creators({ developers: [[developer, clan]], publishers: [publisher] }),
     });
 
-    it.each<[string, CreatorRole, string, AllowScope, string]>([
+    it.each<[string, CreatorRole, string, AllowScope, string | null]>([
       [
         "a developer by clan ID, for one kind",
         "developer",
@@ -471,7 +487,7 @@ describe("start on the search page", () => {
         "kernel",
         "ai iap pvp eula",
       ],
-      ["a developer for all kinds", "developer", `c:${String(clan)}`, "all", ""],
+      ["a developer for all kinds", "developer", `c:${String(clan)}`, "all", null],
       [
         "the publisher's name on the developer list",
         "developer",
@@ -488,9 +504,9 @@ describe("start on the search page", () => {
     });
   });
 
-  it.each<[string, AllowScope, string, readonly string[]]>([
+  it.each<[string, AllowScope, string | null, readonly string[]]>([
     ["one kind", "ai", "earlyaccess", ["earlyaccess"]],
-    ["all kinds", "all", "", []],
+    ["all kinds", "all", null, []],
   ])("leaves out what a game is ignored for (%s), in lists and on badges", async (
     _name,
     scope,
@@ -551,12 +567,12 @@ describe("start on the search page", () => {
   });
 
   describe("with Valve's device ratings", () => {
-    const [
-      UNSUPPORTED = make.appId(),
-      VERIFIED = make.appId(),
-      UNRATED = make.appId(),
-      UNASKED = make.appId(),
-    ] = SEARCH_IDS;
+    const [UNSUPPORTED, VERIFIED, UNRATED, UNASKED] = [
+      searchId(0),
+      searchId(1),
+      searchId(2),
+      searchId(3),
+    ];
     // The route keeps the last item of an ID, so these replace the captured rows' items.
     const rated = [
       ...SEARCH_ITEMS,
@@ -629,13 +645,13 @@ describe("start on the search page", () => {
   });
 
   describe("with the family kind", () => {
-    const [
-      UNLISTED = make.appId(),
-      LISTED = make.appId(),
-      FREE = make.appId(),
-      DLC = make.appId(),
-      NO_LIST = make.appId(),
-    ] = SEARCH_IDS;
+    const [UNLISTED, LISTED, FREE, DLC, NO_LIST] = [
+      searchId(0),
+      searchId(1),
+      searchId(2),
+      searchId(3),
+      searchId(4),
+    ];
     // No In-App Purchases (35), which would add its own token to the host.
     const PAID_FEATURES = [22, 29, 41, 42];
     // The route keeps the last item of an ID, so these replace the captured rows' items.

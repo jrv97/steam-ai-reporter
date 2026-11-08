@@ -1,6 +1,4 @@
-import type { LocalChanges, OnLocalChanged, StorageArea, StorageChange } from "./storage-area";
-
-export type { LocalChanges, OnLocalChanged, StorageArea, StorageChange };
+import type { OnLocalChanged, StorageArea, StorageChange } from "./storage-area";
 
 // The one module that names the WebExtension APIs. Everything else in the extension takes the
 // narrow interfaces of storage-area.ts, so tests pass typed fakes and the rest of the code never

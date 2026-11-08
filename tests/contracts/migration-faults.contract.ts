@@ -46,7 +46,7 @@ export function migrationFaultContract(
       expect(await readKey(store, "v1:allow")).toStrictEqual(V1_ALLOW);
     }
 
-    it("copies the v1 keys and removes nothing, even where removing would fail", async () => {
+    it("copies the v1 keys and keeps them where removing a key would fail", async () => {
       const { faults, store } = await seeded();
       faults.rejectRemove = true;
       expect(await migrateStorage(store)).toBe("migrated");

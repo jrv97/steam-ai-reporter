@@ -148,6 +148,14 @@ export function migrationContract(name: string, harness: () => KeyValueStore): v
       expect(await store.keys()).toStrictEqual([]);
     });
 
+    it("never removes a key from a customized install", async () => {
+      const store = harness();
+      await seed(store, { "v1:settings": V1_CUSTOM, "v1:allow": V1_ALLOW });
+      const before = await store.keys();
+      await migrateStorage(store);
+      expect(await store.keys()).toStrictEqual(expect.arrayContaining([...before]));
+    });
+
     it("is idempotent: a second run changes nothing", async () => {
       const store = harness();
       await seed(store, { "v1:settings": V1_CUSTOM, "v1:allow": V1_ALLOW });

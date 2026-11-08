@@ -4,6 +4,7 @@ import { make } from "../../../tests/helpers/factory";
 import { fake } from "../../../tests/helpers/fakes";
 import { disclosedList } from "../../../tests/helpers/fixture-verdicts";
 import { englishI18n } from "../../../tests/helpers/i18n";
+import { the } from "../../../tests/helpers/surfaces";
 import { dateFormat } from "../i18n/date-format";
 import { KIND_IDS, type KindId } from "../kinds/id";
 import { KIND_BY_ID } from "../kinds/registry";
@@ -61,7 +62,8 @@ describe("createHoverCard", () => {
   const i18n = englishI18n();
   let timers = fake.queue();
   let frames = fake.queue();
-  let overflowing = false;
+  /** Whether the clamp hides part of a quote, as the card measures it. */
+  let overflowing: (quote: HTMLElement) => boolean = () => false;
   let card: HoverCard | undefined;
   const flush = () => {
     timers.run();
@@ -73,7 +75,7 @@ describe("createHoverCard", () => {
   function start(): HoverCard {
     card = createHoverCard(document, i18n, {
       delay: timers.delay,
-      overflows: () => overflowing,
+      overflows: (quote) => overflowing(quote),
       frame: frames.frame,
     });
     return card;
@@ -124,7 +126,7 @@ describe("createHoverCard", () => {
   beforeEach(() => {
     timers = fake.queue();
     frames = fake.queue();
-    overflowing = false;
+    overflowing = () => false;
   });
 
   afterEach(() => {
@@ -249,7 +251,7 @@ describe("createHoverCard", () => {
   it("points to the store page only when the clamp cuts a long note", () => {
     const { badge, other } = page();
     const hover = start();
-    overflowing = true;
+    overflowing = () => true;
     const notes = make.text.note();
     hover.bind(badge, [make.verdict.disclosed("ai", { notes })]);
     pointerOver(badge);
@@ -259,7 +261,7 @@ describe("createHoverCard", () => {
     expect(more?.textContent).toBe(i18n.t("badge_card_more"));
     expect(shown()?.querySelector(".sar-hovercard-notes")?.textContent).toBe(notes);
 
-    overflowing = false;
+    overflowing = () => false;
     const second = triggerIn(other, "sar-badge");
     hover.bind(second, [make.verdict.disclosed("ai", { notes: make.text.note() })]);
     pointerOver(second);
@@ -282,7 +284,7 @@ describe("createHoverCard", () => {
   it("leaves out the store page pointer on the game's own page", () => {
     const { badge, other } = page();
     const hover = start();
-    overflowing = true;
+    overflowing = () => true;
     const verdict = make.verdict.disclosed("ai");
     hover.bind(badge, [verdict], true);
     pointerOver(badge);
@@ -315,11 +317,9 @@ describe("createHoverCard", () => {
     start().bind(badge, [make.verdict.disclosed("ai")]);
     pointerOver(badge);
     flush();
-    const node = shown();
+    const node = the(`#${HOVER_CARD_ID}`);
     pointerOver(document.body);
-    if (node !== null) {
-      pointerOver(node);
-    }
+    pointerOver(node);
     flush();
     expect(shown()).not.toBeNull();
     pointerOver(other);
@@ -339,11 +339,8 @@ describe("createHoverCard", () => {
 
   it("opens at once on focus of a link holding a badge, and describes the link", () => {
     const { link, other } = page();
-    const badge = link.querySelector(".sar-badge");
     link.setAttribute("aria-describedby", STORE_NOTE_ID);
-    if (badge !== null) {
-      start().bind(badge, [make.verdict.disclosed("ai")]);
-    }
+    start().bind(the(".sar-badge", link), [make.verdict.disclosed("ai")]);
     focusIn(link);
     expect(shown()).not.toBeNull();
     expect(link.getAttribute("aria-describedby")).toBe(`${STORE_NOTE_ID} ${HOVER_CARD_ID}`);
@@ -477,7 +474,10 @@ describe("createHoverCard", () => {
 
     function notesOf(verdicts: KindVerdicts): string {
       const { ai } = verdicts;
-      return ai.state === "disclosed" ? ai.notes : "";
+      if (ai.state !== "disclosed") {
+        throw new TypeError(ai.state);
+      }
+      return ai.notes;
     }
 
     /** A Unix time as the card writes a date in the catalog's language. */
@@ -486,13 +486,19 @@ describe("createHoverCard", () => {
     /** The developer's Early Access note as the card shows it, with CRLF breaks read as LF. */
     function earlyAccessNote(verdicts: KindVerdicts): string {
       const { earlyaccess } = verdicts;
-      const note = earlyaccess.state === "disclosed" ? (earlyaccess.note ?? "") : "";
+      if (earlyaccess.state !== "disclosed" || earlyaccess.note === undefined) {
+        throw new TypeError(earlyaccess.state);
+      }
+      const { note } = earlyaccess;
       return note.replaceAll("\r\n", "\n");
     }
 
     function eulaNames(verdicts: KindVerdicts): string[] {
       const { eula } = verdicts;
-      return eula.state === "disclosed" ? eula.items.map((item) => item.name) : [];
+      if (eula.state !== "disclosed") {
+        throw new TypeError(eula.state);
+      }
+      return eula.items.map((item) => item.name);
     }
 
     it("lists every kind in the order given", () => {
@@ -731,6 +737,13 @@ describe("createHoverCard", () => {
       pointerOver(badge);
       pointerOver(second);
       expect(entries()).toEqual([[heading("iap")]]);
+    });
+
+    it("shows the long-text line when a quote other than the first is clamped", () => {
+      const note = make.text.note();
+      overflowing = (quote) => quote.textContent === note;
+      open([make.verdict.disclosed("ai"), make.verdict.disclosed("earlyaccess", { note })]);
+      expect(the(".sar-hovercard-more")).toHaveProperty("hidden", false);
     });
 
     it("opens nothing for a trigger bound to no kind", () => {

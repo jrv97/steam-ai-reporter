@@ -416,6 +416,13 @@ describe("changing a setting", () => {
     );
     expect(other?.hidden).toBe(true);
   });
+
+  it("follows a switch another tab stores, and leaves the other kinds' switches", async () => {
+    const { settings, input } = await setup();
+    await writeSettings(settings, make.settings.kind("kernel", { banner: false }));
+    expect(input("kernel", "banner").checked).toBe(false);
+    expect(input("drm", "banner").checked).toBe(true);
+  });
 });
 
 /** Types into a color field as a person does: each key is an input event, leaving is a change. */
@@ -682,6 +689,14 @@ describe("the color field", () => {
     const color = make.color();
     await settings.patch({ kinds: { ai: { color } } });
     const { root } = await mountForm({ settings });
+    expect(colorOf(root, "ai")).toBe(color);
+  });
+
+  it("follows a color another tab stores", async () => {
+    const { root, settings, input } = await setup();
+    const color = make.color();
+    await settings.patch({ kinds: { ai: { color } } });
+    expect(input("ai", "color").value).toBe(color);
     expect(colorOf(root, "ai")).toBe(color);
   });
 

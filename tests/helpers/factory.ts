@@ -1,5 +1,6 @@
 import type { KindId } from "../../src/core/kinds/id";
 import type { KindSettings } from "../../src/core/kinds/kind-settings";
+import type { KindVerdicts } from "../../src/core/kinds/verdicts";
 import {
   applyPatch,
   DEFAULT_SETTINGS,
@@ -130,17 +131,12 @@ import {
   disclosed,
   disclosedKinds,
   dlcOf,
-  FULL_DISCLOSED,
+  fullDisclosed,
   lent,
   minimalDisclosed,
   uniformVerdicts,
   verdictsWith,
 } from "./verdicts";
-
-/** Settings from the defaults, with `patch` applied. */
-function settings(patch: SettingsPatch = {}): Settings {
-  return applyPatch(DEFAULT_SETTINGS, patch);
-}
 
 /**
  * The only source of test data. Primitives come from one sequence, so each call gives a fresh,
@@ -200,14 +196,15 @@ export const make = {
     unknown: (reason: UnknownReason = "missing") => UNKNOWN[reason],
     lent,
   },
-  verdicts: Object.assign(verdictsWith, {
-    full: () => FULL_DISCLOSED,
+  verdicts: Object.assign((given?: Partial<KindVerdicts>) => verdictsWith(given), {
+    full: fullDisclosed,
     uniform: uniformVerdicts,
     only: disclosedKinds,
     demoOf,
     dlcOf,
   }),
-  settings: Object.assign(settings, {
+  /** Settings from the defaults, with `patch` applied. */
+  settings: Object.assign((patch: SettingsPatch = {}) => applyPatch(DEFAULT_SETTINGS, patch), {
     kind: (id: KindId, patch: Partial<KindSettings>, base: Settings = DEFAULT_SETTINGS) =>
       withKind(base, id, patch),
     chipText: (

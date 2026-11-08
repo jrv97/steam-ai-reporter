@@ -57,10 +57,8 @@ describe("createBadgeRenderer", () => {
   const i18n = englishI18n();
   const chip = (id: KindId) => i18n.t(KIND_BY_ID[id].messages.chip);
   // The accessible name starts with the visible chip text, then Steam's full line.
-  const nameOf = (id: KindId) => {
-    const heading = i18n.t(KIND_BY_ID[id].messages.heading);
-    return chip(id) === heading ? heading : i18n.t("kind_chip_name", { chip: chip(id), heading });
-  };
+  const nameOf = (id: KindId) =>
+    i18n.t("kind_chip_name", { chip: chip(id), heading: i18n.t(KIND_BY_ID[id].messages.heading) });
   const AI_NAME = nameOf("ai");
   const MANY: readonly KindId[] = ["ai", "drm", "pvp", "eula", "kernel"];
 
@@ -91,6 +89,14 @@ describe("createBadgeRenderer", () => {
   }
 
   const chipsIn = (host: Element) => Array.from(host.querySelectorAll(".sar-chips > *"));
+  /** The chip drawn at `index` in a host, counted from the end when negative. */
+  function chipAt(host: Element, index: number): Element {
+    const found = chipsIn(host).at(index);
+    if (found === undefined) {
+      throw new RangeError(String(index));
+    }
+    return found;
+  }
   const kindsOf = (host: Element) => chipsIn(host).map((c) => c.getAttribute("data-sar-kind"));
 
   it("draws the full badge with the catalog label and binds it to the hover card", () => {
@@ -118,10 +124,10 @@ describe("createBadgeRenderer", () => {
     (id) => {
       const { host, title } = capsule();
       renderer.render(view(host, full(title), { verdicts: make.verdicts.only([id]) }));
-      const [label, name] = texts(chipsIn(host)[0] ?? host);
+      const [label, name] = texts(chipAt(host, 0));
       expect(label).toBe(chip(id));
       expect(name).toBe(nameOf(id));
-      expect(name?.startsWith(`${label ?? ""}: `)).toBe(true);
+      expect(name?.startsWith(chip(id))).toBe(true);
       expect(name).toContain(i18n.t(KIND_BY_ID[id].messages.heading));
     },
   );
@@ -137,7 +143,7 @@ describe("createBadgeRenderer", () => {
       value: i18n.t(`kind_compat_${facet}`),
     });
     const heading = i18n.t(KIND_BY_ID[kind].messages.heading);
-    expect(texts(chipsIn(host)[0] ?? host)).toEqual([
+    expect(texts(chipAt(host, 0))).toEqual([
       label,
       i18n.t("kind_chip_name", { chip: label, heading }),
     ]);
@@ -146,7 +152,7 @@ describe("createBadgeRenderer", () => {
   it("gives the PvP chip the name PvP once, not PvP: PvP", () => {
     const { host, title } = capsule();
     renderer.render(view(host, full(title), { verdicts: make.verdicts.only(["pvp"]) }));
-    const [label, name] = texts(chipsIn(host)[0] ?? host);
+    const [label, name] = texts(chipAt(host, 0));
     expect(label).toBe(i18n.t("kind_pvp_chip"));
     expect(name).toBe(i18n.t("kind_pvp_heading"));
   });
@@ -181,7 +187,7 @@ describe("createBadgeRenderer", () => {
       renderer.render(
         view(drawn.host, SLOTS[slot](drawn), { verdicts: make.verdicts.only(["ai"]) }),
       );
-      return texts(chipsIn(drawn.host)[0] ?? drawn.host);
+      return texts(chipAt(drawn.host, 0));
     }
 
     it.each<readonly [SlotKind, { chip?: string; chipCompact?: string; }, string]>([
@@ -211,7 +217,7 @@ describe("createBadgeRenderer", () => {
       renderer.render(drawn);
       words = make.settings.chipText({ ai: { chip: MINE } }).kinds;
       renderer.render(drawn);
-      expect(texts(chipsIn(host)[0] ?? host)[0]).toBe(MINE);
+      expect(texts(chipAt(host, 0))[0]).toBe(MINE);
     });
   });
 
@@ -261,8 +267,7 @@ describe("createBadgeRenderer", () => {
           }),
         );
         expect(kindsOf(host)).toEqual([...listed.slice(0, OVERLAY_CHIPS), null]);
-        const more = chipsIn(host).at(-1) ?? host;
-        expect(bound.get(more)?.map((v) => v.kind)).toEqual(listed);
+        expect(bound.get(chipAt(host, -1))?.map((v) => v.kind)).toEqual(listed);
       },
     );
 
@@ -282,10 +287,10 @@ describe("createBadgeRenderer", () => {
       const maxChips = 2;
       renderer.render(view(host, full(title), { verdicts: make.verdicts.only(MANY), maxChips }));
       expect(kindsOf(host)).toEqual([...MANY.slice(0, maxChips), null]);
-      const more = chipsIn(host)[maxChips];
+      const more = chipAt(host, maxChips);
       const label = i18n.t("kind_chip_more", { count: String(MANY.length - maxChips) });
-      expect(more?.classList.contains("sar-badge")).toBe(true);
-      expect(texts(more ?? host)).toEqual([
+      expect(more.classList.contains("sar-badge")).toBe(true);
+      expect(texts(more)).toEqual([
         label,
         i18n.t("kind_chip_name", { chip: label, heading: i18n.t("kind_chip_more_name") }),
       ]);

@@ -145,6 +145,28 @@ describe("the list filter styles", () => {
     },
   );
 
+  const MIXED = { ai: "dim", kernel: "dim", pvp: "hide" } as const;
+  /** Whether a host the page still shows is dimmed; a hidden host shows nothing to dim. */
+  const shownDimmed = (style: CSSStyleDeclaration) => !hidden(style) && dimmed(style);
+
+  it.each<
+    readonly [string, Partial<Record<KindId, ListFilter>>, readonly KindId[], boolean, boolean]
+  >([
+    ["leaves a host with every kind alone while every filter is off", {}, KIND_IDS, false, false],
+    [
+      "lets one hiding kind outrank the dims of the others",
+      MIXED,
+      ["ai", "kernel", "pvp"],
+      true,
+      false,
+    ],
+    ["dims a host that carries only the dimming kinds", MIXED, ["ai", "kernel"], false, true],
+  ])("%s", (_case, modes, carried, gone, dim) => {
+    filters(modes);
+    const style = carrying(carried);
+    expect([hidden(style), shownDimmed(style)]).toEqual([gone, dim]);
+  });
+
   it.each<readonly [string, readonly KindId[], HostViewOptions]>([
     ["not disclosed", [], {}],
     ["unknown", [], { verdicts: make.verdicts.uniform("error") }],

@@ -3,7 +3,7 @@ import type { KindId } from "../../src/core/kinds/id";
 import { perKind } from "../../src/core/kinds/registry";
 import type { KindVerdicts } from "../../src/core/kinds/verdicts";
 import type { BadgeSlot, HostView } from "../../src/core/ui/host";
-import { aiVerdicts, disclosedVerdict } from "./verdicts";
+import { disclosed, verdictsWith } from "./verdicts";
 
 export interface HostViewOptions {
   /** The AI kind's verdict; disclosed unless a test says otherwise. */
@@ -27,8 +27,8 @@ const MAX_CHIPS = 3;
 
 /** What a renderer receives for one host, with the AI kind's verdict and nothing else known. */
 export function hostView(host: Element, options: HostViewOptions = {}): HostView {
-  const { verdict = disclosedVerdict(), allowed = false, ignored = [] } = options;
-  const { slot, hideable = true, verdicts = aiVerdicts(verdict) } = options;
+  const { verdict = disclosed("ai"), allowed = false, ignored = [] } = options;
+  const { slot, hideable = true, verdicts = verdictsWith({ ai: verdict }) } = options;
   const { unbadged = [], maxChips = MAX_CHIPS } = options;
   return {
     host,

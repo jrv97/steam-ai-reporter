@@ -116,24 +116,25 @@ describe("createAppPageUi", () => {
     document.body.replaceChildren();
   });
 
-  it("adds the tag section under the user tags and the banner above the purchase box", () => {
-    setup().render(view());
-    const root = section();
-    expect(document.getElementById("tags")?.nextElementSibling).toBe(root);
-    expect(root?.querySelector(".sar-tag-section-label")?.textContent).toBe(
-      i18n.t("badge_tags_title"),
-    );
-    expect(chipKinds()).toEqual(["ai"]);
-    expect(root?.querySelector(".sar-badge-label")?.textContent).toBe(i18n.t("kind_ai_chip"));
-    expect(root?.querySelector(".sar-vh")?.textContent).toBe(
-      i18n.t("kind_chip_name", {
-        chip: i18n.t("kind_ai_chip"),
-        heading: i18n.t("kind_ai_heading"),
-      }),
-    );
-    expect(root?.querySelector("a, [href]")).toBeNull();
-    expect(bannerHost()?.nextElementSibling?.id).toBe("game_area_purchase");
-  });
+  it.each<KindId>(["ai", "kernel"])(
+    "gives a game that discloses only %s a section under the user tags, banner above purchase",
+    (kind) => {
+      setup().render(view({ verdicts: make.verdicts.only([kind]) }));
+      const root = section();
+      const { chip, heading } = KIND_BY_ID[kind].messages;
+      expect(document.getElementById("tags")?.nextElementSibling).toBe(root);
+      expect(root?.querySelector(".sar-tag-section-label")?.textContent).toBe(
+        i18n.t("badge_tags_title"),
+      );
+      expect(chipKinds()).toEqual([kind]);
+      expect(root?.querySelector(".sar-badge-label")?.textContent).toBe(i18n.t(chip));
+      expect(root?.querySelector(".sar-vh")?.textContent).toBe(
+        i18n.t("kind_chip_name", { chip: i18n.t(chip), heading: i18n.t(heading) }),
+      );
+      expect(root?.querySelector("a, [href]")).toBeNull();
+      expect(bannerHost()?.nextElementSibling?.id).toBe("game_area_purchase");
+    },
+  );
 
   it("leaves nothing under Publisher", () => {
     setup().render(view({ verdicts: ARC }));
@@ -227,7 +228,8 @@ describe("createAppPageUi", () => {
     expect(bannerRoot()?.querySelector("aside")?.getAttribute("data-sar-variant")).toBe("ignored");
   });
 
-  describe("with some kinds silenced", () => {
+  describe("with kinds silenced or none", () => {
+    const ALL: readonly KindId[] = ["ai", "iap", "pvp", "eula", "kernel"];
     const NO_AI: readonly KindId[] = ["iap", "pvp", "eula", "kernel"];
     const NO_KERNEL: readonly KindId[] = ["ai", "iap", "pvp", "eula"];
     const DEVELOPER_AI = i18n.t("banner_ignored_creator_kind", {
@@ -240,6 +242,7 @@ describe("createAppPageUi", () => {
       readonly [string, ViewOptions, readonly KindId[], readonly KindId[], readonly string[]]
     >(
       [
+        ["nothing silenced", {}, ALL, ALL, []],
         ["the AI kind ignored", { ignored: ["ai"] }, NO_AI, NO_AI, [kindNote("ai")]],
         ["the AI kind ignored on the base game", { baseIgnored: ["ai"] }, NO_AI, NO_AI, []],
         [
@@ -263,6 +266,7 @@ describe("createAppPageUi", () => {
       ],
     )("with %s, draws the chips, banner entries and notes", (_name, options, ids, entries, all) => {
       setup().render(view({ verdicts: ARC, ...options }));
+      expect(document.querySelectorAll(".sar-tag-section")).toHaveLength(1);
       expect(chipKinds()).toEqual(ids);
       expect(headings()).toEqual(headingsOf(entries));
       expect(notes()).toEqual(all);

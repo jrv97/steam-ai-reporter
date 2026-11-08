@@ -23,6 +23,7 @@ import { DEFAULT_SPACING_MS } from "./detect/throttle";
 import { SHIPPED_CATALOGS } from "./i18n/shipped";
 import type { JsonValue } from "./json";
 import type { KindSettings } from "./kinds/kind-settings";
+import type { KindVerdicts } from "./kinds/verdicts";
 import type { Clock, Http } from "./ports";
 import type { AllowScope } from "./settings/allow-data";
 import { DEFAULT_SETTINGS, encodeSettings } from "./settings/settings";
@@ -58,6 +59,14 @@ const control = (selector: string) => banner()?.querySelector<HTMLElement>(selec
 const headings = () =>
   [...(banner()?.querySelectorAll("h2") ?? [])].map((heading) => heading.textContent);
 const aiHeading = i18n.t("kind_ai_heading");
+/** The AI notes a banner quotes for `verdicts`; throws when AI is not disclosed. */
+function quotedNotes(verdicts: KindVerdicts): string {
+  const { ai } = verdicts;
+  if (ai.state !== "disclosed") {
+    throw new TypeError(ai.state);
+  }
+  return normalizeBreaks(ai.notes);
+}
 /** A store whose ignore list under `key` holds `keys` in `scope`. */
 const ignoring = (scope: AllowScope, keys: readonly (number | string)[], key = ALLOW_KEY) =>
   new Map<string, JsonValue>([[key, make.raw.v2Allow(scope, ...keys)]]);
@@ -126,7 +135,9 @@ describe("start on an English app page", () => {
     const column = document.querySelector(".game_description_column");
     expect(column?.firstElementChild?.id).toBe("sar-banner");
     expect(headings()).toEqual([aiHeading]);
-    expect(banner()?.querySelector("blockquote")?.textContent).not.toBe("");
+    expect(banner()?.querySelector("blockquote")?.textContent).toBe(
+      quotedNotes(make.fixture.pageVerdicts("5072580-ai-first.html", OPEN)),
+    );
     expect(banner()?.querySelector(".sar-banner-service")).toBeNull();
     release();
     await expect.poll(() => banner()?.querySelector(".sar-banner-service")?.textContent).toContain(
@@ -194,7 +205,7 @@ describe("start on an English app page", () => {
     expect(banner()?.querySelector("aside")?.getAttribute("data-sar-variant")).toBe("ignored");
 
     control('[data-sar-action="undo"]')?.click();
-    await expect.poll(() => banner()?.querySelector("blockquote") !== null).toBe(true);
+    await expect.poll(() => banner()?.querySelector("blockquote")).toBeInstanceOf(HTMLElement);
     expect(Object.keys((await stored()).ai)).toEqual([]);
   });
 
@@ -341,9 +352,9 @@ describe("start on an English app page", () => {
       await startOnDemo();
       await expect.poll(headings).toEqual(kinds.map((key) => i18n.t(key)));
       expect(lines()).toEqual(kinds.map(() => i18n.t("kind_full_game")));
-      const { ai } = make.fixture.verdicts(GAME);
-      const notes = ai.state === "disclosed" ? normalizeBreaks(ai.notes) : "";
-      expect(banner()?.querySelector("blockquote")?.textContent).toBe(notes);
+      expect(banner()?.querySelector("blockquote")?.textContent).toBe(
+        quotedNotes(make.fixture.verdicts(GAME)),
+      );
       expect(banner()?.querySelector(".sar-banner-source")?.textContent).toBe(
         i18n.t("banner_source"),
       );

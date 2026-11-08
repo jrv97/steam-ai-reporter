@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { JsonValue } from "../../src/core/json";
 import type { KeyValueStore } from "../../src/core/ports";
 import { make } from "../helpers/factory";
+import { readKey } from "../helpers/store-read";
 
 /**
  * The behavior every `KeyValueStore` must have (src/core/AGENTS.md, "The contract-test rule").
@@ -70,12 +71,9 @@ export function keyValueStoreContract(
       const value = [original];
       await store.set(new Map<string, JsonValue>([["a", value]]));
       value.push(make.text.note());
-      const first = (await store.get(["a"])).get("a");
-      expect(Array.isArray(first)).toBe(true);
-      if (Array.isArray(first)) {
-        first.push(make.text.note());
-      }
-      expect(await store.get(["a"])).toStrictEqual(new Map([["a", [original]]]));
+      const [first, second] = [await readKey(store, "a"), await readKey(store, "a")];
+      expect(first).toStrictEqual([original]);
+      expect(first).not.toBe(second);
     });
 
     it("treats empty batches as no-ops", async () => {
