@@ -1,8 +1,5 @@
 import type { AiDisclosed, AiVerdict } from "../../src/core/kinds/ai";
-import type { CompatDisclosed, CompatFacet } from "../../src/core/kinds/compat";
-import type { EarlyAccessDisclosed } from "../../src/core/kinds/early-access";
 import { eulaLink, type EulaUrl } from "../../src/core/kinds/eula";
-import type { FamilyDisclosed, FamilyFacet } from "../../src/core/kinds/family";
 import type { KindId } from "../../src/core/kinds/id";
 import { perKind } from "../../src/core/kinds/registry";
 import { type AnyDisclosed, type KindVerdicts, UNKNOWN_KINDS } from "../../src/core/kinds/verdicts";
@@ -156,26 +153,6 @@ export function verdictsWith(given: Partial<KindVerdicts> = {}): KindVerdicts {
 /** An app's verdicts where the AI kind has this verdict and no other kind has an answer. */
 export function aiVerdicts(ai: AiVerdict): KindVerdicts {
   return verdictsWith({ ai });
-}
-
-/** A rating Valve gives for a device kind, as its disclosed verdict. */
-export function compatVerdict<const Id extends "deck" | "machine">(
-  kind: Id,
-  facet: CompatFacet,
-): CompatDisclosed<Id> {
-  return { state: "disclosed", kind, source: "api", facet };
-}
-
-/** The value Steam's feature list gives for Family Sharing, as its disclosed verdict. */
-export function familyVerdict(facet: FamilyFacet): FamilyDisclosed {
-  return disclosed("family", { facet });
-}
-
-/** A game in Early Access with the stored details set; override what a test cares about. */
-export function earlyAccessVerdict(
-  overrides: Partial<EarlyAccessDisclosed> = {},
-): EarlyAccessDisclosed {
-  return disclosed("earlyaccess", overrides);
 }
 
 /** Each kind's disclosed verdict, with every field of its payload set. */

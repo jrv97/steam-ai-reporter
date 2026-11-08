@@ -14,7 +14,7 @@ import { fake } from "./fakes";
 import { englishI18n } from "./i18n";
 
 /** The deps of a full options page over stores of its own; `overrides` replaces any of them. */
-export function formDeps(overrides: Partial<SettingsFormDeps> = {}): SettingsFormDeps {
+function formDeps(overrides: Partial<SettingsFormDeps> = {}): SettingsFormDeps {
   return {
     i18n: englishI18n(),
     settings: createSettingsSource(fake.store()),

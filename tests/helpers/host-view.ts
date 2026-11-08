@@ -23,7 +23,7 @@ export interface HostViewOptions {
 }
 
 /** Chips a view shows before the "+N" chip unless a test says otherwise. */
-export const MAX_CHIPS = 3;
+const MAX_CHIPS = 3;
 
 /** What a renderer receives for one host, with the AI kind's verdict and nothing else known. */
 export function hostView(host: Element, options: HostViewOptions = {}): HostView {

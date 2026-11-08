@@ -4,7 +4,6 @@ import {
   type ChipText,
   type ChipTextField,
 } from "../../src/core/kinds/chip-text";
-import { type HexColor, HexColorSchema } from "../../src/core/kinds/color";
 import type { KindId } from "../../src/core/kinds/id";
 import type { FacetId } from "../../src/core/kinds/kind";
 import {
@@ -16,11 +15,6 @@ import { perKind } from "../../src/core/kinds/registry";
 import { applyPatch, type Settings, wholePatch } from "../../src/core/settings/settings";
 import type { StoredSettings } from "../../src/core/settings/settings-source";
 import { applyKindSettings } from "../../src/core/ui/kind-attributes";
-
-/** The text as a tag color; throws when it is not one, so a typo fails the test. */
-export function hexColor(text: string): HexColor {
-  return v.parse(HexColorSchema, text);
-}
 
 /** The text as a person's chip text for a field; throws when nothing is left of it. */
 export function chipText(text: string, field: ChipTextField = "chip"): ChipText {
