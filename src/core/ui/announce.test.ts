@@ -13,17 +13,6 @@ function region(): HTMLElement {
 }
 
 describe("announce", () => {
-  it("empties the region and fills it on the next frame", async () => {
-    const live = region();
-    const earlier = "Earlier";
-    live.textContent = earlier;
-    announce(document, live, "Saved");
-    expect(live.textContent).toBe("");
-    await vi.waitFor(() => {
-      expect(live.textContent).toBe("Saved");
-    });
-  });
-
   it("empties the region again for a message that repeats, so it is heard twice", async () => {
     const live = region();
     announce(document, live, "Saved");

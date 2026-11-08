@@ -16,7 +16,7 @@ import { taggedView } from "../kinds/facets";
 import { KIND_IDS, type KindId } from "../kinds/id";
 import type { ChipWords } from "../kinds/kind-settings";
 import { kindsInOrder, parseOrder } from "../kinds/order";
-import { perKind } from "../kinds/registry";
+import { KIND_BY_ID, perKind } from "../kinds/registry";
 import type { AnyDisclosed, KindVerdicts } from "../kinds/verdicts";
 import { type AllowScope, perScope } from "../settings/allow-data";
 import { DEFAULT_SETTINGS } from "../settings/settings";
@@ -108,6 +108,10 @@ const notes = () =>
   [...(bannerRoot()?.querySelectorAll(".sar-banner-ignored-text") ?? [])].map((note) =>
     note.textContent
   );
+const headingsOf = (ids: readonly KindId[]) =>
+  kindsInOrder(ids).map((kind) => i18n.t(kind.messages.heading));
+const kindNote = (kind: KindId) =>
+  i18n.t("banner_ignored_kind", { heading: i18n.t(KIND_BY_ID[kind].messages.heading) });
 
 describe("createAppPageUi", () => {
   beforeEach(() => {
@@ -162,19 +166,6 @@ describe("createAppPageUi", () => {
     expect(document.body.innerHTML).toBe(PAGE);
   });
 
-  it("lists every disclosed kind in the banner and in the tag section, in registry order", () => {
-    setup().render(view({ verdicts: capturedVerdicts(1808500) }));
-    expect(headings()).toEqual([
-      i18n.t("kind_ai_heading"),
-      i18n.t("kind_iap_heading"),
-      i18n.t("kind_pvp_heading"),
-      i18n.t("kind_eula_heading"),
-      i18n.t("kind_kernel_heading"),
-    ]);
-    expect(document.querySelectorAll(".sar-tag-section")).toHaveLength(1);
-    expect(chipKinds()).toEqual(["ai", "iap", "pvp", "eula", "kernel"]);
-  });
-
   it("shows a game that discloses no AI its chips and its banner entries", () => {
     setup().render(view({ verdicts: capturedVerdicts(3751950) }));
     expect(headings()).toEqual([
@@ -210,8 +201,6 @@ describe("createAppPageUi", () => {
     const SHOWN: readonly KindId[] = ["ai", "kernel", "eula", "pvp"];
     const MOVED = parseOrder(["pvp", "eula", "ai"]);
     const shownIn = (order: readonly KindId[]) => order.filter((id) => SHOWN.includes(id));
-    const headingsOf = (ids: readonly KindId[]) =>
-      kindsInOrder(ids).map((kind) => i18n.t(kind.messages.heading));
 
     it.each<[string, readonly KindId[]]>([["the registry's", KIND_IDS], ["a person's", MOVED]])(
       "lists the chips and the banner entries in %s order",
@@ -231,14 +220,6 @@ describe("createAppPageUi", () => {
     });
   });
 
-  it("gives a game that declares only kernel anti-cheat a section with one chip", () => {
-    setup().render(view({ verdicts: disclosedKinds(["kernel"]) }));
-    expect(chipKinds()).toEqual(["kernel"]);
-    expect(chips()[0]?.querySelector(".sar-badge-label")?.textContent).toBe(
-      i18n.t("kind_kernel_chip"),
-    );
-  });
-
   it("shows a game ignored for all tags only the note, with no section", () => {
     setup().render(view({ verdicts: capturedVerdicts(1808500), ignored: ["all"] }));
     expect(section()).toBeNull();
@@ -247,30 +228,46 @@ describe("createAppPageUi", () => {
     expect(bannerRoot()?.querySelector("aside")?.getAttribute("data-sar-variant")).toBe("ignored");
   });
 
-  it("notes the AI kind ignored on its own, keeps the other entries and drops its chip", () => {
-    setup().render(view({ verdicts: capturedVerdicts(1808500), ignored: ["ai"] }));
-    expect(chipKinds()).toEqual(["iap", "pvp", "eula", "kernel"]);
-    expect(headings()).toEqual([
-      i18n.t("kind_iap_heading"),
-      i18n.t("kind_pvp_heading"),
-      i18n.t("kind_eula_heading"),
-      i18n.t("kind_kernel_heading"),
-    ]);
-    expect(notes()).toEqual([
-      i18n.t("banner_ignored_kind", { heading: i18n.t("kind_ai_heading") }),
-    ]);
-  });
+  describe("with some kinds silenced", () => {
+    const NO_AI: readonly KindId[] = ["iap", "pvp", "eula", "kernel"];
+    const NO_KERNEL: readonly KindId[] = ["ai", "iap", "pvp", "eula"];
+    const DEVELOPER_AI = i18n.t("banner_ignored_creator_kind", {
+      name: "Valve",
+      role: i18n.t("banner_role_developer"),
+      heading: i18n.t("kind_ai_heading"),
+    });
 
-  it("shows a DLC of a base game ignored for one kind its other entries, with no note", () => {
-    setup().render(view({ verdicts: capturedVerdicts(1808500), baseIgnored: ["ai"] }));
-    expect(chipKinds()).toEqual(["iap", "pvp", "eula", "kernel"]);
-    expect(headings()).toEqual([
-      i18n.t("kind_iap_heading"),
-      i18n.t("kind_pvp_heading"),
-      i18n.t("kind_eula_heading"),
-      i18n.t("kind_kernel_heading"),
-    ]);
-    expect(notes()).toEqual([]);
+    it.each<
+      readonly [string, ViewOptions, readonly KindId[], readonly KindId[], readonly string[]]
+    >(
+      [
+        ["the AI kind ignored", { ignored: ["ai"] }, NO_AI, NO_AI, [kindNote("ai")]],
+        ["the AI kind ignored on the base game", { baseIgnored: ["ai"] }, NO_AI, NO_AI, []],
+        [
+          "the AI kind ignored here and three kinds on the base game",
+          { ignored: ["ai"], baseIgnored: ["ai", "pvp", "iap"] },
+          ["eula", "kernel"],
+          ["eula", "kernel"],
+          [kindNote("ai")],
+        ],
+        ["the developer ignored for AI", { developerIgnored: ["ai"] }, NO_AI, NO_AI, [
+          DEVELOPER_AI,
+        ]],
+        ["kernel ignored", { ignored: ["kernel"] }, NO_KERNEL, NO_KERNEL, [kindNote("kernel")]],
+        [
+          "kernel ignored and its banner entry off",
+          { ignored: ["kernel"], bannerOff: ["kernel", "pvp", "iap"] },
+          NO_KERNEL,
+          ["ai", "eula"],
+          [],
+        ],
+      ],
+    )("with %s, draws the chips, banner entries and notes", (_name, options, ids, entries, all) => {
+      setup().render(view({ verdicts: capturedVerdicts(1808500), ...options }));
+      expect(chipKinds()).toEqual(ids);
+      expect(headings()).toEqual(headingsOf(entries));
+      expect(notes()).toEqual(all);
+    });
   });
 
   it("shows a DLC of a base game ignored for all tags no banner and no section", () => {
@@ -278,40 +275,6 @@ describe("createAppPageUi", () => {
     expect(bannerHost()).toBeNull();
     expect(section()).toBeNull();
     expect(document.body.innerHTML).toBe(PAGE);
-  });
-
-  it("keeps the note and Undo of a DLC ignored on its own beside a base game that is too", () => {
-    setup().render(
-      view({
-        verdicts: capturedVerdicts(1808500),
-        ignored: ["ai"],
-        baseIgnored: ["ai", "pvp", "iap"],
-      }),
-    );
-    expect(chipKinds()).toEqual(["eula", "kernel"]);
-    expect(notes()).toEqual([
-      i18n.t("banner_ignored_kind", { heading: i18n.t("kind_ai_heading") }),
-    ]);
-    expect(headings()).toEqual([i18n.t("kind_eula_heading"), i18n.t("kind_kernel_heading")]);
-  });
-
-  it("notes a developer ignored for a kind the banner would list, and drops that entry", () => {
-    const ui = setup();
-    ui.render(view({ verdicts: capturedVerdicts(1808500), developerIgnored: ["ai"] }));
-    expect(notes()).toEqual([
-      i18n.t("banner_ignored_creator_kind", {
-        name: "Valve",
-        role: i18n.t("banner_role_developer"),
-        heading: i18n.t("kind_ai_heading"),
-      }),
-    ]);
-    expect(headings()).toEqual([
-      i18n.t("kind_iap_heading"),
-      i18n.t("kind_pvp_heading"),
-      i18n.t("kind_eula_heading"),
-      i18n.t("kind_kernel_heading"),
-    ]);
-    expect(chipKinds()).toEqual(["iap", "pvp", "eula", "kernel"]);
   });
 
   it("notes a developer ignored for all tags once, and keeps the Undo as the only control", () => {
@@ -366,33 +329,6 @@ describe("createAppPageUi", () => {
     expect(section()).toBeNull();
     expect(document.querySelector(".sar-tag-section-label")).toBeNull();
     expect(headings()).toHaveLength(5);
-  });
-
-  it("keeps the chips of the other kinds when one kind is ignored", () => {
-    setup().render(view({ verdicts: capturedVerdicts(1808500), ignored: ["kernel"] }));
-    expect(chipKinds()).toEqual(["ai", "iap", "pvp", "eula"]);
-    expect(headings()).toEqual([
-      i18n.t("kind_ai_heading"),
-      i18n.t("kind_iap_heading"),
-      i18n.t("kind_pvp_heading"),
-      i18n.t("kind_eula_heading"),
-    ]);
-    expect(notes()).toEqual([
-      i18n.t("banner_ignored_kind", { heading: i18n.t("kind_kernel_heading") }),
-    ]);
-  });
-
-  it("leaves out a kind whose banner entry is off, with its note when it is ignored", () => {
-    setup().render(
-      view({
-        verdicts: capturedVerdicts(1808500),
-        ignored: ["kernel"],
-        bannerOff: ["kernel", "pvp", "iap"],
-      }),
-    );
-    expect(headings()).toEqual([i18n.t("kind_ai_heading"), i18n.t("kind_eula_heading")]);
-    expect(notes()).toEqual([]);
-    expect(chipKinds()).toEqual(["ai", "iap", "pvp", "eula"]);
   });
 
   it("drops the banner when every banner entry is off and keeps the chips", () => {

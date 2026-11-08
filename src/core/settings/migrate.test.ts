@@ -245,7 +245,7 @@ describe("migrateSettings", () => {
 });
 
 describe("settingsFromV1 and allowFromV1", () => {
-  it("map the v1 fields into the AI kind", () => {
+  it("map the v1 fields into the AI kind, the other kinds as on a fresh install", () => {
     expect(settingsFromV1(V1_CUSTOM)).toStrictEqual({
       ...DEFAULT_SETTINGS,
       locale: "es",
@@ -256,12 +256,6 @@ describe("settingsFromV1 and allowFromV1", () => {
       },
     });
     expect(settingsFromV1(undefined)).toStrictEqual(DEFAULT_SETTINGS);
-  });
-
-  it("leave PvP off, as for a fresh install", () => {
-    expect(settingsFromV1(V1_CUSTOM).kinds.pvp.enabled).toBe(false);
-    expect(settingsFromV1(undefined).kinds.pvp.enabled).toBe(false);
-    expect(settingsFromV1(V1_CUSTOM).kinds.ai.enabled).toBe(true);
   });
 
   it("put the v1 list in the AI scope", () => {

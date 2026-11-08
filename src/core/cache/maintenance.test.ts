@@ -59,36 +59,24 @@ describe("maintainCache: schema reset", () => {
     );
   });
 
-  it("drops the verdicts written before the per-kind layout, once", async () => {
-    // Version 1 kept one flat verdict per app, with the time inside.
-    const flat: JsonValue = {
-      state: "disclosed",
-      time: T,
-      notes: "Concept art was generated.",
-      language: "english",
-      source: "api",
-    };
-    const { store, run } = setup([
-      [META_KEY, { schema: 1, sweptAt: T }],
-      ["v1:a:1", flat],
-      ["v1:a:2", { state: "not-disclosed", time: T, source: "api" }],
-      ...others,
-    ]);
-    expect(CACHE_SCHEMA).toBeGreaterThan(1);
-    expect(await run()).toBe("reset");
-    expect(await keysOf(store)).toStrictEqual(["v1:allow", "v1:breaker", META_KEY, "v1:settings"]);
-    expect(await run()).toBe("skipped");
-  });
-
-  // Version 2 entries lack `parent`, so a cached DLC would never learn its base game, and
-  // version 4 entries lack `demo`, so a cached demo would not show its full game's tags.
-  it.each([
-    [2, "the base game of a DLC"],
-    [4, "the demo mark"],
-  ])("drops the verdicts of schema %i, stored before %s was kept, once", async (schema) => {
+  // Version 1 kept one flat verdict per app, with the time inside. Version 2 entries lack
+  // `parent`, so a cached DLC never learns its base game. Version 4 entries lack `demo`.
+  it.each(
+    [
+      [1, {
+        state: "disclosed",
+        time: T,
+        notes: "Concept art.",
+        language: "english",
+        source: "api",
+      }],
+      [2, verdict("disclosed", T)],
+      [4, verdict("disclosed", T)],
+    ] as const,
+  )("drops the verdicts of schema %i once", async (schema, entry) => {
     const { store, run } = setup([
       [META_KEY, { schema, sweptAt: T }],
-      ["v1:a:5201760", verdict("disclosed", T)],
+      ["v1:a:5201760", entry],
       ...others,
     ]);
     expect(CACHE_SCHEMA).toBeGreaterThan(schema);

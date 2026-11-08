@@ -73,6 +73,13 @@ function hidingRows(count: number): void {
   start();
 }
 
+/** Appends a row carrying AI to the list, as infinite scroll does. */
+function addHiddenRow(): void {
+  const row = searchRow(1);
+  the(LIST).append(row);
+  mark(row, ["ai"]);
+}
+
 beforeEach(() => {
   loadPage(SURFACES.search);
   frames = manualQueue();
@@ -174,11 +181,7 @@ describe("createHiddenNotice", () => {
   const CHANGES = [
     {
       name: "infinite scroll adds a hidden row",
-      change: () => {
-        const row = searchRow(1);
-        the(LIST).append(row);
-        mark(row, ["ai"]);
-      },
+      change: addHiddenRow,
       expected: 3,
     },
     {
@@ -256,9 +259,7 @@ describe("createHiddenNotice", () => {
 
   it("announces the line once it stops changing", async () => {
     hidingRows(1);
-    const row = searchRow(1);
-    the(LIST).append(row);
-    mark(row, ["ai"]);
+    addHiddenRow();
     await settle();
     expect(delays.size).toBe(1);
     delays.run();
@@ -273,9 +274,7 @@ describe("createHiddenNotice", () => {
     button().click();
     window.dispatchEvent(pageTransition("pagehide"));
     expect([revealed(), shown()]).toEqual([false, false]);
-    const row = searchRow(1);
-    the(LIST).append(row);
-    mark(row, ["ai"]);
+    addHiddenRow();
     await settle();
     expect(shown()).toBe(false);
     window.dispatchEvent(pageTransition("pageshow"));

@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { hasText, trimNotes } from "./notes";
 
+const BLANKS = ["", " ", "\r\n", "\u200b", "\u200b \u200b\n"] as const;
+
 describe("trimNotes", () => {
   it("removes outer whitespace and zero-width characters", () => {
     expect(trimNotes("\n\t\u200bSome art\u00a0 \u200b\ufeff")).toBe("Some art");
@@ -13,19 +15,17 @@ describe("trimNotes", () => {
     );
   });
 
-  it("returns an empty string for blank notes", () => {
-    for (const text of ["", " ", "\r\n", "\u200b", "\u200b \u200b\n"]) {
-      expect(trimNotes(text)).toBe("");
-    }
+  it.each(BLANKS)("returns an empty string for the blank notes %j", (text) => {
+    expect(trimNotes(text)).toBe("");
   });
 });
 
 describe("hasText", () => {
-  it("is true for text and false for blanks only", () => {
-    expect(hasText("Denuvo")).toBe(true);
-    expect(hasText(" a ")).toBe(true);
-    for (const text of ["", " ", "\r\n", "\u200b", "\u200b \u200b\n"]) {
-      expect(hasText(text)).toBe(false);
-    }
+  it.each<readonly [string, boolean]>([
+    ["Denuvo", true],
+    [" a ", true],
+    ...BLANKS.map((text): readonly [string, boolean] => [text, false]),
+  ])("reads %j as text: %s", (text, expected) => {
+    expect(hasText(text)).toBe(expected);
   });
 });

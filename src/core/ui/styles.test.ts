@@ -61,6 +61,12 @@ function rulesOf(css: string): readonly Rule[] {
   }));
 }
 
+/** The body of the first PAGE_CSS rule written as `selector {`. */
+function pageRule(selector: string): string {
+  const start = PAGE_CSS.indexOf(`${selector} {`);
+  return PAGE_CSS.slice(start, PAGE_CSS.indexOf("}", start));
+}
+
 /** The media condition of the fixed settings frame; smaller windows scroll the whole page. */
 const FIXED_FRAME = "(min-width: 800px) and (min-height: 560px)";
 
@@ -211,46 +217,38 @@ describe("the tag color rules", () => {
 });
 
 describe("the hover card rules", () => {
-  const rule = (selector: string) => {
-    const start = PAGE_CSS.indexOf(`${selector} {`);
-    return PAGE_CSS.slice(start, PAGE_CSS.indexOf("}", start));
-  };
-
   it("keeps the card inside the viewport and scrolls what does not fit", () => {
-    expect(rule(".sar-hovercard")).toContain(
+    expect(pageRule(".sar-hovercard")).toContain(
       "max-block-size: calc(100vh - 2 * var(--sar-hovercard-offset))",
     );
-    expect(rule(".sar-hovercard")).toContain("overflow-y: auto");
-    expect(rule(".sar-hovercard")).toContain("inline-size: var(--sar-hovercard-inline-size)");
+    expect(pageRule(".sar-hovercard")).toContain("overflow-y: auto");
+    expect(pageRule(".sar-hovercard")).toContain("inline-size: var(--sar-hovercard-inline-size)");
   });
 
   it("clamps each detail line, a long DRM text or a EULA name among them", () => {
-    expect(rule(".sar-hovercard-detail")).toContain(
+    expect(pageRule(".sar-hovercard-detail")).toContain(
       "-webkit-line-clamp: var(--sar-hovercard-detail-lines)",
     );
-    expect(rule(".sar-hovercard-detail")).toContain("overflow: hidden");
+    expect(pageRule(".sar-hovercard-detail")).toContain("overflow: hidden");
   });
 });
 
 describe("the chips on a narrow row", () => {
-  const rule = (selector: string) => {
-    const start = PAGE_CSS.indexOf(`${selector} {`);
-    return PAGE_CSS.slice(start, PAGE_CSS.indexOf("}", start));
-  };
-
   it("lets a search row wrap and keeps its title a basis of room", () => {
-    expect(rule(".search_result_row[data-sar-kinds] .search_name")).toContain("flex-wrap: wrap");
-    expect(rule(".search_result_row[data-sar-kinds] .search_name > .title")).toContain(
+    expect(pageRule(".search_result_row[data-sar-kinds] .search_name")).toContain(
+      "flex-wrap: wrap",
+    );
+    expect(pageRule(".search_result_row[data-sar-kinds] .search_name > .title")).toContain(
       "flex: 1 1 var(--sar-row-title-basis)",
     );
   });
 
   it("lets a DLC row wrap, and the chips wrap inside their own group", () => {
-    expect(rule(".game_area_dlc_row[data-sar-kinds] .game_area_dlc_name")).toContain(
+    expect(pageRule(".game_area_dlc_row[data-sar-kinds] .game_area_dlc_name")).toContain(
       "flex-wrap: wrap",
     );
-    expect(rule('.sar-chips[data-sar-chips="full"]')).toContain("flex-wrap: wrap");
-    expect(rule('.sar-chips[data-sar-chips="full"]')).toContain("max-inline-size: 100%");
+    expect(pageRule('.sar-chips[data-sar-chips="full"]')).toContain("flex-wrap: wrap");
+    expect(pageRule('.sar-chips[data-sar-chips="full"]')).toContain("max-inline-size: 100%");
   });
 
   it("keeps the allowance of chips a constant on each placement", () => {
@@ -285,14 +283,9 @@ describe("adoptStyles", () => {
 });
 
 describe("the hidden results notice rules", () => {
-  const rule = (selector: string) => {
-    const start = PAGE_CSS.indexOf(`${selector} {`);
-    return PAGE_CSS.slice(start, PAGE_CSS.indexOf("}", start));
-  };
-
   it("resets the notice like the other light-DOM components and keeps it hidden when told", () => {
     expect(PAGE_CSS).toMatch(/\.sar-list-notice,\n\.sar-list-notice \*/);
-    expect(rule(".sar-list-notice[hidden]")).toContain("display: none !important");
+    expect(pageRule(".sar-list-notice[hidden]")).toContain("display: none !important");
   });
 
   it.each([
@@ -304,13 +297,7 @@ describe("the hidden results notice rules", () => {
     [".sar-list-notice-button", "color: var(--sar-store-notice-fg)"],
     [".sar-list-notice-button", "text-decoration: underline"],
   ])("takes the store's notice bar look from its tokens: %s has %s", (selector, declaration) => {
-    expect(rule(selector)).toContain(declaration);
-  });
-
-  it("gives the button the shared focus ring", () => {
-    expect(rule(".sar-list-notice-button:focus-visible")).toContain(
-      "outline: var(--sar-focus-width) solid var(--sar-focus-color)",
-    );
+    expect(pageRule(selector)).toContain(declaration);
   });
 
   it("keeps the notice a distinct region in forced colors", () => {
@@ -350,21 +337,9 @@ describe("the settings tab rules", () => {
     );
     expect(found?.selectors).toContain(selector);
   });
-
-  it("gives a focused tab the shared focus ring", () => {
-    const ring = rulesOf(SETTINGS_CSS).find((rule) =>
-      rule.selectors.includes(".sar-tab:focus-visible")
-    );
-    expect(ring?.body).toContain("outline: var(--sar-focus-width) solid var(--sar-focus-color)");
-  });
 });
 
 describe("the tag section rules", () => {
-  const rule = (selector: string) => {
-    const start = PAGE_CSS.indexOf(`${selector} {`);
-    return PAGE_CSS.slice(start, PAGE_CSS.indexOf("}", start));
-  };
-
   it("leaves no rule for the summary row it replaced", () => {
     expect(PAGE_CSS).not.toContain("sar-summary-row");
     expect(TOKENS_CSS).not.toContain("--sar-summary-chip-inset-inline");
@@ -375,13 +350,20 @@ describe("the tag section rules", () => {
   });
 
   it("sets the label muted and the chips in the store's tag font", () => {
-    expect(rule(".sar-tag-section-label")).toContain("color: var(--sar-color-text-muted)");
-    expect(rule(".sar-tag-section .sar-badge")).toContain("font: var(--sar-summary-tag-font)");
+    expect(pageRule(".sar-tag-section-label")).toContain("color: var(--sar-color-text-muted)");
+    expect(pageRule(".sar-tag-section .sar-badge")).toContain("font: var(--sar-summary-tag-font)");
   });
+});
 
-  it("gives a focused chip the shared focus ring", () => {
-    expect(rule(".sar-tag-section .sar-badge:focus-visible")).toContain(
-      "outline: var(--sar-focus-width) solid var(--sar-focus-color)",
-    );
+describe("the focus ring", () => {
+  it.each(
+    [
+      ["SETTINGS_CSS", ".sar-tab:focus-visible"],
+      ["PAGE_CSS", ".sar-list-notice-button:focus-visible"],
+      ["PAGE_CSS", ".sar-tag-section .sar-badge:focus-visible"],
+    ] as const,
+  )("%s gives %s the shared ring", (sheet, selector) => {
+    const found = rulesOf(RULES[sheet]).find((each) => each.selectors.includes(selector));
+    expect(found?.body).toContain("outline: var(--sar-focus-width) solid var(--sar-focus-color)");
   });
 });

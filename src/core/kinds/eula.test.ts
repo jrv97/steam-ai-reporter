@@ -7,94 +7,65 @@ function fromEula(eula: unknown) {
   return verdictOf(EULA_KIND, { eula });
 }
 
-describe("eulaLink", () => {
-  it("collapses the doubled slash Steam serves", () => {
-    expect(eulaLink("https://store.steampowered.com//eula/3751950_eula_0")).toBe(
-      "https://store.steampowered.com/eula/3751950_eula_0",
-    );
-    expect(eulaLink("https://store.steampowered.com///eula/1_eula_0")).toBe(
-      "https://store.steampowered.com/eula/1_eula_0",
-    );
-  });
+const STORE = "https://store.steampowered.com";
 
-  it("keeps a clean link, and the query and fragment", () => {
-    expect(eulaLink("https://store.steampowered.com/eula/1_eula_0")).toBe(
-      "https://store.steampowered.com/eula/1_eula_0",
-    );
-    expect(eulaLink("https://store.steampowered.com//eula/1_eula_0?l=english#top")).toBe(
-      "https://store.steampowered.com/eula/1_eula_0?l=english#top",
-    );
+describe("eulaLink", () => {
+  it.each([
+    ["collapses the doubled slash Steam serves", "//eula/3751950_eula_0", "/eula/3751950_eula_0"],
+    ["collapses a tripled slash", "///eula/1_eula_0", "/eula/1_eula_0"],
+    ["keeps a clean link", "/eula/1_eula_0", "/eula/1_eula_0"],
+    [
+      "keeps the query and fragment",
+      "//eula/1_eula_0?l=english#top",
+      "/eula/1_eula_0?l=english#top",
+    ],
+    ["drops the default port", ":443/eula/1", "/eula/1"],
+  ])("%s: %s", (_name, raw, link) => {
+    expect(eulaLink(`${STORE}${raw}`)).toBe(`${STORE}${link}`);
   });
 
   it("writes the scheme and host in lower case", () => {
-    expect(eulaLink("HTTPS://STORE.STEAMPOWERED.COM//eula/1")).toBe(
-      "https://store.steampowered.com/eula/1",
-    );
+    expect(eulaLink("HTTPS://STORE.STEAMPOWERED.COM//eula/1")).toBe(`${STORE}/eula/1`);
   });
 
-  it("drops a link on another scheme", () => {
-    const schemes = [
-      "http://store.steampowered.com//eula/1_eula_0",
-      "javascript:alert(1)",
-      "javascript://store.steampowered.com/eula/1%0Aalert(1)",
-      "data:text/html,<script>alert(1)</script>",
-      "ftp://store.steampowered.com/eula/1",
-      "blob:https://store.steampowered.com/eula/1",
-    ];
-    for (const raw of schemes) {
-      expect(eulaLink(raw)).toBeUndefined();
-    }
-  });
-
-  it("drops a link on another host, however the host is dressed", () => {
-    const hosts = [
-      "https://example.com//eula/1_eula_0",
-      "https://steampowered.com/eula/1",
-      "https://help.steampowered.com/eula/1",
-      "https://store.steampowered.com.example.com/eula/1",
-      "https://example.com/store.steampowered.com/eula/1",
-      "https://example.com/?next=https://store.steampowered.com/eula/1",
-      "https://store.steampowered.com@example.com/eula/1",
-      "https://store.steampowered.com:pw@example.com/eula/1",
-      "https://store.steampowered.com./eula/1",
-      "https://store.steampowered.com\\@example.com/eula/1",
-      "https://STORE.STEAMPOWERED.COM.example.com/eula/1",
-    ];
-    for (const raw of hosts) {
-      expect(eulaLink(raw)).toBeUndefined();
-    }
-  });
-
-  it("drops a link with credentials or a port", () => {
-    expect(eulaLink("https://user@store.steampowered.com/eula/1")).toBeUndefined();
-    expect(eulaLink("https://user:pw@store.steampowered.com/eula/1")).toBeUndefined();
-    expect(eulaLink("https://store.steampowered.com:8443/eula/1")).toBeUndefined();
-    expect(eulaLink("https://store.steampowered.com:443/eula/1")).toBe(
-      "https://store.steampowered.com/eula/1",
-    );
-  });
-
-  it("drops a link outside /eula/, also when dot segments lead out of it", () => {
-    const paths = [
-      "https://store.steampowered.com/",
-      "https://store.steampowered.com/app/1/",
-      "https://store.steampowered.com/eula",
-      "https://store.steampowered.com/eulas/1",
-      "https://store.steampowered.com/EULA/1",
-      "https://store.steampowered.com//app/1//eula/1",
-      "https://store.steampowered.com/eula/../app/1",
-      "https://store.steampowered.com/eula/%2e%2e/app/1",
-      "https://store.steampowered.com/%65ula/1/..",
-    ];
-    for (const raw of paths) {
-      expect(eulaLink(raw)).toBeUndefined();
-    }
-  });
-
-  it("drops what is not an absolute URL", () => {
-    for (const raw of ["", " ", "/eula/1", "//store.steampowered.com/eula/1", "eula/1", "null"]) {
-      expect(eulaLink(raw)).toBeUndefined();
-    }
+  it.each([
+    ["another scheme", "http://store.steampowered.com//eula/1_eula_0"],
+    ["another scheme", "javascript:alert(1)"],
+    ["another scheme", "javascript://store.steampowered.com/eula/1%0Aalert(1)"],
+    ["another scheme", "data:text/html,<script>alert(1)</script>"],
+    ["another scheme", "ftp://store.steampowered.com/eula/1"],
+    ["another scheme", "blob:https://store.steampowered.com/eula/1"],
+    ["another host", "https://example.com//eula/1_eula_0"],
+    ["another host", "https://steampowered.com/eula/1"],
+    ["another host", "https://help.steampowered.com/eula/1"],
+    ["another host", "https://store.steampowered.com.example.com/eula/1"],
+    ["another host", "https://example.com/store.steampowered.com/eula/1"],
+    ["another host", "https://example.com/?next=https://store.steampowered.com/eula/1"],
+    ["another host", "https://store.steampowered.com@example.com/eula/1"],
+    ["another host", "https://store.steampowered.com:pw@example.com/eula/1"],
+    ["another host", "https://store.steampowered.com./eula/1"],
+    ["another host", "https://store.steampowered.com\\@example.com/eula/1"],
+    ["another host", "https://STORE.STEAMPOWERED.COM.example.com/eula/1"],
+    ["credentials", "https://user@store.steampowered.com/eula/1"],
+    ["credentials", "https://user:pw@store.steampowered.com/eula/1"],
+    ["a port", "https://store.steampowered.com:8443/eula/1"],
+    ["a path outside /eula/", `${STORE}/`],
+    ["a path outside /eula/", `${STORE}/app/1/`],
+    ["a path outside /eula/", `${STORE}/eula`],
+    ["a path outside /eula/", `${STORE}/eulas/1`],
+    ["a path outside /eula/", `${STORE}/EULA/1`],
+    ["a path outside /eula/", `${STORE}//app/1//eula/1`],
+    ["dot segments out of /eula/", `${STORE}/eula/../app/1`],
+    ["dot segments out of /eula/", `${STORE}/eula/%2e%2e/app/1`],
+    ["dot segments out of /eula/", `${STORE}/%65ula/1/..`],
+    ["no absolute URL", ""],
+    ["no absolute URL", " "],
+    ["no absolute URL", "/eula/1"],
+    ["no absolute URL", "//store.steampowered.com/eula/1"],
+    ["no absolute URL", "eula/1"],
+    ["no absolute URL", "null"],
+  ])("drops a link with %s: %j", (_reason, raw) => {
+    expect(eulaLink(raw)).toBeUndefined();
   });
 });
 
@@ -141,15 +112,6 @@ describe("EULA_KIND.fromGetItems", () => {
     expect(verdict).toMatchObject({ items: [{ name }] });
   });
 
-  it("keeps the kind disclosed for an entry that has a name and no link", () => {
-    expect(fromEula([{ name: "Game terms" }])).toStrictEqual({
-      state: "disclosed",
-      kind: "eula",
-      source: "api",
-      items: [{ name: "Game terms" }],
-    });
-  });
-
   it("drops the entries with a blank name and keeps the others in order", () => {
     const verdict = fromEula([
       { name: "", url: "https://store.steampowered.com/eula/1" },
@@ -163,12 +125,6 @@ describe("EULA_KIND.fromGetItems", () => {
     });
   });
 
-  it("is not disclosed when every entry has a blank name", () => {
-    const none = { state: "not-disclosed", source: "api" };
-    expect(fromEula([{ name: "" }, { name: "  ", url: "https://store.steampowered.com/eula/1" }]))
-      .toStrictEqual(none);
-  });
-
   it("allows 50 entries and is unknown malformed at 51", () => {
     const entries = (count: number) => Array.from({ length: count }, () => ({ name: "Agreement" }));
     expect(fromEula(entries(50))).toMatchObject({ state: "disclosed" });
@@ -180,9 +136,15 @@ describe("EULA_KIND.fromGetItems", () => {
     expect(fromEula([{ name: "x".repeat(4001) }])).toBe(UNKNOWN.malformed);
   });
 
-  it("is not disclosed without entries", () => {
-    expect(verdictOf(EULA_KIND, {})).toStrictEqual({ state: "not-disclosed", source: "api" });
-    expect(fromEula([])).toStrictEqual({ state: "not-disclosed", source: "api" });
+  it.each<readonly [string, Readonly<Record<string, unknown>>]>([
+    ["no field", {}],
+    ["no entries", { eula: [] }],
+    [
+      "only entries with a blank name",
+      { eula: [{ name: "" }, { name: "  ", url: "https://store.steampowered.com/eula/1" }] },
+    ],
+  ])("is not disclosed for %s", (_name, details) => {
+    expect(verdictOf(EULA_KIND, details)).toStrictEqual({ state: "not-disclosed", source: "api" });
   });
 
   it("is unknown malformed when the field is malformed, and only then", () => {

@@ -22,20 +22,23 @@ describe("ANTICHEAT_KIND.fromGetItems", () => {
     });
   });
 
-  it("is disclosed with no name for an empty anti-cheat object, as for Marvel Rivals", () => {
-    const expected = { state: "disclosed", kind: "anticheat", source: "api" };
-    expect(fromDetails({ anticheat: {} })).toStrictEqual(expected);
-    expect(fromDetails({ anticheat: { kernel_mode: false } })).toStrictEqual(expected);
-  });
-
-  it("keeps the vendor text as Steam sent it, and leaves out a blank one", () => {
-    expect(fromDetails({ anticheat: { name: " BattlEye " } })).toMatchObject({
-      name: " BattlEye ",
-    });
-    expect(fromDetails({ anticheat: { name: "", name_loc: " " } })).toStrictEqual({
+  it.each<readonly [string, unknown]>([
+    ["an empty object, as for Marvel Rivals", {}],
+    ["a false kernel flag", { kernel_mode: false }],
+    ["a blank name", { name: "", name_loc: " " }],
+    ["a malformed name", { name: {}, name_loc: 4 }],
+    ["an empty list, read as no object", []],
+  ])("is disclosed with no name for %s", (_name, anticheat) => {
+    expect(fromDetails({ anticheat })).toStrictEqual({
       state: "disclosed",
       kind: "anticheat",
       source: "api",
+    });
+  });
+
+  it("keeps the vendor text as Steam sent it", () => {
+    expect(fromDetails({ anticheat: { name: " BattlEye " } })).toMatchObject({
+      name: " BattlEye ",
     });
   });
 
@@ -50,15 +53,6 @@ describe("ANTICHEAT_KIND.fromGetItems", () => {
     for (const anticheat of [0, "VAC", null, [{}], { kernel_mode: 1 }]) {
       expect(fromDetails({ anticheat })).toBe(UNKNOWN.malformed);
     }
-  });
-
-  it("stays disclosed when the name is malformed, and reads an empty list as no object", () => {
-    expect(fromDetails({ anticheat: { name: {}, name_loc: 4 } })).toStrictEqual({
-      state: "disclosed",
-      kind: "anticheat",
-      source: "api",
-    });
-    expect(fromDetails({ anticheat: [] }).state).toBe("disclosed");
   });
 });
 
@@ -79,15 +73,5 @@ describe("the kernel and anti-cheat kinds", () => {
       expect([kernel, other].toSorted()).toStrictEqual(["disclosed", "not-disclosed"]);
       expect(kernel === "disclosed").toBe(anticheat["kernel_mode"] === true);
     }
-  });
-
-  it("disclose neither when there is no anti-cheat object", () => {
-    expect(verdictOf(KERNEL_KIND, {}).state).toBe("not-disclosed");
-    expect(verdictOf(ANTICHEAT_KIND, {}).state).toBe("not-disclosed");
-  });
-
-  it("are both unknown malformed for a malformed anti-cheat object", () => {
-    expect(verdictOf(KERNEL_KIND, { anticheat: "yes" })).toBe(UNKNOWN.malformed);
-    expect(verdictOf(ANTICHEAT_KIND, { anticheat: "yes" })).toBe(UNKNOWN.malformed);
   });
 });

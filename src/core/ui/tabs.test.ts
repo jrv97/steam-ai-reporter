@@ -170,21 +170,17 @@ describe("the keys on a tab", () => {
     expect(onActivate).not.toHaveBeenCalled();
   });
 
-  it.each([["a click", "click"], ["Enter", "Enter"]])(
-    "returns the tab stop to the selected tab on %s after the arrows moved it",
-    (_case, how) => {
-      const tabs = mounted();
-      tabs.tab("one").focus();
-      key(tabs.tab("one"), "ArrowRight");
-      tabs.tab("one").focus();
-      if (how === "click") {
-        expect(tabs.select("one")).toBe(false);
-      } else {
-        key(tabs.tab("one"), "Enter");
-      }
-      expect(stops(tabs)).toEqual({ focused: "one", stop: ["one"], selected: "one" });
-    },
-  );
+  it.each<readonly [string, (tabs: ReturnType<typeof mounted>) => void]>([
+    ["a click", (tabs) => tabs.select("one")],
+    ["Enter", (tabs) => key(tabs.tab("one"), "Enter")],
+  ])("returns the tab stop to the selected tab on %s after the arrows moved it", (_case, act) => {
+    const tabs = mounted();
+    tabs.tab("one").focus();
+    key(tabs.tab("one"), "ArrowRight");
+    tabs.tab("one").focus();
+    act(tabs);
+    expect(stops(tabs)).toEqual({ focused: "one", stop: ["one"], selected: "one" });
+  });
 
   it("hears no key after stop", () => {
     const onActivate = vi.fn();

@@ -98,17 +98,13 @@ describe("EARLY_ACCESS_KIND.fromGetItems", () => {
   });
 
   it.each<readonly [string, unknown]>([
-    ["a negative time", -1],
-    ["a fraction", 1.5],
-    ["text", "1731596424"],
-    ["null", null],
-  ])("keeps the flag and drops a release date that is %s", (_name, date) => {
-    const release = { steam_release_date: date };
+    ["a negative time", { steam_release_date: -1 }],
+    ["a fraction", { steam_release_date: 1.5 }],
+    ["text", { steam_release_date: "1731596424" }],
+    ["null", { steam_release_date: null }],
+    ["a release section that is no object", "2024"],
+  ])("keeps the flag and drops a release date that is %s", (_name, release) => {
     expect(fromItem({ is_early_access: true, release })).toStrictEqual(flagged());
-  });
-
-  it("keeps the flag when the release section is no object", () => {
-    expect(fromItem({ is_early_access: true, release: "2024" })).toStrictEqual(flagged());
   });
 });
 

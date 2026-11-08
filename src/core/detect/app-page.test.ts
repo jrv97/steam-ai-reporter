@@ -76,26 +76,26 @@ describe("parseAppPage over the captured fixtures", () => {
     );
   });
 
-  it("is unknown gated for the agecheck, login and home redirects", () => {
-    const cases = [
-      ["synthetic-agecheck.html", "https://store.steampowered.com/agecheck/app/1938090/"],
-      [
-        "339800-login-redirect.html",
-        "https://store.steampowered.com/login/?redir=" + encodeURIComponent(APP(339800)),
-      ],
-      ["99999999-home-redirect.html", "https://store.steampowered.com/"],
-    ] as const;
-    for (const [name, url] of cases) {
-      expect(parseFixture(name, url)).toBe(UNKNOWN.gated);
-    }
-  });
-
-  it("is unknown gated when the URL is not an app page, even with an app page body", () => {
-    expect(
-      parseFixture("5072580-ai-first.html", "https://store.steampowered.com/agecheck/app/5072580/"),
-    )
-      .toBe(UNKNOWN.gated);
-    expect(parseFixture("5072580-ai-first.html", "not a url")).toBe(UNKNOWN.gated);
+  it.each<readonly [string, AppPageName, string]>([
+    [
+      "the agecheck redirect",
+      "synthetic-agecheck.html",
+      "https://store.steampowered.com/agecheck/app/1938090/",
+    ],
+    [
+      "the login redirect",
+      "339800-login-redirect.html",
+      "https://store.steampowered.com/login/?redir=" + encodeURIComponent(APP(339800)),
+    ],
+    ["the home redirect", "99999999-home-redirect.html", "https://store.steampowered.com/"],
+    [
+      "an app page body at a URL that is not an app page",
+      "5072580-ai-first.html",
+      "https://store.steampowered.com/agecheck/app/5072580/",
+    ],
+    ["an app page body at a URL that does not parse", "5072580-ai-first.html", "not a url"],
+  ])("is unknown gated for %s", (_name, name, url) => {
+    expect(parseFixture(name, url)).toBe(UNKNOWN.gated);
   });
 
   it("is unknown gated when the app name is missing", () => {
@@ -183,16 +183,13 @@ describe("createAppPageDetector", () => {
     expect(readers.map((kind) => kind.id)).toStrictEqual(["ai"]);
   });
 
-  it("maps failures to unknown, never to not disclosed", async () => {
-    const cases: readonly (readonly [Reply, Verdict])[] = [
-      ["network-error", UNKNOWN.error],
-      [{ status: 429 }, UNKNOWN["rate-limited"]],
-      [{ status: 500 }, UNKNOWN.error],
-      [{ status: 404 }, UNKNOWN.error],
-    ];
-    for (const [reply, expected] of cases) {
-      const { detector: d } = detector([["https://", reply]]);
-      expect((await d.detect(ai)).get(aiId)?.ai).toBe(expected);
-    }
+  it.each<readonly [string, Reply, Verdict]>([
+    ["a network error", "network-error", UNKNOWN.error],
+    ["a 429", { status: 429 }, UNKNOWN["rate-limited"]],
+    ["a 500", { status: 500 }, UNKNOWN.error],
+    ["a 404", { status: 404 }, UNKNOWN.error],
+  ])("maps %s to unknown, never to not disclosed", async (_name, reply, expected) => {
+    const { detector: d } = detector([["https://", reply]]);
+    expect((await d.detect(ai)).get(aiId)?.ai).toBe(expected);
   });
 });

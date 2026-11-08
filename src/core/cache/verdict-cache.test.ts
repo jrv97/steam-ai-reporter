@@ -77,14 +77,6 @@ describe("VerdictCache", () => {
     expect(await store.get(["v1:a:10"])).toStrictEqual(new Map([["v1:a:10", entry]]));
   });
 
-  it("keeps the language the notes were fetched in", async () => {
-    const { cache, another } = setup();
-    const verdicts = aiVerdicts(disclosedVerdict({ language: "spanish", notes: "Arte generado." }));
-    await cache.save(new Map([[appId(10), verdicts]]));
-    const got = (await another().lookup(appIds(10))).get(appId(10));
-    expect(got).toStrictEqual(verdicts);
-  });
-
   it("answers only the fresh IDs and leaves the rest out", async () => {
     const { cache, another } = setup();
     await cache.save(new Map([[appId(10), aiVerdicts(NOT_DISCLOSED)]]));
@@ -198,13 +190,9 @@ describe("VerdictCache", () => {
   });
 
   describe("invalid stored values", () => {
+    // Which entries are invalid is up to decodeVerdicts; these two show the cache drops them.
     const invalid: readonly (readonly [string, JsonValue])[] = [
       ["a string", "disclosed"],
-      ["a v1 entry, one flat verdict", { ...encoded(), time: T }],
-      ["an old-schema entry", { s: "d", t: T, n: "old notes" }],
-      ["an unknown language", entry({ ...encoded(), language: "klingon" })],
-      ["a stored error", entry({ state: "unknown", reason: "error" })],
-      ["a missing time", { kinds: { ai: { state: "not-disclosed", source: "api" } } }],
       ["an entry without kinds", { time: T, kinds: {} }],
     ];
 
@@ -239,13 +227,3 @@ describe("VerdictCache", () => {
     });
   });
 });
-
-/** A verdict body as stored: no time of its own. */
-function encoded(): Record<string, JsonValue> {
-  return { state: "disclosed", notes: "text", language: "english", source: "api" };
-}
-
-/** A stored app entry with this body for the AI kind. */
-function entry(ai: JsonValue): JsonValue {
-  return { time: T, kinds: { ai } };
-}

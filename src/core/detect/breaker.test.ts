@@ -46,23 +46,18 @@ const brokenStore: KeyValueStore = {
 };
 
 describe("tripsBreaker", () => {
-  it.each(
-    [
-      [{ status: 429 }, true],
-      [{ status: 500 }, true],
-      [{ status: 503 }, true],
-      [{ status: 599 }, true],
-      ["network-error", true],
-      [{ status: 200 }, false],
-      [{ status: 400 }, false],
-      [{ status: 404 }, false],
-    ] as const,
-  )("%j trips: %s", (reply, trips) => {
-    expect(tripsBreaker(result(reply))).toBe(trips);
-  });
-
-  it("does not trip on a withheld request", () => {
-    expect(tripsBreaker({ kind: "withheld" })).toBe(false);
+  it.each<readonly [string, HttpResult, boolean]>([
+    ["a 429", result({ status: 429 }), true],
+    ["a 500", result({ status: 500 }), true],
+    ["a 503", result({ status: 503 }), true],
+    ["a 599", result({ status: 599 }), true],
+    ["a network error", result("network-error"), true],
+    ["a 200", result({ status: 200 }), false],
+    ["a 400", result({ status: 400 }), false],
+    ["a 404", result({ status: 404 }), false],
+    ["a withheld request", { kind: "withheld" }, false],
+  ])("%s trips: %s", (_name, answer, trips) => {
+    expect(tripsBreaker(answer)).toBe(trips);
   });
 });
 
@@ -106,15 +101,6 @@ describe("createBreaker", () => {
     expect(await breaker.isOpen()).toBe(true);
     clock.advance(1);
     expect(await breaker.isOpen()).toBe(false);
-  });
-
-  it("opens on a TypeError from fetch and on a 5xx", async () => {
-    const failed = setup();
-    await failed.breaker.record({ kind: "failed", cause: new TypeError() });
-    expect(await failed.breaker.isOpen()).toBe(true);
-    const server = setup();
-    await server.breaker.record(result({ status: 503 }));
-    expect(await server.breaker.isOpen()).toBe(true);
   });
 
   it("is honored by a new instance reading the same store, as in another tab", async () => {

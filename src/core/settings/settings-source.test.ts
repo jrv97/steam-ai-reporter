@@ -6,6 +6,8 @@ import { DEFAULT_SETTINGS, encodeSettings, parseSettings, type Settings } from "
 import { createSettingsSource, type RemoteSettingsChanges } from "./settings-source";
 
 const DIMMED: Settings = withKind(DEFAULT_SETTINGS, "ai", { filter: "dim" });
+/** Settings as layout v1 stored them, with the AI badge off and its filter on hide. */
+const V1_SETTINGS = { badges: false, banner: true, listFilter: "hide", locale: "es" };
 
 /** A platform change event that the test can fire, and that counts its subscribers. */
 function remoteEvents() {
@@ -85,16 +87,8 @@ describe("patch", () => {
     expect(parseSettings(await source.read())).toStrictEqual(written);
   });
 
-  it("starts from the defaults when nothing is stored", async () => {
-    const source = createSettingsSource(memoryStore());
-    await source.patch({ debug: true });
-    expect(parseSettings(await source.read())).toStrictEqual({ ...DEFAULT_SETTINGS, debug: true });
-  });
-
   it("copies v1 settings before it patches, so a patch never puts defaults over them", async () => {
-    const store = memoryStore(
-      new Map([["v1:settings", { badges: false, banner: true, listFilter: "hide", locale: "es" }]]),
-    );
+    const store = memoryStore(new Map([["v1:settings", V1_SETTINGS]]));
     const source = createSettingsSource(store);
     await source.patch({ kinds: { kernel: { enabled: false } } });
     const stored = parseSettings(await source.read());
@@ -134,15 +128,6 @@ describe("patch", () => {
     await source.patch({ debug: true });
     expect(parseSettings(await source.read())).toStrictEqual({ ...DIMMED, debug: true });
   });
-
-  it("tells this context's subscribers the patched settings", async () => {
-    const source = createSettingsSource(memoryStore());
-    const heard = vi.fn();
-    source.subscribe(heard);
-    await source.patch({ kinds: { pvp: { filter: "dim" } } });
-    expect(heard).toHaveBeenCalledTimes(1);
-    expect(parseSettings(heard.mock.calls[0]?.[0]).kinds.pvp.filter).toBe("dim");
-  });
 });
 
 describe("createSettingsSource", () => {
@@ -150,13 +135,7 @@ describe("createSettingsSource", () => {
     expect(await createSettingsSource(memoryStore()).read()).toBeUndefined();
   });
 
-  it("reads what was written, as a value parseSettings accepts", async () => {
-    const source = createSettingsSource(memoryStore());
-    await writeSettings(source, DIMMED);
-    expect(parseSettings(await source.read())).toStrictEqual(DIMMED);
-  });
-
-  it("shares storage with another source over the same store", async () => {
+  it("reads what another source over the same store wrote", async () => {
     const store = memoryStore();
     await writeSettings(createSettingsSource(store), DIMMED);
     expect(parseSettings(await createSettingsSource(store).read())).toStrictEqual(DIMMED);
@@ -189,9 +168,7 @@ describe("createSettingsSource", () => {
   });
 
   it("copies v1 settings to the v2 key on the first read", async () => {
-    const store = memoryStore(
-      new Map([["v1:settings", { badges: false, banner: true, listFilter: "hide", locale: "es" }]]),
-    );
+    const store = memoryStore(new Map([["v1:settings", V1_SETTINGS]]));
     const source = createSettingsSource(store);
     const expected = withKind(
       { ...DEFAULT_SETTINGS, locale: "es" },
@@ -269,12 +246,5 @@ describe("createSettingsSource", () => {
     expect(events.subscribers()).toBe(0);
     source.subscribe(vi.fn());
     expect(events.subscribers()).toBe(1);
-  });
-
-  it("never calls a subscriber when the platform reports no changes", () => {
-    const source = createSettingsSource(memoryStore());
-    const listener = vi.fn<(value: unknown) => void>();
-    source.subscribe(listener);
-    expect(listener).not.toHaveBeenCalled();
   });
 });

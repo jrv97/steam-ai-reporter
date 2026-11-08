@@ -26,6 +26,16 @@ describe.each(KINDS)("the %s kind's fromGetItems", (id, kind, field) => {
     expect(fromPlatforms({ [field]: value })).toStrictEqual(compatVerdict(id, facet));
   });
 
+  it("is stated by Valve, reads the platforms section and offers Steam's three ratings", () => {
+    expect(kind.source).toBe("valve");
+    expect(kind.sections).toStrictEqual(["platforms"]);
+    expect(kind.facets?.map((facet) => facet.id)).toStrictEqual([
+      "verified",
+      "playable",
+      "unsupported",
+    ]);
+  });
+
   it("reads Valve's Unknown (0) as not disclosed, never as Unsupported", () => {
     expect(fromPlatforms({ [field]: 0 })).toStrictEqual(NOT_DISCLOSED);
   });
@@ -55,17 +65,5 @@ describe("the device kinds", () => {
       compatVerdict("deck", "playable"),
     );
     expect(verdictOf(MACHINE_KIND, {}, { platforms })).toStrictEqual(NOT_DISCLOSED);
-  });
-
-  it("are stated by Valve, read the platforms section and offer Steam's three ratings", () => {
-    for (const kind of [DECK_KIND, MACHINE_KIND]) {
-      expect(kind.source).toBe("valve");
-      expect(kind.sections).toStrictEqual(["platforms"]);
-      expect(kind.facets?.map((facet) => facet.id)).toStrictEqual([
-        "verified",
-        "playable",
-        "unsupported",
-      ]);
-    }
   });
 });

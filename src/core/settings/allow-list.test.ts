@@ -16,8 +16,13 @@ const NO_GAMES = perScope(() => ({}));
 /** The ignored games of every scope, none. */
 const NO_ENTRIES = perScope(() => new Map());
 
-function setup(initial: ReadonlyMap<string, JsonValue> = new Map()) {
-  const store = countingStore(memoryStore(initial));
+/** A store holding these values by key. */
+function storeWith(initial: Readonly<Record<string, JsonValue>>) {
+  return countingStore(memoryStore(new Map(Object.entries(initial))));
+}
+
+function setup(initial: Readonly<Record<string, JsonValue>> = {}) {
+  const store = storeWith(initial);
   const clock = fixedClock(T);
   return { store, clock, allow: createAllowList(store, clock) };
 }
@@ -150,12 +155,10 @@ describe("createAllowList", () => {
   });
 
   it("reads only the v2 key once the list is stored, and writes once per change", async () => {
-    const { allow, store } = setup(
-      new Map<string, JsonValue>([
-        ["v2:allow", { all: {}, ai: {} }],
-        ["v1:allow", { "10": { name: "Old", added: T } }],
-      ]),
-    );
+    const { allow, store } = setup({
+      "v2:allow": { all: {}, ai: {} },
+      "v1:allow": { "10": { name: "Old", added: T } },
+    });
     await allow.add("ai", appId(10), "A");
     expect(store.gets).toStrictEqual([["v2:allow"]]);
     expect(store.calls.set).toBe(1);
@@ -176,7 +179,7 @@ describe("createAllowList", () => {
     };
 
     it("is copied to the AI scope on the first read, and left in place", async () => {
-      const { allow, store } = setup(new Map<string, JsonValue>([["v1:allow", V1]]));
+      const { allow, store } = setup({ "v1:allow": V1 });
       expect(await scoped(allow, "ai")).toStrictEqual(
         new Map([[10, V1["10"]], [20, V1["20"]]]),
       );
@@ -189,7 +192,7 @@ describe("createAllowList", () => {
     });
 
     it("is copied once: later changes go to v2 and the list is not copied again", async () => {
-      const { allow, store } = setup(new Map<string, JsonValue>([["v1:allow", V1]]));
+      const { allow, store } = setup({ "v1:allow": V1 });
       await allow.remove("ai", appId(10));
       expect([...(await scoped(allow, "ai")).keys()]).toStrictEqual([20]);
       expect([...(await scoped(createAllowList(store, fixedClock(T)), "ai")).keys()]).toStrictEqual(
@@ -198,81 +201,56 @@ describe("createAllowList", () => {
     });
 
     it("keeps the entries it can read when part of the list is corrupt", async () => {
-      const { allow } = setup(
-        new Map<string, JsonValue>([["v1:allow", { "10": V1["10"], "20": 7, "abc": V1["20"] }]]),
-      );
+      const { allow } = setup({ "v1:allow": { "10": V1["10"], "20": 7, "abc": V1["20"] } });
       expect([...(await scoped(allow, "ai")).keys()]).toStrictEqual([10]);
-    });
-
-    it("adds to the AI scope after the copy and keeps the copied games", async () => {
-      const { allow } = setup(new Map<string, JsonValue>([["v1:allow", V1]]));
-      await allow.add("ai", appId(30), "New");
-      expect([...(await scoped(allow, "ai")).keys()].toSorted((a, b) => a - b)).toStrictEqual([
-        10,
-        20,
-        30,
-      ]);
     });
   });
 
   describe("invalid stored values", () => {
     it("discards a value that is not an object", async () => {
       for (const stored of ["x", 3, null, true, [["10", { name: "A", added: T }]]]) {
-        const { allow } = setup(new Map([["v2:allow", stored]]));
+        const { allow } = setup({ "v2:allow": stored });
         expect(await allow.list()).toStrictEqual(NO_ENTRIES);
       }
     });
 
     it("discards the entries of a scope that is not an object", async () => {
-      const { allow } = setup(
-        new Map<string, JsonValue>([["v2:allow", {
-          all: "x",
-          ai: { "10": { name: "A", added: T } },
-        }]]),
-      );
+      const { allow } = setup({ "v2:allow": { all: "x", ai: { "10": { name: "A", added: T } } } });
       expect(await scoped(allow, "all")).toStrictEqual(new Map());
       expect(await scoped(allow, "ai")).toStrictEqual(new Map([[10, { name: "A", added: T }]]));
     });
 
     it("drops invalid entries and keeps the valid ones", async () => {
-      const { allow } = setup(
-        new Map<string, JsonValue>([[
-          "v2:allow",
-          {
-            ai: {
-              "10": { name: "Good", added: T },
-              "20": { name: "No date" },
-              "30": { name: 5, added: T },
-              "40": "text",
-              "50": null,
-              "0": { name: "Zero", added: T },
-              "-5": { name: "Negative", added: T },
-              "abc": { name: "Not an ID", added: T },
-              "1.5": { name: "Fraction", added: T },
-              "4294967296": { name: "Too big", added: T },
-            },
+      const { allow } = setup({
+        "v2:allow": {
+          ai: {
+            "10": { name: "Good", added: T },
+            "20": { name: "No date" },
+            "30": { name: 5, added: T },
+            "40": "text",
+            "50": null,
+            "0": { name: "Zero", added: T },
+            "-5": { name: "Negative", added: T },
+            "abc": { name: "Not an ID", added: T },
+            "1.5": { name: "Fraction", added: T },
+            "4294967296": { name: "Too big", added: T },
           },
-        ]]),
-      );
+        },
+      });
       expect(await scoped(allow, "ai")).toStrictEqual(
         new Map([[10, { name: "Good", added: T }]]),
       );
     });
 
     it("drops scopes it does not know", async () => {
-      const { allow } = setup(
-        new Map<string, JsonValue>([["v2:allow", { future: { "10": { name: "A", added: T } } }]]),
-      );
+      const { allow } = setup({ "v2:allow": { future: { "10": { name: "A", added: T } } } });
       expect(await allow.list()).toStrictEqual(NO_ENTRIES);
     });
 
     it("repairs the stored object on the next change", async () => {
-      const { allow, store } = setup(
-        new Map<string, JsonValue>([[
-          "v2:allow",
-          { ai: { "10": { name: "Good", added: T }, "20": 7 }, future: { "5": 1 } },
-        ]]),
-      );
+      const { allow, store } = setup({
+        "v2:allow": { ai: { "10": { name: "Good", added: T }, "20": 7 }, future: { "5": 1 } },
+      });
       await allow.add("ai", appId(30), "New");
       expect(await store.get(["v2:allow"])).toStrictEqual(
         new Map([[
@@ -296,8 +274,8 @@ describe.each(
   const valve = keyOf("c:4");
   const embark = keyOf("n:Embark Studios");
 
-  function creatorSetup(initial: ReadonlyMap<string, JsonValue> = new Map()) {
-    const store = countingStore(memoryStore(initial));
+  function creatorSetup(initial: Readonly<Record<string, JsonValue>> = {}) {
+    const store = storeWith(initial);
     const clock = fixedClock(T);
     return { store, clock, list: createCreatorList(store, clock, role) };
   }
@@ -332,19 +310,14 @@ describe.each(
 
   it("drops a stored entry whose key is not a creator key", async () => {
     const entry = { name: "Valve", added: T };
-    const { list } = creatorSetup(
-      new Map<string, JsonValue>([[
-        storageKey,
-        { ai: { "c:4": entry, "c:0": entry, "Valve": entry, "n:": entry } },
-      ]]),
-    );
+    const { list } = creatorSetup({
+      [storageKey]: { ai: { "c:4": entry, "c:0": entry, "Valve": entry, "n:": entry } },
+    });
     expect([...(await list.list()).ai.keys()]).toStrictEqual(["c:4"]);
   });
 
   it("does not read the games' v2:allow entries", async () => {
-    const { list } = creatorSetup(
-      new Map<string, JsonValue>([["v2:allow", { ai: { "10": { name: "A", added: T } } }]]),
-    );
+    const { list } = creatorSetup({ "v2:allow": { ai: { "10": { name: "A", added: T } } } });
     expect(await list.list()).toStrictEqual(NO_ENTRIES);
   });
 });

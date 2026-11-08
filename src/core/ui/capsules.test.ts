@@ -39,15 +39,24 @@ function appId(value: number): AppId {
   return id;
 }
 
+interface SetupOptions {
+  readonly allowed?: ReadonlySet<AppId>;
+  /** Verdicts of kinds other than the AI kind, for every app. */
+  readonly others?: Partial<KindVerdicts>;
+  /** Kinds whose badges are off in the settings. */
+  readonly unbadged?: ReadonlySet<KindId>;
+  /** What decides whether a game is ignored; the set of `allowed` IDs by default. */
+  readonly isAllowed?: (id: AppId, kind: KindId, related: Relations) => boolean;
+}
+
 function setup(
   verdicts: ReadonlyMap<AppId, AiVerdict>,
-  allowed = new Set<AppId>(),
-  /** Verdicts of kinds other than the AI kind, for every app. */
-  others: Partial<KindVerdicts> = {},
-  /** Kinds whose badges are off in the settings. */
-  unbadged: ReadonlySet<KindId> = new Set(),
-  /** What decides whether a game is ignored; the set of `allowed` IDs by default. */
-  isAllowed: (id: AppId, kind: KindId, related: Relations) => boolean = (id) => allowed.has(id),
+  {
+    allowed = new Set(),
+    others = {},
+    unbadged = new Set(),
+    isAllowed = (id) => allowed.has(id),
+  }: SetupOptions = {},
 ) {
   const detect = vi.fn((ids: readonly AppId[]) =>
     Promise.resolve(
@@ -110,6 +119,17 @@ function host(id: number, placement: Placement = ROW): CapsuleHost {
   return { element, appId: appId(id), placement, anchor };
 }
 
+/** A host whose image box measures `width` by `height`, for compact badges. */
+function imageHost(id: number, width: number, height: number) {
+  const found = host(id, {
+    ...GENERIC,
+    anchor: (element) => element.querySelector(".art") ?? undefined,
+  });
+  const box = vi.spyOn(found.anchor, "getBoundingClientRect");
+  box.mockReturnValue(new DOMRect(0, 0, width, height));
+  return { found, box };
+}
+
 describe("createCapsuleUi", () => {
   it("detects found hosts in one call and draws them with their full-badge slot", async () => {
     const id = appId(7);
@@ -123,49 +143,36 @@ describe("createCapsuleUi", () => {
     expect(views[0]?.hideable).toBe(false);
   });
 
-  it("gives a host a slot for a disclosure in any kind, whichever it is", async () => {
+  it.each(
+    [
+      ["no disclosure", NOT_DISCLOSED, {}, [], undefined],
+      ["a disclosure in another kind", NOT_DISCLOSED, { pvp: FULL_DISCLOSED.pvp }, [], "full"],
+      ["its only disclosure badged off", disclosedVerdict(), {}, ["ai"], undefined],
+      [
+        "another disclosure badged on",
+        disclosedVerdict(),
+        { pvp: FULL_DISCLOSED.pvp },
+        ["ai"],
+        "full",
+      ],
+    ] as const,
+  )("gives a host with %s the slot %s", async (_name, ai, others, off, slot) => {
     const id = appId(4);
-    const pvpOnly = setup(new Map([[id, NOT_DISCLOSED]]), new Set(), { pvp: FULL_DISCLOSED.pvp });
-    pvpOnly.ui.render({ found: [host(4)], changed: [] });
-    await pvpOnly.flush();
-    expect(pvpOnly.views[0]?.slot).toMatchObject({ kind: "full" });
-    const none = setup(new Map([[id, NOT_DISCLOSED]]));
-    none.ui.render({ found: [host(4)], changed: [] });
-    await none.flush();
-    expect(none.views[0]?.slot).toBeUndefined();
+    const { ui, views, flush } = setup(new Map([[id, ai]]), { others, unbadged: new Set(off) });
+    ui.render({ found: [host(4)], changed: [] });
+    await flush();
+    expect(views[0]?.slot?.kind).toBe(slot);
   });
 
   it("passes the chip allowance and the badge settings to the renderers", async () => {
     const id = appId(3);
-    const { ui, views, flush } = setup(
-      new Map([[id, disclosedVerdict()]]),
-      new Set(),
-      {},
-      new Set<KindId>(["drm", "pvp"]),
-    );
+    const { ui, views, flush } = setup(new Map([[id, disclosedVerdict()]]), {
+      unbadged: new Set<KindId>(["drm", "pvp"]),
+    });
     ui.render({ found: [host(3, { ...ROW, maxChips: 2 })], changed: [] });
     await flush();
     expect(views[0]?.maxChips).toBe(2);
     expect(KIND_IDS.filter((kind) => views[0]?.badged[kind] === false)).toEqual(["drm", "pvp"]);
-  });
-
-  it("gives a host no slot when the only kind it discloses has its badges off", async () => {
-    const id = appId(2);
-    const aiOff = setup(
-      new Map([[id, disclosedVerdict()]]),
-      new Set(),
-      {},
-      new Set<KindId>(["ai"]),
-    );
-    aiOff.ui.render({ found: [host(2)], changed: [] });
-    await aiOff.flush();
-    expect(aiOff.views[0]?.slot).toBeUndefined();
-    const withPvp = setup(new Map([[id, disclosedVerdict()]]), new Set(), {
-      pvp: FULL_DISCLOSED.pvp,
-    }, new Set<KindId>(["ai"]));
-    withPvp.ui.render({ found: [host(2)], changed: [] });
-    await withPvp.flush();
-    expect(withPvp.views[0]?.slot).toMatchObject({ kind: "full" });
   });
 
   it("draws a full badge of an end slot as the anchor's last child", async () => {
@@ -180,11 +187,7 @@ describe("createCapsuleUi", () => {
   it("measures the image box for a compact badge and anchors a static box", async () => {
     const id = appId(8);
     const { ui, views, flush } = setup(new Map([[id, disclosedVerdict()]]));
-    const found = host(8, {
-      ...GENERIC,
-      anchor: (element) => element.querySelector(".art") ?? undefined,
-    });
-    vi.spyOn(found.anchor, "getBoundingClientRect").mockReturnValue(new DOMRect(0, 0, 231, 87));
+    const { found } = imageHost(8, 231, 87);
     ui.render({ found: [found], changed: [] });
     await flush();
     expect(views[0]?.slot).toMatchObject({ kind: "compact", size: "text", position: "beforeend" });
@@ -194,12 +197,7 @@ describe("createCapsuleUi", () => {
   it("gives a small image no slot", async () => {
     const id = appId(9);
     const { ui, views, flush } = setup(new Map([[id, disclosedVerdict()]]));
-    const found = host(9, {
-      ...GENERIC,
-      anchor: (element) => element.querySelector(".art") ?? undefined,
-    });
-    vi.spyOn(found.anchor, "getBoundingClientRect").mockReturnValue(new DOMRect(0, 0, 120, 45));
-    ui.render({ found: [found], changed: [] });
+    ui.render({ found: [imageHost(9, 120, 45).found], changed: [] });
     await flush();
     expect(views[0]?.slot).toBeUndefined();
   });
@@ -209,12 +207,7 @@ describe("createCapsuleUi", () => {
     const { ui, detect, views, flush, watched, sized } = setup(
       new Map([[id, disclosedVerdict()]]),
     );
-    const found = host(13, {
-      ...GENERIC,
-      anchor: (element) => element.querySelector(".art") ?? undefined,
-    });
-    const box = vi.spyOn(found.anchor, "getBoundingClientRect");
-    box.mockReturnValue(new DOMRect(0, 0, 0, 0));
+    const { found, box } = imageHost(13, 0, 0);
     ui.render({ found: [found], changed: [] });
     await flush();
     expect(views[0]?.slot).toBeUndefined();
@@ -235,11 +228,7 @@ describe("createCapsuleUi", () => {
   it("lets go of the size watch on pagehide and starts a new one when needed", async () => {
     const id = appId(16);
     const { ui, flush, watched, disconnects } = setup(new Map([[id, disclosedVerdict()]]));
-    const found = host(16, {
-      ...GENERIC,
-      anchor: (element) => element.querySelector(".art") ?? undefined,
-    });
-    vi.spyOn(found.anchor, "getBoundingClientRect").mockReturnValue(new DOMRect(0, 0, 0, 0));
+    const { found } = imageHost(16, 0, 0);
     ui.render({ found: [found], changed: [] });
     await flush();
     expect(watched.size).toBe(1);
@@ -263,19 +252,9 @@ describe("createCapsuleUi", () => {
     const { ui, flush, watched } = setup(
       new Map<AppId, AiVerdict>([[appId(14), disclosedVerdict()], [appId(15), NOT_DISCLOSED]]),
     );
-    const small = host(14, {
-      ...GENERIC,
-      anchor: (element) => element.querySelector(".art") ?? undefined,
-    });
-    vi.spyOn(small.anchor, "getBoundingClientRect").mockReturnValue(new DOMRect(0, 0, 120, 45));
-    ui.render({ found: [small], changed: [] });
+    ui.render({ found: [imageHost(14, 120, 45).found], changed: [] });
     await flush();
-    const hidden = host(15, {
-      ...GENERIC,
-      anchor: (element) => element.querySelector(".art") ?? undefined,
-    });
-    vi.spyOn(hidden.anchor, "getBoundingClientRect").mockReturnValue(new DOMRect(0, 0, 0, 0));
-    ui.render({ found: [hidden], changed: [] });
+    ui.render({ found: [imageHost(15, 0, 0).found], changed: [] });
     await flush();
     expect(watched.size).toBe(0);
   });
@@ -304,7 +283,7 @@ describe("createCapsuleUi", () => {
   it("redraws the hosts of an app after an allow-list change", async () => {
     const id = appId(11);
     const allowed = new Set<AppId>();
-    const { ui, views, flush } = setup(new Map([[id, disclosedVerdict()]]), allowed);
+    const { ui, views, flush } = setup(new Map([[id, disclosedVerdict()]]), { allowed });
     ui.render({ found: [host(11)], changed: [] });
     await flush();
     allowed.add(id);
@@ -335,22 +314,18 @@ describe("createCapsuleUi", () => {
     const DLC = appId(5201760);
 
     /** The real predicate over an ignore list, as the composition root wires it. */
-    function ignoring(setupList: (ignored: ReturnType<typeof lists>) => void) {
-      const ignored = lists();
+    function ignoring(setupList: (ignored: ReturnType<typeof ignoredSets>) => void) {
+      const ignored = ignoredSets();
       setupList(ignored);
       return (id: AppId, kind: KindId, related: Relations) => isIgnored(ignored, id, kind, related);
     }
-    const lists = () => ignoredSets();
 
     it("asks whether the game is ignored with the base game Steam named", async () => {
       const asked = vi.fn((_id: AppId, _kind: KindId, _related: Relations) => false);
-      const { ui, flush } = setup(
-        new Map([[DLC, disclosedVerdict()]]),
-        new Set(),
-        { parent: BASE },
-        new Set(),
-        asked,
-      );
+      const { ui, flush } = setup(new Map([[DLC, disclosedVerdict()]]), {
+        others: { parent: BASE },
+        isAllowed: asked,
+      });
       ui.render({ found: [host(5201760)], changed: [] });
       await flush();
       expect(asked).toHaveBeenCalledWith(DLC, "ai", expect.objectContaining({ parent: BASE }));
@@ -359,13 +334,10 @@ describe("createCapsuleUi", () => {
 
     it("flags a DLC of a base game ignored for one kind in that kind only", async () => {
       const isAllowed = ignoring((ignored) => ignored.games.ai.add(BASE));
-      const { ui, views, flush } = setup(
-        new Map([[DLC, disclosedVerdict()]]),
-        new Set(),
-        { parent: BASE, pvp: FULL_DISCLOSED.pvp },
-        new Set(),
+      const { ui, views, flush } = setup(new Map([[DLC, disclosedVerdict()]]), {
+        others: { parent: BASE, pvp: FULL_DISCLOSED.pvp },
         isAllowed,
-      );
+      });
       ui.render({ found: [host(5201760)], changed: [] });
       await flush();
       expect(views[0]?.allowed.ai).toBe(true);
@@ -375,13 +347,10 @@ describe("createCapsuleUi", () => {
 
     it("gives a DLC whose only disclosure is ignored through its base game no slot", async () => {
       const isAllowed = ignoring((ignored) => ignored.games.all.add(BASE));
-      const { ui, views, flush } = setup(
-        new Map([[DLC, disclosedVerdict()]]),
-        new Set(),
-        { parent: BASE },
-        new Set(),
+      const { ui, views, flush } = setup(new Map([[DLC, disclosedVerdict()]]), {
+        others: { parent: BASE },
         isAllowed,
-      );
+      });
       ui.render({ found: [host(5201760)], changed: [] });
       await flush();
       expect(views[0]?.slot).toBeUndefined();
@@ -389,14 +358,11 @@ describe("createCapsuleUi", () => {
     });
 
     it("draws the DLC again when its base game is ignored or restored, and only then", async () => {
-      const ignored = lists();
-      const { ui, views, flush } = setup(
-        new Map([[DLC, disclosedVerdict()]]),
-        new Set(),
-        { parent: BASE },
-        new Set(),
-        (id, kind, related) => isIgnored(ignored, id, kind, related),
-      );
+      const ignored = ignoredSets();
+      const { ui, views, flush } = setup(new Map([[DLC, disclosedVerdict()]]), {
+        others: { parent: BASE },
+        isAllowed: (id, kind, related) => isIgnored(ignored, id, kind, related),
+      });
       ui.render({ found: [host(5201760)], changed: [] });
       await flush();
       ignored.games.ai.add(BASE);
@@ -412,13 +378,7 @@ describe("createCapsuleUi", () => {
 
     it("leaves a DLC with no known base game on its own entries", async () => {
       const isAllowed = ignoring((ignored) => ignored.games.all.add(BASE));
-      const { ui, views, flush } = setup(
-        new Map([[DLC, disclosedVerdict()]]),
-        new Set(),
-        {},
-        new Set(),
-        isAllowed,
-      );
+      const { ui, views, flush } = setup(new Map([[DLC, disclosedVerdict()]]), { isAllowed });
       ui.render({ found: [host(5201760)], changed: [] });
       await flush();
       expect(views[0]?.allowed.ai).toBe(false);

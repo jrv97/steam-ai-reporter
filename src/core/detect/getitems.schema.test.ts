@@ -232,19 +232,23 @@ describe("StoreItemSchema early access fields", () => {
 });
 
 describe("StoreItemSchema leniency", () => {
-  type Read = (details: ExtraDetails) => unknown;
-  const bad: readonly (readonly [string, unknown, Read])[] = [
-    ["content_survey_ai_notes", 42, (d) => d.content_survey_ai_notes],
-    ["ai_generation_service", "OpenAI", (d) => d.ai_generation_service],
-    ["anticheat", true, (d) => d.anticheat],
-    ["drm_third_party_type", ["Denuvo"], (d) => d.drm_third_party_type],
-    ["user_account_third_party", null, (d) => d.user_account_third_party],
-    ["eula", "none", (d) => d.eula],
-  ];
-
-  it.each(bad)("marks %s as malformed and keeps the item", (key, value, read) => {
+  it.each<readonly [keyof ExtraDetails, unknown]>([
+    ["content_survey_ai_notes", 42],
+    ["ai_generation_service", "OpenAI"],
+    ["ai_generation_service", [{}]],
+    ["anticheat", true],
+    ["anticheat", { kernel_mode: "true" }],
+    ["anticheat", { kernel_mode: 1 }],
+    ["anticheat", [1]],
+    ["drm_third_party_type", ["Denuvo"]],
+    ["user_account_third_party", null],
+    ["eula", "none"],
+    ["eula", [{ url: "https://store.steampowered.com//eula/1" }]],
+    ["eula", [3]],
+    ["eula", [{ name: 4 }]],
+  ])("marks %s that is %j as malformed and keeps the item", (key, value) => {
     const details = detailsOf(storeItem(1, { extra_details: { vetted: true, [key]: value } }));
-    expect(read(details)).toBe(MALFORMED);
+    expect(details[key]).toBe(MALFORMED);
   });
 
   it("marks only the malformed field, not its neighbours", () => {
@@ -253,12 +257,6 @@ describe("StoreItemSchema leniency", () => {
     }));
     expect(details.anticheat).toBe(MALFORMED);
     expect(details.drm_third_party_type).toBe("Denuvo");
-  });
-
-  it("marks an anticheat object whose kernel flag has the wrong type as malformed", () => {
-    for (const anticheat of [{ kernel_mode: "true" }, { kernel_mode: 1 }]) {
-      expect(detailsOf(storeItem(1, { extra_details: { anticheat } })).anticheat).toBe(MALFORMED);
-    }
   });
 
   it("reads a field that only enriches a verdict as absent when it is malformed", () => {
@@ -289,15 +287,6 @@ describe("StoreItemSchema leniency", () => {
     expect(details.user_account_third_party_link_to_steam).toBeUndefined();
   });
 
-  it("marks a list with entries in the place of an object as malformed", () => {
-    const details = detailsOf(
-      storeItem(1, { extra_details: { anticheat: [1], ai_generation_service: [{}] } }),
-    );
-    expect(details.anticheat).toBe(MALFORMED);
-    expect(details.ai_generation_service).toBe(MALFORMED);
-    expect(parse(storeItem(1, { categories: [49] })).categories).toBe(MALFORMED);
-  });
-
   it("reads an empty list in the place of an object as an empty object", () => {
     const item = parse(storeItem(1, {
       categories: [],
@@ -309,44 +298,38 @@ describe("StoreItemSchema leniency", () => {
     expect(parse(storeItem(1, { extra_details: [] })).extra_details).toStrictEqual({});
   });
 
-  it("marks an eula list with an entry that has no name string as malformed", () => {
-    const wrong = [[{ url: "https://store.steampowered.com//eula/1" }], [3], [{ name: 4 }]];
-    for (const eula of wrong) {
-      expect(detailsOf(storeItem(1, { extra_details: { eula } })).eula).toBe(MALFORMED);
-    }
-  });
-
   it("reads an eula entry with a name and no link", () => {
     const eula = [{ name: "Game terms" }];
     expect(detailsOf(storeItem(1, { extra_details: { eula } })).eula).toStrictEqual(eula);
   });
 
-  it("marks malformed categories and names without dropping the item", () => {
-    const item = parse(storeItem(1, { categories: "co-op", name: 9 }));
-    expect(item.categories).toBe(MALFORMED);
-    expect(item.name).toBe(MALFORMED);
+  it.each<readonly [keyof StoreItem, unknown]>([
+    ["categories", "co-op"],
+    ["categories", [49]],
+    ["name", 9],
+  ])("marks %s that is %j as malformed without dropping the item", (key, value) => {
+    const item = parse(storeItem(1, { [key]: value }));
+    expect(item[key]).toBe(MALFORMED);
+    expect(item.id).toBe(1);
   });
 
-  it.each(CATEGORY_LISTS)("marks a malformed %s and keeps the other list", (list) => {
-    const lists = { supported_player_categoryids: [2], feature_categoryids: [35] };
-    for (const bad of ["49", [49, "36"]]) {
+  it.each(CATEGORY_LISTS.flatMap((list) => [[list, "49"], [list, [49, "36"]]] as const))(
+    "marks %s that is %j as malformed and keeps the other list",
+    (list, bad) => {
+      const lists = { supported_player_categoryids: [2], feature_categoryids: [35] };
       const categories = parse(storeItem(1, { categories: { ...lists, [list]: bad } })).categories;
       expect(categories).toStrictEqual({ ...lists, [list]: MALFORMED });
-    }
-  });
+    },
+  );
 
-  it("still rejects an item whose id, success or extra_details is unusable", () => {
-    for (
-      const item of [
-        storeItem(1, { success: "1" }),
-        storeItem(1, { extra_details: "none" }),
-        storeItem(1, { extra_details: null }),
-        storeItem(1, { extra_details: [1] }),
-        { ...storeItem(1), id: "1" },
-      ]
-    ) {
-      expect(v.safeParse(StoreItemSchema, parseJson(JSON.stringify(item))).success).toBe(false);
-    }
+  it.each<readonly [string, unknown]>([
+    ["a success that is text", storeItem(1, { success: "1" })],
+    ["extra_details that is text", storeItem(1, { extra_details: "none" })],
+    ["extra_details that is null", storeItem(1, { extra_details: null })],
+    ["extra_details that is a list with entries", storeItem(1, { extra_details: [1] })],
+    ["an id that is text", { ...storeItem(1), id: "1" }],
+  ])("still rejects an item with %s", (_name, item) => {
+    expect(v.safeParse(StoreItemSchema, parseJson(JSON.stringify(item))).success).toBe(false);
   });
 
   describe("size caps", () => {

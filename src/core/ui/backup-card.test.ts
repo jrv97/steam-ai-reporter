@@ -81,6 +81,8 @@ async function setup(games: EntriesSpec<number> = {}) {
   return { root, store, files, lists, button, shown, pick, click, stored };
 }
 
+type Card = Awaited<ReturnType<typeof setup>>;
+
 /** A backup file that hides AI results and ignores these games. */
 function backupFile(games: EntriesSpec<number> = {}, name?: string): PickedFile {
   return pickedFile(
@@ -118,16 +120,17 @@ describe("the Backup card", () => {
     expect(shown(".sar-backup-status")).toBe(i18n.t("notice_backup_downloaded"));
   });
 
-  it.each([
-    ["the store cannot be read", "store"],
-    ["the browser refuses the download", "browser"],
-  ])("shows the create error when %s", async (_case, cause) => {
-    const { store, files, click, shown } = await setup();
-    if (cause === "store") {
+  it.each<readonly [string, (card: Card) => void]>([
+    ["the store cannot be read", ({ store }) => {
       store.break();
-    } else {
+    }],
+    ["the browser refuses the download", ({ files }) => {
       files.refuse();
-    }
+    }],
+  ])("shows the create error when %s", async (_case, fail) => {
+    const card = await setup();
+    fail(card);
+    const { click, shown } = card;
     await click("options_backup_download");
     expect(shown(".sar-field-error")).toBe(i18n.t("error_backup_create"));
   });

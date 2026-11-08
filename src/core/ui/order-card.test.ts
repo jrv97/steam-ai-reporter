@@ -22,6 +22,9 @@ const CUE = 10;
 const topOf = (index: number) => index * ROW + (index >= OVERLAY_CHIPS ? CUE : 0);
 
 const chip = (id: KindId) => i18n.t(KIND_BY_ID[id].messages.chip);
+/** What the card says when `id` lands at 1-based `position`. */
+const dropped = (id: KindId, position: string) =>
+  i18n.t("options_order_dropped", { name: chip(id), position, count: KIND_COUNT });
 
 /** A form on the options page over a store whose settings hold `order`. */
 async function setup(order: readonly KindId[] = KIND_IDS) {
@@ -130,53 +133,41 @@ describe("the Tag order card", () => {
   });
 
   it.each<[string, readonly ([string, KindId] | string)[], readonly KindId[], string]>([
-    ["moves down with the arrows", [["pick", "ai"], "ArrowDown", "ArrowDown", ["pick", "ai"]], [
-      "earlyaccess",
-      "family",
-      "ai",
-    ], i18n.t("options_order_dropped", { name: chip("ai"), position: "3", count: KIND_COUNT })],
+    [
+      "moves down with the arrows",
+      [["pick", "ai"], "ArrowDown", "ArrowDown", ["pick", "ai"]],
+      ["earlyaccess", "family", "ai"],
+      dropped("ai", "3"),
+    ],
     [
       "goes first with Home",
       [["pick", "drm"], "Home", ["pick", "drm"]],
       ["drm"],
-      i18n.t(
-        "options_order_dropped",
-        { name: chip("drm"), position: "1", count: KIND_COUNT },
-      ),
+      dropped("drm", "1"),
     ],
     [
       "goes last with End",
       [["pick", "ai"], "End", ["pick", "ai"]],
       KIND_IDS.slice(1),
-      i18n.t(
-        "options_order_dropped",
-        { name: chip("ai"), position: KIND_COUNT, count: KIND_COUNT },
-      ),
+      dropped("ai", KIND_COUNT),
     ],
     [
       "stays first past the top",
       [["pick", "ai"], "ArrowUp", ["pick", "ai"]],
       [],
-      i18n.t(
-        "options_order_dropped",
-        { name: chip("ai"), position: "1", count: KIND_COUNT },
-      ),
+      dropped("ai", "1"),
     ],
     [
       "goes back with Escape",
       [["pick", "ai"], "ArrowDown", "Escape"],
       [],
-      i18n.t(
-        "options_order_cancelled",
-        { name: chip("ai"), position: "1" },
-      ),
+      i18n.t("options_order_cancelled", { name: chip("ai"), position: "1" }),
     ],
     [
       "takes another row's place on a click there",
       [["pick", "pvp"], ["pick", "ai"]],
       ["pvp"],
-      i18n
-        .t("options_order_dropped", { name: chip("pvp"), position: "1", count: KIND_COUNT }),
+      dropped("pvp", "1"),
     ],
   ])("%s", async (_case, steps, first, said) => {
     const card = await setup();

@@ -7,7 +7,7 @@ import { memoryStore } from "../../../tests/helpers/memory-store";
 import { recordingLogger } from "../../../tests/helpers/recording-logger";
 import { T0, useTimerClock } from "../../../tests/helpers/timer-clock";
 import { aiVerdicts } from "../../../tests/helpers/verdicts";
-import { KINDS } from "../kinds/registry";
+import { KIND_IDS } from "../kinds/id";
 import { type KindVerdicts, UNKNOWN_KINDS } from "../kinds/verdicts";
 import type { Detector, Http } from "../ports";
 import { type AppId, NOT_DISCLOSED as NOT_DISCLOSED_VERDICT } from "../types";
@@ -97,18 +97,14 @@ describe("createChainDetector", () => {
     );
   });
 
-  it("passes an ID on only when no kind has an answer, whichever kind has one", async () => {
-    for (const kind of KINDS) {
-      const partly = { ...UNKNOWN_KINDS.missing, [kind.id]: NOT_DISCLOSED_VERDICT };
-      const api = fakeDetector(() => partly);
-      const html = allMissing();
-      const verdicts = await createChainDetector([api, html]).detect(appIds(1));
-      expect(html.calls).toStrictEqual([]);
-      expect(verdicts).toStrictEqual(new Map([[appId(1), partly]]));
-    }
+  it.each(KIND_IDS)("does not pass an ID on when only %s has an answer", async (kind) => {
+    const partly = { ...UNKNOWN_KINDS.missing, [kind]: NOT_DISCLOSED_VERDICT };
     const html = allMissing();
-    await createChainDetector([allMissing(), html]).detect(appIds(1));
-    expect(html.calls).toStrictEqual([appIds(1)]);
+    const verdicts = await createChainDetector([fakeDetector(() => partly), html]).detect(
+      appIds(1),
+    );
+    expect(html.calls).toStrictEqual([]);
+    expect(verdicts).toStrictEqual(new Map([[appId(1), partly]]));
   });
 
   it("does not call a link when nothing is left for it", async () => {

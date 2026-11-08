@@ -56,13 +56,14 @@ describe("createHostKindsRenderer", () => {
     expect(kinds(element)).toBe("ai drm account");
   });
 
-  it("marks no kind for a game that is not disclosed, unknown or ignored for every kind", () => {
-    const [none, unknown, ignored] = [host(), host(), host()];
-    renderer.render(view(none, { verdict: NOT_DISCLOSED }));
-    renderer.render(view(unknown, { verdict: UNKNOWN.gated }));
-    renderer.render(view(ignored, { verdicts: FULL_DISCLOSED, allowed: true }));
-    expect([none, unknown, ignored].map((element) => element.hasAttribute("data-sar-kinds")))
-      .toEqual([false, false, false]);
+  it.each<readonly [string, HostViewOptions]>([
+    ["not disclosed", { verdict: NOT_DISCLOSED }],
+    ["unknown", { verdict: UNKNOWN.gated }],
+    ["ignored for every kind", { verdicts: FULL_DISCLOSED, allowed: true }],
+  ])("marks no kind for a game that is %s", (_case, options) => {
+    const element = host();
+    renderer.render(view(element, options));
+    expect(element.hasAttribute("data-sar-kinds")).toBe(false);
   });
 
   it("follows the verdicts when they change, and drops the attribute when none is left", () => {
@@ -137,12 +138,6 @@ describe("the list filter styles", () => {
     expect(hidden(carrying([id]))).toBe(false);
   });
 
-  it("leaves hosts alone while every filter is off", () => {
-    filters({});
-    const style = carrying(KIND_IDS);
-    expect([hidden(style), dimmed(style)]).toEqual([false, false]);
-  });
-
   // The strongest mode wins: hide over dim over off.
   const PAIRS = LIST_FILTERS.flatMap((ai) => LIST_FILTERS.map((drm) => [ai, drm] as const));
   const CASES = PAIRS.flatMap(([ai, drm]) => [[ai, drm, true], [ai, drm, false]] as const);
@@ -160,27 +155,14 @@ describe("the list filter styles", () => {
     },
   );
 
-  it("lets one hiding kind outrank the dims of the others on a host", () => {
-    filters({ ai: "dim", kernel: "dim", pvp: "hide" });
-    expect(hidden(carrying(["ai", "kernel", "pvp"]))).toBe(true);
-    expect(dimmed(carrying(["ai", "kernel"]))).toBe(true);
-    expect(hidden(carrying(["ai", "kernel"]))).toBe(false);
-  });
-
-  it("ignores a filter of a kind the host does not carry", () => {
-    filters({ kernel: "hide", drm: "dim" });
-    const style = carrying(["ai", "pvp"]);
-    expect([hidden(style), dimmed(style)]).toEqual([false, false]);
-  });
-
-  it("never filters a kind that is not disclosed, unknown or ignored", () => {
+  it.each<readonly [string, readonly KindId[], HostViewOptions]>([
+    ["not disclosed", [], {}],
+    ["unknown", [], { verdicts: perKind(() => UNKNOWN.error) }],
+    ["ignored", KIND_IDS, { allowed: true }],
+  ])("never filters a kind that is %s", (_case, carried, options) => {
     filters(Object.fromEntries(KIND_IDS.map((id) => [id, "hide"])));
-    const none = carrying([]);
-    const unknown = carrying([], { verdicts: perKind(() => UNKNOWN.error) });
-    const ignored = carrying(KIND_IDS, { allowed: true });
-    for (const style of [none, unknown, ignored]) {
-      expect([hidden(style), dimmed(style)]).toEqual([false, false]);
-    }
+    const style = carrying(carried, options);
+    expect([hidden(style), dimmed(style)]).toEqual([false, false]);
   });
 
   it("filters nothing for a kind that is disabled", () => {

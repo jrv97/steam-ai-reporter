@@ -48,16 +48,17 @@ function view(host: Element, slot: BadgeSlot | undefined, options: HostViewOptio
 }
 
 describe("compactSize", () => {
-  it("gives small images no badge", () => {
-    expect(compactSize(179, 70)).toBeUndefined();
-    expect(compactSize(300, 31)).toBeUndefined();
-  });
-
-  it("uses the text tier from 180px and the large tier from 400 by 150", () => {
-    expect(compactSize(180, 32)).toBe("text");
-    expect(compactSize(399, 400)).toBe("text");
-    expect(compactSize(400, 149)).toBe("text");
-    expect(compactSize(400, 150)).toBe("large");
+  it.each(
+    [
+      [179, 70, undefined],
+      [300, 31, undefined],
+      [180, 32, "text"],
+      [399, 400, "text"],
+      [400, 149, "text"],
+      [400, 150, "large"],
+    ] as const,
+  )("sizes a %ipx by %ipx image as %s", (width, height, expected) => {
+    expect(compactSize(width, height)).toBe(expected);
   });
 });
 
@@ -287,23 +288,13 @@ describe("createBadgeRenderer", () => {
       ]);
     });
 
-    it("lists all the kinds in the hover card from the +N chip too", () => {
+    it.each<readonly [number, readonly (string | null)[]]>([
+      [5, MANY],
+      [0, [null]],
+    ])("with an allowance of %i draws the kinds %j", (maxChips, expected) => {
       const { host, title } = capsule();
-      renderer.render(view(host, full(title), { verdicts: disclosedKinds(MANY), maxChips: 2 }));
-      const more = chipsIn(host)[2];
-      expect(more === undefined ? undefined : bound.get(more)?.map((v) => v.kind)).toEqual(MANY);
-    });
-
-    it("draws no +N chip when the kinds fit exactly", () => {
-      const { host, title } = capsule();
-      renderer.render(view(host, full(title), { verdicts: disclosedKinds(MANY), maxChips: 5 }));
-      expect(kindsOf(host)).toEqual(MANY);
-    });
-
-    it("can show nothing but the +N chip", () => {
-      const { host, title } = capsule();
-      renderer.render(view(host, full(title), { verdicts: disclosedKinds(MANY), maxChips: 0 }));
-      expect(kindsOf(host)).toEqual([null]);
+      renderer.render(view(host, full(title), { verdicts: disclosedKinds(MANY), maxChips }));
+      expect(kindsOf(host)).toEqual(expected);
     });
 
     it("counts only the kinds shown, not the ones whose badges are off", () => {

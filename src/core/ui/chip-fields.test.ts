@@ -7,6 +7,7 @@ import { CATALOGS as CONTENT } from "../../platform/extension/content.catalogs.g
 import { CATALOGS as OPTIONS } from "../../platform/extension/options.catalogs.gen";
 import { CATALOGS as USERSCRIPT } from "../../platform/userscript/main.catalogs.gen";
 import { SHIPPED_CATALOGS } from "../i18n/shipped";
+import type { BareMessageKey } from "../i18n/t";
 import { CHIP_TEXT_LIMITS, type ChipTextField } from "../kinds/chip-text";
 import type { KindId } from "../kinds/id";
 import { KIND_BY_ID } from "../kinds/registry";
@@ -69,13 +70,14 @@ describe("the chip text fields", () => {
     },
   );
 
-  it.each<ChipTextField>(["chip", "chipCompact"])("label %s and limit it", async (field) => {
+  it.each<readonly [ChipTextField, BareMessageKey]>([
+    ["chip", "options_chip_label"],
+    ["chipCompact", "options_chip_compact_label"],
+  ])("label %s and limit it", async (field, key) => {
     const { root, box } = await setup();
     const input = box("ai", field);
     expect(input.maxLength).toBe(CHIP_TEXT_LIMITS[field]);
-    expect(root.querySelector(`label[for="${input.id}"]`)?.textContent).toBe(
-      i18n.t(field === "chip" ? "options_chip_label" : "options_chip_compact_label"),
-    );
+    expect(root.querySelector(`label[for="${input.id}"]`)?.textContent).toBe(i18n.t(key));
   });
 
   it("save the text cleaned on change, and clear it once emptied", async () => {
@@ -91,16 +93,17 @@ describe("the chip text fields", () => {
     });
   });
 
-  it.each<readonly [string, Partial<Record<ChipTextField, string>>, readonly string[]]>([
-    ["the catalog's word on both", {}, [i18n.t("kind_ai_chip"), i18n.t("kind_ai_chip")]],
-    ["the chip text on both", { chip: "Mine" }, ["Mine", "Mine"]],
-    ["the short text on the small image", { chip: "Mine", chipCompact: "Me" }, ["Mine", "Me"]],
+  it.each<readonly [string, readonly (readonly [ChipTextField, string])[], readonly string[]]>([
+    ["the catalog's word on both", [], [i18n.t("kind_ai_chip"), i18n.t("kind_ai_chip")]],
+    ["the chip text on both", [["chip", "Mine"]], ["Mine", "Mine"]],
+    ["the short text on the small image", [["chip", "Mine"], ["chipCompact", "Me"]], [
+      "Mine",
+      "Me",
+    ]],
   ])("preview, as typed, %s", async (_case, typed, labels) => {
     const { box, preview } = await setup();
-    for (const [field, text] of Object.entries(typed)) {
-      if (field === "chip" || field === "chipCompact") {
-        type(box("ai", field), text);
-      }
+    for (const [field, text] of typed) {
+      type(box("ai", field), text);
     }
     expect(preview("ai")).toEqual([["sar-badge", labels[0]], ["sar-compact", labels[1]]]);
   });

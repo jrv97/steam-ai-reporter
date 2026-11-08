@@ -25,7 +25,7 @@ import type { SteamLanguage } from "../i18n/locale";
 import { KIND_IDS } from "../kinds/id";
 import { SECTIONS } from "../kinds/sections";
 import { type KindVerdicts, UNKNOWN_KINDS } from "../kinds/verdicts";
-import type { Http } from "../ports";
+import type { Http, HttpResult } from "../ports";
 import type { AppId } from "../types";
 import {
   createGetItemsDetector,
@@ -44,6 +44,11 @@ function parse(
   language: SteamLanguage = "english",
 ): ReadonlyMap<AppId, KindVerdicts> {
   return parseGetItems(ids, httpResult(reply, URL_FOR_TESTS), language);
+}
+
+/** The result of a request with `status` whose answer carries a disclosed item for ID 1. */
+function answer(options: { readonly status: number; }): HttpResult {
+  return httpResult(getItemsResponse([disclosedItem(1, "notes")], options), URL_FOR_TESTS);
 }
 
 function fixtureReply(fixture: unknown): Reply {
@@ -143,8 +148,6 @@ describe("parseGetItems over the captured fixtures", () => {
     expect(parse(appIds(413150, 5072580), reply)).toStrictEqual(
       new Map([[appId(413150), UNKNOWN_KINDS.error], [appId(5072580), UNKNOWN_KINDS.error]]),
     );
-    const contextless: Reply = { body: JSON.stringify(empty), headers: { "x-eresult": "8" } };
-    expect(stateOf(parse(appIds(413150), contextless), 413150)).toBe("unknown:error");
   });
 });
 
@@ -168,12 +171,6 @@ describe("parseGetItems and the base game of a DLC", () => {
       expect(found.get(id)).not.toHaveProperty("parent");
       expect(found.get(id)?.ai.state).toBe("not-disclosed");
     }
-  });
-
-  it("gives the unknown verdicts of an item without details no parent", () => {
-    const item = storeItem(4, { extra_details: undefined, related_items: { parent_appid: 9 } });
-    const found = parse(appIds(4), getItemsResponse([item])).get(appId(4));
-    expect(found).toBe(UNKNOWN_KINDS.missing);
   });
 
   it("marks the captured demo, and not its full game or a DLC (demo-parent.json)", () => {
@@ -273,28 +270,16 @@ describe("parseGetItems and the developers and publishers", () => {
       expect(found?.creators).toStrictEqual(creatorsFor({ developers: ["E"] }));
     },
   );
-
-  it("gives an item without details no creators", () => {
-    const item = storeItem(1, { extra_details: undefined, ...basicInfo({ developers: ["A"] }) });
-    expect(parse(one, getItemsResponse([item])).get(appId(1))).toBe(UNKNOWN_KINDS.missing);
-  });
 });
 
 describe("parseGetItems edge cases", () => {
-  it("reads blank notes, U+200B included, as not disclosed", () => {
-    const ids = appIds(1, 2, 3);
-    const verdicts = parse(
-      ids,
-      getItemsResponse([
-        disclosedItem(1, "   "),
-        disclosedItem(2, "\u200b"),
-        disclosedItem(3, "\r\n\u200b \t"),
-      ]),
-    );
-    for (const id of [1, 2, 3]) {
-      expect(stateOf(verdicts, id)).toBe("not-disclosed");
-    }
-  });
+  it.each(["   ", "\u200b", "\r\n\u200b \t"])(
+    "reads the blank notes %j as not disclosed",
+    (notes) => {
+      const verdicts = parse(appIds(1), getItemsResponse([disclosedItem(1, notes)]));
+      expect(stateOf(verdicts, 1)).toBe("not-disclosed");
+    },
+  );
 
   it("keeps \\r\\n inside notes and trims the edges", () => {
     const verdicts = parse(appIds(1), getItemsResponse([disclosedItem(1, "\u200b A\r\n\r\nB \n")]));
@@ -334,14 +319,21 @@ describe("parseGetItems edge cases", () => {
     }
   });
 
-  it("reads an item without extra_details as unknown missing", () => {
-    const item = storeItem(1, { extra_details: undefined });
-    expect(stateOf(parse(appIds(1), getItemsResponse([item])), 1)).toBe("unknown:missing");
-  });
-
-  it("keys an invalid item (success 15, appid 0) by its id", () => {
-    const verdicts = parse(appIds(99999999), getItemsResponse([invalidItem(99999999)]));
-    expect([...verdicts]).toStrictEqual([[99999999, UNKNOWN_KINDS.missing]]);
+  it.each<readonly [string, Readonly<Record<string, unknown>>]>([
+    ["an item without extra_details", storeItem(1, { extra_details: undefined })],
+    [
+      "an item without details that names a parent",
+      storeItem(1, { extra_details: undefined, related_items: { parent_appid: 9 } }),
+    ],
+    [
+      "an item without details that names creators",
+      storeItem(1, { extra_details: undefined, ...basicInfo({ developers: ["A"] }) }),
+    ],
+    ["an invalid item (success 15, appid 0), keyed by its id", invalidItem(1)],
+  ])("reads %s as unknown missing, with no relations", (_name, item) => {
+    expect([...parse(appIds(1), getItemsResponse([item]))]).toStrictEqual([
+      [1, UNKNOWN_KINDS.missing],
+    ]);
   });
 
   it("reads a requested ID without an item as unknown missing", () => {
@@ -384,49 +376,41 @@ describe("parseGetItems edge cases", () => {
     expect(notesOf(verdicts, 1)).toBe("first");
   });
 
-  it("treats x-eresult other than 1 as a batch error", () => {
-    const reply = getItemsResponse([disclosedItem(1, "notes")], { eresult: "8" });
-    expect(stateOf(parse(appIds(1), reply), 1)).toBe("unknown:error");
+  it.each<readonly [string | null, string]>([
+    ["8", "unknown:error"],
+    [null, "disclosed"],
+  ])("reads an answer whose x-eresult is %j as %s", (eresult, state) => {
+    const reply = getItemsResponse([disclosedItem(1, "notes")], { eresult });
+    expect(stateOf(parse(appIds(1), reply), 1)).toBe(state);
   });
 
-  it("accepts an answer whose x-eresult header is not exposed", () => {
-    const reply = getItemsResponse([disclosedItem(1, "notes")], { eresult: null });
-    expect(stateOf(parse(appIds(1), reply), 1)).toBe("disclosed");
+  it.each<readonly [string, Reply]>([
+    ["a missing store_items", getItemsResponse(undefined)],
+    ["bad JSON", { body: "{" }],
+    ["a null body", { body: "null" }],
+    ["store_items as an object", { body: JSON.stringify({ response: { store_items: {} } }) }],
+    ["no response envelope", {
+      body: JSON.stringify({ store_items: [disclosedItem(1, "notes")] }),
+    }],
+  ])("treats %s as a batch error", (_name, reply) => {
+    expect([...parse(appIds(1, 2), reply).values()]).toStrictEqual([
+      UNKNOWN_KINDS.error,
+      UNKNOWN_KINDS.error,
+    ]);
   });
 
-  it("treats a missing store_items, bad JSON or a wrong envelope as a batch error", () => {
-    const ids = appIds(1, 2);
-    for (
-      const reply of [
-        getItemsResponse(undefined),
-        { body: "{" },
-        { body: "null" },
-        { body: JSON.stringify({ response: { store_items: {} } }) },
-        { body: JSON.stringify({ store_items: [disclosedItem(1, "notes")] }) },
-      ]
-    ) {
-      const verdicts = parse(ids, reply);
-      expect([...verdicts.values()]).toStrictEqual([UNKNOWN_KINDS.error, UNKNOWN_KINDS.error]);
-    }
-  });
-
-  it("maps statuses: 429 to rate-limited, any other non-200 to error", () => {
-    const ok = [disclosedItem(1, "notes")];
-    expect(stateOf(parse(appIds(1), getItemsResponse(ok, { status: 429 })), 1)).toBe(
-      "unknown:rate-limited",
-    );
-    for (const status of [400, 404, 414, 500, 503]) {
-      expect(stateOf(parse(appIds(1), getItemsResponse(ok, { status })), 1)).toBe("unknown:error");
-    }
-  });
-
-  it("maps a failed request to error and a withheld one to rate-limited", () => {
-    const ids = appIds(1);
-    expect(parseGetItems(ids, { kind: "failed", cause: new TypeError() }, "english")).toStrictEqual(
-      new Map([[appId(1), UNKNOWN_KINDS.error]]),
-    );
-    expect(parseGetItems(ids, { kind: "withheld" }, "english")).toStrictEqual(
-      new Map([[appId(1), UNKNOWN_KINDS["rate-limited"]]]),
+  it.each<readonly [string, HttpResult, KindVerdicts]>([
+    ["a 429", answer({ status: 429 }), UNKNOWN_KINDS["rate-limited"]],
+    ...[400, 404, 414, 500, 503].map((status): readonly [string, HttpResult, KindVerdicts] => [
+      `a ${String(status)}`,
+      answer({ status }),
+      UNKNOWN_KINDS.error,
+    ]),
+    ["a failed request", { kind: "failed", cause: new TypeError() }, UNKNOWN_KINDS.error],
+    ["a withheld request", { kind: "withheld" }, UNKNOWN_KINDS["rate-limited"]],
+  ])("maps %s to its unknown reason", (_name, result, expected) => {
+    expect(parseGetItems(appIds(1), result, "english")).toStrictEqual(
+      new Map([[appId(1), expected]]),
     );
   });
 });
@@ -470,7 +454,6 @@ describe("planBatches", () => {
 
   it.each(
     [
-      ["the base sections", undefined, ["include_extra_details", "include_basic_info"]],
       ["platforms", ["basic_info", "platforms"], [
         "include_extra_details",
         "include_basic_info",

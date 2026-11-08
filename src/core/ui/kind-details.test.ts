@@ -20,73 +20,57 @@ import { chipText, type KindDetail, kindDetails } from "./kind-details";
 const { ai, kernel, anticheat, drm, account, eula, pvp, iap } = FULL_DISCLOSED;
 
 describe("kindDetails", () => {
-  it("quotes the AI notes and names the service the developer gave", () => {
-    expect(kindDetails(ai)).toEqual([
-      { kind: "quote", text: ai.notes },
+  const { service: _service, ...unnamedAi } = ai;
+  const { name: _kernelName, bootProtection: _boot, ...plainKernel } = kernel;
+  const { name: _anticheatName, ...unnamedAnticheat } = anticheat;
+  const { activationLimit: _limit, ...unlimitedDrm } = drm;
+  const AI_NOTES: KindDetail = { kind: "quote", text: ai.notes };
+  const DENUVO: KindDetail = { kind: "text", text: "Denuvo Anti-tamper" };
+  const UBISOFT: KindDetail = { kind: "text", text: "Ubisoft Account" };
+
+  it.each<readonly [string, AnyDisclosed, readonly KindDetail[]]>([
+    ["the AI notes and the service the developer named", ai, [
+      AI_NOTES,
       { kind: "labeled", key: "badge_card_service_label", text: "Midjourney" },
-    ]);
-  });
-
-  it("leaves out an AI service that is missing or empty", () => {
-    const { service: _service, ...unnamed } = ai;
-    expect(kindDetails(unnamed)).toEqual([{ kind: "quote", text: ai.notes }]);
-    expect(kindDetails({ ...ai, service: "" })).toEqual([{ kind: "quote", text: ai.notes }]);
-  });
-
-  it("lists the kernel anti-cheat's name, the leftover note and the boot protection", () => {
-    expect(kindDetails({ ...kernel, uninstallsCompletely: false })).toEqual([
+    ]],
+    ["the AI notes alone without a service", unnamedAi, [AI_NOTES]],
+    ["the AI notes alone with an empty service", { ...ai, service: "" }, [AI_NOTES]],
+    ["the kernel anti-cheat's name, leftover note and boot protection", {
+      ...kernel,
+      uninstallsCompletely: false,
+    }, [
       { kind: "text", text: "Easy Anti-Cheat" },
       { kind: "message", key: "kind_kernel_uninstall" },
       { kind: "message", key: "kind_kernel_boot" },
-    ]);
-  });
-
-  it("says nothing about a kernel anti-cheat that cleans up and needs no boot protection", () => {
-    const { name: _name, bootProtection: _boot, ...plain } = kernel;
-    expect(kindDetails(plain)).toEqual([]);
-  });
-
-  it("names the anti-cheat that is not kernel level, when Steam does", () => {
-    expect(kindDetails(anticheat)).toEqual([{ kind: "text", text: "VAC (Valve Anti-Cheat)" }]);
-    const { name: _name, ...unnamed } = anticheat;
-    expect(kindDetails(unnamed)).toEqual([]);
-  });
-
-  it("gives the developer's DRM text and the activation limit Steam sent", () => {
-    expect(kindDetails(drm)).toEqual([
-      { kind: "text", text: "Denuvo Anti-tamper" },
-      { kind: "text", text: "5 a day" },
-    ]);
-    const { activationLimit: _limit, ...unlimited } = drm;
-    expect(kindDetails(unlimited)).toEqual([{ kind: "text", text: "Denuvo Anti-tamper" }]);
-  });
-
-  it("gives the account text, and Steam's note when it links to a Steam account", () => {
-    expect(kindDetails(account)).toEqual([
-      { kind: "text", text: "Ubisoft Account" },
+    ]],
+    ["nothing for a kernel anti-cheat that cleans up, with no boot protection", plainKernel, []],
+    ["the name of an anti-cheat that is not kernel level", anticheat, [
+      { kind: "text", text: "VAC (Valve Anti-Cheat)" },
+    ]],
+    ["nothing for an unnamed anti-cheat that is not kernel level", unnamedAnticheat, []],
+    ["the DRM text and the activation limit", drm, [DENUVO, { kind: "text", text: "5 a day" }]],
+    ["the DRM text alone without a limit", unlimitedDrm, [DENUVO]],
+    ["the account text and the note that it links to Steam", account, [
+      UBISOFT,
       { kind: "message", key: "kind_account_links" },
-    ]);
-    expect(kindDetails({ ...account, linksToSteam: false })).toEqual([
-      { kind: "text", text: "Ubisoft Account" },
-    ]);
-  });
-
-  it("lists every EULA by name", () => {
-    expect(kindDetails(eula)).toEqual([
+    ]],
+    ["the account text alone when it does not link", { ...account, linksToSteam: false }, [
+      UBISOFT,
+    ]],
+    ["every EULA by name", eula, [
       { kind: "text", text: "Game EULA" },
       { kind: "text", text: "Publisher terms" },
-    ]);
-  });
-
-  it("names the PvP categories Steam lists, in the order given, and skips any other", () => {
-    expect(kindDetails({ ...pvp, categoryIds: [37, 49, 9] })).toEqual([
+    ]],
+    ["the PvP categories Steam lists, in order, skipping others", {
+      ...pvp,
+      categoryIds: [37, 49, 9],
+    }, [
       { kind: "message", key: "kind_pvp_category_split" },
       { kind: "message", key: "kind_pvp_category_pvp" },
-    ]);
-  });
-
-  it("adds no line to IAP, whose heading is Steam's category name", () => {
-    expect(kindDetails(iap)).toEqual([]);
+    ]],
+    ["no line for IAP, whose heading is Steam's category name", iap, []],
+  ])("gives %s", (_name, verdict, lines) => {
+    expect(kindDetails(verdict)).toEqual(lines);
   });
 
   describe("for early access", () => {

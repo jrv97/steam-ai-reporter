@@ -126,14 +126,34 @@ describe("isTransient", () => {
 });
 
 describe("isFresh", () => {
+  const notDisclosed = uniformVerdicts("not-disclosed");
   const cases: readonly (readonly [string, KindVerdicts, number])[] = [
     ["disclosed", uniformVerdicts("disclosed"), FULL_TTL_MS],
-    ["not disclosed", uniformVerdicts("not-disclosed"), 12 * HOUR_MS],
+    ["not disclosed", notDisclosed, 12 * HOUR_MS],
     ["unknown gated", uniformVerdicts("gated"), UNKNOWN_TTL_MS],
     ["unknown missing", uniformVerdicts("missing"), UNKNOWN_TTL_MS],
     ["unknown malformed", uniformVerdicts("malformed"), UNKNOWN_TTL_MS],
     ["unknown error", uniformVerdicts("error"), TRANSIENT_TTL_MS],
     ["unknown rate-limited", uniformVerdicts("rate-limited"), TRANSIENT_TTL_MS],
+    ["AI notes beside kinds not disclosed", { ...notDisclosed, ai: FULL_DISCLOSED.ai }, 7 * DAY_MS],
+    [
+      "AI not disclosed beside disclosed kinds",
+      { ...FULL_DISCLOSED, ai: NOT_DISCLOSED },
+      12 * HOUR_MS,
+    ],
+    [
+      "early access no longer flagged",
+      { ...FULL_DISCLOSED, earlyaccess: NOT_DISCLOSED },
+      7 * DAY_MS,
+    ],
+    ["a section left out beside kinds not disclosed", {
+      ...notDisclosed,
+      pvp: UNKNOWN.unrequested,
+    }, 12 * HOUR_MS],
+    ["a section left out beside disclosed kinds", {
+      ...FULL_DISCLOSED,
+      pvp: UNKNOWN.unrequested,
+    }, FULL_TTL_MS],
   ];
 
   it.each(cases)("%s: fresh until exactly its TTL", (_name, verdicts, ttl) => {
@@ -144,25 +164,15 @@ describe("isFresh", () => {
   });
 
   it("treats a fetch time in the future as stale", () => {
-    expect(isFresh(uniformVerdicts("not-disclosed"), T + 1, T)).toBe(false);
+    expect(isFresh(notDisclosed, T + 1, T)).toBe(false);
   });
 });
 
 describe("isFresh across kinds", () => {
-  const notDisclosed = uniformVerdicts("not-disclosed");
-
   function expiresAt(verdicts: KindVerdicts, ttl: number): void {
     expect(isFresh(verdicts, T, T + ttl - 1)).toBe(true);
     expect(isFresh(verdicts, T, T + ttl)).toBe(false);
   }
-
-  it("keeps the AI notes for 7 days while every other kind is not disclosed", () => {
-    expiresAt({ ...notDisclosed, ai: FULL_DISCLOSED.ai }, 7 * DAY_MS);
-  });
-
-  it("keeps a game that disclosed nothing for 12 hours, the AI kind's TTL", () => {
-    expiresAt(notDisclosed, 12 * HOUR_MS);
-  });
 
   it("does not shorten an app because a non-AI kind is not disclosed", () => {
     for (const kind of KINDS) {
@@ -172,12 +182,8 @@ describe("isFresh across kinds", () => {
     }
   });
 
-  it("expires with the AI kind when it is not disclosed, whatever the others are", () => {
-    expiresAt({ ...FULL_DISCLOSED, ai: NOT_DISCLOSED }, 12 * HOUR_MS);
-  });
-
   it("expires after 6 hours when any kind is gated, missing or malformed", () => {
-    const aiNotes = { ...notDisclosed, ai: FULL_DISCLOSED.ai };
+    const aiNotes = { ...uniformVerdicts("not-disclosed"), ai: FULL_DISCLOSED.ai };
     for (const kind of KINDS) {
       for (const reason of ["gated", "missing", "malformed"] as const) {
         expiresAt({ ...aiNotes, [kind.id]: UNKNOWN[reason] }, UNKNOWN_TTL_MS);
@@ -187,22 +193,7 @@ describe("isFresh across kinds", () => {
 
   it("expires at once with a verdict that is not stored", () => {
     for (const kind of KINDS) {
-      const failed = { ...FULL_DISCLOSED, [kind.id]: UNKNOWN.error };
-      expect(isFresh(failed, T, T + TRANSIENT_TTL_MS - 1)).toBe(true);
-      expect(isFresh(failed, T, T + TRANSIENT_TTL_MS)).toBe(false);
+      expiresAt({ ...FULL_DISCLOSED, [kind.id]: UNKNOWN.error }, TRANSIENT_TTL_MS);
     }
-  });
-
-  it("leaves the TTL to the other kinds when a kind's section was left out", () => {
-    expiresAt({ ...notDisclosed, pvp: UNKNOWN.unrequested }, 12 * HOUR_MS);
-    expiresAt({ ...FULL_DISCLOSED, pvp: UNKNOWN.unrequested }, FULL_TTL_MS);
-  });
-
-  it("keeps disclosed kinds for 2 days, the shortest disclosed TTL of any kind", () => {
-    expiresAt(FULL_DISCLOSED, FULL_TTL_MS);
-  });
-
-  it("keeps an early access game for 7 days once Steam stops flagging it", () => {
-    expiresAt({ ...FULL_DISCLOSED, earlyaccess: NOT_DISCLOSED }, 7 * DAY_MS);
   });
 });

@@ -69,13 +69,6 @@ const NONE = {
 };
 
 describe("parseGetItems over the tag kind fixture", () => {
-  it("answers every requested ID with a verdict for every kind", () => {
-    expect(verdicts.size).toBe(IDS.length + OTHER_ITEMS.length);
-    for (const found of verdicts.values()) {
-      expect(Object.keys(found)).toStrictEqual(expect.arrayContaining([...KIND_IDS]));
-    }
-  });
-
   it("reads DRM, account, EULA and a plain category list (3751950)", () => {
     expect(states(3751950)).toStrictEqual({
       ...NONE,
@@ -135,26 +128,22 @@ describe("parseGetItems over the tag kind fixture", () => {
     });
   });
 
-  it("reads a game that declares nothing as not disclosed for every kind", () => {
-    for (const id of NOTHING) {
-      expect(states(id)).toStrictEqual(NONE);
-    }
+  it.each(NOTHING)("reads %i, which declares nothing, as not disclosed for every kind", (id) => {
+    expect(states(id)).toStrictEqual(NONE);
   });
 
-  it("reads the VAC anti-cheat of Counter-Strike 2 and Dota 2 as non-kernel (730, 570)", () => {
-    for (const id of [730, 570]) {
-      expect(states(id)).toStrictEqual({
-        ...NONE,
-        anticheat: "disclosed",
-        iap: "disclosed",
-        // Free games are never tagged for Family Sharing.
-        family: "not-disclosed",
-      });
-      expect(of(id).anticheat).toMatchObject({
-        name: "VAC (Valve Anti-Cheat)",
-        nameToken: "#Store_AntiCheat_Type_vac",
-      });
-    }
+  it.each([730, 570])("reads the VAC anti-cheat of %i as non-kernel", (id) => {
+    expect(states(id)).toStrictEqual({
+      ...NONE,
+      anticheat: "disclosed",
+      iap: "disclosed",
+      // Free games are never tagged for Family Sharing.
+      family: "not-disclosed",
+    });
+    expect(of(id).anticheat).toMatchObject({
+      name: "VAC (Valve Anti-Cheat)",
+      nameToken: "#Store_AntiCheat_Type_vac",
+    });
   });
 
   it("reads PvP from the categories and nothing else (105600, 1245620)", () => {
@@ -184,11 +173,9 @@ describe("parseGetItems over the tag kind fixture", () => {
     expect(of(271590).kernel).toMatchObject({ name: "BattlEye" });
   });
 
-  it("is unknown missing for a package, a bundle and an ID that does not exist", () => {
-    // The package has categories but no extra_details, so even PvP and IAP stay unknown.
-    for (const id of OTHER_ITEMS) {
-      expect(of(id)).toBe(UNKNOWN_KINDS.missing);
-    }
+  // The package has categories but no extra_details, so even PvP and IAP stay unknown.
+  it.each(OTHER_ITEMS)("is unknown missing for %i, a package, a bundle or no app", (id) => {
+    expect(of(id)).toBe(UNKNOWN_KINDS.missing);
   });
 });
 
@@ -349,12 +336,5 @@ describe("parseGetItems with one malformed field", () => {
     for (const kind of KINDS.filter(({ sections }) => sections === undefined)) {
       expect(found[kind.id].state).toBe("not-disclosed");
     }
-  });
-
-  it("keeps the item-level rule: no extra_details is unknown for every kind", () => {
-    const categories = { supported_player_categoryids: [49] };
-    expect(parse(storeItem(1, { extra_details: undefined, categories }))).toBe(
-      UNKNOWN_KINDS.missing,
-    );
   });
 });

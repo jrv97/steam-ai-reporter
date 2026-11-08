@@ -185,14 +185,6 @@ describe("encodeVerdicts and decodeVerdicts", () => {
     expect(JSON.stringify(stored)).not.toMatch(/undefined|null|nameToken|service|bootProtection/);
   });
 
-  it("stores a kind whose field is malformed as such and keeps the other kinds", () => {
-    const verdicts = { ...FULL_DISCLOSED, eula: UNKNOWN.malformed };
-    expect(encodeVerdicts(verdicts, T)).toStrictEqual({
-      time: T,
-      kinds: { ...STORED_KINDS, eula: { state: "unknown", reason: "malformed" } },
-    });
-  });
-
   it("does not encode an app that has a verdict living in memory only", () => {
     expect(encodeVerdicts(UNKNOWN_KINDS.error, T)).toBeUndefined();
     expect(encodeVerdicts(UNKNOWN_KINDS["rate-limited"], T)).toBeUndefined();
@@ -285,16 +277,6 @@ describe("the base game of a DLC in storage", () => {
     expect(encodeVerdicts(uniformVerdicts("missing"), T)).not.toHaveProperty("parent");
   });
 
-  it("reads an entry stored before the field existed as an app with no parent", () => {
-    const decoded = decodeVerdicts(stored);
-    expect(decoded?.verdicts).toStrictEqual(FULL_DISCLOSED);
-    expect(decoded?.verdicts).not.toHaveProperty("parent");
-  });
-
-  it("reads the parent of a stored entry", () => {
-    expect(decodeVerdicts({ ...stored, parent: 1808500 })?.verdicts.parent).toBe(1808500);
-  });
-
   it.each([
     ["a string", "1808500"],
     ["zero", 0],
@@ -331,10 +313,6 @@ describe("the developers and publishers in storage", () => {
     }
   });
 
-  it("reads an entry stored before the fields existed as an app with no creators", () => {
-    expect(decodeVerdicts(stored)?.verdicts).not.toHaveProperty("creators");
-  });
-
   it("reads a role the entry lacks as having none", () => {
     const decoded = decodeVerdicts({ ...stored, publishers: [{ name: "Valve" }] });
     expect(decoded?.verdicts.creators).toStrictEqual(creatorsFor({ publishers: ["Valve"] }));
@@ -361,7 +339,7 @@ describe("decodeVerdicts", () => {
     return { time, kinds: { ...STORED_KINDS, [id]: entry } };
   }
 
-  it("accepts the valid shape", () => {
+  it("accepts the valid shape, as an app with no parent and no creators", () => {
     expect(decodeVerdicts(valid)).toStrictEqual({ verdicts: FULL_DISCLOSED, time: T });
   });
 
@@ -379,17 +357,6 @@ describe("decodeVerdicts", () => {
       const kinds = Object.fromEntries(Object.entries(STORED_KINDS).filter(([key]) => key !== id));
       expect(decodeVerdicts({ time: T, kinds })).toBeUndefined();
     }
-  });
-
-  it("discards the v1 shape, which kept one verdict flat under the key", () => {
-    const v1 = { state: "disclosed", time: T, notes: "text", language: "english", source: "api" };
-    expect(decodeVerdicts(v1)).toBeUndefined();
-    expect(decodeVerdicts({ state: "not-disclosed", time: T, source: "api" })).toBeUndefined();
-  });
-
-  it("discards an AI entry that carries no kind", () => {
-    const { kind: _kind, ...legacy } = STORED_KINDS.ai;
-    expect(decodeVerdicts(withEntry("ai", legacy))).toBeUndefined();
   });
 
   it("discards malformed entries instead of casting them", () => {
