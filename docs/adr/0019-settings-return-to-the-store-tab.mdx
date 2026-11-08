@@ -1,0 +1,223 @@
+---
+status: proposed
+date: 2026-10-29
+decision-makers: Jorge Rodriguez de la Vega
+---
+
+# The settings page returns to the store tab it was opened from
+
+## Context and problem statement
+
+Feedback on All Settings asks for a "Go back to Steam" button that returns to the page a person came from. The toolbar popup opens All Settings in a new tab (`options.html`, through `runtime.openOptionsPage()`), or focuses the tab when one is open, and then closes itself. The person ends up with two tabs and no control on the settings page that leads back to the store one.
+
+Rule 3 limits the extension to the `storage` permission and no background script until an ADR says otherwise. Rule 1 keeps what a person browses inside the browser, and a stored store URL is a history item. The first idea was the `activeTab` permission. Reading the extension docs showed that the button needs a tab ID, a tab switch and a tab close, and that none of the three calls asks for a permission.
+
+How does the settings page take a person back to the tab they came from, with no new permission, no background script and no stored page address? What does it do when that tab is gone, or when the page was never opened from a tab at all?
+
+## Decision drivers
+
+- Rule 3: no new permission and no background script. A new permission also changes the permission justifications in `docs/store/listing.mdx`, the privacy page and the install text.
+- Least permission: Chrome words the `tabs` permission as "Read your browsing history" [R16]. `activeTab` shows no warning but hands over temporary host access to a tab [R16, R17].
+- Rule 1: the extension keeps no record of where a person browses. A value that must be kept lives in memory and ends with the browser session.
+- Rule 5: core takes a `goBack` dependency. Only platform code names `browser` or `chrome`.
+- Rule 9: the button text is a catalog message in English and Spanish.
+- A result in every case: a closed tab, a restarted browser, a settings page opened from the extensions menu, two windows, a private window.
+- The userscript dialog has no tab to return to and gets no button.
+
+## Considered options
+
+1. Link to the store home. No permission and no stored data; it lands on `store.steampowered.com` whatever page the person left.
+2. Remember the last store page URL in `storage.local`. The content script writes it.
+3. Add the `activeTab` permission (the first idea).
+4. Remember the originating tab ID, switch back to that tab and close the settings tab. Fall back to option 1 when the ID is missing or the tab is gone (chosen).
+
+## Decision outcome
+
+Chosen option 4, with option 1 as its fallback. The manifest keeps `permissions: ["storage"]`, `activeTab` is not added, and no background script appears. The status stays "proposed" until every box in the spike below passes in Chromium and in Firefox Nightly.
+
+What the sources say. Chrome states that most of the tabs API needs no permission and that the `tabs` permission unlocks four properties of a `Tab`: `url`, `pendingUrl`, `title` and `favIconUrl` [R13, R14]. MDN names three of them (`url`, `title`, `favIconUrl`), and its pages for `tabs.update`, `tabs.remove` and `windows.update` name no permission [R1, R3, R4, R5, R6]. `Tab.id` and `Tab.windowId` are not among the hidden properties [R6, R13]. `tabs.query({ active: true, currentWindow: true })` is MDN's own example for finding the active tab [R2]; Chrome defines the current window as the one that holds the executing code [R14]. `tabs.update` with `active: true` leaves the window unfocused, and `windows.update` with `focused: true` brings it to the front [R3, R5, R13, R14]. On Firefox `tabs.update` rejects when the tab cannot be found [R3]; Chrome documents no error case and types the result `Promise<Tab | undefined>` [R13].
+
+`activeTab` adds nothing to this. Both vendors describe it as temporary host access to the active tab after a user gesture, which unlocks script injection, the tab's `url`, `title` and `favIconUrl`, and request interception in Chrome [R7, R17]. Neither page lists `tabs.update`, `tabs.remove` or the tab ID. The permission would give the extension the address of the page it needs to leave, and the button never reads that address.
+
+Flow.
+
+1. The popup opens the settings from the gear or a tag row (`openSettings` in `src/platform/extension/options.ts`). Before it calls `openOptionsPage()`, it asks for the active tab of the current window and writes that tab's ID to `storage.session` under `v2:origin`. A missing ID (the field is optional [R6]), `TAB_ID_NONE` or a failed call writes nothing.
+2. The settings page reads `v2:origin` when it loads and again when `storage.onChanged` reports the key, which covers the focus path where `openOptionsPage()` focuses a tab that is open [R18]. Each read validates the value with a schema, keeps the ID in memory and removes the key. A page opened later from the extensions menu finds no key and has no origin.
+3. The page asks `tabs.getCurrent()` for its own tab ID [R1]. An origin equal to that ID (the toolbar button pressed on the settings tab itself) is dropped, and the origin held before stays.
+4. The button runs `tabs.update(origin, { active: true })`, then `windows.update(tab.windowId, { focused: true })` with the `windowId` of the returned tab, then `tabs.remove(ownId)`. The origin is active before the settings tab closes, which leaves the browser no neighbor tab to pick. A failed `windows.update` or `tabs.remove` is ignored: the person has reached the tab they asked for.
+5. With no origin, a rejected `tabs.update` or an `undefined` result, the page navigates its own tab to `https://store.steampowered.com/`. The window and its privacy mode stay as they are.
+
+Where the ID travels. Three carriers fit, and `storage.session` wins.
+
+- The page address. `openOptionsPage()` takes no URL, and the options page opens as plain `options.html` [R11]. The new-tab fallback in `openSettings` alone could carry a query, and a restored session would bring the query back after the browser reused the ID [R1].
+- The `v2:ui` key in `storage.local`. The popup writes the requested tab name there, but the value lands on disk, survives a restart, and Firefox reuses tab IDs after one [R1]. A stale ID would switch a person to an unrelated tab.
+- `storage.session`. It sits in memory and clears when the browser stops or the extension is disabled, reloaded or updated [R9, R15]. It needs the `storage` permission the extension holds [R15] and exists since Chrome 102 and Firefox 115 [R10, R15]; the Gecko build requires Firefox 140. Extension pages reach it by default; the content script does not need it.
+
+Edge cases.
+
+- Origin tab closed: `tabs.update` rejects or resolves empty, and the page falls back to the store home.
+- Origin tab navigated to another site: the ID still names the tab, and the button shows it as the person left it. The extension cannot read the URL without a permission; the label "Go back to Steam" can then be wrong. See the open question.
+- Page reloaded: the held origin is in memory and is lost. The button then goes to the store home.
+- Two windows: the origin tab's window is focused with the `windowId` of the tab that `tabs.update` returns. The settings tab can sit in another window than the origin.
+- Firefox private windows: extensions do not run in them until the person allows it [R8]. Where allowed, `Tab.incognito` marks the tab [R6] and the same calls apply. Whether `openOptionsPage()` opens the settings in the private window is not documented; the spike records it.
+- Firefox containers: `cookieStoreId` is a separate property of the tab [R6] and no call here reads it. The spike runs one container tab.
+- Session restore: the memory is empty after a restart; a restored settings tab goes to the store home.
+
+Core and platform. Core's settings form takes `goBack?: () => void`. The page layout draws the button when the dependency is present; the popup context and the userscript dialog pass none and get no button. The extension composition root builds `goBack` from narrow interfaces added to `src/platform/extension/ext.ts` (the one module that names the WebExtension APIs): the active tab ID, the current tab ID, focus a tab, close a tab, the session area and its change feed. The ID is a branded `BrowserTabId` read from `unknown` through a schema (rule 10). The button text is the catalog message `options_back_to_steam` ("Go back to Steam" in English, "Volver a Steam" in Spanish). Placement and look belong to a design decision when the code lands; the header stays fixed (decision 74).
+
+### Library check (rule 12)
+
+Nothing adopted. The feature is five WebExtension calls and one schema. `webextension-polyfill` would replace the `browser ?? chrome` choice that `ext.ts` makes in one line, and `@types/chrome` already types the calls.
+
+### Consequences
+
+- Good: the manifest, the store listing's permission text and rule 3 stay as they are.
+- Good: the extension stores no address and no history. The tab ID lives in memory and ends with the browser session; `v2:origin` sits outside `storage.local`, the area the backup reads.
+- Good: the fallback gives every case a destination, and the button needs no network request.
+- Bad: the label can be wrong. A popup opened on a tab outside the store, or an origin tab that moved to another site, still counts as the origin.
+- Bad: a reload of the settings page drops the origin.
+- Bad: the button closes the settings tab, and a person who wanted both tabs opens the settings again from the popup.
+- Bad: the code relies on three behaviors the docs leave open: the error `tabs.update` gives for a missing tab on Chrome, the focus of an open options tab by `openOptionsPage()` on Firefox, and the area name `storage.onChanged` reports for the session area. The spike covers all three.
+- Neutral: `PRIVACY.md` gains one sentence when the code lands, naming the tab ID and its lifetime.
+
+What changes in `src/` later: `ORIGIN_KEY` in `storage-keys.ts`; the interfaces and the `goBack` builder in `src/platform/extension`; the capture in `openSettings`; the `goBack` dependency and button in `src/core/ui/settings-form.ts`; the two catalog entries; a changelog fragment.
+
+Tests. A table-driven test over the `goBack` builder with a typed fake of the narrow tab interface (in `tests/helpers/`): no origin, a rejected `tabs.update`, an `undefined` result, a failed `windows.update`, a failed `tabs.remove`, an origin equal to the own tab, a value that fails the schema. One form test checks that the button is drawn only when `goBack` is present and calls it once per click. The catalogs carry the new key in both languages, and `scripts/check_i18n.py` covers the rest.
+
+## Pros and cons of the options
+
+### 1. Link to the store home
+
+- Good: nothing to build beyond a button; no permission, no stored value.
+- Bad: it ignores the page the person left, which is the request. A wishlist, a search or a game page is lost.
+
+### 2. Remember the last store page URL
+
+- Good: it could restore the exact address, even after the tab closed.
+- Bad: a browsing-history item on disk, against rule 1. The content script would write on every page view or navigation, and the store would grow a key.
+- Bad: it would open the page again instead of switching to the tab that is open, and the old store tab stays behind.
+
+### 3. The `activeTab` permission
+
+- Good: no install warning in Chrome [R16].
+- Bad: it unlocks the URL, script injection and request interception [R7, R17], and the button needs none of them. The docs do not say it covers `tabs.update` or `tabs.remove`, and it may not help if those calls ever need a permission.
+- Bad: a new permission entry, listing text and privacy text for no gain, against rule 3.
+
+### 4. The originating tab ID, with the store home as fallback
+
+- Good: the person lands on the tab they left, with its scroll and state intact, and the settings tab closes.
+- Good: no permission, and a value that is not personal data and never leaves the browser.
+- Bad: the label can be wrong on a non-store origin, and the behavior rests on the spike.
+- Also considered inside this option: `Tab.openerTabId` of the settings tab. The docs do not say that `openOptionsPage()` sets it, and it is absent once the opener closes or sits in another window [R6, R13].
+
+## Spike
+
+Run by hand before the status changes. Use the build of the branch that adds the button, with `permissions` still `["storage"]`. Part 1 needs no button and can run on any build. Mark each box when the result matches. Write what differs under the box.
+
+Chromium: `mise run run-chromium` (project profile). Firefox Nightly: `mise run run-gecko` (dedicated profile). Chromium version: 155.0.8059.84 (ungoogled-chromium, 64-bit). Firefox Nightly build: 161.0a1 (2026-10-26, 64-bit).
+
+### Part 1: the calls need no permission
+
+Use `chrome` in Chromium and `browser` in Firefox Nightly. Open `https://store.steampowered.com/app/730/` in a tab, then open All Settings from the popup's gear and open the developer console on the settings tab.
+
+1. Run `await chrome.tabs.query({})`. Expect every item to carry `id` and `windowId`, and the settings tab itself (an extension page) to carry `url`, `title` and `favIconUrl`. Write whether the store tab carries them.
+   - [x] Chromium: only the two settings tabs carried the three properties. The store tab and the other tabs carried none.
+   - [x] Firefox Nightly: the store tab carried all three as well. The cause was not checked, and the button never reads them.
+2. Run `await chrome.tabs.update(<ID of the store tab>, { active: true })`. Expect a resolved `Tab` and the store tab in front.
+   - [x] Chromium
+   - [x] Firefox Nightly
+3. Run `await chrome.windows.update(<its windowId>, { focused: true })` with the store tab in a second window. Expect that window in front.
+   - [ ] Chromium: the call resolved with `focused: true`. The window coming to the front was not confirmed.
+   - [x] Firefox Nightly
+4. Run `await chrome.tabs.update(999999, { active: true })`. Expect a rejection or an `undefined` result, and no permission error. Write the message here: Chromium rejected with `No tab with id: 999999.` and Firefox Nightly with `Invalid tab ID: 999999`.
+   - [x] Chromium
+   - [x] Firefox Nightly
+5. Open a blank tab, note its ID, run `await chrome.tabs.remove(<that ID>)`. Expect the tab to close.
+   - [x] Chromium
+   - [x] Firefox Nightly
+6. Run `await chrome.tabs.getCurrent()` on the settings tab. Expect a `Tab` with the settings tab's `id`.
+   - [x] Chromium
+   - [x] Firefox Nightly
+7. On the settings tab run `chrome.storage.onChanged.addListener((c, area) => console.log(area, c))`. Open the same address with `?context=popup` added in a second tab and run `await chrome.storage.session.set({ probe: 1 })` there. Expect a log line on the settings tab, and `await chrome.storage.session.get("probe")` to return `{ probe: 1 }` on either tab. Write the area name from the log line here: `session` in both browsers.
+   - [x] Chromium
+   - [x] Firefox Nightly
+
+If a call fails with a permission error, stop. Write the call and the message here: ______. Try `activeTab` in the manifest and run the part again. The docs do not list these calls under `activeTab`, and the `tabs` permission carries Chrome's browsing-history warning. A failure then most likely leaves option 1 alone.
+
+### Part 2: the button
+
+Each case starts from a fresh browser start with one window, unless it says otherwise.
+
+1. Basic path. Open a store page, open the popup, click the gear, click "Go back to Steam". Expect the store tab in front and the settings tab closed.
+   - [ ] Chromium
+   - [ ] Firefox Nightly
+2. Tag path. Open the settings from a tag row in the popup. Expect the settings on that tag's tab, and the same return as case 1.
+   - [ ] Chromium
+   - [ ] Firefox Nightly
+3. Focus path. With the settings tab open, switch to a second store tab, open the popup, click the gear. Expect the open settings tab in front, and the button to return to the second store tab, not the first.
+   - [ ] Chromium
+   - [ ] Firefox Nightly
+4. Origin tab closed. Open the settings from a store tab, close that store tab, click the button. Expect the settings tab to load the store home, with no error on the page or in the console.
+   - [ ] Chromium
+   - [ ] Firefox Nightly
+5. Origin tab navigated away. Open the settings from a store tab, go to the store tab, load `https://example.com/`, return to the settings, click the button. Expect `example.com` in front and the settings tab closed (the accepted behavior).
+   - [ ] Chromium
+   - [ ] Firefox Nightly
+6. No origin. After a browser start, open the settings from the extensions menu (Chromium: the extension's details page, "Extension options"; Firefox Nightly: `about:addons`, the extension's preferences). Expect the button to load the store home in that tab. Repeat after case 1 in the same session: the old origin must be gone.
+   - [ ] Chromium
+   - [ ] Firefox Nightly
+7. Reload. Open the settings from the popup, reload the settings tab, click the button. Expect the store home.
+   - [ ] Chromium
+   - [ ] Firefox Nightly
+8. Two windows. Open a store tab in window A and another in window B. Open the settings from window A, then open the popup in window B and click the gear. Write which window shows the settings: ______. Click the button. Expect window B in front with its store tab active and the settings tab closed.
+   - [ ] Chromium
+   - [ ] Firefox Nightly
+9. Popup on the settings tab. With a held origin, press the toolbar button on the settings tab and click the gear. Click the button. Expect the earlier store tab to come forward.
+   - [ ] Chromium
+   - [ ] Firefox Nightly
+10. Private window. Allow the extension in private windows (Chromium: "Allow in Incognito"; Firefox Nightly: "Run in Private Windows"). Run case 1 in a private window. Write which window shows the settings: ______. Expect the return to the private store tab.
+    - [ ] Chromium
+    - [ ] Firefox Nightly
+11. Container tab (Firefox Nightly). Open a store page in a container tab and run case 1. Expect the return to that container tab.
+    - [ ] Firefox Nightly
+12. Restart. Open the settings from the popup, quit the browser with session restore on, start it again, click the button on the restored settings tab. Expect the store home and no switch to an unrelated tab.
+    - [ ] Chromium
+    - [ ] Firefox Nightly
+13. Non-store origin. Open the popup on a blank tab, click the gear, click the button. Write what it does: ______. Expect a return to the blank tab (see the open question).
+    - [ ] Chromium
+    - [ ] Firefox Nightly
+
+When every box is marked, the status moves to "accepted" and the build ships. If case 3 fails because `storage.onChanged` does not report the session area, read `v2:origin` when the page becomes visible instead and rerun cases 3, 8 and 9.
+
+## Open questions
+
+- A popup opened on a tab outside the store records that tab. The content script could answer a `tabs.sendMessage` probe from the popup, which needs no permission, and the popup would record the ID only when the probe succeeds. It adds a message listener to `content.js`, which had about 1.8 KB of room when ADR 0017 was written. I leave it out until the spike or real use shows the mislabel matters.
+- Where the button sits and how it looks is a design decision for `docs/design/decisions.mdx`.
+
+## More information
+
+- The live-page check for this button is open question 34 in [UI design decisions](../design/decisions.mdx).
+- [ADR 0017 (name chips in own words)](0017-name-chips-in-own-words.mdx) gives the `content.js` size room.
+
+## References
+
+- R1: MDN, tabs API overview (permissions, tab ID lifetime, `getCurrent`). https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/tabs
+- R2: MDN, tabs.query. https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/tabs/query
+- R3: MDN, tabs.update. https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/tabs/update
+- R4: MDN, tabs.remove. https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/tabs/remove
+- R5: MDN, windows.update. https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/windows/update
+- R6: MDN, tabs.Tab (`id`, `windowId`, `openerTabId`, `incognito`, `cookieStoreId`). https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/tabs/Tab
+- R7: MDN, the activeTab permission. https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/activeTab_permission
+- R8: MDN, manifest `incognito` key. https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/manifest.json/incognito
+- R9: MDN, storage.session. https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/storage/session
+- R10: MDN browser compatibility data, `storage.session` (Chrome 102, Firefox 115; `setAccessLevel` absent in Firefox). https://github.com/mdn/browser-compat-data/blob/main/webextensions/api/storage.json
+- R11: MDN, runtime.openOptionsPage. https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/runtime/openOptionsPage
+- R12: MDN, manifest `options_ui` key. https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/manifest.json/options_ui
+- R13: Chrome for Developers, chrome.tabs. https://developer.chrome.com/docs/extensions/reference/api/tabs
+- R14: Chrome for Developers, chrome.windows. https://developer.chrome.com/docs/extensions/reference/api/windows
+- R15: Chrome for Developers, chrome.storage. https://developer.chrome.com/docs/extensions/reference/api/storage
+- R16: Chrome for Developers, permissions list (warnings for `tabs` and `activeTab`). https://developer.chrome.com/docs/extensions/reference/permissions-list
+- R17: Chrome for Developers, the activeTab permission. https://developer.chrome.com/docs/extensions/develop/concepts/activeTab
+- R18: Chrome for Developers, chrome.runtime (`openOptionsPage` may focus an open options page). https://developer.chrome.com/docs/extensions/reference/api/runtime
+
+Not confirmed by any source above: the error text of `tabs.update` for a missing tab on Chrome; that Firefox focuses an open options tab from `openOptionsPage()` (MDN is silent, Chrome says it may); the window `openOptionsPage()` uses in a second or private window; the area name `storage.onChanged` reports for the session area; whether Firefox reads "current window" in a popup like Chrome does. The spike checks each.
