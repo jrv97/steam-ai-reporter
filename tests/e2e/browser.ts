@@ -85,8 +85,9 @@ async function launchChromium(): Promise<ExtensionBrowser> {
 }
 
 /** Resolves once the browser process has exited, so its profile files are unlocked. */
-function exited(child: ChildProcess | null): Promise<void> {
-  if (child?.exitCode !== null) {
+function exited(child: ChildProcess | null | undefined): Promise<void> {
+  // A process killed by a signal has no exit code, only a signal code.
+  if (child?.exitCode !== null || child.signalCode !== null) {
     return Promise.resolve();
   }
   return new Promise((resolve) => {
@@ -96,28 +97,42 @@ function exited(child: ChildProcess | null): Promise<void> {
   });
 }
 
+/** Waits for the browser process to exit, then deletes its profile. */
+async function removeProfile(profile: string, child: ChildProcess | null | undefined) {
+  await exited(child);
+  await rm(profile, { recursive: true, force: true, maxRetries: 5 });
+}
+
 async function launchGecko(): Promise<ExtensionBrowser> {
   // A random UUID per launch, preset through a pref, gives a known moz-extension:// origin.
   const uuid = crypto.randomUUID();
   // After a reconnect puppeteer skips its own profile cleanup, so this module owns the profile.
   const profile = await mkdtemp(join(tmpdir(), "sar-e2e-gecko-"));
-  const launched = await puppeteer.launch({
-    browser: "firefox",
-    executablePath: envPath("SAR_GECKO_BIN"),
-    userDataDir: profile,
-    headless: false,
-    // Firefox treats extension pages as privileged and refuses to drive them without this.
-    env: { ...process.env, MOZ_REMOTE_ALLOW_SYSTEM_ACCESS: "1" },
-    extraPrefsFirefox: {
-      "extensions.webextensions.uuids": JSON.stringify({
-        [geckoManifest.browser_specific_settings.gecko.id]: uuid,
-      }),
-      "extensions.openPopupWithoutUserGesture.enabled": true,
-      "intl.accept_languages": LOCALE,
-      "intl.locale.requested": LOCALE,
-    },
-  });
-  await installed(launched, "gecko");
+  let launched: Browser | undefined;
+  try {
+    launched = await puppeteer.launch({
+      browser: "firefox",
+      executablePath: envPath("SAR_GECKO_BIN"),
+      userDataDir: profile,
+      headless: false,
+      // Firefox treats extension pages as privileged and refuses to drive them without this.
+      env: { ...process.env, MOZ_REMOTE_ALLOW_SYSTEM_ACCESS: "1" },
+      extraPrefsFirefox: {
+        "extensions.webextensions.uuids": JSON.stringify({
+          [geckoManifest.browser_specific_settings.gecko.id]: uuid,
+        }),
+        "extensions.openPopupWithoutUserGesture.enabled": true,
+        "intl.accept_languages": LOCALE,
+        "intl.locale.requested": LOCALE,
+      },
+    });
+    await installed(launched, "gecko");
+  } catch (error) {
+    // `installed` has closed a browser that started; a failed launch left none.
+    await removeProfile(profile, launched?.process());
+    throw error;
+  }
+  const child = launched.process();
   let browser: Browser = launched;
   const url = (path: string): string => `moz-extension://${uuid}/${path}`;
 
@@ -169,10 +184,8 @@ async function launchGecko(): Promise<ExtensionBrowser> {
       return adopt(href);
     },
     async close() {
-      const child = launched.process();
       await browser.close();
-      await exited(child);
-      await rm(profile, { recursive: true, force: true, maxRetries: 5 });
+      await removeProfile(profile, child);
     },
   };
 }
