@@ -1,3 +1,0 @@
-kind: Fixed
-body: Turning a tag off on its settings tab no longer hides its other controls. The values, badge and banner switches, chip text, color and list filter stay in place, dimmed and disabled, so the page does not shift.
-time: 2026-10-29T12:30:00.0000000+01:00
