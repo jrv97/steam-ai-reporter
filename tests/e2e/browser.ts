@@ -100,19 +100,24 @@ function exited(child: ChildProcess | null | undefined): Promise<void> {
   });
 }
 
+/** Resolves with whether `done` settled within `ms`. */
+function settlesWithin(done: Promise<void>, ms: number): Promise<boolean> {
+  const late = new Promise<false>((resolve) => {
+    AbortSignal.timeout(ms).addEventListener("abort", () => {
+      resolve(false);
+    });
+  });
+  return Promise.race([done.then(() => true), late]);
+}
+
 /** Waits for the browser process to exit, kills it when it lingers, then deletes its profile. */
 async function removeProfile(profile: string, child: ChildProcess | null | undefined) {
   // A failed reconnect leaves no session to close the browser with.
   const done = exited(child);
-  const late = new Promise<"late">((resolve) => {
-    AbortSignal.timeout(EXIT_MS).addEventListener("abort", () => {
-      resolve("late");
-    });
-  });
-  if ((await Promise.race([done, late])) === "late") {
-    // SIGKILL cannot be caught or ignored, so the exit follows.
+  if (!(await settlesWithin(done, EXIT_MS))) {
     child?.kill("SIGKILL");
-    await done;
+    // The second bound keeps a kill the OS never carries out from stalling the run.
+    await settlesWithin(done, EXIT_MS);
   }
   await rm(profile, { recursive: true, force: true, maxRetries: 5 });
 }
