@@ -18,10 +18,7 @@ export const ENGINES: readonly Engine[] = ["chromium", "gecko"];
 
 /** A running browser with the extension installed. */
 export interface ExtensionBrowser {
-  readonly engine: Engine;
-  /** The address of an extension page, such as `options.html`. */
-  url(path: string): string;
-  /** Opens an extension page in a new tab and resolves once it has loaded. */
+  /** Opens an extension page, such as `options.html`, in a new tab once it has loaded. */
   open(path: string): Promise<Page>;
   /**
    * Resolves with the tab the extension opens at exactly `path`. Call it before the action that
@@ -72,8 +69,6 @@ async function launchChromium(): Promise<ExtensionBrowser> {
   const id = await installed(browser, "chromium");
   const url = (path: string): string => `chrome-extension://${id}/${path}`;
   return {
-    engine: "chromium",
-    url,
     async open(path) {
       const page = await browser.newPage();
       await page.goto(url(path));
@@ -153,8 +148,6 @@ async function launchGecko(): Promise<ExtensionBrowser> {
   }
 
   return {
-    engine: "gecko",
-    url,
     async open(path) {
       const { result } = await bidi().connection.send("browsingContext.create", { type: "tab" });
       await bidi().connection.send("browsingContext.navigate", {
