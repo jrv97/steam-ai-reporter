@@ -1,28 +1,19 @@
 import { describe, expect, it } from "vitest";
-import { appId, appIds } from "../../../tests/helpers/app-ids";
-import { httpResult } from "../../../tests/helpers/fake-http";
-import {
-  earlyAccessItem,
-  getItemsResponse,
-  storeItem,
-  verdictOf,
-} from "../../../tests/helpers/getitems";
-import { earlyAccessVerdict, NOT_DISCLOSED } from "../../../tests/helpers/verdicts";
+import { make } from "../../../tests/helpers/factory";
+import { verdictOf } from "../../../tests/helpers/getitems";
 import { decodeVerdicts, encodeVerdicts } from "../cache/stored";
 import { GETITEMS_URL, parseGetItems } from "../detect/getitems";
 import { MAX_TEXT_LENGTH } from "../detect/getitems.schema";
-import { UNKNOWN, type Verdict } from "../types";
+import type { Verdict } from "../types";
 import { EARLY_ACCESS_KIND, type EarlyAccessDisclosed } from "./early-access";
-import { perKind } from "./registry";
-import { type KindVerdicts, UNKNOWN_KINDS } from "./verdicts";
+import type { KindVerdicts } from "./verdicts";
 
-const NOTE = "We ship early to hear from players.";
-const RELEASED = 1731596424;
+const NOTE = make.text.note();
+const RELEASED = make.fixture.released;
 
 /** The disclosed verdict with only these details, as the kind builds it. */
-function flagged(details: { note?: string; released?: number; } = {}): EarlyAccessDisclosed {
-  const { note: _note, released: _released, ...bare } = earlyAccessVerdict();
-  return { ...bare, ...details };
+function flagged(details: { note?: string; released?: number; } = {}) {
+  return make.verdict.bare("earlyaccess", details);
 }
 
 /** What the kind answers for an item with these keys over a plain one with `extra_details`. */
@@ -74,7 +65,7 @@ describe("EARLY_ACCESS_KIND.fromGetItems", () => {
       { early_access: { why_bbcode: NOTE } },
     ],
   ])("is not disclosed for %s", (_name, item, details) => {
-    expect(fromItem(item, details)).toStrictEqual(NOT_DISCLOSED);
+    expect(fromItem(item, details)).toStrictEqual(make.verdict.notDisclosed());
   });
 
   it.each<readonly [string, unknown]>([
@@ -83,7 +74,7 @@ describe("EARLY_ACCESS_KIND.fromGetItems", () => {
     ["null", null],
     ["a list", [true]],
   ])("is unknown malformed for a flag that is %s", (_name, flag) => {
-    expect(fromItem({ is_early_access: flag })).toBe(UNKNOWN.malformed);
+    expect(fromItem({ is_early_access: flag })).toBe(make.verdict.unknown("malformed"));
   });
 
   it.each<readonly [string, Readonly<Record<string, unknown>>]>([
@@ -98,41 +89,37 @@ describe("EARLY_ACCESS_KIND.fromGetItems", () => {
   });
 
   it.each<readonly [string, unknown]>([
-    ["a negative time", -1],
-    ["a fraction", 1.5],
-    ["text", "1731596424"],
-    ["null", null],
-  ])("keeps the flag and drops a release date that is %s", (_name, date) => {
-    const release = { steam_release_date: date };
+    ["a negative time", { steam_release_date: -1 }],
+    ["a fraction", { steam_release_date: 1.5 }],
+    ["text", { steam_release_date: String(RELEASED) }],
+    ["null", { steam_release_date: null }],
+    ["a release section that is no object", "2024"],
+  ])("keeps the flag and drops a release date that is %s", (_name, release) => {
     expect(fromItem({ is_early_access: true, release })).toStrictEqual(flagged());
-  });
-
-  it("keeps the flag when the release section is no object", () => {
-    expect(fromItem({ is_early_access: true, release: "2024" })).toStrictEqual(flagged());
   });
 });
 
 describe("EARLY_ACCESS_KIND over a parsed response", () => {
-  const ID = appId(1);
+  const ID = make.appId();
 
   /** The kind's verdict for one item as parsed with these sections. */
   function parsed(item: unknown, sections: Parameters<typeof parseGetItems>[3]) {
-    const result = httpResult(getItemsResponse([item]), GETITEMS_URL);
-    return parseGetItems(appIds(1), result, "english", sections).get(ID)?.earlyaccess;
+    const result = make.http.result(make.item.response([item]), GETITEMS_URL);
+    return parseGetItems([ID], result, "english", sections).get(ID)?.earlyaccess;
   }
 
   it("reads the release section: unknown unrequested while the request left it out", () => {
-    const item = earlyAccessItem(1, { note: NOTE, released: RELEASED });
-    expect(parsed(item, ["basic_info"])).toBe(UNKNOWN.unrequested);
+    const item = make.item.earlyAccess(ID, { note: NOTE, released: RELEASED });
+    expect(parsed(item, ["basic_info"])).toBe(make.verdict.unknown("unrequested"));
     expect(parsed(item, ["basic_info", "release"])).toStrictEqual(
-      earlyAccessVerdict({ note: NOTE, released: RELEASED }),
+      make.verdict.disclosed("earlyaccess", { note: NOTE, released: RELEASED }),
     );
     expect(EARLY_ACCESS_KIND.sections).toStrictEqual(["release"]);
   });
 
   it("leaves an item without extra_details unknown missing, flagged or not", () => {
-    const item = storeItem(1, { extra_details: undefined, is_early_access: true });
-    expect(parsed(item, ["basic_info", "release"])).toBe(UNKNOWN.missing);
+    const item = make.item.store(ID, { extra_details: undefined, is_early_access: true });
+    expect(parsed(item, ["basic_info", "release"])).toBe(make.verdict.unknown("missing"));
   });
 
   it("is declared by the developer, so the card names no Valve source", () => {
@@ -141,25 +128,25 @@ describe("EARLY_ACCESS_KIND over a parsed response", () => {
 });
 
 describe("EARLY_ACCESS_KIND in storage", () => {
-  const T = 1_000_000_000_000;
-  const of = (earlyaccess: KindVerdicts["earlyaccess"]): KindVerdicts => ({
-    ...UNKNOWN_KINDS.missing,
-    earlyaccess,
-  });
+  const T = make.time();
+  const of = (earlyaccess: KindVerdicts["earlyaccess"]) => make.verdicts({ earlyaccess });
 
   it.each<readonly [string, KindVerdicts["earlyaccess"]]>([
     ["a flag alone", flagged()],
     ["a note and a release date", flagged({ note: NOTE, released: RELEASED })],
-    ["not disclosed", NOT_DISCLOSED],
-    ["unknown missing", UNKNOWN.missing],
+    ["not disclosed", make.verdict.notDisclosed()],
+    ["unknown missing", make.verdict.unknown("missing")],
   ])("round trips %s", (_name, verdict) => {
     const verdicts = of(verdict);
     expect(decodeVerdicts(encodeVerdicts(verdicts, T))).toStrictEqual({ verdicts, time: T });
   });
 
   it("reads an entry without the latest update the app page added", () => {
-    const entry = encodeVerdicts(of(earlyAccessVerdict({ updated: 1793121240 })), T);
-    expect(decodeVerdicts(entry)?.verdicts.earlyaccess).toStrictEqual(earlyAccessVerdict());
+    const updated = make.verdict.disclosed("earlyaccess", { updated: make.fixture.updated });
+    const entry = encodeVerdicts(of(updated), T);
+    expect(decodeVerdicts(entry)?.verdicts.earlyaccess).toStrictEqual(
+      make.verdict.disclosed("earlyaccess"),
+    );
   });
 
   it.each<readonly [string, Readonly<Record<string, unknown>>]>([
@@ -170,8 +157,8 @@ describe("EARLY_ACCESS_KIND in storage", () => {
     ["a release date no date format can show", { released: 9_000_000_000_000 }],
   ])("discards an entry that holds %s, so the app is fetched again", (_name, fields) => {
     const kinds = {
-      ...perKind(() => ({ state: "not-disclosed", source: "api" })),
-      earlyaccess: { state: "disclosed", kind: "earlyaccess", source: "api", ...fields },
+      ...make.verdicts.uniform("not-disclosed"),
+      earlyaccess: { ...make.verdict.bare("earlyaccess"), ...fields },
     };
     expect(decodeVerdicts({ time: T, kinds })).toBeUndefined();
   });

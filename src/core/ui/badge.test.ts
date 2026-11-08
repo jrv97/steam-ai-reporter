@@ -1,23 +1,15 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { setBody } from "../../../tests/helpers/dom";
+import { make } from "../../../tests/helpers/factory";
 import { hostView, type HostViewOptions } from "../../../tests/helpers/host-view";
 import { englishI18n } from "../../../tests/helpers/i18n";
-import { STATUS_KINDS, withChipText } from "../../../tests/helpers/settings";
-import {
-  compatVerdict,
-  disclosedKinds,
-  disclosedVerdict,
-  FULL_DISCLOSED,
-  NOT_DISCLOSED,
-} from "../../../tests/helpers/verdicts";
+import { STATUS_KINDS } from "../../../tests/helpers/settings";
 import { COMPAT_FACETS } from "../kinds/compat";
 import { KIND_IDS, type KindId } from "../kinds/id";
 import type { ChipWords } from "../kinds/kind-settings";
 import { kindsInOrder, OVERLAY_CHIPS, parseOrder } from "../kinds/order";
 import { KIND_BY_ID, KINDS } from "../kinds/registry";
 import type { AnyDisclosed } from "../kinds/verdicts";
-import { DEFAULT_SETTINGS } from "../settings/settings";
-import { UNKNOWN } from "../types";
 import { compactSize, createBadgeRenderer, createChip } from "./badge";
 import type { BadgeSlot } from "./host";
 
@@ -28,8 +20,8 @@ function capsule(): {
   title: HTMLElement;
 } {
   setBody(`
-    <div class="row"><a class="link" href="/app/10/"><div class="image"></div>
-    <span class="title">Game</span></a></div>`);
+    <div class="row"><a class="link" href="/app/${String(make.appId())}/"><div class="image"></div>
+    <span class="title">${make.text.name()}</span></a></div>`);
   const host = document.querySelector<HTMLElement>(".row");
   const link = document.querySelector<HTMLAnchorElement>(".link");
   const image = document.querySelector<HTMLElement>(".image");
@@ -40,24 +32,24 @@ function capsule(): {
   return { host, link, image, title };
 }
 
-/** Where a chip draws: on a row, or over an image in the text or the large tier. */
-type SlotKind = "full" | "text" | "large";
+type Capsule = ReturnType<typeof capsule>;
 
 function view(host: Element, slot: BadgeSlot | undefined, options: HostViewOptions = {}) {
   return hostView(host, { ...options, slot });
 }
 
 describe("compactSize", () => {
-  it("gives small images no badge", () => {
-    expect(compactSize(179, 70)).toBeUndefined();
-    expect(compactSize(300, 31)).toBeUndefined();
-  });
-
-  it("uses the text tier from 180px and the large tier from 400 by 150", () => {
-    expect(compactSize(180, 32)).toBe("text");
-    expect(compactSize(399, 400)).toBe("text");
-    expect(compactSize(400, 149)).toBe("text");
-    expect(compactSize(400, 150)).toBe("large");
+  it.each(
+    [
+      [179, 70, undefined],
+      [300, 31, undefined],
+      [180, 32, "text"],
+      [399, 400, "text"],
+      [400, 149, "text"],
+      [400, 150, "large"],
+    ] as const,
+  )("sizes a %ipx by %ipx image as %s", (width, height, expected) => {
+    expect(compactSize(width, height)).toBe(expected);
   });
 });
 
@@ -65,10 +57,8 @@ describe("createBadgeRenderer", () => {
   const i18n = englishI18n();
   const chip = (id: KindId) => i18n.t(KIND_BY_ID[id].messages.chip);
   // The accessible name starts with the visible chip text, then Steam's full line.
-  const nameOf = (id: KindId) => {
-    const heading = i18n.t(KIND_BY_ID[id].messages.heading);
-    return chip(id) === heading ? heading : i18n.t("kind_chip_name", { chip: chip(id), heading });
-  };
+  const nameOf = (id: KindId) =>
+    i18n.t("kind_chip_name", { chip: chip(id), heading: i18n.t(KIND_BY_ID[id].messages.heading) });
   const AI_NAME = nameOf("ai");
   const MANY: readonly KindId[] = ["ai", "drm", "pvp", "eula", "kernel"];
 
@@ -99,11 +89,19 @@ describe("createBadgeRenderer", () => {
   }
 
   const chipsIn = (host: Element) => Array.from(host.querySelectorAll(".sar-chips > *"));
+  /** The chip drawn at `index` in a host, counted from the end when negative. */
+  function chipAt(host: Element, index: number): Element {
+    const found = chipsIn(host).at(index);
+    if (found === undefined) {
+      throw new RangeError(String(index));
+    }
+    return found;
+  }
   const kindsOf = (host: Element) => chipsIn(host).map((c) => c.getAttribute("data-sar-kind"));
 
   it("draws the full badge with the catalog label and binds it to the hover card", () => {
     const { host, title } = capsule();
-    const verdict = disclosedVerdict({ notes: "Concept art." });
+    const verdict = make.verdict.disclosed("ai", { notes: make.text.note() });
     renderer.render(view(host, full(title), { verdict }));
     const group = host.querySelector(".sar-chips");
     expect(group?.previousElementSibling).toBe(title);
@@ -125,11 +123,11 @@ describe("createBadgeRenderer", () => {
     "gives the %s chip an accessible name that starts with its text",
     (id) => {
       const { host, title } = capsule();
-      renderer.render(view(host, full(title), { verdicts: disclosedKinds([id]) }));
-      const [label, name] = texts(chipsIn(host)[0] ?? host);
+      renderer.render(view(host, full(title), { verdicts: make.verdicts.only([id]) }));
+      const [label, name] = texts(chipAt(host, 0));
       expect(label).toBe(chip(id));
       expect(name).toBe(nameOf(id));
-      expect(name?.startsWith(`${label ?? ""}: `)).toBe(true);
+      expect(name?.startsWith(chip(id))).toBe(true);
       expect(name).toContain(i18n.t(KIND_BY_ID[id].messages.heading));
     },
   );
@@ -138,14 +136,14 @@ describe("createBadgeRenderer", () => {
     STATUS_KINDS.flatMap((kind) => COMPAT_FACETS.map((facet) => [kind, facet] as const)),
   )("gives a %s chip rated %s the device word and Steam's value word", (kind, facet) => {
     const { host, title } = capsule();
-    const verdicts = { ...disclosedKinds([]), [kind]: compatVerdict(kind, facet) };
+    const verdicts = { ...make.verdicts.only([]), [kind]: make.verdict.disclosed(kind, { facet }) };
     renderer.render(view(host, full(title), { verdicts }));
     const label = i18n.t("kind_facet_chip", {
       chip: chip(kind),
       value: i18n.t(`kind_compat_${facet}`),
     });
     const heading = i18n.t(KIND_BY_ID[kind].messages.heading);
-    expect(texts(chipsIn(host)[0] ?? host)).toEqual([
+    expect(texts(chipAt(host, 0))).toEqual([
       label,
       i18n.t("kind_chip_name", { chip: label, heading }),
     ]);
@@ -153,14 +151,23 @@ describe("createBadgeRenderer", () => {
 
   it("gives the PvP chip the name PvP once, not PvP: PvP", () => {
     const { host, title } = capsule();
-    renderer.render(view(host, full(title), { verdicts: disclosedKinds(["pvp"]) }));
-    const [label, name] = texts(chipsIn(host)[0] ?? host);
+    renderer.render(view(host, full(title), { verdicts: make.verdicts.only(["pvp"]) }));
+    const [label, name] = texts(chipAt(host, 0));
     expect(label).toBe(i18n.t("kind_pvp_chip"));
     expect(name).toBe(i18n.t("kind_pvp_heading"));
   });
 
   describe("with the person's chip text", () => {
     let words: ChipWords = {};
+    const MINE = make.chipText();
+    const ME = make.chipText();
+    /** Where a chip draws: on a row, or over an image in the text or the large tier. */
+    const SLOTS = {
+      full: (at: Capsule) => full(at.title),
+      text: (at: Capsule) => overlay(at.image, "text"),
+      large: (at: Capsule) => overlay(at.image, "large"),
+    };
+    type SlotKind = keyof typeof SLOTS;
 
     beforeEach(() => {
       words = {};
@@ -175,18 +182,19 @@ describe("createBadgeRenderer", () => {
 
     /** The visible text of the first chip drawn in a slot, with these texts for AI. */
     function drawnLabel(own: { chip?: string; chipCompact?: string; }, slot: SlotKind) {
-      words = withChipText(DEFAULT_SETTINGS, { ai: own }).kinds;
-      const { host, title, image } = capsule();
-      const at = slot === "full" ? full(title) : overlay(image, slot);
-      renderer.render(view(host, at, { verdicts: disclosedKinds(["ai"]) }));
-      return texts(chipsIn(host)[0] ?? host);
+      words = make.settings.chipText({ ai: own }).kinds;
+      const drawn = capsule();
+      renderer.render(
+        view(drawn.host, SLOTS[slot](drawn), { verdicts: make.verdicts.only(["ai"]) }),
+      );
+      return texts(chipAt(drawn.host, 0));
     }
 
     it.each<readonly [SlotKind, { chip?: string; chipCompact?: string; }, string]>([
-      ["full", { chip: "Mine", chipCompact: "Me" }, "Mine"],
-      ["large", { chip: "Mine", chipCompact: "Me" }, "Mine"],
-      ["text", { chip: "Mine", chipCompact: "Me" }, "Me"],
-      ["text", { chip: "Mine" }, "Mine"],
+      ["full", { chip: MINE, chipCompact: ME }, MINE],
+      ["large", { chip: MINE, chipCompact: ME }, MINE],
+      ["text", { chip: MINE, chipCompact: ME }, ME],
+      ["text", { chip: MINE }, MINE],
     ])("shows on a %s chip, given %j, the text %s", (slot, own, expected) => {
       expect(drawnLabel(own, slot)[0]).toBe(expected);
     });
@@ -196,25 +204,26 @@ describe("createBadgeRenderer", () => {
     });
 
     it("sets markup as literal text, never as elements", () => {
-      const [label, name] = drawnLabel({ chip: "<b>x</b>" }, "full");
-      expect(label).toBe("<b>x</b>");
-      expect(name?.startsWith("<b>x</b>")).toBe(true);
+      const markup = make.text.markup();
+      const [label, name] = drawnLabel({ chip: markup }, "full");
+      expect(label).toBe(markup);
+      expect(name?.startsWith(markup)).toBe(true);
       expect(document.querySelector(".sar-chips b")).toBeNull();
     });
 
     it("draws a host again when only the text changed", () => {
       const { host, title } = capsule();
-      const drawn = view(host, full(title), { verdicts: disclosedKinds(["ai"]) });
+      const drawn = view(host, full(title), { verdicts: make.verdicts.only(["ai"]) });
       renderer.render(drawn);
-      words = withChipText(DEFAULT_SETTINGS, { ai: { chip: "Mine" } }).kinds;
+      words = make.settings.chipText({ ai: { chip: MINE } }).kinds;
       renderer.render(drawn);
-      expect(texts(chipsIn(host)[0] ?? host)[0]).toBe("Mine");
+      expect(texts(chipAt(host, 0))[0]).toBe(MINE);
     });
   });
 
   it("draws one chip per disclosed kind, in registry order, whatever the data order", () => {
     const { host, title } = capsule();
-    const verdicts = disclosedKinds(["pvp", "drm", "ai"]);
+    const verdicts = make.verdicts.only(["pvp", "drm", "ai"]);
     renderer.render(view(host, full(title), { verdicts, maxChips: 5 }));
     expect(host.querySelectorAll(".sar-chips")).toHaveLength(1);
     expect(kindsOf(host)).toEqual(["ai", "drm", "pvp"]);
@@ -223,10 +232,9 @@ describe("createBadgeRenderer", () => {
 
   it("binds every chip to the verdicts of all the kinds shown", () => {
     const { host, title } = capsule();
-    renderer.render(
-      view(host, full(title), { verdicts: FULL_DISCLOSED, maxChips: KIND_IDS.length }),
-    );
-    const expected = KIND_IDS.map((id) => FULL_DISCLOSED[id]);
+    const verdicts = make.verdicts.full();
+    renderer.render(view(host, full(title), { verdicts, maxChips: KIND_IDS.length }));
+    const expected = KIND_IDS.map((id) => verdicts[id]);
     expect(chipsIn(host)).toHaveLength(KIND_IDS.length);
     for (const element of chipsIn(host)) {
       expect(bound.get(element)).toEqual(expected);
@@ -253,19 +261,19 @@ describe("createBadgeRenderer", () => {
         const { host, image } = capsule();
         const listed = order.filter((id) => MANY.includes(id));
         renderer.render(
-          view(host, overlay(image), { verdicts: disclosedKinds(MANY), maxChips: OVERLAY_CHIPS }),
+          view(host, overlay(image), {
+            verdicts: make.verdicts.only(MANY),
+            maxChips: OVERLAY_CHIPS,
+          }),
         );
         expect(kindsOf(host)).toEqual([...listed.slice(0, OVERLAY_CHIPS), null]);
-        const more = chipsIn(host).at(-1);
-        expect(more === undefined ? undefined : bound.get(more)?.map((v) => v.kind)).toEqual(
-          listed,
-        );
+        expect(bound.get(chipAt(host, -1))?.map((v) => v.kind)).toEqual(listed);
       },
     );
 
     it("draws a host again when only the order changed", () => {
       const { host, title } = capsule();
-      const drawn = view(host, full(title), { verdicts: disclosedKinds(MANY), maxChips: 5 });
+      const drawn = view(host, full(title), { verdicts: make.verdicts.only(MANY), maxChips: 5 });
       renderer.render(drawn);
       order = parseOrder(["pvp"]);
       renderer.render(drawn);
@@ -276,52 +284,44 @@ describe("createBadgeRenderer", () => {
   describe("past the placement's allowance", () => {
     it("shows the allowed chips and a +N chip for the rest", () => {
       const { host, title } = capsule();
-      renderer.render(view(host, full(title), { verdicts: disclosedKinds(MANY), maxChips: 2 }));
-      expect(kindsOf(host)).toEqual([...MANY.slice(0, 2), null]);
-      const more = chipsIn(host)[2];
-      const label = i18n.t("kind_chip_more", { count: "3" });
-      expect(more?.classList.contains("sar-badge")).toBe(true);
-      expect(texts(more ?? host)).toEqual([
+      const maxChips = 2;
+      renderer.render(view(host, full(title), { verdicts: make.verdicts.only(MANY), maxChips }));
+      expect(kindsOf(host)).toEqual([...MANY.slice(0, maxChips), null]);
+      const more = chipAt(host, maxChips);
+      const label = i18n.t("kind_chip_more", { count: String(MANY.length - maxChips) });
+      expect(more.classList.contains("sar-badge")).toBe(true);
+      expect(texts(more)).toEqual([
         label,
         i18n.t("kind_chip_name", { chip: label, heading: i18n.t("kind_chip_more_name") }),
       ]);
     });
 
-    it("lists all the kinds in the hover card from the +N chip too", () => {
+    it.each<readonly [number, readonly (string | null)[]]>([
+      [MANY.length, MANY],
+      [0, [null]],
+    ])("with an allowance of %i draws the kinds %j", (maxChips, expected) => {
       const { host, title } = capsule();
-      renderer.render(view(host, full(title), { verdicts: disclosedKinds(MANY), maxChips: 2 }));
-      const more = chipsIn(host)[2];
-      expect(more === undefined ? undefined : bound.get(more)?.map((v) => v.kind)).toEqual(MANY);
-    });
-
-    it("draws no +N chip when the kinds fit exactly", () => {
-      const { host, title } = capsule();
-      renderer.render(view(host, full(title), { verdicts: disclosedKinds(MANY), maxChips: 5 }));
-      expect(kindsOf(host)).toEqual(MANY);
-    });
-
-    it("can show nothing but the +N chip", () => {
-      const { host, title } = capsule();
-      renderer.render(view(host, full(title), { verdicts: disclosedKinds(MANY), maxChips: 0 }));
-      expect(kindsOf(host)).toEqual([null]);
+      renderer.render(view(host, full(title), { verdicts: make.verdicts.only(MANY), maxChips }));
+      expect(kindsOf(host)).toEqual(expected);
     });
 
     it("counts only the kinds shown, not the ones whose badges are off", () => {
       const { host, title } = capsule();
       const unbadged: readonly KindId[] = ["ai", "kernel", "pvp"];
       renderer.render(
-        view(host, full(title), { verdicts: disclosedKinds(MANY), unbadged, maxChips: 2 }),
+        view(host, full(title), { verdicts: make.verdicts.only(MANY), unbadged, maxChips: 2 }),
       );
       expect(kindsOf(host)).toEqual(["drm", "eula"]);
     });
 
     it("draws the +N chip in the compact style over an image", () => {
       const { host, image } = capsule();
-      renderer.render(view(host, overlay(image), { verdicts: disclosedKinds(MANY), maxChips: 1 }));
+      const maxChips = 1;
+      renderer.render(view(host, overlay(image), { verdicts: make.verdicts.only(MANY), maxChips }));
       const chips = chipsIn(host);
       expect(chips.map((c) => c.className)).toEqual(["sar-compact", "sar-compact"]);
       expect(chips[1]?.querySelector(".sar-compact-label")?.textContent).toBe(
-        i18n.t("kind_chip_more", { count: "4" }),
+        i18n.t("kind_chip_more", { count: String(MANY.length - maxChips) }),
       );
       expect(chips[1]?.getAttribute("data-sar-size")).toBe("text");
     });
@@ -332,7 +332,7 @@ describe("createBadgeRenderer", () => {
     const slot = full(title);
     renderer.render(view(host, slot));
     const group = host.querySelector(".sar-chips");
-    const next = disclosedVerdict({ notes: "Voice lines." });
+    const next = make.verdict.disclosed("ai", { notes: make.text.note() });
     renderer.render(view(host, slot, { verdict: next }));
     expect(host.querySelector(".sar-chips")).toBe(group);
     const badge = host.querySelector(".sar-badge");
@@ -341,13 +341,13 @@ describe("createBadgeRenderer", () => {
 
   it("draws the group again when the kinds, the allowance or the slot change", () => {
     const { host, title, image } = capsule();
-    renderer.render(view(host, full(title), { verdicts: disclosedKinds(["ai"]) }));
+    renderer.render(view(host, full(title), { verdicts: make.verdicts.only(["ai"]) }));
     const first = host.querySelector(".sar-chips");
-    renderer.render(view(host, full(title), { verdicts: disclosedKinds(["ai", "drm"]) }));
+    renderer.render(view(host, full(title), { verdicts: make.verdicts.only(["ai", "drm"]) }));
     expect(host.querySelector(".sar-chips")).not.toBe(first);
     expect(first?.isConnected).toBe(false);
     expect(kindsOf(host)).toEqual(["ai", "drm"]);
-    const verdicts = disclosedKinds(["ai", "drm"]);
+    const verdicts = make.verdicts.only(["ai", "drm"]);
     renderer.render(view(host, full(title), { verdicts, maxChips: 1 }));
     expect(kindsOf(host)).toEqual(["ai", null]);
     renderer.render(view(host, overlay(image), { verdicts, maxChips: 1 }));
@@ -357,7 +357,7 @@ describe("createBadgeRenderer", () => {
 
   it("draws the compact chips in their tier, linked to the capsule link", () => {
     const { host, image } = capsule();
-    const verdicts = disclosedKinds(["ai", "kernel"]);
+    const verdicts = make.verdicts.only(["ai", "kernel"]);
     renderer.render(view(host, overlay(image, "large"), { verdicts }));
     const chips = Array.from(image.querySelectorAll<HTMLElement>(".sar-chips > .sar-compact"));
     expect(image.querySelector(".sar-chips")?.getAttribute("data-sar-chips")).toBe("compact");
@@ -383,8 +383,8 @@ describe("createBadgeRenderer", () => {
   });
 
   it.each([
-    ["not disclosed", NOT_DISCLOSED],
-    ["unknown", UNKNOWN.error],
+    ["not disclosed", make.verdict.notDisclosed()],
+    ["unknown", make.verdict.unknown("error")],
   ])("renders nothing for %s", (_name, verdict) => {
     const { host, title } = capsule();
     const before = host.innerHTML;
@@ -396,7 +396,7 @@ describe("createBadgeRenderer", () => {
     const { host, title } = capsule();
     renderer.render(
       view(host, full(title), {
-        verdicts: disclosedKinds(["ai", "drm", "eula"]),
+        verdicts: make.verdicts.only(["ai", "drm", "eula"]),
         ignored: ["drm"],
         unbadged: ["eula"],
       }),
@@ -436,7 +436,7 @@ describe("createBadgeRenderer", () => {
 describe("createChip", () => {
   it("builds a chip with the kind's text, name and id", () => {
     const i18n = englishI18n();
-    const element = createChip(document, i18n, FULL_DISCLOSED.drm);
+    const element = createChip(document, i18n, make.verdict.disclosed("drm"));
     expect(element.className).toBe("sar-badge");
     expect(element.getAttribute("data-sar-kind")).toBe("drm");
     expect(element.querySelector(".sar-badge-label")?.textContent).toBe(i18n.t("kind_drm_chip"));

@@ -1,14 +1,12 @@
 import * as v from "valibot";
 import { describe, expect, it } from "vitest";
-import { appId } from "../../../tests/helpers/app-ids";
-import { creatorsFor } from "../../../tests/helpers/creators";
-import { parsedItem } from "../../../tests/helpers/getitems";
-import { FULL_DISCLOSED } from "../../../tests/helpers/verdicts";
+import { make } from "../../../tests/helpers/factory";
 import { UNKNOWN, type UnknownReason } from "../types";
 import { KIND_IDS } from "./id";
-import { KINDS } from "./registry";
+import { KINDS, perKind } from "./registry";
 import { BASE_SECTIONS, SECTIONS } from "./sections";
 import {
+  type AnyDisclosed,
   type FoundRelations,
   isKindVerdicts,
   kindsFromGetItems,
@@ -20,12 +18,10 @@ import {
 const REASONS: readonly UnknownReason[] = ["gated", "missing", "error", "rate-limited"];
 
 describe("UNKNOWN_KINDS", () => {
-  it("holds the shared unknown verdict of its reason for every kind", () => {
-    for (const reason of REASONS) {
-      expect(Object.keys(UNKNOWN_KINDS[reason])).toStrictEqual([...KIND_IDS]);
-      for (const id of KIND_IDS) {
-        expect(UNKNOWN_KINDS[reason][id]).toBe(UNKNOWN[reason]);
-      }
+  it.each(REASONS)("holds the shared unknown %s verdict for every kind", (reason) => {
+    expect(Object.keys(UNKNOWN_KINDS[reason])).toStrictEqual([...KIND_IDS]);
+    for (const id of KIND_IDS) {
+      expect(UNKNOWN_KINDS[reason][id]).toBe(UNKNOWN[reason]);
     }
   });
 });
@@ -35,17 +31,21 @@ describe("withRelations", () => {
     ["nothing", {}],
     ["no parent", { parent: undefined }],
     ["no creators", { creators: undefined }],
-    ["creators of no one", { creators: creatorsFor({}) }],
+    ["creators of no one", { creators: make.creator.forItem({}) }],
     ["a demo mark without a full game", { demo: true }],
   ])("returns the same verdicts when it is given %s", (_name, from) => {
-    expect(withRelations(FULL_DISCLOSED, from)).toBe(FULL_DISCLOSED);
+    const verdicts = make.verdicts.full();
+    expect(withRelations(verdicts, from)).toBe(verdicts);
   });
 
   it.each<[string, FoundRelations]>([
-    ["the base game", { parent: appId(7) }],
-    ["the creators", { creators: creatorsFor({ developers: ["A"] }) }],
-    ["both", { parent: appId(7), creators: creatorsFor({ publishers: [["B", 2]] }) }],
-    ["the full game of a demo", { parent: appId(7), demo: true }],
+    ["the base game", { parent: make.appId() }],
+    ["the creators", { creators: make.creator.forItem({ developers: [make.text.creator()] }) }],
+    ["both", {
+      parent: make.appId(),
+      creators: make.creator.forItem({ publishers: [[make.text.creator(), make.creator.clan()]] }),
+    }],
+    ["the full game of a demo", { parent: make.appId(), demo: true }],
   ])("adds %s without touching the shared objects or the verdicts", (_name, from) => {
     const related = withRelations(UNKNOWN_KINDS.missing, from);
     expect(related).toMatchObject(from);
@@ -59,61 +59,65 @@ describe("withRelations", () => {
 });
 
 describe("sameVerdicts", () => {
-  const { ai, drm, pvp } = FULL_DISCLOSED;
+  const ai = make.verdict.disclosed("ai");
+  const drm = make.verdict.disclosed("drm");
+  const pvp = make.verdict.disclosed("pvp");
 
-  it("holds for lists of the very same verdicts in the same order", () => {
-    expect(sameVerdicts([], [])).toBe(true);
-    expect(sameVerdicts([ai, drm], [ai, drm])).toBe(true);
-  });
-
-  it("fails on another order, another length or a copy of a verdict", () => {
-    expect(sameVerdicts([ai, drm], [drm, ai])).toBe(false);
-    expect(sameVerdicts([ai], [ai, pvp])).toBe(false);
-    expect(sameVerdicts([ai, drm], [ai])).toBe(false);
-    expect(sameVerdicts([ai], [{ ...ai }])).toBe(false);
+  it.each<readonly [string, readonly AnyDisclosed[], readonly AnyDisclosed[], boolean]>([
+    ["holds for two empty lists", [], [], true],
+    ["holds for the very same verdicts in the same order", [ai, drm], [ai, drm], true],
+    ["fails on another order", [ai, drm], [drm, ai], false],
+    ["fails on a longer list", [ai], [ai, pvp], false],
+    ["fails on a shorter list", [ai, drm], [ai], false],
+    ["fails on a copy of a verdict", [ai], [{ ...ai }], false],
+  ])("%s", (_name, a, b, same) => {
+    expect(sameVerdicts(a, b)).toBe(same);
   });
 });
 
 describe("isKindVerdicts", () => {
-  it("accepts verdicts for every kind and nothing less", () => {
-    expect(isKindVerdicts(UNKNOWN_KINDS.missing)).toBe(true);
-    expect(isKindVerdicts({})).toBe(false);
-  });
+  const full = make.verdicts.full();
 
-  it("accepts a disclosed verdict in the slot of its own kind", () => {
-    expect(isKindVerdicts(FULL_DISCLOSED)).toBe(true);
-  });
-
-  it("rejects a disclosed verdict in the slot of another kind", () => {
-    expect(isKindVerdicts({ ...FULL_DISCLOSED, kernel: FULL_DISCLOSED.anticheat })).toBe(false);
-    expect(isKindVerdicts({ ...FULL_DISCLOSED, ai: FULL_DISCLOSED.pvp })).toBe(false);
+  it.each<readonly [string, Parameters<typeof isKindVerdicts>[0], boolean]>([
+    ["accepts verdicts for every kind", UNKNOWN_KINDS.missing, true],
+    ["rejects an object without them", {}, false],
+    ["accepts a disclosed verdict in the slot of its own kind", full, true],
+    [
+      "rejects an anti-cheat verdict in the kernel slot",
+      { ...full, kernel: make.verdict.disclosed("anticheat") },
+      false,
+    ],
+    ["rejects a PvP verdict in the AI slot", { ...full, ai: make.verdict.disclosed("pvp") }, false],
+  ])("%s", (_name, value, valid) => {
+    expect(isKindVerdicts(value)).toBe(valid);
   });
 });
 
 describe("a disclosed verdict", () => {
-  it("names the kind it sits under, and is read back by that kind's schema", () => {
-    for (const kind of KINDS) {
-      const verdict = FULL_DISCLOSED[kind.id];
-      expect(verdict.kind).toBe(kind.id);
+  it.each(KINDS.map((kind) => [kind.id, kind] as const))(
+    "of the %s kind names its kind and is read back by its schema",
+    (id, kind) => {
+      const verdict = make.verdict.disclosed(id);
+      expect(verdict.kind).toBe(id);
       expect(v.safeParse(kind.stored, verdict).success).toBe(true);
-    }
-  });
+    },
+  );
 });
 
 describe("kindsFromGetItems", () => {
   it("gives a kind whose section the request left out unknown unrequested", () => {
-    const { item, details } = parsedItem({}, { platforms: { steam_deck_compat_category: 1 } });
+    const platforms = { steam_deck_compat_category: 1 };
+    const { item, details } = make.item.parsed({}, { platforms });
     const verdicts = kindsFromGetItems(item, details, "english", BASE_SECTIONS);
     expect(verdicts.deck).toBe(UNKNOWN.unrequested);
     expect(verdicts.sections).toBe(BASE_SECTIONS);
   });
 
   it("gives every kind the verdict its definition derives from the item", () => {
-    const { item, details } = parsedItem({ content_survey_ai_notes: "Concept art." });
-    const verdicts = kindsFromGetItems(item, details, "english", SECTIONS);
-    expect(Object.keys(verdicts)).toStrictEqual([...KIND_IDS, "sections"]);
-    for (const kind of KINDS) {
-      expect(verdicts[kind.id]).toStrictEqual(kind.fromGetItems(item, details, "english"));
-    }
+    const { item, details } = make.item.parsed({ content_survey_ai_notes: make.text.note() });
+    expect(kindsFromGetItems(item, details, "english", SECTIONS)).toStrictEqual({
+      ...perKind((kind) => kind.fromGetItems(item, details, "english")),
+      sections: SECTIONS,
+    });
   });
 });

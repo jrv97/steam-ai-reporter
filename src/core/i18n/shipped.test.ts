@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
+import { make } from "../../../tests/helpers/factory";
 import en from "../../locales/en/messages.json";
 import es from "../../locales/es/messages.json";
 import { type Catalog, DEFAULT_LOCALE, type Params, substitute } from "./catalog";
-import { resolveLocale } from "./locale";
+import { type LocaleContext, resolveLocale } from "./locale";
 import { SHIPPED_CATALOGS } from "./shipped";
 import { createI18n } from "./t";
 
@@ -38,7 +39,7 @@ describe("shipped catalogs", () => {
     const spanish = createI18n(SHIPPED_CATALOGS, "es");
     expect(spanish.locale).toBe("es");
     expect(spanish.t("banner_ignore")).toBe(es.banner_ignore.message);
-    const restore = { name: "Fixture Game", scope: spanish.t("options_allow_scope_all") };
+    const restore = { name: make.text.name(), scope: spanish.t("options_allow_scope_all") };
     expect(spanish.t("options_allow_restore_label", restore)).toBe(
       substitute(es.options_allow_restore_label.message, restore),
     );
@@ -56,15 +57,14 @@ describe("shipped catalogs", () => {
     );
   });
 
-  it("resolves Spanish and Latin American store pages to the Spanish catalog", () => {
-    expect(resolveLocale({ setting: "auto", pageLang: "es" }, locales)).toBe("es");
-    expect(resolveLocale({ setting: "auto", pageLang: "es-419" }, locales)).toBe("es");
-    expect(resolveLocale({ setting: "es", pageLang: "en" }, locales)).toBe("es");
-  });
-
-  it("keeps other store languages on English", () => {
-    expect(resolveLocale({ setting: "auto", pageLang: "de" }, locales)).toBe(DEFAULT_LOCALE);
-    expect(resolveLocale({ setting: "auto", pageLang: "pt-br" }, locales)).toBe(DEFAULT_LOCALE);
+  it.each<readonly [string, LocaleContext, string]>([
+    ["a Spanish store page to Spanish", { setting: "auto", pageLang: "es" }, "es"],
+    ["a Latin American store page to Spanish", { setting: "auto", pageLang: "es-419" }, "es"],
+    ["Spanish chosen on an English page to Spanish", { setting: "es", pageLang: "en" }, "es"],
+    ["a German store page to English", { setting: "auto", pageLang: "de" }, DEFAULT_LOCALE],
+    ["a Brazilian store page to English", { setting: "auto", pageLang: "pt-br" }, DEFAULT_LOCALE],
+  ])("resolves %s", (_name, context, locale) => {
+    expect(resolveLocale(context, locales)).toBe(locale);
   });
 
   it("falls back to English for a key the Spanish catalog lacks", () => {

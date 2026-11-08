@@ -1,6 +1,5 @@
 import { parseAppPage } from "../../src/core/detect/app-page";
 import { GETITEMS_URL, parseGetItems } from "../../src/core/detect/getitems";
-import { KIND_IDS } from "../../src/core/kinds/id";
 import { KIND_BY_ID, KINDS } from "../../src/core/kinds/registry";
 import type { AnyDisclosed, KindVerdicts } from "../../src/core/kinds/verdicts";
 import kinds from "../fixtures/getitems/kinds.json";
@@ -46,11 +45,6 @@ export function capturedVerdicts(id: number): KindVerdicts {
 export function pageVerdicts(name: AppPageName, id: number): KindVerdicts {
   const doc = new DOMParser().parseFromString(APP_PAGES[name], "text/html");
   return parseAppPage(doc, `https://store.steampowered.com/app/${String(id)}/?l=english`);
-}
-
-/** The kinds a verdict list discloses, in registry order. */
-export function disclosedIds(verdicts: KindVerdicts): readonly string[] {
-  return KIND_IDS.filter((id) => verdicts[id].state === "disclosed");
 }
 
 /** The disclosed verdicts of every kind, in registry order. */

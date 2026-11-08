@@ -23,7 +23,7 @@ The only shipped composition roots are the extension content script and the user
 1. Check first whether an existing port or a small extension of one covers the need (rule 11, SOLID and DRY). A new port is the last resort.
 2. Define the interface in `ports.ts`: methods take and return plain, `readonly` data, and return `unknown` for anything read from outside. No platform types in signatures.
 3. Write the contract test in `tests/contracts/<port>.contract.ts`: a suite that takes a factory and asserts the behavior every implementation must have, including edge cases and failure modes.
-4. Provide the test double in `tests/helpers/` (memory store, fake HTTP, fixed clock) and run the contract suite against it.
+4. Provide the test double in `tests/helpers/` (memory store, fake HTTP, fixed clock), expose it on `fake` in `tests/helpers/fakes.ts`, and run the contract suite against it.
 5. Implement the port in each platform that needs it under `src/platform/`, and run the same suite against each implementation.
 6. Wire it in the composition roots only. Core code receives it by parameter.
 
@@ -57,7 +57,7 @@ A kind is data. The detectors, the chain, the cache, the settings and the ignore
 5. The per-kind rules in `ui/styles.css`: the badge switch, the dim and hide filters, their hover and focus rules and the hide rule list each kind by hand, because no selector joins an attribute on the root element with one on a host. `ui/styles.test.ts` fails for a kind they miss.
 6. A fixture: a captured GetItems item of a game that declares the kind in `tests/fixtures/getitems/kinds.json`, and a captured app page when the kind has page-only detail (`scripts/capture_fixtures.py`, then the table in `tests/fixtures/README.md`).
 7. A check in `scripts/canary.py` for the field the kind reads, so a change on Valve's side shows up before users see it.
-8. The test helpers that list every kind: `FULL_DISCLOSED` and `disclosedKinds` in `tests/helpers/verdicts.ts` (typed, so the checker names them). Fixture-based tests take the captured verdicts from `tests/helpers/fixture-verdicts.ts`.
+8. The per-kind disclosed defaults in `tests/helpers/verdicts.ts` behind `make.verdict.disclosed` and `make.verdicts.full` (typed, so the checker names them). Fixture-based tests take the captured verdicts from `make.fixture`.
 9. Tests next to the definition and in `kinds/registry.test.ts`; the settings form, the Tag order card, the chips, the hover card and the banner pick the kind up without an edit, and a stored order places it last.
 
 ### A kind with values (facets)
@@ -112,5 +112,5 @@ The banner adds a closed `details` per game that lists its creators, one row per
 - CSS classes and data attributes use the prefix `sar-` and `data-sar-*`; errors are `SarError` with a catalog-key `code`.
 - A surface that detects once asks again after a transient answer (every kind unknown `error` or `rate-limited`, or disclosed beside them on a demo whose full game failed, with `unrequested` kinds left out: `isTransient` in `cache/ttl.ts`) through `createTransientRetry` in `detect/retry.ts`: one timer per round, past the longest breaker pause, two rounds per item at most. The capsule UI and the app page use it; a new surface uses it too, never a timer of its own.
 - Efficiency is a requirement (rule 13, efficiency): scan only added subtrees, batch DOM reads before writes, no per-node closures or listeners, `WeakSet` and `WeakMap` keyed by elements, bounded caches, no polling.
-- Tests sit next to the module as `*.test.ts` and use the builders in `tests/helpers/`.
+- Tests sit next to the module as `*.test.ts` and take their data from `make` and their doubles from `fake` (`tests/helpers/`).
 - A backup (`backup/`) is read by the same schemas that read storage. A new setting or list reaches the file through `encodeSettings` or `encodeAllow`; a change to the file's shape bumps `BACKUP_VERSION` with an upgrade step in `UPGRADES`. An additive field inside `settings`, such as a kind's `facets` or chip text, keeps the version (decisions 61 and 67): an older build drops it and keeps the rest.

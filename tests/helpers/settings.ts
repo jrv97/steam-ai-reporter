@@ -4,7 +4,6 @@ import {
   type ChipText,
   type ChipTextField,
 } from "../../src/core/kinds/chip-text";
-import { type HexColor, HexColorSchema } from "../../src/core/kinds/color";
 import type { KindId } from "../../src/core/kinds/id";
 import type { FacetId } from "../../src/core/kinds/kind";
 import {
@@ -16,11 +15,6 @@ import { perKind } from "../../src/core/kinds/registry";
 import { applyPatch, type Settings, wholePatch } from "../../src/core/settings/settings";
 import type { StoredSettings } from "../../src/core/settings/settings-source";
 import { applyKindSettings } from "../../src/core/ui/kind-attributes";
-
-/** The text as a tag color; throws when it is not one, so a typo fails the test. */
-export function hexColor(text: string): HexColor {
-  return v.parse(HexColorSchema, text);
-}
 
 /** The text as a person's chip text for a field; throws when nothing is left of it. */
 export function chipText(text: string, field: ChipTextField = "chip"): ChipText {
@@ -91,6 +85,14 @@ export function plainKinds<T extends { readonly enabled: boolean; readonly banne
 /** The settings with `patch` applied to one kind's settings. */
 export function withKind(settings: Settings, id: KindId, patch: Partial<KindSettings>): Settings {
   return applyPatch(settings, { kinds: { [id]: patch } });
+}
+
+/** Every kind switched on over its defaults, with `patch`, then each kind's own `byKind` patch. */
+export function switchedOnKinds(
+  patch: Partial<KindSettings> = {},
+  byKind: Partial<Record<KindId, Partial<KindSettings>>> = {},
+): Readonly<Record<KindId, KindSettings>> {
+  return perKind((kind) => ({ ...kind.defaults, enabled: true, ...patch, ...byKind[kind.id] }));
 }
 
 /** Writes the kinds' list filters on the root element as the app does, `off` for the rest. */

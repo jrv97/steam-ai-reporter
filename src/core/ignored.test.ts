@@ -1,54 +1,87 @@
 import { describe, expect, it, vi } from "vitest";
-import { appId } from "../../tests/helpers/app-ids";
-import { creatorsFor, type CreatorsSpec, keyOf } from "../../tests/helpers/creators";
-import { fixedClock } from "../../tests/helpers/fixed-clock";
-import { ignoredSets, type IgnoredSpec } from "../../tests/helpers/ignored";
-import { memoryStore } from "../../tests/helpers/memory-store";
-import { createIgnoreLists, type IgnoreLists, isIgnored, loadIgnored } from "./ignored";
+import type { CreatorsSpec } from "../../tests/helpers/creators";
+import { make } from "../../tests/helpers/factory";
+import { fake } from "../../tests/helpers/fakes";
+import type { IgnoredSpec } from "../../tests/helpers/ignored";
+import {
+  createIgnoreLists,
+  type Ignored,
+  type IgnoreLists,
+  isIgnored,
+  loadIgnored,
+} from "./ignored";
 import type { KindId } from "./kinds/id";
+import type { Relations } from "./kinds/verdicts";
 import { ALLOW_ALL } from "./settings/allow-data";
+import type { AppId } from "./types";
 
-const quiet = { error: vi.fn() };
+/** Empty ignore lists over a store in memory. */
+function emptyLists(): IgnoreLists {
+  return createIgnoreLists(fake.store(), fake.clock(make.time()));
+}
+
+/** A creator key by clan ID, and the name key of the same creator. */
+function creatorKeys() {
+  return {
+    clan: make.creator.key(`c:${String(make.creator.clan())}`),
+    name: make.creator.key(`n:${make.text.creator()}`),
+  };
+}
 
 describe("loadIgnored", () => {
   it("holds the stored games and creators of each scope", async () => {
-    const lists = createIgnoreLists(memoryStore(), fixedClock(0));
-    await lists.games.add("drm", appId(10), "Ten");
-    await lists.games.add(ALLOW_ALL, appId(20), "Twenty");
-    await lists.creators.developer.add("ai", keyOf("c:4"), "Valve");
-    await lists.creators.publisher.add(ALLOW_ALL, keyOf("n:Embark"), "Embark");
-    const ignored = await loadIgnored(lists, quiet);
-    expect([...ignored.games.drm]).toEqual([10]);
-    expect([...ignored.games[ALLOW_ALL]]).toEqual([20]);
+    const lists = emptyLists();
+    const [drm, all] = [make.appId(), make.appId()] as const;
+    const { clan, name } = creatorKeys();
+    await lists.games.add("drm", drm, make.text.name());
+    await lists.games.add(ALLOW_ALL, all, make.text.name());
+    await lists.creators.developer.add("ai", clan, make.text.creator());
+    await lists.creators.publisher.add(ALLOW_ALL, name, make.text.creator());
+    const ignored = await loadIgnored(lists, { error: vi.fn() });
+    expect([...ignored.games.drm]).toEqual([drm]);
+    expect([...ignored.games[ALLOW_ALL]]).toEqual([all]);
     expect([...ignored.games.ai]).toEqual([]);
-    expect([...ignored.creators.developer.ai]).toEqual(["c:4"]);
-    expect([...ignored.creators.publisher[ALLOW_ALL]]).toEqual(["n:Embark"]);
+    expect([...ignored.creators.developer.ai]).toEqual([clan]);
+    expect([...ignored.creators.publisher[ALLOW_ALL]]).toEqual([name]);
     expect([...ignored.creators.developer[ALLOW_ALL]]).toEqual([]);
   });
 
-  it.each<[string, (lists: IgnoreLists, problem: Error) => IgnoreLists, string]>([
-    ["games", (lists, problem) => ({ ...lists, games: failing(lists.games, problem) }), "games"],
+  it.each<[
+    string,
+    (lists: IgnoreLists, problem: Error) => IgnoreLists,
+    (ignored: Ignored) => number,
+    (ignored: Ignored) => number,
+  ]>([
+    [
+      "games",
+      (lists, problem) => ({ ...lists, games: failing(lists.games, problem) }),
+      (ignored) => ignored.games.ai.size,
+      (ignored) => ignored.creators.developer.ai.size,
+    ],
     [
       "developers",
       (lists, problem) => ({
         ...lists,
         creators: { ...lists.creators, developer: failing(lists.creators.developer, problem) },
       }),
-      "creators",
+      (ignored) => ignored.creators.developer.ai.size,
+      (ignored) => ignored.games.ai.size,
     ],
   ])("logs a %s list that cannot be read, starts with none and keeps the others", async (
     _name,
     breakList,
-    held,
+    broken,
+    kept,
   ) => {
     const problem = new Error();
-    const lists = createIgnoreLists(memoryStore(), fixedClock(0));
-    await lists.games.add("ai", appId(1), "One");
-    await lists.creators.publisher.add("ai", keyOf("c:7"), "Seven");
-    const ignored = await loadIgnored(breakList(lists, problem), quiet);
-    expect(quiet.error).toHaveBeenCalledWith(problem);
-    expect(held === "games" ? ignored.creators.publisher.ai.size : ignored.games.ai.size).toBe(1);
-    expect(held === "games" ? ignored.games.ai.size : ignored.creators.developer.ai.size).toBe(0);
+    const logger = { error: vi.fn() };
+    const lists = emptyLists();
+    await lists.games.add("ai", make.appId(), make.text.name());
+    await lists.creators.developer.add("ai", creatorKeys().clan, make.text.creator());
+    await lists.creators.publisher.add("ai", creatorKeys().clan, make.text.creator());
+    const ignored = await loadIgnored(breakList(lists, problem), logger);
+    expect(logger.error).toHaveBeenCalledWith(problem);
+    expect([broken(ignored), kept(ignored), ignored.creators.publisher.ai.size]).toEqual([0, 1, 1]);
   });
 });
 
@@ -57,123 +90,156 @@ function failing<List extends { list(): Promise<unknown>; }>(list: List, problem
 }
 
 describe("isIgnored", () => {
-  const BASE = 100;
-  const DLC = 101;
+  const GAME = make.appId();
+  const OTHER = make.appId();
+  const BASE = make.appId();
+  const DLC = make.appId();
+  const DLC_OF_DLC = make.appId();
+  const NONE: Relations = {};
+  const OF_BASE: Relations = { parent: BASE };
+  const OF_DLC: Relations = { parent: DLC };
 
-  it.each<[string, IgnoredSpec, number, KindId, number | undefined, boolean]>([
+  it.each<[string, IgnoredSpec, AppId, KindId, Relations, boolean]>([
     [
       "a game for the kind it was ignored for",
-      { games: { kernel: [1] } },
-      1,
+      { games: { kernel: [GAME] } },
+      GAME,
       "kernel",
-      undefined,
+      NONE,
       true,
     ],
-    ["a game for another kind", { games: { kernel: [1] } }, 1, "ai", undefined, false],
+    ["a game for another kind", { games: { kernel: [GAME] } }, GAME, "ai", NONE, false],
     [
       "a game ignored for all kinds, in any kind",
-      { games: { all: [2] } },
-      2,
+      { games: { all: [GAME] } },
+      GAME,
       "pvp",
-      undefined,
+      NONE,
       true,
     ],
-    ["another game", { games: { kernel: [1] } }, 3, "kernel", undefined, false],
-    ["a DLC, through its base game for the kind", { games: { ai: [BASE] } }, DLC, "ai", BASE, true],
+    ["another game", { games: { kernel: [GAME] } }, OTHER, "kernel", NONE, false],
+    [
+      "a DLC, through its base game for the kind",
+      { games: { ai: [BASE] } },
+      DLC,
+      "ai",
+      OF_BASE,
+      true,
+    ],
     [
       "a DLC in another kind than its base game's",
       { games: { ai: [BASE] } },
       DLC,
       "pvp",
-      BASE,
+      OF_BASE,
       false,
     ],
-    ["a DLC, through its base game for all", { games: { all: [BASE] } }, DLC, "drm", BASE, true],
+    ["a DLC, through its base game for all", { games: { all: [BASE] } }, DLC, "drm", OF_BASE, true],
     [
       "a DLC whose base game is not known",
       { games: { all: [BASE], ai: [BASE] } },
       DLC,
       "ai",
-      undefined,
+      NONE,
       false,
     ],
-    ["a DLC whose base game is not ignored", { games: { ai: [999] } }, DLC, "ai", BASE, false],
-    ["a DLC on its own entry", { games: { pvp: [DLC] } }, DLC, "pvp", BASE, true],
-    ["a DLC on its own entry, in another kind", { games: { pvp: [DLC] } }, DLC, "ai", BASE, false],
-    ["a base game whose DLC is ignored", { games: { all: [DLC] } }, BASE, "ai", undefined, false],
+    ["a DLC whose base game is not ignored", { games: { ai: [OTHER] } }, DLC, "ai", OF_BASE, false],
+    ["a DLC on its own entry", { games: { pvp: [DLC] } }, DLC, "pvp", OF_BASE, true],
+    [
+      "a DLC on its own entry, in another kind",
+      { games: { pvp: [DLC] } },
+      DLC,
+      "ai",
+      OF_BASE,
+      false,
+    ],
+    ["a base game whose DLC is ignored", { games: { all: [DLC] } }, BASE, "ai", NONE, false],
     [
       "a DLC of a DLC, which looks one level up only",
       { games: { ai: [BASE] } },
-      102,
+      DLC_OF_DLC,
       "ai",
-      DLC,
+      OF_DLC,
       false,
     ],
-  ])("decides for %s", (_name, spec, id, kind, parent, expected) => {
-    const related = parent === undefined ? {} : { parent: appId(parent) };
-    expect(isIgnored(ignoredSets(spec), appId(id), kind, related)).toBe(expected);
+  ])("decides for %s", (_name, spec, id, kind, related, expected) => {
+    expect(isIgnored(make.ignored(spec), id, kind, related)).toBe(expected);
   });
 
-  const VALVE: CreatorsSpec = { developers: [["Valve", 4]], publishers: [["Valve", 4]] };
+  const CLAN = make.creator.clan();
+  const NAME = make.text.creator();
+  const OTHER_NAME = make.text.creator();
+  const BY_CLAN = `c:${String(CLAN)}`;
+  const BY_NAME = `n:${NAME}`;
+  /** Relations holding these developers and publishers. */
+  const made = (creators: CreatorsSpec): Relations => ({
+    creators: make.creator.forItem(creators),
+  });
+  const STUDIO = made({ developers: [[NAME, CLAN]], publishers: [[NAME, CLAN]] });
 
-  it.each<[string, IgnoredSpec, CreatorsSpec | undefined, KindId, boolean]>([
-    ["a developer by clan ID", { developers: { ai: ["c:4"] } }, VALVE, "ai", true],
-    ["a developer in another kind", { developers: { ai: ["c:4"] } }, VALVE, "pvp", false],
-    ["a developer for all kinds", { developers: { all: ["c:4"] } }, VALVE, "pvp", true],
+  it.each<[string, IgnoredSpec, Relations, KindId, boolean]>([
+    ["a developer by clan ID", { developers: { ai: [BY_CLAN] } }, STUDIO, "ai", true],
+    ["a developer in another kind", { developers: { ai: [BY_CLAN] } }, STUDIO, "pvp", false],
+    ["a developer for all kinds", { developers: { all: [BY_CLAN] } }, STUDIO, "pvp", true],
     [
       "a developer by name",
-      { developers: { ai: ["n:Embark"] } },
-      { developers: ["Embark"] },
+      { developers: { ai: [BY_NAME] } },
+      made({ developers: [NAME] }),
       "ai",
       true,
     ],
     [
       "a developer by name once Steam adds a clan ID",
-      { developers: { ai: ["n:Valve"] } },
-      VALVE,
+      { developers: { ai: [BY_NAME] } },
+      STUDIO,
       "ai",
       true,
     ],
     [
       "a developer by clan ID after a rename",
-      { developers: { ai: ["c:4"] } },
-      { developers: [["Valve Renamed", 4]] },
+      { developers: { ai: [BY_CLAN] } },
+      made({ developers: [[OTHER_NAME, CLAN]] }),
       "ai",
       true,
     ],
     [
       "a clan entry for a creator that now has no clan ID",
-      { developers: { ai: ["c:4"] } },
-      { developers: ["Valve"] },
+      { developers: { ai: [BY_CLAN] } },
+      made({ developers: [NAME] }),
       "ai",
       false,
     ],
-    ["another developer", { developers: { ai: ["c:5"] } }, VALVE, "ai", false],
+    [
+      "another developer",
+      { developers: { ai: [`c:${String(make.creator.clan())}`] } },
+      STUDIO,
+      "ai",
+      false,
+    ],
     [
       "one of several developers",
-      { developers: { ai: ["n:Two"] } },
-      { developers: ["One", "Two"] },
+      { developers: { ai: [BY_NAME] } },
+      made({ developers: [OTHER_NAME, NAME] }),
       "ai",
       true,
     ],
-    ["a publisher by clan ID", { publishers: { ai: ["c:4"] } }, VALVE, "ai", true],
+    ["a publisher by clan ID", { publishers: { ai: [BY_CLAN] } }, STUDIO, "ai", true],
     [
       "a developer list for the game's publisher",
-      { developers: { ai: ["c:4"] } },
-      { publishers: [["Valve", 4]] },
+      { developers: { ai: [BY_CLAN] } },
+      made({ publishers: [[NAME, CLAN]] }),
       "ai",
       false,
     ],
     [
       "a publisher list for the game's developer",
-      { publishers: { ai: ["c:4"] } },
-      { developers: [["Valve", 4]] },
+      { publishers: { ai: [BY_CLAN] } },
+      made({ developers: [[NAME, CLAN]] }),
       "ai",
       false,
     ],
-    ["a game with no known creators", { developers: { all: ["c:4"] } }, undefined, "ai", false],
-  ])("decides for %s", (_name, spec, creators, kind, expected) => {
-    const related = creators === undefined ? {} : { creators: creatorsFor(creators) };
-    expect(isIgnored(ignoredSets(spec), appId(1), kind, related)).toBe(expected);
+    ["a game with no known creators", { developers: { all: [BY_CLAN] } }, NONE, "ai", false],
+  ])("decides for %s", (_name, spec, related, kind, expected) => {
+    expect(isIgnored(make.ignored(spec), GAME, kind, related)).toBe(expected);
   });
 });

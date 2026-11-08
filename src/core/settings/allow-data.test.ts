@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { appId } from "../../../tests/helpers/app-ids";
+import { make } from "../../../tests/helpers/factory";
 import { KIND_IDS } from "../kinds/id";
 import {
   ALLOW_ALL,
@@ -11,9 +11,6 @@ import {
   perScope,
   toAllowScope,
 } from "./allow-data";
-
-const T = 1_000_000_000_000;
-const ENTRY = { name: "Game", added: T };
 
 describe("perScope", () => {
   it("makes one result for the scope for all kinds and one for each kind", () => {
@@ -36,20 +33,20 @@ describe("toAllowScope", () => {
     expect(toAllowScope(scope)).toBe(scope);
   });
 
-  it.each([null, "", "kinds", "all ", "__proto__"])("reads %j as no scope", (value) => {
+  it.each(make.raw.badScopes())("reads %j as no scope", (value) => {
     expect(toAllowScope(value)).toBeUndefined();
   });
 });
 
 describe("decodeAllowScope", () => {
   it("reads an object from app ID to name and date", () => {
-    expect(decodeAllowScope({ "10": ENTRY })).toStrictEqual(new Map([[appId(10), ENTRY]]));
+    const id = make.appId();
+    const entry = make.raw.allowEntry();
+    expect(decodeAllowScope({ [String(id)]: entry })).toStrictEqual(new Map([[id, entry]]));
   });
 
-  it("reads anything else as no games", () => {
-    for (const stored of [undefined, null, "x", 3, true]) {
-      expect(decodeAllowScope(stored)).toStrictEqual(new Map());
-    }
+  it.each([undefined, ...make.raw.junk()])("reads %j as no games", (stored) => {
+    expect(decodeAllowScope(stored)).toStrictEqual(new Map());
   });
 });
 
@@ -57,45 +54,47 @@ describe("decodeScope", () => {
   const tagged = (text: string) => (text.startsWith("t:") ? text.slice(2) : undefined);
 
   it("keeps the entries whose key the parser reads, under the key it returns", () => {
-    expect(decodeScope({ "t:a": ENTRY, "b": ENTRY, "t:c": 7 }, tagged)).toStrictEqual(
-      new Map([["a", ENTRY]]),
-    );
+    const entry = make.raw.allowEntry();
+    expect(
+      decodeScope({ "t:a": entry, "b": entry, "t:c": make.raw.corruptNumber() }, tagged),
+    ).toStrictEqual(new Map([["a", entry]]));
   });
 
   it("is written back under the text of the key", () => {
+    const entry = make.raw.allowEntry();
     const entries = {
-      ...perScope(() => new Map<string, typeof ENTRY>()),
-      ai: new Map([["t:a", ENTRY]]),
+      ...perScope(() => new Map<string, typeof entry>()),
+      ai: new Map([["t:a", entry]]),
     };
-    expect(encodeAllow(entries)).toMatchObject({ ai: { "t:a": ENTRY } });
+    expect(encodeAllow(entries)).toMatchObject({ ai: { "t:a": entry } });
   });
 });
 
 describe("decodeAllow and encodeAllow", () => {
   it("round trip the games of every scope", () => {
-    const entries = decodeAllow({ all: { "20": ENTRY }, ai: { "10": ENTRY } });
-    expect(entries.all.get(appId(20))).toStrictEqual(ENTRY);
-    expect(entries.ai.get(appId(10))).toStrictEqual(ENTRY);
+    const all = make.appId();
+    const ai = make.appId();
+    const entry = make.raw.allowEntry();
+    const entries = decodeAllow({ all: { [String(all)]: entry }, ai: { [String(ai)]: entry } });
+    expect(entries.all.get(all)).toStrictEqual(entry);
+    expect(entries.ai.get(ai)).toStrictEqual(entry);
     expect(decodeAllow(encodeAllow(entries))).toStrictEqual(entries);
   });
 
   it("read the games of the scope of any kind, and nothing for a kind not stored", () => {
-    const entries = decodeAllow({ drm: { "30": ENTRY } });
-    expect(entries.drm.get(appId(30))).toStrictEqual(ENTRY);
-    for (const id of KIND_IDS) {
-      expect(entries[id].size).toBe(id === "drm" ? 1 : 0);
-    }
-    expect(entries.all.size).toBe(0);
+    const id = make.appId();
+    const entry = make.raw.allowEntry();
+    expect(decodeAllow({ drm: { [String(id)]: entry } })).toStrictEqual({
+      ...perScope(() => new Map()),
+      drm: new Map([[id, entry]]),
+    });
   });
 
   it("encode every scope, empty ones too", () => {
-    expect(encodeAllow(decodeAllow(undefined))).toStrictEqual(
-      Object.fromEntries([ALLOW_ALL, ...KIND_IDS].map((scope) => [scope, {}])),
-    );
+    expect(encodeAllow(decodeAllow(undefined))).toStrictEqual(make.raw.noGames());
   });
 
   it("do not take a v1 list, which kept the games at the top level, for a scope", () => {
-    const entries = decodeAllow({ "10": ENTRY });
-    expect(entries.ai.size + entries.all.size).toBe(0);
+    expect(decodeAllow(make.raw.v1Allow())).toStrictEqual(perScope(() => new Map()));
   });
 });

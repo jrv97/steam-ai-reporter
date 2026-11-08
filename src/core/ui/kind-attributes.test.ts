@@ -1,9 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { clearRoot } from "../../../tests/helpers/dom";
-import { toHexColor } from "../kinds/color";
+import { make } from "../../../tests/helpers/factory";
 import { KIND_IDS } from "../kinds/id";
-import { DEFAULT_KIND_SETTINGS, type KindSettings } from "../kinds/kind-settings";
-import { perKind } from "../kinds/registry";
+import type { KindSettings } from "../kinds/kind-settings";
 import {
   applyKindSettings,
   colorProperty,
@@ -14,15 +13,8 @@ import {
 
 const root = () => document.documentElement;
 
-/** The same settings for every kind, over the defaults. */
-function settings(patch: Partial<KindSettings> = {}) {
-  return perKind((kind) => ({ ...kind.defaults, enabled: true, ...patch }));
-}
-
-/** The defaults, except for the DRM kind. */
-function withDrm(patch: Partial<KindSettings>) {
-  return { ...settings(), drm: { ...DEFAULT_KIND_SETTINGS, ...patch } };
-}
+const settings = (patch: Partial<KindSettings> = {}) => make.settings.kinds(patch);
+const withDrm = (drm: Partial<KindSettings>) => make.settings.kinds({}, { drm });
 
 afterEach(() => {
   clearRoot();
@@ -52,41 +44,45 @@ describe("the custom colors", () => {
     expect(root().getAttribute("style")).toBeNull();
   });
 
-  it("writes the color of one kind as #rrggbb and touches no other kind", () => {
-    applyKindSettings(root(), withDrm({ color: toHexColor("F0A") }));
-    expect(colorOf("drm")).toBe("#ff00aa");
+  it("writes the color of one kind and touches no other kind", () => {
+    const color = make.color();
+    applyKindSettings(root(), withDrm({ color }));
+    expect(colorOf("drm")).toBe(color);
     expect(colorOf("ai")).toBe("");
   });
 
   it("removes the property when the color is cleared", () => {
-    applyKindSettings(root(), withDrm({ color: toHexColor("#123456") }));
+    applyKindSettings(root(), withDrm({ color: make.color() }));
     applyKindSettings(root(), settings());
     expect(colorOf("drm")).toBe("");
     expect(root().hasAttribute("style")).toBe(false);
   });
 
   it("changes the color in place, and writes nothing when nothing changed", () => {
-    applyKindSettings(root(), withDrm({ color: toHexColor("#111111") }));
+    const [first, second] = [make.color(), make.color()];
+    applyKindSettings(root(), withDrm({ color: first }));
     const setProperty = vi.spyOn(root().style, "setProperty");
     const removeProperty = vi.spyOn(root().style, "removeProperty");
-    applyKindSettings(root(), withDrm({ color: toHexColor("#111111") }));
+    applyKindSettings(root(), withDrm({ color: first }));
     applyKindSettings(root(), settings());
     expect(setProperty).not.toHaveBeenCalled();
     expect(removeProperty).toHaveBeenCalledTimes(1);
-    applyKindSettings(root(), withDrm({ color: toHexColor("#222222") }));
-    expect(colorOf("drm")).toBe("#222222");
+    applyKindSettings(root(), withDrm({ color: second }));
+    expect(colorOf("drm")).toBe(second);
   });
 
   it("keeps the color of a disabled kind, which draws nothing anyway", () => {
-    applyKindSettings(root(), withDrm({ enabled: false, color: toHexColor("#333333") }));
-    expect(colorOf("drm")).toBe("#333333");
+    const color = make.color();
+    applyKindSettings(root(), withDrm({ enabled: false, color }));
+    expect(colorOf("drm")).toBe(color);
   });
 
   it("writes nothing for a color already there, on any element", () => {
     const element = document.createElement("div");
-    setColorOnce(element, "ai", toHexColor("#444444"));
+    const color = make.color();
+    setColorOnce(element, "ai", color);
     const setProperty = vi.spyOn(element.style, "setProperty");
-    setColorOnce(element, "ai", toHexColor("#444444"));
+    setColorOnce(element, "ai", color);
     expect(setProperty).not.toHaveBeenCalled();
     setColorOnce(element, "ai", undefined);
     expect(element.style.getPropertyValue(colorProperty("ai"))).toBe("");

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { FileTransfer, PickedFile } from "../../src/core/ports";
-import { pickedFile } from "../helpers/backup";
+import { make } from "../helpers/factory";
 
 /** A file offered for download. */
 export interface SavedFile {
@@ -21,62 +21,69 @@ export interface FileTransferHarness {
 
 /**
  * The behavior every `FileTransfer` must have (src/core/AGENTS.md, "The contract-test rule").
- * `make` returns a new harness for each case.
+ * `harness` returns a new harness for each case.
  */
-export function fileTransferContract(name: string, make: () => FileTransferHarness): void {
+export function fileTransferContract(name: string, harness: () => FileTransferHarness): void {
   describe(`FileTransfer contract: ${name}`, () => {
     it("offers the text under the name, unchanged", async () => {
-      const { transfer, saved } = make();
+      const { transfer, saved } = harness();
       // Markup and a non-ASCII letter, which must pass through as text
-      const text = `{"name":"Caf${String.fromCodePoint(0xe9)} <b>&amp;</b>"}\n`;
-      transfer.save("backup.json", text);
-      expect(await saved()).toStrictEqual([{ name: "backup.json", text }]);
+      const text = `${make.text.markup()} ${make.text.note()}${String.fromCodePoint(0xe9)}
+`;
+      const name = make.text.fileName();
+      transfer.save(name, text);
+      expect(await saved()).toStrictEqual([{ name, text }]);
     });
 
     it("offers each save as a file of its own", async () => {
-      const { transfer, saved } = make();
-      transfer.save("a.json", "1");
-      transfer.save("b.json", "2");
-      expect((await saved()).map((file) => file.name)).toStrictEqual(["a.json", "b.json"]);
+      const { transfer, saved } = harness();
+      const names = [make.text.fileName(), make.text.fileName()];
+      for (const name of names) {
+        transfer.save(name, make.http.body());
+      }
+      expect((await saved()).map((file) => file.name)).toStrictEqual(names);
     });
 
     it("hands the picked file to the listener", async () => {
-      const { transfer, choose } = make();
+      const { transfer, choose } = harness();
+      const file = make.backup.file(make.http.body(), make.text.fileName());
       const heard: string[] = [];
-      transfer.pick("Backup file", (file) => {
-        void file.text().then((text) => heard.push(`${file.name}:${String(file.size)}:${text}`));
+      transfer.pick(make.text.note(), (picked) => {
+        void picked.text().then((text) =>
+          heard.push(`${picked.name}:${String(picked.size)}:${text}`)
+        );
       });
-      choose(pickedFile("abc", "mine.json"));
+      choose(file);
       await Promise.resolve();
       await Promise.resolve();
-      expect(heard).toStrictEqual(["mine.json:3:abc"]);
+      expect(heard).toStrictEqual([`${file.name}:${String(file.size)}:${await file.text()}`]);
     });
 
     it("tells nothing when the person cancels", () => {
-      const { transfer, cancel } = make();
+      const { transfer, cancel } = harness();
       const heard: PickedFile[] = [];
-      transfer.pick("Backup file", (file) => heard.push(file));
+      transfer.pick(make.text.note(), (file) => heard.push(file));
       cancel();
       expect(heard).toStrictEqual([]);
     });
 
     it("tells the same file picked twice, twice", () => {
-      const { transfer, choose } = make();
+      const { transfer, choose } = harness();
       const heard: string[] = [];
-      const file = pickedFile("abc");
-      transfer.pick("Backup file", (picked) => heard.push(picked.name));
+      const file = make.backup.file(make.http.body());
+      transfer.pick(make.text.note(), (picked) => heard.push(picked.name));
       choose(file);
-      transfer.pick("Backup file", (picked) => heard.push(picked.name));
+      transfer.pick(make.text.note(), (picked) => heard.push(picked.name));
       choose(file);
       expect(heard).toHaveLength(2);
     });
 
     it("tells only the listener of the latest pick", () => {
-      const { transfer, choose } = make();
+      const { transfer, choose } = harness();
       const heard: string[] = [];
-      transfer.pick("Backup file", () => heard.push("first"));
-      transfer.pick("Backup file", () => heard.push("second"));
-      choose(pickedFile("abc"));
+      transfer.pick(make.text.note(), () => heard.push("first"));
+      transfer.pick(make.text.note(), () => heard.push("second"));
+      choose(make.backup.file(make.http.body()));
       expect(heard).toStrictEqual(["second"]);
     });
   });

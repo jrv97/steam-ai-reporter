@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { toHexColor } from "./color";
+import { make } from "../../../tests/helpers/factory";
 import { DECK_KIND } from "./deck";
 import { FAMILY_KIND } from "./family";
 import {
@@ -12,7 +12,7 @@ import {
 } from "./kind-settings";
 
 const DEFAULTS: KindSettings = { enabled: true, badge: true, banner: true, filter: "off" };
-const VIOLET = toHexColor("#8f73f3");
+const VIOLET = make.color();
 
 describe("LIST_FILTERS", () => {
   it("lists the three filters in the order the settings show them", () => {
@@ -21,11 +21,12 @@ describe("LIST_FILTERS", () => {
 });
 
 describe("parseKindSettings", () => {
-  it("returns the defaults when nothing valid is stored", () => {
-    for (const stored of [undefined, null, 7, "dim", true, [], [{ badge: false }]]) {
+  it.each<unknown>([undefined, null, 7, "dim", true, [], [{ badge: false }]])(
+    "returns the defaults when %j is stored",
+    (stored) => {
       expect(parseKindSettings({ defaults: DEFAULTS }, stored)).toStrictEqual(DEFAULTS);
-    }
-  });
+    },
+  );
 
   it("accepts every valid value", () => {
     const stored: KindSettings = { enabled: false, badge: false, banner: false, filter: "hide" };
@@ -48,24 +49,29 @@ describe("parseKindSettings", () => {
     expect(parseKindSettings({ defaults: other }, {})).toStrictEqual(other);
   });
 
-  it("has no color until one is stored, and no color key either", () => {
-    expect(parseKindSettings({ defaults: DEFAULTS }, {})).not.toHaveProperty("color");
-    expect(parseKindSettings({ defaults: DEFAULTS }, { color: undefined })).not.toHaveProperty(
-      "color",
-    );
+  it.each<readonly [string, Readonly<Record<string, unknown>>]>([
+    ["no color stored", {}],
+    ["an undefined color", { color: undefined }],
+  ])("has no color key for %s", (_name, stored) => {
+    expect(parseKindSettings({ defaults: DEFAULTS }, stored)).not.toHaveProperty("color");
   });
 
-  it("reads a stored color in its normal form", () => {
-    expect(parseKindSettings({ defaults: DEFAULTS }, { color: "#8F73F3" }).color).toBe(VIOLET);
-    expect(parseKindSettings({ defaults: DEFAULTS }, { color: "f0a" }).color).toBe("#ff00aa");
+  const DIGITS = [1, 3, 5].map((index) => VIOLET.charAt(index));
+
+  it.each<readonly [string, string, string]>([
+    ["upper case", VIOLET.toUpperCase(), VIOLET],
+    ["three digits without the hash", DIGITS.join(""), `#${DIGITS.map((d) => d + d).join("")}`],
+  ])("reads a stored color in %s in its normal form", (_name, typed, normal) => {
+    expect(parseKindSettings({ defaults: DEFAULTS }, { color: typed }).color).toBe(normal);
   });
 
-  it("drops a color that is not one and keeps the other fields", () => {
-    for (const color of ["red", "#12", "#abc; x", 7, null, true, {}, []]) {
+  it.each<unknown>(["red", "#12", "#abc; x", 7, null, true, {}, []])(
+    "drops the color %j and keeps the other fields",
+    (color) => {
       const parsed = parseKindSettings({ defaults: DEFAULTS }, { color, filter: "dim" });
-      expect(parsed, JSON.stringify(color)).toStrictEqual({ ...DEFAULTS, filter: "dim" });
-    }
-  });
+      expect(parsed).toStrictEqual({ ...DEFAULTS, filter: "dim" });
+    },
+  );
 
   it("falls back to the color of the given defaults", () => {
     const tinted = mergeKindSettings(DEFAULTS, { color: VIOLET });
@@ -130,6 +136,9 @@ describe("mergeKindSettings", () => {
       ...DEFAULTS,
       badge: false,
     });
+  });
+
+  it("keeps every field without a patch", () => {
     expect(mergeKindSettings(DEFAULTS, undefined)).toStrictEqual(DEFAULTS);
   });
 
@@ -167,7 +176,7 @@ describe("encodeKindSettings", () => {
   it("stores a color as the text #rrggbb, and no key at all without one", () => {
     expect(encodeKindSettings(DEFAULTS)).not.toHaveProperty("color");
     const tinted = mergeKindSettings(DEFAULTS, { color: VIOLET });
-    expect(encodeKindSettings(tinted)).toStrictEqual({ ...DEFAULTS, color: "#8f73f3" });
+    expect(encodeKindSettings(tinted)).toStrictEqual({ ...DEFAULTS, color: VIOLET });
     expect(parseKindSettings({ defaults: DEFAULTS }, encodeKindSettings(tinted))).toStrictEqual(
       tinted,
     );

@@ -1,18 +1,15 @@
-import type { AccountDisclosed } from "../../src/core/kinds/account";
-import type { AiDisclosed, AiVerdict } from "../../src/core/kinds/ai";
-import type { AnticheatDisclosed } from "../../src/core/kinds/anticheat";
-import type { CompatDisclosed, CompatFacet } from "../../src/core/kinds/compat";
-import type { DrmDisclosed } from "../../src/core/kinds/drm";
-import type { EarlyAccessDisclosed } from "../../src/core/kinds/early-access";
-import { type EulaDisclosed, eulaLink, type EulaUrl } from "../../src/core/kinds/eula";
-import type { FamilyDisclosed, FamilyFacet } from "../../src/core/kinds/family";
-import type { IapDisclosed } from "../../src/core/kinds/iap";
+import { eulaLink, type EulaUrl } from "../../src/core/kinds/eula";
 import type { KindId } from "../../src/core/kinds/id";
-import type { KernelDisclosed } from "../../src/core/kinds/kernel";
-import type { PvpDisclosed } from "../../src/core/kinds/pvp";
 import { perKind } from "../../src/core/kinds/registry";
 import { type AnyDisclosed, type KindVerdicts, UNKNOWN_KINDS } from "../../src/core/kinds/verdicts";
-import type { AppId, NotDisclosedVerdict, UnknownReason } from "../../src/core/types";
+import {
+  type AppId,
+  type DisclosedBase,
+  NOT_DISCLOSED as TYPES_NOT_DISCLOSED,
+  type NotDisclosedVerdict,
+  type UnknownReason,
+} from "../../src/core/types";
+import { EARLY_ACCESS_RELEASED } from "./fixture-ids";
 
 /** The link of a EULA entry, when the address is one the store hosts. */
 function linked(address: string): { readonly url?: EulaUrl; } {
@@ -20,72 +17,23 @@ function linked(address: string): { readonly url?: EulaUrl; } {
   return url === undefined ? {} : { url };
 }
 
-/** A disclosed verdict with the optional fields filled in; override what a test cares about. */
-export function disclosedVerdict(overrides: Partial<AiDisclosed> = {}): AiDisclosed {
-  return {
+/** The disclosed verdict shape of the kind `Id`. */
+export type DisclosedFor<Id extends KindId> = Extract<AnyDisclosed, DisclosedBase<Id>>;
+
+/** One disclosed verdict per kind, in the shape of that kind. */
+type DisclosedByKind = { readonly [Id in KindId]: DisclosedFor<Id>; };
+
+/** Each kind's disclosed verdict, with every field of its payload set. */
+const DISCLOSED_DEFAULTS: DisclosedByKind = {
+  ai: {
     state: "disclosed",
     kind: "ai",
+    source: "api",
     notes: "Concept art was generated.\nNo AI text in the game.",
     language: "english",
     service: "Midjourney",
     name: "Fixture Game",
-    source: "api",
-    ...overrides,
-  };
-}
-
-export const NOT_DISCLOSED: NotDisclosedVerdict = { state: "not-disclosed", source: "api" };
-
-/** An app's verdicts where the AI kind has this verdict and no other kind has an answer. */
-export function aiVerdicts(ai: AiVerdict): KindVerdicts {
-  return { ...UNKNOWN_KINDS.missing, ai };
-}
-
-interface FullDisclosed {
-  readonly ai: AiDisclosed;
-  readonly kernel: KernelDisclosed;
-  readonly anticheat: AnticheatDisclosed;
-  readonly drm: DrmDisclosed;
-  readonly account: AccountDisclosed;
-  readonly eula: EulaDisclosed;
-  readonly pvp: PvpDisclosed;
-  readonly iap: IapDisclosed;
-  readonly deck: CompatDisclosed<"deck">;
-  readonly machine: CompatDisclosed<"machine">;
-  readonly family: FamilyDisclosed;
-  readonly earlyaccess: EarlyAccessDisclosed;
-}
-
-/** A rating Valve gives for a device kind, as its disclosed verdict. */
-export function compatVerdict<const Id extends "deck" | "machine">(
-  kind: Id,
-  facet: CompatFacet,
-): CompatDisclosed<Id> {
-  return { state: "disclosed", kind, source: "api", facet };
-}
-
-/** The value Steam's feature list gives for Family Sharing, as its disclosed verdict. */
-export function familyVerdict(facet: FamilyFacet): FamilyDisclosed {
-  return { state: "disclosed", kind: "family", source: "api", facet };
-}
-
-/** A game in Early Access with the stored details set; override what a test cares about. */
-export function earlyAccessVerdict(
-  overrides: Partial<EarlyAccessDisclosed> = {},
-): EarlyAccessDisclosed {
-  return {
-    state: "disclosed",
-    kind: "earlyaccess",
-    source: "api",
-    note: "We ship early to hear from players.\r\nExpect changes.",
-    released: 1731596424,
-    ...overrides,
-  };
-}
-
-/** Each kind's disclosed verdict, with every field of its payload set. */
-export const FULL_DISCLOSED: FullDisclosed = {
-  ai: disclosedVerdict(),
+  },
   kernel: {
     state: "disclosed",
     kind: "kernel",
@@ -127,38 +75,107 @@ export const FULL_DISCLOSED: FullDisclosed = {
   },
   pvp: { state: "disclosed", kind: "pvp", source: "api", categoryIds: [49, 36] },
   iap: { state: "disclosed", kind: "iap", source: "api" },
-  deck: compatVerdict("deck", "unsupported"),
-  machine: compatVerdict("machine", "unsupported"),
-  family: familyVerdict("unsupported"),
-  earlyaccess: earlyAccessVerdict(),
+  deck: { state: "disclosed", kind: "deck", source: "api", facet: "unsupported" },
+  machine: { state: "disclosed", kind: "machine", source: "api", facet: "unsupported" },
+  family: { state: "disclosed", kind: "family", source: "api", facet: "unsupported" },
+  earlyaccess: {
+    state: "disclosed",
+    kind: "earlyaccess",
+    source: "api",
+    note: "We ship early to hear from players.\r\nExpect changes.",
+    released: EARLY_ACCESS_RELEASED,
+  },
 };
+
+/** The kind's disclosed verdict with every field set; `overrides` replace what a test needs. */
+export function disclosed<Id extends KindId>(
+  kind: Id,
+  overrides: Partial<DisclosedFor<Id>> = {},
+): DisclosedFor<Id> {
+  return { ...structuredClone(DISCLOSED_DEFAULTS[kind]), ...overrides };
+}
+
+/** The kind's disclosed verdict with no payload field but those in `fields`. */
+export function bareDisclosed<Id extends KindId>(
+  kind: Id,
+  fields: Partial<DisclosedFor<Id>> = {},
+): DisclosedBase<Id> & Partial<DisclosedFor<Id>> {
+  return { state: "disclosed", kind, source: "api", ...fields };
+}
+
+/** The payload of the kind `Id`: its disclosed verdict without state, kind, source and mark. */
+type PayloadFor<Id extends KindId> = Omit<DisclosedFor<Id>, keyof DisclosedBase | "fullGame">;
+
+/** Each kind's disclosed verdict holding the given payload and no other field. */
+const MINIMAL: {
+  readonly [Id in KindId]: (payload: PayloadFor<Id>) => DisclosedFor<Id>;
+} = {
+  ai: (payload) => ({ state: "disclosed", kind: "ai", source: "api", ...payload }),
+  kernel: (payload) => ({ state: "disclosed", kind: "kernel", source: "api", ...payload }),
+  anticheat: (payload) => ({ state: "disclosed", kind: "anticheat", source: "api", ...payload }),
+  drm: (payload) => ({ state: "disclosed", kind: "drm", source: "api", ...payload }),
+  account: (payload) => ({ state: "disclosed", kind: "account", source: "api", ...payload }),
+  eula: (payload) => ({ state: "disclosed", kind: "eula", source: "api", ...payload }),
+  pvp: (payload) => ({ state: "disclosed", kind: "pvp", source: "api", ...payload }),
+  iap: (payload) => ({ state: "disclosed", kind: "iap", source: "api", ...payload }),
+  deck: (payload) => ({ state: "disclosed", kind: "deck", source: "api", ...payload }),
+  machine: (payload) => ({ state: "disclosed", kind: "machine", source: "api", ...payload }),
+  family: (payload) => ({ state: "disclosed", kind: "family", source: "api", ...payload }),
+  earlyaccess: (payload) => ({
+    state: "disclosed",
+    kind: "earlyaccess",
+    source: "api",
+    ...payload,
+  }),
+};
+
+/** The kind's disclosed verdict with its required payload and only the optional fields given. */
+export function minimalDisclosed<Id extends KindId>(
+  kind: Id,
+  payload: PayloadFor<Id>,
+): DisclosedFor<Id> {
+  return MINIMAL[kind](payload);
+}
+
+export const NOT_DISCLOSED: NotDisclosedVerdict = TYPES_NOT_DISCLOSED.api;
+
+/** An app's verdicts: the given ones, and unknown `missing` for every other kind. */
+export function verdictsWith(given: Partial<KindVerdicts> = {}): KindVerdicts {
+  return { ...UNKNOWN_KINDS.missing, ...given };
+}
+
+/** Each kind's disclosed verdict with every field of its payload set, as a fresh copy. */
+export function fullDisclosed(): DisclosedByKind {
+  return structuredClone(DISCLOSED_DEFAULTS);
+}
 
 /** Every kind in the same state, so a test sees the TTL or the storage of that state alone. */
 export function uniformVerdicts(
   state: "disclosed" | "not-disclosed" | UnknownReason,
 ): KindVerdicts {
   if (state === "disclosed") {
-    return FULL_DISCLOSED;
+    return fullDisclosed();
   }
   return state === "not-disclosed" ? perKind(() => NOT_DISCLOSED) : UNKNOWN_KINDS[state];
 }
 
 /** The kinds in `kinds` disclosed with a full payload, every other kind not disclosed. */
 export function disclosedKinds(kinds: readonly KindId[]): KindVerdicts {
+  const full = fullDisclosed();
   const pick = <T>(id: KindId, verdict: T) => kinds.includes(id) ? verdict : NOT_DISCLOSED;
   return {
-    ai: pick("ai", FULL_DISCLOSED.ai),
-    kernel: pick("kernel", FULL_DISCLOSED.kernel),
-    anticheat: pick("anticheat", FULL_DISCLOSED.anticheat),
-    drm: pick("drm", FULL_DISCLOSED.drm),
-    account: pick("account", FULL_DISCLOSED.account),
-    eula: pick("eula", FULL_DISCLOSED.eula),
-    pvp: pick("pvp", FULL_DISCLOSED.pvp),
-    iap: pick("iap", FULL_DISCLOSED.iap),
-    deck: pick("deck", FULL_DISCLOSED.deck),
-    machine: pick("machine", FULL_DISCLOSED.machine),
-    family: pick("family", FULL_DISCLOSED.family),
-    earlyaccess: pick("earlyaccess", FULL_DISCLOSED.earlyaccess),
+    ai: pick("ai", full.ai),
+    kernel: pick("kernel", full.kernel),
+    anticheat: pick("anticheat", full.anticheat),
+    drm: pick("drm", full.drm),
+    account: pick("account", full.account),
+    eula: pick("eula", full.eula),
+    pvp: pick("pvp", full.pvp),
+    iap: pick("iap", full.iap),
+    deck: pick("deck", full.deck),
+    machine: pick("machine", full.machine),
+    family: pick("family", full.family),
+    earlyaccess: pick("earlyaccess", full.earlyaccess),
   };
 }
 

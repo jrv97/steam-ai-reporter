@@ -9,17 +9,17 @@ import {
 } from "../../src/core/ui/settings-form";
 import type { TabId } from "../../src/core/ui/tab-id";
 import { createUiState } from "../../src/core/ui/ui-state";
-import { fixedClock } from "./fixed-clock";
+import { make } from "./factory";
+import { fake } from "./fakes";
 import { englishI18n } from "./i18n";
-import { memoryStore } from "./memory-store";
 
 /** The deps of a full options page over stores of its own; `overrides` replaces any of them. */
-export function formDeps(overrides: Partial<SettingsFormDeps> = {}): SettingsFormDeps {
+function formDeps(overrides: Partial<SettingsFormDeps> = {}): SettingsFormDeps {
   return {
     i18n: englishI18n(),
-    settings: createSettingsSource(memoryStore()),
-    lists: createIgnoreLists(memoryStore(), fixedClock(0)),
-    uiState: createUiState(memoryStore()),
+    settings: createSettingsSource(fake.store()),
+    lists: createIgnoreLists(fake.store(), fake.clock(make.time())),
+    uiState: createUiState(fake.store()),
     context: "page",
     layout: "tabs",
     colors: true,

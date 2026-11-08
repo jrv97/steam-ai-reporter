@@ -1,24 +1,12 @@
 // @vitest-environment-options {"url":"https://store.steampowered.com/search/?term=roguelike"}
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { BASE_ID, DLC_PATH, dlcPage } from "../../../tests/helpers/dlc-page";
 import { countDomWork, type DomWork } from "../../../tests/helpers/dom-work";
+import { make } from "../../../tests/helpers/factory";
+import { fake } from "../../../tests/helpers/fakes";
 import { hostView } from "../../../tests/helpers/host-view";
-import { PACKAGE_PATH, packagePage } from "../../../tests/helpers/package-page";
-import {
-  type RecordingRenderer,
-  recordingRenderer,
-} from "../../../tests/helpers/recording-renderer";
-import {
-  loadPage,
-  nodes,
-  pageTransition,
-  searchRow,
-  setBody,
-  SURFACES,
-  the,
-} from "../../../tests/helpers/surfaces";
-import { disclosedKinds } from "../../../tests/helpers/verdicts";
+import { loadPage, nodes, pageTransition, setBody, the } from "../../../tests/helpers/surfaces";
 import type { KindId } from "../kinds/id";
+import type { AppId } from "../types";
 import { createHostKindsRenderer } from "../ui/list-filter";
 import { HOST_APPID, HOST_HIDEABLE, HOST_KINDS } from "./marks";
 import type { CapsuleHost } from "./renderer";
@@ -27,8 +15,9 @@ import { createScanner, DEBOUNCE_MS, type Scanner, type ScanReport } from "./sca
 const SEARCH_URL = "https://store.steampowered.com/search/?term=roguelike";
 /** One animation frame under fake timers. */
 const FRAME_MS = 16;
+const SURFACE_APPS = make.fixture.surfaceApps;
 
-let renderer: RecordingRenderer;
+let renderer: ReturnType<typeof fake.renderer>;
 let reports: ScanReport[];
 let scanner: Scanner;
 
@@ -46,11 +35,18 @@ afterEach(() => {
 
 /** Starts a scanner on the current page and lets its first page scan run. */
 async function startScanner(options: { readonly badges?: boolean; } = {}): Promise<void> {
-  renderer = recordingRenderer(options);
+  renderer = fake.renderer(options);
   reports = [];
   scanner = createScanner({ document, renderer, onReport: (report) => reports.push(report) });
   scanner.start();
   await vi.advanceTimersByTimeAsync(FRAME_MS);
+}
+
+/** Opens `markup` at `path` and starts a scanner on it. */
+async function startOn(path: string, markup: string): Promise<void> {
+  history.replaceState(null, "", path);
+  setBody(markup);
+  await startScanner();
 }
 
 /** Lets a debounced scan run after the last mutation. */
@@ -67,6 +63,11 @@ function mapping(): (readonly [number, string])[] {
   return found().map((host) => [host.appId, host.placement.id] as const);
 }
 
+/** The mapping that `ids` give when each host takes `placement`. */
+function placed(ids: readonly AppId[], placement: string): (readonly [number, string])[] {
+  return ids.map((id) => [id, placement] as const);
+}
+
 function hostElements(): readonly Element[] {
   return found().map((host) => host.element);
 }
@@ -75,7 +76,7 @@ function hostElements(): readonly Element[] {
 function dimmed(kind: KindId): readonly Element[] {
   const kindsRenderer = createHostKindsRenderer();
   for (const host of found()) {
-    kindsRenderer.render(hostView(host.element, { verdicts: disclosedKinds([kind]) }));
+    kindsRenderer.render(hostView(host.element, { verdicts: make.verdicts.only([kind]) }));
   }
   document.documentElement.setAttribute(`data-sar-filter-${kind}`, "dim");
   return [
@@ -83,33 +84,30 @@ function dimmed(kind: KindId): readonly Element[] {
   ];
 }
 
+/** A link to the app page of `id` around `inner`. */
+function appLink(id: AppId, inner = "<img>"): string {
+  return `<a href="/app/${String(id)}/">${inner}</a>`;
+}
+
 describe("per-surface hosts", () => {
   it("search: each result row, badge right after the title", async () => {
-    loadPage(SURFACES.search);
+    loadPage(make.page.surface("search"));
     await startScanner();
     const rows = [...document.querySelectorAll("a.search_result_row")];
-    expect(rows).toHaveLength(8);
+    expect(rows).toHaveLength(make.fixture.searchRows.length);
     expect(hostElements()).toStrictEqual(rows);
-    expect(mapping()).toStrictEqual(
-      [4075620, 3934270, 3784030, 1045010, 3432110, 3664320, 4461450, 2624160].map(
-        (id) => [id, "search-row"] as const,
-      ),
-    );
+    expect(mapping()).toStrictEqual(placed(make.fixture.searchRows, "search-row"));
     for (const host of found()) {
       expect(host.anchor).toBe(the(".search_name .title", host.element));
     }
   });
 
   it("home: main carousel with a CSS background, discount capsules and tab rows", async () => {
-    loadPage(SURFACES.home);
+    loadPage(make.page.surface("home"));
     await startScanner();
     expect(mapping()).toStrictEqual([
-      [4356430, "home-main-carousel"],
-      [1867240, "home-main-carousel"],
-      [466560, "generic"],
-      [1121640, "generic"],
-      [1091500, "generic"],
-      [1174180, "generic"],
+      ...placed(SURFACE_APPS.home.slice(0, 2), "home-main-carousel"),
+      ...placed(SURFACE_APPS.home.slice(2), "generic"),
     ]);
     expect(hostElements()).toStrictEqual([
       ...document.querySelectorAll("a.store_main_capsule"),
@@ -121,38 +119,34 @@ describe("per-surface hosts", () => {
   });
 
   it("home: the package row with a comma list gets no host", async () => {
-    loadPage(SURFACES.home);
+    loadPage(make.page.surface("home"));
     await startScanner();
     expect(the("[data-ds-packageid]").hasAttribute(HOST_APPID)).toBe(false);
   });
 
   it("tag hub: one host per capsule and no section-sized host", async () => {
-    loadPage(SURFACES["tag-hub"]);
+    loadPage(make.page.surface("tag-hub"));
     await startScanner();
     const panels = [...document.querySelectorAll(".SaleSectionContainer ._1omVjlZWALGX34pum8v7SF")];
     expect(hostElements()).toStrictEqual([...panels, the(".LibraryAssetExpandedDisplay")]);
     expect(mapping()).toStrictEqual([
-      [632360, "generic"],
-      [3845070, "generic"],
-      [2124120, "generic"],
-      [632360, "hub-carousel"],
+      ...placed(SURFACE_APPS.tagHub, "generic"),
+      [make.fixture.app.hubCarousel, "hub-carousel"],
     ]);
     for (const host of hostElements()) {
       expect(host.querySelector(".SaleSectionContainer")).toBeNull();
       expect(host.matches(".SaleSectionContainer, section")).toBe(false);
     }
-    expect(found()[3]?.anchor).toBe(the(".HeroCapsuleImageContainer"));
+    expect(found().at(-1)?.anchor).toBe(the(".HeroCapsuleImageContainer"));
   });
 
   it("next fest: one host per feed card, badge over its hero capsule, never hidden", async () => {
-    loadPage(SURFACES["next-fest"]);
+    loadPage(make.page.surface("next-fest"));
     await startScanner();
     const cards = [...document.querySelectorAll(".LibraryAssetExpandedDisplay")];
     const perCard = cards.map((card) => found().filter((host) => card.contains(host.element)));
-    expect(perCard.map((hosts) => hosts.length)).toStrictEqual([1, 1, 1]);
-    expect(mapping()).toStrictEqual(
-      [5053640, 4783070, 4631870].map((id) => [id, "hub-carousel"] as const),
-    );
+    expect(perCard.map((hosts) => hosts.length)).toStrictEqual(cards.map(() => 1));
+    expect(mapping()).toStrictEqual(placed(SURFACE_APPS.nextFest, "hub-carousel"));
     for (const host of found()) {
       expect(host.anchor).toBe(the(".HeroCapsuleImageContainer", host.element));
       expect(host.element.getAttribute(HOST_HIDEABLE)).toBe("false");
@@ -160,26 +154,20 @@ describe("per-surface hosts", () => {
   });
 
   it("developer: each sale widget", async () => {
-    loadPage(SURFACES.developer);
+    loadPage(make.page.surface("developer"));
     await startScanner();
     expect(hostElements()).toStrictEqual([
       ...document.querySelectorAll(".StoreSaleWidgetOuterContainer"),
     ]);
-    expect(mapping()).toStrictEqual([
-      [1902490, "generic"],
-      [546560, "generic"],
-    ]);
+    expect(mapping()).toStrictEqual(placed(SURFACE_APPS.developer, "generic"));
   });
 
   it("wishlist: each virtualized row, badge after the title, never hidden", async () => {
-    loadPage(SURFACES.wishlist);
+    loadPage(make.page.surface("wishlist"));
     await startScanner();
     const rows = [...document.querySelectorAll("[data-index]")];
     expect(hostElements()).toStrictEqual(rows);
-    expect(mapping()).toStrictEqual([
-      [5072580, "wishlist-row"],
-      [3664320, "wishlist-row"],
-    ]);
+    expect(mapping()).toStrictEqual(placed(SURFACE_APPS.wishlist, "wishlist-row"));
     for (const host of found()) {
       expect(host.anchor.localName).toBe("a");
       expect(host.anchor.querySelector("img")).toBeNull();
@@ -188,17 +176,14 @@ describe("per-surface hosts", () => {
   });
 
   it("wishlist: a row mounted before its title text keeps the wishlist placement", async () => {
-    loadPage(SURFACES.wishlist);
-    const [row] = document.querySelectorAll("[data-index]");
-    if (row === undefined) {
-      throw new TypeError();
+    loadPage(make.page.surface("wishlist"));
+    const row = the("[data-index]");
+    const links = [...row.querySelectorAll("a[href*='/app/']")];
+    for (const link of links.filter((candidate) => candidate.querySelector("img") !== null)) {
+      link.remove();
     }
     for (const link of row.querySelectorAll("a[href*='/app/']")) {
-      if (link.querySelector("img") === null) {
-        link.replaceChildren();
-      } else {
-        link.remove();
-      }
+      link.replaceChildren();
     }
     const title = the("a[href*='/app/']", row);
     await startScanner();
@@ -208,11 +193,15 @@ describe("per-surface hosts", () => {
   });
 
   it("search suggestions in the header root get hosts; its navigation links do not", async () => {
-    const popup = new DOMParser().parseFromString(SURFACES["search-suggestions"], "text/html");
+    const popup = new DOMParser().parseFromString(
+      make.page.surface("search-suggestions"),
+      "text/html",
+    );
     setBody(
       `<div data-featuretarget="store-menu-v7"><nav>`
-        + `<a href="https://store.steampowered.com/app/730/">Counter-Strike 2</a>`
-        + `<a href="https://store.steampowered.com/explore/">Discovery queue</a></nav>`
+        + `<a href="https://store.steampowered.com/app/${String(make.appId())}/">`
+        + `${make.text.name()}</a>`
+        + `<a href="https://store.steampowered.com/explore/">${make.text.name()}</a></nav>`
         + `<div class="popup"></div></div>`,
     );
     the(".popup").replaceChildren(...popup.body.childNodes);
@@ -220,44 +209,40 @@ describe("per-surface hosts", () => {
     expect(hostElements()).toStrictEqual([
       ...document.querySelectorAll("[id^='searchSuggestions'] a[href*='/app/']"),
     ]);
-    expect(mapping()).toStrictEqual([
-      [4075620, "search-suggestion"],
-      [3934270, "search-suggestion"],
-      [3784030, "search-suggestion"],
-    ]);
-    expect(found()[0]?.anchor.textContent).toBe("Combolands: Roguelike Citybuilder");
+    expect(mapping()).toStrictEqual(placed(make.fixture.suggestions, "search-suggestion"));
+    // The title block of the first suggestion.
+    expect(found()[0]?.anchor).toBe(the("._2c8KHMFOeIi4TVcVN6qeIi"));
     expect(the("nav a").hasAttribute(HOST_APPID)).toBe(false);
   });
 
   it("discovery queue preview: badge on the first queued capsule, never hidden", async () => {
-    history.replaceState(null, "", "/explore/");
-    setBody(
+    const id = make.appId();
+    await startOn(
+      "/explore/",
       `<div class="page_content_ctn discovery_queue_content_ctn"><div class="page_content">`
-        + `<h2>Your queue</h2><div class="discovery_queue_static">`
-        + `<a class="discovery_queue_overlay" href="/app/2121510/x/?queue=1">`
-        + `<div class="discovery_queue_overlay_message">Begin</div></a>`
+        + `<h2>${make.text.name()}</h2><div class="discovery_queue_static">`
+        + `<a class="discovery_queue_overlay" href="/app/${String(id)}/x/?queue=1">`
+        + `<div class="discovery_queue_overlay_message">${make.text.note()}</div></a>`
         + `<div class="discovery_queue"><div class="dq_item dq_static_pos_2"><img></div>`
         + `<div class="dq_item dq_static_pos_3"><img></div></div></div></div></div>`,
     );
-    await startScanner();
     expect(hostElements()).toStrictEqual([the(".discovery_queue_content_ctn")]);
-    expect(mapping()).toStrictEqual([[2121510, "queue-preview"]]);
+    expect(mapping()).toStrictEqual([[id, "queue-preview"]]);
     expect(found()[0]?.anchor).toBe(the(".dq_static_pos_2"));
     expect(the(".discovery_queue_content_ctn").getAttribute(HOST_HIDEABLE)).toBe("false");
   });
 
   it("app page: DLC rows get hosts, badge at the end of the name; own links do not", async () => {
-    loadPage(SURFACES["dlc-rows"]);
-    history.replaceState(null, "", "/app/1808500/ARC_Raiders/");
+    const base = make.fixture.app.arcRaiders;
+    loadPage(make.page.surface("dlc-rows"));
+    history.replaceState(null, "", `/app/${String(base)}/ARC_Raiders/`);
     const own = document.createElement("a");
-    own.href = "/app/1808500/";
+    own.href = `/app/${String(base)}/`;
     own.append(document.createElement("img"));
     document.body.append(own);
     await startScanner();
     expect(hostElements()).toStrictEqual([...document.querySelectorAll("a.game_area_dlc_row")]);
-    expect(mapping()).toStrictEqual(
-      [5201760, 3948510, 4920260, 4210150, 4424920, 4741040].map((id) => [id, "dlc-row"] as const),
-    );
+    expect(mapping()).toStrictEqual(placed(SURFACE_APPS.dlcRows, "dlc-row"));
     for (const host of found()) {
       expect(host.anchor).toBe(the(".game_area_dlc_name", host.element));
       expect(host.placement).toMatchObject({ badge: "full", slot: "end" });
@@ -271,8 +256,8 @@ describe("host rule", () => {
     const deep = "<div>".repeat(9);
     const close = "</div>".repeat(9);
     setBody(
-      `<p><a href="/app/10/">A game</a></p>`
-        + `<section><img>${deep}<a href="/app/20/">Deep</a>${close}</section>`,
+      `<p>${appLink(make.appId(), make.text.name())}</p>`
+        + `<section><img>${deep}${appLink(make.appId(), make.text.name())}${close}</section>`,
     );
     await startScanner();
     expect(found()).toHaveLength(0);
@@ -280,10 +265,10 @@ describe("host rule", () => {
 
   it("skips the footers, breadcrumbs and our own nodes", async () => {
     setBody(
-      `<div id="footer"><a href="/app/10/"><img></a></div>`
-        + `<div data-featuretarget="footer"><a href="/app/20/"><img></a></div>`
-        + `<div class="breadcrumbs"><a href="/app/30/"><img></a></div>`
-        + `<div class="sar-banner-host"><a href="/app/40/"><img></a></div>`,
+      `<div id="footer">${appLink(make.appId())}</div>`
+        + `<div data-featuretarget="footer">${appLink(make.appId())}</div>`
+        + `<div class="breadcrumbs">${appLink(make.appId())}</div>`
+        + `<div class="sar-banner-host">${appLink(make.appId())}</div>`,
     );
     await startScanner();
     expect(found()).toHaveLength(0);
@@ -292,49 +277,54 @@ describe("host rule", () => {
 
   it("stops climbing at an ancestor that names another app", async () => {
     setBody(
-      `<main><div class="a"><a href="/app/10/"><img></a></div>`
-        + `<div class="b"><a href="/app/20/"><img></a></div></main>`,
+      `<main><div class="a">${appLink(make.appId())}</div>`
+        + `<div class="b">${appLink(make.appId())}</div></main>`,
     );
     await startScanner();
     expect(hostElements()).toStrictEqual([the("div.a"), the("div.b")]);
   });
 
   it("joins an image link and a sibling title block, at most 3 levels up", async () => {
+    const id = make.appId();
     setBody(
-      `<main><div class="other"><a href="/app/99/"><img></a></div>`
-        + `<div class="l3"><div class="l2"><div class="l1"><a href="/app/10/"><img></a></div>`
-        + `<a href="/app/10/">Title</a></div></div></div></main>`,
+      `<main><div class="other">${appLink(make.appId())}</div>`
+        + `<div class="l3"><div class="l2"><div class="l1">${appLink(id)}</div>`
+        + `${appLink(id, make.text.name())}</div></div></div></main>`,
     );
     await startScanner();
     expect(hostElements()).toStrictEqual([the("div.other"), the("div.l3")]);
   });
 
   it("does not join a tile that links to a package or an event", async () => {
+    const id = make.appId();
     setBody(
-      `<main><div class="other"><a href="/app/99/"><img></a></div>`
-        + `<div class="column"><div class="package"><a href="/sub/7/"><img></a></div>`
-        + `<div class="tile"><a href="/app/10/"><div class="box"><img></div></a></div>`
-        + `<div class="event"><a href="/news/app/10/view/1"><img></a></div></div></main>`,
+      `<main><div class="other">${appLink(make.appId())}</div>`
+        + `<div class="column"><div class="package"><a href="/sub/${String(make.appId())}/">`
+        + `<img></a></div>`
+        + `<div class="tile">${appLink(id, `<div class="box"><img></div>`)}</div>`
+        + `<div class="event"><a href="/news/app/${String(id)}/view/${String(make.appId())}">`
+        + `<img></a></div></div></main>`,
     );
     await startScanner();
-    expect(mapping().filter(([id]) => id === 10)).toStrictEqual([[10, "generic"]]);
-    const host = found().find((candidate) => candidate.appId === 10);
+    expect(mapping().filter(([host]) => host === id)).toStrictEqual([[id, "generic"]]);
+    const host = found().find((candidate) => candidate.appId === id);
     expect(host?.element).toBe(the(".tile"));
     expect(host?.anchor).toBe(the(".tile .box"));
   });
 
   it("keeps one host when hosts of the same app nest", async () => {
+    const id = make.appId();
     setBody(
-      `<main><div class="x"><a href="/app/10/"><img></a></div>`
-        + `<div class="row"><div class="mid"><div class="in"><a href="/app/20/"><img></a></div>`
-        + `<div><img></div><a href="/app/20/">Title</a></div></div></main>`,
+      `<main><div class="x">${appLink(make.appId())}</div>`
+        + `<div class="row"><div class="mid"><div class="in">${appLink(id)}</div>`
+        + `<div><img></div>${appLink(id, make.text.name())}</div></div></main>`,
     );
     await startScanner();
-    expect(mapping().filter(([id]) => id === 20)).toHaveLength(1);
+    expect(mapping().filter(([host]) => host === id)).toHaveLength(1);
   });
 
   it("finds a React capsule whose image arrives inside its link after the scan", async () => {
-    loadPage(SURFACES["tag-hub"]);
+    loadPage(make.page.surface("tag-hub"));
     const panel = the(".SaleSectionContainer ._1omVjlZWALGX34pum8v7SF");
     const image = the(".CapsuleImageCtn img", panel);
     image.remove();
@@ -359,45 +349,31 @@ describe("package page", () => {
     "img.package_header",
   ];
 
-  it("one included game: the row is the host and its capsule image the anchor", async () => {
-    history.replaceState(null, "", PACKAGE_PATH);
-    setBody(packagePage([4115450]));
-    await startScanner();
-    expect(hostElements()).toStrictEqual([the(ROW)]);
-    expect(mapping()).toStrictEqual([[4115450, "generic"]]);
-    expect(found()[0]?.anchor).toBe(the(".tab_item_cap"));
-    expect(the(".tab_item_cap").contains(the("img.tab_item_cap_img"))).toBe(true);
-    expect(the(ROW).getAttribute(HOST_APPID)).toBe("4115450");
-    for (const selector of OUTSIDE) {
-      expect(the(selector).hasAttribute(HOST_APPID)).toBe(false);
-      expect(the(selector).hasAttribute(HOST_KINDS)).toBe(false);
-    }
-  });
+  it.each([["one included game", 1], ["two included games", 2]])(
+    "%s: each row is a host, its capsule image the anchor, nothing around them",
+    async (_name, count) => {
+      const ids = make.appIds(count);
+      await startOn(make.page.packagePath, make.page.package(ids));
+      const rows = [...document.querySelectorAll(ROW)];
+      expect(hostElements()).toStrictEqual(rows);
+      expect(mapping()).toStrictEqual(placed(ids, "generic"));
+      expect(rows.map((row) => row.getAttribute(HOST_APPID))).toStrictEqual(ids.map(String));
+      for (const host of found()) {
+        expect(host.anchor).toBe(the(".tab_item_cap", host.element));
+        expect(host.anchor.contains(the("img.tab_item_cap_img", host.element))).toBe(true);
+      }
+      for (const selector of OUTSIDE) {
+        expect(the(selector).hasAttribute(HOST_APPID)).toBe(false);
+        expect(the(selector).hasAttribute(HOST_KINDS)).toBe(false);
+      }
+    },
+  );
 
   it("with the DRM filter on dim, only the included game's row dims", async () => {
-    history.replaceState(null, "", PACKAGE_PATH);
-    setBody(packagePage([4115450]));
-    await startScanner();
+    await startOn(make.page.packagePath, make.page.package([make.appId()]));
     expect(dimmed("drm")).toStrictEqual([the(ROW)]);
     for (const selector of OUTSIDE) {
       expect(the(selector).hasAttribute(HOST_KINDS)).toBe(false);
-    }
-  });
-
-  it("two included games: two row hosts, nothing around them", async () => {
-    history.replaceState(null, "", PACKAGE_PATH);
-    setBody(packagePage([4115450, 1091500]));
-    await startScanner();
-    expect(hostElements()).toStrictEqual([...document.querySelectorAll(ROW)]);
-    expect(mapping()).toStrictEqual([
-      [4115450, "generic"],
-      [1091500, "generic"],
-    ]);
-    for (const host of found()) {
-      expect(host.anchor).toBe(the(".tab_item_cap", host.element));
-    }
-    for (const selector of OUTSIDE) {
-      expect(the(selector).hasAttribute(HOST_APPID)).toBe(false);
     }
   });
 });
@@ -430,18 +406,14 @@ describe("DLC page", () => {
       { links: ["description"], hosts: [] },
     ] as const,
   )("a base game link in $links: hosts $hosts", async ({ links, hosts }) => {
-    history.replaceState(null, "", DLC_PATH);
-    setBody(dlcPage(links));
-    await startScanner();
+    await startOn(make.page.dlcPath, make.page.dlc(links));
     expect(hostElements()).toStrictEqual(hosts.map((selector) => the(selector)));
     expect(hostElements().filter(tooLarge)).toStrictEqual([]);
-    expect(found().every((host) => host.appId === BASE_ID)).toBe(true);
+    expect(found().every((host) => host.appId === make.fixture.dlcBase)).toBe(true);
   });
 
   it("with the AI filter on dim, nothing that holds the header capsule dims", async () => {
-    history.replaceState(null, "", DLC_PATH);
-    setBody(dlcPage(["glance", "bubble", "description"]));
-    await startScanner();
+    await startOn(make.page.dlcPath, make.page.dlc(["glance", "bubble", "description"]));
     const faded = dimmed("ai");
     expect(faded.filter(tooLarge)).toStrictEqual([]);
     expect(faded).toStrictEqual([the(GLANCE)]);
@@ -450,16 +422,16 @@ describe("DLC page", () => {
 
 describe("marking", () => {
   it("marks hosts once with the app ID and no kinds yet", async () => {
-    loadPage(SURFACES.search);
+    loadPage(make.page.surface("search"));
     await startScanner();
     const row = the("a.search_result_row");
-    expect(row.getAttribute(HOST_APPID)).toBe("4075620");
+    expect(row.getAttribute(HOST_APPID)).toBe(String(make.fixture.searchRows[0]));
     expect(row.hasAttribute(HOST_KINDS)).toBe(false);
     expect(row.hasAttribute(HOST_HIDEABLE)).toBe(false);
   });
 
   it("finds nothing new on a rescan", async () => {
-    loadPage(SURFACES["tag-hub"]);
+    loadPage(make.page.surface("tag-hub"));
     await startScanner();
     expect(found()).toHaveLength(4);
     scanner.stop();
@@ -472,13 +444,13 @@ describe("marking", () => {
 
 describe("observing", () => {
   it("scans 50 appended search rows once, touching only the new rows", async () => {
-    loadPage(SURFACES.search);
+    loadPage(make.page.surface("search"));
     await startScanner();
     const container = the("#search_resultsRows");
     const added: HTMLElement[] = [];
     for (let burst = 0; burst < 5; burst++) {
-      for (let n = 0; n < 10; n++) {
-        const row = searchRow(1_000_000 + burst * 10 + n);
+      for (const id of make.appIds(10)) {
+        const row = make.page.searchRow(id);
         added.push(row);
         container.append(row);
       }
@@ -491,9 +463,9 @@ describe("observing", () => {
     expect(renderer.batches[1]?.changed).toStrictEqual([]);
     expect(reports[1]).toStrictEqual({
       kind: "added",
-      roots: 50,
-      candidates: 50,
-      found: 50,
+      roots: added.length,
+      candidates: added.length,
+      found: added.length,
       changed: 0,
     });
   });
@@ -502,17 +474,18 @@ describe("observing", () => {
     setBody("<main></main>");
     await startScanner();
     const main = the("main");
-    for (let n = 0; n < 12; n++) {
-      main.append(searchRow(100 + n));
+    const ids = make.appIds(12);
+    for (const id of ids) {
+      main.append(make.page.searchRow(id));
       await vi.advanceTimersByTimeAsync(DEBOUNCE_MS / 2);
     }
     expect(reports.filter((report) => report.kind === "added").length).toBeGreaterThanOrEqual(1);
     await settle();
-    expect(found()).toHaveLength(12);
+    expect(found()).toHaveLength(ids.length);
   });
 
   it("ignores mutations made only of our own nodes", async () => {
-    loadPage(SURFACES.search);
+    loadPage(make.page.surface("search"));
     await startScanner();
     const badge = document.createElement("span");
     badge.className = "sar-badge";
@@ -522,11 +495,11 @@ describe("observing", () => {
   });
 
   it("restores a badge when a re-render replaces the host's subtree", async () => {
-    loadPage(SURFACES["tag-hub"]);
+    loadPage(make.page.surface("tag-hub"));
     await startScanner({ badges: true });
     const host = the(".capsule_index_0");
     expect(host.querySelectorAll(".sar-badge")).toHaveLength(1);
-    const fresh = new DOMParser().parseFromString(SURFACES["tag-hub"], "text/html");
+    const fresh = new DOMParser().parseFromString(make.page.surface("tag-hub"), "text/html");
     const rendered = the(".capsule_index_0", fresh);
     host.replaceChildren(...rendered.childNodes);
     expect(host.querySelectorAll(".sar-badge")).toHaveLength(0);
@@ -540,54 +513,54 @@ describe("observing", () => {
   });
 
   it("resets a host reused for another app and finds the new app's host", async () => {
+    const [before, after] = [make.appId(), make.appId()];
     setBody(
-      `<main><div class="other"><a href="/app/99/"><img></a></div>`
-        + `<div class="slot"><div class="slide"><a href="/app/10/"><img></a>`
-        + `<a href="/app/10/">Ten</a></div></div></main>`,
+      `<main><div class="other">${appLink(make.appId())}</div>`
+        + `<div class="slot"><div class="slide">${appLink(before)}`
+        + `${appLink(before, make.text.name())}</div></div></main>`,
     );
     await startScanner({ badges: true });
     const slot = the(".slot");
-    expect(slot.getAttribute(HOST_APPID)).toBe("10");
+    expect(slot.getAttribute(HOST_APPID)).toBe(String(before));
     the(".slide", slot).replaceWith(
-      ...nodes(
-        `<div class="slide"><a href="/app/20/"><img></a><a href="/app/20/">Twenty</a></div>`,
-      ),
+      ...nodes(`<div class="slide">${appLink(after)}${appLink(after, make.text.name())}</div>`),
     );
     await settle();
     expect(renderer.batches.at(-1)?.changed).toStrictEqual([]);
     expect(renderer.batches.at(-1)?.found.map((host) => [host.element, host.appId])).toStrictEqual([
-      [slot, 20],
+      [slot, after],
     ]);
-    expect(slot.getAttribute(HOST_APPID)).toBe("20");
+    expect(slot.getAttribute(HOST_APPID)).toBe(String(after));
     expect(slot.querySelectorAll(`[${HOST_APPID}]`)).toHaveLength(0);
     expect(slot.querySelectorAll(".sar-badge")).toHaveLength(1);
   });
 
   it("finds a capsule whose image arrives inside its link after the scan", async () => {
-    setBody(`<main><div class="other"><a href="/app/99/"><img></a></div></main>`);
+    const [other, late] = [make.appId(), make.appId()];
+    setBody(`<main><div class="other">${appLink(other)}</div></main>`);
     await startScanner();
     the("main").append(
-      ...nodes(`<div class="card"><a href="/app/30/"><div class="box"></div></a></div>`),
+      ...nodes(`<div class="card">${appLink(late, `<div class="box"></div>`)}</div>`),
     );
     await settle();
-    expect(mapping()).toStrictEqual([[99, "generic"]]);
+    expect(mapping()).toStrictEqual([[other, "generic"]]);
     the(".box").append(document.createElement("img"));
     await settle();
-    expect(mapping()).toStrictEqual([[99, "generic"], [30, "generic"]]);
+    expect(mapping()).toStrictEqual([[other, "generic"], [late, "generic"]]);
     expect(renderer.batches.at(-1)?.found.map((host) => host.element)).toStrictEqual([
       the(".card"),
     ]);
   });
 
   it("keeps the badge in place when the store adds a hover popup inside the host", async () => {
-    loadPage(SURFACES["tag-hub"]);
+    loadPage(make.page.surface("tag-hub"));
     await startScanner({ badges: true });
     const host = the(".capsule_index_0");
     const box = the(".CapsuleImageCtn", host);
     expect(box.querySelectorAll(".sar-badge")).toHaveLength(1);
     const popup = nodes(
-      `<div class="popup" style="position: fixed"><a href="/app/632360/"><div class="art">`
-        + `<img></div></a></div>`,
+      `<div class="popup" style="position: fixed">`
+        + `${appLink(make.fixture.app.hubCarousel, `<div class="art"><img></div>`)}</div>`,
     );
     the(".ImpressionTrackedElement", host).prepend(...popup);
     await settle();
@@ -600,7 +573,7 @@ describe("observing", () => {
   });
 
   it("gives a carousel clone its own host and removes the copied badge", async () => {
-    loadPage(SURFACES.home);
+    loadPage(make.page.surface("home"));
     await startScanner({ badges: true });
     const original = the("a.sale_capsule");
     const clone = original.cloneNode(true);
@@ -613,13 +586,14 @@ describe("observing", () => {
     expect(renderer.batches.at(-1)?.found.map((host) => host.element)).toStrictEqual([clone]);
     expect(original.querySelectorAll(".sar-badge")).toHaveLength(1);
     expect(clone.querySelectorAll(".sar-badge")).toHaveLength(1);
-    expect(clone.getAttribute(HOST_APPID)).toBe("466560");
+    // The first discount capsule.
+    expect(clone.getAttribute(HOST_APPID)).toBe(String(SURFACE_APPS.home[2]));
   });
 
   it("cleans marks and badges left by a previous instance", async () => {
-    loadPage(SURFACES.search);
+    loadPage(make.page.surface("search"));
     const row = the("a.search_result_row");
-    row.setAttribute(HOST_APPID, "4075620");
+    row.setAttribute(HOST_APPID, String(make.fixture.searchRows[0]));
     row.setAttribute(HOST_KINDS, "ai");
     row.append(...nodes(`<span class="sar-badge"></span><span class="sar-badge"></span>`));
     await startScanner({ badges: true });
@@ -629,10 +603,10 @@ describe("observing", () => {
   });
 
   it("disconnects on pagehide and rescans the page on a bfcache pageshow", async () => {
-    loadPage(SURFACES.search);
+    loadPage(make.page.surface("search"));
     await startScanner();
     globalThis.dispatchEvent(pageTransition("pagehide"));
-    const row = searchRow(42);
+    const row = make.page.searchRow(make.appId());
     the("#search_resultsRows").append(row);
     await settle();
     expect(reports).toHaveLength(1);
@@ -688,56 +662,50 @@ describe("work budget", () => {
     }
   }
 
-  /** A React sale grid of `count` tag hub capsules, each for its own app. */
-  function capsuleGrid(count: number): Element {
-    const page = new DOMParser().parseFromString(SURFACES["tag-hub"], "text/html");
-    const capsule = the(".capsule_index_0", page).parentElement;
-    if (capsule === null) {
-      throw new TypeError();
-    }
-    const grid = document.createElement("div");
-    grid.className = "SaleSectionContainer";
-    for (let n = 0; n < count; n++) {
-      const copy = capsule.cloneNode(true);
-      if (copy instanceof Element) {
-        for (const link of copy.querySelectorAll("a")) {
-          link.setAttribute("href", `https://store.steampowered.com/app/${String(500_000 + n)}/X`);
-        }
-        grid.append(copy);
+  /** A React sale grid of tag hub capsules, one for each app in `ids`. */
+  function capsuleGrid(ids: readonly AppId[]): string {
+    const page = new DOMParser().parseFromString(make.page.surface("tag-hub"), "text/html");
+    // The wrapper of the first capsule.
+    const capsule = the("._3r4Ny9tQdQZc50XDM5B2q2", page);
+    const copies = ids.map((id) => {
+      for (const link of capsule.querySelectorAll("a")) {
+        link.setAttribute("href", `https://store.steampowered.com/app/${String(id)}/X`);
       }
-    }
-    return grid;
+      return capsule.outerHTML;
+    });
+    return `<div class="SaleSectionContainer">${copies.join("")}</div>`;
   }
 
   it("scans a 200-capsule page with bounded DOM work, in one frame", async () => {
-    document.body.replaceChildren(capsuleGrid(200));
+    const ids = make.appIds(200);
+    setBody(capsuleGrid(ids));
     const work = countDomWork();
     await startScanner();
-    expect(found()).toHaveLength(200);
+    expect(found()).toHaveLength(ids.length);
     expect(renderer.batches).toHaveLength(1);
     expect(reports).toHaveLength(1);
     const done = work();
-    expectWithin(done, PAGE_LIMITS, 200);
-    expect(done.setAttribute).toBe(200);
+    expectWithin(done, PAGE_LIMITS, ids.length);
+    expect(done.setAttribute).toBe(ids.length);
     expect(done.removeAttribute).toBe(0);
   });
 
   it("scans 50 appended search rows with bounded DOM work", async () => {
-    loadPage(SURFACES.search);
+    loadPage(make.page.surface("search"));
     await startScanner();
     const container = the("#search_resultsRows");
-    const rows = Array.from({ length: 50 }, (_, n) => searchRow(2_000_000 + n));
+    const rows = make.appIds(50).map((id) => make.page.searchRow(id));
     const work = countDomWork();
     for (const row of rows) {
       container.append(row);
     }
     await settle();
-    expect(found()).toHaveLength(58);
+    expect(found()).toHaveLength(make.fixture.searchRows.length + rows.length);
     expect(renderer.batches).toHaveLength(2);
     expect(reports).toHaveLength(2);
     const done = work();
-    expectWithin(done, ADDED_LIMITS, 50);
-    expect(done.setAttribute).toBe(50);
+    expectWithin(done, ADDED_LIMITS, rows.length);
+    expect(done.setAttribute).toBe(rows.length);
     expect(done.removeAttribute).toBe(0);
   });
 });

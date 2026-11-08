@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { make } from "../../../tests/helpers/factory";
 import { verdictOf } from "../../../tests/helpers/getitems";
-import { UNKNOWN } from "../types";
 import { DRM_KIND } from "./drm";
 
 function fromDetails(details: Readonly<Record<string, unknown>>) {
@@ -9,61 +9,58 @@ function fromDetails(details: Readonly<Record<string, unknown>>) {
 
 describe("DRM_KIND.fromGetItems", () => {
   it("is disclosed with the developer's text", () => {
-    expect(fromDetails({ drm_third_party_type: "Denuvo Anti-tamper" })).toStrictEqual({
-      state: "disclosed",
-      kind: "drm",
-      source: "api",
-      text: "Denuvo Anti-tamper",
-    });
+    const text = make.text.service();
+    expect(fromDetails({ drm_third_party_type: text })).toStrictEqual(
+      make.verdict.bare("drm", { text }),
+    );
   });
 
-  it("keeps the text verbatim: spacing, line breaks and markup stay", () => {
-    const text = " EA online activation required.\n<b>Denuvo</b> Anti-tamper ";
+  it.each<readonly [string, () => string]>([
+    ["spacing, line breaks and markup", () => ` ${make.text.note()}\n${make.text.markup()} `],
+    ["4,000 characters", () => "x".repeat(4000)],
+  ])("keeps the text verbatim, %s included", (_name, textOf) => {
+    const text = textOf();
     expect(fromDetails({ drm_third_party_type: text })).toMatchObject({ text });
   });
 
   it("adds the activation limit when Steam sends one", () => {
+    const activationLimit = make.text.note();
     const verdict = fromDetails({
-      drm_third_party_type: "Denuvo",
-      drm_activation_limit: "5 activations within 24 hours",
+      drm_third_party_type: make.text.service(),
+      drm_activation_limit: activationLimit,
     });
-    expect(verdict).toMatchObject({ activationLimit: "5 activations within 24 hours" });
-    expect(fromDetails({ drm_third_party_type: "Denuvo", drm_activation_limit: " " })).not
-      .toHaveProperty("activationLimit");
+    expect(verdict).toMatchObject({ activationLimit });
   });
 
-  it("is not disclosed when the field is absent or holds only blanks", () => {
-    for (const details of [{}, { drm_third_party_type: "" }, { drm_third_party_type: " \n" }]) {
-      expect(fromDetails(details)).toStrictEqual({ state: "not-disclosed", source: "api" });
-    }
+  it.each<readonly [string, unknown]>([
+    ["blank", " "],
+    ["a list", []],
+    ["a number", 5],
+    ["over the text limit", "x".repeat(4001)],
+  ])("stays disclosed without an activation limit that is %s", (_name, drm_activation_limit) => {
+    const text = make.text.service();
+    const verdict = fromDetails({ drm_third_party_type: text, drm_activation_limit });
+    expect(verdict).toStrictEqual(make.verdict.bare("drm", { text }));
   });
 
-  it("is not disclosed on an activation limit alone", () => {
-    expect(fromDetails({ drm_activation_limit: "5 a day" }).state).toBe("not-disclosed");
+  it.each<readonly [string, Readonly<Record<string, unknown>>]>([
+    ["no text", {}],
+    ["empty text", { drm_third_party_type: "" }],
+    ["blank text", { drm_third_party_type: " \n" }],
+    ["an activation limit alone", { drm_activation_limit: make.text.note() }],
+  ])("is not disclosed for %s", (_name, details) => {
+    expect(fromDetails(details)).toStrictEqual(make.verdict.notDisclosed());
   });
 
-  it("is unknown malformed when a field it reads is malformed, and only then", () => {
-    expect(fromDetails({ drm_third_party_type: 4 })).toBe(UNKNOWN.malformed);
-    expect(fromDetails({ drm_third_party_type: "x".repeat(4001) })).toBe(UNKNOWN.malformed);
-    expect(fromDetails({ drm_third_party_type: "Denuvo", anticheat: 5, eula: 6 }).state).toBe(
-      "disclosed",
-    );
+  it.each<readonly [string, unknown]>([
+    ["a number", 4],
+    ["text over 4,000 characters", "x".repeat(4001)],
+  ])("is unknown malformed for text that is %s", (_name, text) => {
+    expect(fromDetails({ drm_third_party_type: text })).toBe(make.verdict.unknown("malformed"));
   });
 
-  it("allows 4,000 characters of text", () => {
-    const text = "x".repeat(4000);
-    expect(fromDetails({ drm_third_party_type: text })).toMatchObject({ text });
-  });
-
-  it("stays disclosed without the activation limit when that field is malformed", () => {
-    for (const drm_activation_limit of [[], 5, "x".repeat(4001)]) {
-      const verdict = fromDetails({ drm_third_party_type: "Denuvo", drm_activation_limit });
-      expect(verdict).toStrictEqual({
-        state: "disclosed",
-        kind: "drm",
-        source: "api",
-        text: "Denuvo",
-      });
-    }
+  it("ignores malformed fields of other kinds", () => {
+    const details = { drm_third_party_type: make.text.service(), anticheat: 5, eula: 6 };
+    expect(fromDetails(details).state).toBe("disclosed");
   });
 });

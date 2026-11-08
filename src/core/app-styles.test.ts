@@ -1,11 +1,9 @@
 // @vitest-environment-options {"url":"https://store.steampowered.com/search/?term=roguelike"}
 import { afterEach, describe, expect, it, vi } from "vitest";
 import searchItems from "../../tests/fixtures/getitems/search-roguelike-50.json";
-import { fakeHttp } from "../../tests/helpers/fake-http";
-import { fixedClock } from "../../tests/helpers/fixed-clock";
-import { fixtureItems, getItemsRoute } from "../../tests/helpers/getitems";
-import { memoryStore } from "../../tests/helpers/memory-store";
-import { loadPage, SURFACES } from "../../tests/helpers/surfaces";
+import { make } from "../../tests/helpers/factory";
+import { fake } from "../../tests/helpers/fakes";
+import { loadPage } from "../../tests/helpers/surfaces";
 import { type App, start } from "./app";
 import { SHIPPED_CATALOGS } from "./i18n/shipped";
 import { createSettingsSource } from "./settings/settings-source";
@@ -14,8 +12,6 @@ import { createSettingsSource } from "./settings/settings-source";
 
 // The captured row of 4461450 carries the AI and the Early Access tags.
 const DISCLOSED_BADGES = 2;
-
-const quiet = { error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() };
 
 let app: App | undefined;
 
@@ -27,16 +23,16 @@ afterEach(() => {
 describe("start and the page stylesheet", () => {
   it("leaves the page stylesheet to the platform hook and still badges", async () => {
     const addPageStyles = vi.fn();
-    loadPage(SURFACES.search);
+    loadPage(make.page.surface("search"));
     document.documentElement.lang = "en";
-    const store = memoryStore();
+    const store = fake.store();
     app = await start({
       document,
-      http: fakeHttp([getItemsRoute(fixtureItems(searchItems))]),
+      http: fake.http([make.item.route(make.fixture.items(searchItems))]),
       store,
       settings: createSettingsSource(store),
-      clock: fixedClock(Date.UTC(2026, 9, 20)),
-      console: quiet,
+      clock: fake.clock(make.time()),
+      console: fake.console(),
       catalogs: SHIPPED_CATALOGS,
       addPageStyles,
     });

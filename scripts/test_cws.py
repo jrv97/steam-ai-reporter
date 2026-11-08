@@ -6,8 +6,7 @@ from collections.abc import Iterator
 from pathlib import Path
 
 from cws import POLL_ATTEMPTS, publish
-
-ITEM = "publishers/pub/items/ext"
+from testdata import Cws
 
 
 class FakeApi:
@@ -34,18 +33,21 @@ class PublishTest(unittest.TestCase):
     def setUp(self) -> None:
         folder = tempfile.TemporaryDirectory()
         self.addCleanup(folder.cleanup)
-        self.archive = Path(folder.name) / "chrome.zip"
-        self.archive.write_bytes(b"zip-bytes")
+        self.archive = Path(folder.name) / Cws.ARCHIVE_NAME
+        self.archive.write_bytes(Cws.ARCHIVE)
 
     def run_publish(self, api: FakeApi) -> str:
-        return publish(api, "pub", "ext", self.archive, api.sleep)
+        return publish(api, Cws.PUBLISHER, Cws.EXTENSION, self.archive, api.sleep)
 
     def test_uploads_then_submits_when_the_upload_succeeds_at_once(self) -> None:
         api = FakeApi("SUCCEEDED", [])
         self.assertEqual(self.run_publish(api), "PENDING_REVIEW")
         self.assertEqual(
             api.calls,
-            [("POST", f"/upload/v2/{ITEM}:upload", 9), ("POST", f"/v2/{ITEM}:publish", 0)],
+            [
+                ("POST", f"/upload/v2/{Cws.ITEM}:upload", len(Cws.ARCHIVE)),
+                ("POST", f"/v2/{Cws.ITEM}:publish", 0),
+            ],
         )
         self.assertEqual(api.sleeps, 0)
 
@@ -53,8 +55,8 @@ class PublishTest(unittest.TestCase):
         api = FakeApi("IN_PROGRESS", ["IN_PROGRESS", "SUCCEEDED"])
         self.run_publish(api)
         paths = [path for _, path, _ in api.calls]
-        self.assertEqual(paths.count(f"/v2/{ITEM}:fetchStatus"), 2)
-        self.assertEqual(paths[-1], f"/v2/{ITEM}:publish")
+        self.assertEqual(paths.count(f"/v2/{Cws.ITEM}:fetchStatus"), 2)
+        self.assertEqual(paths[-1], f"/v2/{Cws.ITEM}:publish")
         self.assertEqual(api.sleeps, 2)
 
     def test_a_failed_upload_stops_before_publishing(self) -> None:

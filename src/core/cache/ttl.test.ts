@@ -1,18 +1,14 @@
 import { describe, expect, it } from "vitest";
-import {
-  disclosedVerdict,
-  FULL_DISCLOSED,
-  NOT_DISCLOSED,
-  uniformVerdicts,
-} from "../../../tests/helpers/verdicts";
+import { make } from "../../../tests/helpers/factory";
 import { DEFAULT_BACKOFF } from "../detect/breaker";
 import { RETRY_DELAY_MS } from "../detect/retry";
 import { AI_KIND } from "../kinds/ai";
 import { EARLY_ACCESS_KIND } from "../kinds/early-access";
-import { DAY_MS, HOUR_MS, WEEK_TTL } from "../kinds/kind-ttl";
-import { KINDS } from "../kinds/registry";
+import type { KindId } from "../kinds/id";
+import { DAY_MS, HOUR_MS, type KindTtl, WEEK_TTL } from "../kinds/kind-ttl";
+import { KIND_BY_ID, KINDS } from "../kinds/registry";
 import { type KindVerdicts, UNKNOWN_KINDS } from "../kinds/verdicts";
-import { UNKNOWN } from "../types";
+import type { UnknownReason, Verdict } from "../types";
 import {
   isFresh,
   isStoredReason,
@@ -22,102 +18,108 @@ import {
   UNKNOWN_TTL_MS,
 } from "./ttl";
 
-const T = 1_000_000_000_000;
+const T = make.time();
 // An app whose kinds are all disclosed expires with Early Access, the shortest-lived disclosure.
 const FULL_TTL_MS = EARLY_ACCESS_KIND.ttl.disclosed;
+const FULL = make.verdicts.full();
+const NOT_DISCLOSED = make.verdict.notDisclosed();
+/** The kinds that keep both answers for a week: all but the AI kind and Early Access. */
+const WEEK_KINDS = KINDS.filter((kind) => kind.id !== "ai" && kind.id !== "earlyaccess");
+const STORED_UNKNOWN = ["gated", "missing", "malformed"] as const;
 
 describe("kind TTLs", () => {
-  it("keep the AI notes for 7 days and a missing disclosure for 12 hours", () => {
-    expect(AI_KIND.ttl).toStrictEqual({ disclosed: 7 * DAY_MS, notDisclosed: 12 * HOUR_MS });
-  });
-
-  it("keep early access for 2 days when disclosed and 7 when not", () => {
-    expect(EARLY_ACCESS_KIND.ttl).toStrictEqual({
-      disclosed: 2 * DAY_MS,
+  it.each<readonly [KindId, KindTtl]>([
+    ["ai", { disclosed: 7 * DAY_MS, notDisclosed: 12 * HOUR_MS }],
+    ["earlyaccess", { disclosed: 2 * DAY_MS, notDisclosed: 7 * DAY_MS }],
+    ...WEEK_KINDS.map((kind): readonly [KindId, KindTtl] => [kind.id, {
+      disclosed: 7 * DAY_MS,
       notDisclosed: 7 * DAY_MS,
-    });
-  });
-
-  it("keep every other kind for 7 days, disclosed or not", () => {
-    for (const kind of KINDS) {
-      if (kind.id !== "ai" && kind.id !== "earlyaccess") {
-        expect(kind.ttl).toBe(WEEK_TTL);
-      }
-    }
-    expect(WEEK_TTL).toStrictEqual({ disclosed: 7 * DAY_MS, notDisclosed: 7 * DAY_MS });
+    }]),
+  ])("keep %s verdicts for %o", (id, ttl) => {
+    expect(KIND_BY_ID[id].ttl).toStrictEqual(ttl);
   });
 });
 
 describe("ttlMs", () => {
-  it("takes disclosed and not disclosed from the kind's TTLs", () => {
-    expect(ttlMs(AI_KIND.ttl, disclosedVerdict())).toBe(7 * DAY_MS);
-    expect(ttlMs(AI_KIND.ttl, NOT_DISCLOSED)).toBe(12 * HOUR_MS);
-    expect(ttlMs(WEEK_TTL, NOT_DISCLOSED)).toBe(7 * DAY_MS);
+  it.each<readonly [string, KindTtl, Verdict, number]>([
+    ["an AI disclosure", AI_KIND.ttl, make.verdict.disclosed("ai"), 7 * DAY_MS],
+    ["no AI disclosure", AI_KIND.ttl, NOT_DISCLOSED, 12 * HOUR_MS],
+    ["no disclosure of a week-long kind", WEEK_TTL, NOT_DISCLOSED, 7 * DAY_MS],
+    ...STORED_UNKNOWN.flatMap((reason): (readonly [string, KindTtl, Verdict, number])[] => [
+      [`an AI unknown ${reason}`, AI_KIND.ttl, make.verdict.unknown(reason), 6 * HOUR_MS],
+      [`a week-long unknown ${reason}`, WEEK_TTL, make.verdict.unknown(reason), 6 * HOUR_MS],
+    ]),
+    [
+      "a section the request left out",
+      WEEK_TTL,
+      make.verdict.unknown("unrequested"),
+      Number.POSITIVE_INFINITY,
+    ],
+    [
+      "an unknown error, never stored",
+      AI_KIND.ttl,
+      make.verdict.unknown("error"),
+      TRANSIENT_TTL_MS,
+    ],
+    [
+      "an unknown rate-limited, never stored",
+      AI_KIND.ttl,
+      make.verdict.unknown("rate-limited"),
+      TRANSIENT_TTL_MS,
+    ],
+  ])("keeps %s for its TTL", (_name, ttl, verdict, expected) => {
+    expect(ttlMs(ttl, verdict)).toBe(expected);
   });
 
-  it("is 6 hours for gated, missing and malformed, whatever the kind", () => {
-    for (const reason of ["gated", "missing", "malformed"] as const) {
-      expect(ttlMs(AI_KIND.ttl, UNKNOWN[reason])).toBe(6 * HOUR_MS);
-      expect(ttlMs(WEEK_TTL, UNKNOWN[reason])).toBe(6 * HOUR_MS);
-    }
-  });
-
-  it("never runs out for a kind whose section the request left out", () => {
-    expect(ttlMs(WEEK_TTL, UNKNOWN.unrequested)).toBe(Number.POSITIVE_INFINITY);
-  });
-
-  it("is short for the verdicts that are not stored", () => {
-    expect(ttlMs(AI_KIND.ttl, UNKNOWN.error)).toBe(TRANSIENT_TTL_MS);
-    expect(ttlMs(AI_KIND.ttl, UNKNOWN["rate-limited"])).toBe(TRANSIENT_TTL_MS);
+  it("runs out for an unstored verdict before a stored one and before a retry round", () => {
     expect(TRANSIENT_TTL_MS).toBeLessThan(UNKNOWN_TTL_MS);
-  });
-
-  it("runs out before a retry round, which waits out the longest breaker pause", () => {
     expect(TRANSIENT_TTL_MS).toBeLessThan(RETRY_DELAY_MS);
     expect(DEFAULT_BACKOFF.baseMs + DEFAULT_BACKOFF.jitterMs).toBeLessThan(RETRY_DELAY_MS);
   });
 });
 
 describe("isStoredReason", () => {
-  it("stores gated, missing, malformed and unrequested only", () => {
-    expect(isStoredReason("gated")).toBe(true);
-    expect(isStoredReason("missing")).toBe(true);
-    expect(isStoredReason("malformed")).toBe(true);
-    expect(isStoredReason("unrequested")).toBe(true);
-    expect(isStoredReason("error")).toBe(false);
-    expect(isStoredReason("rate-limited")).toBe(false);
+  it.each<readonly [UnknownReason, boolean]>([
+    ["gated", true],
+    ["missing", true],
+    ["malformed", true],
+    ["unrequested", true],
+    ["error", false],
+    ["rate-limited", false],
+  ])("%s: %s", (reason, stored) => {
+    expect(isStoredReason(reason)).toBe(stored);
   });
 });
 
 describe("isTransient", () => {
   it.each(
     [
-      ["unknown error", true, uniformVerdicts("error")],
-      ["unknown rate-limited", true, uniformVerdicts("rate-limited")],
+      ["unknown error", true, make.verdicts.uniform("error")],
+      ["unknown rate-limited", true, make.verdicts.uniform("rate-limited")],
       ["error and rate-limited mixed", true, {
         ...UNKNOWN_KINDS.error,
-        ai: UNKNOWN["rate-limited"],
+        ai: make.verdict.unknown("rate-limited"),
       }],
-      ["unknown gated", false, uniformVerdicts("gated")],
-      ["unknown missing", false, uniformVerdicts("missing")],
-      ["unknown malformed", false, uniformVerdicts("malformed")],
+      ["unknown gated", false, make.verdicts.uniform("gated")],
+      ["unknown missing", false, make.verdicts.uniform("missing")],
+      ["unknown malformed", false, make.verdicts.uniform("malformed")],
       ["one kind answered", false, { ...UNKNOWN_KINDS.error, ai: NOT_DISCLOSED }],
-      ["disclosed", false, uniformVerdicts("disclosed")],
+      ["disclosed", false, make.verdicts.uniform("disclosed")],
       ["a demo's own disclosure beside its failed full game", true, {
         ...UNKNOWN_KINDS.error,
-        drm: FULL_DISCLOSED.drm,
+        drm: FULL.drm,
       }],
       ["a demo's own disclosure beside a stored unknown", false, {
         ...UNKNOWN_KINDS.missing,
-        drm: FULL_DISCLOSED.drm,
+        drm: FULL.drm,
       }],
       ["a section left out beside a failed lookup", true, {
         ...UNKNOWN_KINDS.error,
-        pvp: UNKNOWN.unrequested,
+        pvp: make.verdict.unknown("unrequested"),
       }],
       ["a section left out beside answers", false, {
-        ...uniformVerdicts("not-disclosed"),
-        pvp: UNKNOWN.unrequested,
+        ...make.verdicts.uniform("not-disclosed"),
+        pvp: make.verdict.unknown("unrequested"),
       }],
     ] as const,
   )("%s: %s", (_name, transient, verdicts) => {
@@ -126,17 +128,27 @@ describe("isTransient", () => {
 });
 
 describe("isFresh", () => {
-  const cases: readonly (readonly [string, KindVerdicts, number])[] = [
-    ["disclosed", uniformVerdicts("disclosed"), FULL_TTL_MS],
-    ["not disclosed", uniformVerdicts("not-disclosed"), 12 * HOUR_MS],
-    ["unknown gated", uniformVerdicts("gated"), UNKNOWN_TTL_MS],
-    ["unknown missing", uniformVerdicts("missing"), UNKNOWN_TTL_MS],
-    ["unknown malformed", uniformVerdicts("malformed"), UNKNOWN_TTL_MS],
-    ["unknown error", uniformVerdicts("error"), TRANSIENT_TTL_MS],
-    ["unknown rate-limited", uniformVerdicts("rate-limited"), TRANSIENT_TTL_MS],
-  ];
+  const notDisclosed = make.verdicts.uniform("not-disclosed");
+  const unrequested = make.verdict.unknown("unrequested");
 
-  it.each(cases)("%s: fresh until exactly its TTL", (_name, verdicts, ttl) => {
+  it.each<readonly [string, KindVerdicts, number]>([
+    ["disclosed", make.verdicts.uniform("disclosed"), FULL_TTL_MS],
+    ["not disclosed", notDisclosed, 12 * HOUR_MS],
+    ["unknown gated", make.verdicts.uniform("gated"), UNKNOWN_TTL_MS],
+    ["unknown missing", make.verdicts.uniform("missing"), UNKNOWN_TTL_MS],
+    ["unknown malformed", make.verdicts.uniform("malformed"), UNKNOWN_TTL_MS],
+    ["unknown error", make.verdicts.uniform("error"), TRANSIENT_TTL_MS],
+    ["unknown rate-limited", make.verdicts.uniform("rate-limited"), TRANSIENT_TTL_MS],
+    ["AI notes beside kinds not disclosed", { ...notDisclosed, ai: FULL.ai }, 7 * DAY_MS],
+    ["AI not disclosed beside disclosed kinds", { ...FULL, ai: NOT_DISCLOSED }, 12 * HOUR_MS],
+    ["early access no longer flagged", { ...FULL, earlyaccess: NOT_DISCLOSED }, 7 * DAY_MS],
+    [
+      "a section left out beside kinds not disclosed",
+      { ...notDisclosed, pvp: unrequested },
+      12 * HOUR_MS,
+    ],
+    ["a section left out beside disclosed kinds", { ...FULL, pvp: unrequested }, FULL_TTL_MS],
+  ])("%s: fresh until exactly its TTL", (_name, verdicts, ttl) => {
     expect(isFresh(verdicts, T, T)).toBe(true);
     expect(isFresh(verdicts, T, T + ttl - 1)).toBe(true);
     expect(isFresh(verdicts, T, T + ttl)).toBe(false);
@@ -144,65 +156,32 @@ describe("isFresh", () => {
   });
 
   it("treats a fetch time in the future as stale", () => {
-    expect(isFresh(uniformVerdicts("not-disclosed"), T + 1, T)).toBe(false);
+    expect(isFresh(notDisclosed, T + 1, T)).toBe(false);
   });
 });
 
 describe("isFresh across kinds", () => {
-  const notDisclosed = uniformVerdicts("not-disclosed");
-
   function expiresAt(verdicts: KindVerdicts, ttl: number): void {
     expect(isFresh(verdicts, T, T + ttl - 1)).toBe(true);
     expect(isFresh(verdicts, T, T + ttl)).toBe(false);
   }
 
-  it("keeps the AI notes for 7 days while every other kind is not disclosed", () => {
-    expiresAt({ ...notDisclosed, ai: FULL_DISCLOSED.ai }, 7 * DAY_MS);
-  });
+  it.each(WEEK_KINDS.map((kind) => kind.id))(
+    "does not shorten an app because %s is not disclosed",
+    (id) => {
+      expiresAt({ ...FULL, [id]: NOT_DISCLOSED }, FULL_TTL_MS);
+    },
+  );
 
-  it("keeps a game that disclosed nothing for 12 hours, the AI kind's TTL", () => {
-    expiresAt(notDisclosed, 12 * HOUR_MS);
-  });
+  it.each(KINDS.flatMap((kind) => STORED_UNKNOWN.map((reason) => [kind.id, reason] as const)))(
+    "expires after 6 hours when %s is unknown %s",
+    (id, reason) => {
+      const aiNotes = { ...make.verdicts.uniform("not-disclosed"), ai: FULL.ai };
+      expiresAt({ ...aiNotes, [id]: make.verdict.unknown(reason) }, UNKNOWN_TTL_MS);
+    },
+  );
 
-  it("does not shorten an app because a non-AI kind is not disclosed", () => {
-    for (const kind of KINDS) {
-      if (kind.id !== "ai" && kind.id !== "earlyaccess") {
-        expiresAt({ ...FULL_DISCLOSED, [kind.id]: NOT_DISCLOSED }, FULL_TTL_MS);
-      }
-    }
-  });
-
-  it("expires with the AI kind when it is not disclosed, whatever the others are", () => {
-    expiresAt({ ...FULL_DISCLOSED, ai: NOT_DISCLOSED }, 12 * HOUR_MS);
-  });
-
-  it("expires after 6 hours when any kind is gated, missing or malformed", () => {
-    const aiNotes = { ...notDisclosed, ai: FULL_DISCLOSED.ai };
-    for (const kind of KINDS) {
-      for (const reason of ["gated", "missing", "malformed"] as const) {
-        expiresAt({ ...aiNotes, [kind.id]: UNKNOWN[reason] }, UNKNOWN_TTL_MS);
-      }
-    }
-  });
-
-  it("expires at once with a verdict that is not stored", () => {
-    for (const kind of KINDS) {
-      const failed = { ...FULL_DISCLOSED, [kind.id]: UNKNOWN.error };
-      expect(isFresh(failed, T, T + TRANSIENT_TTL_MS - 1)).toBe(true);
-      expect(isFresh(failed, T, T + TRANSIENT_TTL_MS)).toBe(false);
-    }
-  });
-
-  it("leaves the TTL to the other kinds when a kind's section was left out", () => {
-    expiresAt({ ...notDisclosed, pvp: UNKNOWN.unrequested }, 12 * HOUR_MS);
-    expiresAt({ ...FULL_DISCLOSED, pvp: UNKNOWN.unrequested }, FULL_TTL_MS);
-  });
-
-  it("keeps disclosed kinds for 2 days, the shortest disclosed TTL of any kind", () => {
-    expiresAt(FULL_DISCLOSED, FULL_TTL_MS);
-  });
-
-  it("keeps an early access game for 7 days once Steam stops flagging it", () => {
-    expiresAt({ ...FULL_DISCLOSED, earlyaccess: NOT_DISCLOSED }, 7 * DAY_MS);
+  it.each(KINDS.map((kind) => kind.id))("expires at once when %s failed", (id) => {
+    expiresAt({ ...FULL, [id]: make.verdict.unknown("error") }, TRANSIENT_TTL_MS);
   });
 });

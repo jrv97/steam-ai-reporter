@@ -1,23 +1,30 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { DEV_ROWS, USER_TAGS } from "../../../tests/helpers/app-page";
 import { setBody } from "../../../tests/helpers/dom";
+import { make } from "../../../tests/helpers/factory";
 import { disclosedList } from "../../../tests/helpers/fixture-verdicts";
 import { englishI18n } from "../../../tests/helpers/i18n";
-import { FULL_DISCLOSED } from "../../../tests/helpers/verdicts";
 import { KIND_IDS } from "../kinds/id";
 import type { AnyDisclosed } from "../kinds/verdicts";
 import { createTagSection } from "./tag-section";
 
 const i18n = englishI18n();
-const { ai, kernel, drm } = FULL_DISCLOSED;
-const all: readonly AnyDisclosed[] = disclosedList(FULL_DISCLOSED);
+const full = make.verdicts.full();
+const { ai, kernel, drm } = full;
+const all: readonly AnyDisclosed[] = disclosedList(full);
 
-const WITH_TAGS = `<div class="glance_ctn_responsive_left">${DEV_ROWS}${USER_TAGS}</div>`;
-const WITHOUT_TAGS = `<div class="glance_ctn_responsive_left">${DEV_ROWS}</div>`;
+const WITH_TAGS =
+  `<div class="glance_ctn_responsive_left">${make.page.devRows}${make.page.userTags}</div>`;
+const WITHOUT_TAGS = `<div class="glance_ctn_responsive_left">${make.page.devRows}</div>`;
 
 const sections = () => [...document.querySelectorAll(".sar-tag-section")];
 const chips = () => [...document.querySelectorAll(".sar-tag-section .sar-badge")];
 const kinds = () => chips().map((chip) => chip.getAttribute("data-sar-kind"));
+
+/** A tag section over a page made of `html`. */
+function mounted(html = WITH_TAGS, card?: Parameters<typeof createTagSection>[2]) {
+  setBody(html);
+  return createTagSection(document, i18n, card);
+}
 
 function bindings() {
   const bound = new Map<Element, readonly AnyDisclosed[]>();
@@ -33,8 +40,7 @@ describe("createTagSection", () => {
   });
 
   it("draws the label and one chip for every verdict, in order, with no overflow chip", () => {
-    setBody(WITH_TAGS);
-    createTagSection(document, i18n).render(all);
+    mounted().render(all);
     expect(kinds()).toEqual([...KIND_IDS]);
     expect(document.querySelectorAll(".sar-badge-label")).toHaveLength(KIND_IDS.length);
     expect(document.querySelector(".sar-tag-section-label")?.textContent).toBe(
@@ -50,8 +56,7 @@ describe("createTagSection", () => {
   });
 
   it("puts the chip text and the accessible name in the chip", () => {
-    setBody(WITH_TAGS);
-    createTagSection(document, i18n).render([kernel]);
+    mounted().render([kernel]);
     const chip = chips()[0];
     expect(chip?.querySelector(".sar-badge-label")?.textContent).toBe(i18n.t("kind_kernel_chip"));
     expect(chip?.querySelector(".sar-vh")?.textContent).toBe(
@@ -63,34 +68,24 @@ describe("createTagSection", () => {
   });
 
   it("follows the store's user tags block", () => {
-    setBody(WITH_TAGS);
-    createTagSection(document, i18n).render([ai]);
+    mounted().render([ai]);
     expect(document.getElementById("tags")?.nextElementSibling).toBe(sections()[0]);
     expect(document.getElementById("publisher")?.nextElementSibling?.id).toBe("tags");
   });
 
   it("falls back to the row after Publisher when the page has no user tags block", () => {
-    setBody(WITHOUT_TAGS);
-    createTagSection(document, i18n).render([ai]);
+    mounted(WITHOUT_TAGS).render([ai]);
     expect(document.getElementById("publisher")?.nextElementSibling).toBe(sections()[0]);
   });
 
-  it("prefers the user tags block when both anchors are there", () => {
-    setBody(WITH_TAGS);
-    createTagSection(document, i18n).render([ai]);
-    expect(document.getElementById("publisher")?.nextElementSibling?.id).toBe("tags");
-  });
-
   it("draws nothing on a page with neither anchor", () => {
-    setBody('<div id="other"></div>');
-    createTagSection(document, i18n).render(all);
+    mounted('<div id="other"></div>').render(all);
     expect(sections()).toHaveLength(0);
     expect(document.body.innerHTML).toBe('<div id="other"></div>');
   });
 
   it("draws nothing, label included, for no verdicts, and removes what was there", () => {
-    setBody(WITH_TAGS);
-    const section = createTagSection(document, i18n);
+    const section = mounted();
     section.render([]);
     expect(sections()).toHaveLength(0);
     section.render([ai, drm]);
@@ -101,8 +96,7 @@ describe("createTagSection", () => {
   });
 
   it("changes nothing for the same verdicts and never doubles the section", () => {
-    setBody(WITH_TAGS);
-    const section = createTagSection(document, i18n);
+    const section = mounted();
     section.render([ai, drm]);
     const first = sections()[0];
     const html = document.body.innerHTML;
@@ -112,8 +106,7 @@ describe("createTagSection", () => {
   });
 
   it("draws again when the verdicts change, and when the store dropped the section", () => {
-    setBody(WITH_TAGS);
-    const section = createTagSection(document, i18n);
+    const section = mounted();
     section.render([ai]);
     section.render([ai, drm]);
     expect(kinds()).toEqual(["ai", "drm"]);
@@ -126,11 +119,10 @@ describe("createTagSection", () => {
   });
 
   it("moves the section to the user tags block when the block appears later", () => {
-    setBody(WITHOUT_TAGS);
-    const section = createTagSection(document, i18n);
+    const section = mounted(WITHOUT_TAGS);
     section.render([ai]);
     const first = sections()[0];
-    document.getElementById("publisher")?.insertAdjacentHTML("afterend", USER_TAGS);
+    document.getElementById("publisher")?.insertAdjacentHTML("afterend", make.page.userTags);
     section.render([ai]);
     expect(sections()[0]).toBe(first);
     expect(document.getElementById("tags")?.nextElementSibling).toBe(first);
@@ -138,22 +130,19 @@ describe("createTagSection", () => {
   });
 
   it("binds the hover card to each chip with its own verdict, as on the game's own page", () => {
-    setBody(WITH_TAGS);
     const { bound, card } = bindings();
-    createTagSection(document, i18n, card).render([ai, kernel]);
+    mounted(WITH_TAGS, card).render([ai, kernel]);
     expect(chips().map((chip) => bound.get(chip))).toEqual([[ai], [kernel]]);
     expect(chips().every((chip) => chip instanceof HTMLElement && chip.tabIndex === 0)).toBe(true);
   });
 
   it("leaves the chips unfocusable when there is no card to open", () => {
-    setBody(WITH_TAGS);
-    createTagSection(document, i18n).render([ai]);
+    mounted().render([ai]);
     expect(chips().every((chip) => !chip.hasAttribute("tabindex"))).toBe(true);
   });
 
   it("sets no listener and no link on the chips", () => {
-    setBody(WITH_TAGS);
-    createTagSection(document, i18n).render(all);
+    mounted().render(all);
     expect(sections()[0]?.querySelector("a, [href], [onclick]")).toBeNull();
   });
 });

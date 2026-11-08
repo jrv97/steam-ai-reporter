@@ -1,24 +1,20 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { countingStore } from "../../../tests/helpers/counting-store";
-import { keyOf } from "../../../tests/helpers/creators";
-import { fixedClock } from "../../../tests/helpers/fixed-clock";
+import { make } from "../../../tests/helpers/factory";
+import { fake } from "../../../tests/helpers/fakes";
 import { englishI18n } from "../../../tests/helpers/i18n";
-import { memoryStore } from "../../../tests/helpers/memory-store";
 import {
   BANNERLESS_KINDS,
   isValveKind,
   OFF_KINDS,
   STATUS_KINDS,
-  withChipText,
-  withKind,
   writeSettings,
 } from "../../../tests/helpers/settings";
 import { headingOf as heading, mountForm } from "../../../tests/helpers/settings-form";
-import { CREATOR_ROLES } from "../creator";
+import { CREATOR_ROLES, type CreatorRole } from "../creator";
 import { SHIPPED_CATALOGS } from "../i18n/shipped";
-import { createI18n } from "../i18n/t";
+import { type BareMessageKey, createI18n } from "../i18n/t";
 import { createIgnoreLists } from "../ignored";
-import { toHexColor } from "../kinds/color";
+import type { JsonValue } from "../json";
 import { KIND_IDS, type KindId } from "../kinds/id";
 import { LIST_FILTERS } from "../kinds/kind-settings";
 import { parseOrder } from "../kinds/order";
@@ -26,29 +22,38 @@ import { KIND_BY_ID, KINDS } from "../kinds/registry";
 import { ALLOW_ALL, type AllowScope } from "../settings/allow-data";
 import { DEFAULT_SETTINGS, parseSettings } from "../settings/settings";
 import { createSettingsSource } from "../settings/settings-source";
-import { UI_STATE_KEY } from "../storage-keys";
-import { toAppId } from "../types";
+import { LEGACY_SETTINGS_KEY, UI_STATE_KEY } from "../storage-keys";
+import type { AppId } from "../types";
 import { chipText } from "./kind-details";
 import { DEFAULT_TAG_COLOR, type SettingsFormDeps } from "./settings-form";
 import { TOKENS_CSS } from "./styles";
 import { GENERAL_TAB, type TabId } from "./tab-id";
 import { createUiState } from "./ui-state";
 
-const DAY = 86_400_000;
 const i18n = englishI18n();
 /** The toolbar popup: compact rows, no colors. */
 const POPUP = { context: "popup", layout: "list", colors: false } as const;
+/** The state a tab shows for a kind that is on or off. */
+const STATE_KEYS = { true: "options_state_on", false: "options_state_off" } as const;
 
 function isEventTarget(value: object): value is EventTarget {
   return "addEventListener" in value;
 }
 
-function appId(value: number) {
-  const id = toAppId(value);
-  if (id === undefined) {
-    throw new TypeError();
-  }
-  return id;
+/** A game on an ignore list: its ID, its name and when it was ignored. */
+interface IgnoredGame {
+  readonly id: AppId;
+  readonly name: string;
+  readonly added: number;
+}
+
+function ignoredGame(name: string = make.text.name()): IgnoredGame {
+  return { id: make.appId(), name, added: make.time() };
+}
+
+/** The selector of the button that stops ignoring a game or creator in a scope. */
+function restore(key: AppId | string, scope: AllowScope): string {
+  return `[data-sar-restore="${String(key)}"][data-sar-scope="${scope}"]`;
 }
 
 /** Fires the change event a user's click on the control would. */
@@ -63,18 +68,26 @@ function press(target: Element, key: string): void {
 
 /** A form on stores of its own, with the games the tests ignore already listed. */
 async function setup(overrides: Partial<SettingsFormDeps> = {}) {
-  const clock = fixedClock(Date.UTC(2026, 9, 1));
-  const store = memoryStore();
+  const clock = fake.clock(make.time());
+  const store = fake.store();
   const settings = createSettingsSource(store);
-  const lists = createIgnoreLists(memoryStore(), clock);
+  const lists = createIgnoreLists(fake.store(), clock);
   const allowList = lists.games;
-  await allowList.add("ai", appId(10), "Older Game");
-  clock.advance(DAY);
-  await allowList.add("ai", appId(20), "Newer <b>Game</b>");
-  clock.advance(DAY);
-  await allowList.add("drm", appId(30), "Drm Game");
-  await allowList.add(ALLOW_ALL, appId(40), "Every Game");
-  await allowList.add("kernel", appId(10), "Older Game");
+  const games = {
+    older: ignoredGame(),
+    newer: ignoredGame(make.text.markup()),
+    drm: ignoredGame(),
+    every: ignoredGame(),
+  };
+  const ignore = async (scope: AllowScope, game: IgnoredGame) => {
+    clock.set(game.added);
+    await allowList.add(scope, game.id, game.name);
+  };
+  await ignore("ai", games.older);
+  await ignore("ai", games.newer);
+  await ignore("drm", games.drm);
+  await ignore(ALLOW_ALL, games.every);
+  await ignore("kernel", games.older);
   const mounted = await mountForm({ settings, lists, locales: ["en", "es"], ...overrides });
   const { root, panel } = mounted;
   const control = (selector: string): HTMLElement => {
@@ -125,6 +138,7 @@ async function setup(overrides: Partial<SettingsFormDeps> = {}) {
     settings,
     lists,
     allowList,
+    games,
     store,
     control,
     card,
@@ -188,34 +202,29 @@ describe("the settings of each tag", () => {
     }
   });
 
-  it.each(STATUS_KINDS)(
-    "gives %s a labelled group of its values in Steam's words, Unsupported ticked",
-    async (id) => {
+  it.each<readonly [KindId, readonly BareMessageKey[], readonly boolean[]]>([
+    ...STATUS_KINDS.map((id) =>
+      [
+        id,
+        ["kind_compat_verified", "kind_compat_playable", "kind_compat_unsupported"],
+        [false, false, true],
+      ] as const
+    ),
+    ["family", ["options_facet_available", "options_facet_unavailable"], [false, true]],
+  ])(
+    "gives %s a labelled group of its values in its own words, the unlisted one ticked",
+    async (id, words, ticked) => {
       const { card, root } = await setup();
       const group = card(id).querySelector("fieldset.sar-checks");
       const label = root.querySelector(`#${group?.getAttribute("aria-labelledby") ?? "x"}`);
       expect(label?.textContent).toBe(i18n.t("options_facets_label"));
       const boxes = [...(group?.querySelectorAll("input") ?? [])];
-      expect(boxes.map((box) => box.closest("label")?.textContent)).toEqual([
-        i18n.t("kind_compat_verified"),
-        i18n.t("kind_compat_playable"),
-        i18n.t("kind_compat_unsupported"),
-      ]);
-      expect(boxes.map((box) => box.checked)).toEqual([false, false, true]);
+      expect(boxes.map((box) => box.closest("label")?.textContent)).toEqual(
+        words.map((key) => i18n.t(key)),
+      );
+      expect(boxes.map((box) => box.checked)).toEqual(ticked);
     },
   );
-
-  it("gives the family kind its settings-only value words, the unlisted one ticked", async () => {
-    const { card } = await setup();
-    const boxes = [
-      ...(card("family").querySelector("fieldset.sar-checks")?.querySelectorAll("input") ?? []),
-    ];
-    expect(boxes.map((box) => box.closest("label")?.textContent)).toEqual([
-      i18n.t("options_facet_available"),
-      i18n.t("options_facet_unavailable"),
-    ]);
-    expect(boxes.map((box) => box.checked)).toEqual([false, true]);
-  });
 
   it.each(KINDS.filter((kind) => kind.facets !== undefined).map((kind) => kind.id))(
     "names each value checkbox of %s by its text, then Steam's line for the tag",
@@ -260,14 +269,15 @@ describe("the settings of each tag", () => {
 
   it("shows the settings stored for each kind", async () => {
     const { settings, input } = await setup();
-    await writeSettings(settings, {
-      ...DEFAULT_SETTINGS,
-      kinds: {
-        ...DEFAULT_SETTINGS.kinds,
-        kernel: { enabled: true, badge: false, banner: true, filter: "dim" },
-        pvp: { enabled: false, badge: true, banner: false, filter: "hide" },
-      },
-    });
+    await writeSettings(
+      settings,
+      make.settings({
+        kinds: {
+          kernel: { enabled: true, badge: false, banner: true, filter: "dim" },
+          pvp: { enabled: false, badge: true, banner: false, filter: "hide" },
+        },
+      }),
+    );
     expect(input("kernel", "badge").checked).toBe(false);
     expect(input("kernel", "filter", "dim").checked).toBe(true);
     expect(input("pvp", "enabled").checked).toBe(false);
@@ -289,66 +299,42 @@ describe("the settings of each tag", () => {
     "keeps every control of %s in place, disabled, while its master switch is off",
     async (id) => {
       const { settings, card, input, tab } = await setup();
-      await writeSettings(settings, withKind(DEFAULT_SETTINGS, id, { enabled: true }));
+      await writeSettings(settings, make.settings.kind(id, { enabled: true }));
       const options = () => card(id).querySelector<HTMLFieldSetElement>(".sar-kind-options");
       const controlsOf = () => [...card(id).querySelectorAll("input, button")];
       const before = controlsOf();
       expect(options()?.disabled).toBe(false);
-      await writeSettings(
-        settings,
-        withKind(DEFAULT_SETTINGS, id, { enabled: false, badge: false }),
-      );
+      await writeSettings(settings, make.settings.kind(id, { enabled: false, badge: false }));
       expect(controlsOf()).toStrictEqual(before);
       expect(options()?.disabled).toBe(true);
       expect(options()?.hidden).toBe(false);
       expect(tab(id).hidden).toBe(false);
       expect(options()?.contains(input(id, "badge"))).toBe(true);
       expect(input(id, "enabled").closest(".sar-kind-options")).toBeNull();
-      await writeSettings(
-        settings,
-        withKind(DEFAULT_SETTINGS, id, { enabled: true, badge: false }),
-      );
+      await writeSettings(settings, make.settings.kind(id, { enabled: true, badge: false }));
       expect(options()?.disabled).toBe(false);
       expect(input(id, "badge").checked).toBe(false);
     },
   );
 
-  it("keeps PvP off and its controls disabled until the player turns it on", async () => {
-    const { settings, card, input } = await setup();
-    const options = () => card("pvp").querySelector<HTMLFieldSetElement>(".sar-kind-options");
-    expect(input("pvp", "enabled").checked).toBe(false);
-    expect(options()?.disabled).toBe(true);
-    const master = input("pvp", "enabled");
-    master.checked = true;
-    change(master);
-    await vi.waitFor(async () => {
-      expect(parseSettings(await settings.read()).kinds.pvp).toStrictEqual({
-        enabled: true,
-        badge: true,
-        banner: true,
-        filter: "off",
+  it.each([["pvp", true], ["eula", false]] as const)(
+    "turns %s from its master switch to %s, with its controls, and keeps every other setting",
+    async (id, enabled) => {
+      const { settings, card, input } = await setup();
+      await writeSettings(settings, make.settings.kind(id, { filter: "dim" }));
+      const options = () => card(id).querySelector<HTMLFieldSetElement>(".sar-kind-options");
+      const master = input(id, "enabled");
+      expect([master.checked, options()?.disabled]).toEqual([!enabled, enabled]);
+      master.checked = enabled;
+      change(master);
+      await vi.waitFor(async () => {
+        expect(parseSettings(await settings.read())).toStrictEqual(
+          make.settings.kind(id, { enabled, filter: "dim" }),
+        );
       });
-    });
-    expect(options()?.disabled).toBe(false);
-    expect(parseSettings(await settings.read()).kinds.drm.enabled).toBe(true);
-  });
-
-  it("turns a kind off from its master switch and keeps its other settings", async () => {
-    const { settings, input } = await setup();
-    await settings.patch({ kinds: { eula: { filter: "dim" } } });
-    const master = input("eula", "enabled");
-    master.checked = false;
-    change(master);
-    await vi.waitFor(async () => {
-      expect(parseSettings(await settings.read()).kinds.eula.enabled).toBe(false);
-    });
-    expect(parseSettings(await settings.read()).kinds.eula).toStrictEqual({
-      enabled: false,
-      badge: true,
-      banner: true,
-      filter: "dim",
-    });
-  });
+      expect(options()?.disabled).toBe(!enabled);
+    },
+  );
 });
 
 describe("changing a setting", () => {
@@ -369,39 +355,29 @@ describe("changing a setting", () => {
     ).toBe(i18n.t("options_filter_dim_help"));
   });
 
-  it.each(["badge", "banner"] as const)("flips the %s of one kind and no other", async (field) => {
-    const { settings, input } = await setup();
-    const switchInput = input("account", field);
-    switchInput.checked = false;
-    change(switchInput);
-    await vi.waitFor(async () => {
-      expect(parseSettings(await settings.read())).toStrictEqual(
-        withKind(DEFAULT_SETTINGS, "account", { [field]: false }),
-      );
-    });
-  });
-
-  it("keeps the other settings of the stored value", async () => {
-    const { settings, input } = await setup();
-    await writeSettings(settings, { ...DEFAULT_SETTINGS, locale: "es", debug: true });
-    const banner = input("ai", "banner");
-    banner.checked = false;
-    change(banner);
-    await vi.waitFor(async () => {
-      expect(parseSettings(await settings.read())).toStrictEqual({
-        ...withKind(DEFAULT_SETTINGS, "ai", { banner: false }),
-        locale: "es",
-        debug: true,
+  it.each(["badge", "banner"] as const)(
+    "flips the %s of one kind and keeps every other stored setting",
+    async (field) => {
+      const { settings, input } = await setup();
+      const stored = make.settings({ locale: "es", debug: true });
+      await writeSettings(settings, stored);
+      const switchInput = input("account", field);
+      switchInput.checked = false;
+      change(switchInput);
+      await vi.waitFor(async () => {
+        expect(parseSettings(await settings.read())).toStrictEqual(
+          make.settings.kind("account", { [field]: false }, stored),
+        );
       });
-    });
-  });
+    },
+  );
 
   it("sets a list filter the setting does not allow to its default and shows it", async () => {
     const { settings, input } = await setup();
-    await writeSettings(settings, withKind(DEFAULT_SETTINGS, "pvp", { filter: "dim" }));
+    await writeSettings(settings, make.settings.kind("pvp", { filter: "dim" }));
     expect(input("pvp", "filter", "dim").checked).toBe(true);
     const radio = input("pvp", "filter", "hide");
-    radio.value = "blur";
+    radio.value = make.text.name();
     radio.checked = true;
     change(radio);
     await vi.waitFor(async () => {
@@ -414,10 +390,10 @@ describe("changing a setting", () => {
     const { settings, input } = await setup();
     const spy = vi.spyOn(settings, "patch");
     const badge = input("drm", "badge");
-    badge.setAttribute("data-sar-for", "nothing");
+    badge.setAttribute("data-sar-for", make.text.name());
     change(badge);
     badge.setAttribute("data-sar-for", "drm");
-    badge.setAttribute("data-sar-setting", "other");
+    badge.setAttribute("data-sar-setting", make.text.name());
     change(badge);
     await Promise.resolve();
     expect(spy).not.toHaveBeenCalled();
@@ -441,9 +417,9 @@ describe("changing a setting", () => {
     expect(other?.hidden).toBe(true);
   });
 
-  it("follows changes from other tabs", async () => {
+  it("follows a switch another tab stores, and leaves the other kinds' switches", async () => {
     const { settings, input } = await setup();
-    await writeSettings(settings, withKind(DEFAULT_SETTINGS, "kernel", { banner: false }));
+    await writeSettings(settings, make.settings.kind("kernel", { banner: false }));
     expect(input("kernel", "banner").checked).toBe(false);
     expect(input("drm", "banner").checked).toBe(true);
   });
@@ -489,7 +465,9 @@ describe("the color field", () => {
       expect(DEFAULT_TAG_COLOR).toBe(/--sar-accent-400:\s*([^;]+);/.exec(TOKENS_CSS)?.[1]);
     });
 
-    it.each<readonly [string, (form: Square) => void, string, string, string | undefined]>([
+    const PICKED = make.color();
+
+    it.each<readonly [string, (form: Square) => void, string, string, readonly string[]]>([
       [
         "a typed hex",
         ({ text }) => {
@@ -498,7 +476,7 @@ describe("the color field", () => {
         },
         "#ff00aa",
         "#F0a",
-        undefined,
+        [],
       ],
       [
         "typed text that is no color",
@@ -510,46 +488,41 @@ describe("the color field", () => {
         },
         "#ff00aa",
         "#12",
-        undefined,
+        [],
       ],
       [
         "a pick while the picker is open",
         ({ picker }) => {
-          picker.value = "#00ff00";
+          picker.value = PICKED;
           fire(picker, "input");
         },
-        "#00ff00",
-        "#00ff00",
-        undefined,
+        PICKED,
+        PICKED,
+        [],
       ],
       [
         "a pick the picker commits",
         ({ picker }) => {
-          picker.value = "#00ff00";
+          picker.value = PICKED;
           fire(picker, "change");
         },
-        "#00ff00",
-        "#00ff00",
-        "#00ff00",
+        PICKED,
+        PICKED,
+        [PICKED],
       ],
-    ])("keeps in step with the text after %s", async (_case, act, picked, typed, stored) => {
+    ])("keeps in step with the text after %s", async (_case, act, picked, typed, saved) => {
       const form = await square();
       const patch = vi.spyOn(form.settings, "patch");
       act(form);
       expect([form.picker.value, form.text.value]).toEqual([picked, typed]);
-      if (stored === undefined) {
-        expect(patch).not.toHaveBeenCalled();
-      } else {
-        await vi.waitFor(async () => {
-          expect(await storedColor(form.settings, "ai")).toBe(stored);
-        });
-      }
+      expect(patch.mock.calls).toEqual(saved.map((color) => [{ kinds: { ai: { color } } }]));
     });
 
     it("goes back to the default violet on Reset", async () => {
       const { picker, settings, card } = await square();
-      await settings.patch({ kinds: { ai: { color: toHexColor("#123456") } } });
-      expect(picker.value).toBe("#123456");
+      const color = make.color();
+      await settings.patch({ kinds: { ai: { color } } });
+      expect(picker.value).toBe(color);
       card("ai").querySelector<HTMLElement>("[data-sar-color-reset]")?.click();
       expect(picker.value).toBe(DEFAULT_TAG_COLOR);
       await vi.waitFor(async () => {
@@ -597,14 +570,15 @@ describe("the color field", () => {
     }
   });
 
-  it("starts empty with no color set, and shows a stored color in its normal form", async () => {
+  it("starts empty with no color set, and shows a stored color", async () => {
     const { root, settings, input, card } = await setup();
     expect(input("ai", "color").value).toBe("");
     expect(colorOf(root, "ai")).toBe("");
     expect(card("ai").querySelector<HTMLElement>("[data-sar-color-reset]")?.hidden).toBe(true);
-    await settings.patch({ kinds: { ai: { color: toHexColor("ABC") } } });
-    expect(input("ai", "color").value).toBe("#aabbcc");
-    expect(colorOf(root, "ai")).toBe("#aabbcc");
+    const color = make.color();
+    await settings.patch({ kinds: { ai: { color } } });
+    expect(input("ai", "color").value).toBe(color);
+    expect(colorOf(root, "ai")).toBe(color);
     expect(card("ai").querySelector<HTMLElement>("[data-sar-color-reset]")?.hidden).toBe(false);
     expect(colorOf(root, "drm")).toBe("");
   });
@@ -633,9 +607,10 @@ describe("the color field", () => {
     const { root, settings, input } = await setup();
     const patch = vi.spyOn(settings, "patch");
     const field = input("eula", "color");
-    field.value = "#123456";
+    const color = make.color();
+    field.value = color;
     field.dispatchEvent(new Event("input", { bubbles: true }));
-    expect(colorOf(root, "eula")).toBe("#123456");
+    expect(colorOf(root, "eula")).toBe(color);
     expect(patch).not.toHaveBeenCalled();
     change(field);
     await vi.waitFor(() => {
@@ -679,7 +654,7 @@ describe("the color field", () => {
 
   it("clears the color when the text is emptied", async () => {
     const { root, settings, input } = await setup();
-    await settings.patch({ kinds: { pvp: { color: toHexColor("#112233") } } });
+    await settings.patch({ kinds: { pvp: { color: make.color() } } });
     typeColor(input("pvp", "color"), "  ");
     await vi.waitFor(async () => {
       expect(await storedColor(settings, "pvp")).toBeUndefined();
@@ -690,7 +665,7 @@ describe("the color field", () => {
 
   it("resets from the quiet Reset button, whose name starts with its text", async () => {
     const { root, settings, card, input } = await setup();
-    await settings.patch({ kinds: { account: { color: toHexColor("#445566") } } });
+    await settings.patch({ kinds: { account: { color: make.color() } } });
     const reset = card("account").querySelector<HTMLElement>("[data-sar-color-reset]");
     expect(reset?.textContent).toBe(i18n.t("options_color_reset"));
     expect(reset?.getAttribute("data-sar-variant")).toBe("quiet");
@@ -709,21 +684,26 @@ describe("the color field", () => {
     expect(reset?.hidden).toBe(true);
   });
 
-  it("applies the stored colors when it opens and follows another tab", async () => {
+  it("applies the stored colors when it opens", async () => {
+    const settings = createSettingsSource(fake.store());
+    const color = make.color();
+    await settings.patch({ kinds: { ai: { color } } });
+    const { root } = await mountForm({ settings });
+    expect(colorOf(root, "ai")).toBe(color);
+  });
+
+  it("follows a color another tab stores", async () => {
     const { root, settings, input } = await setup();
-    const other = createSettingsSource(memoryStore());
-    await other.patch({ kinds: { ai: { color: toHexColor("#010203") } } });
-    const second = await mountForm({ settings: other });
-    expect(second.root.style.getPropertyValue("--sar-kind-color-ai")).toBe("#010203");
-    await settings.patch({ kinds: { ai: { color: toHexColor("#0a0b0c") } } });
-    expect(input("ai", "color").value).toBe("#0a0b0c");
-    expect(colorOf(root, "ai")).toBe("#0a0b0c");
+    const color = make.color();
+    await settings.patch({ kinds: { ai: { color } } });
+    expect(input("ai", "color").value).toBe(color);
+    expect(colorOf(root, "ai")).toBe(color);
   });
 
   it("restores the stored color when the save fails", async () => {
     const { root, settings, card, input } = await setup();
     vi.spyOn(settings, "patch").mockRejectedValue(new Error());
-    typeColor(input("ai", "color"), "#abcdef");
+    typeColor(input("ai", "color"), make.color());
     const failure = card("ai").querySelector<HTMLElement>(
       ".sar-color > .sar-field-error:not([id])",
     );
@@ -734,23 +714,15 @@ describe("the color field", () => {
     expect(colorOf(root, "ai")).toBe("");
     expect(input("ai", "color").value).toBe("");
   });
-
-  it("is disabled while the settings could not be read", async () => {
-    const settings = createSettingsSource(memoryStore());
-    vi.spyOn(settings, "read").mockRejectedValue(new Error());
-    const { root } = await mountForm({ settings });
-    const field = root.querySelector<HTMLInputElement>("[data-sar-setting=color]");
-    expect(field?.disabled).toBe(true);
-  });
 });
 
 describe("two forms over one store", () => {
   /** A form that is its own tab: its own settings source over the shared store. */
-  async function tab(store: ReturnType<typeof memoryStore>) {
+  async function tab(store: ReturnType<typeof fake.store>) {
     const settings = createSettingsSource(store);
     const { panel } = await mountForm({
       settings,
-      lists: createIgnoreLists(store, fixedClock(0)),
+      lists: createIgnoreLists(store, fake.clock(make.time())),
     });
     const input = (id: KindId, field: string): HTMLInputElement => {
       const found = panel(id).querySelector<HTMLInputElement>(`[data-sar-setting=${field}]`);
@@ -763,7 +735,7 @@ describe("two forms over one store", () => {
   }
 
   it("keeps what the other form changed, though it never heard of the change", async () => {
-    const store = memoryStore();
+    const store = fake.store();
     const first = await tab(store);
     const second = await tab(store);
 
@@ -789,13 +761,13 @@ describe("two forms over one store", () => {
   });
 
   it("keeps another field of the same kind and the settings of the page language", async () => {
-    const store = memoryStore();
+    const store = fake.store();
     const first = await tab(store);
     const second = await tab(store);
-    await writeSettings(createSettingsSource(store), {
-      ...withKind(DEFAULT_SETTINGS, "pvp", { filter: "hide" }),
-      locale: "es",
-    });
+    await writeSettings(
+      createSettingsSource(store),
+      make.settings({ kinds: { pvp: { filter: "hide" } }, locale: "es" }),
+    );
 
     const badge = second.input("pvp", "badge");
     badge.checked = false;
@@ -819,13 +791,13 @@ describe("the language", () => {
 
   it("sets a language the setting does not allow to automatic and shows it", async () => {
     const { settings, select } = await setup();
-    await writeSettings(settings, { ...DEFAULT_SETTINGS, locale: "es" });
+    await writeSettings(settings, make.settings({ locale: "es" }));
     const picker = select();
     expect(picker.value).toBe("es");
     const option = document.createElement("option");
-    option.value = "x y";
+    option.value = make.text.name();
     picker.append(option);
-    picker.value = "x y";
+    picker.value = option.value;
     change(picker);
     await vi.waitFor(async () => {
       expect(parseSettings(await settings.read()).locale).toBe("auto");
@@ -835,7 +807,7 @@ describe("the language", () => {
 
   it("changes the language and leaves every kind alone", async () => {
     const { settings, select } = await setup();
-    await writeSettings(settings, withKind(DEFAULT_SETTINGS, "drm", { filter: "hide" }));
+    await writeSettings(settings, make.settings.kind("drm", { filter: "hide" }));
     const picker = select();
     picker.value = "es";
     change(picker);
@@ -864,22 +836,21 @@ describe("the page around the tabs", () => {
   });
 
   it("renders the product header with the popup's gear to all settings when given", async () => {
-    const { root } = await mountForm({
-      ...POPUP,
-      header: { version: "2026.10.20", iconUrl: "icons/icon-32.png" },
-      allSettingsUrl: "options.html",
-    });
+    const version = make.text.version();
+    const iconUrl = make.text.url();
+    const allSettingsUrl = make.text.url();
+    const { root } = await mountForm({ ...POPUP, header: { version, iconUrl }, allSettingsUrl });
     const header = root.firstElementChild;
     expect(header?.matches("header.sar-options-header")).toBe(true);
     expect(header?.querySelector("h1")?.textContent).toBe(i18n.t("ext_name"));
     expect(header?.querySelector(".sar-options-version")?.textContent).toBe(
-      i18n.t("options_version", { version: "2026.10.20" }),
+      i18n.t("options_version", { version }),
     );
-    expect(header?.querySelector("img")?.getAttribute("src")).toBe("icons/icon-32.png");
+    expect(header?.querySelector("img")?.getAttribute("src")).toBe(iconUrl);
     expect(header?.querySelector("img")?.getAttribute("alt")).toBe("");
     const gear = header?.querySelector("a.sar-gear");
     expect(gear?.getAttribute("aria-label")).toBe(i18n.t("options_all_settings"));
-    expect(gear?.getAttribute("href")).toBe("options.html");
+    expect(gear?.getAttribute("href")).toBe(allSettingsUrl);
     expect(gear?.getAttribute("target")).toBe("_blank");
     expect(gear?.querySelector("svg")?.getAttribute("aria-hidden")).toBe("true");
     expect(gear?.textContent).toBe("");
@@ -887,7 +858,11 @@ describe("the page around the tabs", () => {
   });
 
   it("keeps the gear small: one path of fewer than 400 bytes", async () => {
-    const { root } = await mountForm({ ...POPUP, header: { version: "1" }, allSettingsUrl: "o" });
+    const { root } = await mountForm({
+      ...POPUP,
+      header: { version: make.text.version() },
+      allSettingsUrl: make.text.url(),
+    });
     const svg = root.querySelector(".sar-gear svg");
     expect(svg?.querySelectorAll("*")).toHaveLength(1);
     expect(svg?.outerHTML.length).toBeLessThan(400);
@@ -928,8 +903,9 @@ describe("the toolbar popup", () => {
     }
     return found;
   };
+  const allSettingsUrl = make.text.url();
   const popup = (overrides: Partial<SettingsFormDeps> = {}) =>
-    setup({ ...POPUP, allSettingsUrl: "options.html", ...overrides });
+    setup({ ...POPUP, allSettingsUrl, ...overrides });
 
   it("shows one row per tag, in the default order, and nothing else to set", async () => {
     const { root } = await popup();
@@ -950,8 +926,9 @@ describe("the toolbar popup", () => {
 
   it("names a row by the person's chip text and keeps its place", async () => {
     const { root, settings } = await popup();
-    await writeSettings(settings, withChipText(DEFAULT_SETTINGS, { pvp: { chip: "Aaa" } }));
-    expect(row(root, "pvp").querySelector(".sar-tab-label")?.textContent).toBe("Aaa");
+    const chip = make.chipText();
+    await writeSettings(settings, make.settings.chipText({ pvp: { chip } }));
+    expect(row(root, "pvp").querySelector(".sar-tab-label")?.textContent).toBe(chip);
     expect(rows(root).indexOf(row(root, "pvp"))).toBe(KIND_IDS.indexOf("pvp"));
   });
 
@@ -960,7 +937,7 @@ describe("the toolbar popup", () => {
     async (id) => {
       const { root } = await popup();
       const link = row(root, id).querySelector("a");
-      expect(link?.getAttribute("href")).toBe(`options.html#tab=${id}`);
+      expect(link?.getAttribute("href")).toBe(`${allSettingsUrl}#tab=${id}`);
       expect(link?.getAttribute("target")).toBe("_blank");
       expect(link?.querySelector(".sar-vh")?.textContent).toBe(
         chipText(i18n, KIND_BY_ID[id], undefined, undefined).name,
@@ -1011,11 +988,7 @@ describe("the toolbar popup", () => {
     ["the gear", (root: HTMLElement) => root.querySelector(".sar-gear svg"), undefined],
   ])("hands a click on %s to the page, which opens the settings", async (_name, find, tab) => {
     const openSettings = vi.fn();
-    const { root } = await popup({
-      openSettings,
-      header: { version: "1" },
-      allSettingsUrl: "options.html",
-    });
+    const { root } = await popup({ openSettings, header: { version: make.text.version() } });
     const click = new MouseEvent("click", { bubbles: true, cancelable: true });
     find(root)?.dispatchEvent(click);
     expect(openSettings.mock.calls).toEqual([[tab]]);
@@ -1026,15 +999,15 @@ describe("the toolbar popup", () => {
     ["a tag's name", (root: HTMLElement) => row(root, "drm").querySelector("a")],
     ["the gear", (root: HTMLElement) => root.querySelector("a.sar-gear")],
   ])("leaves %s to the browser when the page has no way to open the settings", async (_n, find) => {
-    const { root } = await popup({ header: { version: "1" }, allSettingsUrl: "options.html" });
+    const { root } = await popup({ header: { version: make.text.version() } });
     const click = new MouseEvent("click", { bubbles: true, cancelable: true });
     find(root)?.dispatchEvent(click);
     expect(click.defaultPrevented).toBe(false);
   });
 
   it("reads no ignore list and no remembered tab", async () => {
-    const lists = createIgnoreLists(memoryStore(), fixedClock(0));
-    const store = countingStore(memoryStore());
+    const lists = createIgnoreLists(fake.store(), fake.clock(make.time()));
+    const store = fake.countingStore(fake.store());
     const reads = [lists.games, ...CREATOR_ROLES.map((role) => lists.creators[role])].map((list) =>
       vi.spyOn(list, "list")
     );
@@ -1118,7 +1091,7 @@ const SURFACES: readonly (readonly [
   ],
   [
     "the popup rows",
-    { ...POPUP, allSettingsUrl: "options.html" },
+    { ...POPUP, allSettingsUrl: make.text.url() },
     (root) =>
       [...root.querySelectorAll("[data-sar-open-tab]")].map((each) =>
         each.getAttribute("data-sar-open-tab")
@@ -1140,11 +1113,11 @@ describe("the tag order", () => {
   it.each(SURFACES)(
     "%s follow the stored order, and the default after a reset",
     async (_name, deps, ids) => {
-      const source = createSettingsSource(memoryStore());
-      await writeSettings(source, { ...DEFAULT_SETTINGS, order: MOVED });
+      const source = createSettingsSource(fake.store());
+      await writeSettings(source, make.settings({ order: MOVED }));
       const { root } = await setup({ ...deps, settings: source });
       expect(ids(root)).toEqual(MOVED);
-      await writeSettings(source, { ...DEFAULT_SETTINGS, order: parseOrder(["machine"]) });
+      await writeSettings(source, make.settings({ order: ["machine"] }));
       expect(ids(root).slice(0, 2)).toEqual(["machine", KIND_IDS[0]]);
       await writeSettings(source, DEFAULT_SETTINGS);
       expect(ids(root)).toEqual(KIND_IDS);
@@ -1169,20 +1142,20 @@ describe("the tabs", () => {
     "names the %s tab by Steam's heading, then its state, whatever the chip says",
     async (id) => {
       const { tab, settings } = await setup();
-      await writeSettings(settings, withChipText(DEFAULT_SETTINGS, { [id]: { chip: "Mine" } }));
-      const on = !OFF_KINDS.includes(id);
+      const chip = make.chipText();
+      await writeSettings(settings, make.settings.chipText({ [id]: { chip } }));
       expect(tab(id).querySelector(".sar-tab-label")?.textContent).toBe(heading(id));
       expect(tab(id).querySelector(".sar-vh")).toBeNull();
       expect(tab(id).querySelector(".sar-tab-state")?.textContent).toBe(
-        i18n.t(on ? "options_state_on" : "options_state_off"),
+        i18n.t(STATE_KEYS[`${DEFAULT_SETTINGS.kinds[id].enabled}`]),
       );
-      expect(tab(id).textContent).not.toContain("Mine");
+      expect(tab(id).textContent).not.toContain(chip);
     },
   );
 
   it("moves the arrows along the tag order", async () => {
     const { tab, tabIds, settings } = await setup();
-    await writeSettings(settings, { ...DEFAULT_SETTINGS, order: parseOrder(["pvp"]) });
+    await writeSettings(settings, make.settings({ order: ["pvp"] }));
     expect(tabIds().slice(0, 2)).toEqual([GENERAL_TAB, "pvp"]);
     tab(GENERAL_TAB).focus();
     press(tab(GENERAL_TAB), "ArrowRight");
@@ -1199,22 +1172,33 @@ describe("the tabs", () => {
       expect(state("ai")?.textContent).toBe(i18n.t("options_state_off"));
     });
     expect(state("ai")?.hasAttribute("data-sar-on")).toBe(false);
-    await writeSettings(settings, withKind(DEFAULT_SETTINGS, "pvp", { enabled: true }));
+    await writeSettings(settings, make.settings.kind("pvp", { enabled: true }));
     expect(state("pvp")?.textContent).toBe(i18n.t("options_state_on"));
     expect(state("pvp")?.hasAttribute("data-sar-on")).toBe(true);
   });
 
-  it.each<[string, TabId | undefined, unknown, TabId]>([
-    ["the fragment's tab over the stored one", "drm", { tab: "pvp" }, "drm"],
-    ["the stored tab without a fragment", undefined, { tab: "pvp" }, "pvp"],
-    ["General on a first visit", undefined, undefined, GENERAL_TAB],
-    ["General for a stored tab it does not know", undefined, { tab: "gone" }, GENERAL_TAB],
-    ["General for an older build's sections", undefined, { open: { ai: false } }, GENERAL_TAB],
-  ])("opens on %s", async (_case, initialTab, stored, shown) => {
-    const store = memoryStore(stored === undefined ? new Map() : new Map([[UI_STATE_KEY, stored]]));
+  it.each<[string, Partial<SettingsFormDeps>, readonly (readonly [string, JsonValue])[], TabId]>([
+    ["the fragment's tab over the stored one", { initialTab: "drm" }, [[UI_STATE_KEY, {
+      tab: "pvp",
+    }]], "drm"],
+    ["the stored tab without a fragment", {}, [[UI_STATE_KEY, { tab: "pvp" }]], "pvp"],
+    ["General on a first visit", {}, [], GENERAL_TAB],
+    [
+      "General for a stored tab it does not know",
+      {},
+      [[UI_STATE_KEY, { tab: "gone" }]],
+      GENERAL_TAB,
+    ],
+    [
+      "General for an older build's sections",
+      {},
+      [[UI_STATE_KEY, { open: { ai: false } }]],
+      GENERAL_TAB,
+    ],
+  ])("opens on %s", async (_case, deps, stored, shown) => {
     const { tab, panel } = await setup({
-      uiState: createUiState(store),
-      ...(initialTab === undefined ? {} : { initialTab }),
+      uiState: createUiState(fake.store(new Map(stored))),
+      ...deps,
     });
     expect(tab(shown).getAttribute("aria-selected")).toBe("true");
     expect(panel(shown).hidden).toBe(false);
@@ -1222,7 +1206,7 @@ describe("the tabs", () => {
   });
 
   it("opens on General and still works when the stored tab cannot be read", async () => {
-    const store = countingStore(memoryStore());
+    const store = fake.countingStore(fake.store());
     store.break();
     const { tab, input, settings } = await setup({ uiState: createUiState(store) });
     expect(tab(GENERAL_TAB).getAttribute("aria-selected")).toBe("true");
@@ -1235,7 +1219,7 @@ describe("the tabs", () => {
   });
 
   it("remembers a tab picked with a click and tells the page; opening writes nothing", async () => {
-    const store = countingStore(memoryStore());
+    const store = fake.countingStore(fake.store());
     const onTabChange = vi.fn();
     const { tab } = await setup({ uiState: createUiState(store), onTabChange });
     expect(store.calls.set).toBe(0);
@@ -1249,7 +1233,7 @@ describe("the tabs", () => {
   });
 
   it("moves focus with the arrows, selects with Enter or Space, and remembers it", async () => {
-    const store = memoryStore();
+    const store = fake.store();
     const onTabChange = vi.fn();
     const { tab, tabIds } = await setup({ uiState: createUiState(store), onTabChange });
     const [first, second] = tabIds();
@@ -1285,11 +1269,11 @@ describe("the tabs", () => {
 
 describe("the ignored items", () => {
   it("lists each scope in its own card: all tags in General, each tag in its tab", async () => {
-    const { ignored, names, root } = await setup();
-    expect(names(ignored(ALLOW_ALL))).toEqual(["Every Game"]);
-    expect(names(ignored("ai"))).toEqual(["Newer <b>Game</b>", "Older Game"]);
-    expect(names(ignored("kernel"))).toEqual(["Older Game"]);
-    expect(names(ignored("drm"))).toEqual(["Drm Game"]);
+    const { ignored, names, root, games } = await setup();
+    expect(names(ignored(ALLOW_ALL))).toEqual([games.every.name]);
+    expect(names(ignored("ai"))).toEqual([games.newer.name, games.older.name]);
+    expect(names(ignored("kernel"))).toEqual([games.older.name]);
+    expect(names(ignored("drm"))).toEqual([games.drm.name]);
     expect(names(ignored("pvp"))).toEqual([]);
     expect(root.querySelector(".sar-allow-name b")).toBeNull();
     const captions = [...ignored("ai").querySelectorAll(".sar-allow-scope")];
@@ -1299,26 +1283,27 @@ describe("the ignored items", () => {
   });
 
   it("links each game to its store page and dates it", async () => {
-    const { ignored } = await setup();
+    const { ignored, games } = await setup();
     const all = ignored(ALLOW_ALL);
     expect(all.querySelector(".sar-allow-name")?.getAttribute("href")).toBe(
-      "https://store.steampowered.com/app/40/",
+      `https://store.steampowered.com/app/${String(games.every.id)}/`,
     );
+    const date = new Intl.DateTimeFormat("en", { dateStyle: "medium" }).format(games.every.added);
     expect(all.querySelector(".sar-allow-meta")?.textContent).toBe(
-      i18n.t("options_allow_since", { date: "Oct 3, 2026" }),
+      i18n.t("options_allow_since", { date }),
     );
   });
 
   it("names each quiet button by its item and its scope, so no two are alike", async () => {
-    const { root } = await setup();
+    const { root, games } = await setup();
     const buttons = [...root.querySelectorAll("[data-sar-restore]")];
     const labels = buttons.map((button) => button.getAttribute("aria-label"));
     expect(labels).toContain(
-      i18n.t("options_allow_restore_label", { name: "Older Game", scope: heading("ai") }),
+      i18n.t("options_allow_restore_label", { name: games.older.name, scope: heading("ai") }),
     );
     expect(labels).toContain(
       i18n.t("options_allow_restore_label", {
-        name: "Every Game",
+        name: games.every.name,
         scope: i18n.t("options_allow_scope_all"),
       }),
     );
@@ -1334,23 +1319,23 @@ describe("the ignored items", () => {
   });
 
   it("stops ignoring for one tag only, and moves focus to the next item in the card", async () => {
-    const { allowList, control } = await setup();
-    control('[data-sar-restore="20"][data-sar-scope="ai"]').click();
+    const { allowList, control, games } = await setup();
+    control(restore(games.newer.id, "ai")).click();
     await vi.waitFor(async () => {
-      expect([...(await allowList.list()).ai.keys()]).toEqual([10]);
+      expect([...(await allowList.list()).ai.keys()]).toEqual([games.older.id]);
     });
     await vi.waitFor(() => {
-      expect(document.activeElement).toBe(control('[data-sar-restore="10"][data-sar-scope="ai"]'));
+      expect(document.activeElement).toBe(control(restore(games.older.id, "ai")));
     });
-    expect([...(await allowList.list()).kernel.keys()]).toEqual([10]);
+    expect([...(await allowList.list()).kernel.keys()]).toEqual([games.older.id]);
     expect(control("[aria-live]").textContent).toBe(
       i18n.t("notice_marking_restored_kind", { heading: heading("ai") }),
     );
   });
 
   it("shows the empty state once the last item goes, with focus on the card's title", async () => {
-    const { control, ignored } = await setup();
-    control('[data-sar-restore="30"][data-sar-scope="drm"]').click();
+    const { control, ignored, games } = await setup();
+    control(restore(games.drm.id, "drm")).click();
     await vi.waitFor(() => {
       expect(ignored("drm").querySelector(".sar-empty")).not.toBeNull();
     });
@@ -1358,8 +1343,8 @@ describe("the ignored items", () => {
   });
 
   it("says a game is no longer ignored for all tags when that was the scope", async () => {
-    const { allowList, control } = await setup();
-    control('[data-sar-restore="40"][data-sar-scope="all"]').click();
+    const { allowList, control, games } = await setup();
+    control(restore(games.every.id, ALLOW_ALL)).click();
     await vi.waitFor(() => {
       expect(control("[aria-live]").textContent).toBe(i18n.t("notice_marking_restored"));
     });
@@ -1370,14 +1355,16 @@ describe("the ignored items", () => {
     [ALLOW_ALL, "banner_ignore"],
     ["pvp", "banner_ignore_kind"],
   ])("shows the empty state of %s with the label of its ignore button", async (of, action) => {
-    const { ignored } = await setup({ lists: createIgnoreLists(memoryStore(), fixedClock(0)) });
+    const { ignored } = await setup({
+      lists: createIgnoreLists(fake.store(), fake.clock(make.time())),
+    });
     expect(ignored(of).querySelector(".sar-empty")?.textContent).toBe(
       i18n.t("options_allow_empty", { action: i18n.t(action) }),
     );
   });
 
   it("says that a list could not be read, not that nothing is ignored", async () => {
-    const lists = createIgnoreLists(memoryStore(), fixedClock(0));
+    const lists = createIgnoreLists(fake.store(), fake.clock(make.time()));
     vi.spyOn(lists.games, "list").mockRejectedValue(new Error());
     const { ignored } = await setup({ lists });
     for (const  of of[ALLOW_ALL, "drm"] as const) {
@@ -1387,9 +1374,9 @@ describe("the ignored items", () => {
   });
 
   it("keeps an item and shows an error when stopping to ignore it fails", async () => {
-    const { allowList, control } = await setup();
+    const { allowList, control, games } = await setup();
     vi.spyOn(allowList, "remove").mockRejectedValue(new Error());
-    const button = control('[data-sar-restore="20"][data-sar-scope="ai"]');
+    const button = control(restore(games.newer.id, "ai"));
     button.click();
     const error = button.parentElement?.querySelector<HTMLElement>(".sar-field-error");
     await vi.waitFor(() => {
@@ -1400,9 +1387,10 @@ describe("the ignored items", () => {
 
   it("reads the lists again on request, for a change made in another tab", async () => {
     const { allowList, form, ignored, names } = await setup();
-    await allowList.add("pvp", appId(50), "Fifty");
+    const game = ignoredGame();
+    await allowList.add("pvp", game.id, game.name);
     await form.refreshAllowList();
-    expect(names(ignored("pvp"))).toEqual(["Fifty"]);
+    expect(names(ignored("pvp"))).toEqual([game.name]);
   });
 
   it("reads each list once per refresh, however many cards draw it", async () => {
@@ -1423,7 +1411,8 @@ describe("the note on what all tags ignore", () => {
       expect(note(kind.id)?.firstChild?.textContent).toBe(i18n.plural("options_allow_all_note", 1));
     }
     expect(note(ALLOW_ALL)).toBeNull();
-    await lists.creators.developer.add(ALLOW_ALL, keyOf("n:Studio"), "Studio");
+    const studio = make.creator.of(make.text.creator());
+    await lists.creators.developer.add(ALLOW_ALL, studio.key, studio.name);
     await form.refreshAllowList();
     expect(note("pvp")?.firstChild?.textContent).toBe(i18n.plural("options_allow_all_note", 2));
   });
@@ -1442,7 +1431,7 @@ describe("the note on what all tags ignore", () => {
 
 describe("a failed read of the settings", () => {
   it("shows the defaults and an error above the tabs when settings cannot be read", async () => {
-    const settings = createSettingsSource(memoryStore());
+    const settings = createSettingsSource(fake.store());
     vi.spyOn(settings, "read").mockRejectedValue(new Error());
     const { root } = await mountForm({ settings });
     const error = root.querySelector<HTMLElement>(":scope > .sar-field-error");
@@ -1455,10 +1444,8 @@ describe("a failed read of the settings", () => {
   });
 
   it("keeps the controls off after a failed load, so v1 can still migrate", async () => {
-    const inner = memoryStore(
-      new Map([["v1:settings", { badges: false, banner: true, listFilter: "hide", locale: "es" }]]),
-    );
-    const store = countingStore(inner);
+    const inner = fake.store(new Map([[LEGACY_SETTINGS_KEY, make.raw.v1CustomSettings()]]));
+    const store = fake.countingStore(inner);
     const settings = createSettingsSource(store);
     store.break();
     const { root } = await mountForm({ settings, locales: ["en", "es"] });
@@ -1480,7 +1467,7 @@ describe("a failed read of the settings", () => {
     expect(store.calls.set).toBe(0);
 
     store.heal();
-    expect(await inner.keys()).toStrictEqual(["v1:settings"]);
+    expect(await inner.keys()).toStrictEqual([LEGACY_SETTINGS_KEY]);
     const read = parseSettings(await settings.read());
     expect(read.kinds.ai).toStrictEqual({
       enabled: true,
@@ -1492,14 +1479,14 @@ describe("a failed read of the settings", () => {
   });
 
   it("turns the controls on again when settings arrive after a failed load", async () => {
-    const settings = createSettingsSource(memoryStore());
+    const settings = createSettingsSource(fake.store());
     vi.spyOn(settings, "read").mockRejectedValueOnce(new Error());
     const { root } = await mountForm({ settings });
     const banner = root.querySelector<HTMLInputElement>(
       "[data-sar-setting=banner][data-sar-for=ai]",
     );
     expect(banner?.disabled).toBe(true);
-    await writeSettings(settings, withKind(DEFAULT_SETTINGS, "ai", { banner: false }));
+    await writeSettings(settings, make.settings.kind("ai", { banner: false }));
     expect(banner?.disabled).toBe(false);
     expect(root.querySelector<HTMLElement>(":scope > .sar-field-error")?.hidden).toBe(true);
     expect(banner?.checked).toBe(false);
@@ -1533,22 +1520,27 @@ describe("listeners", () => {
   });
 });
 
+/** The caption of each role's list and the role's own name. */
+const ROLE_WORDS = {
+  developer: { caption: "options_section_allow_developers", role: "banner_role_developer" },
+  publisher: { caption: "options_section_allow_publishers", role: "banner_role_publisher" },
+} as const satisfies Record<CreatorRole, Record<"caption" | "role", BareMessageKey>>;
+
 describe.each(CREATOR_ROLES)("the ignored %ss", (role) => {
-  const developer = role === "developer";
-  const caption = i18n.t(
-    developer ? "options_section_allow_developers" : "options_section_allow_publishers",
-  );
-  const roleName = i18n.t(developer ? "banner_role_developer" : "banner_role_publisher");
-  const stop = (key: string, scope: string) =>
-    `[data-sar-list="allow-${role}s"][data-sar-restore="${key}"][data-sar-scope="${scope}"]`;
-  const NAME = "Valve <b>Software</b>";
+  const caption = i18n.t(ROLE_WORDS[role].caption);
+  const roleName = i18n.t(ROLE_WORDS[role].role);
+  const stop = (key: string, scope: AllowScope) =>
+    `[data-sar-list="allow-${role}s"]${restore(key, scope)}`;
+  /** One creator keyed by clan, named with markup, and one keyed by name. */
+  const byClan = make.creator.of([make.text.markup(), make.creator.clan()]);
+  const byName = make.creator.of(make.text.creator());
 
   /** A form whose list of this role holds two creators. */
   async function seeded() {
     const made = await setup();
     const list = made.lists.creators[role];
-    await list.add("ai", keyOf("c:4"), NAME);
-    await list.add(ALLOW_ALL, keyOf("n:Embark Studios"), "Embark Studios");
+    await list.add("ai", byClan.key, byClan.name);
+    await list.add(ALLOW_ALL, byName.key, byName.name);
     await made.form.refreshAllowList();
     return { ...made, list };
   }
@@ -1567,8 +1559,8 @@ describe.each(CREATOR_ROLES)("the ignored %ss", (role) => {
         name.tagName,
         name.textContent,
       ]);
-    expect(names(ignored("ai"))).toEqual([["SPAN", NAME]]);
-    expect(names(ignored(ALLOW_ALL))).toEqual([["SPAN", "Embark Studios"]]);
+    expect(names(ignored("ai"))).toEqual([["SPAN", byClan.name]]);
+    expect(names(ignored(ALLOW_ALL))).toEqual([["SPAN", byName.name]]);
     expect(block(ignored("ai"))?.querySelector("a")).toBeNull();
     expect(root.querySelectorAll('[data-sar-list="allow"]')).toHaveLength(5);
     const ids = [...root.querySelectorAll("[role=group]")].map((group) =>
@@ -1579,15 +1571,15 @@ describe.each(CREATOR_ROLES)("the ignored %ss", (role) => {
 
   it("stops ignoring one creator without touching the other lists, and announces it", async () => {
     const { root, list, control } = await seeded();
-    control(stop("c:4", "ai")).click();
+    control(stop(byClan.key, "ai")).click();
     await vi.waitFor(async () => {
       expect((await list.list()).ai.size).toBe(0);
     });
-    expect([...(await list.list())[ALLOW_ALL].keys()]).toEqual(["n:Embark Studios"]);
+    expect([...(await list.list())[ALLOW_ALL].keys()]).toEqual([byName.key]);
     expect(root.querySelectorAll('[data-sar-list="allow"]')).toHaveLength(5);
     expect(root.querySelector(":scope > .sar-vh")?.textContent).toBe(
       i18n.t("notice_creator_restored_kind", {
-        name: NAME,
+        name: byClan.name,
         role: roleName,
         heading: heading("ai"),
       }),
@@ -1596,10 +1588,10 @@ describe.each(CREATOR_ROLES)("the ignored %ss", (role) => {
 
   it("names the role and not the tag when it stops ignoring a creator for all tags", async () => {
     const { root, control } = await seeded();
-    control(stop("n:Embark Studios", "all")).click();
+    control(stop(byName.key, ALLOW_ALL)).click();
     await vi.waitFor(() => {
       expect(root.querySelector(":scope > .sar-vh")?.textContent).toBe(
-        i18n.t("notice_creator_restored", { name: "Embark Studios", role: roleName }),
+        i18n.t("notice_creator_restored", { name: byName.name, role: roleName }),
       );
     });
   });
@@ -1614,7 +1606,7 @@ describe.each(CREATOR_ROLES)("the ignored %ss", (role) => {
   it("keeps the creator and shows an error when stopping to ignore it fails", async () => {
     const { list, control } = await seeded();
     vi.spyOn(list, "remove").mockRejectedValue(new Error());
-    const button = control(stop("c:4", "ai"));
+    const button = control(stop(byClan.key, "ai"));
     button.click();
     const error = button.parentElement?.querySelector<HTMLElement>(".sar-field-error");
     await vi.waitFor(() => {

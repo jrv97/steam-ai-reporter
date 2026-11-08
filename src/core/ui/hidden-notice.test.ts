@@ -1,18 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { clearRoot } from "../../../tests/helpers/dom";
+import { make } from "../../../tests/helpers/factory";
+import { fake } from "../../../tests/helpers/fakes";
 import { hostView } from "../../../tests/helpers/host-view";
 import { englishI18n } from "../../../tests/helpers/i18n";
-import { manualQueue } from "../../../tests/helpers/manual-queue";
 import { applyFilters } from "../../../tests/helpers/settings";
-import {
-  loadPage,
-  nodes,
-  pageTransition,
-  searchRow,
-  SURFACES,
-  the,
-} from "../../../tests/helpers/surfaces";
-import { disclosedKinds } from "../../../tests/helpers/verdicts";
+import { loadPage, nodes, pageTransition, the } from "../../../tests/helpers/surfaces";
 import type { KindId } from "../kinds/id";
 import type { ListFilter } from "../kinds/kind-settings";
 import { HOST_KINDS } from "../scan/marks";
@@ -26,15 +19,22 @@ const BUTTON = ".sar-list-notice-button";
 const renderer = createHostKindsRenderer();
 
 let notice: HiddenNotice | undefined;
-let frames = manualQueue();
-let delays = manualQueue();
+let frames = fake.queue();
+let delays = fake.queue();
 
 /** Marks a host as the list filter's renderer does. */
 function mark(host: Element, kinds: readonly KindId[], hideable = true): void {
-  renderer.render(hostView(host, { verdicts: disclosedKinds(kinds), hideable }));
+  renderer.render(hostView(host, { verdicts: make.verdicts.only(kinds), hideable }));
 }
 
 const rows = () => [...document.querySelectorAll(`${LIST} a.search_result_row`)];
+const rowAt = (index: number): Element => {
+  const row = rows()[index];
+  if (row === undefined) {
+    throw new TypeError(String(index));
+  }
+  return row;
+};
 const box = () => document.querySelector(".sar-list-notice");
 const shown = () => {
   const element = box();
@@ -73,10 +73,17 @@ function hidingRows(count: number): void {
   start();
 }
 
+/** Appends a row carrying AI to the list, as infinite scroll does. */
+function addHiddenRow(): void {
+  const row = make.page.searchRow(make.appId());
+  the(LIST).append(row);
+  mark(row, ["ai"]);
+}
+
 beforeEach(() => {
-  loadPage(SURFACES.search);
-  frames = manualQueue();
-  delays = manualQueue();
+  loadPage(make.page.surface("search"));
+  frames = fake.queue();
+  delays = fake.queue();
 });
 
 afterEach(() => {
@@ -118,7 +125,6 @@ const COUNTS: readonly CountCase[] = [
     marks: [[["ai", "drm"], true]],
     expected: 1,
   },
-  { name: "no kind on Hide", filters: { ai: "dim" }, marks: [[["ai"], true]], expected: 0 },
 ];
 
 describe("createHiddenNotice", () => {
@@ -127,22 +133,24 @@ describe("createHiddenNotice", () => {
     (_name, { filters, marks, expected }) => {
       applyFilters(filters);
       marks.forEach(([kinds, hideable], index) => {
-        const row = rows()[index];
-        if (row !== undefined) {
-          mark(row, kinds, hideable);
-        }
+        mark(rowAt(index), kinds, hideable);
       });
       start();
-      expect(shown()).toBe(expected > 0);
-      if (expected > 0) {
-        expect(line()).toBe(i18n.plural("notice_list_hidden", expected));
-        expect(button().textContent).toBe(i18n.plural("notice_list_show", expected));
-      }
+      expect(shown()).toBe(true);
+      expect(line()).toBe(i18n.plural("notice_list_hidden", expected));
+      expect(button().textContent).toBe(i18n.plural("notice_list_show", expected));
     },
   );
 
+  it("shows no notice while no kind is on Hide", () => {
+    applyFilters({ ai: "dim" });
+    mark(rowAt(0), ["ai"]);
+    start();
+    expect(shown()).toBe(false);
+  });
+
   it("counts no host outside the list", () => {
-    const outside = searchRow(1);
+    const outside = make.page.searchRow(make.appId());
     document.body.append(outside);
     mark(outside, ["ai"]);
     hidingRows(2);
@@ -174,33 +182,22 @@ describe("createHiddenNotice", () => {
   const CHANGES = [
     {
       name: "infinite scroll adds a hidden row",
-      change: () => {
-        const row = searchRow(1);
-        the(LIST).append(row);
-        mark(row, ["ai"]);
-      },
+      change: addHiddenRow,
       expected: 3,
     },
     {
       name: "the game of a row is ignored",
       change: () => {
-        rows()[0]?.removeAttribute(HOST_KINDS);
+        rowAt(0).removeAttribute(HOST_KINDS);
       },
       expected: 1,
     },
     {
       name: "a hidden row leaves the page",
       change: () => {
-        rows()[0]?.remove();
+        rowAt(0).remove();
       },
       expected: 1,
-    },
-    {
-      name: "the filter is switched off",
-      change: () => {
-        applyFilters({});
-      },
-      expected: 0,
     },
   ];
 
@@ -210,10 +207,8 @@ describe("createHiddenNotice", () => {
       hidingRows(2);
       change();
       await settle();
-      expect(shown()).toBe(expected > 0);
-      if (expected > 0) {
-        expect(line()).toBe(i18n.plural("notice_list_hidden", expected));
-      }
+      expect(shown()).toBe(true);
+      expect(line()).toBe(i18n.plural("notice_list_hidden", expected));
     },
   );
 
@@ -228,12 +223,12 @@ describe("createHiddenNotice", () => {
     expect(line()).toBe(i18n.plural("notice_list_hidden", 2));
   });
 
-  it("ends the reveal once nothing is left to hide", async () => {
+  it("hides the notice and ends the reveal once nothing is left to hide", async () => {
     hidingRows(1);
     button().click();
     applyFilters({});
     await settle();
-    expect(revealed()).toBe(false);
+    expect([shown(), revealed()]).toEqual([false, false]);
     applyFilters({ ai: "hide" });
     await settle();
     expect(line()).toBe(i18n.plural("notice_list_hidden", 1));
@@ -244,7 +239,7 @@ describe("createHiddenNotice", () => {
     button().click();
     const list = document.createElement("div");
     list.id = LIST.slice(1);
-    const row = searchRow(1);
+    const row = make.page.searchRow(make.appId());
     list.append(row);
     mark(row, ["ai"]);
     the(LIST).replaceWith(list);
@@ -256,9 +251,7 @@ describe("createHiddenNotice", () => {
 
   it("announces the line once it stops changing", async () => {
     hidingRows(1);
-    const row = searchRow(1);
-    the(LIST).append(row);
-    mark(row, ["ai"]);
+    addHiddenRow();
     await settle();
     expect(delays.size).toBe(1);
     delays.run();
@@ -273,9 +266,7 @@ describe("createHiddenNotice", () => {
     button().click();
     window.dispatchEvent(pageTransition("pagehide"));
     expect([revealed(), shown()]).toEqual([false, false]);
-    const row = searchRow(1);
-    the(LIST).append(row);
-    mark(row, ["ai"]);
+    addHiddenRow();
     await settle();
     expect(shown()).toBe(false);
     window.dispatchEvent(pageTransition("pageshow"));
@@ -284,9 +275,9 @@ describe("createHiddenNotice", () => {
   });
 
   it("draws nothing on a page without a list surface", () => {
-    loadPage(SURFACES.home);
+    loadPage(make.page.surface("home"));
     applyFilters({ ai: "hide" });
-    const host = searchRow(1);
+    const host = make.page.searchRow(make.appId());
     document.body.append(host);
     mark(host, ["ai"]);
     start();

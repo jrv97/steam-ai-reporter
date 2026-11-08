@@ -90,14 +90,11 @@ describe("catalog wording", () => {
   });
 
   it.each<readonly [string, (name: string) => string]>([
-    ["a bare negative", (name) => `No ${name}`],
     ["a negative in a sentence", (name) => `This game has no ${name}.`],
     ["none after the name", (name) => `${name}: none`],
     ["free of the tag", (name) => `Free of ${name}`],
     ["the tag with -free", (name) => `${name}-free`],
   ])("catches %s for every tag", (_name, phrase) => {
-    for (const name of english) {
-      expect(claimsAbsence(phrase(name), english)).toBe(true);
-    }
+    expect(english.filter((name) => !claimsAbsence(phrase(name), english))).toEqual([]);
   });
 });

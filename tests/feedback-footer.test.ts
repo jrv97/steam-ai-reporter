@@ -44,20 +44,22 @@ function dialogOf(doc: Document): ParentNode | undefined {
   return doc.querySelector(".sar-dialog-host")?.shadowRoot?.querySelector("dialog") ?? undefined;
 }
 
-const SURFACES: readonly (readonly [string, () => Promise<ParentNode | undefined>, boolean])[] = [
-  ["the options page", async () => (await mountForm()).root, true],
+type Surface = readonly [string, () => Promise<ParentNode | undefined>, readonly Shown[]];
+
+const SURFACES: readonly Surface[] = [
+  ["the options page", async () => (await mountForm()).root, EXPECTED],
   [
     "the userscript dialog",
     async () => {
       await openSettingsDialog(dialogDeps());
       return dialogOf(document);
     },
-    true,
+    EXPECTED,
   ],
   [
     "the toolbar popup",
     async () => (await mountForm({ context: "popup", layout: "list", colors: false })).root,
-    false,
+    [],
   ],
 ];
 
@@ -67,8 +69,8 @@ afterEach(() => {
 });
 
 describe("feedback footer", () => {
-  it.each(SURFACES)("%s", async (_, open, carries) => {
-    expect(shown(await open())).toEqual(carries ? EXPECTED : []);
+  it.each(SURFACES)("%s", async (_, open, links) => {
+    expect(shown(await open())).toEqual(links);
   });
 
   it("stays at the bottom of the view while the tabs scroll", () => {

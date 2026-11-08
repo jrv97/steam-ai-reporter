@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { make } from "../../../tests/helpers/factory";
 import { verdictOf } from "../../../tests/helpers/getitems";
-import { UNKNOWN } from "../types";
 import { ACCOUNT_KIND } from "./account";
 
 function fromDetails(details: Readonly<Record<string, unknown>>) {
@@ -9,63 +9,54 @@ function fromDetails(details: Readonly<Record<string, unknown>>) {
 
 describe("ACCOUNT_KIND.fromGetItems", () => {
   it("is disclosed with the developer's text and the link to Steam", () => {
+    const text = make.text.service();
     const verdict = fromDetails({
-      user_account_third_party: "Ubisoft Account",
+      user_account_third_party: text,
       user_account_third_party_link_to_steam: true,
     });
-    expect(verdict).toStrictEqual({
-      state: "disclosed",
-      kind: "account",
-      source: "api",
-      text: "Ubisoft Account",
-      linksToSteam: true,
-    });
+    expect(verdict).toStrictEqual(make.verdict.disclosed("account", { text, linksToSteam: true }));
   });
 
-  it("reads an absent or false link flag as no link", () => {
-    for (const link of [{}, { user_account_third_party_link_to_steam: false }]) {
-      expect(fromDetails({ user_account_third_party: "Battle.net Account", ...link }))
-        .toMatchObject(
-          { linksToSteam: false },
-        );
-    }
+  it.each<readonly [string, Readonly<Record<string, unknown>>]>([
+    ["an absent", {}],
+    ["a false", { user_account_third_party_link_to_steam: false }],
+    ["a text", { user_account_third_party_link_to_steam: "yes" }],
+    ["a number", { user_account_third_party_link_to_steam: 1 }],
+    ["a list", { user_account_third_party_link_to_steam: [] }],
+  ])("stays disclosed and reads %s link flag as no link", (_name, link) => {
+    const text = make.text.service();
+    expect(fromDetails({ user_account_third_party: text, ...link })).toStrictEqual(
+      make.verdict.disclosed("account", { text, linksToSteam: false }),
+    );
   });
 
-  it("keeps the text verbatim, markup and spacing included", () => {
-    const text = " <i>Rockstar</i> Games\n";
+  it.each<readonly [string, () => string]>([
+    ["markup and spacing", () => ` ${make.text.markup()}\n`],
+    ["4,000 characters", () => "x".repeat(4000)],
+  ])("keeps the text verbatim, %s included", (_name, textOf) => {
+    const text = textOf();
     expect(fromDetails({ user_account_third_party: text })).toMatchObject({ text });
   });
 
-  it("is not disclosed when the text is absent or holds only blanks, link flag or not", () => {
-    const none = { state: "not-disclosed", source: "api" };
-    expect(fromDetails({})).toStrictEqual(none);
-    expect(fromDetails({ user_account_third_party: "" })).toStrictEqual(none);
-    expect(fromDetails({ user_account_third_party: "\n " })).toStrictEqual(none);
-    expect(fromDetails({ user_account_third_party_link_to_steam: true })).toStrictEqual(none);
+  it.each<readonly [string, Readonly<Record<string, unknown>>]>([
+    ["no text", {}],
+    ["empty text", { user_account_third_party: "" }],
+    ["blank text", { user_account_third_party: "\n " }],
+    ["a link flag alone", { user_account_third_party_link_to_steam: true }],
+    ["a malformed link flag alone", { user_account_third_party_link_to_steam: 1 }],
+  ])("is not disclosed for %s", (_name, details) => {
+    expect(fromDetails(details)).toStrictEqual(make.verdict.notDisclosed());
   });
 
-  it("is unknown malformed when a field it reads is malformed, and only then", () => {
-    expect(fromDetails({ user_account_third_party: 7 })).toBe(UNKNOWN.malformed);
-    expect(fromDetails({ user_account_third_party: "x".repeat(4001) })).toBe(UNKNOWN.malformed);
-    expect(fromDetails({ user_account_third_party: "EA", anticheat: 5 }).state).toBe("disclosed");
+  it.each<readonly [string, unknown]>([
+    ["a number", 7],
+    ["text over 4,000 characters", "x".repeat(4001)],
+  ])("is unknown malformed for text that is %s", (_name, text) => {
+    expect(fromDetails({ user_account_third_party: text })).toBe(make.verdict.unknown("malformed"));
   });
 
-  it("allows 4,000 characters of text", () => {
-    const text = "x".repeat(4000);
-    expect(fromDetails({ user_account_third_party: text })).toMatchObject({ text });
-  });
-
-  it("stays disclosed, with no link, when the link flag is malformed", () => {
-    for (const link of ["yes", 1, []]) {
-      const verdict = fromDetails({
-        user_account_third_party: "EA",
-        user_account_third_party_link_to_steam: link,
-      });
-      expect(verdict).toMatchObject({ state: "disclosed", linksToSteam: false });
-    }
-  });
-
-  it("is not disclosed on a malformed link flag alone", () => {
-    expect(fromDetails({ user_account_third_party_link_to_steam: 1 }).state).toBe("not-disclosed");
+  it("ignores a malformed field of another kind", () => {
+    const details = { user_account_third_party: make.text.service(), anticheat: 5 };
+    expect(fromDetails(details).state).toBe("disclosed");
   });
 });

@@ -97,12 +97,15 @@ These are hard rules. A change that breaks one needs an ADR first.
 16. **Secrets.** `STEAM_API_KEY` is read only by development scripts, only from the environment.
     It is never committed, logged, written into fixtures or bundled; a build check fails if its
     value appears in `dist/` or `artifacts/`. Release secrets live in GitHub environments.
-17. **Tests.** Fewer, better tests. Build inputs with test data builders and factories in
-    `tests/helpers/` (`storeItem`, `disclosedVerdict` and the like) that take overrides, and fold
-    near-duplicate cases into one table-driven test (`it.each`) over builder output. Before
-    writing a fake, stub or mock, check `tests/helpers/` for one to reuse or extend. Repeated
-    setup moves into a helper; a test body shows only what differs for its case. Assert behavior
-    through the public surface, one idea per test, and never add a test that restates another.
+17. **Tests.** Fewer, better tests. All test data comes from one factory, `make` in
+    `tests/helpers/factory.ts`, plain strings and numbers included; its builders take overrides.
+    All test doubles come from `fake` in `tests/helpers/fakes.ts`. Before writing a builder or a
+    fake, check those two for one to reuse or extend. Fold near-duplicate cases into one
+    table-driven test (`it.each`) over factory output, with no conditional logic in its body. A
+    behavior every platform has is one test over a strategy per platform, such as a contract in
+    `tests/contracts/`. Repeated setup moves into a helper; a test body shows only what differs
+    for its case. Assert behavior through the public surface, one idea per test, and never add a
+    test that restates another.
 18. **Layout stability.** Turning something off never changes the layout of the page that shows
     it. A control that a switch turns off stays in place at the same size, disabled (a disabled
     `fieldset` or the `disabled` attribute) and dimmed by a CSS state selector; it is never hidden,

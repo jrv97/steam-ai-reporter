@@ -1,147 +1,111 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { detectorContract } from "../../../tests/contracts/detector.contract";
-import { appId, appIds } from "../../../tests/helpers/app-ids";
-import { countingStore } from "../../../tests/helpers/counting-store";
-import { creatorsFor } from "../../../tests/helpers/creators";
-import { fakeDetector } from "../../../tests/helpers/fake-detector";
-import { fixedClock } from "../../../tests/helpers/fixed-clock";
-import { memoryStore } from "../../../tests/helpers/memory-store";
-import {
-  aiVerdicts,
-  disclosedVerdict,
-  FULL_DISCLOSED,
-  NOT_DISCLOSED,
-} from "../../../tests/helpers/verdicts";
+import { make } from "../../../tests/helpers/factory";
+import { fake } from "../../../tests/helpers/fakes";
 import type { AiVerdict } from "../kinds/ai";
-import { withRelations } from "../kinds/verdicts";
-import type { Detector } from "../ports";
-import { type AppId, UNKNOWN } from "../types";
+import { KIND_BY_ID } from "../kinds/registry";
+import { type KindVerdicts, withRelations } from "../kinds/verdicts";
+import type { AppId } from "../types";
 import { cachedDetector } from "./cached-detector";
 import { createVerdictCache } from "./verdict-cache";
 
-const T = 1_000_000_000_000;
-
-/** A detector that answers from a table (not disclosed by default) and records its calls. */
-function stubDetector(table: ReadonlyMap<AppId, AiVerdict> = new Map()) {
-  const calls: (readonly AppId[])[] = [];
-  const detector: Detector = {
-    detect(ids) {
-      calls.push(ids);
-      return Promise.resolve(
-        new Map(ids.map((id) => [id, aiVerdicts(table.get(id) ?? NOT_DISCLOSED)])),
-      );
-    },
-  };
-  return { detector, calls };
+/** Answers each ID with its AI verdict in `table`, not disclosed by default. */
+function aiAnswers(table: ReadonlyMap<AppId, AiVerdict>): (id: AppId) => KindVerdicts {
+  return (id) => make.verdicts({ ai: table.get(id) ?? make.verdict.notDisclosed() });
 }
 
-function memoryCountingStore() {
-  return countingStore(memoryStore());
-}
-
-function setup(table?: ReadonlyMap<AppId, AiVerdict>) {
-  const store = countingStore(memoryStore());
-  const clock = fixedClock(T);
-  const logger = { error: vi.fn<(problem: unknown) => void>() };
-  const inner = stubDetector(table);
-  const cache = createVerdictCache(store, clock);
-  return { store, clock, logger, inner, detector: cachedDetector(inner.detector, cache, logger) };
+function setup(verdictsFor: (id: AppId) => KindVerdicts = aiAnswers(new Map())) {
+  const store = fake.countingStore(fake.store());
+  const clock = fake.clock(make.time());
+  const { logger, sink } = fake.logger();
+  const inner = fake.detector(verdictsFor);
+  /** Another tab: a cached detector with its own memory over the same storage. */
+  const tab = () => cachedDetector(inner, createVerdictCache(store, clock), logger);
+  return { store, clock, sink, inner, tab, detector: tab() };
 }
 
 detectorContract("cachedDetector", () => setup().detector);
 
 describe("cachedDetector", () => {
-  it("asks the inner detector once, then answers from the cache", async () => {
-    const { detector, inner, store } = setup(new Map([[appId(10), disclosedVerdict()]]));
-    const first = await detector.detect(appIds(10, 20));
-    const second = await detector.detect(appIds(10, 20));
+  it("asks the inner detector once, then answers from memory", async () => {
+    const disclosed = make.appId();
+    const ids = [disclosed, make.appId()];
+    const { detector, inner, store } = setup(
+      aiAnswers(new Map([[disclosed, make.verdict.disclosed("ai")]])),
+    );
+    const first = await detector.detect(ids);
+    const gets = store.calls.get;
+    const second = await detector.detect(ids);
     expect(second).toStrictEqual(first);
-    expect(inner.calls).toStrictEqual([[10, 20]]);
-    expect(store.calls.set).toBe(1);
+    expect(inner.calls).toStrictEqual([ids]);
+    expect(store.calls).toMatchObject({ get: gets, set: 1 });
   });
 
   it("keeps the base game and creators from the first answer on, with one request", async () => {
-    const dlc = withRelations(aiVerdicts(disclosedVerdict()), {
-      parent: appId(1808500),
-      creators: creatorsFor({ developers: ["Embark Studios"] }),
+    const dlc = withRelations(make.verdicts({ ai: make.verdict.disclosed("ai") }), {
+      parent: make.appId(),
+      creators: make.creator.forItem({ developers: [make.text.name()] }),
     });
-    const inner = fakeDetector(() => dlc);
-    const store = memoryStore();
-    const logger = { error: vi.fn<(problem: unknown) => void>() };
-    const tab = () => cachedDetector(inner, createVerdictCache(store, fixedClock(T)), logger);
-    const first = await tab().detect(appIds(5201760));
-    const second = await tab().detect(appIds(5201760));
-    expect(first.get(appId(5201760))).toStrictEqual(dlc);
-    expect(second.get(appId(5201760))).toStrictEqual(dlc);
-    expect(inner.calls).toStrictEqual([[5201760]]);
+    const id = make.appId();
+    const { tab, inner } = setup(() => dlc);
+    const first = await tab().detect([id]);
+    const second = await tab().detect([id]);
+    expect(first.get(id)).toStrictEqual(dlc);
+    expect(second.get(id)).toStrictEqual(dlc);
+    expect(inner.calls).toStrictEqual([[id]]);
   });
 
   it("asks the inner detector only about the IDs the cache lacks", async () => {
+    const [a, b, c, d] = [make.appId(), make.appId(), make.appId(), make.appId()];
     const { detector, inner } = setup();
-    await detector.detect(appIds(1, 2));
-    const got = await detector.detect(appIds(2, 3, 3, 4));
-    expect(inner.calls).toStrictEqual([[1, 2], [3, 4]]);
-    expect([...got.keys()].toSorted((a, b) => a - b)).toStrictEqual([2, 3, 4]);
+    await detector.detect([a, b]);
+    const got = await detector.detect([b, c, c, d]);
+    expect(inner.calls).toStrictEqual([[a, b], [c, d]]);
+    expect([...got.keys()].toSorted((x, y) => x - y)).toStrictEqual([b, c, d]);
   });
 
   it("makes one storage read and one write for a batch of new IDs", async () => {
     const { detector, store } = setup();
-    await detector.detect(appIds(1, 2, 3, 4, 5));
+    await detector.detect(make.appIds(5));
     expect(store.calls.get).toBe(1);
     expect(store.calls.set).toBe(1);
   });
 
-  it("does not call the inner detector when everything is cached", async () => {
-    const { detector, inner, store } = setup();
-    await detector.detect(appIds(1, 2));
-    const gets = store.calls.get;
-    await detector.detect(appIds(1, 2));
-    expect(inner.calls).toHaveLength(1);
-    expect(store.calls.get).toBe(gets);
-  });
-
-  it("asks again after the verdict expires", async () => {
-    const { detector, inner, clock } = setup();
-    await detector.detect(appIds(1));
-    clock.advance(12 * 3_600_000);
-    await detector.detect(appIds(1));
-    expect(inner.calls).toHaveLength(2);
-  });
-
   it("asks again about every kind when the shortest-lived one expires", async () => {
     // Six kinds hold a seven day verdict; the AI kind holds a twelve hour one.
-    const verdicts = { ...FULL_DISCLOSED, ai: NOT_DISCLOSED };
-    const inner = fakeDetector(() => verdicts);
-    const clock = fixedClock(T);
-    const logger = { error: vi.fn<(problem: unknown) => void>() };
-    const detector = cachedDetector(
-      inner,
-      createVerdictCache(memoryCountingStore(), clock),
-      logger,
-    );
-    await detector.detect(appIds(1));
-    clock.advance(12 * 3_600_000 - 1);
-    expect(await detector.detect(appIds(1))).toStrictEqual(new Map([[appId(1), verdicts]]));
+    const verdicts = { ...make.verdicts.full(), ai: make.verdict.notDisclosed() };
+    const id = make.appId();
+    const { detector, inner, clock } = setup(() => verdicts);
+    await detector.detect([id]);
+    clock.advance(KIND_BY_ID.ai.ttl.notDisclosed - 1);
+    expect(await detector.detect([id])).toStrictEqual(new Map([[id, verdicts]]));
     expect(inner.calls).toHaveLength(1);
     clock.advance(1);
-    await detector.detect(appIds(1));
+    await detector.detect([id]);
     expect(inner.calls).toHaveLength(2);
   });
 
   it("remembers unknown error in memory for a while and never stores it", async () => {
-    const { detector, inner, store } = setup(new Map([[appId(1), UNKNOWN.error]]));
-    await detector.detect(appIds(1));
-    await detector.detect(appIds(1));
+    const id = make.appId();
+    const { detector, inner, store } = setup(
+      aiAnswers(new Map([[id, make.verdict.unknown("error")]])),
+    );
+    await detector.detect([id]);
+    await detector.detect([id]);
     expect(inner.calls).toHaveLength(1);
     expect(store.calls.set).toBe(0);
   });
 
   it("detects through broken storage and logs the failures", async () => {
-    const { detector, store, logger } = setup(new Map([[appId(1), disclosedVerdict()]]));
+    const disclosed = make.appId();
+    const other = make.appId();
+    const { detector, store, sink } = setup(
+      aiAnswers(new Map([[disclosed, make.verdict.disclosed("ai")]])),
+    );
     store.break();
-    const got = await detector.detect(appIds(1, 2));
-    expect(got.get(appId(1))).toStrictEqual(aiVerdicts(disclosedVerdict()));
-    expect(got.get(appId(2))).toStrictEqual(aiVerdicts(NOT_DISCLOSED));
-    expect(logger.error).toHaveBeenCalledTimes(2);
+    const got = await detector.detect([disclosed, other]);
+    expect(got.get(disclosed)).toStrictEqual(make.verdicts({ ai: make.verdict.disclosed("ai") }));
+    expect(got.get(other)).toStrictEqual(make.verdicts({ ai: make.verdict.notDisclosed() }));
+    expect(sink.error).toHaveBeenCalledTimes(2);
   });
 });

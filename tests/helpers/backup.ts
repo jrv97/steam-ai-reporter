@@ -5,6 +5,7 @@ import { type AllowEntries, type AllowScope, perScope } from "../../src/core/set
 import { DEFAULT_SETTINGS } from "../../src/core/settings/settings";
 import { appId } from "./app-ids";
 import { keyOf } from "./creators";
+import { freshAppId, freshClanId, freshCreator, freshName, freshTime } from "./sequence";
 
 /** When the backups in tests were made: 2026-10-20, midday UTC. */
 export const BACKUP_TIME = Date.UTC(2026, 9, 20, 12);
@@ -23,6 +24,22 @@ function entries<Spec, Key>(spec: EntriesSpec<Spec>, toKey: (key: Spec) => Key):
 /** Ignored games, by app ID. */
 export function gameEntries(spec: EntriesSpec<number> = {}): AllowEntries {
   return entries(spec, appId);
+}
+
+/** One row of an `EntriesSpec` of games: a fresh app ID, name and time. */
+export function gameRow(): readonly [key: number, name: string, added: number] {
+  return [freshAppId(), freshName(), freshTime()];
+}
+
+/** One row of an `EntriesSpec` of creators under a fresh clan key. */
+export function clanRow(): readonly [key: string, name: string, added: number] {
+  return [`c:${String(freshClanId())}`, freshCreator(), freshTime()];
+}
+
+/** One row of an `EntriesSpec` of creators under the name key of a fresh name. */
+export function nameRow(): readonly [key: string, name: string, added: number] {
+  const name = freshCreator();
+  return [`n:${name}`, name, freshTime()];
 }
 
 /** Ignored developers or publishers, by creator key such as `c:4` or `n:Valve`. */
@@ -60,4 +77,9 @@ export function pickedFile(
   size = new TextEncoder().encode(text).length,
 ): PickedFile {
   return { name, size, text: () => Promise.resolve(text) };
+}
+
+/** A file the person picked that the browser fails to read. */
+export function unreadableFile(name = "backup.json"): PickedFile {
+  return { name, size: 1, text: () => Promise.reject(new Error()) };
 }

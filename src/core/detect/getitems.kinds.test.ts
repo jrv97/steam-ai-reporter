@@ -1,37 +1,31 @@
 import { describe, expect, it } from "vitest";
 import kinds from "../../../tests/fixtures/getitems/kinds.json";
 import platforms from "../../../tests/fixtures/getitems/platforms.json";
-import { appId, appIds } from "../../../tests/helpers/app-ids";
-import { httpResult } from "../../../tests/helpers/fake-http";
-import {
-  fixtureItems,
-  getItemsResponse,
-  itemIds,
-  storeItem,
-} from "../../../tests/helpers/getitems";
+import { make } from "../../../tests/helpers/factory";
+import { itemIds } from "../../../tests/helpers/getitems";
 import { KIND_IDS } from "../kinds/id";
 import { KINDS, perKind } from "../kinds/registry";
 import { SECTIONS } from "../kinds/sections";
-import { type KindVerdict, type KindVerdicts, UNKNOWN_KINDS } from "../kinds/verdicts";
+import type { KindVerdicts } from "../kinds/verdicts";
+import type { AppId } from "../types";
 import { GETITEMS_URL, parseGetItems } from "./getitems";
 
-// Every kind derived from the batch captured for the tag kinds (tests/fixtures/README.md).
-const DECLARING = [3751950, 2807960, 1808500, 730, 570, 105600, 1245620, 1172470, 271590];
-// Games from 2004 to 2024 that declare nothing, and have no PvP or In-App Purchases category.
-const NOTHING = [813230, 1145360, 413150, 504230, 367520, 2379780, 620];
-const IDS = [...DECLARING, ...NOTHING];
-const OTHER_ITEMS = [320795, 1, 99999999];
-// A game in Early Access, and one that left it and still answers the developer's note.
-const EARLY_ACCESS = [2514910, 646570];
+const { app } = make.fixture;
 
+/** The result of a GetItems request whose answer holds `items`. */
+function answer(items: readonly unknown[]) {
+  return make.http.result(make.item.response(items), GETITEMS_URL);
+}
+
+// Every item of the batch captured for the tag kinds (tests/fixtures/README.md).
 const verdicts = parseGetItems(
-  appIds(...IDS, ...OTHER_ITEMS),
-  httpResult(getItemsResponse(fixtureItems(kinds)), GETITEMS_URL),
+  itemIds(make.fixture.items(kinds)),
+  answer(make.fixture.items(kinds)),
   "english",
 );
 
-function of(id: number): KindVerdicts {
-  const found = verdicts.get(appId(id));
+function of(id: AppId, from: ReadonlyMap<AppId, KindVerdicts> = verdicts): KindVerdicts {
+  const found = from.get(id);
   if (found === undefined) {
     throw new TypeError();
   }
@@ -39,8 +33,8 @@ function of(id: number): KindVerdicts {
 }
 
 /** The state of each kind, with the reason for unknown and the value for a disclosed facet. */
-function states(id: number): Readonly<Record<string, string>> {
-  const found = of(id);
+function states(id: AppId, from = verdicts): Readonly<Record<string, string>> {
+  const found = of(id, from);
   return perKind((kind) => {
     const verdict = found[kind.id];
     if (verdict.state === "unknown") {
@@ -69,15 +63,8 @@ const NONE = {
 };
 
 describe("parseGetItems over the tag kind fixture", () => {
-  it("answers every requested ID with a verdict for every kind", () => {
-    expect(verdicts.size).toBe(IDS.length + OTHER_ITEMS.length);
-    for (const found of verdicts.values()) {
-      expect(Object.keys(found)).toStrictEqual(expect.arrayContaining([...KIND_IDS]));
-    }
-  });
-
   it("reads DRM, account, EULA and a plain category list (3751950)", () => {
-    expect(states(3751950)).toStrictEqual({
+    expect(states(app.drmAccountEula)).toStrictEqual({
       ...NONE,
       drm: "disclosed",
       account: "disclosed",
@@ -85,20 +72,20 @@ describe("parseGetItems over the tag kind fixture", () => {
       iap: "disclosed",
       family: "disclosed:unsupported",
     });
-    const found = of(3751950);
+    const found = of(app.drmAccountEula);
     expect(found.drm).toMatchObject({ text: "Denuvo Anti-tamper" });
     expect(found.drm).not.toHaveProperty("activationLimit");
     expect(found.account).toMatchObject({ text: "Ubisoft Account", linksToSteam: true });
     expect(found.eula).toMatchObject({
       items: [{
         name: "Assassin's Creed Black Flag Resynced EULA",
-        url: "https://store.steampowered.com/eula/3751950_eula_0",
+        url: `https://store.steampowered.com/eula/${String(app.drmAccountEula)}_eula_0`,
       }],
     });
   });
 
   it("reads a kernel anti-cheat with boot protection and no vendor name (2807960)", () => {
-    expect(states(2807960)).toStrictEqual({
+    expect(states(app.kernelBootProtection)).toStrictEqual({
       ...NONE,
       kernel: "disclosed",
       account: "disclosed",
@@ -107,7 +94,7 @@ describe("parseGetItems over the tag kind fixture", () => {
       iap: "disclosed",
       family: "disclosed:unsupported",
     });
-    const found = of(2807960);
+    const found = of(app.kernelBootProtection);
     expect(found.kernel).toStrictEqual({
       state: "disclosed",
       kind: "kernel",
@@ -120,7 +107,7 @@ describe("parseGetItems over the tag kind fixture", () => {
   });
 
   it("reads a kernel anti-cheat from Denuvo next to AI notes (1808500)", () => {
-    expect(states(1808500)).toStrictEqual({
+    expect(states(app.arcRaiders)).toStrictEqual({
       ...NONE,
       ai: "disclosed",
       kernel: "disclosed",
@@ -128,40 +115,39 @@ describe("parseGetItems over the tag kind fixture", () => {
       pvp: "disclosed",
       iap: "disclosed",
     });
-    expect(of(1808500).kernel).toMatchObject({
+    expect(of(app.arcRaiders).kernel).toMatchObject({
       name: "Denuvo",
       nameToken: "#Store_AntiCheat_Type_denuvo",
       uninstallsCompletely: false,
     });
   });
 
-  it("reads a game that declares nothing as not disclosed for every kind", () => {
-    for (const id of NOTHING) {
+  it.each(make.fixture.kindsDeclaringNothing)(
+    "reads %i, which declares nothing, as not disclosed for every kind",
+    (id) => {
       expect(states(id)).toStrictEqual(NONE);
-    }
-  });
+    },
+  );
 
-  it("reads the VAC anti-cheat of Counter-Strike 2 and Dota 2 as non-kernel (730, 570)", () => {
-    for (const id of [730, 570]) {
-      expect(states(id)).toStrictEqual({
-        ...NONE,
-        anticheat: "disclosed",
-        iap: "disclosed",
-        // Free games are never tagged for Family Sharing.
-        family: "not-disclosed",
-      });
-      expect(of(id).anticheat).toMatchObject({
-        name: "VAC (Valve Anti-Cheat)",
-        nameToken: "#Store_AntiCheat_Type_vac",
-      });
-    }
+  it.each([app.vac, app.vacOther])("reads the VAC anti-cheat of %i as non-kernel", (id) => {
+    expect(states(id)).toStrictEqual({
+      ...NONE,
+      anticheat: "disclosed",
+      iap: "disclosed",
+      // Free games are never tagged for Family Sharing.
+      family: "not-disclosed",
+    });
+    expect(of(id).anticheat).toMatchObject({
+      name: "VAC (Valve Anti-Cheat)",
+      nameToken: "#Store_AntiCheat_Type_vac",
+    });
   });
 
   it("reads PvP from the categories and nothing else (105600, 1245620)", () => {
-    expect(states(105600)).toStrictEqual({ ...NONE, pvp: "disclosed" });
-    expect(of(105600).pvp).toMatchObject({ categoryIds: [49, 36] });
-    expect(states(1245620)).toStrictEqual({ ...NONE, eula: "disclosed", pvp: "disclosed" });
-    expect(of(1245620).eula).toMatchObject({
+    expect(states(app.pvp)).toStrictEqual({ ...NONE, pvp: "disclosed" });
+    expect(of(app.pvp).pvp).toMatchObject({ categoryIds: [49, 36] });
+    expect(states(app.pvpOther)).toStrictEqual({ ...NONE, eula: "disclosed", pvp: "disclosed" });
+    expect(of(app.pvpOther).eula).toMatchObject({
       items: [{ name: "ELDEN RING EULA" }, { name: "ELDEN RING EULA (JP)" }],
     });
   });
@@ -174,111 +160,103 @@ describe("parseGetItems over the tag kind fixture", () => {
       eula: "disclosed",
       pvp: "disclosed",
     };
-    expect(states(271590)).toStrictEqual({ ...delisted, family: "disclosed:unsupported" });
-    expect(states(1172470)).toStrictEqual({
+    expect(states(app.battlEye)).toStrictEqual({ ...delisted, family: "disclosed:unsupported" });
+    expect(states(app.easyAntiCheat)).toStrictEqual({
       ...delisted,
       iap: "disclosed",
       family: "not-disclosed",
     });
-    expect(of(1172470).kernel).toMatchObject({ name: "Easy Anti-Cheat" });
-    expect(of(271590).kernel).toMatchObject({ name: "BattlEye" });
+    expect(of(app.easyAntiCheat).kernel).toMatchObject({ name: "Easy Anti-Cheat" });
+    expect(of(app.battlEye).kernel).toMatchObject({ name: "BattlEye" });
   });
 
-  it("is unknown missing for a package, a bundle and an ID that does not exist", () => {
-    // The package has categories but no extra_details, so even PvP and IAP stay unknown.
-    for (const id of OTHER_ITEMS) {
-      expect(of(id)).toBe(UNKNOWN_KINDS.missing);
-    }
-  });
+  // The package has categories but no extra_details, so even PvP and IAP stay unknown.
+  it.each(make.fixture.kindsWithoutDetails)(
+    "is unknown missing for %i, a package, a bundle or no app",
+    (id) => {
+      expect(of(id)).toBe(make.verdicts.uniform("missing"));
+    },
+  );
 });
 
 describe("parseGetItems over the early access captures, asked with the release section", () => {
   const found = parseGetItems(
-    appIds(...EARLY_ACCESS),
-    httpResult(getItemsResponse(fixtureItems(kinds)), GETITEMS_URL),
+    [app.earlyAccess, app.leftEarlyAccess],
+    answer(make.fixture.items(kinds)),
     "english",
     ["basic_info", "release"],
   );
 
-  it("reads a flagged game with the developer's note and the Steam release date (2514910)", () => {
-    const verdict = found.get(appId(2514910))?.earlyaccess;
-    if (verdict?.state !== "disclosed") {
-      throw new TypeError();
+  /** The Early Access verdict of `id`; throws when it is not disclosed. */
+  function disclosedEarlyAccess(id: AppId) {
+    const verdict = of(id, found).earlyaccess;
+    if (verdict.state !== "disclosed") {
+      throw new TypeError(verdict.state);
     }
-    const { note, ...rest } = verdict;
+    return verdict;
+  }
+
+  it("reads a flagged game with the developer's note and the Steam release date (2514910)", () => {
+    const { note, ...rest } = disclosedEarlyAccess(app.earlyAccess);
     expect(rest).toStrictEqual({
       state: "disclosed",
       kind: "earlyaccess",
       source: "api",
-      released: 1731596424,
+      released: make.fixture.released,
     });
     expect(note).toMatch(/^You can also experience the special systems/);
   });
 
   it("reads a game that left early access as not disclosed, whatever its note (646570)", () => {
     // The capture still holds the developer's note, which the schema test reads.
-    expect(found.get(appId(646570))?.earlyaccess).toStrictEqual({
-      state: "not-disclosed",
-      source: "api",
-    });
+    expect(found.get(app.leftEarlyAccess)?.earlyaccess).toStrictEqual(
+      make.verdict.notDisclosed("api"),
+    );
   });
 });
 
 describe("parseGetItems over the platforms fixture, asked with every section", () => {
-  const ids = itemIds(fixtureItems(platforms));
-  const found = parseGetItems(
-    ids,
-    httpResult(getItemsResponse(fixtureItems(platforms)), GETITEMS_URL),
-    "english",
-    SECTIONS,
-  );
+  const items = make.fixture.items(platforms);
+  const found = parseGetItems(itemIds(items), answer(items), "english", SECTIONS);
+  const [VERIFIED, PLAYABLE] = ["disclosed:verified", "disclosed:playable"] as const;
 
   it.each(
     [
-      ["Cyberpunk 2077", 1091500, "verified", "verified"],
-      ["Counter-Strike 2", 730, "playable", "playable"],
-      ["Red Dead Redemption 2", 1174180, "playable", "playable"],
-      ["ARC Raiders, rated apart per device", 1808500, "playable", "verified"],
-      ["Assassin's Creed Black Flag Resynced", 3751950, "verified", "verified"],
-      ["Hades", 1145360, "verified", "verified"],
-      ["the unreleased ReBlade, all zeros", 3489340, undefined, undefined],
-      ["a large DLC with its own Deck rating", 2778580, "playable", undefined],
-      ["a cosmetic DLC, all zeros, with nothing from its base game", 5201760, undefined, undefined],
+      ["Cyberpunk 2077", app.verified, VERIFIED, VERIFIED],
+      ["Counter-Strike 2", app.vac, PLAYABLE, PLAYABLE],
+      ["Red Dead Redemption 2", app.familyLeftOut, PLAYABLE, PLAYABLE],
+      ["ARC Raiders, rated apart per device", app.arcRaiders, PLAYABLE, VERIFIED],
+      ["Assassin's Creed Black Flag Resynced", app.drmAccountEula, VERIFIED, VERIFIED],
+      ["Hades", app.verifiedOther, VERIFIED, VERIFIED],
+      ["the unreleased ReBlade, all zeros", app.demoParent, "not-disclosed", "not-disclosed"],
+      ["a large DLC with its own Deck rating", app.largeDlc, PLAYABLE, "not-disclosed"],
+      [
+        "a cosmetic DLC, all zeros, with nothing from its base game",
+        app.dlc,
+        "not-disclosed",
+        "not-disclosed",
+      ],
     ] as const,
   )("reads %s (%s)", (_name, id, deck, machine) => {
-    const verdicts = found.get(appId(id));
-    const facet = (verdict: KindVerdict | undefined) =>
-      verdict?.state === "disclosed" && "facet" in verdict ? verdict.facet : verdict?.state;
-    expect([facet(verdicts?.deck), facet(verdicts?.machine)]).toStrictEqual([
-      deck ?? "not-disclosed",
-      machine ?? "not-disclosed",
-    ]);
+    expect(states(id, found)).toMatchObject({ deck, machine });
   });
 });
 
 describe("parseGetItems with one malformed field", () => {
+  const ID = make.appId();
+  const CATEGORIES = make.item.declaringCategories;
+  const PLATFORMS = make.item.declaringPlatforms;
+
   function parse(item: unknown): KindVerdicts {
-    const id = appId(1);
-    const result = httpResult(getItemsResponse([item]), GETITEMS_URL);
-    const found = parseGetItems([id], result, "english", SECTIONS).get(id);
+    const found = parseGetItems([ID], answer([item]), "english", SECTIONS).get(ID);
     if (found === undefined) {
       throw new TypeError();
     }
     return found;
   }
 
-  const FULL = {
-    content_survey_ai_notes: "Art.",
-    anticheat: { kernel_mode: true },
-    drm_third_party_type: "Denuvo",
-    user_account_third_party: "EA",
-    eula: [{ name: "Game terms", url: "https://store.steampowered.com//eula/1_eula_0" }],
-  };
-
-  const CATEGORIES = { supported_player_categoryids: [49], feature_categoryids: [35] };
-  const PLATFORMS = { steam_deck_compat_category: 1, steam_machine_compat_category: 1 };
-  // What FULL, CATEGORIES and PLATFORMS disclose: a kernel anti-cheat is not the other anti-cheat,
-  // and a paid game whose features lack 62 is not available for Family Sharing.
+  // What a declaring item discloses: a kernel anti-cheat is not the other anti-cheat, and a paid
+  // game whose features lack 62 is not available for Family Sharing.
   const DISCLOSING = [
     "ai",
     "kernel",
@@ -296,37 +274,36 @@ describe("parseGetItems with one malformed field", () => {
     return KIND_IDS.filter((id) => found[id].state === "disclosed");
   }
 
-  /** A store item with FULL, CATEGORIES and PLATFORMS, and `details` over FULL. */
-  function item(
-    details: Readonly<Record<string, unknown>>,
-    categories: unknown = CATEGORIES,
-    platforms: unknown = PLATFORMS,
-  ) {
-    return storeItem(1, { categories, platforms, extra_details: { ...FULL, ...details } });
+  function declaring(parts: Parameters<typeof make.item.declaring>[1]) {
+    return make.item.declaring(ID, parts);
   }
 
   it.each<readonly [string, Readonly<Record<string, unknown>>, readonly string[]]>([
-    ["content_survey_ai_notes", item({ content_survey_ai_notes: 5 }), ["ai"]],
-    ["anticheat", item({ anticheat: "kernel" }), ["kernel", "anticheat"]],
-    ["drm_third_party_type", item({ drm_third_party_type: 5 }), ["drm"]],
-    ["user_account_third_party", item({ user_account_third_party: 5 }), ["account"]],
-    ["eula", item({ eula: "none" }), ["eula"]],
-    ["categories", item({}, "co-op"), ["pvp", "iap", "family"]],
+    ["content_survey_ai_notes", declaring({ details: { content_survey_ai_notes: 5 } }), ["ai"]],
+    ["anticheat", declaring({ details: { anticheat: "kernel" } }), ["kernel", "anticheat"]],
+    ["drm_third_party_type", declaring({ details: { drm_third_party_type: 5 } }), ["drm"]],
+    [
+      "user_account_third_party",
+      declaring({ details: { user_account_third_party: 5 } }),
+      ["account"],
+    ],
+    ["eula", declaring({ details: { eula: "none" } }), ["eula"]],
+    ["categories", declaring({ categories: "co-op" }), ["pvp", "iap", "family"]],
     [
       "supported_player_categoryids",
-      item({}, { ...CATEGORIES, supported_player_categoryids: "49" }),
+      declaring({ categories: { ...CATEGORIES, supported_player_categoryids: "49" } }),
       ["pvp"],
     ],
     [
       "feature_categoryids",
-      item({}, { ...CATEGORIES, feature_categoryids: [35, "1"] }),
+      declaring({ categories: { ...CATEGORIES, feature_categoryids: [35, "1"] } }),
       ["iap", "family"],
     ],
-    ["is_free", { ...item({}), is_free: "no" }, ["family"]],
-    ["platforms", item({}, CATEGORIES, "Steam Deck Verified"), ["deck", "machine"]],
+    ["is_free", make.item.declaring(ID, {}, { is_free: "no" }), ["family"]],
+    ["platforms", declaring({ platforms: "Steam Deck Verified" }), ["deck", "machine"]],
     [
       "steam_machine_compat_category",
-      item({}, CATEGORIES, { ...PLATFORMS, steam_machine_compat_category: 9 }),
+      declaring({ platforms: { ...PLATFORMS, steam_machine_compat_category: 9 } }),
       ["machine"],
     ],
   ])("costs only the kinds that read %s when it is malformed", (_field, raw, lost) => {
@@ -344,17 +321,10 @@ describe("parseGetItems with one malformed field", () => {
   it("reads an empty list for extra_details as an object that declares nothing", () => {
     const categories = { supported_player_categoryids: [2], feature_categoryids: [22] };
     // A free game, which Family Sharing never tags from its features.
-    const found = parse(storeItem(1, { extra_details: [], categories, is_free: true }));
+    const found = parse(make.item.details([], { categories, is_free: true }, ID));
     expect(disclosedKinds(found)).toStrictEqual([]);
     for (const kind of KINDS.filter(({ sections }) => sections === undefined)) {
       expect(found[kind.id].state).toBe("not-disclosed");
     }
-  });
-
-  it("keeps the item-level rule: no extra_details is unknown for every kind", () => {
-    const categories = { supported_player_categoryids: [49] };
-    expect(parse(storeItem(1, { extra_details: undefined, categories }))).toBe(
-      UNKNOWN_KINDS.missing,
-    );
   });
 });

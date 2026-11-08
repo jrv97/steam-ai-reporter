@@ -4,7 +4,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from catalogs import Catalog, Entry, load, static_parts, used_placeholders
+from catalogs import Catalog, load, static_parts
 from check_i18n import (
     MIN_WILDCARD_TEXT,
     SHIPPED,
@@ -13,30 +13,7 @@ from check_i18n import (
     copy_problems,
     scanned_sources,
 )
-
-
-def catalog(**messages: str) -> Catalog:
-    return {
-        key: Entry(key, message, "A description.", used_placeholders(message))
-        for key, message in messages.items()
-    }
-
-
-ENGLISH = catalog(
-    banner_undo="Undo",
-    notice_settings_saved="Saved.",
-    userscript_menu_settings="Settings",
-    options_version="Version $version$",
-    options_allow_restore_label="Stop ignoring $name$",
-    banner_source="In the developer's own words:",
-    options_privacy_lookup="To check a game, it asks Valve's own store servers.",
-    only_placeholder="$count$",
-    short_with_placeholder="$n$ ok",
-    ext_description="Tags: AI Generated Content Disclosure, PvP.",
-)
-SPANISH = catalog(banner_undo="Deshacer", banner_source="En palabras del desarrollador:")
-CATALOGS = {"en": ENGLISH, "es": SPANISH}
-HIT = "catalog text in a string literal"
+from testdata import CheckI18n, catalog
 
 
 def keys(index: CopyIndex, *parts: str) -> list[str]:
@@ -44,170 +21,87 @@ def keys(index: CopyIndex, *parts: str) -> list[str]:
 
 
 class MatchTest(unittest.TestCase):
-    def setUp(self) -> None:
-        self.index = copy_index(CATALOGS)
-
-    def test_a_literal_equal_to_a_short_message_matches(self) -> None:
-        self.assertEqual(keys(self.index, "Undo"), ["banner_undo"])
-        self.assertEqual(keys(self.index, "Saved."), ["notice_settings_saved"])
-        self.assertEqual(keys(self.index, " Undo "), ["banner_undo"])
-        self.assertEqual(keys(self.index, "Deshacer"), ["banner_undo (es)"])
-
-    def test_a_short_word_inside_a_longer_literal_does_not_match(self) -> None:
-        for literal in ("Undo the change", "parseSettings", "Accept-Settings", "undo", "Sav"):
-            with self.subTest(literal=literal):
-                self.assertEqual(keys(self.index, literal), [])
-
-    def test_a_placeholder_message_matches_when_the_whole_literal_fits(self) -> None:
-        self.assertEqual(keys(self.index, "Version 2026.10.20"), ["options_version"])
-        self.assertEqual(
-            keys(self.index, "Stop ignoring Some Game"), ["options_allow_restore_label"]
-        )
-        self.assertEqual(keys(self.index, "Version"), [])
-        self.assertEqual(keys(self.index, "Versions of 3"), [])
-
-    def test_a_template_expression_stands_for_a_placeholder(self) -> None:
-        self.assertEqual(keys(self.index, "Version ", ""), ["options_version"])
-        self.assertEqual(keys(self.index, "Stop ignoring ", ""), ["options_allow_restore_label"])
-        self.assertEqual(keys(self.index, "", "Undo", " now"), ["banner_undo"])
-        self.assertEqual(keys(self.index, "", " is ", ""), [])
-        self.assertEqual(keys(self.index, "Versions ", ""), [])
-
-    def test_placeholder_messages_with_little_static_text_never_match_everything(self) -> None:
-        self.assertEqual(keys(self.index, "anything at all"), [])
-        self.assertEqual(keys(self.index, "3 ok"), [])
-
-    def test_long_catalog_text_matches_inside_a_longer_literal(self) -> None:
-        self.assertEqual(
-            keys(self.index, "<p>In the developer's own words: <b>x</b></p>"), ["banner_source"]
-        )
-        self.assertEqual(
-            keys(self.index, "En palabras del desarrollador: x"), ["banner_source (es)"]
-        )
-
-    def test_a_detection_constant_may_repeat_a_message(self) -> None:
-        self.assertEqual(keys(self.index, "AI Generated Content Disclosure"), [])
-        self.assertEqual(
-            keys(self.index, "Tags: AI Generated Content Disclosure, PvP."), ["ext_description"]
-        )
+    def test_matches_a_literal_to_the_catalog_keys_whose_text_it_repeats(self) -> None:
+        index = copy_index(CheckI18n.CATALOGS)
+        for parts, expected in CheckI18n.MATCHES:
+            with self.subTest(parts=parts):
+                self.assertEqual(keys(index, *parts), expected)
 
     def test_a_detection_constant_still_matches_a_message_that_equals_it(self) -> None:
-        index = copy_index(
-            {
-                "en": catalog(
-                    ext_description="Tags: AI Generated Content Disclosure, PvP.",
-                    banner_heading="AI Generated Content Disclosure",
-                )
-            }
-        )
-        self.assertEqual(keys(index, "AI Generated Content Disclosure"), ["banner_heading"])
+        index = copy_index(CheckI18n.HEADING_CATALOGS)
+        self.assertEqual(keys(index, CheckI18n.HEADING), ["banner_heading"])
 
-    def test_a_long_piece_of_a_message_matches(self) -> None:
-        self.assertEqual(keys(self.index, "asks Valve's own store"), ["options_privacy_lookup"])
-        self.assertEqual(keys(self.index, "own words"), [])
 
-    def test_matching_is_case_sensitive(self) -> None:
-        self.assertEqual(keys(self.index, "in the developer's own words:"), [])
-        self.assertEqual(keys(self.index, "Banner_Undo"), [])
-
-    def test_an_empty_literal_never_matches(self) -> None:
-        self.assertEqual(keys(self.index, ""), [])
-        self.assertEqual(keys(self.index, "   "), [])
+def telling_parts(shipped: dict[str, Catalog]) -> list[tuple[str, str, str, tuple[str, ...]]]:
+    """Each shipped locale, key, message and static parts that a literal can be told from."""
+    every = [
+        (locale, key, entry.message, tuple(static_parts(entry.message)))
+        for locale, messages in shipped.items()
+        for key, entry in messages.items()
+    ]
+    # A message of only placeholders and punctuation tells no literal apart.
+    return [
+        case
+        for case in every
+        if len(case[3]) <= 1 or len("".join(case[3]).strip()) >= MIN_WILDCARD_TEXT
+    ]
 
 
 class ShippedCatalogsTest(unittest.TestCase):
     def test_every_shipped_message_is_caught_as_a_string_and_as_a_template(self) -> None:
         shipped = {path.parent.name: load(path) for path in SHIPPED.glob("*/messages.json")}
         index = copy_index(shipped)
-        for locale, messages in shipped.items():
-            for key, entry in messages.items():
-                parts = tuple(static_parts(entry.message))
-                if len(parts) > 1 and len("".join(parts).strip()) < MIN_WILDCARD_TEXT:
-                    # Only placeholders and punctuation: no literal can be told from it.
-                    continue
-                with self.subTest(locale=locale, key=key):
-                    self.assertTrue(index.matches(("x".join(parts),)), entry.message)
-                    self.assertTrue(index.matches(parts), entry.message)
+        for locale, key, message, parts in telling_parts(shipped):
+            with self.subTest(locale=locale, key=key):
+                self.assertTrue(index.matches(("x".join(parts),)), message)
+                self.assertTrue(index.matches(parts), message)
 
 
 class ScanTest(unittest.TestCase):
-    def test_flags_a_seeded_literal_in_a_test_file(self) -> None:
-        with tempfile.TemporaryDirectory() as folder:
-            root = Path(folder)
-            write(root, "src/core/ui/banner.test.ts", 'expect(button.textContent).toBe("Undo");\n')
-            self.assertEqual(
-                copy_problems(root, CATALOGS),
-                [f"src/core/ui/banner.test.ts:1: banner_undo: {HIT}"],
-            )
+    def setUp(self) -> None:
+        folder = tempfile.TemporaryDirectory()
+        self.addCleanup(folder.cleanup)
+        self.root = Path(folder.name)
+
+    def write(self, relative: str, text: str) -> None:
+        path = self.root / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text, encoding="utf-8")
 
     def test_reports_each_literal_with_its_line_and_keys(self) -> None:
-        with tempfile.TemporaryDirectory() as folder:
-            root = Path(folder)
-            write(
-                root,
-                "tests/helpers/a.ts",
-                'const a = 1;\nconst b = `Saved.${x}`;\nf("Deshacer");\n',
-            )
-            self.assertEqual(
-                copy_problems(root, CATALOGS),
-                [
-                    f"tests/helpers/a.ts:2: notice_settings_saved: {HIT}",
-                    f"tests/helpers/a.ts:3: banner_undo (es): {HIT}",
-                ],
-            )
+        for name, source in CheckI18n.REPORTED_FILES:
+            self.write(name, source)
+        self.assertEqual(copy_problems(self.root, CheckI18n.CATALOGS), list(CheckI18n.REPORTED))
 
     def test_a_detection_constant_may_repeat_a_message(self) -> None:
-        heading = "AI Generated Content Disclosure"
-        catalogs = {"en": catalog(kind_ai_heading=heading)}
-        with tempfile.TemporaryDirectory() as folder:
-            root = Path(folder)
-            write(root, "src/core/kinds/ai.ts", f'const HEADING = "{heading}";\n')
-            self.assertEqual(copy_problems(root, catalogs), [])
-            write(root, "src/core/ui/a.ts", f'const a = "{heading} (copy)";\n')
-            self.assertEqual(
-                copy_problems(root, catalogs),
-                [f"src/core/ui/a.ts:1: kind_ai_heading: {HIT}"],
-            )
+        catalogs = {"en": catalog(kind_ai_heading=CheckI18n.HEADING)}
+        self.write(CheckI18n.HEADING_FILE, CheckI18n.HEADING_SOURCE)
+        self.assertEqual(copy_problems(self.root, catalogs), [])
+        self.write(CheckI18n.HEADING_COPY_FILE, CheckI18n.HEADING_COPY_SOURCE)
+        self.assertEqual(
+            copy_problems(self.root, catalogs),
+            [f"{CheckI18n.HEADING_COPY_FILE}:1: kind_ai_heading: {CheckI18n.HIT}"],
+        )
 
     def test_ignores_comments_identifiers_and_type_names(self) -> None:
-        with tempfile.TemporaryDirectory() as folder:
-            root = Path(folder)
-            write(
-                root,
-                "src/core/settings.ts",
-                '// Undo the change. Saved.\ntype Settings = { parseSettings: () => "kept" };\n',
-            )
-            self.assertEqual(copy_problems(root, CATALOGS), [])
+        self.write(CheckI18n.COMMENTED_FILE, CheckI18n.COMMENTED_SOURCE)
+        self.assertEqual(copy_problems(self.root, CheckI18n.CATALOGS), [])
 
     def test_skips_generated_files_and_the_test_catalog_and_fixture_folders(self) -> None:
-        with tempfile.TemporaryDirectory() as folder:
-            root = Path(folder)
-            seeded = 'export const text = "Undo";\n'
-            write(root, "src/core/i18n/keys.gen.ts", seeded)
-            write(root, "tests/locales/keys.gen.ts", seeded)
-            write(root, "tests/locales/messages.ts", seeded)
-            write(root, "tests/fixtures/page.ts", seeded)
-            write(root, "docs/design/previews/a.ts", seeded)
-            write(root, "src/locales/en/messages.json", '{"banner_undo": {"message": "Undo"}}')
-            self.assertEqual(copy_problems(root, CATALOGS), [])
-            self.assertEqual(scanned_sources(root), [])
+        for name in CheckI18n.SKIPPED_FILES:
+            self.write(name, CheckI18n.SEEDED_SOURCE)
+        self.write(CheckI18n.SOURCE_CATALOG_FILE, CheckI18n.SOURCE_CATALOG)
+        self.assertEqual(copy_problems(self.root, CheckI18n.CATALOGS), [])
+        self.assertEqual(scanned_sources(self.root), [])
 
     def test_scans_every_source_suffix_under_src_and_tests(self) -> None:
-        with tempfile.TemporaryDirectory() as folder:
-            root = Path(folder)
-            for name in ("src/a.ts", "src/deep/b.mts", "tests/c.test.ts", "tests/helpers/d.d.ts"):
-                write(root, name, "export {};\n")
-            write(root, "src/notes.md", "Undo\n")
-            self.assertEqual(
-                [path.relative_to(root).as_posix() for path in scanned_sources(root)],
-                ["src/a.ts", "src/deep/b.mts", "tests/c.test.ts", "tests/helpers/d.d.ts"],
-            )
-
-
-def write(root: Path, relative: str, text: str) -> None:
-    path = root / relative
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(text, encoding="utf-8")
+        for name in CheckI18n.SCANNED_FILES:
+            self.write(name, CheckI18n.EMPTY_MODULE)
+        self.write(CheckI18n.UNSCANNED_FILE, CheckI18n.SEEDED_SOURCE)
+        self.assertEqual(
+            [path.relative_to(self.root).as_posix() for path in scanned_sources(self.root)],
+            list(CheckI18n.SCANNED_FILES),
+        )
 
 
 if __name__ == "__main__":

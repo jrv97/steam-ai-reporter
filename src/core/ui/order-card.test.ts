@@ -1,14 +1,14 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { countingStore } from "../../../tests/helpers/counting-store";
+import { make } from "../../../tests/helpers/factory";
+import { fake } from "../../../tests/helpers/fakes";
 import { englishI18n } from "../../../tests/helpers/i18n";
-import { memoryStore } from "../../../tests/helpers/memory-store";
-import { withChipText, writeSettings } from "../../../tests/helpers/settings";
+import { writeSettings } from "../../../tests/helpers/settings";
 import { mountForm } from "../../../tests/helpers/settings-form";
 import { pageTransition } from "../../../tests/helpers/surfaces";
 import { KIND_IDS, type KindId } from "../kinds/id";
 import { OVERLAY_CHIPS, parseOrder } from "../kinds/order";
 import { KIND_BY_ID } from "../kinds/registry";
-import { DEFAULT_SETTINGS, parseSettings } from "../settings/settings";
+import { parseSettings } from "../settings/settings";
 import { createSettingsSource } from "../settings/settings-source";
 
 const i18n = englishI18n();
@@ -22,12 +22,15 @@ const CUE = 10;
 const topOf = (index: number) => index * ROW + (index >= OVERLAY_CHIPS ? CUE : 0);
 
 const chip = (id: KindId) => i18n.t(KIND_BY_ID[id].messages.chip);
+/** What the card says when `id` lands at 1-based `position`. */
+const dropped = (id: KindId, position: string) =>
+  i18n.t("options_order_dropped", { name: chip(id), position, count: KIND_COUNT });
 
 /** A form on the options page over a store whose settings hold `order`. */
 async function setup(order: readonly KindId[] = KIND_IDS) {
-  const store = countingStore(memoryStore());
+  const store = fake.countingStore(fake.store());
   const settings = createSettingsSource(store);
-  await writeSettings(settings, { ...DEFAULT_SETTINGS, order });
+  await writeSettings(settings, make.settings({ order }));
   const { root, form } = await mountForm({ settings });
   const handle = (id: KindId): HTMLElement => {
     const found = root.querySelector<HTMLElement>(`[data-sar-order="${id}"]`);
@@ -51,6 +54,16 @@ function press(target: Element, key: string): void {
   target.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true, cancelable: true }));
 }
 
+/** A step that clicks the handle of `id`, picking it up or dropping the held row there. */
+const pick = (id: KindId) => (card: Card) => {
+  card.handle(id).click();
+};
+
+/** A step that presses `key` on the held handle. */
+const key = (name: string) => (card: Card) => {
+  press(card.root.querySelector("[aria-pressed=true]") ?? card.root, name);
+};
+
 function pointer(target: EventTarget, type: string, clientY: number): void {
   target.dispatchEvent(
     new PointerEvent(type, { bubbles: true, clientY, pointerId: 1, isPrimary: true }),
@@ -59,13 +72,14 @@ function pointer(target: EventTarget, type: string, clientY: number): void {
 
 /** Lays the rows out `ROW` pixels apart in their order, as a browser would. */
 function layOut(card: Card): void {
-  card.shown().forEach((id, index) => {
-    const row = card.root.querySelector(`[data-sar-order="${id ?? ""}"]`)?.closest("li");
-    if (row !== null && row !== undefined) {
-      vi.spyOn(row, "getBoundingClientRect").mockReturnValue(
-        DOMRect.fromRect({ x: 0, y: topOf(index), width: 300, height: ROW }),
-      );
+  card.root.querySelectorAll(".sar-order-handle").forEach((handle, index) => {
+    const row = handle.closest("li");
+    if (row === null) {
+      throw new TypeError(String(index));
     }
+    vi.spyOn(row, "getBoundingClientRect").mockReturnValue(
+      DOMRect.fromRect({ x: 0, y: topOf(index), width: 300, height: ROW }),
+    );
   });
 }
 
@@ -90,12 +104,13 @@ afterEach(() => {
 describe("the Tag order card", () => {
   it("names a row and its handle by the person's chip text, with Steam's line beside", async () => {
     const { root, handle, settings } = await setup();
-    await writeSettings(settings, withChipText(DEFAULT_SETTINGS, { pvp: { chip: "Versus" } }));
+    const text = make.chipText();
+    await writeSettings(settings, make.settings.chipText({ pvp: { chip: text } }));
     const row = handle("pvp").closest("li");
-    expect(row?.querySelector(".sar-order-chip")?.textContent).toBe("Versus");
+    expect(row?.querySelector(".sar-order-chip")?.textContent).toBe(text);
     expect(row?.querySelector<HTMLElement>(".sar-order-heading")?.hidden).toBe(false);
     expect(handle("pvp").getAttribute("aria-label")).toBe(
-      i18n.t("options_order_handle", { name: "Versus" }),
+      i18n.t("options_order_handle", { name: text }),
     );
     expect(root.querySelector(".sar-order-row .sar-order-chip")?.textContent).toBe(chip("ai"));
   });
@@ -129,63 +144,47 @@ describe("the Tag order card", () => {
     expect(list?.children).toHaveLength(KIND_IDS.length + 1);
   });
 
-  it.each<[string, readonly ([string, KindId] | string)[], readonly KindId[], string]>([
-    ["moves down with the arrows", [["pick", "ai"], "ArrowDown", "ArrowDown", ["pick", "ai"]], [
-      "earlyaccess",
-      "family",
-      "ai",
-    ], i18n.t("options_order_dropped", { name: chip("ai"), position: "3", count: KIND_COUNT })],
+  it.each<[string, readonly ((card: Card) => void)[], readonly KindId[], string]>([
+    [
+      "moves down with the arrows",
+      [pick("ai"), key("ArrowDown"), key("ArrowDown"), pick("ai")],
+      ["earlyaccess", "family", "ai"],
+      dropped("ai", "3"),
+    ],
     [
       "goes first with Home",
-      [["pick", "drm"], "Home", ["pick", "drm"]],
+      [pick("drm"), key("Home"), pick("drm")],
       ["drm"],
-      i18n.t(
-        "options_order_dropped",
-        { name: chip("drm"), position: "1", count: KIND_COUNT },
-      ),
+      dropped("drm", "1"),
     ],
     [
       "goes last with End",
-      [["pick", "ai"], "End", ["pick", "ai"]],
+      [pick("ai"), key("End"), pick("ai")],
       KIND_IDS.slice(1),
-      i18n.t(
-        "options_order_dropped",
-        { name: chip("ai"), position: KIND_COUNT, count: KIND_COUNT },
-      ),
+      dropped("ai", KIND_COUNT),
     ],
     [
       "stays first past the top",
-      [["pick", "ai"], "ArrowUp", ["pick", "ai"]],
+      [pick("ai"), key("ArrowUp"), pick("ai")],
       [],
-      i18n.t(
-        "options_order_dropped",
-        { name: chip("ai"), position: "1", count: KIND_COUNT },
-      ),
+      dropped("ai", "1"),
     ],
     [
       "goes back with Escape",
-      [["pick", "ai"], "ArrowDown", "Escape"],
+      [pick("ai"), key("ArrowDown"), key("Escape")],
       [],
-      i18n.t(
-        "options_order_cancelled",
-        { name: chip("ai"), position: "1" },
-      ),
+      i18n.t("options_order_cancelled", { name: chip("ai"), position: "1" }),
     ],
     [
       "takes another row's place on a click there",
-      [["pick", "pvp"], ["pick", "ai"]],
+      [pick("pvp"), pick("ai")],
       ["pvp"],
-      i18n
-        .t("options_order_dropped", { name: chip("pvp"), position: "1", count: KIND_COUNT }),
+      dropped("pvp", "1"),
     ],
   ])("%s", async (_case, steps, first, said) => {
     const card = await setup();
     for (const step of steps) {
-      if (typeof step === "string") {
-        press(card.root.querySelector("[aria-pressed=true]") ?? card.root, step);
-      } else {
-        card.handle(step[1]).click();
-      }
+      step(card);
     }
     const expected = parseOrder(first);
     expect(card.shown()).toEqual(expected);
@@ -297,10 +296,10 @@ describe("the Tag order card", () => {
   it("follows another tab's order, but never under a held row", async () => {
     const { settings, shown, handle } = await setup();
     const moved = parseOrder(["iap"]);
-    await writeSettings(settings, { ...DEFAULT_SETTINGS, order: moved });
+    await writeSettings(settings, make.settings({ order: moved }));
     expect(shown()).toEqual(moved);
     handle("ai").click();
-    await writeSettings(settings, DEFAULT_SETTINGS);
+    await writeSettings(settings, make.settings());
     expect(shown()).toEqual(moved);
   });
 

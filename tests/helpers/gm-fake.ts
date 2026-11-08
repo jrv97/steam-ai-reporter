@@ -1,8 +1,10 @@
 import { type JsonValue, parseJson } from "../../src/core/json";
-import type { GmStorage } from "../../src/platform/userscript/gm-storage";
+import type { GmStorage, WatchValue } from "../../src/platform/userscript/gm-storage";
 import { failsWrite, type StorageFaults, storedValue } from "./storage-faults";
 
 export interface FakeGm extends GmStorage {
+  /** The names `GM.getValue` was asked for, in order. */
+  readonly reads: readonly string[];
   /** The `GM.setValue` calls, in order. */
   readonly writes: readonly string[];
 }
@@ -13,10 +15,13 @@ export interface FakeGm extends GmStorage {
  */
 export function fakeGm(): FakeGm {
   const values = new Map<string, string>();
+  const reads: string[] = [];
   const writes: string[] = [];
   return {
+    reads,
     writes,
     getValue(name) {
+      reads.push(name);
       const text = values.get(name);
       // The managers serialize values as JSON, so reading one back is a parse
       return Promise.resolve(text === undefined ? undefined : parseJson(text));
@@ -51,5 +56,28 @@ export function faultyGm(faults: StorageFaults): GmStorage {
     deleteValue: (name) =>
       faults.rejectRemove ? Promise.reject(new Error()) : inner.deleteValue(name),
     listValues: () => inner.listValues(),
+  };
+}
+
+/** A fake `GM_addValueChangeListener`, which a test triggers by hand. */
+export interface FakeWatch {
+  readonly watch: WatchValue;
+  /** Reports a new `value` of `key` to the callbacks that watch that key, as the manager does. */
+  readonly notify: (key: string, value: unknown) => void;
+}
+
+export function fakeWatch(): FakeWatch {
+  const watchers: (readonly [string, (value: unknown) => void])[] = [];
+  return {
+    watch(key, onChange) {
+      watchers.push([key, onChange]);
+    },
+    notify(key, value) {
+      for (const [watched, onChange] of watchers) {
+        if (watched === key) {
+          onChange(value);
+        }
+      }
+    },
   };
 }

@@ -1,17 +1,9 @@
 import { describe, expect, it } from "vitest";
 import family from "../../../tests/fixtures/getitems/family-sharing.json";
-import { appId } from "../../../tests/helpers/app-ids";
-import { httpResult } from "../../../tests/helpers/fake-http";
-import {
-  featuredItem,
-  fixtureItems,
-  getItemsResponse,
-  itemIds,
-  verdictOf,
-} from "../../../tests/helpers/getitems";
-import { familyVerdict, NOT_DISCLOSED } from "../../../tests/helpers/verdicts";
+import { make } from "../../../tests/helpers/factory";
+import { itemIds, verdictOf } from "../../../tests/helpers/getitems";
 import { GETITEMS_URL, parseGetItems } from "../detect/getitems";
-import { UNKNOWN, type Verdict } from "../types";
+import type { AppId, Verdict } from "../types";
 import { FAMILY_CATEGORY_ID, FAMILY_KIND, type FamilyDisclosed } from "./family";
 
 const PAID_FEATURES = [22, 35, 41, 42];
@@ -21,26 +13,55 @@ function fromItem(item: Readonly<Record<string, unknown>>): Verdict<FamilyDisclo
 }
 
 describe("FAMILY_KIND over the live capture (family-sharing.json)", () => {
-  const ids = itemIds(fixtureItems(family));
+  const items = make.fixture.items(family);
   const found = parseGetItems(
-    ids,
-    httpResult(getItemsResponse(fixtureItems(family)), GETITEMS_URL),
+    itemIds(items),
+    make.http.result(make.item.response(items), GETITEMS_URL),
     "english",
   );
+  const app = make.fixture.app;
 
-  it.each<readonly [string, number, Verdict<FamilyDisclosed>]>([
-    ["Cyberpunk 2077, listed", 1091500, familyVerdict("supported")],
-    ["ARC Raiders, listed", 1808500, familyVerdict("supported")],
-    ["Hades, listed", 1145360, familyVerdict("supported")],
-    ["the unreleased ReBlade, listed before release", 3489340, familyVerdict("supported")],
-    ["Red Dead Redemption 2, a paid game left out", 1174180, familyVerdict("unsupported")],
-    ["Assassin's Creed Black Flag Resynced, left out", 3751950, familyVerdict("unsupported")],
-    ["Counter-Strike 2, free and left out, which is never tagged", 730, NOT_DISCLOSED],
-    ["a cosmetic DLC left out while its base game is listed", 5201760, NOT_DISCLOSED],
-    ["a demo, which has no feature list", 4513800, UNKNOWN.missing],
-    ["a large DLC that is listed", 2778580, familyVerdict("supported")],
+  it.each<readonly [string, AppId, Verdict<FamilyDisclosed>]>([
+    [
+      "Cyberpunk 2077, listed",
+      app.verified,
+      make.verdict.disclosed("family", { facet: "supported" }),
+    ],
+    [
+      "ARC Raiders, listed",
+      app.arcRaiders,
+      make.verdict.disclosed("family", { facet: "supported" }),
+    ],
+    ["Hades, listed", app.verifiedOther, make.verdict.disclosed("family", { facet: "supported" })],
+    [
+      "the unreleased ReBlade, listed before release",
+      app.demoParent,
+      make.verdict.disclosed("family", { facet: "supported" }),
+    ],
+    [
+      "Red Dead Redemption 2, a paid game left out",
+      app.familyLeftOut,
+      make.verdict.disclosed("family", { facet: "unsupported" }),
+    ],
+    [
+      "Assassin's Creed Black Flag Resynced, left out",
+      app.drmAccountEula,
+      make.verdict.disclosed("family", { facet: "unsupported" }),
+    ],
+    [
+      "Counter-Strike 2, free and left out, which is never tagged",
+      app.vac,
+      make.verdict.notDisclosed(),
+    ],
+    ["a cosmetic DLC left out while its base game is listed", app.dlc, make.verdict.notDisclosed()],
+    ["a demo, which has no feature list", app.demo, make.verdict.unknown("missing")],
+    [
+      "a large DLC that is listed",
+      app.largeDlc,
+      make.verdict.disclosed("family", { facet: "supported" }),
+    ],
   ])("reads %s (%i)", (_name, id, verdict) => {
-    expect(found.get(appId(id))?.family).toStrictEqual(verdict);
+    expect(found.get(id)?.family).toStrictEqual(verdict);
   });
 });
 
@@ -50,74 +71,90 @@ describe("FAMILY_KIND.fromGetItems", () => {
   });
 
   it.each<readonly [string, Readonly<Record<string, unknown>>, Verdict<FamilyDisclosed>]>([
-    ["listed for category 62 alone", featuredItem(1, [62]), familyVerdict("supported")],
+    [
+      "listed for category 62 alone",
+      make.item.featured(make.appId(), [62]),
+      make.verdict.disclosed("family", { facet: "supported" }),
+    ],
     [
       "listed on a free game",
-      featuredItem(1, [29, 62], { is_free: true }),
-      familyVerdict("supported"),
+      make.item.featured(make.appId(), [29, 62], { is_free: true }),
+      make.verdict.disclosed("family", { facet: "supported" }),
     ],
-    ["listed on a DLC", featuredItem(1, [22, 62], { type: 4 }), familyVerdict("supported")],
+    [
+      "listed on a DLC",
+      make.item.featured(make.appId(), [22, 62], { type: 4 }),
+      make.verdict.disclosed("family", { facet: "supported" }),
+    ],
     [
       "listed whatever is_free holds",
-      featuredItem(1, [22, 62], { is_free: "yes" }),
-      familyVerdict("supported"),
+      make.item.featured(make.appId(), [22, 62], { is_free: "yes" }),
+      make.verdict.disclosed("family", { facet: "supported" }),
     ],
     [
       "not available on a paid game left out",
-      featuredItem(1, PAID_FEATURES),
-      familyVerdict("unsupported"),
+      make.item.featured(make.appId(), PAID_FEATURES),
+      make.verdict.disclosed("family", { facet: "unsupported" }),
     ],
     [
       "not available when is_free is false",
-      featuredItem(1, PAID_FEATURES, { is_free: false }),
-      familyVerdict("unsupported"),
+      make.item.featured(make.appId(), PAID_FEATURES, { is_free: false }),
+      make.verdict.disclosed("family", { facet: "unsupported" }),
     ],
     [
       "not disclosed on a free game",
-      featuredItem(1, PAID_FEATURES, { is_free: true }),
-      NOT_DISCLOSED,
+      make.item.featured(make.appId(), PAID_FEATURES, { is_free: true }),
+      make.verdict.notDisclosed(),
     ],
-    ["not disclosed on a DLC", featuredItem(1, PAID_FEATURES, { type: 4 }), NOT_DISCLOSED],
-    ["not disclosed on a demo", featuredItem(1, PAID_FEATURES, { type: 1 }), NOT_DISCLOSED],
+    [
+      "not disclosed on a DLC",
+      make.item.featured(make.appId(), PAID_FEATURES, { type: 4 }),
+      make.verdict.notDisclosed(),
+    ],
+    [
+      "not disclosed on a demo",
+      make.item.featured(make.appId(), PAID_FEATURES, { type: 1 }),
+      make.verdict.notDisclosed(),
+    ],
     [
       "not disclosed without a type",
-      featuredItem(1, PAID_FEATURES, { type: undefined }),
-      NOT_DISCLOSED,
+      make.item.featured(make.appId(), PAID_FEATURES, { type: undefined }),
+      make.verdict.notDisclosed(),
     ],
     [
       "not disclosed with a type that is no integer",
-      featuredItem(1, PAID_FEATURES, { type: "0" }),
-      NOT_DISCLOSED,
+      make.item.featured(make.appId(), PAID_FEATURES, { type: "0" }),
+      make.verdict.notDisclosed(),
     ],
     [
       "unknown missing without categories",
-      featuredItem(1, [], { categories: undefined }),
-      UNKNOWN.missing,
+      make.item.featured(make.appId(), [], { categories: undefined }),
+      make.verdict.unknown("missing"),
     ],
     [
       "unknown missing without a feature list",
-      featuredItem(1, [], { categories: { supported_player_categoryids: [2] } }),
-      UNKNOWN.missing,
+      make.item.featured(make.appId(), [], { categories: { supported_player_categoryids: [2] } }),
+      make.verdict.unknown("missing"),
     ],
     [
       "unknown missing for an empty list, which Steam's JSON leaves out",
-      featuredItem(1, []),
-      UNKNOWN.missing,
+      make.item.featured(make.appId(), []),
+      make.verdict.unknown("missing"),
     ],
     [
       "unknown malformed for categories that are no object",
-      featuredItem(1, [], { categories: "62" }),
-      UNKNOWN.malformed,
+      make.item.featured(make.appId(), [], { categories: "62" }),
+      make.verdict.unknown("malformed"),
     ],
     [
       "unknown malformed for a feature list with text in it",
-      featuredItem(1, [22, "62"]),
-      UNKNOWN.malformed,
+      make.item.featured(make.appId(), [22, "62"]),
+      make.verdict.unknown("malformed"),
     ],
     [
       "unknown malformed when a paid game's is_free is no boolean",
-      featuredItem(1, PAID_FEATURES, { is_free: "no" }),
-      UNKNOWN.malformed,
+      make.item.featured(make.appId(), PAID_FEATURES, { is_free: "no" }),
+      make.verdict.unknown("malformed"),
     ],
   ])("is %s", (_name, item, verdict) => {
     expect(fromItem(item)).toStrictEqual(verdict);

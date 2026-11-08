@@ -1,5 +1,9 @@
 import type { JsonValue } from "../../src/core/json";
-import type { StorageArea } from "../../src/platform/extension/ext";
+import type {
+  LocalChanges,
+  OnLocalChanged,
+  StorageArea,
+} from "../../src/platform/extension/storage-area";
 import { failsWrite, type StorageFaults, storedValue } from "./storage-faults";
 
 /** A typed `storage.local` fake that clones values in and out, as the browsers serialize them. */
@@ -54,5 +58,32 @@ export function faultyArea(faults: StorageFaults): StorageArea {
       return inner.set(kept);
     },
     remove: (keys) => faults.rejectRemove ? Promise.reject(new Error()) : inner.remove(keys),
+  };
+}
+
+/** A fake `storage.onChanged` for the `local` area, which a test fires by hand. */
+export interface FakeChanges {
+  readonly subscribe: OnLocalChanged;
+  /** Reports `changes` to every listener, as the browser does after a write in any context. */
+  readonly fire: (changes: LocalChanges) => void;
+  /** The listeners registered now. */
+  readonly size: () => number;
+}
+
+export function fakeChanges(): FakeChanges {
+  const listeners = new Set<(changes: LocalChanges) => void>();
+  return {
+    subscribe(listener) {
+      listeners.add(listener);
+      return () => {
+        listeners.delete(listener);
+      };
+    },
+    fire(changes) {
+      for (const listener of listeners) {
+        listener(changes);
+      }
+    },
+    size: () => listeners.size,
   };
 }

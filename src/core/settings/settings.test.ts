@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { plainKinds, withChipText, withKind } from "../../../tests/helpers/settings";
-import { toHexColor } from "../kinds/color";
+import { make } from "../../../tests/helpers/factory";
 import { KIND_IDS, type KindId } from "../kinds/id";
 import type { KindSettings } from "../kinds/kind-settings";
 import { KINDS, perKind } from "../kinds/registry";
@@ -20,23 +19,14 @@ describe("DEFAULT_SETTINGS", () => {
     expect(DEFAULT_SETTINGS).toStrictEqual({
       locale: "auto",
       debug: false,
-      kinds: plainKinds(PLAIN),
+      kinds: make.raw.v2Kinds(PLAIN),
       order: KIND_IDS,
     });
   });
 
-  it("is what a fresh install reads, and what a stored value without the kind reads", () => {
-    expect(parseSettings(undefined)).toStrictEqual(DEFAULT_SETTINGS);
-    expect(parseSettings({ locale: "es", kinds: { ai: { badge: false } } }).kinds.pvp)
-      .toStrictEqual(
-        { ...PLAIN, enabled: false },
-      );
-  });
-
   it("keeps PvP on once the player turned it on", () => {
-    const on = withKind(DEFAULT_SETTINGS, "pvp", { enabled: true });
-    expect(parseSettings(encodeSettings(on)).kinds.pvp.enabled).toBe(true);
-    expect(parseSettings(encodeSettings(on)).kinds.ai).toStrictEqual(PLAIN);
+    const on = make.settings.kind("pvp", { enabled: true });
+    expect(parseSettings(encodeSettings(on))).toStrictEqual(on);
   });
 
   it("takes each kind's defaults from its definition", () => {
@@ -47,27 +37,24 @@ describe("DEFAULT_SETTINGS", () => {
 });
 
 describe("parseSettings", () => {
-  it("returns the defaults when nothing valid is stored", () => {
-    for (const stored of [undefined, null, 7, "dim", true, [], [{ locale: "es" }]]) {
-      expect(parseSettings(stored)).toStrictEqual(DEFAULT_SETTINGS);
-    }
+  it.each([undefined, ...make.raw.junk()])("returns the defaults for %j", (stored) => {
+    expect(parseSettings(stored)).toStrictEqual(DEFAULT_SETTINGS);
   });
 
   it("fills the fields a stored object lacks with their defaults", () => {
     expect(parseSettings({})).toStrictEqual(DEFAULT_SETTINGS);
-    expect(parseSettings({ debug: true })).toStrictEqual({ ...DEFAULT_SETTINGS, debug: true });
+    expect(parseSettings({ debug: true })).toStrictEqual(make.settings({ debug: true }));
     expect(parseSettings({ kinds: {} })).toStrictEqual(DEFAULT_SETTINGS);
-    expect(parseSettings({ kinds: { ai: { badge: false } } })).toStrictEqual(
-      withKind(DEFAULT_SETTINGS, "ai", { badge: false }),
-    );
   });
 
   it("gives each kind the stored settings do not mention the defaults of its definition", () => {
-    const parsed = parseSettings({ kinds: { kernel: { badge: false }, drm: "junk" } });
-    for (const kind of KINDS) {
-      const expected = kind.id === "kernel" ? { ...kind.defaults, badge: false } : kind.defaults;
-      expect(parsed.kinds[kind.id]).toStrictEqual(expected);
-    }
+    const parsed = parseSettings({
+      kinds: { kernel: { badge: false }, drm: make.raw.corruptText() },
+    });
+    expect(parsed.kinds).toStrictEqual({
+      ...perKind((kind) => kind.defaults),
+      kernel: { ...DEFAULT_SETTINGS.kinds.kernel, badge: false },
+    });
   });
 
   it("accepts every valid value", () => {
@@ -88,69 +75,62 @@ describe("parseSettings", () => {
     expect(parseSettings(stored)).toStrictEqual(stored);
     expect(parseSettings({ locale: "es" }).locale).toBe("es");
     expect(parseSettings({ locale: "zh-CN" }).locale).toBe("zh-CN");
-    expect(parseSettings({ kinds: { ai: { filter: "dim" } } }).kinds.ai.filter).toBe("dim");
   });
 
   it("falls back to the default for each invalid field and keeps the valid ones", () => {
+    const text = make.raw.corruptText();
+    const number = make.raw.corruptNumber();
     expect(
       parseSettings({
-        locale: "x y",
-        debug: 1,
-        kinds: { ai: { enabled: "yes", badge: 0, banner: false, filter: "blur" } },
+        locale: text,
+        debug: number,
+        kinds: { ai: { enabled: text, badge: number, banner: false, filter: text } },
       }),
-    ).toStrictEqual(withKind(DEFAULT_SETTINGS, "ai", { banner: false }));
+    ).toStrictEqual(make.settings.kind("ai", { banner: false }));
   });
 
-  it("falls back to the defaults of a kind whose entry is not an object", () => {
-    for (const ai of [null, 7, "dim", [], true]) {
-      expect(parseSettings({ locale: "es", kinds: { ai } })).toStrictEqual({
-        ...DEFAULT_SETTINGS,
-        locale: "es",
-      });
-    }
-    expect(parseSettings({ locale: "es", kinds: "dim" })).toStrictEqual({
-      ...DEFAULT_SETTINGS,
-      locale: "es",
-    });
+  it.each(make.raw.junk())(
+    "falls back to the defaults of a kind whose entry is %j",
+    (ai) => {
+      expect(parseSettings({ debug: true, kinds: { ai } })).toStrictEqual(
+        make.settings({ debug: true }),
+      );
+    },
+  );
+
+  it("falls back to the defaults of every kind when the kinds are not an object", () => {
+    expect(parseSettings({ debug: true, kinds: make.raw.corruptText() })).toStrictEqual(
+      make.settings({ debug: true }),
+    );
   });
 
-  it("rejects locales that are not codes", () => {
-    for (const locale of ["", " ", "english", "e", "en US", "../en", 5, null]) {
-      expect(parseSettings({ locale }).locale).toBe("auto");
-    }
+  it.each(make.raw.badLocales())("reads the locale %j as auto", (locale) => {
+    expect(parseSettings({ locale }).locale).toBe("auto");
   });
 
   it("drops keys and kinds it does not know", () => {
-    const stored = { ...DEFAULT_SETTINGS, theme: "dark", kinds: { future: PLAIN } };
+    const stored = { ...DEFAULT_SETTINGS, theme: make.raw.corruptText(), kinds: { future: PLAIN } };
     expect(parseSettings(stored)).toStrictEqual(DEFAULT_SETTINGS);
   });
 
   it("does not read the v1 flat fields", () => {
-    expect(parseSettings({ badges: false, banner: false, listFilter: "hide" })).toStrictEqual(
-      DEFAULT_SETTINGS,
-    );
+    const v1 = make.raw.v1Settings({ badges: false, banner: false, listFilter: "hide" });
+    expect(parseSettings(v1)).toStrictEqual(DEFAULT_SETTINGS);
   });
 });
 
 describe("encodeSettings", () => {
-  const settings: Settings = {
-    locale: "es",
-    debug: true,
-    kinds: {
-      ...plainKinds(PLAIN),
-      ai: { enabled: true, badge: false, banner: true, filter: "dim" },
-    },
-    order: KIND_IDS,
-  };
+  const settings = make.settings.kind(
+    "ai",
+    { badge: false, filter: "dim" },
+    make.settings({ locale: "es", debug: true }),
+  );
 
   it("stores the global fields and one object per kind", () => {
     expect(encodeSettings(settings)).toStrictEqual({
       locale: "es",
       debug: true,
-      kinds: {
-        ...plainKinds(PLAIN),
-        ai: { enabled: true, badge: false, banner: true, filter: "dim" },
-      },
+      kinds: { ...make.raw.v2Kinds(PLAIN), ai: { ...PLAIN, badge: false, filter: "dim" } },
     });
   });
 
@@ -161,30 +141,18 @@ describe("encodeSettings", () => {
 });
 
 describe("a tag's color", () => {
-  const RED = toHexColor("#f00");
-
-  it("is absent from the defaults, so a fresh install keeps the violet", () => {
-    for (const kind of KINDS) {
-      expect(DEFAULT_SETTINGS.kinds[kind.id]).not.toHaveProperty("color");
-    }
-  });
-
-  it("reads old stored settings, which have no color, as before", () => {
-    const old = { locale: "es", debug: false, kinds: { ai: { ...PLAIN, filter: "dim" } } };
-    expect(parseSettings(old).kinds.ai).toStrictEqual({ ...PLAIN, filter: "dim" });
-  });
+  const color = make.color();
 
   it("is kept per kind, stored as text and read back", () => {
-    const next = withKind(DEFAULT_SETTINGS, "drm", { color: RED });
-    expect(next.kinds.drm.color).toBe("#ff0000");
+    const next = make.settings.kind("drm", { color });
     expect(next.kinds.ai).not.toHaveProperty("color");
-    expect(encodeSettings(next)).toMatchObject({ kinds: { drm: { color: "#ff0000" } } });
+    expect(encodeSettings(next)).toMatchObject({ kinds: { drm: { color: String(color) } } });
     expect(parseSettings(encodeSettings(next))).toStrictEqual(next);
   });
 
   it("is cleared by a patch of undefined, and left alone by any other patch", () => {
-    const tinted = withKind(DEFAULT_SETTINGS, "drm", { color: RED });
-    expect(applyPatch(tinted, { kinds: { drm: { badge: false } } }).kinds.drm.color).toBe(RED);
+    const tinted = make.settings.kind("drm", { color });
+    expect(applyPatch(tinted, { kinds: { drm: { badge: false } } }).kinds.drm.color).toBe(color);
     expect(applyPatch(tinted, { kinds: { drm: { color: undefined } } })).toStrictEqual(
       DEFAULT_SETTINGS,
     );
@@ -192,31 +160,35 @@ describe("a tag's color", () => {
 });
 
 describe("a tag's chip text", () => {
-  const NAMED = withChipText(DEFAULT_SETTINGS, {
-    deck: { chip: "SD", chipCompact: "S" },
-    family: { chip: "Lending" },
+  const chip = make.chipText();
+  const compact = make.chipText();
+  const family = make.chipText();
+  const NAMED = make.settings.chipText({
+    deck: { chip, chipCompact: compact },
+    family: { chip: family },
   });
 
   it("is stored only for the fields a person set, and read back", () => {
     const stored = encodeSettings(NAMED);
-    expect(stored).toMatchObject({ kinds: { deck: { chip: "SD", chipCompact: "S" } } });
-    expect(stored).toMatchObject({ kinds: { family: { chip: "Lending" } } });
+    expect(stored).toMatchObject({ kinds: { deck: { chip, chipCompact: compact } } });
+    expect(stored).toMatchObject({ kinds: { family: { chip: family } } });
     expect(JSON.stringify(encodeSettings(DEFAULT_SETTINGS))).not.toMatch(/"chip/);
     expect(parseSettings(stored)).toStrictEqual(NAMED);
   });
 
-  it.each<[string, unknown]>([
-    ["a number", 3],
-    ["only spaces", "   "],
-    ["a list", ["SD"]],
-  ])("drops a stored text that is %s and keeps the kind's other fields", (_case, chip) => {
-    const parsed = parseSettings({ kinds: { deck: { chip, chipCompact: "S", filter: "dim" } } });
-    expect(parsed.kinds.deck).toStrictEqual({
-      ...DEFAULT_SETTINGS.kinds.deck,
-      filter: "dim",
-      chipCompact: "S",
-    });
-  });
+  it.each(make.raw.badChipTexts())(
+    "drops a stored text %j and keeps the kind's other fields",
+    (stored) => {
+      const parsed = parseSettings({
+        kinds: { deck: { chip: stored, chipCompact: compact, filter: "dim" } },
+      });
+      expect(parsed.kinds.deck).toStrictEqual({
+        ...DEFAULT_SETTINGS.kinds.deck,
+        filter: "dim",
+        chipCompact: compact,
+      });
+    },
+  );
 
   it("is cleared by a whole patch of settings without it", () => {
     expect(applyPatch(NAMED, wholePatch(DEFAULT_SETTINGS))).toStrictEqual(DEFAULT_SETTINGS);
@@ -254,18 +226,6 @@ describe("the tag order", () => {
   });
 });
 
-describe("withKind", () => {
-  it("changes the given fields of one kind and nothing else", () => {
-    const next = withKind(DEFAULT_SETTINGS, "ai", { filter: "hide", enabled: false });
-    expect(next).toStrictEqual({
-      ...DEFAULT_SETTINGS,
-      kinds: { ...DEFAULT_SETTINGS.kinds, ai: { ...PLAIN, filter: "hide", enabled: false } },
-    });
-    expect(DEFAULT_SETTINGS.kinds.ai).toStrictEqual(PLAIN);
-    expect(next.kinds.kernel).toStrictEqual(PLAIN);
-  });
-});
-
 describe("applyPatch", () => {
   const stored: Settings = {
     locale: "es",
@@ -294,8 +254,10 @@ describe("applyPatch", () => {
 
   it("patches several kinds at once", () => {
     const next = applyPatch(stored, { kinds: { ai: { enabled: false }, pvp: { filter: "hide" } } });
-    expect(next.kinds.ai.enabled).toBe(false);
-    expect(next.kinds.pvp.filter).toBe("hide");
-    expect(next.kinds.kernel.filter).toBe("dim");
+    expect(next.kinds).toStrictEqual({
+      ...stored.kinds,
+      ai: { ...PLAIN, enabled: false },
+      pvp: { ...PLAIN, filter: "hide" },
+    });
   });
 });

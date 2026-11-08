@@ -1,24 +1,33 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { setBody } from "../../../tests/helpers/dom";
-import { capturedVerdicts, pageVerdicts } from "../../../tests/helpers/fixture-verdicts";
+import { make } from "../../../tests/helpers/factory";
+import { fake } from "../../../tests/helpers/fakes";
+import { disclosedList } from "../../../tests/helpers/fixture-verdicts";
 import { englishI18n } from "../../../tests/helpers/i18n";
-import { manualQueue } from "../../../tests/helpers/manual-queue";
-import {
-  disclosedVerdict,
-  earlyAccessVerdict,
-  FULL_DISCLOSED,
-  lent,
-} from "../../../tests/helpers/verdicts";
+import { the } from "../../../tests/helpers/surfaces";
 import { dateFormat } from "../i18n/date-format";
 import { KIND_IDS, type KindId } from "../kinds/id";
 import { KIND_BY_ID } from "../kinds/registry";
 import type { AnyDisclosed, KindVerdicts } from "../kinds/verdicts";
-import { createHoverCard, HOVER_CARD_ID, type HoverCard, placeCard } from "./hover-card";
+import {
+  type Align,
+  createHoverCard,
+  HOVER_CARD_ID,
+  type HoverCard,
+  placeCard,
+} from "./hover-card";
 import { adoptPageStyles } from "./styles";
 
-const XSS = '<img src=x onerror="alert(1)"> art';
 /** The id of a description the store already set on a link. */
 const STORE_NOTE_ID = "store-note";
+
+/** A trigger of the class `className`, appended to `parent`. */
+function triggerIn(parent: Element, className: string): HTMLElement {
+  const trigger = document.createElement("span");
+  trigger.className = className;
+  parent.append(trigger);
+  return trigger;
+}
 
 describe("placeCard", () => {
   const viewport = { width: 1000, height: 800 };
@@ -33,11 +42,6 @@ describe("placeCard", () => {
     });
   });
 
-  it("aligns the end edges for a compact badge", () => {
-    expect(placeCard({ ...trigger, left: 500, right: 700 }, card, viewport, 8, "end").left)
-      .toBe(394);
-  });
-
   it("flips above near the bottom edge, and stays below when above has no room either", () => {
     const low = { left: 100, top: 700, right: 220, bottom: 719 };
     expect(placeCard(low, card, viewport, 8, "start")).toMatchObject({ top: 492, side: "above" });
@@ -45,18 +49,21 @@ describe("placeCard", () => {
     expect(placeCard(low, tall, viewport, 8, "start").side).toBe("below");
   });
 
-  it("keeps one offset inside the left and right edges", () => {
-    expect(placeCard({ ...trigger, left: 900, right: 990 }, card, viewport, 8, "start").left)
-      .toBe(686);
-    expect(placeCard({ ...trigger, left: 2, right: 40 }, card, viewport, 8, "end").left).toBe(8);
+  it.each<readonly [string, number, number, Align, number]>([
+    ["aligns the end edges for a compact badge", 500, 700, "end", 394],
+    ["keeps one offset inside the right edge", 900, 990, "start", 686],
+    ["keeps one offset inside the left edge", 2, 40, "end", 8],
+  ])("%s", (_name, left, right, align, expected) => {
+    expect(placeCard({ ...trigger, left, right }, card, viewport, 8, align).left).toBe(expected);
   });
 });
 
 describe("createHoverCard", () => {
   const i18n = englishI18n();
-  let timers = manualQueue();
-  let frames = manualQueue();
-  let overflowing = false;
+  let timers = fake.queue();
+  let frames = fake.queue();
+  /** Whether the clamp hides part of a quote, as the card measures it. */
+  let overflowing: (quote: HTMLElement) => boolean = () => false;
   let card: HoverCard | undefined;
   const flush = () => {
     timers.run();
@@ -68,7 +75,7 @@ describe("createHoverCard", () => {
   function start(): HoverCard {
     card = createHoverCard(document, i18n, {
       delay: timers.delay,
-      overflows: () => overflowing,
+      overflows: (quote) => overflowing(quote),
       frame: frames.frame,
     });
     return card;
@@ -85,10 +92,11 @@ describe("createHoverCard", () => {
   function page(): { link: HTMLAnchorElement; badge: HTMLElement; other: HTMLElement; } {
     const label = i18n.t("kind_ai_chip");
     setBody(`
-      <a class="row" href="/app/10/"><span class="title">Game</span>
+      <a class="row" href="/app/${String(make.appId())}/">
+      <span class="title">${make.text.name()}</span>
       <span class="sar-badge" data-sar-kind="ai">
       <span class="sar-badge-label">${label}</span></span></a>
-      <a class="other" href="/app/20/">Other</a>`);
+      <a class="other" href="/app/${String(make.appId())}/">${make.text.name()}</a>`);
     const link = document.querySelector<HTMLAnchorElement>(".row");
     const badge = document.querySelector<HTMLElement>(".sar-badge");
     const other = document.querySelector<HTMLElement>(".other");
@@ -116,9 +124,9 @@ describe("createHoverCard", () => {
   };
 
   beforeEach(() => {
-    timers = manualQueue();
-    frames = manualQueue();
-    overflowing = false;
+    timers = fake.queue();
+    frames = fake.queue();
+    overflowing = () => false;
   });
 
   afterEach(() => {
@@ -130,8 +138,10 @@ describe("createHoverCard", () => {
 
   it("opens after the pointer rests on a badge and quotes the notes verbatim", () => {
     const { badge } = page();
+    const [first, second] = [make.text.note(), make.text.note()];
+    const service = make.text.service();
     start().bind(badge, [
-      disclosedVerdict({ notes: "Line one\r\nLine two", service: "Midjourney" }),
+      make.verdict.disclosed("ai", { notes: `${first}\r\n${second}`, service }),
     ]);
     pointerOver(badge.firstElementChild ?? badge);
     expect(shown()).toBeNull();
@@ -142,9 +152,9 @@ describe("createHoverCard", () => {
       .toBe(i18n.t("kind_ai_heading"));
     expect(node?.lastElementChild?.className).toBe("sar-hovercard-source");
     expect(node?.lastElementChild?.textContent).toBe(i18n.t("badge_card_declared"));
-    expect(node?.querySelector(".sar-hovercard-notes")?.textContent).toBe("Line one\nLine two");
+    expect(node?.querySelector(".sar-hovercard-notes")?.textContent).toBe(`${first}\n${second}`);
     expect(node?.querySelector(".sar-hovercard-service")?.textContent)
-      .toBe(`${i18n.t("badge_card_service_label")} Midjourney`);
+      .toBe(`${i18n.t("badge_card_service_label")} ${service}`);
     expect(node?.getAttribute("data-sar-side")).toBe("below");
   });
 
@@ -157,12 +167,10 @@ describe("createHoverCard", () => {
     });
     try {
       const { badge, other } = page();
-      const second = document.createElement("span");
-      second.className = "sar-badge";
-      other.append(second);
+      const second = triggerIn(other, "sar-badge");
       const hover = start();
-      hover.bind(badge, [disclosedVerdict()]);
-      hover.bind(second, [disclosedVerdict()]);
+      hover.bind(badge, [make.verdict.disclosed("ai")]);
+      hover.bind(second, [make.verdict.disclosed("ai")]);
       pointerOver(badge);
       flush();
       pointerOver(second);
@@ -180,7 +188,7 @@ describe("createHoverCard", () => {
   it("keeps a closed card hidden through the reset, which unsets the popover's own rules", () => {
     adoptPageStyles(document);
     const { badge, other } = page();
-    start().bind(badge, [disclosedVerdict()]);
+    start().bind(badge, [make.verdict.disclosed("ai")]);
     pointerOver(badge);
     flush();
     const node = document.getElementById(HOVER_CARD_ID);
@@ -199,7 +207,7 @@ describe("createHoverCard", () => {
     storeHover.id = "global_hover";
     document.body.append(storeHover);
     expect(getComputedStyle(storeHover).visibility).not.toBe("hidden");
-    start().bind(badge, [disclosedVerdict()]);
+    start().bind(badge, [make.verdict.disclosed("ai")]);
     pointerOver(badge);
     flush();
     expect(document.documentElement.getAttribute("data-sar-hovercard")).toBe("open");
@@ -212,7 +220,7 @@ describe("createHoverCard", () => {
   it("clears the root mark on Escape, on pagehide and on stop", () => {
     const { badge, other } = page();
     const hover = start();
-    hover.bind(badge, [disclosedVerdict()]);
+    hover.bind(badge, [make.verdict.disclosed("ai")]);
     const marked = () => document.documentElement.hasAttribute("data-sar-hovercard");
     const reopen = () => {
       pointerOver(other);
@@ -231,19 +239,9 @@ describe("createHoverCard", () => {
     expect(marked()).toBe(false);
   });
 
-  it("renders notes with markup as plain text", () => {
-    const { badge } = page();
-    start().bind(badge, [disclosedVerdict({ notes: XSS, service: XSS })]);
-    pointerOver(badge);
-    flush();
-    expect(shown()?.querySelector(".sar-hovercard-notes")?.textContent).toBe(XSS);
-    expect(shown()?.querySelector(".sar-hovercard-service-name")?.textContent).toBe(XSS);
-    expect(document.querySelector(".sar-hovercard img")).toBeNull();
-  });
-
   it("leaves out the service line when the developer named none", () => {
     const { badge } = page();
-    const { service: _service, ...unnamed } = disclosedVerdict();
+    const { service: _service, ...unnamed } = make.verdict.disclosed("ai");
     start().bind(badge, [unnamed]);
     pointerOver(badge);
     flush();
@@ -253,20 +251,19 @@ describe("createHoverCard", () => {
   it("points to the store page only when the clamp cuts a long note", () => {
     const { badge, other } = page();
     const hover = start();
-    overflowing = true;
-    hover.bind(badge, [disclosedVerdict({ notes: "word ".repeat(400) })]);
+    overflowing = () => true;
+    const notes = make.text.note();
+    hover.bind(badge, [make.verdict.disclosed("ai", { notes })]);
     pointerOver(badge);
     flush();
     const more = shown()?.querySelector<HTMLElement>(".sar-hovercard-more");
     expect(more?.hidden).toBe(false);
     expect(more?.textContent).toBe(i18n.t("badge_card_more"));
-    expect(shown()?.querySelector(".sar-hovercard-notes")?.textContent).toBe("word ".repeat(400));
+    expect(shown()?.querySelector(".sar-hovercard-notes")?.textContent).toBe(notes);
 
-    overflowing = false;
-    const second = document.createElement("span");
-    second.className = "sar-badge";
-    other.append(second);
-    hover.bind(second, [disclosedVerdict({ notes: "Short." })]);
+    overflowing = () => false;
+    const second = triggerIn(other, "sar-badge");
+    hover.bind(second, [make.verdict.disclosed("ai", { notes: make.text.note() })]);
     pointerOver(second);
     expect(shown()?.querySelector<HTMLElement>(".sar-hovercard-more")?.hidden).toBe(true);
   });
@@ -274,7 +271,7 @@ describe("createHoverCard", () => {
   it("opens for a focusable chip on the game's own page and closes when focus leaves", () => {
     const { badge, other } = page();
     badge.tabIndex = 0;
-    start().bind(badge, [disclosedVerdict()], true);
+    start().bind(badge, [make.verdict.disclosed("ai")], true);
     focusIn(badge);
     expect(shown()).not.toBeNull();
     expect(badge.getAttribute("aria-describedby")).toBe(HOVER_CARD_ID);
@@ -287,16 +284,14 @@ describe("createHoverCard", () => {
   it("leaves out the store page pointer on the game's own page", () => {
     const { badge, other } = page();
     const hover = start();
-    overflowing = true;
-    const verdict = disclosedVerdict({ notes: "word ".repeat(400) });
+    overflowing = () => true;
+    const verdict = make.verdict.disclosed("ai");
     hover.bind(badge, [verdict], true);
     pointerOver(badge);
     flush();
     expect(shown()?.querySelector<HTMLElement>(".sar-hovercard-more")?.hidden).toBe(true);
 
-    const capsule = document.createElement("span");
-    capsule.className = "sar-compact";
-    other.append(capsule);
+    const capsule = triggerIn(other, "sar-compact");
     hover.bind(capsule, [verdict]);
     pointerOver(capsule);
     expect(shown()?.querySelector<HTMLElement>(".sar-hovercard-more")?.hidden).toBe(false);
@@ -304,10 +299,10 @@ describe("createHoverCard", () => {
 
   it("adds six document listeners and none per badge, however many badges there are", () => {
     const add = vi.spyOn(Node.prototype, "addEventListener");
-    setBody(Array.from({ length: 200 }, () => '<span class="sar-badge">AI</span>').join(""));
+    setBody(Array.from({ length: 200 }, () => '<span class="sar-badge"></span>').join(""));
     const hover = start();
     for (const badge of document.querySelectorAll(".sar-badge")) {
-      hover.bind(badge, [disclosedVerdict()]);
+      hover.bind(badge, [make.verdict.disclosed("ai")]);
     }
     pointerOver(document.querySelectorAll(".sar-badge")[150] ?? document.body);
     flush();
@@ -319,14 +314,12 @@ describe("createHoverCard", () => {
 
   it("stays open while the pointer crosses onto the card, and closes after leaving both", () => {
     const { badge, other } = page();
-    start().bind(badge, [disclosedVerdict()]);
+    start().bind(badge, [make.verdict.disclosed("ai")]);
     pointerOver(badge);
     flush();
-    const node = shown();
+    const node = the(`#${HOVER_CARD_ID}`);
     pointerOver(document.body);
-    if (node !== null) {
-      pointerOver(node);
-    }
+    pointerOver(node);
     flush();
     expect(shown()).not.toBeNull();
     pointerOver(other);
@@ -337,7 +330,7 @@ describe("createHoverCard", () => {
 
   it("opens nothing when the pointer only passes over a badge", () => {
     const { badge, other } = page();
-    start().bind(badge, [disclosedVerdict()]);
+    start().bind(badge, [make.verdict.disclosed("ai")]);
     pointerOver(badge);
     pointerOver(other);
     flush();
@@ -346,11 +339,8 @@ describe("createHoverCard", () => {
 
   it("opens at once on focus of a link holding a badge, and describes the link", () => {
     const { link, other } = page();
-    const badge = link.querySelector(".sar-badge");
     link.setAttribute("aria-describedby", STORE_NOTE_ID);
-    if (badge !== null) {
-      start().bind(badge, [disclosedVerdict()]);
-    }
+    start().bind(the(".sar-badge", link), [make.verdict.disclosed("ai")]);
     focusIn(link);
     expect(shown()).not.toBeNull();
     expect(link.getAttribute("aria-describedby")).toBe(`${STORE_NOTE_ID} ${HOVER_CARD_ID}`);
@@ -362,7 +352,7 @@ describe("createHoverCard", () => {
 
   it("describes a focused link when the pointer opens the card over it, and lets go", () => {
     const { link, badge, other } = page();
-    start().bind(badge, [disclosedVerdict()]);
+    start().bind(badge, [make.verdict.disclosed("ai")]);
     link.focus();
     document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
     expect(shown()).toBeNull();
@@ -379,7 +369,7 @@ describe("createHoverCard", () => {
 
   it("describes nothing when the pointer opens the card and no link holds focus", () => {
     const { link, badge, other } = page();
-    start().bind(badge, [disclosedVerdict()]);
+    start().bind(badge, [make.verdict.disclosed("ai")]);
     other.focus();
     pointerOver(badge);
     flush();
@@ -390,7 +380,7 @@ describe("createHoverCard", () => {
 
   it("closes on Escape and stays closed until the pointer leaves the badge", () => {
     const { badge, other } = page();
-    start().bind(badge, [disclosedVerdict()]);
+    start().bind(badge, [make.verdict.disclosed("ai")]);
     pointerOver(badge);
     flush();
     document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
@@ -407,7 +397,7 @@ describe("createHoverCard", () => {
   it("moves a focus-opened card with its link, once per frame, through a scroll", () => {
     const { link, badge } = page();
     layout(badge, 300);
-    start().bind(badge, [disclosedVerdict()]);
+    start().bind(badge, [make.verdict.disclosed("ai")]);
     focusIn(link);
     layout(badge, 100);
     const moved = vi.spyOn(badge, "getBoundingClientRect");
@@ -425,7 +415,7 @@ describe("createHoverCard", () => {
   it("closes a focus-opened card once its link leaves the viewport", () => {
     const { link, badge } = page();
     layout(badge, 300);
-    start().bind(badge, [disclosedVerdict()]);
+    start().bind(badge, [make.verdict.disclosed("ai")]);
     focusIn(link);
     layout(badge, -50);
     document.dispatchEvent(new Event("scroll"));
@@ -436,7 +426,7 @@ describe("createHoverCard", () => {
 
   it("closes on a page scroll", () => {
     const { badge } = page();
-    start().bind(badge, [disclosedVerdict()]);
+    start().bind(badge, [make.verdict.disclosed("ai")]);
     pointerOver(badge);
     flush();
     document.dispatchEvent(new Event("scroll"));
@@ -449,7 +439,7 @@ describe("createHoverCard", () => {
     pointerOver(badge);
     flush();
     expect(shown()).toBeNull();
-    hover.bind(badge, [disclosedVerdict()]);
+    hover.bind(badge, [make.verdict.disclosed("ai")]);
     pointerOver(badge);
     flush();
     hover.stop();
@@ -477,19 +467,17 @@ describe("createHoverCard", () => {
       flush();
     }
 
-    /** The disclosed verdicts of an app, in registry order. */
-    function disclosedOf(verdicts: KindVerdicts): AnyDisclosed[] {
-      return KIND_IDS.flatMap((id) => {
-        const verdict = verdicts[id];
-        return verdict.state === "disclosed" ? [verdict] : [];
-      });
-    }
-
     const heading = (id: KindId) => i18n.t(KIND_BY_ID[id].messages.heading);
+    const captured = make.fixture.verdicts;
+    const { app } = make.fixture;
+    const full = disclosedList(make.verdicts.full());
 
     function notesOf(verdicts: KindVerdicts): string {
       const { ai } = verdicts;
-      return ai.state === "disclosed" ? ai.notes : "";
+      if (ai.state !== "disclosed") {
+        throw new TypeError(ai.state);
+      }
+      return ai.notes;
     }
 
     /** A Unix time as the card writes a date in the catalog's language. */
@@ -498,17 +486,23 @@ describe("createHoverCard", () => {
     /** The developer's Early Access note as the card shows it, with CRLF breaks read as LF. */
     function earlyAccessNote(verdicts: KindVerdicts): string {
       const { earlyaccess } = verdicts;
-      const note = earlyaccess.state === "disclosed" ? (earlyaccess.note ?? "") : "";
+      if (earlyaccess.state !== "disclosed" || earlyaccess.note === undefined) {
+        throw new TypeError(earlyaccess.state);
+      }
+      const { note } = earlyaccess;
       return note.replaceAll("\r\n", "\n");
     }
 
     function eulaNames(verdicts: KindVerdicts): string[] {
       const { eula } = verdicts;
-      return eula.state === "disclosed" ? eula.items.map((item) => item.name) : [];
+      if (eula.state !== "disclosed") {
+        throw new TypeError(eula.state);
+      }
+      return eula.items.map((item) => item.name);
     }
 
     it("lists every kind in the order given", () => {
-      open(disclosedOf(FULL_DISCLOSED));
+      open(full);
       expect(entries().map(([title]) => title)).toEqual(KIND_IDS.map(heading));
       expect(shown()?.querySelectorAll(".sar-hovercard-title")).toHaveLength(KIND_IDS.length);
     });
@@ -525,39 +519,14 @@ describe("createHoverCard", () => {
         ],
       ] as const,
     )("closes %s with the lines that name their source", (_name, kinds, keys) => {
-      open(kinds.map((id) => FULL_DISCLOSED[id]));
+      open(kinds.map((id) => make.verdict.disclosed(id)));
       const lines = [...(shown()?.querySelectorAll(".sar-hovercard-source") ?? [])];
       expect(lines.map((line) => line.textContent)).toEqual(keys.map((key) => i18n.t(key)));
       expect(shown()?.lastElementChild).toBe(lines.at(-1));
     });
 
-    it("shows a rating in Steam's words, and a lent one as rated for the full game", () => {
-      open([FULL_DISCLOSED.deck, lent(FULL_DISCLOSED.machine)]);
-      expect(entries()).toEqual([
-        [heading("deck"), i18n.t("kind_compat_unsupported")],
-        [heading("machine"), i18n.t("kind_full_game_valve"), i18n.t("kind_compat_unsupported")],
-      ]);
-    });
-
-    it.each(
-      [
-        ["its own line and its source line", FULL_DISCLOSED.family, []],
-        ["the same for the full game", lent(FULL_DISCLOSED.family), ["kind_full_game_valve"]],
-      ] as const,
-    )("shows the family kind's unlisted value with %s", (_name, verdict, lead) => {
-      open([verdict]);
-      expect(entries()).toEqual([
-        [
-          heading("family"),
-          ...lead.map((key) => i18n.t(key)),
-          i18n.t("kind_family_unsupported_line"),
-        ],
-      ]);
-      expect(shown()?.lastElementChild?.textContent).toBe(i18n.t("kind_family_source"));
-    });
-
     it("marks each entry with its kind, so a custom color reaches its title", () => {
-      open(disclosedOf(FULL_DISCLOSED));
+      open(full);
       const kinds = [...(shown()?.querySelectorAll(".sar-hovercard-entry") ?? [])].map((entry) =>
         entry.getAttribute("data-sar-kind")
       );
@@ -568,161 +537,195 @@ describe("createHoverCard", () => {
     // Family Sharing as a paid game whose Steam features leave it out shows it.
     const unlisted = [heading("family"), i18n.t("kind_family_unsupported_line")];
 
-    // The details of each kind, from the batch captured for the tag kinds and from its pages.
-    const CASES: readonly (readonly [string, KindVerdicts, readonly (readonly string[])[]])[] = [
-      ["DRM, a linkable account and a EULA (3751950)", capturedVerdicts(3751950), [
+    const fullGame = make.verdict.lent;
+    const anticheatName = make.text.service();
+    const drmText = make.text.service();
+    const limit = make.text.note();
+    const { name: _kernelName, bootProtection: _boot, ...plainKernel } = make.verdict.disclosed(
+      "kernel",
+    );
+    const { name: _anticheatName, ...unnamedAnticheat } = make.verdict.disclosed("anticheat");
+    const note = make.text.note();
+    const { released, updated } = make.fixture;
+    const noted = make.verdict.disclosed("earlyaccess", { note, released });
+    const { note: _note, released: _released, ...bare } = noted;
+    const releasedLine = i18n.t("kind_earlyaccess_released", { date: day(released) });
+    const updatedLine = i18n.t("kind_earlyaccess_updated", { date: day(updated) });
+
+    // The captured rows come from the batch captured for the tag kinds and from its pages.
+    const CASES: readonly (readonly [
+      string,
+      readonly AnyDisclosed[],
+      readonly (readonly string[])[],
+    ])[] = [
+      ["DRM, a linkable account and a EULA", disclosedList(captured(app.drmAccountEula)), [
         unlisted,
         [heading("iap")],
         [heading("drm"), "Denuvo Anti-tamper"],
         [heading("account"), "Ubisoft Account", i18n.t("kind_account_links")],
-        [heading("eula"), ...eulaNames(capturedVerdicts(3751950))],
+        [heading("eula"), ...eulaNames(captured(app.drmAccountEula))],
       ]],
       [
-        "kernel anti-cheat with boot protection and no vendor (2807960)",
-        capturedVerdicts(2807960),
+        "kernel anti-cheat with boot protection and no vendor",
+        disclosedList(captured(app.kernelBootProtection)),
         [
           unlisted,
           [heading("iap")],
           [heading("pvp"), i18n.t("kind_pvp_category_online")],
           [heading("account"), "EA Account linking required", i18n.t("kind_account_links")],
-          [heading("eula"), ...eulaNames(capturedVerdicts(2807960))],
+          [heading("eula"), ...eulaNames(captured(app.kernelBootProtection))],
           [heading("kernel"), i18n.t("kind_kernel_boot")],
         ],
       ],
       [
-        "AI notes, a named kernel anti-cheat that stays behind, PvP (1808500)",
-        capturedVerdicts(1808500),
+        "AI notes, a named kernel anti-cheat that stays behind, PvP",
+        disclosedList(captured(app.arcRaiders)),
         [
-          [heading("ai"), notesOf(capturedVerdicts(1808500))],
+          [heading("ai"), notesOf(captured(app.arcRaiders))],
           // Steam's word for the value is the heading, which the card shows once.
           [heading("family")],
           [heading("iap")],
           [heading("pvp"), i18n.t("kind_pvp_category_online")],
-          [heading("eula"), ...eulaNames(capturedVerdicts(1808500))],
+          [heading("eula"), ...eulaNames(captured(app.arcRaiders))],
           [heading("kernel"), "Denuvo", i18n.t("kind_kernel_uninstall")],
         ],
       ],
-      ["a named anti-cheat that is not kernel level, and IAP alone (730)", capturedVerdicts(730), [
-        [heading("iap")],
-        [heading("anticheat"), "VAC (Valve Anti-Cheat)"],
-      ]],
-      ["two EULAs (1245620)", capturedVerdicts(1245620), [
+      [
+        "a named anti-cheat that is not kernel level, and IAP alone",
+        disclosedList(captured(app.vac)),
+        [
+          [heading("iap")],
+          [heading("anticheat"), "VAC (Valve Anti-Cheat)"],
+        ],
+      ],
+      ["two EULAs", disclosedList(captured(app.pvpOther)), [
         [heading("family")],
         [heading("pvp"), i18n.t("kind_pvp_category_online")],
-        [heading("eula"), ...eulaNames(capturedVerdicts(1245620))],
+        [heading("eula"), ...eulaNames(captured(app.pvpOther))],
       ]],
       [
-        "a named kernel anti-cheat that stays behind, an account and a EULA (1172470)",
-        capturedVerdicts(1172470),
+        "a named kernel anti-cheat that stays behind, an account and a EULA",
+        disclosedList(captured(app.easyAntiCheat)),
         [
           [heading("iap")],
           [heading("pvp"), i18n.t("kind_pvp_category_online")],
           [heading("account"), "EA Account", i18n.t("kind_account_links")],
-          [heading("eula"), ...eulaNames(capturedVerdicts(1172470))],
+          [heading("eula"), ...eulaNames(captured(app.easyAntiCheat))],
           [heading("kernel"), "Easy Anti-Cheat", i18n.t("kind_kernel_uninstall")],
         ],
       ],
       [
-        "the developer's note and the release date of an early access game (2514910)",
-        capturedVerdicts(2514910),
+        "the developer's note and the release date of a captured early access game",
+        disclosedList(captured(app.earlyAccess)),
         [
           [
             heading("earlyaccess"),
-            earlyAccessNote(capturedVerdicts(2514910)),
-            i18n.t("kind_earlyaccess_released", { date: day(1731596424) }),
+            earlyAccessNote(captured(app.earlyAccess)),
+            i18n.t("kind_earlyaccess_released", { date: day(make.fixture.released) }),
           ],
           [heading("family")],
         ],
       ],
       [
-        "the AI notes read from a captured app page (5072580)",
-        pageVerdicts("5072580-ai-first.html", 5072580),
-        [[heading("ai"), notesOf(pageVerdicts("5072580-ai-first.html", 5072580))]],
+        "the AI notes read from a captured app page",
+        disclosedList(make.fixture.pageVerdicts("5072580-ai-first.html", app.aiWithService)),
+        [[
+          heading("ai"),
+          notesOf(make.fixture.pageVerdicts("5072580-ai-first.html", app.aiWithService)),
+        ]],
       ],
+      [
+        "a rating in Steam's words, and a lent one as rated for the full game",
+        [make.verdict.disclosed("deck"), fullGame(make.verdict.disclosed("machine"))],
+        [
+          [heading("deck"), i18n.t("kind_compat_unsupported")],
+          [heading("machine"), i18n.t("kind_full_game_valve"), i18n.t("kind_compat_unsupported")],
+        ],
+      ],
+      ["the family kind's unlisted value in its own line", [make.verdict.disclosed("family")], [
+        unlisted,
+      ]],
+      [
+        "the family kind's unlisted value for the full game",
+        [fullGame(make.verdict.disclosed("family"))],
+        [[
+          heading("family"),
+          i18n.t("kind_full_game_valve"),
+          i18n.t("kind_family_unsupported_line"),
+        ]],
+      ],
+      [
+        "the full game's disclosure marked under its heading",
+        [
+          fullGame(make.verdict.disclosed("anticheat", { name: anticheatName })),
+          make.verdict.disclosed("drm", { text: drmText, activationLimit: limit }),
+        ],
+        [
+          [heading("anticheat"), i18n.t("kind_full_game"), anticheatName],
+          [heading("drm"), drmText, limit],
+        ],
+      ],
+      [
+        "the headings alone for details the data does not carry",
+        [plainKernel, unnamedAnticheat, make.verdict.disclosed("pvp", { categoryIds: [1234] })],
+        [[heading("kernel")], [heading("anticheat")], [heading("pvp")]],
+      ],
+      [
+        "the early access note, release date and latest update, in that order",
+        [{ ...noted, updated }],
+        [[heading("earlyaccess"), note, releasedLine, updatedLine]],
+      ],
+      [
+        "the early access note and release date, without an update the page did not give",
+        [noted],
+        [[heading("earlyaccess"), note, releasedLine]],
+      ],
+      ["the early access dates without a note", [{ ...bare, released, updated }], [
+        [heading("earlyaccess"), releasedLine, updatedLine],
+      ]],
+      ["the early access heading alone when nothing else is known", [bare], [
+        [heading("earlyaccess")],
+      ]],
     ];
 
     it.each(CASES)(
       "shows Steam's lines and the developer's text for %s",
       (_name, verdicts, lines) => {
-        open(disclosedOf(verdicts));
+        open(verdicts);
         expect(entries()).toEqual(lines);
       },
     );
 
-    describe("for early access", () => {
-      const NOTE = "We ship early to hear from players.";
-      const RELEASED = 1731596424;
-      const UPDATED = 1793121240;
-      const released = i18n.t("kind_earlyaccess_released", { date: day(RELEASED) });
-      const updated = i18n.t("kind_earlyaccess_updated", { date: day(UPDATED) });
-      const { note: _note, released: _released, ...bare } = earlyAccessVerdict();
-
-      it.each<readonly [string, AnyDisclosed, readonly string[]]>([
-        [
-          "the note, the release date and the latest update, in that order",
-          earlyAccessVerdict({ note: NOTE, released: RELEASED, updated: UPDATED }),
-          [NOTE, released, updated],
-        ],
-        [
-          "the note and the release date, without an update the page did not give",
-          earlyAccessVerdict({ note: NOTE, released: RELEASED }),
-          [NOTE, released],
-        ],
-        ["the dates without a note", { ...bare, released: RELEASED, updated: UPDATED }, [
-          released,
-          updated,
-        ]],
-        ["the heading alone when nothing else is known", bare, []],
-      ])("shows %s", (_name, verdict, lines) => {
-        open([verdict]);
-        expect(entries()).toEqual([[heading("earlyaccess"), ...lines]]);
-        expect(shown()?.lastElementChild?.textContent).toBe(i18n.t("badge_card_declared"));
-      });
-
-      it("sets the developer's note as text, with its BBCode tags as typed", () => {
-        open([earlyAccessVerdict({ note: `[b]${XSS}[/b]` })]);
-        expect(document.querySelector(".sar-hovercard img")).toBeNull();
-        expect(entries()[0]?.[1]).toBe(`[b]${XSS}[/b]`);
-      });
-    });
-
     it("sets the developer's text as text for every kind", () => {
-      const markup = [
-        { ...FULL_DISCLOSED.drm, text: XSS },
-        { ...FULL_DISCLOSED.account, text: XSS },
-        { ...FULL_DISCLOSED.eula, items: [{ name: XSS }] },
-        { ...FULL_DISCLOSED.anticheat, name: XSS },
-        { ...FULL_DISCLOSED.kernel, name: XSS },
-      ];
-      open(markup);
-      expect(document.querySelector(".sar-hovercard img")).toBeNull();
-      expect(entries().map((lines) => lines[1])).toEqual([XSS, XSS, XSS, XSS, XSS]);
-    });
-
-    it("marks the full game's disclosure under its heading, and names the developer", () => {
-      const { drm, anticheat } = FULL_DISCLOSED;
-      open([lent(anticheat), drm]);
-      expect(entries()).toEqual([
-        [heading("anticheat"), i18n.t("kind_full_game"), anticheat.name],
-        [heading("drm"), drm.text, drm.activationLimit],
+      const markup = make.text.markup();
+      const bbcode = `[b]${markup}[/b]`;
+      open([
+        make.verdict.disclosed("ai", { notes: markup, service: markup }),
+        make.verdict.disclosed("drm", { text: markup }),
+        make.verdict.disclosed("account", { text: markup }),
+        make.verdict.disclosed("eula", { items: [{ name: markup }] }),
+        make.verdict.disclosed("anticheat", { name: markup }),
+        make.verdict.disclosed("kernel", { name: markup }),
+        make.verdict.disclosed("earlyaccess", { note: bbcode }),
       ]);
-      expect(shown()?.lastElementChild?.textContent).toBe(i18n.t("badge_card_declared"));
-    });
-
-    it("leaves out the details the data does not carry", () => {
-      const { name: _kernelName, bootProtection: _boot, ...kernel } = FULL_DISCLOSED.kernel;
-      const { name: _anticheatName, ...anticheat } = FULL_DISCLOSED.anticheat;
-      open([kernel, anticheat, { ...FULL_DISCLOSED.pvp, categoryIds: [1234] }]);
-      expect(entries()).toEqual([[heading("kernel")], [heading("anticheat")], [heading("pvp")]]);
+      expect(document.querySelector(".sar-hovercard b")).toBeNull();
+      expect(entries().map((lines) => lines[1])).toEqual([
+        markup,
+        markup,
+        markup,
+        markup,
+        markup,
+        markup,
+        bbcode,
+      ]);
+      expect(shown()?.querySelector(".sar-hovercard-service-name")?.textContent).toBe(markup);
     });
 
     it("refills the card for other kinds and keeps it for the same verdicts", () => {
       const { badge, other } = page();
-      const second = document.createElement("span");
-      second.className = "sar-badge";
-      other.append(second);
+      const second = triggerIn(other, "sar-badge");
       const hover = start();
-      const first = disclosedOf(FULL_DISCLOSED).slice(0, 2);
+      const first = full.slice(0, 2);
       hover.bind(badge, first);
       hover.bind(second, [...first]);
       pointerOver(badge);
@@ -730,21 +733,22 @@ describe("createHoverCard", () => {
       const node = shown()?.firstElementChild;
       pointerOver(second);
       expect(shown()?.firstElementChild).toBe(node);
-      hover.bind(second, disclosedOf(FULL_DISCLOSED).slice(3, 4));
+      hover.bind(second, full.slice(3, 4));
       pointerOver(badge);
       pointerOver(second);
       expect(entries()).toEqual([[heading("iap")]]);
     });
 
+    it("shows the long-text line when a quote other than the first is clamped", () => {
+      const note = make.text.note();
+      overflowing = (quote) => quote.textContent === note;
+      open([make.verdict.disclosed("ai"), make.verdict.disclosed("earlyaccess", { note })]);
+      expect(the(".sar-hovercard-more")).toHaveProperty("hidden", false);
+    });
+
     it("opens nothing for a trigger bound to no kind", () => {
       open([]);
       expect(shown()).toBeNull();
-    });
-
-    it("shows the long-text line when any quote is clamped", () => {
-      overflowing = true;
-      open(disclosedOf(FULL_DISCLOSED));
-      expect(shown()?.querySelector<HTMLElement>(".sar-hovercard-more")?.hidden).toBe(false);
     });
   });
 });

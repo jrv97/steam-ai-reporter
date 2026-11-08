@@ -1,36 +1,39 @@
 // @vitest-environment-options {"url":"https://store.steampowered.com/search/?term=roguelike"}
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import searchItems from "../../../tests/fixtures/getitems/search-roguelike-50.json";
-import { fakeFetch } from "../../../tests/helpers/fake-http";
-import { fixtureItems, getItemsRoute } from "../../../tests/helpers/getitems";
-import { fakeGm } from "../../../tests/helpers/gm-fake";
+import { make } from "../../../tests/helpers/factory";
+import { fake } from "../../../tests/helpers/fakes";
 import { englishI18n } from "../../../tests/helpers/i18n";
-import { withKind } from "../../../tests/helpers/settings";
-import { loadPage, SURFACES } from "../../../tests/helpers/surfaces";
+import { loadPage } from "../../../tests/helpers/surfaces";
 import type { App } from "../../core/app";
-import { DEFAULT_SETTINGS, encodeSettings } from "../../core/settings/settings";
-import { SETTINGS_KEY } from "../../core/storage-keys";
+import type { KindId } from "../../core/kinds/id";
+import { encodeSettings } from "../../core/settings/settings";
+import { isVerdictKey, SETTINGS_KEY } from "../../core/storage-keys";
 import { startUserscript, type UserscriptEnv } from "./userscript";
 
 const i18n = englishI18n();
 // The captured row of 4461450 carries the AI and the Early Access tags.
 const DISCLOSED_BADGES = 2;
-const quiet = { error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() };
+
+/** The list filter mode the page root carries for `kind`. */
+function filterOf(kind: KindId): string | null {
+  return document.documentElement.getAttribute(`data-sar-filter-${kind}`);
+}
 
 let app: App | undefined;
 
 function setup(overrides: Partial<UserscriptEnv> = {}) {
-  loadPage(SURFACES.search);
+  loadPage(make.page.surface("search"));
   document.documentElement.lang = "en";
-  const gm = fakeGm();
-  const server = fakeFetch([getItemsRoute(fixtureItems(searchItems))]);
+  const gm = fake.gm();
+  const server = fake.fetch([make.item.route(make.fixture.items(searchItems))]);
   const commands = new Map<string, () => void>();
   const added: string[] = [];
   const env: UserscriptEnv = {
     document,
     storage: gm,
     fetch: server.fetch,
-    console: quiet,
+    console: fake.console(),
     addStyle: (css) => added.push(css),
     watchValue: undefined,
     registerMenuCommand: (caption, run) => commands.set(caption, run),
@@ -55,7 +58,7 @@ describe("startUserscript", () => {
     expect(server.calls).toHaveLength(1);
     expect(server.calls[0]?.init.credentials).toBe("omit");
     // The verdicts went to GM storage, not to the page
-    expect(gm.writes.some((name) => name.startsWith("v1:a:"))).toBe(true);
+    expect(gm.writes.some(isVerdictKey)).toBe(true);
     // The page CSS went through addStyle, not through adopted sheets
     expect(added.join(" ")).toContain(".sar-badge");
     expect(document.adoptedStyleSheets).toHaveLength(0);
@@ -90,28 +93,23 @@ describe("startUserscript", () => {
   });
 
   it("applies settings changed in another tab where the manager reports them", async () => {
-    let notify: (value: unknown) => void = () => undefined;
-    const { env } = setup({
-      watchValue: (_key, onChange) => {
-        notify = onChange;
-      },
-    });
+    const watch = fake.watch();
+    const { env } = setup({ watchValue: watch.watch });
     app = await startUserscript(env);
-    expect(document.documentElement.getAttribute("data-sar-filter-ai")).toBe("off");
+    expect(filterOf("ai")).toBe("off");
 
-    notify(encodeSettings(withKind(DEFAULT_SETTINGS, "ai", { filter: "hide" })));
-    expect(document.documentElement.getAttribute("data-sar-filter-ai")).toBe("hide");
-    expect(document.documentElement.getAttribute("data-sar-filter-drm")).toBe("off");
+    watch.notify(SETTINGS_KEY, encodeSettings(make.settings.kind("ai", { filter: "hide" })));
+    expect([filterOf("ai"), filterOf("drm")]).toStrictEqual(["hide", "off"]);
   });
 
   it("starts on stored settings", async () => {
     const { env, gm } = setup();
     await gm.setValue(
       SETTINGS_KEY,
-      encodeSettings(withKind(DEFAULT_SETTINGS, "ai", { filter: "dim" })),
+      encodeSettings(make.settings.kind("ai", { filter: "dim" })),
     );
     app = await startUserscript(env);
 
-    expect(document.documentElement.getAttribute("data-sar-filter-ai")).toBe("dim");
+    expect(filterOf("ai")).toBe("dim");
   });
 });

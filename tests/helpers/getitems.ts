@@ -10,10 +10,11 @@ import { parseJson } from "../../src/core/json";
 import type { KindDefinition } from "../../src/core/kinds/kind";
 import { type AppId, AppIdSchema, type DisclosedBase, type Verdict } from "../../src/core/types";
 import type { Reply, Route } from "./fake-http";
+import { freshAppId, freshName, freshNote, freshService, freshUrl } from "./sequence";
 
 /** A plain store item as GetItems returns it: listed, `success: 1`, no AI notes. */
 export function storeItem(
-  id: number,
+  id: number = freshAppId(),
   overrides: Readonly<Record<string, unknown>> = {},
 ): Readonly<Record<string, unknown>> {
   return {
@@ -31,8 +32,8 @@ export function storeItem(
 
 /** A store item whose developer disclosed AI use with these notes. */
 export function disclosedItem(
-  id: number,
-  notes: string,
+  id: number = freshAppId(),
+  notes: string = freshNote(),
   service?: string,
 ): Readonly<Record<string, unknown>> {
   return storeItem(id, {
@@ -41,6 +42,62 @@ export function disclosedItem(
       content_survey_ai_notes: notes,
       ...(service === undefined ? {} : { ai_generation_service: { name: service, url: "" } }),
     },
+  });
+}
+
+/** A store item whose `extra_details` are exactly `details`, with `overrides` over the item. */
+export function detailedItem(
+  details: unknown,
+  overrides: Readonly<Record<string, unknown>> = {},
+  id: number = freshAppId(),
+): Readonly<Record<string, unknown>> {
+  return storeItem(id, { extra_details: details, ...overrides });
+}
+
+/** Categories with PvP (49) and In-App Purchases (35), and without Family Sharing (62). */
+export const DECLARING_CATEGORIES = {
+  supported_player_categoryids: [49],
+  feature_categoryids: [35],
+} as const;
+
+/** Both devices rated 1 (Unsupported) by Valve. */
+export const DECLARING_PLATFORMS = {
+  steam_deck_compat_category: 1,
+  steam_machine_compat_category: 1,
+} as const;
+
+/** The parts of a declaring item a test replaces; `details` merge over the declarations. */
+export interface DeclaringParts {
+  readonly details?: Readonly<Record<string, unknown>>;
+  readonly categories?: unknown;
+  readonly platforms?: unknown;
+}
+
+/**
+ * A paid game that declares every developer kind with fresh text (AI notes, a kernel anti-cheat,
+ * a DRM, an account and a EULA), with `DECLARING_CATEGORIES` and `DECLARING_PLATFORMS`.
+ */
+export function declaringItem(
+  id: number = freshAppId(),
+  {
+    details = {},
+    categories = DECLARING_CATEGORIES,
+    platforms = DECLARING_PLATFORMS,
+  }: DeclaringParts = {},
+  overrides: Readonly<Record<string, unknown>> = {},
+): Readonly<Record<string, unknown>> {
+  const declarations = {
+    content_survey_ai_notes: freshNote(),
+    anticheat: { kernel_mode: true },
+    drm_third_party_type: freshService(),
+    user_account_third_party: freshService(),
+    eula: [{ name: freshName(), url: freshUrl() }],
+  };
+  return storeItem(id, {
+    categories,
+    platforms,
+    extra_details: { ...declarations, ...details },
+    ...overrides,
   });
 }
 
@@ -81,7 +138,7 @@ export interface EarlyAccessFields {
 
 /** A game Steam flags as Early Access, with the developer's note and release date when given. */
 export function earlyAccessItem(
-  id: number,
+  id: number = freshAppId(),
   { note, released }: EarlyAccessFields = {},
   overrides: Readonly<Record<string, unknown>> = {},
 ): Readonly<Record<string, unknown>> {
@@ -102,7 +159,7 @@ export function demoItem(id: number, game: number): Readonly<Record<string, unkn
 }
 
 /** What GetItems answers for an invalid ID (rq6, S2). */
-export function invalidItem(id: number): Readonly<Record<string, unknown>> {
+export function invalidItem(id: number = freshAppId()): Readonly<Record<string, unknown>> {
   return { item_type: 0, id, success: 15, visible: false, name: "", appid: 0 };
 }
 

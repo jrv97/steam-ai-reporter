@@ -1,13 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { withKind } from "../../../tests/helpers/settings";
+import { make } from "../../../tests/helpers/factory";
 import { DEFAULT_SETTINGS, type Settings } from "../settings/settings";
 import { BASE_SECTIONS, coversSections, requestSections } from "./sections";
 
 // The settings as installed ask for Early Access's release section, so most cases start without it.
-const NO_EARLY_ACCESS = withKind(DEFAULT_SETTINGS, "earlyaccess", { enabled: false });
+const NO_EARLY_ACCESS = make.settings.kind("earlyaccess", { enabled: false });
 
 const on = (settings: Settings, ...ids: ("deck" | "machine" | "pvp")[]) =>
-  ids.reduce((next, id) => withKind(next, id, { enabled: true }), settings);
+  ids.reduce((next, id) => make.settings.kind(id, { enabled: true }, next), settings);
 
 describe("requestSections", () => {
   it.each(
@@ -25,12 +25,16 @@ describe("requestSections", () => {
       ],
       [
         "the deck kind off with its badge, banner and values set",
-        withKind(NO_EARLY_ACCESS, "deck", { badge: true, banner: true, facets: ["verified"] }),
+        make.settings.kind(
+          "deck",
+          { badge: true, banner: true, facets: ["verified"] },
+          NO_EARLY_ACCESS,
+        ),
         BASE_SECTIONS,
       ],
       [
         "the kind off with its badge and banner set",
-        withKind(NO_EARLY_ACCESS, "earlyaccess", { badge: true, banner: true }),
+        make.settings.kind("earlyaccess", { badge: true, banner: true }, NO_EARLY_ACCESS),
         BASE_SECTIONS,
       ],
     ] as const,

@@ -13,7 +13,7 @@ describe("toHexColor", () => {
     expect(toHexColor(typed)).toBe(normal);
   });
 
-  it.each([
+  it.each<unknown>([
     "",
     "#",
     "#ab",
@@ -29,23 +29,25 @@ describe("toHexColor", () => {
     "#abc}",
     "var(--x)",
     "\n#abc\n#def",
+    undefined,
+    null,
+    7,
+    true,
+    [],
+    {},
+    ["#abc"],
   ])("rejects %j", (typed) => {
     expect(toHexColor(typed)).toBeUndefined();
-  });
-
-  it.each([undefined, null, 7, true, [], {}, ["#abc"]])("rejects the non-text %j", (value) => {
-    expect(toHexColor(value)).toBeUndefined();
   });
 });
 
 describe("readTypedColor", () => {
-  it("reads empty text as the default, which is valid", () => {
-    expect(readTypedColor("")).toStrictEqual({ valid: true, color: undefined });
-    expect(readTypedColor("   ")).toStrictEqual({ valid: true, color: undefined });
-  });
-
-  it("reads a color, and flags text that is none", () => {
-    expect(readTypedColor("F00")).toStrictEqual({ valid: true, color: "#ff0000" });
-    expect(readTypedColor("#12")).toStrictEqual({ valid: false });
+  it.each<readonly [string, string, unknown]>([
+    ["empty text as the default, which is valid", "", { valid: true, color: undefined }],
+    ["blank text as the default, which is valid", "   ", { valid: true, color: undefined }],
+    ["a color in its normal form", "F00", { valid: true, color: "#ff0000" }],
+    ["text that is no color as invalid", "#12", { valid: false }],
+  ])("reads %s", (_name, typed, reading) => {
+    expect(readTypedColor(typed)).toStrictEqual(reading);
   });
 });

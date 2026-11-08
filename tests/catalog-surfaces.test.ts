@@ -31,8 +31,7 @@ function messages(catalogs: Catalogs, locale: string): readonly (readonly [strin
 }
 
 describe("surface catalogs", () => {
-  it.each(Object.keys(SURFACES))("%s ships every locale with the same keys", (surface) => {
-    const catalogs = SURFACES[surface] ?? {};
+  it.each(Object.entries(SURFACES))("%s ships every locale with the same keys", (_, catalogs) => {
     const english = messages(catalogs, "en").map(([key]) => key);
     expect(english.length).toBeGreaterThan(0);
     expect(Object.keys(catalogs)).toEqual(LOCALES);
@@ -41,14 +40,16 @@ describe("surface catalogs", () => {
     }
   });
 
-  it.each(Object.keys(SURFACES))("%s copies each message from the source catalog", (surface) => {
-    const catalogs = SURFACES[surface] ?? {};
-    for (const locale of LOCALES) {
-      const source = new Map(messages(SHIPPED_CATALOGS, locale));
-      const projected = messages(catalogs, locale);
-      expect(projected, locale).toEqual(projected.map(([key]) => [key, source.get(key)]));
-    }
-  });
+  it.each(Object.entries(SURFACES))(
+    "%s copies each message from the source catalog",
+    (_, catalogs) => {
+      for (const locale of LOCALES) {
+        const source = new Map(messages(SHIPPED_CATALOGS, locale));
+        const projected = messages(catalogs, locale);
+        expect(projected, locale).toEqual(projected.map(([key]) => [key, source.get(key)]));
+      }
+    },
+  );
 
   it.each([
     ["badge_tags_title", ["content", "userscript"]],

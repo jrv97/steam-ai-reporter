@@ -2,7 +2,7 @@ import type { JsonValue } from "../../core/json";
 import type { KeyValueStore } from "../../core/ports";
 import { createSettingsSource, type StoredSettings } from "../../core/settings/settings-source";
 import { SETTINGS_KEY } from "../../core/storage-keys";
-import type { OnLocalChanged, StorageArea } from "./ext";
+import type { OnLocalChanged, StorageArea } from "./storage-area";
 
 /**
  * The `KeyValueStore` port over `storage.local`. The browser serializes values on the way in and

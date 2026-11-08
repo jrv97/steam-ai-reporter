@@ -1,8 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { make } from "../../../tests/helpers/factory";
 import { createTabs, TAB_ATTRIBUTE } from "./tabs";
 
 const IDS = ["one", "two", "three", "four"] as const;
 type Id = (typeof IDS)[number];
+const LABEL = make.text.name();
 
 /** Tabs over the four ids, in the document, with `selected` shown. */
 function mounted(selected: Id = "one", onActivate?: (id: Id) => void) {
@@ -10,7 +12,7 @@ function mounted(selected: Id = "one", onActivate?: (id: Id) => void) {
     doc: document,
     ids: IDS,
     idPrefix: "t-",
-    label: "label",
+    label: LABEL,
     ...(onActivate === undefined ? {} : { onActivate }),
   });
   tabs.select(selected);
@@ -37,7 +39,7 @@ describe("the tab list", () => {
   it("is a named tablist of tab buttons, each controlling its own labelled panel", () => {
     const tabs = mounted();
     expect(tabs.list.getAttribute("role")).toBe("tablist");
-    expect(tabs.list.getAttribute("aria-label")).toBe("label");
+    expect(tabs.list.getAttribute("aria-label")).toBe(LABEL);
     for (const id of IDS) {
       const tab = tabs.tab(id);
       const panel = tabs.panel(id);
@@ -53,18 +55,23 @@ describe("the tab list", () => {
   });
 
   it("starts on the first tab", () => {
-    const tabs = createTabs({ doc: document, ids: IDS, idPrefix: "s-", label: "label" });
+    const tabs = createTabs({ doc: document, ids: IDS, idPrefix: "s-", label: LABEL });
     expect(tabs.selected()).toBe("one");
     expect(tabs.tab("one").getAttribute("aria-selected")).toBe("true");
   });
 
   it.each(IDS)("shows %s alone: one selected tab, one tab stop, one panel", (id) => {
     const tabs = mounted(id);
-    for (const each of IDS) {
-      const on = each === id;
-      expect(tabs.tab(each).getAttribute("aria-selected")).toBe(String(on));
-      expect(tabs.tab(each).tabIndex).toBe(on ? 0 : -1);
-      expect(tabs.panel(each).hidden).toBe(!on);
+    expect([tabs.tab(id).getAttribute("aria-selected"), tabs.tab(id).tabIndex]).toEqual([
+      "true",
+      0,
+    ]);
+    expect(tabs.panel(id).hidden).toBe(false);
+    for (const other of IDS.filter((each) => each !== id)) {
+      expect([tabs.tab(other).getAttribute("aria-selected"), tabs.tab(other).tabIndex]).toEqual(
+        ["false", -1],
+      );
+      expect(tabs.panel(other).hidden).toBe(true);
     }
     expect(tabs.selected()).toBe(id);
   });
@@ -170,21 +177,17 @@ describe("the keys on a tab", () => {
     expect(onActivate).not.toHaveBeenCalled();
   });
 
-  it.each([["a click", "click"], ["Enter", "Enter"]])(
-    "returns the tab stop to the selected tab on %s after the arrows moved it",
-    (_case, how) => {
-      const tabs = mounted();
-      tabs.tab("one").focus();
-      key(tabs.tab("one"), "ArrowRight");
-      tabs.tab("one").focus();
-      if (how === "click") {
-        expect(tabs.select("one")).toBe(false);
-      } else {
-        key(tabs.tab("one"), "Enter");
-      }
-      expect(stops(tabs)).toEqual({ focused: "one", stop: ["one"], selected: "one" });
-    },
-  );
+  it.each<readonly [string, (tabs: ReturnType<typeof mounted>) => void]>([
+    ["a click", (tabs) => tabs.select("one")],
+    ["Enter", (tabs) => key(tabs.tab("one"), "Enter")],
+  ])("returns the tab stop to the selected tab on %s after the arrows moved it", (_case, act) => {
+    const tabs = mounted();
+    tabs.tab("one").focus();
+    key(tabs.tab("one"), "ArrowRight");
+    tabs.tab("one").focus();
+    act(tabs);
+    expect(stops(tabs)).toEqual({ focused: "one", stop: ["one"], selected: "one" });
+  });
 
   it("hears no key after stop", () => {
     const onActivate = vi.fn();

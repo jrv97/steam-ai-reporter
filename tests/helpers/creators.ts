@@ -9,6 +9,7 @@ import {
 } from "../../src/core/creator";
 import type { AllowScope } from "../../src/core/settings/allow-data";
 import type { BannerCreator, CreatorNote } from "../../src/core/ui/banner";
+import { freshClanId, freshCreator, freshTextOfLength } from "./sequence";
 
 /** A creator in a test: its name, or its name with the clan ID Steam gave it. */
 export type CreatorSpec = string | readonly [name: string, clan: number];
@@ -91,4 +92,39 @@ export function creatorNote(role: CreatorRole, spec: CreatorSpec, scope: AllowSc
 /** The creator key for a text such as `c:4` or `n:Valve`; throws for text that is none. */
 export function keyOf(text: string): CreatorKey {
   return v.parse(CreatorKeySchema, text);
+}
+
+/** One past the longest creator name a key holds. */
+const OVERLONG_NAME = 201;
+
+/** Texts that are creator keys: clan keys up to 32 bits, name keys with spaces or a key inside. */
+export function creatorKeyTexts(): readonly string[] {
+  return [
+    `c:${String(freshClanId())}`,
+    "c:4294967295",
+    `n:${freshCreator()}`,
+    `n: ${freshCreator()} `,
+    `n:c:${String(freshClanId())}`,
+  ];
+}
+
+/** Creator names that cannot be a key: empty, or too long. */
+export function badCreatorNames(): readonly string[] {
+  return ["", freshTextOfLength(OVERLONG_NAME)];
+}
+
+/** Texts that are no creator key: no ID or name, a bad clan ID, no prefix, a name too long. */
+export function badCreatorKeyTexts(): readonly string[] {
+  return [
+    "",
+    "c:",
+    "n:",
+    "c:0",
+    "c:04",
+    "c:4294967296",
+    "c:-1",
+    "c:4x",
+    freshCreator(),
+    `n:${freshTextOfLength(OVERLONG_NAME)}`,
+  ];
 }
