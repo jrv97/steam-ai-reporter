@@ -1,3 +1,0 @@
-kind: Fixed
-body: On the settings tabs, the arrow keys now move focus between tabs and Enter or Space selects the focused tab. Before, Enter did nothing, Space toggled something else, and the arrow keys stopped working after a click on blank space in the panel.
-time: 2026-10-29T10:30:46.036136+01:00

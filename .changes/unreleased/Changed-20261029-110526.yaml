@@ -1,3 +1,0 @@
-kind: Changed
-body: The settings tabs and the popup rows follow the tag order, and the tabs read Steam's headings. With no saved order the tags now sort alphabetically by Steam's heading, so the first two chips on small images change.
-time: 2026-10-29T11:05:26.6257288+01:00
