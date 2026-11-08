@@ -71,7 +71,6 @@ FORBIDDEN = re.compile(r"\buses AI\b|\bAI-free\b|\bno AI\b", re.IGNORECASE)
 DETECTION_CONSTANTS = frozenset({"AI Generated Content Disclosure"})
 
 MIN_SHARED = 12
-DETECTION_CONSTANTS = frozenset({"AI Generated Content Disclosure"})
 MIN_WILDCARD_TEXT = 4
 SOURCE_ROOTS = ("src", "tests")
 SOURCE_SUFFIXES = {".ts", ".mts", ".js", ".mjs"}

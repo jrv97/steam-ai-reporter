@@ -3,6 +3,7 @@ import { migrationContract } from "../../../tests/contracts/migration.contract";
 import { countingStore } from "../../../tests/helpers/counting-store";
 import { memoryStore } from "../../../tests/helpers/memory-store";
 import { plainKinds, withKind } from "../../../tests/helpers/settings";
+import { readKey } from "../../../tests/helpers/store-read";
 import type { JsonValue } from "../json";
 import type { KeyValueStore } from "../ports";
 import { perScope } from "./allow-data";
@@ -40,10 +41,6 @@ const V1_CUSTOM: JsonValue = {
   debug: true,
 };
 const V1_ALLOW: JsonValue = { "1808500": ARC, "5072580": COURAGE };
-
-async function stored(store: KeyValueStore, key: string): Promise<unknown> {
-  return (await store.get([key])).get(key);
-}
 
 migrationContract("memory", () => memoryStore());
 
@@ -122,7 +119,7 @@ describe("migrateStorage", () => {
       }
     });
     expect(await migrateStorage(store)).toBe("migrated");
-    expect(await stored(inner, "v2:settings")).toStrictEqual(changed);
+    expect(await readKey(inner, "v2:settings")).toStrictEqual(changed);
     expect(log).not.toContain("set v2:settings");
     expect(log).toContain("set v2:allow");
   });
@@ -138,18 +135,18 @@ describe("migrateStorage", () => {
     const settings = encodeSettings(settingsFromV1(V1_CUSTOM));
     expect(await migrateStorage(store)).toBe("current");
     expect(log.filter((line) => line.startsWith("set"))).toStrictEqual([]);
-    expect(await stored(inner, "v2:settings")).toStrictEqual(settings);
+    expect(await readKey(inner, "v2:settings")).toStrictEqual(settings);
   });
 
   it("agrees with itself when two contexts migrate at once", async () => {
     const inner = memoryStore(new Map([["v1:settings", V1_CUSTOM], ["v1:allow", V1_ALLOW]]));
     await Promise.all([migrateStorage(inner), migrateStorage(inner)]);
-    expect(await stored(inner, "v2:settings")).toStrictEqual(
+    expect(await readKey(inner, "v2:settings")).toStrictEqual(
       encodeSettings(settingsFromV1(V1_CUSTOM)),
     );
-    expect(await stored(inner, "v2:allow")).toStrictEqual(allowFromV1(V1_ALLOW));
-    expect(await stored(inner, "v1:settings")).toStrictEqual(V1_CUSTOM);
-    expect(await stored(inner, "v1:allow")).toStrictEqual(V1_ALLOW);
+    expect(await readKey(inner, "v2:allow")).toStrictEqual(allowFromV1(V1_ALLOW));
+    expect(await readKey(inner, "v1:settings")).toStrictEqual(V1_CUSTOM);
+    expect(await readKey(inner, "v1:allow")).toStrictEqual(V1_ALLOW);
   });
 });
 
@@ -207,7 +204,7 @@ describe("readSettingsValue and readAllowValue", () => {
       ]),
     );
     expect(await readSettingsValue(store)).toStrictEqual(encodeSettings(settingsFromV1(V1_CUSTOM)));
-    expect(await stored(store, "v2:allow")).toBeUndefined();
+    expect(await readKey(store, "v2:allow")).toBeUndefined();
   });
 });
 
@@ -224,7 +221,7 @@ describe("migrateSettings", () => {
     expect(await migrateSettings(store)).toBe("current");
     await store.set(new Map([["v1:settings", V1_CUSTOM]]));
     expect(await migrateSettings(store)).toBe("migrated");
-    expect(parseSettings(await stored(store, "v2:settings")).locale).toBe("es");
+    expect(parseSettings(await readKey(store, "v2:settings")).locale).toBe("es");
   });
 
   it("runs again for another store", async () => {
@@ -232,7 +229,7 @@ describe("migrateSettings", () => {
     const two = memoryStore(new Map([["v1:settings", V1_DEFAULTS]]));
     await migrateSettings(one);
     expect(await migrateSettings(two)).toBe("migrated");
-    expect(parseSettings(await stored(two, "v2:settings"))).toStrictEqual(DEFAULT_SETTINGS);
+    expect(parseSettings(await readKey(two, "v2:settings"))).toStrictEqual(DEFAULT_SETTINGS);
   });
 
   it("forgets a failed run, so the next call tries again", async () => {

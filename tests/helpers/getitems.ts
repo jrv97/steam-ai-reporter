@@ -10,10 +10,11 @@ import { parseJson } from "../../src/core/json";
 import type { KindDefinition } from "../../src/core/kinds/kind";
 import { type AppId, AppIdSchema, type DisclosedBase, type Verdict } from "../../src/core/types";
 import type { Reply, Route } from "./fake-http";
+import { freshAppId, freshNote } from "./sequence";
 
 /** A plain store item as GetItems returns it: listed, `success: 1`, no AI notes. */
 export function storeItem(
-  id: number,
+  id: number = freshAppId(),
   overrides: Readonly<Record<string, unknown>> = {},
 ): Readonly<Record<string, unknown>> {
   return {
@@ -31,8 +32,8 @@ export function storeItem(
 
 /** A store item whose developer disclosed AI use with these notes. */
 export function disclosedItem(
-  id: number,
-  notes: string,
+  id: number = freshAppId(),
+  notes: string = freshNote(),
   service?: string,
 ): Readonly<Record<string, unknown>> {
   return storeItem(id, {
@@ -81,7 +82,7 @@ export interface EarlyAccessFields {
 
 /** A game Steam flags as Early Access, with the developer's note and release date when given. */
 export function earlyAccessItem(
-  id: number,
+  id: number = freshAppId(),
   { note, released }: EarlyAccessFields = {},
   overrides: Readonly<Record<string, unknown>> = {},
 ): Readonly<Record<string, unknown>> {
@@ -102,7 +103,7 @@ export function demoItem(id: number, game: number): Readonly<Record<string, unkn
 }
 
 /** What GetItems answers for an invalid ID (rq6, S2). */
-export function invalidItem(id: number): Readonly<Record<string, unknown>> {
+export function invalidItem(id: number = freshAppId()): Readonly<Record<string, unknown>> {
   return { item_type: 0, id, success: 15, visible: false, name: "", appid: 0 };
 }
 
