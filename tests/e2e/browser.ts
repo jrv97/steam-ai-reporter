@@ -108,7 +108,8 @@ async function removeProfile(profile: string, child: ChildProcess | null | undef
     });
   });
   if ((await Promise.race([done, late])) === "late") {
-    child?.kill();
+    // SIGKILL cannot be caught or ignored, so the exit follows.
+    child?.kill("SIGKILL");
     await done;
   }
   await rm(profile, { recursive: true, force: true, maxRetries: 5 });
