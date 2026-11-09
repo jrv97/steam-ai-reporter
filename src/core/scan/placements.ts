@@ -88,6 +88,20 @@ const wishlistTitle: AnchorRule = (host) =>
     ? undefined
     : imagelessLink(host);
 
+/** A slide of the discovery queue player: Steam labels it by its title, tags and reasons. */
+const QUEUE_SLIDE = "[role='button'][aria-labelledby]";
+
+/**
+ * The title block of the queue player slide in the host: the slide's first label, which holds
+ * the game's name and price. Slide markup has hashed class names, so this reads only the labels.
+ */
+const queueTitle: AnchorRule = (host) => {
+  const slide = host.matches(QUEUE_SLIDE) ? host : host.querySelector(QUEUE_SLIDE);
+  const [id] = slide?.getAttribute("aria-labelledby")?.split(" ") ?? [];
+  const label = id === undefined ? null : host.ownerDocument.getElementById(id);
+  return label !== null && host.contains(label) ? label : undefined;
+};
+
 /** The default: a compact badge over the capsule image of any host. */
 export const GENERIC: OverlayPlacement = {
   id: "generic",
@@ -163,6 +177,17 @@ export const PLACEMENTS: readonly Placement[] = [
     badge: "compact",
     slot: "overlay",
     anchor: inside(".dq_item"),
+  },
+  {
+    // The discovery queue player on the home page: a React dialog with one slide per game. The
+    // badge ends the title block, under the name and price. Hiding would leave a hole in the queue.
+    id: "queue-player",
+    host: "[role='dialog'] *",
+    hideable: false,
+    maxChips: ROW_CHIPS,
+    badge: "full",
+    slot: "end",
+    anchor: queueTitle,
   },
   {
     // The large carousel capsule on React sale pages (tag, category and specials hubs).

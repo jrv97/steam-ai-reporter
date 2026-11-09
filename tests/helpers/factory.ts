@@ -127,7 +127,7 @@ import {
   v1Settings,
   v2Allow,
 } from "./stored-raw";
-import { searchRow, SURFACES } from "./surfaces";
+import { queueSlide, searchRow, SURFACES } from "./surfaces";
 import {
   bareDisclosed,
   demoOf,
@@ -275,6 +275,7 @@ export const make = {
     package: packagePage,
     packagePath: PACKAGE_PATH,
     searchRow,
+    queueSlide,
   },
   fixture: {
     app: FIXTURE_APPS,

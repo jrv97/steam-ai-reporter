@@ -37,6 +37,26 @@ export const ANY_CANDIDATE = [DATA_CANDIDATE, LINK_CANDIDATE, OTHER_ITEM_LINK]
 export const SKIPPED =
   `#footer, [data-featuretarget='footer'], .breadcrumbs, .game_area_dlc_bubble, ${SAR_NODE}`;
 
+/**
+ * Small capsules of other apps inside one app's capsule in a store dialog: the "Similar to games
+ * you've played" icons of the discovery queue player. They keep hosts of their own, and the
+ * capsule around them still names its one app. Sale pages use the same hover wrapper for whole
+ * capsules, so it counts as nested only inside `NESTING_DIALOG`.
+ */
+const NESTED = "[data-key='hover div']";
+const NESTING_DIALOG = "[role='dialog']";
+
+/** Whether `element` sits in a nested capsule that `root` holds below itself. */
+function nestedBelow(element: Element, root: Element): boolean {
+  const nested = element.closest(NESTED);
+  return nested !== null && nested !== root && root.contains(nested);
+}
+
+/** Whether `root` is in a store dialog and holds a nested capsule. */
+function holdsNested(root: Element): boolean {
+  return root.querySelector(NESTED) !== null && root.closest(NESTING_DIALOG) !== null;
+}
+
 /** What an element names: one app ID, `several` (a comma list or another item), or nothing. */
 export type Naming = AppId | "several" | undefined;
 
@@ -81,14 +101,26 @@ export function namesApp(root: Element, appId: AppId, base: string): boolean {
 
 /**
  * The single app every naming element in `root` (`root` included) names, `several` when they
- * disagree, or undefined when none names an app. Stops at the first disagreement.
+ * disagree, or undefined when none names an app. Nested capsules below `root` do not count. A
+ * root without them is read once.
  */
 export function uniformNaming(root: Element, base: string): Naming {
+  const naming = namingIn(root, base, false);
+  return naming === "several" && holdsNested(root)
+    ? namingIn(root, base, true)
+    : naming;
+}
+
+/** `uniformNaming`, counting nested capsules or not. Stops at the first disagreement. */
+function namingIn(root: Element, base: string, skipNested: boolean): Naming {
   let found = namingOf(root, base);
   if (found === "several") {
     return found;
   }
   for (const element of root.querySelectorAll(ANY_CANDIDATE)) {
+    if (skipNested && nestedBelow(element, root)) {
+      continue;
+    }
     const naming = namingOf(element, base);
     if (naming === undefined) {
       continue;
