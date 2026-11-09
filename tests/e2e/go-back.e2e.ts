@@ -80,8 +80,7 @@ async function windowOf(browser: ExtensionBrowser, tab: number): Promise<number>
 
 /**
  * Focuses `tab`'s window, as pressing its toolbar button does, opens the popup over its active tab
- * and clicks `selector` until the popup handles it. The form attaches its listeners after its
- * first reads and cancels the link's default action; an earlier click is cancelled here.
+ * and clicks `selector` once the popup draws it.
  */
 async function pressInPopup(browser: ExtensionBrowser, tab: number, selector: string) {
   const windowId = await windowOf(browser, tab);
@@ -100,21 +99,10 @@ async function pressInPopup(browser: ExtensionBrowser, tab: number, selector: st
         (ext, wanted) => {
           const [popup] = ext.extension.getViews({ type: "popup" });
           const link = popup?.document.querySelector<HTMLElement>(wanted);
-          if (popup === undefined || link === null || link === undefined) {
+          if (link === null || link === undefined) {
             throw new Error(wanted);
           }
-          // The form's handler cancels the click before it bubbles up to the window.
-          const seen = { handled: false };
-          const settle = (event: Event): void => {
-            seen.handled = event.defaultPrevented;
-            event.preventDefault();
-          };
-          popup.addEventListener("click", settle);
           link.click();
-          popup.removeEventListener("click", settle);
-          if (!seen.handled) {
-            throw new Error(wanted);
-          }
         },
         api,
         selector,
@@ -126,7 +114,8 @@ async function pressInPopup(browser: ExtensionBrowser, tab: number, selector: st
 /**
  * Waits until the popup has closed, no origin is left in the session area (each settings page
  * removes it once read) and every settings tab is ready. The form draws the empty ignore lists
- * right before it attaches its listeners. Resolves with the newest settings tab's ID.
+ * once its reads are done, right before it handles events. Resolves with the newest settings
+ * tab's ID.
  */
 async function settingsTab(browser: ExtensionBrowser): Promise<number> {
   const { page, api, pageIn } = await control(browser);
