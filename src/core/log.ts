@@ -53,7 +53,7 @@ export interface FailureStreak {
   worked(): void;
 }
 
-/** A streak that hands the first failure after a success, or ever, to `log`. */
+/** A `FailureStreak` that hands the first failure of each streak to `log`. */
 export function createFailureStreak(log: (problem: unknown) => void): FailureStreak {
   let failing = false;
   return {
