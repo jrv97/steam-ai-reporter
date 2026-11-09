@@ -642,7 +642,7 @@
   font-weight: var(--sar-weight-medium);
 }
 
-/* Steam's long heading for the tag wraps inside the tab, so the rail never scrolls sideways */
+/* A long key or description wraps inside the tab, so the rail never scrolls sideways */
 .sar-tab {
   max-inline-size: 100%;
 }
@@ -652,13 +652,48 @@
   overflow-wrap: anywhere;
 }
 
-/* General stands apart from the tags: heavier text and room before the first tag */
+/* A tag's tab: its key in bold and its state on one line, the line that describes it beneath */
+.sar-tab:not(.sar-tab-general) {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+}
+
+.sar-tab-key {
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
+  font-weight: var(--sar-weight-bold);
+}
+
+/* The wrapping row stays short: descriptions show only in the rail */
+.sar-tab-description {
+  display: none;
+  grid-column: 1 / -1;
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
+  color: var(--sar-color-text-subtle);
+  font-size: var(--sar-size-sm);
+  font-weight: var(--sar-weight-regular);
+}
+
+/* General stands apart from the tags, with heavier text */
 .sar-tab-general {
-  margin-inline-end: var(--sar-space-2);
   font-weight: var(--sar-weight-medium);
 }
 
-/* The tag's state in words beside its label, off in a quieter tone */
+/* The divider and caption over the tags' tabs; in the wrapping row it starts a line of its own */
+.sar-tab-group {
+  flex-basis: 100%;
+  margin-block-start: var(--sar-space-1);
+  padding-block-start: var(--sar-space-2);
+  padding-inline: var(--sar-space-2);
+  border-block-start: 1px solid var(--sar-color-divider);
+  color: var(--sar-color-text-subtle);
+  font-size: var(--sar-size-sm);
+  font-weight: var(--sar-weight-medium);
+}
+
+/* The tag's state in words beside its key: on in the switch's accent, off in a quieter tone */
 .sar-tab-state {
   flex: none;
   color: var(--sar-color-text-subtle);
@@ -667,7 +702,7 @@
 }
 
 .sar-tab-state[data-sar-on] {
-  color: var(--sar-color-text);
+  color: var(--sar-accent-300);
 }
 
 .sar-panel-title {
@@ -696,9 +731,12 @@
     border-radius: 0 var(--sar-radius-sm) var(--sar-radius-sm) 0;
   }
 
-  .sar-tab-general {
-    margin-block-end: var(--sar-space-2);
-    margin-inline-end: 0;
+  .sar-tab-description {
+    display: block;
+  }
+
+  .sar-tab-group {
+    flex-basis: auto;
   }
 }
 
@@ -786,18 +824,18 @@
   fill: currentColor;
 }
 
-.sar-order-chip {
+.sar-order-key {
   color: var(--sar-color-text-strong);
   font-weight: var(--sar-weight-medium);
 }
 
-.sar-order-heading,
+.sar-order-description,
 .sar-order-cue {
   color: var(--sar-color-text-subtle);
   font-size: var(--sar-size-sm);
 }
 
-/* Where small images stop: a dashed line, with the reason beneath it. It is not a focus stop. */
+/* Where limited surfaces stop: a dashed line, with the surfaces beneath it. No focus stop. */
 .sar-order-cue {
   padding-block: var(--sar-space-1);
   border-block-start: 1px dashed var(--sar-accent-400);

@@ -42,6 +42,11 @@ These are hard rules. A change that breaks one needs an ADR first.
    hover card, the banner's headings, the settings heading and the package summary keep Steam's
    words, every chip's accessible name begins with the chip's visible text and then gives Steam's
    words, and the person's text is rendered through `textContent` and never enters a catalog.
+   A tag also has a key, our short name, which names it only where the settings navigate: the
+   tab labels, the Tag order rows and the toolbar popup's rows (ADR 0023). Steam's heading stays
+   wherever the tag makes its claim: the hover card, the banner, the tab panel's title, the
+   package summary and every accessible name, after the visible text. A key or a description of
+   ours describes the tag and never claims more about a game than Steam's data.
 5. **Core purity.** `src/core` uses only DOM and web standards and never names `chrome`, `browser`
    or `GM`. Platform code lives in `src/platform/`.
 6. **Originality and credit.** No code is copied from other AI-disclosure extensions, and nothing

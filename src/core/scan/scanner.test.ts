@@ -192,7 +192,7 @@ describe("per-surface hosts", () => {
     expect(row.getAttribute(HOST_HIDEABLE)).toBe("false");
   });
 
-  it("search suggestions in the header root get hosts; its navigation links do not", async () => {
+  it("suggestions under the header search get hosts; its navigation links do not", async () => {
     const popup = new DOMParser().parseFromString(
       make.page.surface("search-suggestions"),
       "text/html",

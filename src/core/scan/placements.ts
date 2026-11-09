@@ -1,14 +1,9 @@
-import { OVERLAY_CHIPS } from "../kinds/order";
+import { OVERLAY_CHIPS, ROW_CHIPS, SUGGESTION_CHIPS } from "../kinds/order";
 import { LINK_CANDIDATE } from "./candidates";
 import { firstImage, imageBox } from "./image";
 
 // Where a host's badge goes, per store surface (rq6, S5; docs/design/components.mdx, sections 1,
 // 2 and 5). A new surface is a new entry here, never a scanner edit (rule 11).
-
-/** Chips a row with room for words shows beside its title. */
-const ROW_CHIPS = 3;
-/** Chips a search suggestion shows: its row is the smallest. */
-const SUGGESTION_CHIPS = 2;
 
 /** Finds the element a badge attaches to inside a host, or undefined when it does not fit. */
 export type AnchorRule = (host: Element) => Element | undefined;

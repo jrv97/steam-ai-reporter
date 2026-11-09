@@ -69,6 +69,10 @@
     "message": "AI Generated Content Disclosure",
     "description": "Steam's own heading of the block where a developer describes generative AI use. It titles the AI entry in the hover card, follows the chip text in the AI chip's screen reader name and heads the notice on the game's page. Use the wording Steam shows in this language."
   },
+  "kind_ai_key": {
+    "message": "AI",
+    "description": "Short name of the tag in the settings, where people look for it: the tab label, the row in the Tag order card and the row in the toolbar popup. Our own word, never a claim about a game; Steam's full line follows it for screen readers. Normal capitalization."
+  },
   "kind_ai_chip": {
     "message": "AI",
     "description": "Short chip for a game whose developer filled in Steam's AI disclosure. Keep it to a few characters; it sits in a row and over game images."
@@ -76,6 +80,10 @@
   "kind_kernel_heading": {
     "message": "Uses Kernel Level Anti-Cheat",
     "description": "Steam's own line for a game whose anti-cheat runs at kernel level. It titles the entry in the hover card and follows the chip text in the chip's screen reader name. Use the wording Steam shows in this language."
+  },
+  "kind_kernel_key": {
+    "message": "Kernel-level anti-cheat",
+    "description": "Short name of the tag in the settings, where people look for it: the tab label, the row in the Tag order card and the row in the toolbar popup. Our own word, never a claim about a game; Steam's full line follows it for screen readers. Normal capitalization."
   },
   "kind_kernel_chip": {
     "message": "KLAC",
@@ -93,6 +101,10 @@
     "message": "Uses Anti-Cheat Software",
     "description": "Steam's own line for a game with anti-cheat software that does not run at kernel level. It titles the entry in the hover card and follows the chip text in the chip's screen reader name. Use the wording Steam shows in this language."
   },
+  "kind_anticheat_key": {
+    "message": "Anti-cheat",
+    "description": "Short name of the tag in the settings, where people look for it: the tab label, the row in the Tag order card and the row in the toolbar popup. Our own word, never a claim about a game; Steam's full line follows it for screen readers. Normal capitalization."
+  },
   "kind_anticheat_chip": {
     "message": "Anti-Cheat",
     "description": "Short chip for a game with anti-cheat software. Keep it short; it sits in a row and over game images."
@@ -101,6 +113,10 @@
     "message": "Incorporates 3rd-party DRM",
     "description": "Steam's own line for a game whose developer declared third-party DRM. It titles the entry in the hover card and follows the chip text in the chip's screen reader name; the DRM the developer named follows in the card, untranslated."
   },
+  "kind_drm_key": {
+    "message": "3rd-party DRM",
+    "description": "Short name of the tag in the settings, where people look for it: the tab label, the row in the Tag order card and the row in the toolbar popup. Our own word, never a claim about a game; Steam's full line follows it for screen readers. Normal capitalization."
+  },
   "kind_drm_chip": {
     "message": "DRM",
     "description": "Short chip for a game with third-party DRM. Keep it short; it sits in a row and over game images."
@@ -108,6 +124,10 @@
   "kind_account_heading": {
     "message": "Requires 3rd-Party Account",
     "description": "Steam's own line for a game that needs an account with another company. It titles the entry in the hover card and follows the chip text in the chip's screen reader name; the account the developer named follows in the card, untranslated."
+  },
+  "kind_account_key": {
+    "message": "3rd-party account",
+    "description": "Short name of the tag in the settings, where people look for it: the tab label, the row in the Tag order card and the row in the toolbar popup. Our own word, never a claim about a game; Steam's full line follows it for screen readers. Normal capitalization."
   },
   "kind_account_chip": {
     "message": "Account",
@@ -121,6 +141,10 @@
     "message": "Requires agreement to a 3rd-party EULA",
     "description": "Steam's own line for a game that makes the player accept an end user license agreement of another company. It titles the entry in the hover card and follows the chip text in the chip's screen reader name; the agreement names follow in the card, untranslated."
   },
+  "kind_eula_key": {
+    "message": "3rd-party EULA",
+    "description": "Short name of the tag in the settings, where people look for it: the tab label, the row in the Tag order card and the row in the toolbar popup. Our own word, never a claim about a game; Steam's full line follows it for screen readers. Normal capitalization."
+  },
   "kind_eula_chip": {
     "message": "EULA",
     "description": "Short chip for a game with a third-party end user license agreement. Use the abbreviation Steam uses in this language; it sits in a row and over game images."
@@ -128,6 +152,14 @@
   "kind_pvp_heading": {
     "message": "PvP",
     "description": "Title of the PvP entry in the hover card and, after the chip text, the chip's screen reader name (said once when the two match). Use the abbreviation Steam uses in this language for player versus player."
+  },
+  "kind_pvp_key": {
+    "message": "PvP",
+    "description": "Short name of the tag in the settings, where people look for it: the tab label, the row in the Tag order card and the row in the toolbar popup. Our own word, never a claim about a game; Steam's full line follows it for screen readers. Normal capitalization."
+  },
+  "kind_pvp_description": {
+    "message": "Online, LAN or split-screen PvP",
+    "description": "Second, quieter line under the tag's short name on its settings tab and its Tag order row. It describes the tag, never a game, and must differ from the short name. Steam's three PvP category names, joined. Use the category names Steam shows in this language."
   },
   "kind_pvp_chip": {
     "message": "PvP",
@@ -153,6 +185,14 @@
     "message": "In-App Purchases",
     "description": "Steam's category name for a game that sells items inside it. It titles the entry in the hover card and the banner, names the settings section and follows the chip text in the chip's screen reader name. Use the name Steam's store shows for this category in this language."
   },
+  "kind_iap_key": {
+    "message": "In-app purchases",
+    "description": "Short name of the tag in the settings, where people look for it: the tab label, the row in the Tag order card and the row in the toolbar popup. Our own word, never a claim about a game; Steam's full line follows it for screen readers. Normal capitalization."
+  },
+  "kind_iap_description": {
+    "message": "Contains In-App Purchases",
+    "description": "Second, quieter line under the tag's short name on its settings tab and its Tag order row. It describes the tag, never a game, and must differ from the short name. Steam's category name inside a plain line. Use the category name Steam shows in this language."
+  },
   "kind_iap_chip": {
     "message": "IAP",
     "description": "Short chip for a game with in-app purchases, as its Steam categories say. Keep it short; it sits in a row and over game images."
@@ -161,6 +201,10 @@
     "message": "Steam Deck Compatibility",
     "description": "Steam's own heading of the Steam Deck rating Valve gives a game. It titles the entry in the hover card, names the settings section with the rating word heads the entry in the notice on the game's page, and it follows the chip text in the chip's screen reader name. Use the wording Steam shows in this language."
   },
+  "kind_deck_key": {
+    "message": "Steam Deck",
+    "description": "Short name of the tag in the settings, where people look for it: the tab label, the row in the Tag order card and the row in the toolbar popup. Our own word, never a claim about a game; Steam's full line follows it for screen readers. Normal capitalization."
+  },
   "kind_deck_chip": {
     "message": "Deck",
     "description": "Short device word at the start of a Steam Deck chip, followed by Steam's rating word (kind_facet_chip): \"Deck Unsupported\". Our short form of the device name, for chips only; keep it short."
@@ -168,6 +212,10 @@
   "kind_machine_heading": {
     "message": "Steam Machine Compatibility",
     "description": "Steam's own heading of the Steam Machine rating Valve gives a game. It titles the entry in the hover card, names the settings section with the rating word heads the entry in the notice on the game's page, and it follows the chip text in the chip's screen reader name. Use the wording Steam shows in this language."
+  },
+  "kind_machine_key": {
+    "message": "Steam Machine",
+    "description": "Short name of the tag in the settings, where people look for it: the tab label, the row in the Tag order card and the row in the toolbar popup. Our own word, never a claim about a game; Steam's full line follows it for screen readers. Normal capitalization."
   },
   "kind_machine_chip": {
     "message": "Steam Machine",
@@ -189,6 +237,14 @@
     "message": "Family Sharing",
     "description": "Steam's own name of Family Sharing, the Steam feature that lets a family share a library. It titles the entry in the hover card, names the settings section, follows the chip text in the chip's screen reader name and is the choice for a game Steam lists it for. It is also the listed value's chip text, in full; the compact badge may cut it with an ellipsis when narrow. Use the word Steam shows in this language."
   },
+  "kind_family_key": {
+    "message": "Family Sharing",
+    "description": "Short name of the tag in the settings, where people look for it: the tab label, the row in the Tag order card and the row in the toolbar popup. Our own word, never a claim about a game; Steam's full line follows it for screen readers. Normal capitalization."
+  },
+  "kind_family_description": {
+    "message": "Steam Family Sharing support",
+    "description": "Second, quieter line under the tag's short name on its settings tab and its Tag order row. It describes the tag, never a game, and must differ from the short name. Steam's feature name inside a plain line: whether Steam lists Family Sharing."
+  },
   "kind_family_unsupported": {
     "message": "Family Sharing not Available",
     "description": "Steam's own words for a game that cannot be shared in a family library. The heading of the entry in the notice on the game's page, a choice in the settings, the package summary's name for the value and, after the chip text, the screen reader name of its chip, for a paid game whose Steam feature list leaves Family Sharing out. Keep Steam's wording and capitalization in this language."
@@ -204,6 +260,14 @@
   "kind_earlyaccess_heading": {
     "message": "Early Access Game",
     "description": "Steam's own line for a game in Early Access, the heading of the notice at the top of its store page. It titles the entry in the hover card, names the settings section and begins the screen reader name of the chip. Use the line Steam's store shows in this language."
+  },
+  "kind_earlyaccess_key": {
+    "message": "Early Access",
+    "description": "Short name of the tag in the settings, where people look for it: the tab label, the row in the Tag order card and the row in the toolbar popup. Our own word, never a claim about a game; Steam's full line follows it for screen readers. Normal capitalization."
+  },
+  "kind_earlyaccess_description": {
+    "message": "This game is still in Early Access",
+    "description": "Second, quieter line under the tag's short name on its settings tab and its Tag order row. It describes the tag, never a game, and must differ from the short name. Plain line on what the tag marks, with Steam's program name."
   },
   "kind_earlyaccess_chip": {
     "message": "Early Access",
@@ -231,7 +295,7 @@
   },
   "kind_chip_name": {
     "message": "$chip$: $heading$",
-    "description": "Screen reader name of a chip: the visible chip text, then Steam's full line for the kind, or Steam's word for a value that names the kind by itself. $chip$ is the chip text, the person's own when they set one, and $heading$ Steam's words.",
+    "description": "Screen reader name of a chip, a settings tab or a popup row: the visible text, then Steam's full line for the kind, or Steam's word for a value that names the kind by itself. $chip$ is the chip text (the person's own when they set one) or the tag's short name, and $heading$ Steam's words.",
     "placeholders": {
       "chip": {
         "content": "$1",
@@ -719,10 +783,10 @@
   },
   "options_chip_label": {
     "message": "Chip text",
-    "description": "Label of a text field in one tag's settings where the person types their own words for the tag's chip, the short label on badges, in the tag list of a game's page and in the toolbar popup. Empty keeps the extension's own words, shown as the placeholder."
+    "description": "Label of a text field in one tag's settings where the person types their own words for the tag's chip, the short label on badges and in the tag list of a game's page. Empty keeps the extension's own words, shown as the placeholder."
   },
   "options_chip_help": {
-    "message": "Your own words for this tag's badges, its row in the popup and its Ignore buttons. Leave it empty for the default. Hover cards, banner headings and screen readers still give Steam's words.",
+    "message": "Your own words for this tag's badges and its Ignore buttons. Leave it empty for the default. Hover cards, banner headings and screen readers still give Steam's words.",
     "description": "Help under the chip text field. Says where the person's words show, that empty means the default, and that the hover card, the banner's headings and screen readers keep Steam's own words after them."
   },
   "options_chip_compact_label": {
@@ -1137,6 +1201,10 @@
     "message": "General",
     "description": "The first settings tab and its heading: language, colors, what is ignored for all tags, backup and privacy. One word if the language allows."
   },
+  "options_tabs_group_tags": {
+    "message": "Tags",
+    "description": "Small caption in the settings tab list, under General and a divider, over the tabs of the tags. Decoration only; screen readers skip it. One word."
+  },
   "options_allow_kind_title": {
     "message": "Ignored for this tag",
     "description": "Title of the card in a tag's settings tab that lists the games, developers and publishers ignored for that tag only."
@@ -1174,14 +1242,44 @@
     "description": "Title of the card in the General settings tab where a person puts the tags in the order badges, banners and summaries list them."
   },
   "options_order_help": {
-    "message": "Badges, banners and summaries list tags in this order, and so do the settings tabs and the popup. Small game images show the first $count$.",
-    "description": "Help under the Tag order title. $count$ is how many tags fit on a small game image, as a number (2); a +N badge stands for the rest. The tabs and the popup's rows follow the same order.",
+    "message": "Tags at the top have priority: badges, banners and summaries list tags in this order, and where room is short the first ones take it. The settings tabs and the popup follow the same order.",
+    "description": "Help under the Tag order title. Tags higher in the list have priority: where a surface shows only a few tags, the first ones win the space. The tabs and the popup's rows follow the same order."
+  },
+  "options_order_cut_one": {
+    "message": "Only the first tag fits on $surfaces$; the rest go into \"+N\".",
+    "description": "A dashed line in the Tag order card after the last tag some store surfaces show, and the same sentence for screen readers under the card's help. $surfaces$ names those surfaces, joined as a list (\"game images and search suggestions\"). $count$ is how many tags fit. \"+N\" is the chip that stands for the rest; keep it as is. Singular form.",
+    "placeholders": {
+      "surfaces": {
+        "content": "$2",
+        "example": "search suggestions"
+      }
+    }
+  },
+  "options_order_cut_other": {
+    "message": "Only the first $count$ tags fit on $surfaces$; the rest go into \"+N\".",
+    "description": "A dashed line in the Tag order card after the last tag some store surfaces show, and the same sentence for screen readers under the card's help. $surfaces$ names those surfaces, joined as a list (\"game images and search suggestions\"). $count$ is how many tags fit. \"+N\" is the chip that stands for the rest; keep it as is. Plural form.",
     "placeholders": {
       "count": {
         "content": "$1",
-        "example": "2"
+        "example": "3"
+      },
+      "surfaces": {
+        "content": "$2",
+        "example": "search, wishlist and DLC rows"
       }
     }
+  },
+  "options_order_surface_images": {
+    "message": "game images",
+    "description": "Store surface named inside options_order_cut: the capsule images of games, large and small, where the tags sit over the image. Lower case unless the language needs otherwise; it sits inside a sentence."
+  },
+  "options_order_surface_suggestions": {
+    "message": "search suggestions",
+    "description": "Store surface named inside options_order_cut: the suggestions under the store's search box as a person types. Lower case; it sits inside a sentence."
+  },
+  "options_order_surface_rows": {
+    "message": "search, wishlist and DLC rows",
+    "description": "Store surface named inside options_order_cut: the rows of the search results, the wishlist and the DLC list of a game's page, where the tags sit beside the title. Lower case; it sits inside a sentence."
   },
   "options_order_how": {
     "message": "Drag a tag by its handle, or click the handle and then the handle of the place it goes to. With a keyboard, Space or Enter picks a tag up, the arrow keys move it, Space or Enter drops it and Escape puts it back.",
@@ -1196,10 +1294,6 @@
         "example": "KLAC"
       }
     }
-  },
-  "options_order_cue": {
-    "message": "Small images show only the tags above this line",
-    "description": "Line in the Tag order card, after the last tag a small game image shows: the tags above it appear on small images, the ones below it do not. The line is a divider and the copy sits just under it. Keep it to one short sentence."
   },
   "options_order_reset": {
     "message": "Reset order",
