@@ -93,9 +93,9 @@ from repo import (
 
 KIB = 1024
 BUDGETS = {
-    **{DIST / target / "content.js": 215 * KIB for target in EXTENSION_TARGETS},
+    **{DIST / target / "content.js": 222 * KIB for target in EXTENSION_TARGETS},
     **{DIST / target / "options.js": 217 * KIB for target in EXTENSION_TARGETS},
-    DIST / "userscript" / f"{SLUG}.user.js": 372 * KIB,
+    DIST / "userscript" / f"{SLUG}.user.js": 378 * KIB,
 }
 ENGLISH = ROOT / "src" / "locales" / DEFAULT_LOCALE / "messages.json"
 STORE_MATCH = ["https://store.steampowered.com/*"]

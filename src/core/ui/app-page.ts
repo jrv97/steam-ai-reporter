@@ -25,7 +25,7 @@ export interface AppPageView {
   /**
    * Per kind: nothing shows for the kind, because the game, or the base game of a DLC, is ignored
    * for it or for all kinds (`isIgnored`). It includes `ignored`; a kind only the base game
-   * silences gets no banner entry and no note, since its Undo would be on the other game's page.
+   * silences gets no banner entry and no note, since undoing it belongs on the other game's page.
    */
   readonly suppressed: Readonly<Record<KindId, boolean>>;
   /** The game's developers and publishers, a row per name and role, and where each is ignored. */
@@ -55,41 +55,34 @@ export interface AppPageOptions extends BannerOptions {
 }
 
 /**
- * What the banner shows: an entry for each disclosed kind the settings allow, a note for each
- * kind the game is ignored for, or one note for all kinds, and a note for each developer or
- * publisher ignored for a kind the banner would list, or for all kinds. A kind only the base game
- * of a DLC is ignored for shows nothing. Undefined when there is nothing.
+ * What the banner shows: an entry for each disclosed kind the settings allow that nothing
+ * ignores, the scopes the game is ignored in among those kinds and all kinds, and a note for each
+ * developer or publisher ignored for a kind the banner lists, or for all kinds. A kind only the
+ * base game of a DLC is ignored for shows nothing. Undefined when there is nothing.
  */
 function bannerView(view: AppPageView): BannerView | undefined {
   const shown: AnyDisclosed[] = [];
-  const ignored: AllowScope[] = [];
-  const listed = new Set<KindId>();
-  let silenced = false;
+  const listed: KindId[] = [];
   for (const kind of view.order) {
     const verdict = view.verdicts[kind.id];
     if (verdict.state !== "disclosed" || !view.banner[kind.id]) {
       continue;
     }
-    listed.add(kind.id);
-    if (view.ignored[ALLOW_ALL]) {
-      silenced = true;
-    } else if (view.ignored[kind.id]) {
-      ignored.push(kind.id);
-    } else if (!view.suppressed[kind.id]) {
+    listed.push(kind.id);
+    if (!view.suppressed[kind.id]) {
       shown.push(verdict);
     }
   }
-  if (silenced) {
-    ignored.push(ALLOW_ALL);
-  }
+  const scopes: readonly AllowScope[] = listed.length === 0 ? [] : [ALLOW_ALL, ...listed];
+  const ignored = scopes.filter((scope) => view.ignored[scope]);
   const creatorNotes: CreatorNote[] = view.creators.flatMap((row) =>
     row.ignored
-      .filter(({ scope }) => scope === ALLOW_ALL ? listed.size > 0 : listed.has(scope))
+      .filter(({ scope }) => scopes.includes(scope))
       .map(({ scope, key }) => ({ role: row.role, creator: row.creator, key, scope }))
   );
   return shown.length + ignored.length + creatorNotes.length === 0
     ? undefined
-    : { shown, ignored, creators: view.creators, creatorNotes, words: view.words };
+    : { shown, listed, ignored, creators: view.creators, creatorNotes, words: view.words };
 }
 
 /**

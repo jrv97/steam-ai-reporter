@@ -180,19 +180,22 @@ describe("createAppPageUi", () => {
   describe("with the person's chip text", () => {
     const MINE = make.chipText();
     const words = make.settings.chipText({ ai: { chip: MINE } }).kinds;
-    const ignoreAi = () =>
-      bannerRoot()?.querySelector(
-        "[data-tks-action=ignore-creator][data-tks-scope=ai]",
-      )?.textContent;
+    const optionTitles = () =>
+      [
+        ...(bannerRoot()?.querySelectorAll(
+          "#tks-banner-option-tag-ai .tks-ignore-title, "
+            + "#tks-banner-option-developer-0-ai .tks-ignore-title",
+        ) ?? []),
+      ].map((title) => title.textContent);
 
-    it("names the chips and a creator's Ignore button by it, and keeps Steam's heading", () => {
+    it("names the chips and the tag's menu options by it, and keeps Steam's heading", () => {
       const ui = setup();
       ui.render(view());
       ui.render(view({ words }));
       expect(chips().map((chip) => chip.querySelector(".tks-badge-label")?.textContent)).toEqual([
         MINE,
       ]);
-      expect(ignoreAi()).toBe(i18n.t("banner_ignore_creator_kind", { chip: MINE }));
+      expect(optionTitles()).toEqual([MINE, MINE]);
       expect(headings()).toEqual([i18n.t("kind_ai_heading")]);
     });
   });
@@ -280,7 +283,7 @@ describe("createAppPageUi", () => {
     expect(document.body.innerHTML).toBe(PAGE);
   });
 
-  it("notes a developer ignored for all tags once, and keeps the Undo as the only control", () => {
+  it("notes a developer ignored for all tags once, with no entry and no section", () => {
     setup().render(view({ verdicts: ARC, developerIgnored: ["all"] }));
     expect(notes()).toEqual([
       i18n.t("banner_ignored_creator", {

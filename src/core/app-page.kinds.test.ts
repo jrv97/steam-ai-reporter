@@ -93,17 +93,18 @@ describe("start on an English app page of a game with no AI", () => {
     expect(chipKinds()).toEqual(["drm", "account", "eula"]);
   });
 
-  it("ignores one kind from its entry and leaves the others", async () => {
+  it("ignores one kind from the menu and leaves the others", async () => {
     const { ignored } = await startOnDrmPage();
+    const option = () => control("#tks-banner-option-tag-drm");
 
-    control('.tks-banner-action[data-tks-scope="drm"]')?.click();
-    await expect.poll(() => control('[data-tks-action="undo"]')).toBeInstanceOf(HTMLElement);
+    option()?.click();
+    await expect.poll(() => option()?.getAttribute("aria-checked")).toBe("true");
     expect(await ignored("drm")).toEqual([String(GAME)]);
     expect(await ignored("all")).toEqual([]);
     expect(headings()).toEqual([i18n.t("kind_account_heading"), i18n.t("kind_eula_heading")]);
     expect(chipKinds()).toEqual(["account", "eula"]);
 
-    control('[data-tks-action="undo"]')?.click();
+    option()?.click();
     await expect.poll(() => headings().length).toBe(3);
     expect(chipKinds()).toEqual(["drm", "account", "eula"]);
     expect(await ignored("drm")).toEqual([]);
@@ -150,8 +151,9 @@ describe("start on an English app page of a game with no AI", () => {
       });
       await expect.poll(() => headings().length).toBe(4);
       expect(headings()[3]).toBe(deckEntry);
-      control('.tks-banner-action[data-tks-scope="deck"]')?.click();
-      await expect.poll(() => control('[data-tks-action="undo"]')).toBeInstanceOf(HTMLElement);
+      control("#tks-banner-option-tag-deck")?.click();
+      await expect.poll(() => control("#tks-banner-option-tag-deck")?.getAttribute("aria-checked"))
+        .toBe("true");
       expect(await ignored("deck")).toEqual([String(GAME)]);
       expect(control(".tks-banner-ignored-text")?.textContent).toBe(
         i18n.t("banner_ignored_kind", { heading: i18n.t("kind_deck_heading") }),

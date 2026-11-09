@@ -1132,9 +1132,8 @@ export async function mountSettingsForm(
   /** Draws a scope's card from the last reads: each list that holds items, or the empty state. */
   function renderScope({ of, body }: ScopeCard): void {
     const blocks = sources.flatMap((source) => listBlock(source, of) ?? []);
-    const action = of === ALLOW_ALL ? "banner_ignore" : "banner_ignore_kind";
     const shown: HTMLElement[] = blocks.length === 0
-      ? [element("p", "tks-empty", i18n.t("options_allow_empty", { action: i18n.t(action) }))]
+      ? [element("p", "tks-empty", i18n.t("options_allow_empty"))]
       : blocks;
     const note = of === ALLOW_ALL ? undefined : allNote();
     body.replaceChildren(...shown, ...(note === undefined ? [] : [note]));

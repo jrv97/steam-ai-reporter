@@ -34,11 +34,11 @@ Every class, attribute and custom property starts with `tks-`.
 ## Voice and copy
 
 - Use Steam's words for each tag: its own line for the kind ("Uses Kernel Level Anti-Cheat", "Incorporates 3rd-party DRM", "Requires 3rd-Party Account", "Requires agreement to a 3rd-party EULA", "PvP", "In-App Purchases", "Steam Deck Compatibility", "Steam Machine Compatibility", "Family Sharing", "Early Access Game") and, for AI, Steam's heading "AI Generated Content Disclosure". A rating keeps Steam's word for its value: Verified, Playable, Unsupported, and Family Sharing keeps Steam's "Family Sharing" and "Family Sharing not Available" where no source line follows, while its derived value's chip and card line are the maintainer's own words (decision 64). Valve's Unknown (0) is never shown, and never as Unsupported. Spanish follows Steam's Spain Spanish. Our own copy never says "uses AI", "AI-free" or "no AI", and never states a tag's absence ("No" and a tag's name, or "none", "free of" or "-free" beside one), in any locale; the copy test fails the build on them. The one exception is Family Sharing's derived value, by key (`kind_family_unsupported_chip`, `kind_family_unsupported_line`; ADR 0016, amended), and only with its source line in the card.
-- Plain, short, sentence case: "Ignore this game", "Ignore tag for this game", "Show full report".
+- Plain, short, sentence case: "Ignore this game", "All tags", "Show full report".
 - One line names a tag everywhere: Steam's line is the hover card entry title, the banner entry heading, the settings section title and, after the chip's visible text, the rest of the chip's accessible name. The chip itself is short: AI, KLAC, Anti-Cheat, DRM, Account, EULA, PvP, IAP, Early Access. A tag with values puts the value after a short device word: "Deck Unsupported", "Steam Machine Playable" (`kind_facet_chip`), named "Deck Unsupported: Steam Deck Compatibility"; its banner heading reads "Steam Deck Compatibility: Unsupported" (`kind_facet_name`). A value with a chip of its own (`FacetDefinition.chip`) shows that chip and is named by it, then Steam's word alone. For Family Sharing the listed value's chip is Steam's full word, "Family Sharing" (`kind_family_heading`), and the derived value's chip is the maintainer's "No Family Sharing" (`kind_family_unsupported_chip`), named "No Family Sharing: Family Sharing not Available". On a narrow compact badge the label may end in an ellipsis (`.tks-compact-label`).
 - A person may name a tag's chips in their own words (decision 67, ADR 0017): `kinds.<id>.chip` for every chip and `kinds.<id>.chipCompact` for small images. The text replaces the tag's word and keeps Steam's value word ("SD Unsupported"); for Family Sharing it replaces the whole chip. It is drawn through `textContent` only and never enters a catalog. Steam's words stay in the hover card, the banner's headings, the settings heading, the package summary and every chip's accessible name after the visible text.
 - Name the source: the developer ("In the developer's own words:", "AI service named by the developer:", "Declared by the developer on the store page"), or Valve for what Valve computes: "According to Valve" for the device ratings (decision 63), and the kind's own line for Family Sharing, "According to the features Steam lists for this game" (`kind_family_source`, decision 64). Under the derived value only, the card line `kind_family_unsupported_line` reads "Family Sharing is not supported for this game", and that source line always follows it.
-- The opt-out labels are "Ignore tag for this game" and "Ignore this game" (every tag). The store has its own Ignore button just above; ours only affects this extension.
+- The opt-out lives in one Ignore menu at the foot of the banner (ADR 0026): "Ignore this game" (every tag), a creator's "All tags", and each tag by its short label. The store has its own Ignore button just above; ours only affects this extension.
 - Settings speak about games, not switches: the list filter reads "Show", "Dim", "Hide".
 - No exclamation marks, no emoji, no em dashes.
 - The full catalog, with translator notes, is in the Messages section.
@@ -331,11 +331,11 @@ Preview: `previews/Banner.html`.
 ### When to use
 
 - On the app page of a game with at least one disclosed kind that is enabled and has its banner switch on, once per page view. One banner holds every such kind, in the tag order (section 6).
-- A kind the game is ignored for is not listed. It becomes a one-line note with Undo. A game ignored for all tags gets one such note and nothing else.
-- Below the entries sits a closed section, "Ignore a developer or publisher", with a row for each of the game's developers and publishers (see "Ignoring a developer or publisher" below). A tag a creator is ignored for becomes a note with Undo.
+- A kind the game is ignored for is not listed. It becomes a one-line note. A game ignored for all tags gets one such note and the ignore menu, nothing else.
+- Every ignore lives in one menu at the foot of the banner, drawn after Steam's own Ignore dropdown (ADR 0026, "The ignore menu" below). A tag a creator is ignored for becomes a note.
 - On a demo's page, a kind the full game declared and the demo did not is listed like the others, with `kind_full_game` right under its heading and before the developer's text, which stays the full game's developer's (decision 59). A Valve value lent this way reads `kind_full_game_valve`.
-- A tag with values is headed by `kind_facet_name`, Steam's heading and the value's word ("Steam Deck Compatibility: Unsupported"), or by Steam's word alone for a value with a chip of its own ("Family Sharing not Available"), and "Ignore tag for this game" ignores the kind, every value.
-- A kind the game's base game is ignored for (the game is a DLC) is not listed and gets no note, since its Undo would belong to the other game's page. A DLC page whose every kind is silenced this way has no banner. "Ignore this game" on a DLC page still ignores that DLC only.
+- A tag with values is headed by `kind_facet_name`, Steam's heading and the value's word ("Steam Deck Compatibility: Unsupported"), or by Steam's word alone for a value with a chip of its own ("Family Sharing not Available"), and its option in the menu ignores the kind, every value.
+- A kind the game's base game is ignored for (the game is a DLC) is not listed and gets no note, since undoing it belongs to the other game's page. A DLC page whose every kind is silenced this way has no banner. "Ignore" on a DLC page still ignores that DLC only.
 - Never as a modal or overlay, never over content, never stealing focus.
 
 ### What the consumer provides
@@ -345,12 +345,7 @@ Preview: `previews/Banner.html`.
   #shadow-root
   <aside class="tks-banner" aria-labelledby="tks-banner-drm-title" tabindex="-1">
     <div class="tks-banner-entry">
-      <div class="tks-banner-head">
-        <h2 class="tks-banner-title" id="tks-banner-drm-title">t('kind_drm_heading')</h2>
-        <button class="tks-banner-action" id="tks-banner-drm-ignore" type="button"
-                data-tks-action="ignore" data-tks-scope="drm"
-                aria-labelledby="tks-banner-drm-ignore tks-banner-drm-title">t('banner_ignore_kind')</button>
-      </div>
+      <h2 class="tks-banner-title" id="tks-banner-drm-title">t('kind_drm_heading')</h2>
     </div>
     <div class="tks-banner-entry">
       <!-- AI: its heading, on a demo's page the line for a kind its full game declared, then the developer's own words -->
@@ -362,13 +357,40 @@ Preview: `previews/Banner.html`.
       <p class="tks-banner-service">t('badge_card_service_label') <span class="tks-banner-service-name">name</span></p>
     </div>
     <p class="tks-banner-note">
-      <span class="tks-banner-ignored-text" id="tks-banner-kernel-note">t('banner_ignored_kind', { heading })</span>
-      <button class="tks-banner-link" id="tks-banner-kernel-undo" type="button"
-              data-tks-action="undo" data-tks-scope="kernel"
-              aria-labelledby="tks-banner-kernel-undo tks-banner-kernel-note">t('banner_undo')</button>
+      <span class="tks-banner-ignored-text">t('banner_ignored_kind', { heading })</span>
     </p>
     <div class="tks-banner-foot">
-      <button class="tks-banner-link" type="button" data-tks-action="ignore" data-tks-scope="all">t('banner_ignore')</button>
+      <div class="tks-ignore">
+        <div class="tks-ignore-split">
+          <button class="tks-ignore-main" id="tks-banner-ignore-main" type="button"
+                  data-tks-action="game" data-tks-scope="all" aria-pressed="false">t('banner_menu_ignore')</button>
+          <button class="tks-ignore-caret" id="tks-banner-menu-button" type="button" data-tks-action="menu"
+                  aria-label="t('banner_menu_label')" aria-haspopup="menu" aria-expanded="false"
+                  aria-controls="tks-banner-menu"><span class="tks-ignore-arrow" aria-hidden="true"></span></button>
+        </div>
+        <div class="tks-ignore-flyout" id="tks-banner-menu" role="menu" aria-labelledby="tks-banner-menu-button" hidden>
+          <div class="tks-ignore-section" role="none">
+            <button class="tks-ignore-group-head" id="tks-banner-group-game" type="button" role="menuitem"
+                    tabindex="-1" data-tks-action="group" data-tks-group="game" aria-expanded="true"
+                    aria-controls="tks-banner-group-game-items">t('banner_menu_group_game')</button>
+            <div class="tks-ignore-group" id="tks-banner-group-game-items" role="group"
+                 aria-labelledby="tks-banner-group-game">
+              <button class="tks-ignore-option" id="tks-banner-option-game-all" type="button"
+                      role="menuitemcheckbox" aria-checked="false" tabindex="-1"
+                      data-tks-action="game" data-tks-scope="all">
+                <span class="tks-ignore-box" aria-hidden="true"></span>
+                <span class="tks-ignore-label">
+                  <span class="tks-ignore-title">t('banner_ignore')</span>
+                  <span class="tks-ignore-subtitle">t('banner_menu_game_note')</span>
+                </span>
+              </button>
+            </div>
+          </div>
+          <!-- Developers and Publishers: per name a role="group" labelled by the name, with
+               "All tags" then one option per listed tag (data-tks-action="creator",
+               data-tks-role, data-tks-creator). Tags: one option per listed tag. -->
+        </div>
+      </div>
     </div>
     <p class="tks-banner-error" role="alert" hidden>t('error_allow_list_save')</p>
   </aside>
@@ -376,11 +398,11 @@ Preview: `previews/Banner.html`.
 </div>
 ```
 
-The banner is a summary, one line per kind: Steam's line and its ignore button. Steam's own boxes on the page and the hover card already show each kind's short lines, so the banner does not repeat them. Only the AI kind adds the developer's own words: "In the developer's own words:", the notes (collapsed at 3 lines) and the AI service the developer named, when there is one.
+The banner is a summary, one line per kind: Steam's line. Steam's own boxes on the page and the hover card already show each kind's short lines, so the banner does not repeat them. Only the AI kind adds the developer's own words: "In the developer's own words:", the notes (collapsed at 3 lines) and the AI service the developer named, when there is one.
 
 - Developer text is data: `textContent`, never translated, summarized or highlighted. The notes take `white-space: pre-line`.
 - The banner draws no link, so a EULA appears by its heading only; the agreement names are in the hover card.
-- The host carries `id="tks-banner"`, and the `aside` carries `tabindex="-1"` so focus can land on it when a button hides.
+- The host carries `id="tks-banner"`, and the `aside` carries `tabindex="-1"` so focus can land on it when a control leaves.
 - A shadow root on `div.tks-banner-host`, styles attached with `adoptedStyleSheets`. Tokens inherit from `:root`, and the page font works inside because `@font-face` is document-wide.
 
 ### Placement
@@ -395,8 +417,9 @@ Modeled on the store's per-app notice bubbles (the DLC notice sits in the same s
 - No border, no radius, no shadow.
 - Padding `tks-space-2` at block-start, `tks-space-3` at block-end, `tks-space-4` inline. `tks-space-4` below: the store's own 2px would glue the banner to the purchase box and read as part of the offer.
 - All text in `tks-banner-fg`. Heading `tks-text-banner-title` (24/30 light) when the banner holds one entry. With two or more, the headings step down to 18/23 light (`tks-size-2xl`) and the entries sit `tks-space-3` apart. Detail, source and service lines `tks-text-banner-meta` (13/19 light). Notes `tks-text-banner-quote` (14/21, italic like the notes in the store's own disclosure section).
-- "Ignore tag for this game" matches the store's outlined buttons right below the banner ("Compare Editions", "Browse all"): `tks-text-banner-button` (11/14 regular, the store's size) in `tks-banner-button-fg`, `tks-banner-button-pad-block` (2px) and `tks-banner-button-pad-inline` (15px), a 1px `tks-banner-button-border` (white at 40%), `tks-radius-sm`, a `tks-banner-button-bg-hover` wash on hover. It stays at least `tks-control-height-xs` (24px) tall for the target size (WCAG 2.5.8), where the store's buttons are 22px. It sits at inline-end of its entry's heading.
-- "Ignore this game", "Show full report" and "Undo" are the store's underlined in-bubble links, in `tks-banner-link-color`, as `button` elements with a 24px minimum target. "Ignore this game" stands alone at inline-end under the last entry. A EULA link looks the same, as an anchor.
+- The split Ignore button sits at inline-end under the last entry. Both halves match the store's outlined buttons right below the banner ("Compare Editions", "Browse all"): `tks-text-banner-button` (11/14 regular, the store's size) in `tks-banner-button-fg`, `tks-banner-button-pad-block` (2px) and `tks-banner-button-pad-inline` (15px), a 1px `tks-banner-button-border` (white at 40%), `tks-radius-sm` on the outer corners, and a `tks-banner-button-bg-hover` wash on hover and while the menu is open. Each half stays at least `tks-control-height-xs` (24px) tall and wide for the target size (WCAG 2.5.8). Once the game is ignored for all tags the main half reads `banner_menu_ignored` behind the store's tick.
+- The menu is the store's Ignore dropdown, sampled signed in (`tests/fixtures/surfaces/app-ignore-menu/`): `tks-menu-width` (300px) at inline-end under the caret, `tks-menu-bg` under `tks-menu-glow`, `tks-menu-shadow`, at most 70vh tall with its own scroll. Options take 12px padding, a 16px box in `tks-menu-box` with a tick when checked, the title at 14/17 in `tks-menu-title` and the muted line at 12/14 in `tks-menu-subtitle` under it. Hover and focus paint `tks-menu-item-bg-hover` and lift the muted line to `tks-menu-subtitle-hover`. The store's own muted colors miss 4.5:1, so ours are lighter. A group head is a 14/17 title with a chevron that turns when open; groups part with a 1px line in the hover color.
+- "Show full report" is the store's underlined in-bubble link, in `tks-banner-link-color`, as a `button` element with a 24px minimum target. A EULA link looks the same, as an anchor.
 - Errors in `tks-banner-error`, never `tks-color-error` (4.21:1 on the bright end).
 - Never `tks-color-text-muted` or `tks-color-text-subtle` on the wash.
 
@@ -404,37 +427,42 @@ Modeled on the store's per-app notice bubbles (the DLC notice sits in the same s
 
 - **Collapsed** (default when the AI notes are long): the quote clamps to `tks-banner-quote-lines` (3). Measure in the next frame; if it does not overflow, drop `data-tks-collapsed` and omit the link.
 - **Expanded:** the link reads `banner_collapse` with `aria-expanded="true"`. No animation; not remembered across pages.
-- **A kind ignored:** its entry gives way to one line in the banner's own type, `banner_ignored_kind` and an Undo link, after the entries that remain.
-- **Only notes left** (`data-tks-variant="ignored"`): the store's DRM-notice geometry in neutral, no violet. The note lines (`banner_ignored` for all tags, one `banner_ignored_kind` for each kind) in `tks-text-banner-note` and `tks-color-text-muted`, each with an Undo link, on `tks-banner-note-bg` with `tks-radius-xs`, `tks-space-1` by `tks-space-2` padding, labelled by `banner_region_label`, or by `badge_tags_title` when an entry comes from Valve.
+- **A kind ignored:** its entry gives way to one line in the banner's own type, `banner_ignored_kind`, after the entries that remain, and its option in the menu is checked.
+- **Only notes left** (`data-tks-variant="ignored"`): the store's DRM-notice geometry in neutral, no violet. The note lines (`banner_ignored` alone for all tags, else one `banner_ignored_kind` for each kind) in `tks-text-banner-note` and `tks-color-text-muted`, over the ignore menu, on `tks-banner-note-bg` with `tks-radius-xs`, `tks-space-1` by `tks-space-2` padding, labelled by `banner_region_label`, or by `badge_tags_title` when an entry comes from Valve.
 - **Storage error:** the banner stays as it was and shows `error_allow_list_save` until the next successful action.
 - **Setting turned off:** the kind's entry and note leave, and the host leaves when nothing is left. Turned on: re-render from the known verdicts, no new request.
 
 ### Behavior
 
-- "Ignore tag for this game" adds the app ID (with the name and today's date) to that kind's list and swaps its entry for the note; focus moves to the note's Undo. "Ignore this game" adds the app ID to the list for all tags, and every entry gives way to one note. Neither calls the store's own ignore feature.
-- "Undo" removes the app ID from that list again and restores the entries. Focus returns to the ignore button of the same scope, or to "Ignore this game" after an undo for all tags.
+- The main half of the split button adds the app ID (with the name and today's date) to the list for all tags, and every entry gives way to one note; pressed again, it removes it. The caret opens the menu. Nothing calls the store's own ignore feature.
+- Checking an option adds the game or the creator to that scope's list; unchecking removes it again. The menu stays open, the focus stays on the option through the redraw, and the entries and notes follow.
 - Chips on the game's capsules follow the same lists, so they leave and return with the entries.
 
-#### Ignoring a developer or publisher
+#### The ignore menu
 
-A native `details` under the entries, closed on every load (decision 13) and open across a redraw, with `banner_creators_toggle` as its `summary`. It lists one row per name and role from `basic_info`: the name, as text, then the role in muted text (`banner_role_developer`, `banner_role_publisher`), then a link-style button for each tag the banner lists that the creator is not yet ignored for (`banner_ignore_creator_kind`, with the tag's short label, the person's chip text when set) and `banner_ignore_creator_all`. A company that develops and publishes has a row for each role, and each row ignores that role only. A button is named by its text and the row's name and role. A creator without a clan ID is keyed by its name (`n:<name>`), one with an ID by `c:<id>`.
+Up to four groups, each a head (`role="menuitem"`, `aria-expanded`) over its options, in this order: Game (`banner_menu_group_game`), Developers, Publishers and Tags (`banner_menu_group_tags`). An empty group is left out. Game and Tags start open and the creator groups start closed; what is open, and whether the menu is, survives a redraw but not a reload.
 
-A tag silenced through a creator is a note with Undo (`banner_ignored_creator_kind`), and a creator ignored for all tags is one note (`banner_ignored_creator`), after the game's own notes. A creator note shows only while the banner would list a tag it covers. After an ignore focus lands on the note's Undo, after an Undo on the button it brought back (the summary when none is left). The polite live region announces `notice_creator_stopped`, `notice_creator_stopped_kind`, `notice_creator_restored` or `notice_creator_restored_kind`. A failed save shows `error_creator_list_save` in the error line.
+- **Game:** one option, `banner_ignore` over `banner_menu_game_note`, checked while the game is ignored for all tags. It and the main half act on one scope.
+- **Developers, Publishers:** one block per name and role from `basic_info` (`role="group"`, labelled by the name, written as text). Each starts with `banner_menu_all_tags` over `banner_menu_developer_all_note` or `banner_menu_publisher_all_note`, then one option per tag the banner lists: the tag's short label (the person's chip text when set) over Steam's heading. A company that develops and publishes has a block in each group, and each ignores that role only. A creator without a clan ID is keyed by its name (`n:<name>`), one with an ID by `c:<id>`; unchecking removes the key that is on the list.
+- **Tags:** one option per tag the banner lists, ignored or not, the short label over Steam's heading. These are our tags, never Steam's user tags.
 
-The two lists are shown in the options page, the popup and the userscript dialog as "Developers you ignored" and "Publishers you ignored", after "Games you ignored", with the same groups and "Stop ignoring" button. The popup leaves out an empty card, and an empty card on the page reads `options_allow_empty` with the section's label as the action.
+Keyboard (the WAI-ARIA menu button): Enter, Space or Down on the caret opens the menu on its first item, Up on its last. Up and Down move between the visible heads and options and wrap, Home and End jump. Right opens a group and Left closes it; Left on an option moves to its group's head. Enter or Space toggles. Escape closes and returns focus to the caret; Tab closes and lets focus move on. A press outside the banner closes it through one document listener that exists only while the menu is open. Everything else goes through the banner's delegated listeners.
+
+A tag silenced through a creator is a note (`banner_ignored_creator_kind`), and a creator ignored for all tags is one note (`banner_ignored_creator`), after the game's own notes. A creator note shows only while the banner would list a tag it covers. The polite live region announces `notice_marking_stopped`, `notice_marking_restored`, `notice_creator_stopped`, `notice_creator_restored` or their `_kind` forms. A failed save shows `error_allow_list_save` or `error_creator_list_save` in the error line, and the option keeps its state.
+
+The two creator lists are shown in the options page, the popup and the userscript dialog as "Developers you ignored" and "Publishers you ignored", after "Games you ignored", with the same groups and "Stop ignoring" button. The popup leaves out an empty card, and an empty card on the page reads `options_allow_empty`.
 
 #### Ignored through a base game
 
 A DLC is ignored for a kind when its own app ID or its base game's app ID is on that kind's list or on the list for all tags. The base game is `related_items.parent_appid` of the DLC's GetItems item, kept with the cached verdict as `parent`; no list of DLC is stored, so a DLC released tomorrow follows at once. `isIgnored` (`src/core/ignored.ts`) is the only place that decides; the chips, the `data-tks-kinds` mark (so the dim and hide filters), the hover card and the app page's banner and tag section all ask it. The "Games you ignored" list is keyed by the games the person ignored, so a DLC never appears in it, and "Stop ignoring" on the base game brings the DLC back. A parent that is not known (not fetched yet, no parent, a source that does not carry it) leaves the game on its own entries. The relation is one level. A demo follows its full game the same way, for its own kinds and for the kinds its full game lends it (decision 59).
-- The polite live region announces `notice_marking_stopped` or `notice_marking_restored`.
 
 ### Longer translations
 
-The head wraps: the heading takes `flex: 1 1 12em` and wraps first (at 24px a longer translation, such as Spanish, already wraps at 616px), then the button moves to its own line at inline-end. The buttons and links wrap their own text. In a note the text and the link wrap inside their own boxes.
+The heading wraps (at 24px a longer translation, such as Spanish, already wraps at 616px). The menu's titles and muted lines wrap inside its 300px, and the split button keeps its halves on one line.
 
 ### Accessibility
 
-An `aside` landmark. With one entry and no note it is labelled by that entry's `h2`; otherwise by `banner_region_label`, or by `badge_tags_title` ("Tag Kit tags for this product") when any entry comes from Valve, since "Declared by the developer" would be false for it (decision 63). Every entry has its own `h2`. Each "Ignore tag for this game" button takes its name from its text and the entry's heading, and each Undo from its text and its note, so no two buttons share a name. The notes are a `blockquote`; the source line names the speaker. No `lang` on the quote, since the developer's language is unknown. Every control is a real `button` with visible text. In forced colors the wash disappears, so the banner gets a `CanvasText` edge.
+An `aside` landmark. With one entry and no note it is labelled by that entry's `h2`; otherwise by `banner_region_label`, or by `badge_tags_title` ("Tag Kit tags for this product") when any entry comes from Valve, since "Declared by the developer" would be false for it (decision 63). Every entry has its own `h2`. The caret is named by `banner_menu_label`, opens the `role="menu"` it labels, and reports `aria-expanded`. Each option is a `menuitemcheckbox` with `aria-checked`, named by its title and muted line, inside the `role="group"` of its group or creator; the main half is a toggle button with `aria-pressed`. The notes are a `blockquote`; the source line names the speaker. No `lang` on the quote, since the developer's language is unknown. Every control is a real `button`, and all but the caret show text. In forced colors the wash disappears, so the banner and the menu get a `CanvasText` edge.
 
 ### Check
 
@@ -738,7 +766,7 @@ Preview: `previews/AllowList.html`.
 - The captions are the lists' names: `options_section_allow`, `options_section_allow_developers`, `options_section_allow_publishers`. The restore button's name still names the scope (`options_allow_restore_label`), so no two are alike.
 - The game name as data, untranslated, linked to its store page; a creator's name as plain text.
 - The date formatted with `Intl.DateTimeFormat(locale, { dateStyle: "medium" })`.
-- Empty card: `<p class="tks-empty">t('options_allow_empty', { action })</p>`, where `action` is `banner_ignore` ("Ignore this game") in General and `banner_ignore_kind` ("Ignore tag for this game") on a tag's tab.
+- Empty card: `<p class="tks-empty">t('options_allow_empty')</p>`, which points to the Ignore menu on a game page.
 - A tag's card ends with the note on what all tags ignore, when anything is: `options_allow_all_note` (plural) and the quiet button `options_allow_all_show`, which selects General and moves focus to the title of Ignored for all tags. It is a button, not a hash link, because in the userscript dialog a hash would change the store page's address.
 - Each list is read once per refresh, and every card draws from that read. A list that cannot be read shows its `error_*_list_load` line in every card, never the empty state. A failed removal shows `error_allow_list_save` or `error_creator_list_save` under that item.
 - One game can sit in several scopes; stopping to ignore it in one leaves the others.
@@ -1192,11 +1220,15 @@ For every translator:
 | `banner_region_label` | Declared by the developer | Screen reader name of the banner when it lists several kinds, or only notes, all from the developer. With an entry from Valve, `badge_tags_title` names it instead. |
 | `banner_expand` | Show full report | Expands the collapsed text. |
 | `banner_collapse` | Show less | Collapses it again. |
-| `banner_ignore` | Ignore this game | Stops every tag and the banner for one game, in this extension. The store has its own Ignore button. |
-| `banner_ignore_kind` | Ignore tag for this game | On one entry: stops that tag for one game. The other tags stay. |
-| `banner_ignored` | Game ignored | Replaces the banner after "Ignore this game". |
-| `banner_ignored_kind` | Tag ignored for this game: `$heading$` | Replaces one entry after "Ignore tag for this game". `heading` is Steam's line for the kind. |
-| `banner_undo` | Undo | Reverses the action above. |
+| `banner_ignore` | Ignore this game | The Game option of the ignore menu: stops every tag and the banner for one game, in this extension. The store has its own Ignore button. |
+| `banner_menu_ignore`, `banner_menu_ignored` | Ignore, Ignored | The main half of the split button, before and after the game is ignored for all tags. |
+| `banner_menu_label` | Ignore options | Accessible name of the caret that opens the menu. |
+| `banner_menu_group_game`, `_developers`, `_publishers`, `_tags` | Game, Developers, Publishers, Tags | The menu's group heads. |
+| `banner_menu_game_note` | Every tag on this game and its DLC | Muted line under `banner_ignore`. |
+| `banner_menu_all_tags` | All tags | A creator's first option. |
+| `banner_menu_developer_all_note`, `banner_menu_publisher_all_note` | On every game they develop, publish | Muted line under a creator's All tags. |
+| `banner_ignored` | Game ignored | The note while the game is ignored for all tags. |
+| `banner_ignored_kind` | Tag ignored for this game: `$heading$` | Replaces one entry while the game is ignored for that tag. `heading` is Steam's line for the kind. |
 
 ### `notice_`
 
@@ -1218,7 +1250,7 @@ For every translator:
 | --- | --- | --- |
 | `error_settings_save` | Could not save this change. Try again. | Under a setting whose change failed to save. |
 | `error_settings_load` | Could not load your settings. Showing the defaults. | Top of the settings page. |
-| `error_allow_list_save` | Could not update this game. Try again. | After "Ignore this game", "Undo" or "Stop ignoring" fails. |
+| `error_allow_list_save` | Could not update this game. Try again. | After an ignore option, the Ignore button or "Stop ignoring" fails. |
 | `error_backup_create` | Could not create the backup. Try again. | When the backup file cannot be built. |
 | `error_backup_read` | Could not read this file. | When the chosen file cannot be opened or is not text. |
 | `error_backup_invalid` | This file is not a backup from `$name$`. | `name` is the product name (`ext_name`). |
@@ -1276,7 +1308,7 @@ For every translator:
 | `options_allow_scope_all` | All tags | Heading of the games ignored for every tag. The games ignored for one tag sit under Steam's line for it. |
 | `options_allow_restore` | Stop ignoring | Button next to a game. |
 | `options_allow_restore_label` | Stop ignoring `$name$` (`$scope$`) | Screen reader name of that button; `name` is untranslated and `scope` is the scope's name. |
-| `options_allow_empty` | None yet. Use "`$action$`" on a game page. | `action` is "Ignore this game" in General, "Ignore tag for this game" on a tag's tab. |
+| `options_allow_empty` | None yet. Use the Ignore menu on a game page. | Any card of ignored items that lists nothing. |
 | `options_allow_kind_title` | Ignored for this tag | Card title on a tag's tab. |
 | `options_allow_all_title` | Ignored for all tags | Card title in General. |
 | `options_allow_all_note_one` | `$count$` item ignored for all tags also applies here. | Plural, one: the note on a tag's tab. |
@@ -1368,7 +1400,10 @@ WCAG 2.2 AA: 4.5:1 for text, 3:1 for non-text. Grounds are the store's own, samp
 | Banner error `tks-banner-error` | bright end | 4.97 |
 | Focus ring `tks-accent-300` | banner bright end | 3.69 |
 | Allow-listed note `tks-color-text-muted` | its strip | 7.68 |
-| Allow-listed Undo `tks-banner-link-color` | its strip | 11.30 |
+| Ignore menu title `tks-menu-title` | `tks-menu-bg` | 14.77 |
+| Ignore menu muted line `tks-menu-subtitle` | `tks-menu-bg` | 5.04 |
+| Ignore menu muted line on hover `tks-menu-subtitle-hover` | `tks-menu-item-bg-hover` | 4.86 |
+| Ignore menu box edge `tks-menu-box` | `tks-menu-item-bg-hover` | 3.55 |
 | Hidden results notice text and button `tks-store-notice-fg` | its bar | 15.38 |
 | Hidden results notice button hover `tks-store-notice-link-hover` | its bar | 8.14 |
 | Focus ring `tks-accent-300` | hidden results notice bar | 7.53 |

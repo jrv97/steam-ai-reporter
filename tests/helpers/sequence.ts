@@ -39,7 +39,7 @@ export function largestAppIds(count: number): readonly AppId[] {
 
 /** A fresh game name. */
 export function freshName(): string {
-  return `Game ${String(next())}`;
+  return `Title ${String(next())}`;
 }
 
 /** A fresh developer note. */

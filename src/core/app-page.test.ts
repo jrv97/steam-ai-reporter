@@ -194,25 +194,25 @@ describe("start on an English app page", () => {
     expect(headings()).toEqual([aiHeading]);
   });
 
-  it("ignores the AI kind from its entry and brings it back with Undo", async () => {
+  it("ignores the AI kind from the menu and brings it back by unchecking it", async () => {
     const { stored } = await startOnAiPage();
+    const option = () => control("#tks-banner-option-tag-ai");
 
-    control('.tks-banner-action[data-tks-scope="ai"]')?.click();
-    await expect.poll(() => control('[data-tks-action="undo"]')?.getAttribute("data-tks-scope"))
-      .toBe("ai");
+    option()?.click();
+    await expect.poll(() => option()?.getAttribute("aria-checked")).toBe("true");
     expect(Object.keys((await stored()).ai)).toEqual([String(OPEN)]);
     expect(Object.keys((await stored()).all)).toEqual([]);
     expect(banner()?.querySelector("aside")?.getAttribute("data-tks-variant")).toBe("ignored");
 
-    control('[data-tks-action="undo"]')?.click();
+    option()?.click();
     await expect.poll(() => banner()?.querySelector("blockquote")).toBeInstanceOf(HTMLElement);
     expect(Object.keys((await stored()).ai)).toEqual([]);
   });
 
-  it("ignores the game for all tags from the link below the entries", async () => {
+  it("ignores the game for all tags from the main Ignore button", async () => {
     const { stored } = await startOnAiPage();
 
-    control('.tks-banner-foot [data-tks-action="ignore"]')?.click();
+    control("#tks-banner-ignore-main")?.click();
     await expect.poll(() => control(".tks-banner-ignored-text")?.textContent).toBe(
       i18n.t("banner_ignored"),
     );
@@ -229,25 +229,26 @@ describe("start on an English app page", () => {
       ...make.fixture.itemAs(mixedStates, OPEN, OPEN),
       ...make.item.creators({ developers: [[developer, clan]], publishers: [publisher] }),
     };
-    const rows = () => [...(banner()?.querySelectorAll(".tks-banner-creator") ?? [])];
+    const rows = () => [...(banner()?.querySelectorAll(".tks-ignore-creator") ?? [])];
+    const checked = () => control('.tks-ignore-creator [aria-checked="true"]');
     const ignoreButton = (row: number, scope: string) =>
       rows()[row]?.querySelector<HTMLElement>(`button[data-tks-scope="${scope}"]`);
 
     it("lists them once Steam's data arrives, and not before", async () => {
       const { release } = await startOnAiPage({ route: make.item.route([studio]), held: true });
-      expect(banner()?.querySelector("details")).toBeNull();
+      expect(rows()).toEqual([]);
       release();
       await expect.poll(() => rows().length).toBe(2);
-      expect(rows().map((row) => row.querySelector(".tks-banner-creator-name")?.textContent))
+      expect(rows().map((row) => row.querySelector(".tks-ignore-creator-name")?.textContent))
         .toEqual([developer, publisher]);
     });
 
-    it("ignores the developer for AI by clan ID and brings it back with Undo", async () => {
+    it("ignores the developer for AI by clan ID and brings it back by unchecking", async () => {
       const { storedCreators } = await startOnAiPage({ route: make.item.route([studio]) });
       await expect.poll(() => rows().length).toBe(2);
 
       ignoreButton(0, "ai")?.click();
-      await expect.poll(() => control('[data-tks-action="undo-creator"]')).not.toBeNull();
+      await expect.poll(checked).not.toBeNull();
       expect(await storedCreators("developer", "ai")).toEqual([`c:${String(clan)}`]);
       expect(await storedCreators("publisher", "ai")).toEqual([]);
       expect(headings()).toEqual([]);
@@ -259,7 +260,7 @@ describe("start on an English app page", () => {
         }),
       );
 
-      control('[data-tks-action="undo-creator"]')?.click();
+      checked()?.click();
       await expect.poll(() => headings()).toEqual([aiHeading]);
       expect(await storedCreators("developer", "ai")).toEqual([]);
     });
@@ -269,15 +270,15 @@ describe("start on an English app page", () => {
       await expect.poll(() => rows().length).toBe(2);
 
       ignoreButton(1, "all")?.click();
-      await expect.poll(() => control('[data-tks-action="undo-creator"]')).not.toBeNull();
+      await expect.poll(checked).not.toBeNull();
       expect(await storedCreators("publisher", "all")).toEqual([`n:${publisher}`]);
       expect(await storedCreators("developer", "all")).toEqual([]);
     });
 
-    it("applies a stored developer ignore at once, with its note and Undo", async () => {
+    it("applies a stored developer ignore at once, checked in the menu", async () => {
       const initial = ignoring("ai", [`c:${String(clan)}`], CREATOR_ALLOW_KEYS.developer);
       await startOnAiPage({ route: make.item.route([studio]), initial });
-      await expect.poll(() => control('[data-tks-action="undo-creator"]')).not.toBeNull();
+      await expect.poll(checked).not.toBeNull();
       expect(headings()).toEqual([]);
       expect(document.querySelector(".tks-tag-section")).toBeNull();
     });
@@ -316,7 +317,7 @@ describe("start on an English app page", () => {
     it("still ignores the DLC itself, never the base game, from its own page", async () => {
       const { stored } = await startOnAiPage({ route, initial: ignoring("kernel", [base]) });
       await expect.poll(() => banner()?.querySelector(".tks-banner-service")).not.toBeNull();
-      control('.tks-banner-foot [data-tks-action="ignore"]')?.click();
+      control("#tks-banner-ignore-main")?.click();
       await expect.poll(() => control(".tks-banner-ignored-text")?.textContent).toBe(
         i18n.t("banner_ignored"),
       );

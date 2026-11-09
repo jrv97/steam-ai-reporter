@@ -1437,15 +1437,12 @@ describe("the ignored items", () => {
     expect((await allowList.list()).ai.size).toBe(2);
   });
 
-  it.each<[AllowScope, "banner_ignore" | "banner_ignore_kind"]>([
-    [ALLOW_ALL, "banner_ignore"],
-    ["pvp", "banner_ignore_kind"],
-  ])("shows the empty state of %s with the label of its ignore button", async (of, action) => {
+  it.each<AllowScope>([ALLOW_ALL, "pvp"])("shows the empty state of %s", async (of) => {
     const { ignored } = await setup({
       lists: createIgnoreLists(fake.store(), fake.clock(make.time())),
     });
     expect(ignored(of).querySelector(".tks-empty")?.textContent).toBe(
-      i18n.t("options_allow_empty", { action: i18n.t(action) }),
+      i18n.t("options_allow_empty"),
     );
   });
 

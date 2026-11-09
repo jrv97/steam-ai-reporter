@@ -150,10 +150,10 @@
   /* All banner text: title, source and service lines, notes. The store's bubble text color: 5.54:1
      on the bright end, 9.84:1 on the dark end. */
   --tks-banner-fg: #d5d6d8;
-  /* Show full report and Undo, underlined like the store's in-bubble links (the store's own
+  /* Show full report, underlined like the store's in-bubble links (the store's own
      #c3c1c0 would be 4.49:1 here). */
   --tks-banner-link-color: var(--tks-banner-fg);
-  /* Ignore this game, as the store's outlined buttons: 8.06:1 on the bright end. */
+  /* The Ignore split button, as the store's outlined buttons: 8.06:1 on the bright end. */
   --tks-banner-button-fg: #ffffff;
   /* That button's edge, the store's own: 2.63:1 on the bright end. The label identifies it. */
   --tks-banner-button-border: rgba(255, 255, 255, 0.4);
@@ -164,6 +164,28 @@
   --tks-banner-error: #ffbab6;
   /* The allow-listed one-line note: the store's DRM-notice geometry in neutral, no violet. */
   --tks-banner-note-bg: rgba(0, 0, 0, 0.2);
+
+  /* Ignore menu: the store's Ignore dropdown on an app page, sampled signed in on 2026-11-09
+     (tests/fixtures/surfaces/app-ignore-menu/). */
+  /* Flyout ground, the store's own, under its corner glow. */
+  --tks-menu-bg: #25282e;
+  --tks-menu-glow: radial-gradient(
+    circle at 0% 0%,
+    rgba(74, 81, 92, 0.4) 0%,
+    rgba(75, 81, 92, 0) 60%
+  );
+  --tks-menu-shadow: 0 0 10px rgba(0, 0, 0, 0.75);
+  --tks-menu-width: 300px;
+  /* An option under the pointer or the focus, the store's own. */
+  --tks-menu-item-bg-hover: #3b404a;
+  /* Option titles and group heads: 14.8:1 on the ground, 10.4:1 on hover. */
+  --tks-menu-title: #ffffff;
+  /* The muted line under a title: 5.03:1 on the ground. The store's #687882 is 3.24:1. */
+  --tks-menu-subtitle: #8f98a0;
+  /* The same line on hover: 4.86:1. The store's #85949d is 3.66:1. */
+  --tks-menu-subtitle-hover: #acb2b8;
+  /* The checkbox edge and tick, the store's light box: 5.03:1 on the ground. */
+  --tks-menu-box: var(--tks-menu-subtitle);
 
   /* Hidden results notice: the look of the store's own notice bar above search results, from its
      text cell in #search_results_filtered_warning_persistent, sampled on 2026-10-26 in Firefox. */
