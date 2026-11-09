@@ -1,0 +1,108 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:best-practices", ":semanticCommitTypeAll(build)"],
+  "semanticCommits": "enabled",
+  "semanticCommitType": "build",
+  "semanticCommitScope": "deps",
+  "branchPrefix": "build/",
+  "branchNameStrict": true,
+  "labels": ["dependencies"],
+  "prBodyTemplate": "{{{table}}}{{{warnings}}}{{{notes}}}{{{changelogs}}}{{{controls}}}",
+  "constraints": {
+    "mise": "2026.10.15"
+  },
+  "internalChecksFilter": "strict",
+  "separateMinorPatch": true,
+  "automergeType": "pr",
+  "automergeStrategy": "squash",
+  "platformAutomerge": true,
+  "osvVulnerabilityAlerts": true,
+  "vulnerabilityAlerts": {
+    "automerge": true,
+    "labels": ["dependencies", "security"]
+  },
+  "lockFileMaintenance": {
+    "enabled": true,
+    "automerge": true
+  },
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "The mise version in min_version",
+      "managerFilePatterns": ["/^mise\\.toml$/"],
+      "matchStrings": ["min_version = \"(?<currentValue>[^\"]+)\""],
+      "depNameTemplate": "jdx/mise",
+      "datasourceTemplate": "github-releases",
+      "extractVersionTemplate": "^v(?<version>.+)$"
+    },
+    {
+      "customType": "regex",
+      "description": "The mise version Renovate runs for mise.lock",
+      "managerFilePatterns": ["/^\\.github/renovate\\.json$/"],
+      "matchStrings": ["\"mise\": \"(?<currentValue>[^\"]+)\""],
+      "depNameTemplate": "jdx/mise",
+      "datasourceTemplate": "github-releases",
+      "extractVersionTemplate": "^v(?<version>.+)$"
+    },
+    {
+      "customType": "regex",
+      "description": "The Renovate container image",
+      "managerFilePatterns": ["/^scripts/renovate\\.sh$/"],
+      "matchStrings": [
+        "renovate_version=\"(?<currentValue>.+)\"\\nrenovate_digest=\"(?<currentDigest>.+)\""
+      ],
+      "depNameTemplate": "ghcr.io/renovatebot/renovate",
+      "datasourceTemplate": "docker"
+    }
+  ],
+  "packageRules": [
+    {
+      "description": "Routine updates wait a week after release",
+      "matchUpdateTypes": ["minor", "patch", "digest"],
+      "minimumReleaseAge": "7 days"
+    },
+    {
+      "description": "Major updates wait 30 days after release",
+      "matchUpdateTypes": ["major"],
+      "minimumReleaseAge": "30 days"
+    },
+    {
+      "description": "One PR for routine npm updates",
+      "matchManagers": ["npm"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "npm dependencies"
+    },
+    {
+      "description": "One PR for routine mise tool updates",
+      "matchManagers": ["mise"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "mise tools"
+    },
+    {
+      "description": "One PR for routine GitHub Actions updates",
+      "matchManagers": ["github-actions"],
+      "matchUpdateTypes": ["minor", "patch", "digest"],
+      "groupName": "GitHub Actions"
+    },
+    {
+      "description": "pnpm is pinned in mise.toml and in packageManager; one PR moves both",
+      "matchDepNames": ["pnpm"],
+      "groupName": "pnpm"
+    },
+    {
+      "description": "mise is pinned in workflows, min_version and constraints; one PR moves all",
+      "matchDepNames": ["jdx/mise"],
+      "groupName": "mise"
+    },
+    {
+      "description": "Node moves along LTS lines only",
+      "matchDepNames": ["node"],
+      "versioning": "node"
+    },
+    {
+      "description": "Patch updates merge once the required checks pass",
+      "matchUpdateTypes": ["patch"],
+      "automerge": true
+    }
+  ]
+}
