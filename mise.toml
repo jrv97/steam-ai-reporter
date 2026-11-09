@@ -142,6 +142,11 @@ description = "Build twice and compare the outputs byte for byte"
 depends = ["deps", "gen"]
 run = "bash scripts/check_reproducible.sh"
 
+[tasks.audit]
+description = "Fail on any published advisory for an installed JavaScript package"
+depends = ["deps"]
+run = "pnpm audit"
+
 [tasks.changelog-gate]
 description = "Fail a pull request that changes src/ without a changie fragment"
 run = "python scripts/changelog_gate.py"
@@ -198,6 +203,12 @@ run = "python scripts/canary.py"
 [tasks.capture-fixtures]
 description = "Refresh the public test fixtures from the live store (cookie-less)"
 run = "python scripts/capture_fixtures.py"
+
+# Dependency updates (ADR 0021; logic in scripts/renovate.sh)
+
+[tasks.renovate]
+description = "Run self-hosted Renovate on $RENOVATE_REPOSITORIES with $RENOVATE_TOKEN (CI only)"
+run = "bash scripts/renovate.sh"
 
 # Changelog
 
@@ -264,9 +275,10 @@ run = [
 ]
 
 [tasks.ci]
-description = "Everything CI runs: prepush plus reproducibility and web-ext lint"
+description = "Everything CI runs: prepush plus advisories, reproducibility and web-ext lint"
 run = [
   { task = "prepush" },
+  { task = "audit" },
   { task = "check-reproducible" },
   { task = "lint-gecko" },
 ]

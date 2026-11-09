@@ -1,0 +1,81 @@
+---
+status: accepted
+date: 2026-11-09
+decision-makers: Jorge Rodriguez de la Vega
+---
+
+# Automate dependency updates with self-hosted Renovate
+
+## Context and problem statement
+
+Every dependency moves by hand today: the npm packages in `package.json` and `pnpm-lock.yaml`, the 14 tools in `mise.toml` and `mise.lock`, the SHA-pinned actions in `.github/workflows`, and the mise version that `jdx/mise-action` and `min_version` name. A security fix waits until someone notices it. `pnpm audit` on 2026-11-09 found GHSA-834v-8h66-3h79 (high) in happy-dom 21.0.3; 21.0.4 had been out since 2026-10-20.
+
+Which tool opens dependency PRs on its own, ships security fixes fast, and keeps routine updates slow, grouped and inside the project rules?
+
+## Decision drivers
+
+- Security fixes open at once, skip any cooldown, and merge by squash once the required checks (`mise run ci`, `changelog fragment`) pass.
+- Routine updates wait out a release-age cooldown: 7 days for patch and minor, 30 days for major. They come grouped, and nothing above patch merges without review.
+- Node stays on LTS lines.
+- Every pinned version is covered: `package.json`, `mise.toml` with `mise.lock`, action SHAs with their `# vX.Y.Z` comments, and the mise version in workflows.
+- Rule 8: branches match `<type>/<slug>` (`scripts/check_branch.py` fails CI otherwise), and commits read `build(deps): ...` with no trailers.
+- Rule 14: the job runs `mise run <task>`, with logic in `scripts/`.
+- No `pull_request_target`, minimal `permissions`, SHA-pinned actions; actionlint and zizmor keep passing.
+
+## Considered options
+
+1. Dependabot version and security updates.
+2. Self-hosted Renovate from its container image, pinned by digest (chosen).
+3. Self-hosted Renovate from npm, pinned in `mise.toml` as `npm:renovate`.
+4. The Mend-hosted Renovate GitHub App.
+
+## Decision outcome
+
+Chosen option 2. A scheduled workflow mints a token for a dedicated GitHub App and runs `mise run renovate`. `scripts/renovate.sh` runs `ghcr.io/renovatebot/renovate:44.206.2` by its index digest, with onboarding off and a required repository config. Renovate clones the repository itself, so the job needs no write token of its own. The workflow runs at minute 17 of every sixth hour and on demand.
+
+`.github/renovate.json` extends `config:best-practices` and sets:
+
+- `branchPrefix: "build/"` with `branchNameStrict: true`. Branches then read `build/node-26-x`, `build/npm-dependencies`, `build/npm-happy-dom-vulnerability` or `build/lock-file-maintenance`, which `check_branch.py` accepts.
+- `semanticCommitType: "build"` for every update (`:semanticCommitTypeAll(build)`), scope `deps`, and a PR body template without the Mend footer.
+- `minimumReleaseAge` of 7 days for minor, patch and digest updates and 30 days for majors, with `internalChecksFilter: "strict"`, so no branch exists before its cooldown ends. The Dependency Dashboard issue lists what is waiting.
+- One group each for routine npm, mise tool and GitHub Actions updates, and `separateMinorPatch`, so a patch group never rides with a minor one. pnpm moves in one PR across `mise.toml` and `packageManager`; mise moves in one PR across the workflows, `min_version` and `constraints.mise`.
+- `versioning: "node"` for node. It treats a major as unstable until its line reaches LTS, so node 25 never shows up and node 26 shows up as a major once it is LTS.
+- Auto-merge through GitHub's native auto-merge with the squash strategy, for patch updates, weekly lockfile maintenance and every vulnerability fix.
+- `osvVulnerabilityAlerts` plus `vulnerabilityAlerts`. Vulnerability PRs ignore the schedule, the hourly limits and the cooldown, which Renovate does not let a config override.
+- Custom regex managers for `min_version` in `mise.toml`, `constraints.mise` in the config itself, and the image version and digest in `scripts/renovate.sh`. Renovate updates its own image after the same cooldown.
+
+### Security coverage
+
+GitHub's dependency graph does not parse the two-document `pnpm-lock.yaml` that pnpm 12 writes when `packageManager` pins pnpm, and it has no mise ecosystem. Dependabot alerts therefore stay empty for this repository, and `vulnerabilityAlerts` alone would find nothing. OSV alerts cover direct npm and PyPI dependencies only.
+
+Two more pieces close the gap for npm. `mise run ci` gains `mise run audit` (`pnpm audit`), which fails CI on any published advisory for an installed package, transitive ones included. Weekly lockfile maintenance, auto-merged, moves transitive versions within their ranges. Core mise tools (node, python, pnpm and the binaries from GitHub releases) get no automated advisory source; their routine updates still arrive after a week.
+
+### Library check (rule 12)
+
+- Dependabot: built into GitHub, no runner to keep. Its docs list no mise ecosystem, which leaves node, pnpm, python and 11 other tools uncovered, along with `mise.lock`. Branches are `dependabot/<ecosystem>/<dependency>` and only the separator is configurable, so every Dependabot PR would fail `check_branch.py`. It lists pnpm 7 to 12 for version updates, but with a two-document lockfile it creates no alerts and no security updates. It has `cooldown` and groups. Auto-merge needs an extra workflow with `dependabot/fetch-metadata`.
+- Renovate 44 (AGPL-3.0, run as a separate tool and never bundled): a mise manager that covers every tool in `mise.toml` and updates `mise.lock` with a targeted `mise lock` (safe mode on mise 2026.7.12 or later); pnpm lockfiles including pnpm 12's two-document format; LTS-aware node versioning; `branchPrefix` and `branchNameStrict`; `minimumReleaseAge`; native auto-merge; digest pins for actions that keep the `# vX.Y.Z` comment; and a built-in reader for `jdx/mise-action`'s `version` input. Releases ship several times a day.
+- `npm:renovate` through mise: `mise install` stopped on mise's npm trust policy (`no-downgrade`). `@yarnpkg/libzip@3.2.2`, a transitive dependency, was published by hand without provenance, while 3.2.0 and 3.2.1 carried SLSA provenance. Passing that check takes a `trust_policy_excludes` entry for each flagged package, reviewed again on every Renovate bump. The container image is pinned by digest with all its dependencies inside.
+- The container image runs on containerbase: Renovate installs the pnpm and mise versions an update needs at run time (`binarySource: install`). A pnpm bump then regenerates the lockfile with the new pnpm, which `pmOnFail: error` in `pnpm-workspace.yaml` requires. On a bare runner with the npm package, Renovate would use whatever pnpm is on `PATH`.
+- `renovatebot/github-action`: a wrapper around the same image. Calling it as a step would bypass `mise run`, and `scripts/renovate.sh` needs only a `docker run`.
+- Mend-hosted Renovate: no workflow, but Mend's servers would hold write access to the repository, and the run would sit outside mise and outside this repository's pins.
+
+### Consequences
+
+- Good: one tool covers npm, mise tools with `mise.lock`, action SHAs and the mise version, on branches and commits that already pass CI rules.
+- Good: a security fix opens within six hours of the advisory and merges once CI passes, with no human step.
+- Good: routine updates arrive grouped, after a week or a month, and only patches merge on their own.
+- Good: the token belongs to a dedicated app with no tag ruleset bypass, and lives one hour.
+- Bad: `pnpm audit` fails CI on any open advisory, including one with no fixed version yet. Every PR blocks until a fix ships or the advisory is excluded in `pnpm-workspace.yaml`.
+- Bad: core mise tools have no advisory feed.
+- Bad: the run pulls the Renovate container image every six hours, and Renovate's image updates arrive as their own PRs.
+- Neutral: the Dependency Dashboard is an issue the app opens and keeps current.
+- Neutral: `scripts/renovate.sh` runs in CI only; a local run needs Docker and a token.
+
+## More information
+
+- Renovate mise manager: https://docs.renovatebot.com/modules/manager/mise/
+- Renovate node versioning: https://docs.renovatebot.com/modules/versioning/node/
+- Minimum release age: https://docs.renovatebot.com/key-concepts/minimum-release-age/
+- Renovate GitHub App permissions: https://docs.renovatebot.com/modules/platform/github/
+- Dependabot ecosystems and the pnpm lockfile note: https://docs.github.com/en/code-security/dependabot/ecosystems-supported-by-dependabot/supported-ecosystems-and-repositories
+- Dependabot options: https://docs.github.com/en/code-security/dependabot/working-with-dependabot/dependabot-options-reference
