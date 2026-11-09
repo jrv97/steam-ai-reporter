@@ -175,12 +175,12 @@ it("05-tag: a tag's own tab with its values and chip text", async () => {
   await page.close();
 });
 
-it.skipIf(signedOut || queueWidget === undefined)(
+it.skipIf(signedOut)(
   "06-queue: chips in the discovery queue opened from the store home",
   async () => {
     await use();
     const page = await storePage(browser, locale, HOME);
-    const widget = `::-p-text(${queueWidget ?? ""})`;
+    const widget = `::-p-text(${queueWidget})`;
     await wheelUntil(page, widget, LAZY_STEPS);
     await page.locator(widget).setTimeout(WAIT.timeout).click();
     await page.waitForSelector(QUEUE_CHIPS, { ...WAIT, visible: true });
@@ -201,12 +201,12 @@ it.skipIf(signedOut)("07-wishlist: the wishlist frame with the most chips", asyn
   await page.close();
 });
 
-it.skipIf(signedOut || calendarWidget === undefined)(
+it.skipIf(signedOut)(
   "08-calendar: badges on the home page's personal calendar",
   async () => {
     await use();
     const page = await storePage(browser, locale, HOME);
-    const widget = `::-p-text(${calendarWidget ?? ""})`;
+    const widget = `::-p-text(${calendarWidget})`;
     await wheelUntil(page, widget, LAZY_STEPS);
     await revealBelowNav(page, widget);
     await save(page, locale, "08-calendar");

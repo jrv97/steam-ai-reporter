@@ -3,7 +3,8 @@
  * page, settings changes per shot, Steam pages in the capture locale, and PNG files at the size
  * both stores take.
  */
-import { readFile } from "node:fs/promises";
+import { mkdir, readFile } from "node:fs/promises";
+import { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Page } from "puppeteer-core";
 import * as v from "valibot";
@@ -41,16 +42,15 @@ const NAV_HEIGHT = 64;
 
 /**
  * A capture language: the browser's, Steam's `l` parameter, the setting, the output folder, and
- * Steam's own words for the home widgets that only text finds. A shot whose words a language
- * lacks is skipped there.
+ * Steam's own words for the home widgets that only text finds.
  */
 export interface CaptureLocale {
   readonly browser: string;
   readonly steam: string;
   readonly setting: string;
   readonly folder: string;
-  readonly queueWidget?: string;
-  readonly calendarWidget?: string;
+  readonly queueWidget: string;
+  readonly calendarWidget: string;
 }
 
 const LOCALES = {
@@ -62,7 +62,14 @@ const LOCALES = {
     queueWidget: "Explore Your Discovery Queue",
     calendarWidget: "Your Personal Calendar",
   },
-  es: { browser: "es-ES", steam: "spanish", setting: "es", folder: "es/" },
+  es: {
+    browser: "es-ES",
+    steam: "spanish",
+    setting: "es",
+    folder: "es/",
+    queueWidget: "Explora tu lista de descubrimientos",
+    calendarWidget: "Tu calendario personal",
+  },
 } as const satisfies Record<string, CaptureLocale>;
 
 /** An environment variable's value, or undefined when it is unset or empty. */
@@ -332,5 +339,8 @@ export async function save(page: Page, locale: CaptureLocale, name: string): Pro
   if (wrong.length > 0) {
     throw new Error(wrong.join(", "));
   }
-  await page.screenshot({ path: screenshotPath(locale, name), type: "png" });
+  const path = screenshotPath(locale, name);
+  // A locale folder such as es/ does not exist until its first capture.
+  await mkdir(dirname(path), { recursive: true });
+  await page.screenshot({ path, type: "png" });
 }
