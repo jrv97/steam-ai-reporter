@@ -189,7 +189,7 @@
 }
 
 /* The store's tick before "Ignored" */
-.tks-ignore-main[aria-pressed="true"]::before {
+.tks-ignore-main[data-tks-ignored]::before {
   content: "";
   inline-size: 8px;
   block-size: 4px;
@@ -362,7 +362,7 @@
   }
 
   .tks-ignore-option[aria-checked="true"] .tks-ignore-box::after,
-  .tks-ignore-main[aria-pressed="true"]::before {
+  .tks-ignore-main[data-tks-ignored]::before {
     border-color: CanvasText;
   }
 }

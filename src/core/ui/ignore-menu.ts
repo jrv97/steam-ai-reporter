@@ -15,6 +15,9 @@ export type MenuGroup = (typeof MENU_GROUPS)[number];
 /** The groups open on a fresh page; a creator lists one option per tag, so those start closed. */
 export const OPEN_GROUPS: readonly MenuGroup[] = ["tags"];
 
+/** Marks the main half once the game is ignored for all tags; its label says so too. */
+export const IGNORED_ATTRIBUTE = "data-tks-ignored";
+
 /** Name the role and the key of the creator an option acts on, and the group a head opens. */
 export const ROLE_ATTRIBUTE = "data-tks-role";
 export const CREATOR_ATTRIBUTE = "data-tks-creator";
@@ -236,7 +239,7 @@ export function buildIgnoreMenu(
   );
   main.id = itemId("ignore", "main");
   main.setAttribute("data-tks-scope", ALLOW_ALL);
-  main.setAttribute("aria-pressed", String(ignored));
+  main.toggleAttribute(IGNORED_ATTRIBUTE, ignored);
 
   const caret = control("tks-ignore-caret", "menu");
   caret.id = MENU_BUTTON_ID;

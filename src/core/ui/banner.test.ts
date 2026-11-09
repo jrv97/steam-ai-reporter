@@ -500,7 +500,7 @@ describe("the ignore menu", () => {
   ])("checks what is ignored now: %s", (_name, shown, checked) => {
     const { banner, root } = setup();
     banner.show(shown);
-    const on = [...root.querySelectorAll('[aria-checked="true"], [aria-pressed="true"]')];
+    const on = [...root.querySelectorAll('[aria-checked="true"], [data-tks-ignored]')];
     expect(on.map((each) => `#${each.id}`)).toEqual(checked);
   });
 
@@ -570,15 +570,32 @@ describe("the ignore menu", () => {
   });
 
   it.each([
-    ["Escape, back on the caret", "Escape", CARET],
-    ["Tab", "Tab", GAME_ROW],
-  ])("closes on %s", (_name, key, focused) => {
+    ["Escape on an option, back on the caret", GAME_ROW, "Escape", CARET],
+    ["Tab on an option", GAME_ROW, "Tab", GAME_ROW],
+    ["Tab on the caret", CARET, "Tab", CARET],
+    ["Tab on the main half", MAIN, "Tab", MAIN],
+  ])("closes on %s", (_name, from, key, focused) => {
     const { banner, root } = setup();
     banner.show(view(SEVERAL));
     query(root, CARET).click();
-    press(query(root, GAME_ROW), key);
+    query(root, from).focus();
+    press(query(root, from), key);
     expect(query(root, MENU).hidden).toBe(true);
+    expect(query(root, CARET).getAttribute("aria-expanded")).toBe("false");
     expect(root.activeElement).toBe(query(root, focused));
+  });
+
+  it("closes the menu and stops listening for presses outside when it is removed", () => {
+    const { banner, root } = setup();
+    banner.show(view(SEVERAL));
+    query(root, CARET).click();
+    const stop = vi.spyOn(document, "removeEventListener");
+    banner.remove();
+    expect(banner.host.isConnected).toBe(false);
+    expect(stop).toHaveBeenCalledWith("pointerdown", expect.any(Function), true);
+    placeBanner(document, banner.host);
+    expect(query(root, MENU).hidden).toBe(true);
+    expect(query(root, CARET).getAttribute("aria-expanded")).toBe("false");
   });
 
   it("closes on a press outside the banner and stays open on one inside", () => {

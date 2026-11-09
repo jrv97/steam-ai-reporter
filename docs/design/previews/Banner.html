@@ -27,40 +27,107 @@
 </head>
 <body>
 <div class="stage"><div class="col">
-  <p class="cap">Long notes, collapsed after 3 lines, with a named service</p>
+  <p class="cap">Long notes, collapsed after 3 lines, with a named service; menu closed</p>
   <aside class="tks-banner" aria-labelledby="t1">
-    <div class="tks-banner-head">
-      <h2 class="tks-banner-title" id="t1">AI use reported</h2>
-      <button class="tks-banner-action" type="button">Ignore this game</button>
+    <div class="tks-banner-entry">
+      <h2 class="tks-banner-title" id="t1">AI Generated Content Disclosure</h2>
+      <p class="tks-banner-source">In the developer's own words:</p>
+      <blockquote class="tks-banner-quote" id="n1" data-tks-collapsed="true"></blockquote>
+      <button class="tks-banner-link" type="button" aria-expanded="false" aria-controls="n1">Show
+        full report</button>
+      <p class="tks-banner-service">AI service named by the developer:
+        <span class="tks-banner-service-name">Example AI API</span></p>
     </div>
-    <p class="tks-banner-source">In the developer's own words:</p>
-    <blockquote class="tks-banner-quote" id="n1" data-tks-collapsed="true"></blockquote>
-    <button class="tks-banner-link" type="button" aria-expanded="false" aria-controls="n1">Show full
-      report</button>
-    <p class="tks-banner-service">AI service named by the developer:
-      <span class="tks-banner-service-name">Example AI API</span></p>
+    <div class="tks-banner-foot">
+      <div class="tks-ignore">
+        <div class="tks-ignore-split">
+          <button class="tks-ignore-main" type="button">Ignore tags for this game</button>
+          <button class="tks-ignore-caret" type="button" aria-label="Ignore options"
+                  aria-haspopup="menu" aria-expanded="false"><span class="tks-ignore-arrow"
+                  aria-hidden="true"></span></button>
+        </div>
+        <div class="tks-ignore-flyout" role="menu" hidden>
+          <div class="tks-ignore-section" role="none">
+            <button class="tks-ignore-option" type="button" role="menuitemcheckbox"
+                    aria-checked="false"><span class="tks-ignore-box" aria-hidden="true"></span>
+              <span class="tks-ignore-label"><span class="tks-ignore-title">Ignore this game</span>
+                <span class="tks-ignore-subtitle">Every tag on this game and its DLC</span></span>
+            </button>
+          </div>
+          <div class="tks-ignore-section" role="none">
+            <button class="tks-ignore-group-head" type="button" role="menuitem"
+                    aria-expanded="true">Tags</button>
+            <div class="tks-ignore-group" role="group">
+              <button class="tks-ignore-option" type="button" role="menuitemcheckbox"
+                      aria-checked="true"><span class="tks-ignore-box" aria-hidden="true"></span>
+                <span class="tks-ignore-label"><span class="tks-ignore-title">AI</span>
+                  <span class="tks-ignore-subtitle">AI Generated Content Disclosure</span></span>
+              </button>
+            </div>
+          </div>
+          <div class="tks-ignore-section" role="none">
+            <button class="tks-ignore-group-head" type="button" role="menuitem"
+                    aria-expanded="false">Developers</button>
+          </div>
+          <div class="tks-ignore-section" role="none">
+            <button class="tks-ignore-group-head" type="button" role="menuitem"
+                    aria-expanded="false">Publishers</button>
+          </div>
+        </div>
+      </div>
+    </div>
   </aside>
   <div class="purchase"></div>
 
-  <p class="cap">Short notes: no toggle, no service line</p>
-  <aside class="tks-banner" aria-labelledby="t2">
-    <div class="tks-banner-head">
-      <h2 class="tks-banner-title" id="t2">AI use reported</h2>
-      <button class="tks-banner-action" type="button">Ignore this game</button>
+  <p class="cap">One tag ignored, menu open</p>
+  <aside class="tks-banner" aria-label="Declared by the developer">
+    <div class="tks-banner-entry">
+      <h2 class="tks-banner-title">Requires agreement to a 3rd-party EULA</h2>
     </div>
-    <p class="tks-banner-source">In the developer's own words:</p>
-    <blockquote class="tks-banner-quote">We used an AI upscaler on some older textures.
-All other art was made by hand.</blockquote>
+    <p class="tks-banner-note"><span class="tks-banner-ignored-text">Tag ignored for this game: AI
+      Generated Content Disclosure</span></p>
+    <div class="tks-banner-foot">
+      <div class="tks-ignore">
+        <div class="tks-ignore-split">
+          <button class="tks-ignore-main" type="button">Ignore tags for this game</button>
+          <button class="tks-ignore-caret" type="button" aria-label="Ignore options"
+                  aria-haspopup="menu" aria-expanded="true"><span class="tks-ignore-arrow"
+                  aria-hidden="true"></span></button>
+        </div>
+        <div class="tks-ignore-flyout" role="menu">
+          <div class="tks-ignore-section" role="none">
+            <button class="tks-ignore-option" type="button" role="menuitemcheckbox"
+                    aria-checked="false"><span class="tks-ignore-box" aria-hidden="true"></span>
+              <span class="tks-ignore-label"><span class="tks-ignore-title">Ignore this game</span>
+                <span class="tks-ignore-subtitle">Every tag on this game and its DLC</span></span>
+            </button>
+          </div>
+          <div class="tks-ignore-section" role="none">
+            <button class="tks-ignore-group-head" type="button" role="menuitem"
+                    aria-expanded="true">Tags</button>
+            <div class="tks-ignore-group" role="group">
+              <button class="tks-ignore-option" type="button" role="menuitemcheckbox"
+                      aria-checked="true"><span class="tks-ignore-box" aria-hidden="true"></span>
+                <span class="tks-ignore-label"><span class="tks-ignore-title">AI</span>
+                  <span class="tks-ignore-subtitle">AI Generated Content Disclosure</span></span>
+              </button>
+            </div>
+          </div>
+          <div class="tks-ignore-section" role="none">
+            <button class="tks-ignore-group-head" type="button" role="menuitem"
+                    aria-expanded="false">Developers</button>
+          </div>
+          <div class="tks-ignore-section" role="none">
+            <button class="tks-ignore-group-head" type="button" role="menuitem"
+                    aria-expanded="false">Publishers</button>
+          </div>
+        </div>
+      </div>
+    </div>
     <p class="tks-banner-error" role="alert">Could not update this game. Try again.</p>
   </aside>
-  <div class="purchase"></div>
+  <div class="purchase" style="margin-block-start: 360px"></div>
 
-  <p class="cap">Allow-listed: one line, with undo</p>
-  <aside class="tks-banner" data-tks-variant="ignored" aria-label="AI use report">
-    <span class="tks-banner-ignored-text">Game ignored</span>
-    <button class="tks-banner-link" type="button">Undo</button>
-  </aside>
-  <div class="purchase"></div>
 </div></div>
 <script>
   // Long sample notes, set here because pre-line would show source line breaks

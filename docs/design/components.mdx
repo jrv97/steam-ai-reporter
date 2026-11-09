@@ -363,7 +363,7 @@ Preview: `previews/Banner.html`.
       <div class="tks-ignore">
         <div class="tks-ignore-split">
           <button class="tks-ignore-main" id="tks-banner-ignore-main" type="button"
-                  data-tks-action="game" data-tks-scope="all" aria-pressed="false">t('banner_menu_ignore')</button>
+                  data-tks-action="game" data-tks-scope="all">t('banner_menu_ignore')</button>
           <button class="tks-ignore-caret" id="tks-banner-menu-button" type="button" data-tks-action="menu"
                   aria-label="t('banner_menu_label')" aria-haspopup="menu" aria-expanded="false"
                   aria-controls="tks-banner-menu"><span class="tks-ignore-arrow" aria-hidden="true"></span></button>
@@ -459,13 +459,15 @@ The two creator lists are shown in the options page and the userscript dialog as
 
 A DLC is ignored for a kind when its own app ID or its base game's app ID is on that kind's list or on the list for all tags. The base game is `related_items.parent_appid` of the DLC's GetItems item, kept with the cached verdict as `parent`; no list of DLC is stored, so a DLC released tomorrow follows at once. `isIgnored` (`src/core/ignored.ts`) is the only place that decides; the chips, the `data-tks-kinds` mark (so the dim and hide filters), the hover card and the app page's banner and tag section all ask it. The "Games you ignored" list is keyed by the games the person ignored, so a DLC never appears in it, and "Stop ignoring" on the base game brings the DLC back. A parent that is not known (not fetched yet, no parent, a source that does not carry it) leaves the game on its own entries. The relation is one level. A demo follows its full game the same way, for its own kinds and for the kinds its full game lends it (decision 59).
 
+On the DLC's own page, a tag silenced only through its base game leaves the ignore menu too: a box there could only read unchecked while the tag stays hidden, and checking it would add the DLC to the list for nothing. A tag the DLC's own list or one of its creators silences stays in the menu, checked where that list holds it.
+
 ### Longer translations
 
 The heading wraps (at 24px a longer translation, such as Spanish, already wraps at 616px). The menu's titles and muted lines wrap inside its 300px, and the split button keeps its halves on one line.
 
 ### Accessibility
 
-An `aside` landmark. With one entry and no note it is labelled by that entry's `h2`; otherwise by `banner_region_label`, or by `badge_tags_title` ("Tag Kit tags for this product") when any entry comes from Valve, since "Declared by the developer" would be false for it (decision 63). Every entry has its own `h2`. The caret is named by `banner_menu_label`, opens the `role="menu"` it labels, and reports `aria-expanded`. Each option is a `menuitemcheckbox` with `aria-checked`, named by its title and muted line, inside the `role="group"` of its group or creator; the main half is a toggle button with `aria-pressed`. The notes are a `blockquote`; the source line names the speaker. No `lang` on the quote, since the developer's language is unknown. Every control is a real `button`, and all but the caret show text. In forced colors the wash disappears, so the banner and the menu get a `CanvasText` edge.
+An `aside` landmark. With one entry and no note it is labelled by that entry's `h2`; otherwise by `banner_region_label`, or by `badge_tags_title` ("Tag Kit tags for this product") when any entry comes from Valve, since "Declared by the developer" would be false for it (decision 63). Every entry has its own `h2`. The caret is named by `banner_menu_label`, opens the `role="menu"` it labels, and reports `aria-expanded`. Each option is a `menuitemcheckbox` with `aria-checked`, named by its title and muted line, inside the `role="group"` of its group or creator; the main half is a plain button whose label states what it does next, so it carries no `aria-pressed`; `data-tks-ignored` draws the tick once the game is ignored. The notes are a `blockquote`; the source line names the speaker. No `lang` on the quote, since the developer's language is unknown. Every control is a real `button`, and all but the caret show text. In forced colors the wash disappears, so the banner and the menu get a `CanvasText` edge.
 
 ### Check
 
@@ -731,7 +733,7 @@ Preview: `previews/Button.html`.
 
 ### Related
 
-- Banner actions are text buttons (`.tks-banner-action`, `.tks-banner-toggle`), documented under Banner.
+- Banner controls are the split Ignore button and its menu (`.tks-ignore-*`) and the "Show full report" link (`.tks-banner-link`), documented under Banner.
 - Primary (`data-tks-variant="primary"`): `tks-button-primary-bg` with `tks-button-primary-fg` (6.77:1), `tks-button-primary-bg-hover` on hover (4.98:1). One per screen at most, for the action that overwrites something. Today that is only Restore in the Backup card.
 - Quiet (`data-tks-variant="quiet"`): no fill, no inline padding, `tks-accent-300` text with an underline, `tks-color-text-strong` on hover; the same minimum height and focus ring, so it keeps its target size. It reads as a link but is a `button`, because it acts on the page and never navigates. Reset, Stop ignoring and Show in General use it; the heavy filled look of a row of Stop ignoring buttons is gone.
 

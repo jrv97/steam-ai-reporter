@@ -58,14 +58,21 @@ export interface AppPageOptions extends BannerOptions {
  * What the banner shows: an entry for each disclosed kind the settings allow that nothing
  * ignores, the scopes the game is ignored in among those kinds and all kinds, and a note for each
  * developer or publisher ignored for a kind the banner lists, or for all kinds. A kind only the
- * base game of a DLC is ignored for shows nothing. Undefined when there is nothing.
+ * base game of a DLC is ignored for shows nothing, in the ignore menu either. Undefined when there
+ * is nothing.
  */
 function bannerView(view: AppPageView): BannerView | undefined {
+  const creatorScopes = view.creators.flatMap((row) => row.ignored.map(({ scope }) => scope));
+  const covered = (kind: KindId) =>
+    view.ignored[ALLOW_ALL] || view.ignored[kind] || creatorScopes.includes(ALLOW_ALL)
+    || creatorScopes.includes(kind);
+  /** Silenced only through the base game: undoing it belongs on the base game's page. */
+  const throughBase = (kind: KindId) => view.suppressed[kind] && !covered(kind);
   const shown: AnyDisclosed[] = [];
   const listed: KindId[] = [];
   for (const kind of view.order) {
     const verdict = view.verdicts[kind.id];
-    if (verdict.state !== "disclosed" || !view.banner[kind.id]) {
+    if (verdict.state !== "disclosed" || !view.banner[kind.id] || throughBase(kind.id)) {
       continue;
     }
     listed.push(kind.id);
@@ -115,7 +122,7 @@ export function createAppPageUi(
 
   function renderBanner(shown: BannerView | undefined): void {
     if (shown === undefined) {
-      banner?.host.remove();
+      banner?.remove();
       return;
     }
     banner ??= createBanner(doc, i18n, actions, options);

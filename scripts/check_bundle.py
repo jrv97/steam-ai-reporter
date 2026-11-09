@@ -60,8 +60,8 @@
   371,180 B (from 365,541): the keys, descriptions, cut lines and caption in two locales, the key
   table, the cut lines' code and the tab rules. Their budgets rise to 217 and 372 KiB, the size
   plus 2.5 and 2.6 percent. Measured when the banner's ignore menu landed (ADR 0026): content.js
-  227,004 B and userscript 387,111 B, for the menu module, its keyboard and hover handling, its
-  rules and its messages in two locales. Their budgets rise to 227 and 387 KiB, the size plus 2.4
+  227,477 B and userscript 387,584 B, for the menu module, its keyboard and hover handling, its
+  rules and its messages in two locales. Their budgets rise to 227 and 387 KiB, the size plus 2.2
   percent each.
 - The STEAM_API_KEY value, when set, appears nowhere in dist/ or artifacts/ (rule 16).
 - The dev injection bundle is never packaged into artifacts/, and when artifacts/ exists it holds

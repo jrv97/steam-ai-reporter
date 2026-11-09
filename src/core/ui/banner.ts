@@ -94,6 +94,8 @@ export interface Banner {
   readonly host: HTMLElement;
   /** Shows the entries, the notes and the menu. Same view: no change. */
   show(view: BannerView): void;
+  /** Closes the menu and takes the banner off the page; `show` and `placeBanner` bring it back. */
+  remove(): void;
 }
 
 const ACTIONS = ["toggle", ...MENU_ACTIONS] as const;
@@ -623,7 +625,7 @@ export function createBanner(
     ) {
       setMenu(true, event.key === "ArrowUp" ? "last" : "first");
       event.preventDefault();
-    } else if (event.key === "Escape" && menuOpen) {
+    } else if ((event.key === "Escape" || event.key === "Tab") && menuOpen) {
       setMenu(false);
     }
   });
@@ -635,6 +637,11 @@ export function createBanner(
       if (shown === undefined || !sameView(shown, view)) {
         render(view);
       }
+    },
+
+    remove() {
+      setMenu(false);
+      host.remove();
     },
   };
 }

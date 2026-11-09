@@ -106,6 +106,11 @@ const notes = () =>
   [...(bannerRoot()?.querySelectorAll(".tks-banner-ignored-text") ?? [])].map((note) =>
     note.textContent
   );
+/** The kinds the ignore menu's Tags group offers, in its order. */
+const menuTags = () =>
+  [...(bannerRoot()?.querySelectorAll("[id^='tks-banner-option-tag-']") ?? [])].map((option) =>
+    option.id.replace("tks-banner-option-tag-", "")
+  );
 const headingsOf = (ids: readonly KindId[]) =>
   kindsInOrder(ids).map((kind) => i18n.t(kind.messages.heading));
 const kindNote = (kind: KindId) =>
@@ -242,38 +247,58 @@ describe("createAppPageUi", () => {
     });
 
     it.each<
-      readonly [string, ViewOptions, readonly KindId[], readonly KindId[], readonly string[]]
+      readonly [
+        string,
+        ViewOptions,
+        readonly KindId[],
+        readonly KindId[],
+        readonly string[],
+        readonly KindId[],
+      ]
     >(
       [
-        ["nothing silenced", {}, ALL, ALL, []],
-        ["the AI kind ignored", { ignored: ["ai"] }, NO_AI, NO_AI, [kindNote("ai")]],
-        ["the AI kind ignored on the base game", { baseIgnored: ["ai"] }, NO_AI, NO_AI, []],
+        ["nothing silenced", {}, ALL, ALL, [], ALL],
+        ["the AI kind ignored", { ignored: ["ai"] }, NO_AI, NO_AI, [kindNote("ai")], ALL],
+        ["the AI kind ignored on the base game", { baseIgnored: ["ai"] }, NO_AI, NO_AI, [], NO_AI],
         [
           "the AI kind ignored here and three kinds on the base game",
           { ignored: ["ai"], baseIgnored: ["ai", "pvp", "iap"] },
           ["eula", "kernel"],
           ["eula", "kernel"],
           [kindNote("ai")],
+          ["ai", "eula", "kernel"],
         ],
         ["the developer ignored for AI", { developerIgnored: ["ai"] }, NO_AI, NO_AI, [
           DEVELOPER_AI,
-        ]],
-        ["kernel ignored", { ignored: ["kernel"] }, NO_KERNEL, NO_KERNEL, [kindNote("kernel")]],
+        ], ALL],
+        [
+          "kernel ignored",
+          { ignored: ["kernel"] },
+          NO_KERNEL,
+          NO_KERNEL,
+          [kindNote("kernel")],
+          ALL,
+        ],
         [
           "kernel ignored and its banner entry off",
           { ignored: ["kernel"], bannerOff: ["kernel", "pvp", "iap"] },
           NO_KERNEL,
           ["ai", "eula"],
           [],
+          ["ai", "eula"],
         ],
       ],
-    )("with %s, draws the chips, banner entries and notes", (_name, options, ids, entries, all) => {
-      setup().render(view({ verdicts: ARC, ...options }));
-      expect(document.querySelectorAll(".tks-tag-section")).toHaveLength(1);
-      expect(chipKinds()).toEqual(ids);
-      expect(headings()).toEqual(headingsOf(entries));
-      expect(notes()).toEqual(all);
-    });
+    )(
+      "with %s, draws the chips, banner entries, notes and menu tags",
+      (_name, options, ids, entries, all, tags) => {
+        setup().render(view({ verdicts: ARC, ...options }));
+        expect(document.querySelectorAll(".tks-tag-section")).toHaveLength(1);
+        expect(chipKinds()).toEqual(ids);
+        expect(headings()).toEqual(headingsOf(entries));
+        expect(notes()).toEqual(all);
+        expect(menuTags()).toEqual(tags);
+      },
+    );
   });
 
   it("shows a DLC of a base game ignored for all tags no banner and no section", () => {
