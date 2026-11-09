@@ -8,6 +8,12 @@ import { KIND_BY_ID, KINDS } from "./registry";
  */
 export const OVERLAY_CHIPS = 2;
 
+/** Chips a search suggestion shows: its row is the smallest. */
+export const SUGGESTION_CHIPS = 2;
+
+/** Chips a row with room for words shows beside its title: search, wishlist and DLC rows. */
+export const ROW_CHIPS = 3;
+
 /**
  * Every kind once: the known ids of `stored` in its order, then the kinds it lacks in registry
  * order, so a new kind comes last. An unknown or repeated id is dropped.

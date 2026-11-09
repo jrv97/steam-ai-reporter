@@ -24,7 +24,7 @@ import { DEFAULT_SETTINGS, parseSettings } from "../settings/settings";
 import { createSettingsSource } from "../settings/settings-source";
 import { LEGACY_SETTINGS_KEY, UI_STATE_KEY } from "../storage-keys";
 import type { AppId } from "../types";
-import { chipText } from "./kind-details";
+import { keyDescription, keyText } from "./kind-keys";
 import { DEFAULT_TAG_COLOR, type SettingsFormDeps } from "./settings-form";
 import { TOKENS_CSS } from "./styles";
 import { GENERAL_TAB, type TabId } from "./tab-id";
@@ -937,8 +937,8 @@ describe("the page around the tabs", () => {
     expect(tabIds()).toEqual([GENERAL_TAB, ...KIND_IDS]);
     expect(tab(GENERAL_TAB).textContent).toBe(spanish.t("options_tab_general"));
     for (const kind of KINDS) {
-      expect(tab(kind.id).querySelector(".sar-tab-label")?.textContent).toBe(
-        spanish.t(kind.messages.heading),
+      expect(tab(kind.id).querySelector(".sar-tab-key")?.textContent).toBe(
+        keyText(spanish, kind).label,
       );
       expect(panel(kind.id).querySelector(".sar-card-title")?.textContent).toBe(
         spanish.t(kind.messages.heading),
@@ -981,11 +981,12 @@ describe("the toolbar popup", () => {
     }
   });
 
-  it("names a row by the person's chip text and keeps its place", async () => {
+  it("names a row by the tag's key, whatever its chip text, and keeps its place", async () => {
     const { root, settings } = await popup();
-    const chip = make.chipText();
-    await writeSettings(settings, make.settings.chipText({ pvp: { chip } }));
-    expect(row(root, "pvp").querySelector(".sar-tab-label")?.textContent).toBe(chip);
+    await writeSettings(settings, make.settings.chipText({ pvp: { chip: make.chipText() } }));
+    expect(row(root, "pvp").querySelector(".sar-tab-label")?.textContent).toBe(
+      keyText(i18n, KIND_BY_ID.pvp).label,
+    );
     expect(rows(root).indexOf(row(root, "pvp"))).toBe(KIND_IDS.indexOf("pvp"));
   });
 
@@ -997,7 +998,7 @@ describe("the toolbar popup", () => {
       expect(link?.getAttribute("href")).toBe(`${allSettingsUrl}#tab=${id}`);
       expect(link?.getAttribute("target")).toBe("_blank");
       expect(link?.querySelector(".sar-vh")?.textContent).toBe(
-        chipText(i18n, KIND_BY_ID[id], undefined, undefined).name,
+        keyText(i18n, KIND_BY_ID[id]).name,
       );
       const enabled = row(root, id).querySelector("[data-sar-setting=enabled]");
       expect(enabled?.getAttribute("role")).toBe("switch");
@@ -1210,19 +1211,33 @@ describe("the tabs", () => {
   });
 
   it.each(KINDS.map((kind) => kind.id))(
-    "names the %s tab by Steam's heading, then its state, whatever the chip says",
+    "names the %s tab by its key and Steam's heading, then its state, whatever the chip says",
     async (id) => {
       const { tab, settings } = await setup();
       const chip = make.chipText();
       await writeSettings(settings, make.settings.chipText({ [id]: { chip } }));
-      expect(tab(id).querySelector(".sar-tab-label")?.textContent).toBe(heading(id));
-      expect(tab(id).querySelector(".sar-vh")).toBeNull();
+      const text = keyText(i18n, KIND_BY_ID[id]);
+      const description = tab(id).querySelector(".sar-tab-description");
+      expect(tab(id).querySelector(".sar-tab-key")?.textContent).toBe(text.label);
+      expect(tab(id).querySelector(".sar-vh")?.textContent).toBe(text.name);
+      expect(text.name).toContain(heading(id));
+      expect(description?.textContent).toBe(keyDescription(i18n, KIND_BY_ID[id]));
+      expect(description?.getAttribute("aria-hidden")).toBe("true");
       expect(tab(id).querySelector(".sar-tab-state")?.textContent).toBe(
         i18n.t(STATE_KEYS[`${DEFAULT_SETTINGS.kinds[id].enabled}`]),
       );
       expect(tab(id).textContent).not.toContain(chip);
     },
   );
+
+  it("puts a Tags caption after General, hidden from readers, wherever the tags move", async () => {
+    const { tab, settings } = await setup();
+    const caption = () => tab(GENERAL_TAB).nextElementSibling;
+    expect(caption()?.textContent).toBe(i18n.t("options_tabs_group_tags"));
+    expect(caption()?.getAttribute("aria-hidden")).toBe("true");
+    await writeSettings(settings, make.settings({ order: ["pvp"] }));
+    expect(caption()?.nextElementSibling).toBe(tab("pvp"));
+  });
 
   it("moves the arrows along the tag order", async () => {
     const { tab, tabIds, settings } = await setup();

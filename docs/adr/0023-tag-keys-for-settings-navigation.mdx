@@ -1,0 +1,77 @@
+---
+status: accepted
+date: 2026-11-09
+decision-makers: Jorge Rodriguez de la Vega
+---
+
+# A tag has a short key for settings navigation and keeps Steam's heading for its claim
+
+## Context and problem statement
+
+Rule 4 says a tag uses Steam's own words for its kind. The settings follow it to the letter: each tag's tab reads Steam's heading ("Requires agreement to a 3rd-party EULA", "Uses Kernel Level Anti-Cheat"), and the Tag order card and the toolbar popup name each row by its chip word ("KLAC", "Account"). The headings make the 200px rail a column of two-line labels that are hard to scan, the chip words are abbreviations a person may not know, and the three lists name the same tag three ways. Family Sharing and PvP show one label where the others show two, because their chip text equals their heading.
+
+The settings tabs, the Tag order rows and the popup rows exist to find a tag, and none of them states anything about a game. A short name of our own would serve them better. Rule 4 binds the words of a tag, so a name that is ours needs a decision and an amended rule.
+
+The Tag order card also names one limit: small images show the first 2 tags. Search suggestions show 2 and rows with room show 3, and the card says nothing about them.
+
+## Decision drivers
+
+- Rule 4: Steam's words wherever a fact about a game is stated, and nothing in our copy beyond Steam's data.
+- WCAG 2.5.3 (Label in Name): a control's accessible name starts with its visible text.
+- Rule 9: every new word is a catalog key in English and Spanish, and tests read it from the catalog.
+- Rule 11: the limits live in one place; the card reads them and never repeats a number.
+- Rule 18: nothing in the settings moves when a switch changes.
+
+## Considered options
+
+1. Keep Steam's headings on the tabs and the chip words on the rows.
+2. Name the tabs and rows by the chip word, with the person's chip text where set.
+3. A key per tag for navigation and Steam's heading for every claim, with a description beside the key.
+
+## Decision outcome
+
+Chosen option 3.
+
+Two names per tag. The key (`kind_<id>_key`) is our short name: "AI", "Kernel-level anti-cheat", "Family Sharing", "In-app purchases", "3rd-party account", "3rd-party EULA", "3rd-party DRM", "Anti-cheat", "Steam Deck", "PvP", "Early Access" and "Steam Machine". It names the tag only where the settings navigate: the tab labels, the Tag order rows and the toolbar popup's rows. The heading (`kind_<id>_heading`) stays Steam's line and stays wherever the tag makes its claim: the hover card, the banner, the tab panel's title, the package summary and accessible names. The person's chip text (ADR 0017) names chips only; it no longer names the popup rows or the Tag order rows.
+
+A description beside the key. The tabs and the Tag order rows show a second, quieter line under the key. It is Steam's heading, except for four tags whose heading would repeat the key: Family Sharing ("Steam Family Sharing support"), PvP ("Online, LAN or split-screen PvP", Steam's three category names), In-App Purchases ("Contains In-App Purchases") and Early Access ("This game is still in Early Access"). Those four read `kind_<id>_description`. The keys and descriptions live in a table of the settings (`ui/kind-keys.ts`), typed by kind id, so the content script's bundle and catalogs carry none of them (rule 13). The description describes the tag and never a game, and a test fails when a description equals its key in either language.
+
+Accessible names. A tab's and a popup row's name is the key, then Steam's heading (`kind_chip_name`, said once when they match), so the visible key leads and Steam's words follow. The description is decoration for sighted readers and hidden from assistive technology; the panel's title carries the heading.
+
+Tabs. Each tag's tab shows its key in bold and its On or Off state on the first line, then the description. General sits apart at the top of the rail, followed by a divider and a small "Tags" caption over the twelve tag tabs. The caption is decoration, hidden from assistive technology, since each tab names its tag. The narrow layout keeps the same grouping in its wrapping row and leaves the descriptions out, so the row stays short. The tabs follow the tag order, as before.
+
+Priority cut lines. The Tag order card speaks in priorities: the first tags win the space on surfaces that show a few. The three limits sit in `kinds/order.ts` as named constants (`OVERLAY_CHIPS`, `SUGGESTION_CHIPS`, `ROW_CHIPS`) that the placements read, and `CHIP_LIMITS` in `ui/order-card.ts` pairs each with the catalog word of its surfaces, which keeps those words out of the content script. The card draws one dashed line after each distinct limit, naming every surface that stops there: after tag 2, game images and search suggestions; after tag 3, search, wishlist and DLC rows. Each line says the rest go into "+N". The lines stay `aria-hidden` list items, and a visually hidden copy of the same sentences follows the card's help line for screen readers.
+
+Rule 4 in `AGENTS.md` gains a sentence after the chip text one:
+
+> A tag also has a key, our short name, which names it only where the settings navigate: the tab labels, the Tag order rows and the toolbar popup's rows (ADR 0023). Steam's heading stays wherever the tag makes its claim: the hover card, the banner, the tab panel's title, the package summary and every accessible name, after the visible text. A key or a description of ours describes the tag and never claims more about a game than Steam's data.
+
+### Library check (rule 12)
+
+Nothing adopted. The surfaces of a line are joined with `Intl.ListFormat` in the catalog's locale, a web standard core may use. The rest is catalog entries, one table of keys and a decorative caption in `createTabs`.
+
+### Consequences
+
+- Good: the rail reads twelve short names, and the popup, the rail and the Tag order card name each tag the same way.
+- Good: a person sees Steam's heading or a plain description beside every key, and screen readers hear Steam's heading after it.
+- Good: the card names every limit, and changing a limit moves its line.
+- Bad: a third word per tag (chip, key, heading) for translators to keep in step; the catalog descriptions say where each one shows.
+- Bad: the person's chip text no longer shows in the popup and the Tag order card, so a person who renamed a chip finds it there under our key.
+- Neutral: ADR 0017's list of places for the chip text loses the popup row and the Tag order card; decision 72's tab label changes from the heading to the key.
+
+## Pros and cons of the options
+
+### 1. Steam's headings on the tabs, chip words on the rows
+
+- Good: no new words; rule 4 as it stands.
+- Bad: long labels on the rail, abbreviations on the rows, and three names for one tag.
+
+### 2. The chip word everywhere, with the person's chip text
+
+- Good: one name a person already sees on the store.
+- Bad: "KLAC" and "EULA" are abbreviations, a person's text can say anything, and the rail would change when a chip is renamed. Decision 72 rejected it for the tabs.
+
+### 3. A key for navigation, Steam's heading for the claim
+
+- Good: short names where people look for a tag, Steam's words where the tag states a fact.
+- Bad: one more catalog entry per tag and four descriptions of our own.
