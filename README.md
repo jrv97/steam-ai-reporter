@@ -32,7 +32,7 @@ Once I got that working in place, I thought "why not also flag all the other ann
 - Adds a badge to capsules and rows (search, wishlist, home, tag and category hubs, sale pages such as Next Fest, developer and publisher pages, the discovery queue, search suggestions) for items that carry one of those tags. Each tag has a short chip (AI, KLAC, Anti-Cheat, DRM, Account, EULA, PvP, IAP, Early Access, a rating such as "Deck Unsupported", "Family Sharing" and "No Family Sharing"), and a +N chip stands for the tags that do not fit. You can rename a tag's chips in your own words in the settings.
 - Opens a card on hover or keyboard focus that lists every tag in Steam's words and ends with a line naming the source: the developer, Valve for the device ratings ("According to Valve"), or for Family Sharing the features Steam lists for the game ("According to the features Steam lists for this game").
 - Gives a demo the tags of its full game, each marked "Declared for the full game" in the card and the banner ("For the full game" for what Valve states); a tag the demo declares itself shows as its own. DLC keep their own tags only.
-- Shows a non-blocking banner on the app page that lists each tag the developer declared and quotes the developer's AI report verbatim.
+- Shows a row of chips under Steam's tags on the app page, and a non-blocking banner that lists each tag the developer declared and quotes the developer's AI report verbatim.
 - Sums up the included games' tags at the top of a package page, one line per tag such as "AI Generated Content Disclosure: 2 of 5 games", from the lookups its rows already use.
 - Gives each tag its own switch, badge, banner entry and list filter (Show, Dim or Hide). Filters start on Show, and the strongest filter wins when a game carries several tags. The PvP, In-App Purchases, Steam Deck, Steam Machine and Family Sharing tags start switched off, and the device, Family Sharing and Early Access tags start without a banner entry.
 - Lets you ignore a game you consider a false flag, for one tag or for all tags. Its DLC follow it. You can also ignore a developer or a publisher, apart by role, from the banner, and undo it in the settings.
@@ -58,31 +58,33 @@ The AI badge does not say a game uses AI, and the absence of a badge does not me
 
 ![Steam search results where rows carry chips such as IAP, EULA, PvP and Early Access after the game's name, dimmed rows are faded, and a panel under one row names its tags in Steam's words](docs/store/screenshots/01-search.png)
 
-In search results, rows of games whose developers reported AI use carry the badge after the name.
+In search results, a row carries a chip for each of its tags after the game's name, three at most, and a +N chip for the rest. Rows whose tags are set to Dim fade. Hovering or tabbing to a chip opens a panel in the style of Steam's game hover, with the developer's own text, any AI service they named and a line in Steam's words for each other tag the game carries.
 
 ![A game's store page with a tag row under Steam's tags and a purple banner that quotes the developer's AI Generated Content Disclosure and lists the game's other tags, each with an Ignore button](docs/store/screenshots/02-app.png)
 
-On a game's page, a banner above the purchase box quotes the developer's report in their own words. The page's DLC rows get badges too. "Ignore this game" stops the badges and the banner for that game in this extension and does not touch Steam's own Ignore button.
-
-Hovering or tabbing to a badge opens a panel in the style of Steam's game hover, with the developer's own text, any AI service they named and a line for each other tag the game carries.
+On a game's page, a row of chips sits under Steam's own tags, and a banner above the purchase box quotes the developer's report in their own words and lists the game's other tags. The page's DLC rows get badges too. "Ignore this game" stops the badges and the banner for that game in this extension and does not touch Steam's own Ignore button.
 
 ![The store home's personal calendar and a recommendation row, where game images carry compact chips such as EULA, EA, PvP and SD Unsupported in their corner](docs/store/screenshots/08-calendar.png)
 
-Sale pages such as Next Fest, tag and category hubs and the home page get a compact badge on the game's image.
-
 ![The store home's Top Played on Steam Deck, Your Wishlist and DLC for Your Games rows with compact chips on the game images](docs/store/screenshots/09-deck.png)
 
+The home page, sale pages such as Next Fest, and tag and category hubs get compact chips on the game's image, two at most.
+
 ![The discovery queue player opened from the store home, with chips beside the game in its right column](docs/store/screenshots/06-queue.png)
+
+In the discovery queue, the chips sit beside the game in the column with Steam's own details.
 
 ### Settings
 
 ![The settings page on its General tab, with the tag tabs on the left and the Tag order card listing every tag with a drag handle](docs/store/screenshots/04-settings.png)
 
-The options page has a tab for each tag, named by Steam's heading for it and in the tag order (alphabetical until you reorder them), with switches for the tag, its badge and its banner entry, a Show, Dim and Hide control for lists, and what you ignored for that tag alone. A General tab picks the language (automatic follows the store page) and lists what you ignored for all tags, each item with "Stop ignoring", beside the backup. Its Tag order card puts the tags in the order badges, the banner, summaries, the tabs and the popup list them: drag a tag by its handle, click its handle and then another, or use Space and the arrow keys; a small game image shows the first two. The page remembers the last tab, and a link to `options.html#tab=drm` opens the DRM tab.
+The options page opens on a General tab at the top of its rail, with a tab for each tag under a "Tags" caption, in the tag order (alphabetical until you reorder them). A tag's tab shows the tag's short name in bold and whether it is on, with Steam's heading or a plain description on a quieter line below. Its panel keeps Steam's heading as the title and holds switches for the tag, its badge and its banner entry, a Show, Dim and Hide control for lists, and what you ignored for that tag alone. The General tab picks the language (automatic follows the store page), lists what you ignored for all tags, each item with "Stop ignoring", and holds the backup. "Go back to Steam" at the end of the header returns to the store tab the popup opened the settings from and closes the settings tab; without such a tab it opens the store home. The page remembers the last tab, and a link to `options.html#tab=drm` opens the DRM tab.
 
-In a tag's tab you can also name its chips in your own words, with a shorter text for small game images and a preview as you type, and pick its badge color (experimental) with the color square or a hex code. The popup and the Tag order card show your chip text too; the tabs keep Steam's headings. The hover panel, the banner's headings and screen readers keep Steam's words: a screen reader reads your text first, then Steam's.
+The Tag order card ranks the tags for badges, the banner, summaries, the tabs and the popup: drag a tag by its handle, click its handle and then another, or use Space and the arrow keys. The first tags win where space runs short, and dashed lines mark the cuts. Game images and search suggestions show the first two tags, and search, wishlist and DLC rows the first three; the rest go into +N.
 
-![The settings tab of the Steam Deck tag: the switch for the tag, the value to tag, the badge and banner switches, custom chip texts and their preview](docs/store/screenshots/05-tag.png)
+![The settings tab of the Steam Deck tag: the switch for the tag, the rating to tag, the badge and banner switches, custom chip texts and their preview](docs/store/screenshots/05-tag.png)
+
+In a tag's tab you can also name its chips in your own words, with a shorter text for small game images and a preview as you type, and pick its badge color (experimental) with the color square or a hex code. Your text names the chips only. The tabs, the Tag order card and the popup keep the short names, and the hover panel, the banner's headings and screen readers keep Steam's words: a screen reader reads your text first, then Steam's.
 
 ![A wishlist where rows carry chips such as EULA, Account, No Family Sharing and Steam Deck Unsupported, and the rows whose tags are set to Dim are faded](docs/store/screenshots/07-wishlist.png)
 
@@ -90,7 +92,7 @@ With the list filter on Dim, badged games fade in lists and come back on hover. 
 
 ![The store home with the toolbar popup open over it, listing every tag with its Show, Dim and Hide control and its on or off switch](docs/store/screenshots/03-home.png)
 
-The toolbar popup lists every tag with its Show, Dim and Hide control and its on or off switch. A tag's name opens its tab on the options page, and the gear at the top opens all settings. The userscript opens the same tabs in a dialog from the script manager's menu.
+The toolbar popup lists every tag by its short name, with its Show, Dim and Hide control and its on or off switch. A tag's name opens its tab on the options page, and the gear at the top opens all settings. The userscript opens the same tabs in a dialog from the script manager's menu.
 
 ### Known gaps
 
