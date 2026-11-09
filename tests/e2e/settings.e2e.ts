@@ -18,3 +18,27 @@ it.each(ENGINES)("%s: the popup's gear opens the settings page", async (engine) 
     await browser.close();
   }
 });
+
+/** Clicks the popup's DRM row in the frame that draws it, before the form has read storage. */
+function clickDrmRowAtOnce(): void {
+  new MutationObserver((_records, observer) => {
+    const link = document.querySelector('a[data-sar-open-tab="drm"]');
+    if (link instanceof HTMLElement) {
+      observer.disconnect();
+      link.click();
+    }
+  }).observe(document, { childList: true, subtree: true });
+}
+
+it("chromium: a popup row clicked at once opens the settings at its tab", async () => {
+  const browser = await launch("chromium");
+  try {
+    const settings = await browser.openedBy(
+      "options.html",
+      () => browser.visit("options.html?context=popup", clickDrmRowAtOnce),
+    );
+    await settings.waitForSelector('[role=tab][data-sar-tab="drm"][aria-selected="true"]');
+  } finally {
+    await browser.close();
+  }
+});

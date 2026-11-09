@@ -27,6 +27,11 @@ export interface ExtensionBrowser {
   /** Opens an extension page, such as `options.html`, in a new tab once it has loaded. */
   open(path: string): Promise<Page>;
   /**
+   * Opens an extension page in a new tab with `preload` run before the page's own scripts, and
+   * resolves once the page has loaded or closed itself. Chromium only.
+   */
+  visit(path: string, preload: () => void): Promise<void>;
+  /**
    * Runs `action` and resolves with the tab the extension opens at exactly `path`. On Gecko it
    * reconnects after the action settles, and pages returned earlier stop working.
    */
@@ -147,6 +152,17 @@ async function launchChromium(hidden: boolean): Promise<ExtensionBrowser> {
 
   return {
     open,
+    async visit(path, preload) {
+      const page = await browser.newPage();
+      await page.evaluateOnNewDocument(preload);
+      try {
+        await page.goto(url(path));
+      } catch (error) {
+        if (!page.isClosed()) {
+          throw error;
+        }
+      }
+    },
     async openedBy(path, action) {
       // Listen first: the target can appear before the action resolves.
       const [target] = await Promise.all([
@@ -286,6 +302,11 @@ async function launchGecko(hidden: boolean): Promise<GeckoExtensionBrowser> {
 
   return {
     open,
+    // Firefox runs no BiDi preload script in an extension page, so a test that needs one is
+    // Chromium only.
+    visit(path) {
+      return Promise.reject(new TypeError(path));
+    },
     async openedBy(path, action) {
       // A reconnect would cut off a command of the action that is still in flight.
       await action();
