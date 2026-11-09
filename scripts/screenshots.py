@@ -3,7 +3,7 @@
 The capture runs on a copy of the dedicated Chromium profile in SAR_CHROMIUM_PROFILE, so Steam
 shows the pages signed in. The copy lives in a temporary folder and is deleted afterwards; the
 profile itself is only read, and Chromium must be closed while it is copied.
-SAR_SCREENSHOT_FRESH=1 runs on a new, signed-out profile instead, and skips the wishlist.
+SAR_SCREENSHOT_FRESH=1 runs on a new, signed-out profile instead, and takes shots 01 to 05 only.
 SAR_SCREENSHOT_LOCALE=es captures in Spanish into docs/store/screenshots/es/.
 
 The runbook is docs/store/screenshots.mdx.

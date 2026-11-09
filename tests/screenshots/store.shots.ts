@@ -29,7 +29,7 @@ import {
 
 // The store screenshots in upload order: the Chrome Web Store takes the first five, AMO and the
 // README take them all. Each shot checks that what it shows is on the page before it saves, so
-// drifted Steam data fails the run instead of saving a thin image. Shots 06 to 08 need the
+// drifted Steam data fails the run instead of saving a thin image. Shots 06 to 09 need the
 // signed-in profile copy. The runbook is docs/store/screenshots.mdx.
 
 const STORE = "https://store.steampowered.com";
@@ -236,7 +236,8 @@ it.skipIf(signedOut)(
   },
 );
 
-it("09-deck: badges on the home page's Steam Deck row", async () => {
+// A signed-out run stops at 05: saving 09 after skipping 06 to 08 leaves a gap the checker rejects.
+it.skipIf(signedOut)("09-deck: badges on the home page's Steam Deck row", async () => {
   await use();
   const page = await storePage(browser, locale, HOME);
   await wheelUntil(page, DECK_ROW, LAZY_STEPS);
