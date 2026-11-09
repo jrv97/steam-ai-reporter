@@ -1,0 +1,32 @@
+---
+status: accepted
+date: 2026-11-09
+decision-makers: Jorge Rodriguez de la Vega
+---
+
+# Capture the store screenshots with the e2e harness on a copy of the dev profile
+
+In the context of five listing screenshots that go stale with every visible change, facing the need to retake them the same way each time, signed in to Steam and with chosen settings, we decided to drive the built extension headless through the puppeteer-core harness of [ADR 0020](0020-browser-e2e-with-puppeteer-core.mdx), on a temporary copy of the dedicated Chromium profile, with settings restored from a committed backup file, and neglected Playwright, Chromium's `--screenshot` flag and manual capture, to achieve a `mise run screenshots` task that needs no new dependency and no focus, accepting that live Steam data drifts between runs and that the copy holds a Steam session for the length of a run.
+
+## Considered options
+
+- puppeteer-core through `tests/e2e/browser.ts` (chosen). Installs the build, opens extension and store pages, takes viewport and element screenshots. Already pinned.
+- Playwright. Its extension support needs a persistent context and its bundled Chromium (ADR 0020), and it adds a dependency.
+- Chromium's `--headless --screenshot`, as `scripts/render_icons.py` uses it. No extension install, no hover, no settings, no scrolling.
+- Manual capture. No record of how a shot was made, and every retake differs.
+
+## Details
+
+- `scripts/screenshots.py` copies `SAR_CHROMIUM_PROFILE` to a temporary folder without its caches, refuses to run while Chromium holds the profile, and deletes the copy at the end. The dev profile itself is only read. `SAR_SCREENSHOT_FRESH=1` runs on a new, signed-out profile instead.
+- The capture installs the worktree's build, so the extension ID and its storage are new on every run. `docs/store/sample-config.json`, made with Download backup, carries the settings and the ignore lists; the capture restores it through Restore from a backup, as a person would.
+- Each shot checks that the elements it shows are on the page before it saves. Data that drifted fails the run with no image written.
+- Store pages load with Steam's `l` parameter for the capture locale. Steam's cookie banner, when it shows, gets Reject All.
+- `scripts/check_screenshots.py` holds the set to 1280x800, 24-bit RGB without alpha and 4 MiB, the limits both stores share (`docs/research/store-screenshots/rq1-store-image-rules.md`). `mise run check` runs it, so CI catches a set that a hand edit broke.
+
+## Consequences
+
+- Good: no new package. The e2e harness gains a locale, a profile folder and `web(url)`.
+- Good: the runbook (`docs/store/screenshots.mdx`) reduces a retake to closing Chromium and one command.
+- Bad: shots depend on live Steam. A game that changes its disclosures or leaves a list fails its shot until the shot list changes.
+- Bad: the profile copy holds a live Steam session until the run ends; a failed delete is reported with its path.
+- Neutral: CI never captures; it only checks the committed images.

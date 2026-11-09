@@ -31,7 +31,7 @@ async function withBrowser(
   body: (browser: ExtensionBrowser) => Promise<void>,
   headed = false,
 ): Promise<void> {
-  const browser = await launch(engine, headed);
+  const browser = await launch(engine, { headed });
   try {
     await body(browser);
   } finally {

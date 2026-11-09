@@ -26,6 +26,8 @@ export const ENGINES: readonly Engine[] = ["chromium", "gecko"];
 export interface ExtensionBrowser {
   /** Opens an extension page, such as `options.html`, in a new tab once it has loaded. */
   open(path: string): Promise<Page>;
+  /** Opens a web page, such as a store page, in a new tab once it has loaded. */
+  web(url: string): Promise<Page>;
   /**
    * Opens an extension page in a new tab with `preload` run before the page's own scripts, and
    * resolves once the page has loaded or closed itself. Chromium only.
@@ -61,7 +63,7 @@ export interface Control {
 const TIMEOUT_MS = 10_000;
 const POLL_MS = 100;
 const EXIT_MS = 5_000;
-const LOCALE = "en-US";
+const DEFAULT_LOCALE = "en-US";
 /** The extension page behind `control`. */
 const CONTROL_PATH = "options.html?context=popup";
 
@@ -77,13 +79,33 @@ function distDir(engine: Engine): string {
   return fileURLToPath(new URL(`../../dist/${engine}`, import.meta.url));
 }
 
-export function launch(engine: "gecko", headed?: boolean): Promise<GeckoExtensionBrowser>;
-export function launch(engine: Engine, headed?: boolean): Promise<ExtensionBrowser>;
-/** Launches `engine` with the extension, headed when `headed` is true. */
-export async function launch(engine: Engine, headed = false): Promise<ExtensionBrowser> {
-  // Headless, so a run takes no focus from the desktop. SAR_E2E_HEADED=1 shows the windows.
-  const hidden = !headed && process.env["SAR_E2E_HEADED"] !== "1";
-  return engine === "chromium" ? launchChromium(hidden) : launchGecko(hidden);
+/** How to start a browser. Every field is optional. */
+export interface LaunchOptions {
+  /** Shows the window. SAR_E2E_HEADED=1 does the same for every launch. */
+  readonly headed?: boolean;
+  /** The browser's language, such as `es-ES`; `en-US` by default. */
+  readonly locale?: string;
+  /** Chromium only: a profile folder the caller owns, to run on instead of a fresh one. */
+  readonly profile?: string | undefined;
+}
+
+export function launch(engine: "gecko", options?: LaunchOptions): Promise<GeckoExtensionBrowser>;
+export function launch(engine: Engine, options?: LaunchOptions): Promise<ExtensionBrowser>;
+/** Launches `engine` with the extension installed. */
+export async function launch(
+  engine: Engine,
+  options: LaunchOptions = {},
+): Promise<ExtensionBrowser> {
+  // Headless, so a run takes no focus from the desktop.
+  const hidden = options.headed !== true && process.env["SAR_E2E_HEADED"] !== "1";
+  const locale = options.locale ?? DEFAULT_LOCALE;
+  if (engine === "gecko") {
+    if (options.profile !== undefined) {
+      throw new TypeError(options.profile);
+    }
+    return launchGecko(hidden, locale);
+  }
+  return launchChromium(hidden, locale, options.profile);
 }
 
 async function controlOf(page: Page): Promise<Control> {
@@ -108,14 +130,19 @@ async function installed(browser: Browser, engine: Engine): Promise<string> {
   }
 }
 
-async function launchChromium(hidden: boolean): Promise<ExtensionBrowser> {
+async function launchChromium(
+  hidden: boolean,
+  locale: string,
+  profile: string | undefined,
+): Promise<ExtensionBrowser> {
   // Pipe mode plus extension debugging lets the driver install the unpacked build.
   const browser = await puppeteer.launch({
     executablePath: envPath("SAR_CHROMIUM_BIN"),
     headless: hidden,
     pipe: true,
     enableExtensions: true,
-    args: [`--lang=${LOCALE}`],
+    args: [`--lang=${locale}`],
+    ...(profile === undefined ? {} : { userDataDir: profile }),
   });
   const id = await installed(browser, "chromium");
   const url = (path: string): string => `chrome-extension://${id}/${path}`;
@@ -152,6 +179,11 @@ async function launchChromium(hidden: boolean): Promise<ExtensionBrowser> {
 
   return {
     open,
+    async web(address) {
+      const page = await browser.newPage();
+      await page.goto(address);
+      return page;
+    },
     async visit(path, preload) {
       const page = await browser.newPage();
       await page.evaluateOnNewDocument(preload);
@@ -218,7 +250,7 @@ async function removeProfile(profile: string, child: ChildProcess | null | undef
   await rm(profile, { recursive: true, force: true, maxRetries: 5 });
 }
 
-async function launchGecko(hidden: boolean): Promise<GeckoExtensionBrowser> {
+async function launchGecko(hidden: boolean, locale: string): Promise<GeckoExtensionBrowser> {
   // A random UUID per launch, preset through a pref, gives a known moz-extension:// origin.
   const uuid = crypto.randomUUID();
   // After a reconnect puppeteer skips its own profile cleanup, so this module owns the profile.
@@ -237,8 +269,8 @@ async function launchGecko(hidden: boolean): Promise<GeckoExtensionBrowser> {
           [geckoManifest.browser_specific_settings.gecko.id]: uuid,
         }),
         "extensions.openPopupWithoutUserGesture.enabled": true,
-        "intl.accept_languages": LOCALE,
-        "intl.locale.requested": LOCALE,
+        "intl.accept_languages": locale,
+        "intl.locale.requested": locale,
       },
     });
     await installed(launched, "gecko");
@@ -302,6 +334,12 @@ async function launchGecko(hidden: boolean): Promise<GeckoExtensionBrowser> {
 
   return {
     open,
+    // Web pages send their BiDi events, unlike extension tabs.
+    async web(address) {
+      const page = await browser.newPage();
+      await page.goto(address);
+      return page;
+    },
     // Firefox runs no BiDi preload script in an extension page, so a test that needs one is
     // Chromium only.
     visit(path) {
