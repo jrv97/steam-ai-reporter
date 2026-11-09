@@ -462,8 +462,8 @@
     "description": "Main half of the split button at the foot of the notice. It ignores every tag on this game and its DLC, in this extension only; Steam's own Ignore list is not touched. Hovering or clicking the arrow beside it opens the ignore menu."
   },
   "banner_menu_ignored": {
-    "message": "Tags ignored for this game",
-    "description": "The same button once the game is ignored for every tag, after a tick. Pressing it again stops ignoring the game."
+    "message": "Stop ignoring tags for this game",
+    "description": "The same button once the game is ignored for every tag, after a tick. It names what pressing it does: stop ignoring the game for every tag."
   },
   "banner_menu_label": {
     "message": "Ignore options",
