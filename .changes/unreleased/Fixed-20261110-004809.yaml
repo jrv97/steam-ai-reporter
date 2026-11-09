@@ -1,0 +1,3 @@
+kind: Fixed
+body: "Failures that used to hide behind a default now reach the browser console: a detection source that breaks, browser storage that cannot read or save the pause after Steam refuses a request (logged once until storage works again), and settings that cannot be read when the language is picked."
+time: 2026-11-10T00:48:09.4208966+01:00

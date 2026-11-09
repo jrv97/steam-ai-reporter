@@ -43,6 +43,16 @@
       }
     }
   },
+  "error_breaker_store": {
+    "message": "Could not read or save the pause after a refused request ($breaker$); this tab keeps its own until storage works again.",
+    "description": "Logged to the browser console once when the browser storage that shares the pause after an error answer from Steam fails, until it works again. $breaker$ is an internal storage key such as v1:breaker; keep it as is.",
+    "placeholders": {
+      "breaker": {
+        "content": "$1",
+        "example": "v1:breaker"
+      }
+    }
+  },
   "notice_page_disagrees": {
     "message": "The store page says $page$ and Steam's data says $data$ for the $kind$ tag of app $app$.",
     "description": "Logged to the browser console in debug mode when the open game's page and the data Steam returns for it give different answers for one tag. $kind$ is the tag id and $page$ and $data$ are verdict states; keep them as they are.",

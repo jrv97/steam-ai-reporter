@@ -1,4 +1,5 @@
 import { type KindVerdicts, UNKNOWN_KINDS } from "../kinds/verdicts";
+import type { Logger } from "../log";
 import type { Detector } from "../ports";
 import type { AppId } from "../types";
 import { settle } from "./settle";
@@ -12,7 +13,11 @@ export const DEFAULT_HTML_BUDGET = 10;
  * `rate-limited`, which is kept in page memory only, so a later page view can try them again.
  * Pacing comes from the throttled `Http` that `inner` is built on.
  */
-export function createBudgetDetector(inner: Detector, limit = DEFAULT_HTML_BUDGET): Detector {
+export function createBudgetDetector(
+  inner: Detector,
+  logger: Pick<Logger, "error">,
+  limit = DEFAULT_HTML_BUDGET,
+): Detector {
   let left = limit;
   return {
     async detect(ids) {
@@ -26,7 +31,7 @@ export function createBudgetDetector(inner: Detector, limit = DEFAULT_HTML_BUDGE
         ]),
       );
       if (allowed.length > 0) {
-        for (const [id, found] of await settle(inner, allowed)) {
+        for (const [id, found] of await settle(inner, allowed, logger)) {
           verdicts.set(id, found);
         }
       }

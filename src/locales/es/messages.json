@@ -43,6 +43,16 @@
       }
     }
   },
+  "error_breaker_store": {
+    "message": "No se pudo leer ni guardar la pausa tras una petición rechazada ($breaker$); esta pestaña mantiene la suya hasta que el almacenamiento vuelva a funcionar.",
+    "description": "Logged to the browser console once when the browser storage that shares the pause after an error answer from Steam fails, until it works again. $breaker$ is an internal storage key such as v1:breaker; keep it as is.",
+    "placeholders": {
+      "breaker": {
+        "content": "$1",
+        "example": "v1:breaker"
+      }
+    }
+  },
   "notice_page_disagrees": {
     "message": "La página de la tienda dice $page$ y los datos de Steam dicen $data$ para la etiqueta $kind$ de la aplicación $app$.",
     "description": "Logged to the browser console in debug mode when the open game's page and the data Steam returns for it give different answers for one tag. $kind$ is the tag id and $page$ and $data$ are verdict states; keep them as they are.",

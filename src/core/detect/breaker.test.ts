@@ -136,6 +136,25 @@ describe("createBreaker", () => {
     expect(await breaker.isOpen()).toBe(true);
   });
 
+  it("logs a storage failure once per streak of failures", async () => {
+    const store = fake.countingStore(fake.store());
+    const { breaker, sink } = setup({ store });
+    store.break();
+    await breaker.isOpen();
+    await breaker.record(result({ status: 429 }));
+    await breaker.isOpen();
+    expect(sink.error).toHaveBeenCalledExactlyOnceWith(
+      "[tks]",
+      i18n.t("error_breaker_store", { breaker: API_BREAKER_KEY }),
+      expect.any(Error),
+    );
+    store.heal();
+    await breaker.isOpen();
+    store.break();
+    await breaker.isOpen();
+    expect(sink.error).toHaveBeenCalledTimes(2);
+  });
+
   it("never shortens a pause when it trips again", async () => {
     const jitter = [0.999_99, 0];
     const { breaker, clock, store } = setup({ random: () => jitter.shift() ?? 0 });

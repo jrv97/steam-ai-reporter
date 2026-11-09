@@ -16,6 +16,7 @@ import { createThrottledHttp, DEFAULT_SPACING_MS } from "./throttle";
 const DISCLOSED = make.verdicts({ ai: make.verdict.disclosed("ai") });
 const NOT_DISCLOSED = make.verdicts({ ai: make.verdict.notDisclosed("html") });
 const RATE_LIMITED = make.verdicts.uniform("rate-limited");
+const { logger } = fake.logger();
 
 /** Every ID unknown `missing`, like GetItems for IDs it has no item for. */
 function allMissing() {
@@ -28,12 +29,12 @@ afterEach(() => {
 
 detectorContract(
   "createChainDetector",
-  () => createChainDetector([allMissing(), fake.detector(() => NOT_DISCLOSED)]),
+  () => createChainDetector([allMissing(), fake.detector(() => NOT_DISCLOSED)], logger),
 );
-detectorContract("createChainDetector with no links", () => createChainDetector([]));
+detectorContract("createChainDetector with no links", () => createChainDetector([], logger));
 detectorContract(
   "createChainDetector over a rejecting link",
-  () => createChainDetector([fake.rejectingDetector()]),
+  () => createChainDetector([fake.rejectingDetector()], logger),
 );
 
 describe("createChainDetector", () => {
@@ -49,7 +50,7 @@ describe("createChainDetector", () => {
     ]);
     const api = fake.detector((id) => answers.get(id) ?? make.verdicts.uniform("error"));
     const html = fake.detector(() => NOT_DISCLOSED);
-    const verdicts = await createChainDetector([api, html]).detect([...ids, missing]);
+    const verdicts = await createChainDetector([api, html], logger).detect([...ids, missing]);
     expect(api.calls).toStrictEqual([ids]);
     expect(html.calls).toStrictEqual([[missing, otherMissing]]);
     expect(verdicts).toStrictEqual(
@@ -67,27 +68,31 @@ describe("createChainDetector", () => {
     const partly = make.verdicts({ [kind]: make.verdict.notDisclosed() });
     const html = allMissing();
     const id = make.appId();
-    const verdicts = await createChainDetector([fake.detector(() => partly), html]).detect([id]);
+    const verdicts = await createChainDetector([fake.detector(() => partly), html], logger).detect([
+      id,
+    ]);
     expect(html.calls).toStrictEqual([]);
     expect(verdicts).toStrictEqual(new Map([[id, partly]]));
   });
 
   it("does not call a link when nothing is left for it", async () => {
     const html = fake.detector(() => NOT_DISCLOSED);
-    await createChainDetector([fake.detector(() => DISCLOSED), html]).detect(make.appIds(2));
+    await createChainDetector([fake.detector(() => DISCLOSED), html], logger).detect(
+      make.appIds(2),
+    );
     expect(html.calls).toStrictEqual([]);
   });
 
   it("keeps missing when the last link also has nothing", async () => {
     const id = make.appId();
-    const verdicts = await createChainDetector([allMissing(), allMissing()]).detect([id]);
+    const verdicts = await createChainDetector([allMissing(), allMissing()], logger).detect([id]);
     expect(verdicts).toStrictEqual(new Map([[id, make.verdicts()]]));
   });
 
   it("answers unknown error for IDs a faulty link rejected or left out", async () => {
     const [answered, left] = [make.appId(), make.appId()];
     const partial = fake.partialDetector(new Map([[answered, DISCLOSED]]));
-    const verdicts = await createChainDetector([partial]).detect([answered, left]);
+    const verdicts = await createChainDetector([partial], logger).detect([answered, left]);
     expect(verdicts).toStrictEqual(
       new Map([[answered, DISCLOSED], [left, make.verdicts.uniform("error")]]),
     );
@@ -111,7 +116,7 @@ describe("the HTML fallback budget in a chain", () => {
       createThrottledHttp({ http: server.http, breaker, clock }),
       NOT_DISCLOSED,
     );
-    const chain = createChainDetector([allMissing(), createBudgetDetector(html)]);
+    const chain = createChainDetector([allMissing(), createBudgetDetector(html, logger)], logger);
     return { chain, server, sent: () => server.sent.map(({ at }) => at - T0) };
   }
 

@@ -1,4 +1,5 @@
 import { type KindVerdicts, UNKNOWN_KINDS } from "../kinds/verdicts";
+import type { Logger } from "../log";
 import type { Detector } from "../ports";
 import type { AppId } from "../types";
 import { settle } from "./settle";
@@ -24,14 +25,14 @@ function nextMicrotask(): Promise<void> {
  * starting another. Once a call settles its IDs are forgotten: remembering verdicts is the
  * cache's job. Memory is bounded by the IDs in flight.
  */
-export function createDedupingDetector(inner: Detector): Detector {
+export function createDedupingDetector(inner: Detector, logger: Pick<Logger, "error">): Detector {
   const inFlight = new Map<AppId, Answer>();
   let tick: Tick | undefined;
 
   async function flush(ids: readonly AppId[]): Answer {
     await nextMicrotask();
     tick = undefined;
-    const verdicts = await settle(inner, ids);
+    const verdicts = await settle(inner, ids, logger);
     for (const id of ids) {
       inFlight.delete(id);
     }

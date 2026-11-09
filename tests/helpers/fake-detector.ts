@@ -23,9 +23,9 @@ export function fakeDetector(verdictsFor: (id: AppId) => KindVerdicts): FakeDete
   };
 }
 
-/** A `Detector` whose every call rejects, like a link that throws. */
-export function rejectingDetector(): Detector {
-  return { detect: () => Promise.reject(new Error()) };
+/** A `Detector` whose every call rejects with `problem`, like a link that throws. */
+export function rejectingDetector(problem = new Error()): Detector {
+  return { detect: () => Promise.reject(problem) };
 }
 
 /**

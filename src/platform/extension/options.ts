@@ -1,9 +1,9 @@
 import * as v from "valibot";
-import { resolveLocale } from "../../core/i18n/locale";
-import { type BareMessageKey, createI18n, type I18n } from "../../core/i18n/t";
+import { readSettingsI18n } from "../../core/i18n/settings-i18n";
+import type { BareMessageKey, I18n } from "../../core/i18n/t";
 import { createIgnoreLists } from "../../core/ignored";
 import type { KeyValueStore } from "../../core/ports";
-import { AUTO_LOCALE, parseSettings } from "../../core/settings/settings";
+import { parseSettings } from "../../core/settings/settings";
 import { ALLOW_KEY, CREATOR_ALLOW_KEYS, UI_STATE_KEY } from "../../core/storage-keys";
 import { mountSettingsForm, type SettingsContext } from "../../core/ui/settings-form";
 import { parseTabHash, tabHash, type TabId } from "../../core/ui/tab-id";
@@ -90,17 +90,13 @@ async function main(): Promise<void> {
   const session = createExtensionStore(sessionStorageArea());
   const catalogs = CATALOGS;
 
-  let setting: string = AUTO_LOCALE;
-  try {
-    setting = parseSettings(await settings.read()).locale;
-  } catch {
-    // The form shows the load error; the page still renders in the browser language.
-  }
-  const locale = resolveLocale(
-    { setting, browserLang: navigator.language },
-    new Set(Object.keys(catalogs)),
+  // On a failed read the page renders in the browser language and the form shows the error.
+  const { setting, i18n } = await readSettingsI18n(
+    settings,
+    catalogs,
+    { browserLang: navigator.language },
+    console,
   );
-  const i18n = createI18n(catalogs, locale);
   fillText(document, i18n);
 
   const page = context === "page";
