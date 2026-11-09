@@ -28,7 +28,7 @@ import type { CardTriggers } from "./ui/hover-card";
 const APP_NAME_SELECTOR = "#appHubAppName";
 
 /** The detectors the app page asks: the cached stack, and GetItems alone for a translation. */
-export interface PageDetectors {
+interface PageDetectors {
   readonly getItems: Detector;
   readonly detector: Detector;
 }

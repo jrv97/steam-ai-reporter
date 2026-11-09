@@ -42,7 +42,7 @@ export interface AllowViewContext {
 }
 
 /** The heading level of a group's caption, below the card that holds it. */
-export type CaptionLevel = "h3" | "h4";
+type CaptionLevel = "h3" | "h4";
 
 /** One list of ignored items, read once per refresh and drawn one scope at a time. */
 export interface AllowSource {

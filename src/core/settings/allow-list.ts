@@ -38,7 +38,7 @@ export type AllowList = ScopedList<AppId>;
 export type CreatorList = ScopedList<CreatorKey>;
 
 /** Where a list lives and how its keys read back. */
-export interface ScopedListSpec<Key> {
+interface ScopedListSpec<Key> {
   /** The storage key of the list. */
   readonly storageKey: string;
   /** The stored value; a list that has a legacy home reads it here. */
@@ -51,7 +51,7 @@ export interface ScopedListSpec<Key> {
  * write the whole object, one after another in this context, so two quick changes both apply;
  * two tabs at once can still lose one.
  */
-export function createScopedList<Key>(
+function createScopedList<Key>(
   store: KeyValueStore,
   clock: Clock,
   spec: ScopedListSpec<Key>,

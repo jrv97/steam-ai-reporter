@@ -18,7 +18,7 @@ import type { StoredSettings } from "../../src/core/settings/settings-source";
 import { applyKindSettings } from "../../src/core/ui/kind-attributes";
 
 /** The text as a person's chip text for a field; throws when nothing is left of it. */
-export function chipText(text: string, field: ChipTextField = "chip"): ChipText {
+function chipText(text: string, field: ChipTextField = "chip"): ChipText {
   return v.parse(CHIP_TEXT_SCHEMAS[field], text);
 }
 
@@ -50,7 +50,7 @@ export const BANNERLESS_KINDS: readonly KindId[] = ["earlyaccess"];
 export const STATUS_KINDS = ["deck", "machine"] as const;
 
 /** The kinds Valve states: they start off, with no banner entry and only Unsupported tagged. */
-export const VALVE_KINDS = [...STATUS_KINDS, "family"] as const;
+const VALVE_KINDS = [...STATUS_KINDS, "family"] as const;
 
 export type ValveKind = (typeof VALVE_KINDS)[number];
 

@@ -11,7 +11,7 @@ import { filterAttribute } from "./kind-attributes";
  */
 export const REVEAL_ATTRIBUTE = "data-tks-reveal";
 /** Quiet time after the last change of the notice before the live region speaks. */
-export const ANNOUNCE_DELAY_MS = 1000;
+const ANNOUNCE_DELAY_MS = 1000;
 
 const NOTICE_CLASS = "tks-list-notice";
 const TEXT_ID = "tks-list-notice-text";
@@ -35,7 +35,7 @@ export interface HiddenNotice {
 }
 
 /** The hosts the root's filters hide, as one selector list, or undefined when no kind hides. */
-export function hiddenSelector(root: Element): string | undefined {
+function hiddenSelector(root: Element): string | undefined {
   const parts: string[] = [];
   for (const kind of KINDS) {
     if (root.getAttribute(filterAttribute(kind.id)) === "hide") {

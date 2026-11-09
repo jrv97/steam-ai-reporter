@@ -81,7 +81,7 @@ export function fakeHttp(routes: readonly Route[]): FakeHttp {
 }
 
 /** One request a `timedHttp` sent, and the clock's time when it went out. */
-export interface SentRequest {
+interface SentRequest {
   readonly url: string;
   readonly at: number;
 }
@@ -112,7 +112,7 @@ export function withheldHttp(): Http {
   return { get: () => Promise.resolve({ kind: "withheld" }) };
 }
 
-export interface FetchCall {
+interface FetchCall {
   readonly url: string;
   readonly init: RequestInit;
 }

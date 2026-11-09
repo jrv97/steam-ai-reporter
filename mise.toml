@@ -102,10 +102,11 @@ run = [
 # Static checks
 
 [tasks.lint]
-description = "Lint TypeScript, Python, shell scripts and workflows"
+description = "Lint TypeScript, Python, shell scripts and workflows; find dead exports and files"
 depends = ["deps", "gen"]
 run = [
   "oxlint --type-aware --deny-warnings",
+  "knip --no-progress",
   "ruff check",
   "mypy --strict scripts posting/scripts",
   "python scripts/lint_shell.py",

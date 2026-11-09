@@ -117,7 +117,7 @@ Nothing is collected. App IDs of the items on the page go, without cookies, only
 
 ## Development
 
-Requirements: [mise](https://mise.jdx.dev) and Git. mise installs every other tool at the pinned version (Node, pnpm, Python, uv, dprint, ruff, mypy, shellcheck, shfmt, actionlint, zizmor, changie, gh, web-ext), and pnpm installs the JavaScript libraries (esbuild, TypeScript, oxlint, valibot, vitest) and the test DOM (happy-dom) from the lockfile. On Windows, use Git for Windows; see `mise.local.toml.example` for putting Git Bash ahead of WSL's `bash` when running tasks from PowerShell.
+Requirements: [mise](https://mise.jdx.dev) and Git. mise installs every other tool at the pinned version (Node, pnpm, Python, uv, dprint, ruff, mypy, shellcheck, shfmt, actionlint, zizmor, changie, gh, web-ext), and pnpm installs the JavaScript libraries (esbuild, TypeScript, oxlint, knip, valibot, vitest) and the test DOM (happy-dom) from the lockfile. On Windows, use Git for Windows; see `mise.local.toml.example` for putting Git Bash ahead of WSL's `bash` when running tasks from PowerShell.
 
 ```bash
 mise trust
@@ -129,7 +129,7 @@ mise run setup
 Main tasks:
 
 - `mise run fmt`: format every file we own (width 100; Markdown is formatted for structure only).
-- `mise run lint`, `mise run typecheck`, `mise run test`: oxlint with type-aware rules, ruff, mypy, shellcheck, actionlint and zizmor; TypeScript 7; vitest with happy-dom.
+- `mise run lint`, `mise run typecheck`, `mise run test`: oxlint with type-aware rules, knip for dead exports and files, ruff, mypy, shellcheck, actionlint and zizmor; TypeScript 7; vitest with happy-dom.
 - `mise run build`: build `dist/chromium`, `dist/gecko`, `dist/userscript` and the dev-only `dist/dev`.
 - `mise run check`: text, catalog, version and bundle checks on top of the build.
 - `mise run ci`: everything CI runs. The pre-push hook runs `prepush`, which is the same without the reproducibility check and `web-ext lint`.

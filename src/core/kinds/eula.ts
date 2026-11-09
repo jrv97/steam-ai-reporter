@@ -11,7 +11,7 @@ import { storedDisclosed } from "./stored-disclosed";
 export type EulaUrl = string & v.Brand<"EulaUrl">;
 
 /** One third-party agreement: its name as typed, and a link when it is safe to show. */
-export interface EulaItem {
+interface EulaItem {
   readonly name: string;
   readonly url?: EulaUrl;
 }

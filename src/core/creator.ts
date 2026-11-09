@@ -22,7 +22,7 @@ const NAME_PREFIX = "n:";
 /** A Steam clan (community group) account ID, which Valve gives to a developer or publisher. */
 export const ClanIdSchema = v.pipe(Uint32IdSchema, v.brand("ClanId"));
 
-export type ClanId = v.InferOutput<typeof ClanIdSchema>;
+type ClanId = v.InferOutput<typeof ClanIdSchema>;
 
 function isKeyText(text: string): boolean {
   if (text.startsWith(CLAN_PREFIX)) {

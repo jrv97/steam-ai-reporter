@@ -10,12 +10,12 @@ import { NESTED_PLACEMENTS } from "./placements";
 // the whole column around the package header and the purchase boxes.
 
 /** How far above a link its capsule image may sit (the link itself is level 0). */
-export const MAX_IMAGE_LEVELS = 8;
+const MAX_IMAGE_LEVELS = 8;
 /**
  * How many more levels a host may climb while everything inside still names its app. The climb
  * ends at the first element with a `data-ds-appid`, which is the item and the largest a host gets.
  */
-export const MAX_JOIN_LEVELS = 3;
+const MAX_JOIN_LEVELS = 3;
 
 /** Finds capsule hosts during one scan. Its memos live as long as the scan; never keep one. */
 export interface HostFinder {

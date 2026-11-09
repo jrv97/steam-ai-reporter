@@ -6,11 +6,11 @@ import type { LucideName } from "./ui/lucide";
 // the person opens in a tab; the extension never requests one, so no app ID goes anywhere
 // (rule 1).
 
-export const BUG_REPORT_URL =
+const BUG_REPORT_URL =
   "https://github.com/jrv97/tag-kit-for-steam/issues/new?template=bug_report.yml";
-export const FEEDBACK_URL =
+const FEEDBACK_URL =
   "https://github.com/jrv97/tag-kit-for-steam/issues/new?template=feature_request.yml";
-export const ANONYMOUS_FEEDBACK_URL = "https://forms.gle/Fo652zzyFWUQn2qK9";
+const ANONYMOUS_FEEDBACK_URL = "https://forms.gle/Fo652zzyFWUQn2qK9";
 
 export interface FeedbackLink {
   readonly id: "bug" | "feedback" | "anonymous";

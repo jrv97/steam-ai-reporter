@@ -16,7 +16,7 @@ import type { CapsuleHost, CapsuleRenderer } from "./renderer";
 /** Quiet time after the last mutation before a scan. */
 export const DEBOUNCE_MS = 200;
 /** The longest a mutation waits for its scan while the page keeps changing. */
-export const MAX_WAIT_MS = 1000;
+const MAX_WAIT_MS = 1000;
 
 /** What one scan did; for debug logs and tests. */
 export interface ScanReport {

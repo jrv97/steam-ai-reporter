@@ -42,7 +42,7 @@ type FacetOf<Disclosed> = Disclosed extends { readonly facet: infer Facet extend
   : never;
 
 /** Who states a kind's facts: the developer on the store page, or Valve for what it computes. */
-export type KindSource = "developer" | "valve";
+type KindSource = "developer" | "valve";
 
 /**
  * One tag kind: what the extension reports about a game. `Disclosed` is the shape of its disclosed

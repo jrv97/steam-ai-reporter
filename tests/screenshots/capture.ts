@@ -20,10 +20,10 @@ import { GENERAL_TAB, tabHash } from "../../src/core/ui/tab-id";
 import type { ExtensionBrowser } from "../e2e/browser";
 
 /** The Chrome Web Store screenshot size, which AMO also recommends, at one device pixel per px. */
-export const STORE_VIEWPORT = { width: 1280, height: 800, deviceScaleFactor: 1 } as const;
+const STORE_VIEWPORT = { width: 1280, height: 800, deviceScaleFactor: 1 } as const;
 
 /** The settings the screenshots start from, made with the settings page's Download backup. */
-export const SAMPLE_CONFIG = fileURLToPath(
+const SAMPLE_CONFIG = fileURLToPath(
   new URL("../../docs/store/sample-config.json", import.meta.url),
 );
 
@@ -93,7 +93,7 @@ export function captureProfile(): string | undefined {
 }
 
 /** The path of screenshot `name` (without extension) for `locale`. */
-export function screenshotPath(locale: CaptureLocale, name: string): string {
+function screenshotPath(locale: CaptureLocale, name: string): string {
   return `${SCREENSHOTS}${locale.folder}${name}.png`;
 }
 
@@ -233,7 +233,7 @@ export async function scrollPast(page: Page, selector: string): Promise<void> {
  * `data-ds-appid` matches the app they were tagged for. A demo row links to its full game and
  * names the demo, so either match is enough. A shot with any puts one game's tags on another.
  */
-export async function strangers(page: Page): Promise<string[]> {
+async function strangers(page: Page): Promise<string[]> {
   return page.evaluate(() =>
     [...document.querySelectorAll("[data-tks-appid]")].flatMap((host) => {
       const link = host.closest("a[href]") ?? host.querySelector("a[href]");
@@ -249,7 +249,7 @@ export async function strangers(page: Page): Promise<string[]> {
 }
 
 /** How many chips sit fully inside the frame, on shown rows. */
-export function chipsInView(page: Page): Promise<number> {
+function chipsInView(page: Page): Promise<number> {
   return page.evaluate(() =>
     [...document.querySelectorAll(".tks-chips")]
       .filter((node) => {

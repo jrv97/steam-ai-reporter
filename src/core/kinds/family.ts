@@ -13,7 +13,7 @@ export const FAMILY_CATEGORY_ID = 62;
 /** The values a person can tag: listed, and left out of a paid game's list (ADR 0016). */
 export const FAMILY_FACETS = ["supported", "unsupported"] as const;
 
-export type FamilyFacet = (typeof FAMILY_FACETS)[number];
+type FamilyFacet = (typeof FAMILY_FACETS)[number];
 
 const STORED = storedDisclosed("family", { facet: v.picklist(FAMILY_FACETS) });
 

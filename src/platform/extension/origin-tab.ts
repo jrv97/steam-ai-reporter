@@ -9,14 +9,14 @@ import type { StorageChanges } from "./storage-area";
 // the active tab's ID to `storage.session`; the settings tab in front takes it and removes it.
 
 /** A browser tab ID: a non-negative integer, which leaves out `TAB_ID_NONE` (-1). */
-export const BrowserTabIdSchema = v.pipe(
+const BrowserTabIdSchema = v.pipe(
   v.number(),
   v.integer(),
   v.minValue(0),
   v.brand("BrowserTabId"),
 );
 
-export type BrowserTabId = v.InferOutput<typeof BrowserTabIdSchema>;
+type BrowserTabId = v.InferOutput<typeof BrowserTabIdSchema>;
 
 /** A failure the caller can do without. */
 const ignore = (): undefined => undefined;
