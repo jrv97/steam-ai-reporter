@@ -121,9 +121,10 @@
 }
 
 /* Placed inside the capsule link: hovering it is hovering the link, so the hover card can
-   open without stealing clicks or hover previews */
-.sar-compact[data-sar-in-link="true"] {
-  pointer-events: auto;
+   open without stealing clicks or hover previews. The chip takes the link's pointer state, so a
+   carousel slide the store hides from the pointer lets it through. */
+[data-sar-in-link="true"] > .sar-compact {
+  pointer-events: inherit;
   cursor: pointer;
 }
 

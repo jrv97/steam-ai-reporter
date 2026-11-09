@@ -359,10 +359,11 @@ describe("createBadgeRenderer", () => {
     const { host, image } = capsule();
     const verdicts = make.verdicts.only(["ai", "kernel"]);
     renderer.render(view(host, overlay(image, "large"), { verdicts }));
+    const group = image.querySelector(".sar-chips");
     const chips = Array.from(image.querySelectorAll<HTMLElement>(".sar-chips > .sar-compact"));
-    expect(image.querySelector(".sar-chips")?.getAttribute("data-sar-chips")).toBe("compact");
+    expect(group?.getAttribute("data-sar-chips")).toBe("compact");
+    expect(group?.getAttribute("data-sar-in-link")).toBe("true");
     expect(chips.map((c) => c.getAttribute("data-sar-size"))).toEqual(["large", "large"]);
-    expect(chips.map((c) => c.getAttribute("data-sar-in-link"))).toEqual(["true", "true"]);
     expect(chips.map((c) => texts(c))).toEqual([
       [chip("ai"), AI_NAME],
       [chip("kernel"), nameOf("kernel")],
@@ -379,7 +380,7 @@ describe("createBadgeRenderer", () => {
       throw new TypeError();
     }
     renderer.render(view(host, overlay(image)));
-    expect(image.querySelector(".sar-compact")?.hasAttribute("data-sar-in-link")).toBe(false);
+    expect(image.querySelector(".sar-chips")?.hasAttribute("data-sar-in-link")).toBe(false);
   });
 
   it.each([

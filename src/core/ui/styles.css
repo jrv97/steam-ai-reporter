@@ -91,9 +91,14 @@
   pointer-events: none;
 }
 
-/* Inside the capsule link: hovering it is hovering the link, and the hover card opens */
-.sar-compact[data-sar-in-link="true"] {
-  pointer-events: auto;
+/* Inside the capsule link: hovering a chip is hovering the link, and the hover card opens. The
+   chips take the link's pointer state, so a carousel slide hidden from the pointer lets it pass. */
+.sar-chips[data-sar-chips="compact"][data-sar-in-link="true"],
+.sar-chips[data-sar-in-link="true"] > .sar-compact {
+  pointer-events: inherit;
+}
+
+.sar-chips[data-sar-in-link="true"] > .sar-compact {
   cursor: pointer;
 }
 

@@ -178,13 +178,11 @@ export function createBadgeRenderer(
     return group;
   }
 
-  /** Compact chips inside the capsule's own link take the pointer and open the card. */
+  /** Compact chips inside the capsule's own link take the link's pointer and open the card. */
   function linkCompact(group: HTMLElement, host: Element): void {
     const link = group.parentElement?.closest("a");
     if (link !== null && link !== undefined && (host.contains(link) || link.contains(host))) {
-      for (const chip of group.children) {
-        chip.setAttribute("data-sar-in-link", TRUE);
-      }
+      group.setAttribute("data-sar-in-link", TRUE);
     }
   }
 

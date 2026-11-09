@@ -270,6 +270,20 @@ describe("the compact badge placement", () => {
   it("keeps the group inside the image by subtracting the end inset once", () => {
     expect(group).toContain("max-inline-size: calc(100% - var(--sar-compact-inset-inline))");
   });
+
+  // The home carousel stacks its hidden slides over the shown one, with no pointer on them.
+  // A chip that took the pointer there would open the card of a game no one can see.
+  it("gives a chip no more pointer than its capsule link has", () => {
+    const pointers = rulesOf(PAGE_CSS)
+      .filter((rule) => rule.selectors.some((selector) => /\.sar-(chips|compact)\b/.test(selector)))
+      .flatMap((rule) => [...rule.body.matchAll(/pointer-events:\s*([^;]+);/g)])
+      .map((match) => match[1]);
+    expect(pointers.length).toBeGreaterThan(0);
+    expect(pointers.filter((value) => value !== "none" && value !== "inherit")).toEqual([]);
+    expect(pageRule('.sar-chips[data-sar-in-link="true"] > .sar-compact')).toContain(
+      "pointer-events: inherit",
+    );
+  });
 });
 
 describe("adoptStyles", () => {

@@ -222,8 +222,8 @@ Preview: `previews/CompactBadge.html`.
 ### What the consumer provides
 
 ```html
-<span class="sar-chips" data-sar-chips="compact">
-  <span class="sar-compact" data-sar-kind="drm" data-sar-size="text" data-sar-in-link="true">
+<span class="sar-chips" data-sar-chips="compact" data-sar-in-link="true">
+  <span class="sar-compact" data-sar-kind="drm" data-sar-size="text">
     <span class="sar-compact-label" aria-hidden="true">t('kind_drm_chip')</span>
     <span class="sar-vh">t('kind_chip_name', { chip, heading })</span>
   </span>
@@ -231,7 +231,7 @@ Preview: `previews/CompactBadge.html`.
 ```
 
 - `data-sar-size` on each chip, set at placement from the measured image box (batched read, `getBoundingClientRect`). No container queries: they would change how store containers size themselves.
-- `data-sar-in-link="true"` only when the group's `closest("a")` is the capsule link. The chips register with the hover card either way; outside a link no pointer reaches them.
+- `data-sar-in-link="true"` on the group only when its `closest("a")` is the capsule link. The group and its chips then inherit the link's `pointer-events`, so a carousel slide or page the store hides from the pointer lets it through to the slide on top. The chips register with the hover card either way; outside a link no pointer reaches them.
 - `data-sar-anchor` on the image container if it computes to `position: static`; the stylesheet turns it into `position: relative`. Never an inline style.
 
 ### Size tiers
