@@ -8,6 +8,7 @@ import { loadPage, nodes, pageTransition, setBody, the } from "../../../tests/he
 import type { KindId } from "../kinds/id";
 import type { AppId } from "../types";
 import { createHostKindsRenderer } from "../ui/list-filter";
+import { appIdFromHref } from "./appid";
 import { HOST_APPID, HOST_HIDEABLE, HOST_KINDS } from "./marks";
 import type { CapsuleHost } from "./renderer";
 import { createScanner, DEBOUNCE_MS, type Scanner, type ScanReport } from "./scanner";
@@ -82,6 +83,17 @@ function dimmed(kind: KindId): readonly Element[] {
   return [
     ...document.querySelectorAll(`[data-sar-filter-${kind}="dim"] [data-sar-kinds~="${kind}"]`),
   ];
+}
+
+/** The slides of the discovery queue player, in order. */
+function queueSlides(): readonly Element[] {
+  return [...document.querySelectorAll("[role='dialog'] [aria-labelledby]")];
+}
+
+/** A queue slide's title block: the first element its label IDs name. */
+function queueTitle(slide: Element | undefined): Element | null {
+  const [id] = slide?.getAttribute("aria-labelledby")?.split(" ") ?? [];
+  return id === undefined ? null : document.getElementById(id);
 }
 
 /** A link to the app page of `id` around `inner`. */
@@ -232,6 +244,35 @@ describe("per-surface hosts", () => {
     expect(the(".discovery_queue_content_ctn").getAttribute(HOST_HIDEABLE)).toBe("false");
   });
 
+  it.each([
+    ["a game with Similar icons", 0, SURFACE_APPS.queueSimilar.slice(0, 2)],
+    ["a game without them", 1, []],
+  ])(
+    "queue player, %s: the slot is the host, badge ends the title block",
+    async (_name, index, similar) => {
+      loadPage(make.page.surface("discovery-queue"));
+      await startScanner();
+      const slide = queueSlides()[index];
+      const slot = slide?.parentElement;
+      const [own, ...icons] = found().filter((host) => slot?.contains(host.element) === true);
+      expect([own?.element, own?.appId, own?.placement.id, own?.anchor]).toStrictEqual([
+        slot,
+        SURFACE_APPS.queue[index],
+        "queue-player",
+        queueTitle(slide),
+      ]);
+      expect(slot?.getAttribute(HOST_HIDEABLE)).toBe("false");
+      // Each icon is a host of its own app, never of the slide's game.
+      expect(
+        icons.map((host) => [
+          host.appId,
+          host.element.getAttribute(HOST_APPID),
+          appIdFromHref(host.element.querySelector("a")?.getAttribute("href") ?? "", SEARCH_URL),
+        ]),
+      ).toStrictEqual(similar.map((id) => [id, String(id), id]));
+    },
+  );
+
   it("app page: DLC rows get hosts, badge at the end of the name; own links do not", async () => {
     const base = make.fixture.app.arcRaiders;
     loadPage(make.page.surface("dlc-rows"));
@@ -310,6 +351,21 @@ describe("host rule", () => {
     const host = found().find((candidate) => candidate.appId === id);
     expect(host?.element).toBe(the(".tile"));
     expect(host?.anchor).toBe(the(".tile .box"));
+  });
+
+  it.each([
+    ["joins a card around other apps' small capsules in a store dialog", " role='dialog'", ".card"],
+    ["stops below them anywhere else", "", ".cover"],
+  ])("%s", async (_name, role, host) => {
+    const id = make.appId();
+    setBody(
+      `<section${role}><div class="other">${appLink(make.appId())}</div>`
+        + `<div class="card"><div class="cover">${appLink(id)}</div>`
+        + appLink(id, make.text.name())
+        + `<div data-key="hover div">${appLink(make.appId())}</div></div></section>`,
+    );
+    await startScanner();
+    expect(found().find((candidate) => candidate.appId === id)?.element).toBe(the(host));
   });
 
   it("keeps one host when hosts of the same app nest", async () => {
@@ -533,6 +589,25 @@ describe("observing", () => {
     expect(slot.getAttribute(HOST_APPID)).toBe(String(after));
     expect(slot.querySelectorAll(`[${HOST_APPID}]`)).toHaveLength(0);
     expect(slot.querySelectorAll(".sar-badge")).toHaveLength(1);
+  });
+
+  it("keeps each queue player slot's badge on its own game when a new slide mounts", async () => {
+    loadPage(make.page.surface("discovery-queue"));
+    await startScanner({ badges: true });
+    const next = make.appId();
+    const track = the("[role='dialog'] [aria-labelledby]").parentElement?.parentElement;
+    // Next: Steam drops the first slot, mounts the new game in the empty last slot, adds a slot.
+    track?.firstElementChild?.remove();
+    track?.lastElementChild?.append(make.page.queueSlide(next));
+    track?.append(document.createElement("div"));
+    await settle();
+    const slides = queueSlides();
+    expect(slides.map((slide) => slide.parentElement?.getAttribute(HOST_APPID))).toStrictEqual(
+      [...SURFACE_APPS.queue, next].map(String),
+    );
+    expect(slides.map((slide) => queueTitle(slide)?.lastElementChild?.className)).toStrictEqual(
+      slides.map(() => "sar-badge"),
+    );
   });
 
   it("finds a capsule whose image arrives inside its link after the scan", async () => {

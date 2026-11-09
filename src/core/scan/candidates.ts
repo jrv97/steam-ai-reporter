@@ -37,6 +37,46 @@ export const ANY_CANDIDATE = [DATA_CANDIDATE, LINK_CANDIDATE, OTHER_ITEM_LINK]
 export const SKIPPED =
   `#footer, [data-featuretarget='footer'], .breadcrumbs, .game_area_dlc_bubble, ${SAR_NODE}`;
 
+/**
+ * Small capsules of other apps that a store surface nests inside one app's capsule. Inside
+ * `within`, links under `region` do not count toward the naming of a capsule that holds them, so
+ * that capsule still names its one app. The small capsules keep hosts of their own.
+ */
+export interface NestedPlacement {
+  /** A stable name for tests and debug logs. */
+  readonly id: string;
+  /** The store container the region counts in; elsewhere its links count like any other. */
+  readonly within: string;
+  /** The element that wraps one nested capsule. */
+  readonly region: string;
+}
+
+/** Whether `element` sits in a nested capsule of `regions` that `root` holds below itself. */
+function nestedBelow(
+  element: Element,
+  root: Element,
+  regions: readonly NestedPlacement[],
+): boolean {
+  for (const { region } of regions) {
+    const nested = element.closest(region);
+    if (nested !== null && nested !== root && root.contains(nested)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/** The nested placements whose region `root` holds, inside their container. */
+function regionsIn(
+  root: Element,
+  nested: readonly NestedPlacement[],
+): readonly NestedPlacement[] {
+  return nested.filter(
+    (placement) =>
+      root.querySelector(placement.region) !== null && root.closest(placement.within) !== null,
+  );
+}
+
 /** What an element names: one app ID, `several` (a comma list or another item), or nothing. */
 export type Naming = AppId | "several" | undefined;
 
@@ -81,14 +121,32 @@ export function namesApp(root: Element, appId: AppId, base: string): boolean {
 
 /**
  * The single app every naming element in `root` (`root` included) names, `several` when they
- * disagree, or undefined when none names an app. Stops at the first disagreement.
+ * disagree, or undefined when none names an app. Capsules of `nested` below `root` do not count.
+ * A root that names one app or holds none of them is read once.
  */
-export function uniformNaming(root: Element, base: string): Naming {
+export function uniformNaming(
+  root: Element,
+  base: string,
+  nested: readonly NestedPlacement[],
+): Naming {
+  const naming = namingIn(root, base, []);
+  if (naming !== "several") {
+    return naming;
+  }
+  const regions = regionsIn(root, nested);
+  return regions.length === 0 ? naming : namingIn(root, base, regions);
+}
+
+/** `uniformNaming` without the capsules of `skipped`. Stops at the first disagreement. */
+function namingIn(root: Element, base: string, skipped: readonly NestedPlacement[]): Naming {
   let found = namingOf(root, base);
   if (found === "several") {
     return found;
   }
   for (const element of root.querySelectorAll(ANY_CANDIDATE)) {
+    if (skipped.length > 0 && nestedBelow(element, root, skipped)) {
+      continue;
+    }
     const naming = namingOf(element, base);
     if (naming === undefined) {
       continue;

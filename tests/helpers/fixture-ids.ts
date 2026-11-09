@@ -131,6 +131,10 @@ export const SURFACE_APPS = {
   wishlist: appIds(5072580, 3664320),
   /** The DLC rows of the ARC Raiders page in `SURFACES["dlc-rows"]`. */
   dlcRows: appIds(5201760, 3948510, 4920260, 4210150, 4424920, 4741040),
+  /** The previous, current and next slides of the discovery queue player. */
+  queue: appIds(4576490, 5037510, 4262460),
+  /** The "Similar to games you've played" icons of the first queue slide, then of the last. */
+  queueSimilar: appIds(730, 570, 440, 620),
 } as const;
 
 /** Clan IDs that `creators.json` holds. */

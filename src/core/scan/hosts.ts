@@ -1,6 +1,7 @@
 import type { AppId } from "../types";
 import { DATA_APPID, DATA_CANDIDATE, type Naming, uniformNaming } from "./candidates";
 import { firstImage } from "./image";
+import { NESTED_PLACEMENTS } from "./placements";
 
 // The host rule rq6 (S5) chose on the tag hub: the lowest image-bearing ancestor that names one
 // app, then a short climb that joins image and title blocks that are siblings. The climb never
@@ -45,7 +46,7 @@ export function createHostFinder(document: Document): HostFinder {
     if (namings.has(element)) {
       return namings.get(element);
     }
-    const value = uniformNaming(element, base);
+    const value = uniformNaming(element, base, NESTED_PLACEMENTS);
     namings.set(element, value);
     return value;
   }

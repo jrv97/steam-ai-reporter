@@ -1,5 +1,6 @@
 import dlcRows from "../fixtures/app-page/1808500-ai-only.html?raw";
 import developer from "../fixtures/surfaces/developer/widgets.html?raw";
+import discoveryQueue from "../fixtures/surfaces/discovery-queue/player.html?raw";
 import home from "../fixtures/surfaces/home/capsules.html?raw";
 import nextFest from "../fixtures/surfaces/next-fest/feed.html?raw";
 import searchSuggestions from "../fixtures/surfaces/search-suggestions/popup.html?raw";
@@ -17,6 +18,7 @@ export const SURFACES = {
   "wishlist": wishlist,
   "search-suggestions": searchSuggestions,
   "dlc-rows": dlcRows,
+  "discovery-queue": discoveryQueue,
 } as const;
 
 /** Replaces the global document's head and body with those of `html`. */
@@ -49,6 +51,28 @@ export function searchRow(id: number): HTMLElement {
     ),
   );
   return row;
+}
+
+/**
+ * A discovery queue player slide like the captured current one, for app `id`. Its label IDs get a
+ * prefix of their own, as React gives each mounted slide new ones.
+ */
+export function queueSlide(id: number): Element {
+  const page = new DOMParser().parseFromString(discoveryQueue, "text/html");
+  const [, current] = page.querySelectorAll("[role='dialog'] [aria-labelledby]");
+  if (current === undefined) {
+    throw new TypeError(String(id));
+  }
+  for (const link of current.querySelectorAll("a[href*='/app/']")) {
+    link.setAttribute("href", `https://store.steampowered.com/app/${String(id)}/Game/`);
+  }
+  const prefix = `q${String(id)}-`;
+  for (const labelled of current.querySelectorAll("[id]")) {
+    labelled.id = prefix + labelled.id;
+  }
+  const labels = current.getAttribute("aria-labelledby")?.split(" ") ?? [];
+  current.setAttribute("aria-labelledby", labels.map((label) => prefix + label).join(" "));
+  return document.importNode(current, true);
 }
 
 /** A bfcache page transition; happy-dom's `PageTransitionEvent` is a plain `Event`. */
