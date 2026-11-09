@@ -280,9 +280,15 @@ describe("the compact badge placement", () => {
       .map((match) => match[1]);
     expect(pointers.length).toBeGreaterThan(0);
     expect(pointers.filter((value) => value !== "none" && value !== "inherit")).toEqual([]);
-    expect(pageRule('.sar-chips[data-sar-in-link="true"] > .sar-compact')).toContain(
-      "pointer-events: inherit",
-    );
+    const inherits = (selector: string) =>
+      rulesOf(PAGE_CSS).some((rule) =>
+        rule.selectors.includes(selector) && rule.body.includes("pointer-events: inherit")
+      );
+    const linked = [
+      '.sar-chips[data-sar-chips="compact"][data-sar-in-link="true"]',
+      '.sar-chips[data-sar-in-link="true"] > .sar-compact',
+    ];
+    expect(linked.filter((selector) => !inherits(selector))).toEqual([]);
   });
 });
 

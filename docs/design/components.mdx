@@ -257,7 +257,7 @@ Built as a mirror of the store's own corner flags (in library, on wishlist): sol
 
 ### Pointer and accessibility
 
-- Inside the capsule link: `pointer-events: auto`, so hovering or clicking the badge is hovering or clicking the link, and the hover card opens. Focus on the link opens it too.
+- Inside the capsule link: the group and its chips inherit the link's `pointer-events`, so hovering or clicking the badge is hovering or clicking the link, and the hover card opens. A carousel slide the store hides from the pointer passes it through, chips included. Focus on the link opens the card too.
 - Outside a link: `pointer-events: none`, so it never swallows a click on an overlaid link, and no hover card opens. The label stays in the DOM.
 
 ### Don't
