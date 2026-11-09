@@ -193,7 +193,7 @@ No code is copied from any of these projects. Ideas that shaped this one are cre
 
 ## How it was built
 
-I built this extension with [Claude Code](https://claude.com/claude-code) and Claude Design. I orchestrated the work and oversaw every decision, with close attention to performance and efficiency, design and testing. The code itself was written with Claude's help, luckily for me. Claude Design kept the design language consistent across the badges, the banner, the hover panel and the settings, small as the app is.
+I built this extension with [Claude Code](https://claude.com/claude-code) and Claude Design. I orchestrated the work and oversaw every decision, with close attention to performance and efficiency, design and testing. The code itself was written with Claude's help, because I wouldn't have time to work on this otherwise, and I've desperately needed this forever. Claude Design kept the design language consistent across the badges, the banner, the hover panel and the settings, small as the app is.
 
 ## Not affiliated with Valve
 
