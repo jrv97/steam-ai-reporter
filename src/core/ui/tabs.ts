@@ -2,6 +2,7 @@
 export const TAB_ATTRIBUTE = "data-sar-tab";
 
 const TAB_ROLE = "tab";
+const HIDDEN = "true";
 const NEXT_KEYS: ReadonlySet<string> = new Set(["ArrowRight", "ArrowDown"]);
 const PREVIOUS_KEYS: ReadonlySet<string> = new Set(["ArrowLeft", "ArrowUp"]);
 /** Enter and Space, the keys that activate the focused tab. */
@@ -17,6 +18,11 @@ export interface TabsOptions<Id extends string> {
   readonly label: string;
   /** Hears a tab the person activates with Enter or Space; shows that tab when omitted. */
   readonly onActivate?: (id: Id) => void;
+  /**
+   * A caption over the tabs after `after`, below a divider. It is decoration that assistive
+   * technology skips, since each tab names itself; it stays after `after` when the tabs move.
+   */
+  readonly group?: { readonly after: Id; readonly caption: string; };
 }
 
 /**
@@ -67,6 +73,11 @@ export function createTabs<Id extends string>(options: TabsOptions<Id>): Tabs<Id
     panels.set(id, panel);
     list.append(tab);
   }
+  const { group } = options;
+  const caption = doc.createElement("div");
+  caption.className = "sar-tab-group";
+  caption.setAttribute("aria-hidden", HIDDEN);
+  caption.textContent = group?.caption ?? "";
 
   function lookup<T>(map: ReadonlyMap<Id, T>, id: Id): T {
     const found = map.get(id);
@@ -109,9 +120,18 @@ export function createTabs<Id extends string>(options: TabsOptions<Id>): Tabs<Id
   }
   select(first);
 
+  /** Puts the group's caption right after its tab. */
+  function placeCaption(): void {
+    if (group !== undefined) {
+      lookup(tabs, group.after).after(caption);
+    }
+  }
+  placeCaption();
+
   function order(next: readonly Id[]): void {
     ids = next.filter((id) => tabs.has(id));
     list.append(...ids.map((id) => lookup(tabs, id)));
+    placeCaption();
   }
 
   function idOf(node: Element): Id | undefined {

@@ -504,7 +504,7 @@ Preview: `previews/OptionsPage.html`, and `previews/Tabs.html` for the tabs alon
 ### Layout
 
 - Page: centered, `sar-options-max-width` (880px), `sar-space-4` padding, `sar-color-bg-panel`, `color-scheme: dark`. Below the header the tabs (section 18): from an 800px viewport a 200px rail beside the panels, narrower a row of tabs that wraps above them.
-- Popup: `sar-popup-width` (360px), `sar-space-3` padding. The header stays in view and ends in the gear. Below it one row per tag, in the tag order (the tabs' order): the tag's chip word (the person's chip text when set), a link to its tab; a compact Show, Dim and Hide control (`sar-control-height-xs`, `sar-text-help`); the master switch. Rows take `sar-space-1` padding with a `sar-color-divider` line between them. The popup has no ignore lists and no badge, banner, value or color controls: those live on the page.
+- Popup: `sar-popup-width` (360px), `sar-space-3` padding. The header stays in view and ends in the gear. Below it one row per tag, in the tag order (the tabs' order): the tag's key (`kind_<id>_key`, ADR 0023), a link to its tab named by the key and then Steam's heading (`kind_chip_name`, said once when they match); a compact Show, Dim and Hide control (`sar-control-height-xs`, `sar-text-help`); the master switch. Rows take `sar-space-1` padding with a `sar-color-divider` line between them. The popup has no ignore lists and no badge, banner, value or color controls: those live on the page.
 - Dialog: the popup's density (flat sections, small captions, `sar-control-height-xs` segments) with the page's tabs and the color fields, 760px wide.
 - Font: the `ext` family (a system stack). The store font is not loaded on extension pages and none is bundled.
 - Type on the full page: field labels, help and error lines in `sar-text-body` (13/18). The popup and the dialog keep help and error lines in `sar-text-help` (12/16).
@@ -520,7 +520,7 @@ Preview: `previews/OptionsPage.html`, and `previews/Tabs.html` for the tabs alon
    - Tag order (page and dialog): the order chips, banners and summaries list the tags in (below).
    - Backup (page and dialog): the Backup card (section 12).
    - Privacy (page only): four bullets.
-2. One tab per tag kind, in the tag order (`settings.order`; alphabetical by Steam's English heading until the person reorders, and again after a reset), named by Steam's heading for the kind (`kind_<id>_heading`), never the chip word or the person's chip text, with `options_state_on` or `options_state_off`. A new order moves the tabs and the popup's rows. A tag that is off keeps its tab. The panel holds:
+2. One tab per tag kind, in the tag order (`settings.order`; alphabetical by Steam's English heading until the person reorders, and again after a reset), named by the tag's key (`kind_<id>_key`, ADR 0023) in bold, never the chip word or the person's chip text, with `options_state_on` or `options_state_off` on the same line and the tag's description under them (below). A new order moves the tabs and the popup's rows. A tag that is off keeps its tab. The panel holds:
    - The tag's card, titled with Steam's line for the kind (`kind_<id>_heading`): the master switch `options_kind_enabled` (`kinds.<id>.enabled`), then, for a tag with values, a group of native checkboxes, one per value in Steam's words, except Family Sharing, whose choices read `options_facet_available` and `options_facet_unavailable`, each checkbox named `options_facet_choice_label` (its text, then Steam's line for the tag) (`facets`; label `options_facets_label`, help `options_facets_help`), then the switches `options_badges` (dialog `options_badges_short`; `badge`) and `options_banner` (`banner`), then the chip text fields and their preview (below), then, where the form has color fields, the color field (below), then a stacked SegmentedControl with Show, Dim and Hide (`filter`; label `options_filter_label`; the help follows the selection). Each switch has help. While the master switch is off, the other controls stay where they are at the same size, in one `fieldset.sar-kind-options` that is `disabled` and drawn at `sar-dim-opacity`, and their stored values stay (decision 75). Only the master switch stays usable. The page never changes its layout when a tag turns on or off.
    - Ignored for this tag (`options_allow_kind_title`): what is ignored for this tag alone, and the note on what all tags ignore (section 11).
 3. Footer, under the tabs: `options_unaffiliated` in `sar-text-help`, subtle. The popup and the dialog use `options_privacy_no_reports` and `options_unaffiliated_short`.
@@ -540,7 +540,7 @@ Preview: `previews/OptionsPage.html`, and `previews/Tabs.html` for the tabs alon
 
 Two stacked fields in each tag's tab, after the banner switch and before the color field, on the page and in the dialog, not in the toolbar popup. They set `kinds.<id>.chip` and `kinds.<id>.chipCompact` (decision 67).
 
-- "Chip text" (`options_chip_label`, help `options_chip_help`) for every chip, the popup row, the Tag order card and the banner's Ignore buttons; "Short chip text for small images" (`options_chip_compact_label`, help `options_chip_compact_help`) for the compact badge's `text` tier. Each label is a `label` for its box.
+- "Chip text" (`options_chip_label`, help `options_chip_help`) for every chip and the banner's Ignore buttons (the popup rows and the Tag order card read the tag's key, ADR 0023); "Short chip text for small images" (`options_chip_compact_label`, help `options_chip_compact_help`) for the compact badge's `text` tier. Each label is a `label` for its box.
 - A row of a text box (`sar-chip-input-inline-size`, `maxlength` 32 and 16, the limits the schema cuts to, counted by the browser in UTF-16 units) and a quiet Reset (`options_color_reset`; named `options_chip_reset_label` and `options_chip_compact_reset_label`, which begin with its text) shown while a text is stored. Under it a counter, `options_chip_count` ("5 of 32"), in `sar-text-help` with tabular figures, named with the help in the box's `aria-describedby`.
 - The placeholder is the catalog's word the field replaces: the tag's chip word, or for Family Sharing the chip of the first value it picks; the short field shows the chip text instead while one is typed.
 - Text is saved on `change` (Enter or leaving the box), cleaned by the schema that reads it back (one space for whitespace, no control or format characters, trimmed, cut to the limit), and the box shows the cleaned text. An emptied box clears the field, as Reset does, and Reset returns focus to the box. Text still being typed stays when another tab saves something else.
@@ -560,11 +560,12 @@ One stacked field in each tag's options, after the chip text fields and before t
 
 ### The Tag order card
 
-One card in General, after Ignored for all tags. It sets `order`: every kind once, the order the chips on rows and images, the hover card, the tag section, the banner and the package summary list them in. The settings tabs and the popup rows follow it too, under Steam's headings for the tabs and the chip words for the rows.
+One card in General, after Ignored for all tags. It sets `order`: every kind once, the order the chips on rows and images, the hover card, the tag section, the banner and the package summary list them in. The settings tabs and the popup rows follow it too, all three named by the tags' keys (ADR 0023). The card speaks in priorities: the first tags win the space where a surface shows only a few.
 
-- Title `options_order_title`, then `options_order_help` (badges, banners and summaries follow the order; small images show the first `OVERLAY_CHIPS`) and `options_order_how` (how to move a tag by pointer, click or keys). The handles name the second line in `aria-describedby`.
-- One `ul.sar-order-list` with an `li.sar-order-row` per kind: a grip handle, the chip word (the person's chip text when set) in `sar-color-text-strong` and medium weight, Steam's line in `sar-text-help` subtle (shown once when they read the same, as PvP), Rows are `sar-space-1` padded with a `sar-color-divider` line between them. After row `OVERLAY_CHIPS` (the constant, never a copy of its number) comes one `li.sar-order-cue`: a dashed `sar-accent-400` line with `options_order_cue` beneath it in `sar-text-help` subtle. It is `aria-hidden`, holds no control and is no focus stop; `options_order_help` tells screen readers the same fact. It stays after that row whatever the order, so a row moved across it changes between shown and not shown on small images (decision 73).
-- The handle is a `button` (`sar-control-height-sm` square, an original six-square grip in `currentColor`, no text) named `options_order_handle` ("Reorder KLAC"), with `aria-pressed` while its row is held and `touch-action: none`, so a drag on it never scrolls the page.
+- Title `options_order_title`, then `options_order_help` (tags at the top have priority; badges, banners and summaries follow the order), a visually hidden copy of the cut lines' sentences for screen readers, and `options_order_how` (how to move a tag by pointer, click or keys). The handles name the last line in `aria-describedby`.
+- One `ul.sar-order-list` with an `li.sar-order-row` per kind: a grip handle, the tag's key (`.sar-order-key`) in `sar-color-text-strong` and medium weight, and its description (`.sar-order-description`) in `sar-text-help` subtle. Rows are `sar-space-1` padded with a `sar-color-divider` line between them.
+- Cut lines: `CHIP_LIMITS` in `ui/order-card.ts` pairs each chip limit of `kinds/order.ts` (`OVERLAY_CHIPS`, `SUGGESTION_CHIPS`, `ROW_CHIPS`, the constants the placements read, never a copy of their numbers) with the catalog word of its surfaces (`options_order_surface_images`, `options_order_surface_suggestions`, `options_order_surface_rows`). After each distinct limit below the number of tags comes one `li.sar-order-cue`: a dashed `sar-accent-400` line with `options_order_cut` beneath it in `sar-text-help` subtle, which names every surface that stops there, joined by `Intl.ListFormat` in the catalog's language, and says the rest go into "+N". Today that is a line after tag 2 (game images and search suggestions) and one after tag 3 (search, wishlist and DLC rows). A cue is `aria-hidden`, holds no control and is no focus stop. It stays after its count of rows whatever the order, so a row moved across it changes between shown and not shown on those surfaces (decision 77).
+- The handle is a `button` (`sar-control-height-sm` square, an original six-square grip in `currentColor`, no text) named `options_order_handle` ("Reorder Kernel-level anti-cheat"), with `aria-pressed` while its row is held and `touch-action: none`, so a drag on it never scrolls the page.
 - Drag: a pointer press on a handle that moves 4px or more picks the row up. The row follows the pointer by a `transform`, the rows between slide aside, each to the place its neighbour leaves, to open its gap (a `sar-duration-fast` transition, none under reduced motion), and the release drops it: only then do the rows move in the DOM. The press captures the pointer; its move, up and cancel listeners sit on the handle, with one `pagehide` listener on the window, and all go at the release. A cancel or `pagehide` puts the row back.
 - Keys and clicks: Space, Enter or a click on a handle picks its row up; the arrows move it one place, Home and End to the ends; Space, Enter or a click on the same handle drops it; Escape puts it back (and, in the userscript dialog, does not close it). A click on another row's handle while one is held puts the held row in that row's place.
 - Each step is said in the form's live region: `options_order_picked`, `options_order_moved`, `options_order_dropped`, `options_order_cancelled`. A drop that changed the order saves it as one patch, then says the drop; a failed save shows `error_settings_save` and puts the stored order back.
@@ -1056,7 +1057,7 @@ A block at the top of a package page (`/sub/<id>/`) that sums up the chips of th
 
 ## 18. Tabs
 
-The settings' sections, as tabs: General first, then one per tag kind in the tag order, named by Steam's heading for the kind. On the options page and in the userscript dialog. Decisions 65 and 72.
+The settings' sections, as tabs: General first, then a Tags caption, then one per tag kind in the tag order, named by the tag's key. On the options page and in the userscript dialog. Decisions 65, 72 and 77; ADR 0023.
 
 Preview: `previews/Tabs.html`.
 
@@ -1068,10 +1069,13 @@ Preview: `previews/Tabs.html`.
     <button class="sar-tab" type="button" role="tab" id="tab-general" aria-controls="panel-general"
             aria-selected="true" tabindex="0" data-sar-tab="general"
             class="sar-tab sar-tab-general">t('options_tab_general')</button>
+    <div class="sar-tab-group" aria-hidden="true">t('options_tabs_group_tags')</div>
     <button class="sar-tab" type="button" role="tab" id="tab-kernel" aria-controls="panel-kernel"
             aria-selected="false" tabindex="-1" data-sar-tab="kernel">
-      <span class="sar-tab-label">t('kind_kernel_heading')</span>
+      <span class="sar-tab-key" aria-hidden="true">t('kind_kernel_key')</span>
+      <span class="sar-vh">t('kind_chip_name', { chip: key, heading: t('kind_kernel_heading') })</span>
       <span class="sar-tab-state" data-sar-on>t('options_state_on')</span>
+      <span class="sar-tab-description" aria-hidden="true">t('kind_kernel_heading')</span>
     </button>
   </div>
   <div class="sar-tabpanel" role="tabpanel" id="panel-general" aria-labelledby="tab-general">...</div>
@@ -1080,8 +1084,9 @@ Preview: `previews/Tabs.html`.
 ```
 
 - `createTabs` (`ui/tabs.ts`) builds the list and the panels; the form fills them. The order comes from `tabsInOrder` (`ui/tab-id.ts`), a pure helper: General, then the tag order of the Tag order card (decisions 66 and 72).
-- A tag's tab: Steam's long heading for the kind, fixed whatever the chip text, then the state in words. A screen reader hears "Uses Kernel Level Anti-Cheat On, tab, selected, 3 of 12". The heading wraps inside the 200px rail and the row of tabs, so nothing scrolls sideways. A new tag order moves the tabs (`Tabs.order`), and the arrows follow it.
-- General is the first tab and outside the tag order. It carries `sar-tab-general` (medium weight, room before the first tag) and no state; the tag tabs do not.
+- A tag's tab: the tag's key in bold, fixed whatever the chip text, then the state in words on the same line, and under them the description: `kind_<id>_description` for Family Sharing, PvP, In-App Purchases and Early Access, Steam's heading for the others (`ui/kind-keys.ts`). The key and the description are `aria-hidden`; a visually hidden name gives the key, then Steam's heading (`kind_chip_name`, said once when they match). A screen reader hears "Kernel-level anti-cheat: Uses Kernel Level Anti-Cheat On, tab, selected, 3 of 12". Long text wraps inside the 200px rail and the row of tabs, so nothing scrolls sideways. A new tag order moves the tabs (`Tabs.order`), and the arrows follow it.
+- General is the first tab and outside the tag order. It carries `sar-tab-general` (medium weight) and no state; the tag tabs do not.
+- The Tags caption (`createTabs`'s `group` option): a `div.sar-tab-group` with `options_tabs_group_tags`, right after General whatever the order, with a `sar-color-divider` line above it, in `sar-text-help` subtle and medium weight. It is `aria-hidden` and no tab: each tab names its tag, and the arrows skip it.
 
 ### Behavior
 
@@ -1095,13 +1100,15 @@ Preview: `previews/Tabs.html`.
 - Row (narrower than 800px): tabs wrap, `sar-space-1` apart; each at least `sar-control-height-sm`, `sar-space-1` by `sar-space-2` padding, with a 2px block-end bar.
 - Rail (from 800px): a 200px column beside the panels, tabs stacked, with a 2px inline-start bar. In the fixed frame it keeps its place and scrolls on its own if the tabs outgrow the window; otherwise it is sticky at the top of its scroller.
 - Selected: the bar in `sar-accent-400`, `sar-color-bg-raised` behind it, `sar-color-text-strong` medium text. The bar and the weight carry the state without color. Hover: `sar-color-bg-raised`.
-- State: `sar-text-help` in `sar-color-text` when on, `sar-color-text-subtle` when off.
+- State: `sar-text-help` in `sar-accent-300` when on, echoing the master switch's accent track, and `sar-color-text-subtle` when off. The words carry the state; the color only adds to them.
+- Key: `sar-weight-bold`. Description: `sar-text-help` in `sar-color-text-subtle`, regular weight, on its own line in the rail; the row of tabs leaves it out (`display: none`) to stay short.
+- Caption: in the row it takes a line of its own (`flex-basis: 100%`), so General sits on the first line and the tags wrap under it; in the rail it is one more item in the column.
 - Forced colors: the selected tab's bar takes `Highlight` and a 1px `CanvasText` outline; the state stays words.
 - Focus: the shared `sar-focus-color` ring. No transition or animation.
 
 ### Longer translations
 
-Labels sit beside their state in a flex row that wraps in the narrow layout. The longest Spanish label, "Prestamo familiar" (with the accent the catalog keeps), and "Desactivada" are expected to fit the 200px rail in one line at the body size; a longer one wraps. Nothing has a fixed height.
+A key sits beside its state in a grid row, and the description wraps under them. The longest Spanish key, "Compras en la aplicacion" (with the accent the catalog keeps), and "Desactivada" may take two lines in the 200px rail; text wraps and nothing has a fixed height.
 
 ## Message catalog
 
@@ -1153,6 +1160,8 @@ For every translator:
 | `kind_family_unsupported_line` | Family Sharing is not supported for this game | The derived value's line in the hover card, our own words, always followed by `kind_family_source`. Allowed by key in the copy test. Spanish unverified. |
 | `kind_earlyaccess_heading` | Early Access Game | Steam's own line for a game in Early Access, the heading of the notice at the top of its store page. Titles the entry in the hover card and the settings and begins the chip's accessible name. Use the line the store shows in your language. |
 | `kind_earlyaccess_chip` | Early Access | Short chip, as Steam's own tag and filter call it. |
+| `kind_<id>_key` | AI, Kernel-level anti-cheat, Family Sharing, In-app purchases, 3rd-party account, 3rd-party EULA, 3rd-party DRM, Anti-cheat, Steam Deck, PvP, Early Access, Steam Machine | A tag's short name where the settings navigate: the tab label, the Tag order row and the popup row (ADR 0023). Never a claim about a game. |
+| `kind_<id>_description` | Steam Family Sharing support; Online, LAN or split-screen PvP; Contains In-App Purchases; This game is still in Early Access | The line under the key on the tab and the Tag order row, for `family`, `pvp`, `iap` and `earlyaccess`; the other tags show Steam's heading there. Differs from the key. |
 | `kind_earlyaccess_released` | Release date: `$date$` | Hover card line under the heading: the release date the store page lists, Steam's own label. `$date$` is formatted for the language. |
 | `kind_earlyaccess_updated` | Latest update post: `$date$` | Hover card line on the game's own page: the date of the developer's latest update post in the community hub. It says nothing about builds, so keep it about the post. |
 | `kind_chip_name` | `$chip$`: `$heading$` | Accessible name of a chip: the visible chip text, then Steam's line or a value's own word. |
@@ -1274,10 +1283,14 @@ For every translator:
 | `options_allow_all_note_other` | `$count$` items ignored for all tags also apply here. | Plural, other. |
 | `options_allow_all_show` | Show in General | Quiet button after that note. |
 | `options_order_title` | Tag order | Card title in General. |
-| `options_order_help` | Badges, banners and summaries list tags in this order, and so do the settings tabs and the popup. Small game images show the first `$count$`. | `count` is `OVERLAY_CHIPS` as a number. |
+| `options_order_help` | Tags at the top have priority: badges, banners and summaries list tags in this order, and where room is short the first ones take it. The settings tabs and the popup follow the same order. | Help under the title. |
 | `options_order_how` | Drag a tag by its handle, or click the handle and then the handle of the place it goes to. With a keyboard, Space or Enter picks a tag up, the arrow keys move it, Space or Enter drops it and Escape puts it back. | Second help line, named by every handle. |
-| `options_order_handle` | Reorder `$name$` | Screen reader name of a row's grip handle; `name` is the chip word. |
-| `options_order_cue` | Small images show only the tags above this line | The line after the last tag a small image shows, under its dashed rule. |
+| `options_order_handle` | Reorder `$name$` | Screen reader name of a row's grip handle; `name` is the tag's key. |
+| `options_order_cut_one` | Only the first tag fits on `$surfaces$`; the rest go into "+N". | Plural, one: a cut line in the Tag order card, and its hidden copy. `surfaces` joins the surface words below with `Intl.ListFormat`. |
+| `options_order_cut_other` | Only the first `$count$` tags fit on `$surfaces$`; the rest go into "+N". | Plural, other. `count` is the limit, read from the constant. |
+| `options_order_surface_images` | game images | Surfaces that `OVERLAY_CHIPS` limits, inside a cut line. |
+| `options_order_surface_suggestions` | search suggestions | Surfaces that `SUGGESTION_CHIPS` limits, inside a cut line. |
+| `options_order_surface_rows` | search, wishlist and DLC rows | Surfaces that `ROW_CHIPS` limits, inside a cut line. |
 | `options_order_reset` | Reset order | Quiet button under the list. |
 | `options_order_reset_done` | Tags are back in the default order. | Announced after Reset order. |
 | `options_order_picked` | Picked up `$name$`, position `$position$` of `$count$`. | Announced when a row is picked up. |
@@ -1295,6 +1308,7 @@ For every translator:
 | `options_back_to_steam` | Go back to Steam | The full page header's button back to the store tab the popup was opened on. |
 | `options_tabs_label` | Settings sections | Name of the tab list. |
 | `options_tab_general` | General | The first tab and its heading. |
+| `options_tabs_group_tags` | Tags | Caption over the tags' tabs, after General and a divider; `aria-hidden`. |
 | `options_state_on` | On | A tag's state on its tab. |
 | `options_state_off` | Off | A tag's state on its tab. |
 | `options_section_backup` | Backup | Section heading. |

@@ -6,25 +6,35 @@ import { writeSettings } from "../../../tests/helpers/settings";
 import { mountForm } from "../../../tests/helpers/settings-form";
 import { pageTransition } from "../../../tests/helpers/surfaces";
 import { KIND_IDS, type KindId } from "../kinds/id";
-import { OVERLAY_CHIPS, parseOrder } from "../kinds/order";
+import { OVERLAY_CHIPS, parseOrder, ROW_CHIPS, SUGGESTION_CHIPS } from "../kinds/order";
 import { KIND_BY_ID } from "../kinds/registry";
 import { parseSettings } from "../settings/settings";
 import { createSettingsSource } from "../settings/settings-source";
+import { keyDescription, keyText } from "./kind-keys";
 
 const i18n = englishI18n();
 /** The pitch of the rows a drag test lays out, in CSS pixels. */
 const ROW = 30;
 /** The number of tags the card announces, as the catalog parameter holds it. */
 const KIND_COUNT = String(KIND_IDS.length);
-/** The room the cue takes after the last row a small image shows. */
+/** Each limit a surface sets on its chips, with the catalog word for those surfaces. */
+const LIMITS = [
+  [OVERLAY_CHIPS, "options_order_surface_images"],
+  [SUGGESTION_CHIPS, "options_order_surface_suggestions"],
+  [ROW_CHIPS, "options_order_surface_rows"],
+] as const;
+/** The rows each cut line follows, once per distinct limit, top to bottom. */
+const CUTS = [...new Set(LIMITS.map(([chips]) => chips))].sort((a, b) => a - b);
+/** The room a cut line takes after the last row its surfaces show. */
 const CUE = 10;
-/** Where row `index` sits laid out: `ROW` apart, with the cue after `OVERLAY_CHIPS` rows. */
-const topOf = (index: number) => index * ROW + (index >= OVERLAY_CHIPS ? CUE : 0);
+/** Where row `index` sits laid out: `ROW` apart, with a cut line after each limit's rows. */
+const topOf = (index: number) => index * ROW + CUE * CUTS.filter((after) => index >= after).length;
 
-const chip = (id: KindId) => i18n.t(KIND_BY_ID[id].messages.chip);
+/** The key that names a tag's row. */
+const keyOf = (id: KindId) => keyText(i18n, KIND_BY_ID[id]).label;
 /** What the card says when `id` lands at 1-based `position`. */
 const dropped = (id: KindId, position: string) =>
-  i18n.t("options_order_dropped", { name: chip(id), position, count: KIND_COUNT });
+  i18n.t("options_order_dropped", { name: keyOf(id), position, count: KIND_COUNT });
 
 /** A form on the options page over a store whose settings hold `order`. */
 async function setup(order: readonly KindId[] = KIND_IDS) {
@@ -93,6 +103,22 @@ function drag(card: Card, id: KindId, by: number): HTMLElement {
   return handle;
 }
 
+/** Each cut line in the list: how many rows sit above it, its text and its `aria-hidden`. */
+function cutLines(root: ParentNode) {
+  const children = [...(root.querySelector(".sar-order-list")?.children ?? [])];
+  const rowsAbove = (index: number) =>
+    children.slice(0, index).filter((each) => each.matches(".sar-order-row")).length;
+  return children.flatMap((child, index) =>
+    child.matches(".sar-order-cue")
+      ? [{
+        after: rowsAbove(index),
+        text: child.textContent,
+        hidden: child.getAttribute("aria-hidden"),
+      }]
+      : []
+  );
+}
+
 const transforms = (card: Card) =>
   [...card.root.querySelectorAll<HTMLElement>(".sar-order-row")].map((row) => row.style.transform);
 
@@ -102,17 +128,24 @@ afterEach(() => {
 });
 
 describe("the Tag order card", () => {
-  it("names a row and its handle by the person's chip text, with Steam's line beside", async () => {
-    const { root, handle, settings } = await setup();
-    const text = make.chipText();
-    await writeSettings(settings, make.settings.chipText({ pvp: { chip: text } }));
-    const row = handle("pvp").closest("li");
-    expect(row?.querySelector(".sar-order-chip")?.textContent).toBe(text);
-    expect(row?.querySelector<HTMLElement>(".sar-order-heading")?.hidden).toBe(false);
-    expect(handle("pvp").getAttribute("aria-label")).toBe(
-      i18n.t("options_order_handle", { name: text }),
+  it("names each row and its handle by the tag's key, over any chip text set", async () => {
+    const { handle, settings } = await setup();
+    await writeSettings(settings, make.settings.chipText({ pvp: { chip: make.chipText() } }));
+    const named = KIND_IDS.map((id) => {
+      const row = handle(id).closest("li");
+      return [
+        row?.querySelector(".sar-order-key")?.textContent,
+        row?.querySelector(".sar-order-description")?.textContent,
+        handle(id).getAttribute("aria-label"),
+      ];
+    });
+    expect(named).toEqual(
+      KIND_IDS.map((id) => [
+        keyOf(id),
+        keyDescription(i18n, KIND_BY_ID[id]),
+        i18n.t("options_order_handle", { name: keyOf(id) }),
+      ]),
     );
-    expect(root.querySelector(".sar-order-row .sar-order-chip")?.textContent).toBe(chip("ai"));
   });
 
   it("lists every kind in the stored order, with a named handle and the cue", async () => {
@@ -121,27 +154,29 @@ describe("the Tag order card", () => {
     expect(shown()).toEqual(order);
     expect(root.querySelectorAll(".sar-order-list")).toHaveLength(1);
     expect(handle("family").getAttribute("aria-label")).toBe(
-      i18n.t("options_order_handle", { name: chip("family") }),
+      i18n.t("options_order_handle", { name: keyOf("family") }),
     );
     const how = root.querySelector(`#${handle("family").getAttribute("aria-describedby") ?? ""}`);
     expect(how?.textContent).toBe(i18n.t("options_order_how"));
   });
 
-  it("marks where small images stop with a line that no key or reader stops at", async () => {
+  it("draws a line after each limit, naming its surfaces, that no key stops at", async () => {
     const { root, shown, handle } = await setup();
     const list = root.querySelector(".sar-order-list");
-    const cues = root.querySelectorAll(".sar-order-cue");
-    expect(cues).toHaveLength(1);
-    expect(list?.children[OVERLAY_CHIPS]).toBe(cues[0]);
-    expect(cues[0]?.textContent).toBe(i18n.t("options_order_cue"));
-    expect(cues[0]?.getAttribute("aria-hidden")).toBe("true");
+    expect(cutLines(root).map(({ after, hidden }) => [after, hidden])).toEqual(
+      CUTS.map((after) => [after, "true"]),
+    );
+    for (const [after, word] of LIMITS) {
+      expect(cutLines(root).find((line) => line.after === after)?.text).toContain(i18n.t(word));
+    }
+    const spoken = root.querySelector(".sar-card .sar-vh")?.textContent;
+    expect(spoken).toBe(cutLines(root).map((line) => line.text).join(" "));
     expect(list?.querySelectorAll("button, [tabindex]")).toHaveLength(KIND_IDS.length);
     handle("ai").click();
     press(handle("ai"), "End");
     press(handle("ai"), "Enter");
     expect(shown()).toEqual([...KIND_IDS.slice(1), "ai"]);
-    expect(list?.children[OVERLAY_CHIPS]).toBe(cues[0]);
-    expect(list?.children).toHaveLength(KIND_IDS.length + 1);
+    expect(cutLines(root).map((line) => line.after)).toEqual(CUTS);
   });
 
   it.each<[string, readonly ((card: Card) => void)[], readonly KindId[], string]>([
@@ -173,7 +208,7 @@ describe("the Tag order card", () => {
       "goes back with Escape",
       [pick("ai"), key("ArrowDown"), key("Escape")],
       [],
-      i18n.t("options_order_cancelled", { name: chip("ai"), position: "1" }),
+      i18n.t("options_order_cancelled", { name: keyOf("ai"), position: "1" }),
     ],
     [
       "takes another row's place on a click there",
@@ -201,7 +236,7 @@ describe("the Tag order card", () => {
     expect(handle("eula").getAttribute("aria-pressed")).toBe("true");
     await vi.waitFor(() => {
       expect(spoken()).toBe(
-        i18n.t("options_order_picked", { name: chip("eula"), position: at, count: KIND_COUNT }),
+        i18n.t("options_order_picked", { name: keyOf("eula"), position: at, count: KIND_COUNT }),
       );
     });
     press(handle("eula"), "ArrowUp");

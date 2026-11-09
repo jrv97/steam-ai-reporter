@@ -39,6 +39,7 @@ import { createFeedbackFooter } from "./feedback-footer";
 import { parseIcon } from "./icon";
 import { KIND_ATTRIBUTE, setColorOnce } from "./kind-attributes";
 import { chipText } from "./kind-details";
+import { keyDescription, keyText } from "./kind-keys";
 import { createOrderCard, type OrderCard } from "./order-card";
 import { adoptStyles, SETTINGS_CSS, TOKENS_CSS } from "./styles";
 import { GENERAL_TAB, TAB_IDS, tabHash, type TabId, tabsInOrder, toTabId } from "./tab-id";
@@ -574,17 +575,12 @@ export async function mountSettingsForm(
     return section;
   }
 
-  /** Each tag's shown chip word and full name, which `relabel` keeps to the person's text. */
-  const names = new Map<KindId, readonly [HTMLElement, HTMLElement]>();
-
-  /** A tag's chip word, shown, and its full name for screen readers, which starts with it. */
-  function kindName(kind: TagKind): readonly HTMLElement[] {
-    const text = chipText(i18n, kind, undefined, undefined);
-    const label = element("span", "sar-tab-label", text.label);
+  /** A tag's key, shown, and its full name for screen readers, which starts with it. */
+  function kindName(kind: TagKind, className: string): readonly HTMLElement[] {
+    const text = keyText(i18n, kind);
+    const label = element("span", className, text.label);
     label.setAttribute("aria-hidden", TRUE);
-    const name = element("span", "sar-vh", text.name);
-    names.set(kind.id, [label, name]);
-    return [label, name];
+    return [label, element("span", "sar-vh", text.name)];
   }
 
   /** A popup row: the tag's name, a link to its tab, then its list filter and master switch. */
@@ -596,7 +592,7 @@ export async function mountSettingsForm(
     link.target = NEW_TAB;
     link.rel = NO_OPENER;
     link.setAttribute(OPEN_TAB_ATTRIBUTE, kind.id);
-    link.append(...kindName(kind));
+    link.append(...kindName(kind, "sar-tab-label"));
     const filterName = element("span", "sar-vh", i18n.t("options_filter_label"));
     filterName.id = `${prefix}${kind.id}-filter`;
     const { segment, radios } = filterSegment(kind, `${link.id} ${filterName.id}`);
@@ -645,6 +641,7 @@ export async function mountSettingsForm(
       idPrefix: prefix,
       label: i18n.t("options_tabs_label"),
       onActivate: show,
+      group: { after: GENERAL_TAB, caption: i18n.t("options_tabs_group_tags") },
     });
   const scopes = new Map<AllowScope, ScopeCard>();
   const live = element("div", "sar-vh");
@@ -674,12 +671,10 @@ export async function mountSettingsForm(
 
     for (const kind of KINDS) {
       const state = element("span", "sar-tab-state");
-      // Steam's long heading for the tag, fixed, then its state in words
-      tabs.tab(kind.id).append(
-        element("span", "sar-tab-label", i18n.t(kind.messages.heading)),
-        " ",
-        state,
-      );
+      // The tag's key and its state in words, then the line that describes it, for sighted readers
+      const description = element("span", "sar-tab-description", keyDescription(i18n, kind));
+      description.setAttribute("aria-hidden", TRUE);
+      tabs.tab(kind.id).append(...kindName(kind, "sar-tab-key"), " ", state, description);
       const ignored = scopeCard(kind.id, "options_allow_kind_title");
       scopes.set(kind.id, ignored);
       tabs.panel(kind.id).append(kindCard(kind, state), ignored.section);
@@ -837,20 +832,14 @@ export async function mountSettingsForm(
     }
   }
 
-  /** Names each popup row and badge help by the person's chip text, or the catalog's word. */
+  /** Names each badge help by the person's chip text, or the catalog's word. */
   function relabel(): void {
     for (const kind of KINDS) {
       const text = chipText(i18n, kind, undefined, ownText(current.kinds, kind.id));
-      const [label, name] = names.get(kind.id) ?? [];
-      if (label !== undefined && name !== undefined && label.textContent !== text.label) {
-        label.textContent = text.label;
-        name.textContent = text.name;
-      }
       badgeHelp.get(kind.id)?.replaceChildren(
         i18n.t("options_badges_help", { label: text.label }),
       );
     }
-    built?.order.rename(current.kinds);
   }
 
   /** The tag order the tabs and the popup's rows show now. */

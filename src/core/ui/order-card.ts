@@ -1,11 +1,11 @@
+import type { BareMessageKey } from "../i18n/t";
 import { KIND_IDS, type KindId } from "../kinds/id";
-import type { ChipWords } from "../kinds/kind-settings";
-import { OVERLAY_CHIPS, sameOrder } from "../kinds/order";
+import { OVERLAY_CHIPS, ROW_CHIPS, sameOrder, SUGGESTION_CHIPS } from "../kinds/order";
 import { KIND_BY_ID } from "../kinds/registry";
 import type { MessageCatalog } from "../ports";
-import { ownText } from "./badge";
 import { createElement } from "./element";
 import { parseIcon } from "./icon";
+import { keyDescription, keyText } from "./kind-keys";
 import { dropIndex, heldIndex, type Reorder, reorder } from "./reorder";
 
 /** What the Tag order card needs from the form around it. */
@@ -25,8 +25,6 @@ export interface OrderCard {
   readonly section: HTMLElement;
   /** Shows a stored order, unless a row is held. */
   sync(order: readonly KindId[]): void;
-  /** Names each row by the person's chip text, or the catalog's word where there is none. */
-  rename(words: ChipWords): void;
   /** Serves a `pointerdown`, `keydown` or `click` the form's root heard; others pass by. */
   handle(event: Event): void;
   /** Lets go of a drag or a held row, as when the form goes away. */
@@ -55,12 +53,46 @@ const KEY_STEPS: ReadonlyMap<string, (at: number, count: number) => number> = ne
   ["End", (_at: number, count: number) => count - 1],
 ]);
 
+/** A limit on the chips some store surfaces show, and the catalog word naming those surfaces. */
+interface ChipLimit {
+  readonly chips: number;
+  readonly surfaces: BareMessageKey;
+}
+
+/** Every limit the placements set (`scan/placements.ts`), each with the surfaces it holds for. */
+const CHIP_LIMITS: readonly ChipLimit[] = [
+  { chips: OVERLAY_CHIPS, surfaces: "options_order_surface_images" },
+  { chips: SUGGESTION_CHIPS, surfaces: "options_order_surface_suggestions" },
+  { chips: ROW_CHIPS, surfaces: "options_order_surface_rows" },
+];
+
+/** A line after the last tag that some surfaces show, and the sentence that names them. */
+interface Cut {
+  readonly after: number;
+  readonly text: string;
+}
+
+/**
+ * One cut per distinct limit below the number of tags, in list order, naming every surface that
+ * stops there, joined as a list in the catalog's language.
+ */
+function cuts(i18n: MessageCatalog): readonly Cut[] {
+  const surfaces = new Map<number, string[]>();
+  for (const { chips, surfaces: word } of CHIP_LIMITS) {
+    if (chips > 0 && chips < KIND_IDS.length) {
+      surfaces.set(chips, [...(surfaces.get(chips) ?? []), i18n.t(word)]);
+    }
+  }
+  const list = new Intl.ListFormat(i18n.locale, { type: "conjunction" });
+  return [...surfaces].sort(([a], [b]) => a - b).map(([after, words]) => ({
+    after,
+    text: i18n.plural("options_order_cut", after, { surfaces: list.format(words) }),
+  }));
+}
+
 interface Row {
   readonly element: HTMLElement;
   readonly handle: HTMLButtonElement;
-  readonly chip: HTMLElement;
-  /** Steam's line, hidden while the chip reads the same (PvP). */
-  readonly heading: HTMLElement;
 }
 
 /** A pointer drag of one row, from its press to its release. */
@@ -80,10 +112,11 @@ interface Drag {
 }
 
 /**
- * The Tag order card: one list of the kinds, each row with a grip handle, its chip word and
- * Steam's line. A row moves by a pointer drag on its handle, by keys (Space or Enter picks it up,
- * the arrows, Home and End move it, Space or Enter drops it and Escape puts it back), or by a click
- * on its handle and then on the handle of the place it goes to. The form's one listener per event
+ * The Tag order card: one list of the kinds, each row with a grip handle, its key and the line
+ * that describes it, and a cut line after the last tag each limited store surface shows. A row
+ * moves by a pointer drag on its handle, by keys (Space or Enter picks it up, the arrows, Home and
+ * End move it, Space or Enter drops it and Escape puts it back), or by a click on its handle and
+ * then on the handle of the place it goes to. The form's one listener per event
  * type hands it the events (`handle`); a drag's own listeners live on its handle while it lasts.
  */
 export function createOrderCard(doc: Document, deps: OrderCardDeps): OrderCard {
@@ -106,32 +139,38 @@ export function createOrderCard(doc: Document, deps: OrderCardDeps): OrderCard {
     if (grip !== undefined) {
       handle.append(grip.cloneNode(true));
     }
+    const kind = KIND_BY_ID[id];
+    const name = keyText(i18n, kind).label;
+    handle.setAttribute("aria-label", i18n.t("options_order_handle", { name }));
     const element = createElement(doc, "li", "sar-order-row");
-    const chip = createElement(doc, "span", "sar-order-chip");
-    const heading = createElement(
-      doc,
-      "span",
-      "sar-order-heading",
-      i18n.t(KIND_BY_ID[id].messages.heading),
+    element.append(
+      handle,
+      createElement(doc, "span", "sar-order-key", name),
+      createElement(doc, "span", "sar-order-description", keyDescription(i18n, kind)),
     );
-    element.append(handle, chip, heading);
-    rows.set(id, { element, handle, chip, heading });
+    rows.set(id, { element, handle });
   }
-  // A line after the last row a small image shows; the help line says the same for screen readers
-  const cue = createElement(doc, "li", "sar-order-cue", i18n.t("options_order_cue"));
-  cue.setAttribute("aria-hidden", TRUE);
+  // A line after the last row each limited surface shows; a hidden copy reads them out
+  const limits = cuts(i18n);
+  const cues = limits.map(({ after, text }) => {
+    const cue = createElement(doc, "li", "sar-order-cue", text);
+    cue.setAttribute("aria-hidden", TRUE);
+    return { after, cue };
+  });
+  const spokenCuts = createElement(
+    doc,
+    "p",
+    "sar-vh",
+    limits.map(({ text }) => text).join(" "),
+  );
   const reset = createElement(doc, "button", "sar-button", i18n.t("options_order_reset"));
   reset.type = "button";
   reset.setAttribute("data-sar-variant", "quiet");
   reset.setAttribute(RESET_ATTRIBUTE, "");
   section.append(
     title,
-    createElement(
-      doc,
-      "p",
-      "sar-field-help",
-      i18n.t("options_order_help", { count: String(OVERLAY_CHIPS) }),
-    ),
+    createElement(doc, "p", "sar-field-help", i18n.t("options_order_help")),
+    spokenCuts,
     how,
     list,
     reset,
@@ -144,19 +183,7 @@ export function createOrderCard(doc: Document, deps: OrderCardDeps): OrderCard {
   let swallowClick = false;
 
   function nameOf(id: KindId): string {
-    return rows.get(id)?.chip.textContent ?? id;
-  }
-
-  function rename(words: ChipWords): void {
-    for (const [id, row] of rows) {
-      const name = ownText(words, id) ?? i18n.t(KIND_BY_ID[id].messages.chip);
-      if (row.chip.textContent !== name) {
-        row.chip.textContent = name;
-        row.handle.setAttribute("aria-label", i18n.t("options_order_handle", { name }));
-        // PvP's heading is its chip word, said once
-        row.heading.hidden = row.heading.textContent === name;
-      }
-    }
+    return keyText(i18n, KIND_BY_ID[id]).label;
   }
 
   function focused(): Element | null {
@@ -164,11 +191,14 @@ export function createOrderCard(doc: Document, deps: OrderCardDeps): OrderCard {
     return scope instanceof Document || scope instanceof ShadowRoot ? scope.activeElement : null;
   }
 
-  /** Puts the rows in the state's order, the cue after `OVERLAY_CHIPS` of them, keeping focus. */
+  /** Puts the rows in the state's order, each cue after its count of them, keeping focus. */
   function place(): void {
     const { order } = state;
     const sequence: HTMLElement[] = order.flatMap((id) => rows.get(id)?.element ?? []);
-    sequence.splice(OVERLAY_CHIPS, 0, cue);
+    // From the last cue back, so each index still counts rows only
+    for (const { after, cue } of [...cues].reverse()) {
+      sequence.splice(after, 0, cue);
+    }
     const placed = sequence.every((element, index) => list.children[index] === element);
     if (!placed) {
       const active = focused();
@@ -397,12 +427,10 @@ export function createOrderCard(doc: Document, deps: OrderCardDeps): OrderCard {
     }
   }
 
-  rename({});
   place();
 
   return {
     section,
-    rename,
     sync(order) {
       state = reorder(state, { type: "load", order });
       place();
