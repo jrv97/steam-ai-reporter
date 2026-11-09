@@ -1437,13 +1437,16 @@ describe("the ignored items", () => {
     expect((await allowList.list()).ai.size).toBe(2);
   });
 
-  it.each<AllowScope>([ALLOW_ALL, "pvp"])("shows the empty state of %s", async (of) => {
+  it.each(
+    [
+      [ALLOW_ALL, "options_allow_empty"],
+      ["pvp", "options_allow_empty_kind"],
+    ] as const,
+  )("shows the empty state of %s", async (of, key) => {
     const { ignored } = await setup({
       lists: createIgnoreLists(fake.store(), fake.clock(make.time())),
     });
-    expect(ignored(of).querySelector(".tks-empty")?.textContent).toBe(
-      i18n.t("options_allow_empty"),
-    );
+    expect(ignored(of).querySelector(".tks-empty")?.textContent).toBe(i18n.t(key));
   });
 
   it("says that a list could not be read, not that nothing is ignored", async () => {

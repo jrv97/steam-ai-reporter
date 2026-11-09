@@ -453,7 +453,7 @@ Hover: a mouse or pen over the caret opens the menu without moving the focus. Th
 
 A tag silenced through a creator is a note (`banner_ignored_creator_kind`), and a creator ignored for all tags is one note (`banner_ignored_creator`), after the game's own notes. A creator note shows only while the banner would list a tag it covers. The polite live region announces `notice_marking_stopped`, `notice_marking_restored`, `notice_creator_stopped`, `notice_creator_restored` or their `_kind` forms. A failed save shows `error_allow_list_save` or `error_creator_list_save` in the error line, and the option keeps its state.
 
-The two creator lists are shown in the options page, the popup and the userscript dialog as "Developers you ignored" and "Publishers you ignored", after "Games you ignored", with the same groups and "Stop ignoring" button. The popup leaves out an empty card, and an empty card on the page reads `options_allow_empty`.
+The two creator lists are shown in the options page and the userscript dialog as "Developers you ignored" and "Publishers you ignored", after "Games you ignored", with the same groups and "Stop ignoring" button. The toolbar popup lists no ignored items. An empty card reads `options_allow_empty` in General and `options_allow_empty_kind` on a tag's tab.
 
 #### Ignored through a base game
 
@@ -769,7 +769,7 @@ Preview: `previews/AllowList.html`.
 - The captions are the lists' names: `options_section_allow`, `options_section_allow_developers`, `options_section_allow_publishers`. The restore button's name still names the scope (`options_allow_restore_label`), so no two are alike.
 - The game name as data, untranslated, linked to its store page; a creator's name as plain text.
 - The date formatted with `Intl.DateTimeFormat(locale, { dateStyle: "medium" })`.
-- Empty card: `<p class="tks-empty">t('options_allow_empty')</p>`, which points to the Ignore menu on a game page.
+- Empty card: `<p class="tks-empty">t('options_allow_empty')</p>` in General, `t('options_allow_empty_kind')` on a tag's tab, which also says the menu lists the tag only while its banner entry is on.
 - A tag's card ends with the note on what all tags ignore, when anything is: `options_allow_all_note` (plural) and the quiet button `options_allow_all_show`, which selects General and moves focus to the title of Ignored for all tags. It is a button, not a hash link, because in the userscript dialog a hash would change the store page's address.
 - Each list is read once per refresh, and every card draws from that read. A list that cannot be read shows its `error_*_list_load` line in every card, never the empty state. A failed removal shows `error_allow_list_save` or `error_creator_list_save` under that item.
 - One game can sit in several scopes; stopping to ignore it in one leaves the others.
@@ -1311,7 +1311,8 @@ For every translator:
 | `options_allow_scope_all` | All tags | Heading of the games ignored for every tag. The games ignored for one tag sit under Steam's line for it. |
 | `options_allow_restore` | Stop ignoring | Button next to a game. |
 | `options_allow_restore_label` | Stop ignoring `$name$` (`$scope$`) | Screen reader name of that button; `name` is untranslated and `scope` is the scope's name. |
-| `options_allow_empty` | None yet. Use the Ignore menu on a game page. | Any card of ignored items that lists nothing. |
+| `options_allow_empty` | None yet. Use the Ignore menu on a game page. | A card of items ignored for all tags that lists nothing. |
+| `options_allow_empty_kind` | None yet. Use the Ignore menu on a game page. It lists this tag while the tag's entry in the banner is on. | The same on a tag's tab. |
 | `options_allow_kind_title` | Ignored for this tag | Card title on a tag's tab. |
 | `options_allow_all_title` | Ignored for all tags | Card title in General. |
 | `options_allow_all_note_one` | `$count$` item ignored for all tags also applies here. | Plural, one: the note on a tag's tab. |

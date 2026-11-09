@@ -929,7 +929,7 @@
   },
   "options_allow_empty": {
     "message": "None yet. Use the Ignore menu on a game page.",
-    "description": "Shown in a card of ignored items when it lists nothing. The ignore menu opens from the arrow beside \"Ignore tags for this game\" at the foot of the notice on a game page."
+    "description": "Shown in a card of ignored items for all tags when it lists nothing. The ignore menu opens from the arrow beside \"Ignore tags for this game\" at the foot of the notice on a game page."
   },
   "options_section_allow_developers": {
     "message": "Developers you ignored",
@@ -1220,6 +1220,10 @@
   "options_tabs_group_tags": {
     "message": "Tags",
     "description": "Small caption in the settings tab list, under General and a divider, over the tabs of the tags. Decoration only; screen readers skip it. One word."
+  },
+  "options_allow_empty_kind": {
+    "message": "None yet. Use the Ignore menu on a game page. It lists this tag while the tag's entry in the banner is on.",
+    "description": "Shown in the card of games ignored for one tag when it lists nothing. The ignore menu on a game page lists a tag only while that tag's banner switch, on this same tab, is on."
   },
   "options_allow_kind_title": {
     "message": "Ignored for this tag",

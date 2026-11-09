@@ -1133,7 +1133,13 @@ export async function mountSettingsForm(
   function renderScope({ of, body }: ScopeCard): void {
     const blocks = sources.flatMap((source) => listBlock(source, of) ?? []);
     const shown: HTMLElement[] = blocks.length === 0
-      ? [element("p", "tks-empty", i18n.t("options_allow_empty"))]
+      ? [
+        element(
+          "p",
+          "tks-empty",
+          i18n.t(of === ALLOW_ALL ? "options_allow_empty" : "options_allow_empty_kind"),
+        ),
+      ]
       : blocks;
     const note = of === ALLOW_ALL ? undefined : allNote();
     body.replaceChildren(...shown, ...(note === undefined ? [] : [note]));
