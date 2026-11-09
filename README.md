@@ -96,7 +96,7 @@ The toolbar popup lists every tag with its Show, Dim and Hide control and its on
 
 - [Chrome Web Store](https://chromewebstore.google.com/detail/ai-reporter-for-steam/jpbjlfnkdmmdccfiocblhkjdejaihnkp).
 - [Firefox Add-ons (AMO)](https://addons.mozilla.org/en-US/firefox/addon/tag-kit-for-steam/).
-- Userscript: open [tag-kit-for-steam.user.js](https://github.com/jrv97/tag-kit-for-steam/releases/latest/download/tag-kit-for-steam.user.js) from the latest release in Tampermonkey or Violentmonkey.
+- Userscript: open the `.user.js` file from the [latest release](https://github.com/jrv97/tag-kit-for-steam/releases/latest) in Tampermonkey or Violentmonkey.
 
 ## Feedback
 

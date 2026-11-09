@@ -16,11 +16,11 @@ export const HOST_KINDS = "data-tks-kinds";
 export const HOST_HIDEABLE = "data-tks-hideable";
 
 /** Whether the element is one of ours: a badge, a banner host or anything else core injected. */
-export function isSarNode(element: Element): boolean {
+export function isTksNode(element: Element): boolean {
   return element.matches(TKS_NODE);
 }
 
 /** Whether the element is one of ours or sits inside one. */
-export function isInSarNode(element: Element): boolean {
+export function isInTksNode(element: Element): boolean {
   return element.closest(TKS_NODE) !== null;
 }
