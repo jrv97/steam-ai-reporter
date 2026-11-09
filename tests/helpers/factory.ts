@@ -174,6 +174,13 @@ export const make = {
   color: freshColor,
   /** A fresh chip text that fits every chip text field. */
   chipText: freshChipText,
+  /** Browser windows in CSS pixels, both inside the settings page's fixed frame. */
+  viewport: {
+    /** Tall enough for every settings tab. */
+    tall: { width: 1600, height: 2000 },
+    /** Too short for the General tab. */
+    short: { width: 1280, height: 640 },
+  },
   item: {
     store: storeItem,
     details: detailedItem,
