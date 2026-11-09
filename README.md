@@ -106,10 +106,10 @@ The toolbar popup lists every tag by its short name, with its Show, Dim and Hide
 
 ## Feedback
 
-- &#128030; [Report a bug](https://github.com/jrv97/steam-ai-reporter/issues/new?template=bug_report.yml)
-- &#128221; [Request a feature](https://github.com/jrv97/steam-ai-reporter/issues/new?template=feature_request.yml)
-- [Request a language or fix a translation](https://github.com/jrv97/steam-ai-reporter/issues/new?template=translation.yml)
-- &#128123; [Send quick anonymous feedback](https://forms.gle/Fo652zzyFWUQn2qK9)
+- <img src="https://api.iconify.design/lucide/bug.svg?color=%238f73f3" alt="" width="16" height="16"> [Report a bug](https://github.com/jrv97/steam-ai-reporter/issues/new?template=bug_report.yml)
+- <img src="https://api.iconify.design/lucide/lightbulb.svg?color=%238f73f3" alt="" width="16" height="16"> [Request a feature](https://github.com/jrv97/steam-ai-reporter/issues/new?template=feature_request.yml)
+- <img src="https://api.iconify.design/lucide/languages.svg?color=%238f73f3" alt="" width="16" height="16"> [Request a language or fix a translation](https://github.com/jrv97/steam-ai-reporter/issues/new?template=translation.yml)
+- <img src="https://api.iconify.design/lucide/message-square-heart.svg?color=%238f73f3" alt="" width="16" height="16"> [Send quick anonymous feedback](https://forms.gle/Fo652zzyFWUQn2qK9)
 
 ## Privacy
 

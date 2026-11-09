@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 import readme from "../README.md?raw";
 import { FEEDBACK_LINKS } from "../src/core/feedback-links";
+import { LUCIDE_PATHS } from "../src/core/ui/lucide";
 import { SETTINGS_CSS } from "../src/core/ui/styles";
 import { openSettingsDialog } from "../src/platform/userscript/settings-dialog";
 import { englishI18n } from "./helpers/i18n";
@@ -9,22 +10,27 @@ import { mountForm } from "./helpers/settings-form";
 
 const i18n = englishI18n();
 
-/** What a person sees of one link: its words, its decorative emoji and where it goes. */
+/** What a person sees of one link: its words, its decorative icon and where it goes. */
 interface Shown {
   readonly label: string | null | undefined;
-  readonly emoji: string | null | undefined;
+  readonly icon: readonly (string | null)[] | undefined;
   readonly href: string | null;
   readonly target: string | null;
   readonly rel: string | null;
 }
 
-const EXPECTED: readonly Shown[] = FEEDBACK_LINKS.map(({ label, emoji, url }) => ({
+const EXPECTED: readonly Shown[] = FEEDBACK_LINKS.map(({ label, icon, url }) => ({
   label: i18n.t(label),
-  emoji,
+  icon: LUCIDE_PATHS[icon],
   href: url,
   target: "_blank",
   rel: "noopener noreferrer",
 }));
+
+/** The drawing of an icon: the path data of each stroke, in order. */
+function paths(icon: Element): readonly (string | null)[] {
+  return [...icon.querySelectorAll("path")].map((path) => path.getAttribute("d"));
+}
 
 function shown(scope: ParentNode | null | undefined): readonly Shown[] {
   const links = scope?.querySelectorAll<HTMLAnchorElement>(".sar-feedback a") ?? [];
@@ -32,7 +38,7 @@ function shown(scope: ParentNode | null | undefined): readonly Shown[] {
     const icon = link.firstElementChild;
     return {
       label: link.lastElementChild?.textContent,
-      emoji: icon?.getAttribute("aria-hidden") === "true" ? icon.textContent : undefined,
+      icon: icon?.getAttribute("aria-hidden") === "true" ? paths(icon) : undefined,
       href: link.getAttribute("href"),
       target: link.getAttribute("target"),
       rel: link.getAttribute("rel"),
@@ -78,8 +84,8 @@ describe("feedback footer", () => {
     expect(SETTINGS_CSS).toMatch(sticky);
   });
 
-  it.each(FEEDBACK_LINKS)("is listed in the README with its emoji: $id", ({ url, emoji }) => {
+  it.each(FEEDBACK_LINKS)("is listed in the README with its icon: $id", ({ url, icon }) => {
     const line = readme.split("\n").find((each) => each.includes(url));
-    expect(line).toContain(`&#${emoji.codePointAt(0)};`);
+    expect(line).toContain(`/lucide/${icon}.svg`);
   });
 });

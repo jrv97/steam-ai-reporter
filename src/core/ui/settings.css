@@ -925,6 +925,23 @@
   min-block-size: var(--sar-control-height-sm);
 }
 
+/* A Lucide line icon (`ui/lucide.ts`) takes the stroke its source sets, in the current color */
+.sar-icon {
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Each feedback icon fills one line of the bar's text, in the accent violet */
+.sar-feedback-link .sar-icon {
+  inline-size: var(--sar-leading-sm);
+  block-size: var(--sar-leading-sm);
+  color: var(--sar-accent-400);
+}
+
 /* Backup: the one primary button confirms the only action that overwrites settings */
 .sar-button[data-sar-variant="primary"] {
   background: var(--sar-button-primary-bg);
