@@ -6,12 +6,12 @@ Run before each release, after `mise run canary` passes. Automated tests cover t
 
 Targets, each tested logged out and logged in:
 
-| Target            | How to load it                                                                                                                        |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| Chrome extension  | `mise run build`, then `chrome://extensions`, Developer mode, "Load unpacked", pick `dist/chromium`. Or `mise run run-chromium`.      |
-| Firefox extension | `mise run run-gecko`, which uses `TKS_GECKO_BIN` and the dedicated profile in `TKS_GECKO_PROFILE`. Personal profiles stay off limits. |
-| Tampermonkey      | Install `tag-kit-for-steam.user.js` from `artifacts/` (or `dist/userscript/`) in Chrome and in Firefox.                               |
-| Violentmonkey     | Same file, in Chrome and in Firefox.                                                                                                  |
+| Target            | How to load it                                                                                                                                                                                          |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Chrome extension  | `mise run build`, then `chrome://extensions`, Developer mode, "Load unpacked", pick `dist/chromium`. Or `mise run run-chromium`.                                                                        |
+| Firefox extension | `mise run run-gecko`, which uses `TKS_GECKO_BIN` and the dedicated profile in `TKS_GECKO_PROFILE`. Personal profiles stay off limits.                                                                   |
+| Tampermonkey      | Disable or remove the old AI Reporter for Steam script, which runs beside the renamed one. Then install `tag-kit-for-steam.user.js` from `artifacts/` (or `dist/userscript/`) in Chrome and in Firefox. |
+| Violentmonkey     | Same file, in Chrome and in Firefox.                                                                                                                                                                    |
 
 To start from a full configuration, use a clean profile or clear the ignore lists, since restore adds to them, then restore `tests/fixtures/backup/sample-config.json` from the Backup card in the settings. The sample hides rows tagged AI Generated Content Disclosure or Kernel Level Anti-Cheat: set those two filters to Show before the surface matrix.
 
@@ -26,7 +26,7 @@ Before starting:
 
 A surface cell passes when all of these hold:
 
-1. An item with a report shows the badge "AI use reported"; an item without one shows nothing; no item shows an "AI-free" or "uses AI" wording.
+1. An item with an AI report shows the "AI" chip; an item without one shows no "AI" chip, though other tags may show their own; no item shows an "AI-free" or "uses AI" wording.
 2. The badge sits on the capsule, the page section around it carries none, and the layout stays intact.
 3. Content added later (infinite scroll, carousel, React re-render, tab switch) gets badges without a reload and without duplicates.
 4. The Network tab shows no request to any host other than `api.steampowered.com` and `store.steampowered.com`, no cookies sent on them, and one GetItems call per batch of up to 50 new IDs.
