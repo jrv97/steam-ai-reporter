@@ -925,6 +925,23 @@
   min-block-size: var(--tks-control-height-sm);
 }
 
+/* A Lucide line icon (`ui/lucide.ts`) takes the stroke its source sets, in the current color */
+.tks-icon {
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Each feedback icon fills one line of the bar's text, in the accent violet */
+.tks-feedback-link .tks-icon {
+  inline-size: var(--tks-leading-sm);
+  block-size: var(--tks-leading-sm);
+  color: var(--tks-accent-400);
+}
+
 /* Backup: the one primary button confirms the only action that overwrites settings */
 .tks-button[data-tks-variant="primary"] {
   background: var(--tks-button-primary-bg);

@@ -1167,15 +1167,15 @@
   },
   "options_feedback_bug": {
     "message": "Report a bug",
-    "description": "Link at the bottom of the settings that opens the project's bug report form on GitHub in a new tab. Keep it short; an emoji precedes it."
+    "description": "Link at the bottom of the settings that opens the project's bug report form on GitHub in a new tab. Keep it short; an icon precedes it."
   },
   "options_feedback_leave": {
     "message": "Leave feedback",
-    "description": "Link at the bottom of the settings that opens the project's feedback form on GitHub in a new tab. Keep it short; an emoji precedes it."
+    "description": "Link at the bottom of the settings that opens the project's feedback form on GitHub in a new tab. Keep it short; an icon precedes it."
   },
   "options_feedback_anonymous": {
     "message": "Anonymous feedback or bug report",
-    "description": "Link at the bottom of the settings that opens an anonymous feedback form in a new tab, with no GitHub account needed. An emoji precedes it."
+    "description": "Link at the bottom of the settings that opens an anonymous feedback form in a new tab, with no GitHub account needed. An icon precedes it."
   },
   "options_all_settings": {
     "message": "All settings",
