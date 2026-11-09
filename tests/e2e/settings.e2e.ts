@@ -1,8 +1,34 @@
 import { expect, it } from "vitest";
+import { make } from "../helpers/factory";
 import { englishI18n } from "../helpers/i18n";
 import { ENGINES, launch } from "./browser";
 
 const i18n = englishI18n();
+
+// Firefox refuses to resize an extension page, so the window size is set in Chromium only.
+it.each(
+  [
+    ["tall", make.viewport.tall, false],
+    ["short", make.viewport.short, true],
+  ] as const,
+)(
+  "chromium: in a %s window the page stays put and General scrolls only when it overflows",
+  async (_name, viewport, panelScrolls) => {
+    const browser = await launch("chromium");
+    try {
+      const page = await browser.open("options.html");
+      await page.setViewport(viewport);
+      const panel = await page.waitForSelector('[role=tabpanel][id$="-panel-general"]');
+      const scrolls = await panel?.evaluate((node) => ({
+        page: document.documentElement.scrollHeight > innerHeight,
+        panel: node.scrollHeight > node.clientHeight,
+      }));
+      expect(scrolls).toEqual({ page: false, panel: panelScrolls });
+    } finally {
+      await browser.close();
+    }
+  },
+);
 
 it.each(ENGINES)("%s: the popup's gear opens the settings page", async (engine) => {
   const browser = await launch(engine);

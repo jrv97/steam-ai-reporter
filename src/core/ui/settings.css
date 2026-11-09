@@ -277,8 +277,10 @@
    the feedback bar stay in place and only the open panel scrolls. Smaller windows keep the single
    scroll and the sticky rail above. The popup list view is not tabbed and never matches. */
 @media (min-width: 800px) and (min-height: 560px) {
+  /* The page's form is its body. A default body margin would add to the viewport height. */
   .sar-options[data-sar-context="page"] {
     block-size: 100dvh;
+    margin-block: 0;
   }
 
   .sar-options[data-sar-view="tabs"] {
@@ -298,8 +300,20 @@
     overflow-y: auto;
   }
 
+  /* A short rail scrolls; its tabs keep their height */
+  .sar-tab {
+    flex: none;
+  }
+
+  /* Hidden inputs and live regions are absolutely positioned. The panel contains and clips them. */
   .sar-tabpanel {
+    position: relative;
     scrollbar-gutter: stable;
+  }
+
+  /* A scroll container counts its last child's margin as overflow */
+  .sar-tabpanel > :last-child {
+    margin-block-end: 0;
   }
 }
 
