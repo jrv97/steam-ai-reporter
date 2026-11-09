@@ -1,5 +1,5 @@
 import { OVERLAY_CHIPS, ROW_CHIPS, SUGGESTION_CHIPS } from "../kinds/order";
-import { LINK_CANDIDATE } from "./candidates";
+import { LINK_CANDIDATE, type NestedPlacement } from "./candidates";
 import { firstImage, imageBox } from "./image";
 
 // Where a host's badge goes, per store surface (rq6, S5; docs/design/components.mdx, sections 1,
@@ -200,6 +200,20 @@ export const PLACEMENTS: readonly Placement[] = [
     anchor: capsuleImage,
   },
   GENERIC,
+];
+
+/**
+ * Every region of small capsules that a surface nests inside another app's capsule. A new such
+ * region is a new entry here, never a host rule edit (rule 11).
+ */
+export const NESTED_PLACEMENTS: readonly NestedPlacement[] = [
+  {
+    // The discovery queue player's "Similar to games you've played" icons. Sale pages and home
+    // carousels wrap whole capsules in the same hover div, so it counts only inside a dialog.
+    id: "queue-similar",
+    within: "[role='dialog']",
+    region: "[data-key='hover div']",
+  },
 ];
 
 /**

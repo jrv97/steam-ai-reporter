@@ -1,0 +1,9 @@
+---
+status: accepted
+date: 2026-11-09
+decision-makers: Jorge Rodriguez de la Vega
+---
+
+# Leave nested capsules of other apps out of a host's naming, by a list of nested placements
+
+In the context of the discovery queue player on the store home, facing slides whose right column holds "Similar to games you've played" icons that link to other apps, which made the host rule read the column as naming several apps and shrink the host to the 60px capsule link, we decided for `NESTED_PLACEMENTS` in `src/core/scan/placements.ts`: a typed, read-only list of regions whose links do not count toward the naming of a capsule that holds them, each scoped to a store container (`within`), read by `uniformNaming` in `src/core/scan/candidates.ts`. We neglected a placement-level host region, which edits `scanner.ts` and so breaks rule 11, and shipping the placement alone, which leaves most slides without chips because Steam shows that section on most of them. We do this to give each slide's slot a host with the queue player placement, and to keep the logic edit to one: a later surface with nested capsules adds an entry. We accept that the host rule now reads one more list, and that the recount costs a second pass over a root only when the root names several apps and holds such a region inside its container. The first entry is scoped to `[role='dialog']` because sale pages and home carousels wrap whole capsules in the same `[data-key='hover div']`, and those keep their hosts. The nested capsules keep hosts of their own and name their own apps.

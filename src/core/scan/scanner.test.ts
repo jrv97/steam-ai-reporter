@@ -8,6 +8,7 @@ import { loadPage, nodes, pageTransition, setBody, the } from "../../../tests/he
 import type { KindId } from "../kinds/id";
 import type { AppId } from "../types";
 import { createHostKindsRenderer } from "../ui/list-filter";
+import { appIdFromHref } from "./appid";
 import { HOST_APPID, HOST_HIDEABLE, HOST_KINDS } from "./marks";
 import type { CapsuleHost } from "./renderer";
 import { createScanner, DEBOUNCE_MS, type Scanner, type ScanReport } from "./scanner";
@@ -243,22 +244,34 @@ describe("per-surface hosts", () => {
     expect(the(".discovery_queue_content_ctn").getAttribute(HOST_HIDEABLE)).toBe("false");
   });
 
-  it("queue player: each slide's slot, badge ends its title block, never hidden", async () => {
-    loadPage(make.page.surface("discovery-queue"));
-    await startScanner();
-    const slides = queueSlides();
-    const player = found().filter((host) => host.placement.id === "queue-player");
-    expect(player.map((host) => [host.element, host.appId, host.anchor])).toStrictEqual(
-      SURFACE_APPS.queue.map((id, index) => [
-        slides[index]?.parentElement,
-        id,
-        queueTitle(slides[index]),
-      ]),
-    );
-    expect(player.map((host) => host.element.getAttribute(HOST_HIDEABLE))).toStrictEqual(
-      SURFACE_APPS.queue.map(() => "false"),
-    );
-  });
+  it.each([
+    ["a game with Similar icons", 0, SURFACE_APPS.queueSimilar.slice(0, 2)],
+    ["a game without them", 1, []],
+  ])(
+    "queue player, %s: the slot is the host, badge ends the title block",
+    async (_name, index, similar) => {
+      loadPage(make.page.surface("discovery-queue"));
+      await startScanner();
+      const slide = queueSlides()[index];
+      const slot = slide?.parentElement;
+      const [own, ...icons] = found().filter((host) => slot?.contains(host.element) === true);
+      expect([own?.element, own?.appId, own?.placement.id, own?.anchor]).toStrictEqual([
+        slot,
+        SURFACE_APPS.queue[index],
+        "queue-player",
+        queueTitle(slide),
+      ]);
+      expect(slot?.getAttribute(HOST_HIDEABLE)).toBe("false");
+      // Each icon is a host of its own app, never of the slide's game.
+      expect(
+        icons.map((host) => [
+          host.appId,
+          host.element.getAttribute(HOST_APPID),
+          appIdFromHref(host.element.querySelector("a")?.getAttribute("href") ?? "", SEARCH_URL),
+        ]),
+      ).toStrictEqual(similar.map((id) => [id, String(id), id]));
+    },
+  );
 
   it("app page: DLC rows get hosts, badge at the end of the name; own links do not", async () => {
     const base = make.fixture.app.arcRaiders;
