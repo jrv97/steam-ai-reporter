@@ -26,10 +26,12 @@ from repo import (
     REPO_URL,
     ROOT,
     SLUG,
+    USERSCRIPT_ICON,
     fail,
     json_object,
     json_string,
     package_version,
+    png_data_uri,
     read_json,
     valibot_notice,
 )
@@ -45,6 +47,7 @@ CONTENT_CSS = ("TOKENS_CSS", "PAGE_CSS")
 USERSCRIPT_MATCH = "https://store.steampowered.com/*"
 USERSCRIPT_NAMESPACE = REPO_URL
 USERSCRIPT_UPDATE_BASE = f"{REPO_URL}/releases/latest/download"
+USERSCRIPT_SUPPORT = f"{REPO_URL}/issues"
 USERSCRIPT_GRANTS = (
     "GM.getValue",
     "GM.setValue",
@@ -161,6 +164,9 @@ def userscript_header(version: str, catalogs: dict[str, dict[str, object]]) -> s
         if locale != DEFAULT_LOCALE:
             fields.append((f"@description:{locale}", message(catalog, "ext_description", locale)))
     fields += [
+        ("@homepageURL", REPO_URL),
+        ("@supportURL", USERSCRIPT_SUPPORT),
+        ("@icon", png_data_uri(USERSCRIPT_ICON)),
         ("@license", "MIT"),
         ("@match", USERSCRIPT_MATCH),
         ("@noframes", ""),

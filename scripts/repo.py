@@ -1,5 +1,6 @@
 """Shared helpers for the scripts in this folder: repository paths, Git file lists, failures."""
 
+import base64
 import json
 import struct
 import subprocess
@@ -16,6 +17,8 @@ SLUG = "tag-kit-for-steam"
 EXTENSION_TARGETS = ("chromium", "gecko")
 ICONS_DIR = ROOT / "assets" / "icons"
 ICON_SIZES = (16, 32, 48, 128)
+# The userscript icon goes into the header as a data URI, so no manager fetches it from a host.
+USERSCRIPT_ICON = ICONS_DIR / "icon-48.png"
 VALIBOT_LICENSE = ROOT / "node_modules" / "valibot" / "LICENSE.md"
 PNG_SIGNATURE = bytes([137, 80, 78, 71, 13, 10, 26, 10])
 PNG_HEADER_SIZE = 24
@@ -50,6 +53,11 @@ def png_header(path: Path) -> PngHeader | None:
         return None
     width, height, bit_depth, color_type = struct.unpack(">IIBB", header[16:PNG_IHDR_SIZE])
     return PngHeader(width, height, bit_depth, color_type)
+
+
+def png_data_uri(path: Path) -> str:
+    """A PNG file as a base64 `data:` URI."""
+    return "data:image/png;base64," + base64.b64encode(path.read_bytes()).decode("ascii")
 
 
 def png_size(path: Path) -> tuple[int, int] | None:

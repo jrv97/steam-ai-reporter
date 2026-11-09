@@ -8,9 +8,10 @@
   valibot text equals node_modules/valibot/LICENSE.md once whitespace is normalized.
 - Extension pages carry no copy (rule 9): only whitespace text, and `data-i18n` keys that resolve.
   Each page links an icon that exists, or its browser tab shows a puzzle piece.
-- Userscript: header present, no @connect, exact @match, @updateURL and @downloadURL; every `GM`
-  name in the bundle has an @grant and every @grant is used; valibot's license block is in the
-  body; no userscript header in any other bundle.
+- Userscript: header present, no @connect, exact @match, @updateURL, @downloadURL, @homepageURL,
+  @supportURL and @icon (the 48 px icon as a data URI); every `GM` name in the bundle has an
+  @grant and every @grant is used; valibot's license block is in the body; no userscript header
+  in any other bundle.
 - No eval( or new Function in any bundle (rule 2); no URL outside the two Valve hosts, except the
   three feedback links of the settings footer, which options.js and the userscript may carry.
 - Catalogs: each shipped bundle carries exactly the messages its code reads (decision 58). Every
@@ -81,11 +82,13 @@ from repo import (
     REPO_URL,
     ROOT,
     SLUG,
+    USERSCRIPT_ICON,
     VALIBOT_LICENSE,
     fail,
     json_object,
     json_string,
     package_version,
+    png_data_uri,
     png_size,
     read_json,
     valibot_notice,
@@ -284,6 +287,9 @@ def header_problems(where: str, header: str) -> list[str]:
         "@match": STORE_MATCH,
         "@updateURL": [f"{RELEASE_BASE}/{SLUG}.meta.js"],
         "@downloadURL": [f"{RELEASE_BASE}/{SLUG}.user.js"],
+        "@homepageURL": [REPO_URL],
+        "@supportURL": [f"{REPO_URL}/issues"],
+        "@icon": [png_data_uri(USERSCRIPT_ICON)],
     }
     for key, values in expected.items():
         if fields.get(key) != values:
