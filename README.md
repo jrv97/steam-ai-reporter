@@ -100,9 +100,9 @@ The toolbar popup lists every tag by its short name, with its Show, Dim and Hide
 
 ## Install
 
-- [Chrome Web Store](https://chromewebstore.google.com/detail/ai-reporter-for-steam/jpbjlfnkdmmdccfiocblhkjdejaihnkp).
-- [Firefox Add-ons (AMO)](https://addons.mozilla.org/en-US/firefox/addon/tag-kit-for-steam/).
-- Userscript: open [steam-ai-reporter.user.js](https://github.com/jrv97/steam-ai-reporter/releases/latest/download/steam-ai-reporter.user.js) from the latest release in Tampermonkey or Violentmonkey.
+- <img src="https://cdn.simpleicons.org/chromewebstore" alt="" width="16" height="16"> [Chrome Web Store](https://chromewebstore.google.com/detail/ai-reporter-for-steam/jpbjlfnkdmmdccfiocblhkjdejaihnkp).
+- <img src="https://cdn.simpleicons.org/firefoxbrowser" alt="" width="16" height="16"> [Firefox Add-ons (AMO)](https://addons.mozilla.org/en-US/firefox/addon/tag-kit-for-steam/).
+- <img src="https://cdn.simpleicons.org/github/8b949e" alt="" width="16" height="16"> Userscript: open [steam-ai-reporter.user.js](https://github.com/jrv97/steam-ai-reporter/releases/latest/download/steam-ai-reporter.user.js) from the latest release in Tampermonkey or Violentmonkey.
 
 ## Feedback
 
