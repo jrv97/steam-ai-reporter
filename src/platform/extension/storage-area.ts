@@ -5,7 +5,7 @@ import type { Unsubscribe } from "../../core/ports";
 // tests can import them without the `chrome` globals.
 
 /**
- * The part of `storage.local` the store adapter uses. Reads stay `unknown`: the type argument of
+ * The part of a storage area the store adapter uses. Reads stay `unknown`: the type argument of
  * `get<T>()` is never passed, since it would be an unchecked assertion (rule 10).
  */
 export interface StorageArea {
@@ -20,8 +20,8 @@ export interface StorageChange {
   readonly newValue?: unknown;
 }
 
-/** The changes of one `storage.onChanged` event in the `local` area, by key. */
-export type LocalChanges = Readonly<Record<string, StorageChange>>;
+/** The changes of one `storage.onChanged` event in one area, by key. */
+export type StorageChanges = Readonly<Record<string, StorageChange>>;
 
-/** Subscribes to changes in `storage.local`, from any context of this extension. */
-export type OnLocalChanged = (listener: (changes: LocalChanges) => void) => Unsubscribe;
+/** Subscribes to changes in one storage area, from any context of this extension. */
+export type OnStorageChanged = (listener: (changes: StorageChanges) => void) => Unsubscribe;

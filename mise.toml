@@ -177,8 +177,9 @@ description = "Run the Chromium build in Chromium ($SAR_CHROMIUM_BIN) with auto-
 depends = ["build"]
 run = "python scripts/run_browser.py chromium"
 
+# Local only: ci has neither browser.
 [tasks.e2e]
-description = "Drive the built extension in Chromium and Firefox Nightly (local only; not in ci)"
+description = "Drive the build headless in Chromium and Firefox Nightly; SAR_E2E_HEADED=1 shows it"
 depends = ["build"]
 run = [
   "python scripts/run_browser.py chromium --check",

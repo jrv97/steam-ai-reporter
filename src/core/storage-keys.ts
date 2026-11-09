@@ -27,6 +27,8 @@ export const CREATOR_ALLOW_KEYS: Readonly<Record<CreatorRole, string>> = {
 };
 /** The settings tab last shown; interface state, not a setting, and left out of a backup. */
 export const UI_STATE_KEY = "v2:ui";
+/** The store tab the settings page was opened from, in `storage.session` only. */
+export const ORIGIN_KEY = "v2:origin";
 export const META_KEY = "v1:meta";
 
 /** The layout `v1` keys of settings and the ignore list; only the migration reads them. */

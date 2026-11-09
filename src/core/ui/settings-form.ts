@@ -86,6 +86,8 @@ export interface SettingsFormDeps {
    * links do without it.
    */
   readonly openSettings?: (id: TabId | undefined) => void;
+  /** Returns to the store tab the page was opened from; draws the header's Go back to Steam. */
+  readonly goBack?: () => void;
   /** Gives the form its Backup card; the toolbar popup has none. */
   readonly backup?: BackupFormDeps;
   /** The tab to show first, from the page's location fragment; else the stored one. */
@@ -237,6 +239,8 @@ export async function mountSettingsForm(
   mounts += 1;
   const prefix = `sar-${String(mounts)}-`;
   const dates = dateFormat(i18n.locale);
+  /** The page header's Go back to Steam, when the page has a way back. */
+  let goBackButton: HTMLButtonElement | undefined;
 
   const scope = root.getRootNode();
   if (scope === doc) {
@@ -314,6 +318,11 @@ export async function mountSettingsForm(
     node.append(text);
     if (deps.allSettingsUrl !== undefined) {
       node.append(gear(deps.allSettingsUrl));
+    }
+    if (deps.goBack !== undefined) {
+      goBackButton = element("button", "sar-button", i18n.t("options_back_to_steam"));
+      goBackButton.type = "button";
+      node.append(goBackButton);
     }
     return node;
   }
@@ -1198,6 +1207,11 @@ export async function mountSettingsForm(
 
   function onClick(event: Event | undefined, target: EventTarget | null): void {
     if (!(target instanceof Element)) {
+      return;
+    }
+    // Outside the load error's lock, so the way back works when the settings fail to load
+    if (target === goBackButton) {
+      deps.goBack?.();
       return;
     }
     const tab = tabs?.idOf(target);

@@ -10,6 +10,7 @@ import {
 } from "./fake-detector";
 import { fakeFileTransfer, fakeFileTransferHarness } from "./fake-file-transfer";
 import { fakeFetch, fakeHttp, timedHttp, withheldHttp } from "./fake-http";
+import { fakeTabs } from "./fake-tabs";
 import { fixedClock } from "./fixed-clock";
 import { fakeGm, fakeWatch, faultyGm } from "./gm-fake";
 import { loggingStore } from "./logging-store";
@@ -34,8 +35,10 @@ export const fake = {
   area: fakeArea,
   /** A `storage.local` area that injects `faults`. */
   faultyArea,
-  /** A `storage.onChanged` for the `local` area that a test fires by hand. */
+  /** A `storage.onChanged` for one storage area that a test fires by hand. */
   changes: fakeChanges,
+  /** The tab calls, answering IDs such as `make.tabs()` and rejecting the calls in `fails`. */
+  tabs: fakeTabs,
   /** A `GM_addValueChangeListener` that a test triggers by hand, per key. */
   watch: fakeWatch,
   /** The `GM` storage calls, storing serialized values. */

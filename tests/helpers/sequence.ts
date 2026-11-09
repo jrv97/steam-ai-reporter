@@ -67,6 +67,11 @@ export function freshUrl(): string {
   return `https://example.test/${String(next())}`;
 }
 
+/** A fresh browser tab or window ID. */
+export function freshBrowserId(): number {
+  return next();
+}
+
 /** A fresh developer or publisher name. */
 export function freshCreator(): string {
   return `Studio ${String(next())}`;

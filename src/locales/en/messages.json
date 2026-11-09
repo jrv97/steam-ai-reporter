@@ -1109,6 +1109,10 @@
     "message": "All settings",
     "description": "Screen reader name and tooltip of the gear button at the top of the toolbar popup, which opens the full settings page in a tab."
   },
+  "options_back_to_steam": {
+    "message": "Go back to Steam",
+    "description": "Button at the end of the settings page header. It switches back to the Steam store tab where the toolbar popup opened the settings and closes the settings tab; without such a tab it opens the Steam store home page in this tab."
+  },
   "options_kind_enabled": {
     "message": "Use this tag",
     "description": "Master switch of one tag in the settings. Its section is titled with Steam's line for the tag."

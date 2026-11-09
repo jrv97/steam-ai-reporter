@@ -1,8 +1,9 @@
-import type { OnLocalChanged, StorageArea, StorageChange } from "./storage-area";
+import type { BrowserTabs } from "./browser-tabs";
+import type { OnStorageChanged, StorageArea, StorageChange, StorageChanges } from "./storage-area";
 
 // The one module that names the WebExtension APIs. Everything else in the extension takes the
-// narrow interfaces of storage-area.ts, so tests pass typed fakes and the rest of the code never
-// sees `chrome` or `browser`.
+// narrow interfaces of storage-area.ts and browser-tabs.ts, so tests pass typed fakes and the rest
+// of the code never sees `chrome` or `browser`.
 
 /**
  * Firefox's promise-based `browser`, else Chrome's `chrome`. `@types/chrome` declares `browser` as
@@ -18,7 +19,7 @@ export const localStorageArea: StorageArea = {
   remove: (keys) => api.storage.local.remove(keys),
 };
 
-export const onLocalChanged: OnLocalChanged = (listener) => {
+export const onLocalChanged: OnStorageChanged = (listener) => {
   const relay = (changes: Readonly<Record<string, StorageChange>>, area: string): void => {
     if (area === LOCAL_AREA) {
       listener(changes);
@@ -28,6 +29,27 @@ export const onLocalChanged: OnLocalChanged = (listener) => {
   return () => {
     api.storage.onChanged.removeListener(relay);
   };
+};
+
+/** `storage.session`: in memory, cleared when the browser closes or the extension reloads. */
+export function sessionStorageArea(): StorageArea {
+  return api.storage.session;
+}
+
+/** Hears `storage.session` through the area's own event, which needs no area name. */
+export function onSessionChanged(listener: (changes: StorageChanges) => void): void {
+  api.storage.session.onChanged.addListener(listener);
+}
+
+// Async arrows turn a missing API's TypeError into a rejection.
+export const browserTabs: BrowserTabs = {
+  activeTabId: async () => (await api.tabs.query({ active: true, currentWindow: true }))[0]?.id,
+  focusedTabId: async () =>
+    (await api.tabs.query({ active: true, lastFocusedWindow: true }))[0]?.id,
+  ownTabId: async () => (await api.tabs.getCurrent())?.id,
+  activate: async (id) => (await api.tabs.update(id, { active: true }))?.windowId,
+  focusWindow: async (id) => api.windows.update(id, { focused: true }),
+  close: async (id) => api.tabs.remove(id),
 };
 
 /** The manifest version, which the build takes from `package.json` (rule 7). */

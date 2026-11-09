@@ -97,6 +97,12 @@
   flex: none;
 }
 
+/* The page's Go back to Steam, at the end of the header */
+.sar-options-header .sar-button {
+  flex: none;
+  margin-inline-start: auto;
+}
+
 .sar-options-title {
   margin: 0;
   color: var(--sar-color-text-strong);
