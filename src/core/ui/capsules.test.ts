@@ -102,9 +102,9 @@ function setup(
 
 function host(id: AppId, placement: Placement = ROW): CapsuleHost {
   setBody(
-    `<div data-sar-appid="${String(id)}"><span class="line"></span><div class="art"></div></div>`,
+    `<div data-tks-appid="${String(id)}"><span class="line"></span><div class="art"></div></div>`,
   );
-  const element = document.querySelector("[data-sar-appid]");
+  const element = document.querySelector("[data-tks-appid]");
   const anchor = placement.anchor(element ?? document.body);
   if (element === null || anchor === undefined) {
     throw new TypeError();
@@ -204,7 +204,7 @@ describe("createCapsuleUi", () => {
       size: "text",
       position: "beforeend",
     });
-    expect(found.anchor.hasAttribute("data-sar-anchor")).toBe(true);
+    expect(found.anchor.hasAttribute("data-tks-anchor")).toBe(true);
   });
 
   it("gives a small image no slot", async () => {

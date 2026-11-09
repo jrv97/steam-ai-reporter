@@ -286,7 +286,7 @@ class BundleKeys:
         return script, ["options_${}", "banner_${}_${}"]
 
     # Templates that start no key.
-    UNKEYED_TEMPLATES: Final = ("`${base}_other`", "`sar-${name}`", "`options`", "`kind_${id}`")
+    UNKEYED_TEMPLATES: Final = ("`${base}_other`", "`tks-${name}`", "`options`", "`kind_${id}`")
 
 
 class Cws:

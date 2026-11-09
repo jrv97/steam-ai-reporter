@@ -84,11 +84,11 @@ describe("createBadgeRenderer", () => {
   function texts(element: Element) {
     return [
       element.querySelector(":scope > [aria-hidden]")?.textContent,
-      element.querySelector(":scope > .sar-vh")?.textContent,
+      element.querySelector(":scope > .tks-vh")?.textContent,
     ];
   }
 
-  const chipsIn = (host: Element) => Array.from(host.querySelectorAll(".sar-chips > *"));
+  const chipsIn = (host: Element) => Array.from(host.querySelectorAll(".tks-chips > *"));
   /** The chip drawn at `index` in a host, counted from the end when negative. */
   function chipAt(host: Element, index: number): Element {
     const found = chipsIn(host).at(index);
@@ -97,21 +97,21 @@ describe("createBadgeRenderer", () => {
     }
     return found;
   }
-  const kindsOf = (host: Element) => chipsIn(host).map((c) => c.getAttribute("data-sar-kind"));
+  const kindsOf = (host: Element) => chipsIn(host).map((c) => c.getAttribute("data-tks-kind"));
 
   it("draws the full badge with the catalog label and binds it to the hover card", () => {
     const { host, title } = capsule();
     const verdict = make.verdict.disclosed("ai", { notes: make.text.note() });
     renderer.render(view(host, full(title), { verdict }));
-    const group = host.querySelector(".sar-chips");
+    const group = host.querySelector(".tks-chips");
     expect(group?.previousElementSibling).toBe(title);
-    expect(group?.getAttribute("data-sar-chips")).toBe("full");
-    const badge = host.querySelector<HTMLElement>(".sar-badge");
+    expect(group?.getAttribute("data-tks-chips")).toBe("full");
+    const badge = host.querySelector<HTMLElement>(".tks-badge");
     expect(badge?.parentElement).toBe(group);
-    expect(badge?.querySelector(".sar-badge-label")?.textContent).toBe(chip("ai"));
-    expect(badge?.querySelector(".sar-badge-label")?.getAttribute("aria-hidden")).toBe("true");
-    expect(badge?.querySelector(".sar-vh")?.textContent).toBe(AI_NAME);
-    expect(badge?.getAttribute("data-sar-kind")).toBe("ai");
+    expect(badge?.querySelector(".tks-badge-label")?.textContent).toBe(chip("ai"));
+    expect(badge?.querySelector(".tks-badge-label")?.getAttribute("aria-hidden")).toBe("true");
+    expect(badge?.querySelector(".tks-vh")?.textContent).toBe(AI_NAME);
+    expect(badge?.getAttribute("data-tks-kind")).toBe("ai");
     expect(badge?.querySelector("svg")).toBeNull();
     expect(badge?.hasAttribute("title")).toBe(false);
     expect(badge === null ? undefined : bound.get(badge)).toEqual([verdict]);
@@ -208,7 +208,7 @@ describe("createBadgeRenderer", () => {
       const [label, name] = drawnLabel({ chip: markup }, "full");
       expect(label).toBe(markup);
       expect(name?.startsWith(markup)).toBe(true);
-      expect(document.querySelector(".sar-chips b")).toBeNull();
+      expect(document.querySelector(".tks-chips b")).toBeNull();
     });
 
     it("draws a host again when only the text changed", () => {
@@ -225,7 +225,7 @@ describe("createBadgeRenderer", () => {
     const { host, title } = capsule();
     const verdicts = make.verdicts.only(["pvp", "drm", "ai"]);
     renderer.render(view(host, full(title), { verdicts, maxChips: 5 }));
-    expect(host.querySelectorAll(".sar-chips")).toHaveLength(1);
+    expect(host.querySelectorAll(".tks-chips")).toHaveLength(1);
     expect(kindsOf(host)).toEqual(["ai", "drm", "pvp"]);
     expect(chipsIn(host).map((c) => texts(c)[0])).toEqual([chip("ai"), chip("drm"), chip("pvp")]);
   });
@@ -289,7 +289,7 @@ describe("createBadgeRenderer", () => {
       expect(kindsOf(host)).toEqual([...MANY.slice(0, maxChips), null]);
       const more = chipAt(host, maxChips);
       const label = i18n.t("kind_chip_more", { count: String(MANY.length - maxChips) });
-      expect(more.classList.contains("sar-badge")).toBe(true);
+      expect(more.classList.contains("tks-badge")).toBe(true);
       expect(texts(more)).toEqual([
         label,
         i18n.t("kind_chip_name", { chip: label, heading: i18n.t("kind_chip_more_name") }),
@@ -319,11 +319,11 @@ describe("createBadgeRenderer", () => {
       const maxChips = 1;
       renderer.render(view(host, overlay(image), { verdicts: make.verdicts.only(MANY), maxChips }));
       const chips = chipsIn(host);
-      expect(chips.map((c) => c.className)).toEqual(["sar-compact", "sar-compact"]);
-      expect(chips[1]?.querySelector(".sar-compact-label")?.textContent).toBe(
+      expect(chips.map((c) => c.className)).toEqual(["tks-compact", "tks-compact"]);
+      expect(chips[1]?.querySelector(".tks-compact-label")?.textContent).toBe(
         i18n.t("kind_chip_more", { count: String(MANY.length - maxChips) }),
       );
-      expect(chips[1]?.getAttribute("data-sar-size")).toBe("text");
+      expect(chips[1]?.getAttribute("data-tks-size")).toBe("text");
     });
   });
 
@@ -331,39 +331,39 @@ describe("createBadgeRenderer", () => {
     const { host, title } = capsule();
     const slot = full(title);
     renderer.render(view(host, slot));
-    const group = host.querySelector(".sar-chips");
+    const group = host.querySelector(".tks-chips");
     const next = make.verdict.disclosed("ai", { notes: make.text.note() });
     renderer.render(view(host, slot, { verdict: next }));
-    expect(host.querySelector(".sar-chips")).toBe(group);
-    const badge = host.querySelector(".sar-badge");
+    expect(host.querySelector(".tks-chips")).toBe(group);
+    const badge = host.querySelector(".tks-badge");
     expect(badge === null ? undefined : bound.get(badge)).toEqual([next]);
   });
 
   it("draws the group again when the kinds, the allowance or the slot change", () => {
     const { host, title, image } = capsule();
     renderer.render(view(host, full(title), { verdicts: make.verdicts.only(["ai"]) }));
-    const first = host.querySelector(".sar-chips");
+    const first = host.querySelector(".tks-chips");
     renderer.render(view(host, full(title), { verdicts: make.verdicts.only(["ai", "drm"]) }));
-    expect(host.querySelector(".sar-chips")).not.toBe(first);
+    expect(host.querySelector(".tks-chips")).not.toBe(first);
     expect(first?.isConnected).toBe(false);
     expect(kindsOf(host)).toEqual(["ai", "drm"]);
     const verdicts = make.verdicts.only(["ai", "drm"]);
     renderer.render(view(host, full(title), { verdicts, maxChips: 1 }));
     expect(kindsOf(host)).toEqual(["ai", null]);
     renderer.render(view(host, overlay(image), { verdicts, maxChips: 1 }));
-    expect(host.querySelectorAll(".sar-chips")).toHaveLength(1);
-    expect(host.querySelector(".sar-chips")?.getAttribute("data-sar-chips")).toBe("compact");
+    expect(host.querySelectorAll(".tks-chips")).toHaveLength(1);
+    expect(host.querySelector(".tks-chips")?.getAttribute("data-tks-chips")).toBe("compact");
   });
 
   it("draws the compact chips in their tier, linked to the capsule link", () => {
     const { host, image } = capsule();
     const verdicts = make.verdicts.only(["ai", "kernel"]);
     renderer.render(view(host, overlay(image, "large"), { verdicts }));
-    const group = image.querySelector(".sar-chips");
-    const chips = Array.from(image.querySelectorAll<HTMLElement>(".sar-chips > .sar-compact"));
-    expect(group?.getAttribute("data-sar-chips")).toBe("compact");
-    expect(group?.getAttribute("data-sar-in-link")).toBe("true");
-    expect(chips.map((c) => c.getAttribute("data-sar-size"))).toEqual(["large", "large"]);
+    const group = image.querySelector(".tks-chips");
+    const chips = Array.from(image.querySelectorAll<HTMLElement>(".tks-chips > .tks-compact"));
+    expect(group?.getAttribute("data-tks-chips")).toBe("compact");
+    expect(group?.getAttribute("data-tks-in-link")).toBe("true");
+    expect(chips.map((c) => c.getAttribute("data-tks-size"))).toEqual(["large", "large"]);
     expect(chips.map((c) => texts(c))).toEqual([
       [chip("ai"), AI_NAME],
       [chip("kernel"), nameOf("kernel")],
@@ -380,7 +380,7 @@ describe("createBadgeRenderer", () => {
       throw new TypeError();
     }
     renderer.render(view(host, overlay(image)));
-    expect(image.querySelector(".sar-chips")?.hasAttribute("data-sar-in-link")).toBe(false);
+    expect(image.querySelector(".tks-chips")?.hasAttribute("data-tks-in-link")).toBe(false);
   });
 
   it.each([
@@ -409,28 +409,28 @@ describe("createBadgeRenderer", () => {
     const { host, title } = capsule();
     const slot = full(title);
     renderer.render(view(host, slot));
-    expect(host.querySelectorAll(".sar-badge")).toHaveLength(1);
+    expect(host.querySelectorAll(".tks-badge")).toHaveLength(1);
     renderer.render(view(host, slot, { allowed: true }));
-    expect(host.querySelector(".sar-chips")).toBeNull();
+    expect(host.querySelector(".tks-chips")).toBeNull();
   });
 
   it("keeps the group for the same view and restores one a re-render dropped", () => {
     const { host, title } = capsule();
     const slot = full(title);
     renderer.render(view(host, slot));
-    const first = host.querySelector(".sar-chips");
+    const first = host.querySelector(".tks-chips");
     renderer.render(view(host, slot));
-    expect(host.querySelector(".sar-chips")).toBe(first);
+    expect(host.querySelector(".tks-chips")).toBe(first);
     first?.remove();
     renderer.render(view(host, slot));
-    expect(host.querySelectorAll(".sar-chips")).toHaveLength(1);
-    expect(host.querySelector(".sar-chips")).not.toBe(first);
+    expect(host.querySelectorAll(".tks-chips")).toHaveLength(1);
+    expect(host.querySelector(".tks-chips")).not.toBe(first);
   });
 
   it("draws no chip where the placement gives no slot", () => {
     const { host } = capsule();
     renderer.render(view(host, undefined));
-    expect(host.querySelector(".sar-chips, .sar-badge, .sar-compact")).toBeNull();
+    expect(host.querySelector(".tks-chips, .tks-badge, .tks-compact")).toBeNull();
   });
 });
 
@@ -438,8 +438,8 @@ describe("createChip", () => {
   it("builds a chip with the kind's text, name and id", () => {
     const i18n = englishI18n();
     const element = createChip(document, i18n, make.verdict.disclosed("drm"));
-    expect(element.className).toBe("sar-badge");
-    expect(element.getAttribute("data-sar-kind")).toBe("drm");
-    expect(element.querySelector(".sar-badge-label")?.textContent).toBe(i18n.t("kind_drm_chip"));
+    expect(element.className).toBe("tks-badge");
+    expect(element.getAttribute("data-tks-kind")).toBe("drm");
+    expect(element.querySelector(".tks-badge-label")?.textContent).toBe(i18n.t("kind_drm_chip"));
   });
 });

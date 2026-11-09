@@ -10,7 +10,7 @@ import { entryName, facetName } from "./kind-details";
 import { createTagBlock } from "./tag-section";
 
 /** The label's id, which the summary's group points to for its name. */
-const LABEL_ID = "sar-summary-label";
+const LABEL_ID = "tks-summary-label";
 
 /** The names a kind's lines may take, in order: one per facet, else Steam's heading. */
 function lineNames(i18n: MessageCatalog, kind: TagKind): readonly string[] {
@@ -90,10 +90,10 @@ export function createPackageSummary(
       return;
     }
     if (box === undefined) {
-      box = createTagBlock(doc, i18n, "sar-tag-section sar-summary", LABEL_ID);
+      box = createTagBlock(doc, i18n, "tks-tag-section tks-summary", LABEL_ID);
       for (const line of lines) {
         const element = doc.createElement("div");
-        element.className = "sar-summary-line";
+        element.className = "tks-summary-line";
         element.textContent = line;
         box.append(element);
       }

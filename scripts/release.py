@@ -30,7 +30,6 @@ from repo import (
     EXTENSION_TARGETS,
     ROOT,
     SLUG,
-    USERSCRIPT_SLUG,
     fail,
     git,
     json_object,
@@ -259,8 +258,8 @@ def release_tag() -> str:
 def asset_names(version: str) -> list[str]:
     return [
         *(f"{SLUG}-{target}-{version}.zip" for target in EXTENSION_TARGETS),
-        f"{USERSCRIPT_SLUG}.user.js",
-        f"{USERSCRIPT_SLUG}.meta.js",
+        f"{SLUG}.user.js",
+        f"{SLUG}.meta.js",
         f"{SLUG}-source-{version}.zip",
     ]
 

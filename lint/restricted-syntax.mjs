@@ -34,7 +34,7 @@ const SET_COPY_ATTRIBUTE = "CallExpression[callee.property.name='setAttribute']"
 
 const COPY = "Copy comes from the message catalog (rule 9): use t(key), not a string literal.";
 const LOG = "Log through the logger with a catalog key (rule 9), not a string literal.";
-const ERROR = "Errors carry a catalog key, new SarError(key, params), not prose (rule 9).";
+const ERROR = "Errors carry a catalog key, new TksError(key, params), not prose (rule 9).";
 const JSON_PARSE_CALL = "CallExpression[callee.object.name='JSON'][callee.property.name='parse']";
 const JSON_PARSE = "Use parseJson from src/core/json.ts (returns unknown) instead of JSON.parse.";
 
@@ -60,7 +60,7 @@ const restrict = (restrictions) => ({
 });
 
 export default {
-  meta: { name: "sar" },
+  meta: { name: "tks" },
   rules: {
     // Rule 9: string literals must not flow into user-visible or logged text.
     "no-hardcoded-copy": restrict({
@@ -69,8 +69,8 @@ export default {
       [SET_COPY_ATTRIBUTE]: COPY,
       [`CallExpression[callee.name=/^(alert|confirm|prompt)$/] > ${LITERAL}`]: COPY,
       [`CallExpression[callee.object.name='console'] > ${LITERAL}`]: LOG,
-      // SarError takes a typed catalog key, so only the other error classes are checked.
-      [`NewExpression[callee.name=/Error$/][callee.name!='SarError'] > ${LITERAL}`]: ERROR,
+      // TksError takes a typed catalog key, so only the other error classes are checked.
+      [`NewExpression[callee.name=/Error$/][callee.name!='TksError'] > ${LITERAL}`]: ERROR,
     }),
     // Untrusted JSON stays unknown: JSON.parse is wrapped once, in src/core/json.ts.
     "no-json-parse": restrict({

@@ -95,15 +95,15 @@ function view(options: ViewOptions = {}): AppPageView {
   };
 }
 
-const section = () => document.querySelector<HTMLElement>(".sar-tag-section");
-const chips = () => [...document.querySelectorAll<HTMLElement>(".sar-tag-section .sar-badge")];
-const chipKinds = () => chips().map((chip) => chip.getAttribute("data-sar-kind"));
+const section = () => document.querySelector<HTMLElement>(".tks-tag-section");
+const chips = () => [...document.querySelectorAll<HTMLElement>(".tks-tag-section .tks-badge")];
+const chipKinds = () => chips().map((chip) => chip.getAttribute("data-tks-kind"));
 const bannerHost = () => document.getElementById(BANNER_ID);
 const bannerRoot = () => bannerHost()?.shadowRoot ?? null;
 const headings = () =>
   [...(bannerRoot()?.querySelectorAll("h2") ?? [])].map((heading) => heading.textContent);
 const notes = () =>
-  [...(bannerRoot()?.querySelectorAll(".sar-banner-ignored-text") ?? [])].map((note) =>
+  [...(bannerRoot()?.querySelectorAll(".tks-banner-ignored-text") ?? [])].map((note) =>
     note.textContent
   );
 const headingsOf = (ids: readonly KindId[]) =>
@@ -123,12 +123,12 @@ describe("createAppPageUi", () => {
       const root = section();
       const { chip, heading } = KIND_BY_ID[kind].messages;
       expect(document.getElementById("tags")?.nextElementSibling).toBe(root);
-      expect(root?.querySelector(".sar-tag-section-label")?.textContent).toBe(
+      expect(root?.querySelector(".tks-tag-section-label")?.textContent).toBe(
         i18n.t("badge_tags_title"),
       );
       expect(chipKinds()).toEqual([kind]);
-      expect(root?.querySelector(".sar-badge-label")?.textContent).toBe(i18n.t(chip));
-      expect(root?.querySelector(".sar-vh")?.textContent).toBe(
+      expect(root?.querySelector(".tks-badge-label")?.textContent).toBe(i18n.t(chip));
+      expect(root?.querySelector(".tks-vh")?.textContent).toBe(
         i18n.t("kind_chip_name", { chip: i18n.t(chip), heading: i18n.t(heading) }),
       );
       expect(root?.querySelector("a, [href]")).toBeNull();
@@ -146,7 +146,7 @@ describe("createAppPageUi", () => {
     setup().render(view({ verdicts }));
     expect(chips()).toHaveLength(5);
     for (const chip of chips()) {
-      const kind = chip.getAttribute("data-sar-kind");
+      const kind = chip.getAttribute("data-tks-kind");
       const entries = bound.get(chip)?.entries ?? [];
       expect(entries.map((entry) => entry.kind)).toEqual([kind]);
       expect(entries[0]).toBe(verdicts[entries[0]?.kind ?? "ai"]);
@@ -182,14 +182,14 @@ describe("createAppPageUi", () => {
     const words = make.settings.chipText({ ai: { chip: MINE } }).kinds;
     const ignoreAi = () =>
       bannerRoot()?.querySelector(
-        "[data-sar-action=ignore-creator][data-sar-scope=ai]",
+        "[data-tks-action=ignore-creator][data-tks-scope=ai]",
       )?.textContent;
 
     it("names the chips and a creator's Ignore button by it, and keeps Steam's heading", () => {
       const ui = setup();
       ui.render(view());
       ui.render(view({ words }));
-      expect(chips().map((chip) => chip.querySelector(".sar-badge-label")?.textContent)).toEqual([
+      expect(chips().map((chip) => chip.querySelector(".tks-badge-label")?.textContent)).toEqual([
         MINE,
       ]);
       expect(ignoreAi()).toBe(i18n.t("banner_ignore_creator_kind", { chip: MINE }));
@@ -225,7 +225,7 @@ describe("createAppPageUi", () => {
     expect(section()).toBeNull();
     expect(headings()).toEqual([]);
     expect(notes()).toEqual([i18n.t("banner_ignored")]);
-    expect(bannerRoot()?.querySelector("aside")?.getAttribute("data-sar-variant")).toBe("ignored");
+    expect(bannerRoot()?.querySelector("aside")?.getAttribute("data-tks-variant")).toBe("ignored");
   });
 
   describe("with kinds silenced or none", () => {
@@ -266,7 +266,7 @@ describe("createAppPageUi", () => {
       ],
     )("with %s, draws the chips, banner entries and notes", (_name, options, ids, entries, all) => {
       setup().render(view({ verdicts: ARC, ...options }));
-      expect(document.querySelectorAll(".sar-tag-section")).toHaveLength(1);
+      expect(document.querySelectorAll(".tks-tag-section")).toHaveLength(1);
       expect(chipKinds()).toEqual(ids);
       expect(headings()).toEqual(headingsOf(entries));
       expect(notes()).toEqual(all);
@@ -327,7 +327,7 @@ describe("createAppPageUi", () => {
     expect(chipKinds()).toEqual(["ai", "eula"]);
     ui.render(view({ verdicts }));
     expect(chipKinds()).toEqual(["ai", "iap", "pvp", "eula", "kernel"]);
-    expect(document.querySelectorAll(".sar-tag-section")).toHaveLength(1);
+    expect(document.querySelectorAll(".tks-tag-section")).toHaveLength(1);
   });
 
   it("removes the section and its label when every badge is off", () => {
@@ -336,7 +336,7 @@ describe("createAppPageUi", () => {
     ui.render(view({ verdicts }));
     ui.render(view({ verdicts, badgeOff: ["ai", "kernel", "eula", "pvp", "iap"] }));
     expect(section()).toBeNull();
-    expect(document.querySelector(".sar-tag-section-label")).toBeNull();
+    expect(document.querySelector(".tks-tag-section-label")).toBeNull();
     expect(headings()).toHaveLength(5);
   });
 
@@ -346,7 +346,7 @@ describe("createAppPageUi", () => {
     ui.render(view({ bannerOff: ["ai"] }));
     expect(bannerHost()).toBeNull();
     expect(chipKinds()).toEqual(["ai"]);
-    expect(document.querySelectorAll(".sar-tag-section")).toHaveLength(1);
+    expect(document.querySelectorAll(".tks-tag-section")).toHaveLength(1);
   });
 
   it("removes the note when the banner setting of an ignored game is off", () => {
@@ -366,7 +366,7 @@ describe("createAppPageUi", () => {
     root?.remove();
     bannerHost()?.remove();
     ui.render(same);
-    expect(document.querySelectorAll(".sar-tag-section")).toHaveLength(1);
+    expect(document.querySelectorAll(".tks-tag-section")).toHaveLength(1);
     expect(bannerHost()?.isConnected).toBe(true);
   });
 
@@ -376,7 +376,7 @@ describe("createAppPageUi", () => {
     const root = section();
     ui.render(view({ verdict: make.verdict.disclosed("ai", { notes: make.text.note() }) }));
     expect(section()).not.toBe(root);
-    expect(document.querySelectorAll(".sar-tag-section")).toHaveLength(1);
+    expect(document.querySelectorAll(".tks-tag-section")).toHaveLength(1);
     expect(chipKinds()).toEqual(["ai"]);
   });
 });

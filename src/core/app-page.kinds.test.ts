@@ -36,12 +36,12 @@ afterEach(() => {
   clearRoot();
 });
 
-const banner = () => document.getElementById("sar-banner")?.shadowRoot ?? null;
+const banner = () => document.getElementById("tks-banner")?.shadowRoot ?? null;
 const headings = () =>
   [...(banner()?.querySelectorAll("h2") ?? [])].map((heading) => heading.textContent);
 const chipKinds = () =>
-  [...document.querySelectorAll(".sar-tag-section .sar-badge")].map((chip) =>
-    chip.getAttribute("data-sar-kind")
+  [...document.querySelectorAll(".tks-tag-section .tks-badge")].map((chip) =>
+    chip.getAttribute("data-tks-kind")
   );
 const control = (selector: string) => banner()?.querySelector<HTMLElement>(selector);
 const storing = (settings: Settings) =>
@@ -96,14 +96,14 @@ describe("start on an English app page of a game with no AI", () => {
   it("ignores one kind from its entry and leaves the others", async () => {
     const { ignored } = await startOnDrmPage();
 
-    control('.sar-banner-action[data-sar-scope="drm"]')?.click();
-    await expect.poll(() => control('[data-sar-action="undo"]')).toBeInstanceOf(HTMLElement);
+    control('.tks-banner-action[data-tks-scope="drm"]')?.click();
+    await expect.poll(() => control('[data-tks-action="undo"]')).toBeInstanceOf(HTMLElement);
     expect(await ignored("drm")).toEqual([String(GAME)]);
     expect(await ignored("all")).toEqual([]);
     expect(headings()).toEqual([i18n.t("kind_account_heading"), i18n.t("kind_eula_heading")]);
     expect(chipKinds()).toEqual(["account", "eula"]);
 
-    control('[data-sar-action="undo"]')?.click();
+    control('[data-tks-action="undo"]')?.click();
     await expect.poll(() => headings().length).toBe(3);
     expect(chipKinds()).toEqual(["drm", "account", "eula"]);
     expect(await ignored("drm")).toEqual([]);
@@ -150,10 +150,10 @@ describe("start on an English app page of a game with no AI", () => {
       });
       await expect.poll(() => headings().length).toBe(4);
       expect(headings()[3]).toBe(deckEntry);
-      control('.sar-banner-action[data-sar-scope="deck"]')?.click();
-      await expect.poll(() => control('[data-sar-action="undo"]')).toBeInstanceOf(HTMLElement);
+      control('.tks-banner-action[data-tks-scope="deck"]')?.click();
+      await expect.poll(() => control('[data-tks-action="undo"]')).toBeInstanceOf(HTMLElement);
       expect(await ignored("deck")).toEqual([String(GAME)]);
-      expect(control(".sar-banner-ignored-text")?.textContent).toBe(
+      expect(control(".tks-banner-ignored-text")?.textContent).toBe(
         i18n.t("banner_ignored_kind", { heading: i18n.t("kind_deck_heading") }),
       );
       expect(chipKinds()).toEqual(["drm", "account", "eula"]);
@@ -191,11 +191,11 @@ describe("start on the app page of a game in early access", () => {
 
   /** Opens the hover card of the page's Early Access chip and returns the entry's lines. */
   async function cardLines(): Promise<readonly (string | null)[]> {
-    const chip = '.sar-tag-section .sar-badge[data-sar-kind="earlyaccess"]';
+    const chip = '.tks-tag-section .tks-badge[data-tks-kind="earlyaccess"]';
     await expect.poll(() => document.querySelector(chip)).not.toBeNull();
     document.querySelector(chip)?.dispatchEvent(new FocusEvent("focusin", { bubbles: true }));
     const entry = document.querySelector(
-      `#${HOVER_CARD_ID} .sar-hovercard-entry[data-sar-kind="earlyaccess"]`,
+      `#${HOVER_CARD_ID} .tks-hovercard-entry[data-tks-kind="earlyaccess"]`,
     );
     return Array.from(entry?.children ?? [], (line) => line.textContent);
   }

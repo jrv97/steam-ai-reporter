@@ -43,15 +43,15 @@ async function setup(order: readonly KindId[] = KIND_IDS) {
   await writeSettings(settings, make.settings({ order }));
   const { root, form } = await mountForm({ settings });
   const handle = (id: KindId): HTMLElement => {
-    const found = root.querySelector<HTMLElement>(`[data-sar-order="${id}"]`);
+    const found = root.querySelector<HTMLElement>(`[data-tks-order="${id}"]`);
     if (found === null) {
       throw new TypeError(id);
     }
     return found;
   };
   const shown = () =>
-    [...root.querySelectorAll(".sar-order-handle")].map((each) =>
-      each.getAttribute("data-sar-order")
+    [...root.querySelectorAll(".tks-order-handle")].map((each) =>
+      each.getAttribute("data-tks-order")
     );
   const stored = async () => parseSettings(await settings.read()).order;
   const spoken = () => root.querySelector("[aria-live]")?.textContent;
@@ -82,7 +82,7 @@ function pointer(target: EventTarget, type: string, clientY: number): void {
 
 /** Lays the rows out `ROW` pixels apart in their order, as a browser would. */
 function layOut(card: Card): void {
-  card.root.querySelectorAll(".sar-order-handle").forEach((handle, index) => {
+  card.root.querySelectorAll(".tks-order-handle").forEach((handle, index) => {
     const row = handle.closest("li");
     if (row === null) {
       throw new TypeError(String(index));
@@ -105,11 +105,11 @@ function drag(card: Card, id: KindId, by: number): HTMLElement {
 
 /** Each cut line in the list: how many rows sit above it, its text and its `aria-hidden`. */
 function cutLines(root: ParentNode) {
-  const children = [...(root.querySelector(".sar-order-list")?.children ?? [])];
+  const children = [...(root.querySelector(".tks-order-list")?.children ?? [])];
   const rowsAbove = (index: number) =>
-    children.slice(0, index).filter((each) => each.matches(".sar-order-row")).length;
+    children.slice(0, index).filter((each) => each.matches(".tks-order-row")).length;
   return children.flatMap((child, index) =>
-    child.matches(".sar-order-cue")
+    child.matches(".tks-order-cue")
       ? [{
         after: rowsAbove(index),
         text: child.textContent,
@@ -120,7 +120,7 @@ function cutLines(root: ParentNode) {
 }
 
 const transforms = (card: Card) =>
-  [...card.root.querySelectorAll<HTMLElement>(".sar-order-row")].map((row) => row.style.transform);
+  [...card.root.querySelectorAll<HTMLElement>(".tks-order-row")].map((row) => row.style.transform);
 
 afterEach(() => {
   document.body.replaceChildren();
@@ -134,8 +134,8 @@ describe("the Tag order card", () => {
     const named = KIND_IDS.map((id) => {
       const row = handle(id).closest("li");
       return [
-        row?.querySelector(".sar-order-key")?.textContent,
-        row?.querySelector(".sar-order-description")?.textContent,
+        row?.querySelector(".tks-order-key")?.textContent,
+        row?.querySelector(".tks-order-description")?.textContent,
         handle(id).getAttribute("aria-label"),
       ];
     });
@@ -152,7 +152,7 @@ describe("the Tag order card", () => {
     const order = parseOrder(["family", "pvp"]);
     const { root, handle, shown } = await setup(order);
     expect(shown()).toEqual(order);
-    expect(root.querySelectorAll(".sar-order-list")).toHaveLength(1);
+    expect(root.querySelectorAll(".tks-order-list")).toHaveLength(1);
     expect(handle("family").getAttribute("aria-label")).toBe(
       i18n.t("options_order_handle", { name: keyOf("family") }),
     );
@@ -162,14 +162,14 @@ describe("the Tag order card", () => {
 
   it("draws a line after each limit, naming its surfaces, that no key stops at", async () => {
     const { root, shown, handle } = await setup();
-    const list = root.querySelector(".sar-order-list");
+    const list = root.querySelector(".tks-order-list");
     expect(cutLines(root).map(({ after, hidden }) => [after, hidden])).toEqual(
       CUTS.map((after) => [after, "true"]),
     );
     for (const [after, word] of LIMITS) {
       expect(cutLines(root).find((line) => line.after === after)?.text).toContain(i18n.t(word));
     }
-    const spoken = root.querySelector(".sar-card .sar-vh")?.textContent;
+    const spoken = root.querySelector(".tks-card .tks-vh")?.textContent;
     expect(spoken).toBe(cutLines(root).map((line) => line.text).join(" "));
     expect(list?.querySelectorAll("button, [tabindex]")).toHaveLength(KIND_IDS.length);
     handle("ai").click();
@@ -265,7 +265,7 @@ describe("the Tag order card", () => {
   it("drags a row with the pointer, the rows between opening its gap, and drops it", async () => {
     const card = await setup();
     const handle = drag(card, "ai", 2 * ROW + CUE + 5);
-    expect(card.root.querySelector("[data-sar-dragging]")).not.toBeNull();
+    expect(card.root.querySelector("[data-tks-dragging]")).not.toBeNull();
     expect(card.shown()).toEqual(KIND_IDS);
     // The row that crosses the cue moves by the room it takes too
     expect(transforms(card).slice(0, 4)).toEqual([
@@ -291,7 +291,7 @@ describe("the Tag order card", () => {
     pointer(handle, "pointerup", 0);
     handle.click();
     expect(handle.getAttribute("aria-pressed")).toBe("true");
-    expect(card.root.querySelector("[data-sar-dragging]")).toBeNull();
+    expect(card.root.querySelector("[data-tks-dragging]")).toBeNull();
   });
 
   it.each<[string, (card: Card, handle: HTMLElement) => void]>([
@@ -318,7 +318,7 @@ describe("the Tag order card", () => {
 
   it("resets to the registry order and stores no order", async () => {
     const { root, shown, settings, spoken } = await setup(parseOrder(["family"]));
-    root.querySelector<HTMLElement>("[data-sar-order-reset]")?.click();
+    root.querySelector<HTMLElement>("[data-tks-order-reset]")?.click();
     await vi.waitFor(async () => {
       expect(JSON.stringify(await settings.read())).not.toContain('"order"');
     });
@@ -345,7 +345,7 @@ describe("the Tag order card", () => {
     store.break();
     handle("ai").click();
     await vi.waitFor(() => {
-      expect(root.querySelector<HTMLElement>(".sar-order-list ~ .sar-field-error")?.hidden).toBe(
+      expect(root.querySelector<HTMLElement>(".tks-order-list ~ .tks-field-error")?.hidden).toBe(
         false,
       );
     });

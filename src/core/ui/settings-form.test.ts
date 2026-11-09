@@ -53,7 +53,7 @@ function ignoredGame(name: string = make.text.name()): IgnoredGame {
 
 /** The selector of the button that stops ignoring a game or creator in a scope. */
 function restore(key: AppId | string, scope: AllowScope): string {
-  return `[data-sar-restore="${String(key)}"][data-sar-scope="${scope}"]`;
+  return `[data-tks-restore="${String(key)}"][data-tks-scope="${scope}"]`;
 }
 
 /** Fires the change event a user's click on the control would. */
@@ -106,7 +106,7 @@ async function setup(overrides: Partial<SettingsFormDeps> = {}) {
   };
   /** A kind's settings card, the first in its tab. */
   const card = (id: KindId): HTMLElement => {
-    const found = panel(id).querySelector<HTMLElement>("section.sar-card");
+    const found = panel(id).querySelector<HTMLElement>("section.tks-card");
     if (found === null) {
       throw new TypeError(id);
     }
@@ -116,7 +116,7 @@ async function setup(overrides: Partial<SettingsFormDeps> = {}) {
   const ignored = (of: AllowScope): HTMLElement => {
     const title = i18n.t(of === ALLOW_ALL ? "options_allow_all_title" : "options_allow_kind_title");
     const found = [...panel(of === ALLOW_ALL ? GENERAL_TAB : of).querySelectorAll("section")]
-      .find((section) => section.querySelector(".sar-card-title")?.textContent === title);
+      .find((section) => section.querySelector(".tks-card-title")?.textContent === title);
     if (found === undefined) {
       throw new TypeError(of);
     }
@@ -124,7 +124,7 @@ async function setup(overrides: Partial<SettingsFormDeps> = {}) {
   };
   const input = (id: KindId, field: string, value?: string): HTMLInputElement => {
     const suffix = value === undefined ? "" : `[value=${value}]`;
-    const found = card(id).querySelector<HTMLInputElement>(`[data-sar-setting=${field}]${suffix}`);
+    const found = card(id).querySelector<HTMLInputElement>(`[data-tks-setting=${field}]${suffix}`);
     if (found === null) {
       throw new TypeError([id, field].join(" "));
     }
@@ -139,7 +139,7 @@ async function setup(overrides: Partial<SettingsFormDeps> = {}) {
   };
   /** The names listed in a card, in order. */
   const names = (section: HTMLElement) =>
-    [...section.querySelectorAll(".sar-allow-name")].map((name) => name.textContent);
+    [...section.querySelectorAll(".tks-allow-name")].map((name) => name.textContent);
   return {
     ...mounted,
     settings,
@@ -164,7 +164,7 @@ describe("the settings of each tag", () => {
   it("titles each tag's tab with Steam's line, in a heading of its own", async () => {
     const { card } = await setup();
     for (const kind of KINDS) {
-      const title = card(kind.id).querySelector(".sar-card-title");
+      const title = card(kind.id).querySelector(".tks-card-title");
       expect([title?.tagName, title?.textContent]).toEqual(["H2", heading(kind.id)]);
     }
   });
@@ -173,8 +173,8 @@ describe("the settings of each tag", () => {
     const { card } = await setup();
     for (const kind of KINDS) {
       const section = card(kind.id);
-      const settings = [...section.querySelectorAll("[data-sar-setting]")].map((control) =>
-        control.getAttribute("data-sar-setting")
+      const settings = [...section.querySelectorAll("[data-tks-setting]")].map((control) =>
+        control.getAttribute("data-tks-setting")
       );
       const facets = (kind.facets ?? []).map(() => "facets");
       expect(settings).toEqual([
@@ -190,8 +190,8 @@ describe("the settings of each tag", () => {
         "filter",
       ]);
       expect(
-        [...section.querySelectorAll("[data-sar-setting]")].every((control) =>
-          control.getAttribute("data-sar-for") === kind.id
+        [...section.querySelectorAll("[data-tks-setting]")].every((control) =>
+          control.getAttribute("data-tks-for") === kind.id
         ),
       ).toBe(true);
     }
@@ -232,7 +232,7 @@ describe("the settings of each tag", () => {
     "gives %s a group named %s of %s controls, one per value in its own words, the default on",
     async (id, name, type, words, ticked) => {
       const { card, root } = await setup();
-      const group = card(id).querySelector("fieldset.sar-checks");
+      const group = card(id).querySelector("fieldset.tks-checks");
       const label = root.querySelector(`#${group?.getAttribute("aria-labelledby") ?? "x"}`);
       expect(label?.textContent).toBe(i18n.t(name));
       const boxes = [...(group?.querySelectorAll("input") ?? [])];
@@ -249,7 +249,7 @@ describe("the settings of each tag", () => {
     async (id) => {
       const { card } = await setup();
       const boxes = [
-        ...(card(id).querySelector("fieldset.sar-checks")?.querySelectorAll("input") ?? []),
+        ...(card(id).querySelector("fieldset.tks-checks")?.querySelectorAll("input") ?? []),
       ];
       const tag = i18n.t(KIND_BY_ID[id].messages.heading);
       expect(boxes.length).toBeGreaterThan(0);
@@ -336,7 +336,7 @@ describe("the settings of each tag", () => {
     async (id) => {
       const { settings, card, input, tab } = await setup();
       await writeSettings(settings, make.settings.kind(id, { enabled: true }));
-      const options = () => card(id).querySelector<HTMLFieldSetElement>(".sar-kind-options");
+      const options = () => card(id).querySelector<HTMLFieldSetElement>(".tks-kind-options");
       const controlsOf = () => [...card(id).querySelectorAll("input, button")];
       const before = controlsOf();
       expect(options()?.disabled).toBe(false);
@@ -346,7 +346,7 @@ describe("the settings of each tag", () => {
       expect(options()?.hidden).toBe(false);
       expect(tab(id).hidden).toBe(false);
       expect(options()?.contains(input(id, "badge"))).toBe(true);
-      expect(input(id, "enabled").closest(".sar-kind-options")).toBeNull();
+      expect(input(id, "enabled").closest(".tks-kind-options")).toBeNull();
       await writeSettings(settings, make.settings.kind(id, { enabled: true, badge: false }));
       expect(options()?.disabled).toBe(false);
       expect(input(id, "badge").checked).toBe(false);
@@ -358,7 +358,7 @@ describe("the settings of each tag", () => {
     async (id, enabled) => {
       const { settings, card, input } = await setup();
       await writeSettings(settings, make.settings.kind(id, { filter: "dim" }));
-      const options = () => card(id).querySelector<HTMLFieldSetElement>(".sar-kind-options");
+      const options = () => card(id).querySelector<HTMLFieldSetElement>(".tks-kind-options");
       const master = input(id, "enabled");
       expect([master.checked, options()?.disabled]).toEqual([!enabled, enabled]);
       master.checked = enabled;
@@ -386,7 +386,7 @@ describe("changing a setting", () => {
       expect(control("[aria-live]").textContent).toBe(i18n.t("notice_settings_saved"));
     });
     expect(
-      input("kernel", "filter", "dim").closest(".sar-field")?.querySelector(".sar-field-help")
+      input("kernel", "filter", "dim").closest(".tks-field")?.querySelector(".tks-field-help")
         ?.textContent,
     ).toBe(i18n.t("options_filter_dim_help"));
   });
@@ -426,10 +426,10 @@ describe("changing a setting", () => {
     const { settings, input } = await setup();
     const spy = vi.spyOn(settings, "patch");
     const badge = input("drm", "badge");
-    badge.setAttribute("data-sar-for", make.text.name());
+    badge.setAttribute("data-tks-for", make.text.name());
     change(badge);
-    badge.setAttribute("data-sar-for", "drm");
-    badge.setAttribute("data-sar-setting", make.text.name());
+    badge.setAttribute("data-tks-for", "drm");
+    badge.setAttribute("data-tks-setting", make.text.name());
     change(badge);
     await Promise.resolve();
     expect(spy).not.toHaveBeenCalled();
@@ -441,14 +441,14 @@ describe("changing a setting", () => {
     const badge = input("anticheat", "badge");
     badge.checked = false;
     change(badge);
-    const error = badge.parentElement?.querySelector<HTMLElement>(".sar-field-error");
+    const error = badge.parentElement?.querySelector<HTMLElement>(".tks-field-error");
     await vi.waitFor(() => {
       expect(error?.hidden).toBe(false);
     });
     expect(badge.checked).toBe(true);
     expect(error?.textContent).toBe(i18n.t("error_settings_save"));
     const other = input("anticheat", "banner").parentElement?.querySelector<HTMLElement>(
-      ".sar-field-error",
+      ".tks-field-error",
     );
     expect(other?.hidden).toBe(true);
   });
@@ -470,7 +470,7 @@ function typeColor(field: HTMLInputElement, text: string): void {
 
 describe("the color field", () => {
   const colorOf = (root: HTMLElement, id: KindId) =>
-    root.style.getPropertyValue(`--sar-kind-color-${id}`);
+    root.style.getPropertyValue(`--tks-kind-color-${id}`);
   const storedColor = async (settings: { read(): Promise<unknown>; }, id: KindId) =>
     parseSettings(await settings.read()).kinds[id].color;
 
@@ -478,7 +478,7 @@ describe("the color field", () => {
     /** A tag's color square and hex text box. */
     async function square(id: KindId = "ai") {
       const form = await setup();
-      const picker = form.root.querySelector(`[data-sar-picker=${id}]`);
+      const picker = form.root.querySelector(`[data-tks-picker=${id}]`);
       if (!(picker instanceof HTMLInputElement)) {
         throw new TypeError(id);
       }
@@ -498,7 +498,7 @@ describe("the color field", () => {
     });
 
     it("pins the default violet to accent 400 of the tokens", () => {
-      expect(DEFAULT_TAG_COLOR).toBe(/--sar-accent-400:\s*([^;]+);/.exec(TOKENS_CSS)?.[1]);
+      expect(DEFAULT_TAG_COLOR).toBe(/--tks-accent-400:\s*([^;]+);/.exec(TOKENS_CSS)?.[1]);
     });
 
     const PICKED = make.color();
@@ -559,7 +559,7 @@ describe("the color field", () => {
       const color = make.color();
       await settings.patch({ kinds: { ai: { color } } });
       expect(picker.value).toBe(color);
-      card("ai").querySelector<HTMLElement>("[data-sar-color-reset]")?.click();
+      card("ai").querySelector<HTMLElement>("[data-tks-color-reset]")?.click();
       expect(picker.value).toBe(DEFAULT_TAG_COLOR);
       await vi.waitFor(async () => {
         expect(await storedColor(settings, "ai")).toBeUndefined();
@@ -569,16 +569,16 @@ describe("the color field", () => {
 
   it("is on the full page and in the dialog, and not in the popup", async () => {
     const page = await setup();
-    expect(page.root.querySelectorAll("[data-sar-setting=color]")).toHaveLength(KINDS.length);
+    expect(page.root.querySelectorAll("[data-tks-setting=color]")).toHaveLength(KINDS.length);
     page.form.destroy();
     const popup = await setup(POPUP);
-    expect(popup.root.querySelector("[data-sar-setting=color]")).toBeNull();
-    expect(popup.root.querySelector("[data-sar-picker]")).toBeNull();
-    expect(popup.root.querySelector("[data-sar-color-reset]")).toBeNull();
+    expect(popup.root.querySelector("[data-tks-setting=color]")).toBeNull();
+    expect(popup.root.querySelector("[data-tks-picker]")).toBeNull();
+    expect(popup.root.querySelector("[data-tks-color-reset]")).toBeNull();
     popup.form.destroy();
     const dialog = await setup({ context: "popup" });
-    expect(dialog.root.querySelectorAll("[data-sar-setting=color]")).toHaveLength(KINDS.length);
-    expect(dialog.root.getAttribute("data-sar-context")).toBe("popup");
+    expect(dialog.root.querySelectorAll("[data-tks-setting=color]")).toHaveLength(KINDS.length);
+    expect(dialog.root.getAttribute("data-tks-context")).toBe("popup");
   });
 
   it("is labelled with the catalog text, which calls the setting experimental", async () => {
@@ -595,7 +595,7 @@ describe("the color field", () => {
 
   it("points each field at the full help in General, with a short line under it", async () => {
     const { root, input, card, panel } = await setup();
-    const helps = [...root.querySelectorAll(".sar-field-help")].filter((help) =>
+    const helps = [...root.querySelectorAll(".tks-field-help")].filter((help) =>
       help.textContent === i18n.t("options_color_help")
     );
     expect(helps).toHaveLength(1);
@@ -610,12 +610,12 @@ describe("the color field", () => {
     const { root, settings, input, card } = await setup();
     expect(input("ai", "color").value).toBe("");
     expect(colorOf(root, "ai")).toBe("");
-    expect(card("ai").querySelector<HTMLElement>("[data-sar-color-reset]")?.hidden).toBe(true);
+    expect(card("ai").querySelector<HTMLElement>("[data-tks-color-reset]")?.hidden).toBe(true);
     const color = make.color();
     await settings.patch({ kinds: { ai: { color } } });
     expect(input("ai", "color").value).toBe(color);
     expect(colorOf(root, "ai")).toBe(color);
-    expect(card("ai").querySelector<HTMLElement>("[data-sar-color-reset]")?.hidden).toBe(false);
+    expect(card("ai").querySelector<HTMLElement>("[data-tks-color-reset]")?.hidden).toBe(false);
     expect(colorOf(root, "drm")).toBe("");
   });
 
@@ -702,9 +702,9 @@ describe("the color field", () => {
   it("resets from the quiet Reset button, whose name starts with its text", async () => {
     const { root, settings, card, input } = await setup();
     await settings.patch({ kinds: { account: { color: make.color() } } });
-    const reset = card("account").querySelector<HTMLElement>("[data-sar-color-reset]");
+    const reset = card("account").querySelector<HTMLElement>("[data-tks-color-reset]");
     expect(reset?.textContent).toBe(i18n.t("options_color_reset"));
-    expect(reset?.getAttribute("data-sar-variant")).toBe("quiet");
+    expect(reset?.getAttribute("data-tks-variant")).toBe("quiet");
     expect(reset?.getAttribute("aria-label")).toBe(
       i18n.t("options_color_reset_label", { heading: heading("account") }),
     );
@@ -741,7 +741,7 @@ describe("the color field", () => {
     vi.spyOn(settings, "patch").mockRejectedValue(new Error());
     typeColor(input("ai", "color"), make.color());
     const failure = card("ai").querySelector<HTMLElement>(
-      ".sar-color > .sar-field-error:not([id])",
+      ".tks-color > .tks-field-error:not([id])",
     );
     await vi.waitFor(() => {
       expect(failure?.hidden).toBe(false);
@@ -761,7 +761,7 @@ describe("two forms over one store", () => {
       lists: createIgnoreLists(store, fake.clock(make.time())),
     });
     const input = (id: KindId, field: string): HTMLInputElement => {
-      const found = panel(id).querySelector<HTMLInputElement>(`[data-sar-setting=${field}]`);
+      const found = panel(id).querySelector<HTMLInputElement>(`[data-tks-setting=${field}]`);
       if (found === null) {
         throw new TypeError([id, field].join(" "));
       }
@@ -877,20 +877,20 @@ describe("the page around the tabs", () => {
     const allSettingsUrl = make.text.url();
     const { root } = await mountForm({ ...POPUP, header: { version, iconUrl }, allSettingsUrl });
     const header = root.firstElementChild;
-    expect(header?.matches("header.sar-options-header")).toBe(true);
+    expect(header?.matches("header.tks-options-header")).toBe(true);
     expect(header?.querySelector("h1")?.textContent).toBe(i18n.t("ext_name"));
-    expect(header?.querySelector(".sar-options-version")?.textContent).toBe(
+    expect(header?.querySelector(".tks-options-version")?.textContent).toBe(
       i18n.t("options_version", { version }),
     );
     expect(header?.querySelector("img")?.getAttribute("src")).toBe(iconUrl);
     expect(header?.querySelector("img")?.getAttribute("alt")).toBe("");
-    const gear = header?.querySelector("a.sar-gear");
+    const gear = header?.querySelector("a.tks-gear");
     expect(gear?.getAttribute("aria-label")).toBe(i18n.t("options_all_settings"));
     expect(gear?.getAttribute("href")).toBe(allSettingsUrl);
     expect(gear?.getAttribute("target")).toBe("_blank");
     expect(gear?.querySelector("svg")?.getAttribute("aria-hidden")).toBe("true");
     expect(gear?.textContent).toBe("");
-    expect(root.querySelector(".sar-options-footer a")).toBeNull();
+    expect(root.querySelector(".tks-options-footer a")).toBeNull();
     expect(header?.querySelector("button")).toBeNull();
   });
 
@@ -900,7 +900,7 @@ describe("the page around the tabs", () => {
       header: { version: make.text.version() },
       allSettingsUrl: make.text.url(),
     });
-    const svg = root.querySelector(".sar-gear svg");
+    const svg = root.querySelector(".tks-gear svg");
     expect(svg?.querySelectorAll("*")).toHaveLength(1);
     expect(svg?.outerHTML.length).toBeLessThan(400);
   });
@@ -915,8 +915,8 @@ describe("the page around the tabs", () => {
       header: { version: make.text.version() },
       goBack,
     });
-    const back = root.querySelector<HTMLButtonElement>(".sar-options-header > button");
-    expect(back).toBe(root.querySelector(".sar-options-header")?.lastElementChild);
+    const back = root.querySelector<HTMLButtonElement>(".tks-options-header > button");
+    expect(back).toBe(root.querySelector(".tks-options-header")?.lastElementChild);
     expect(back?.type).toBe("button");
     expect(back?.textContent).toBe(i18n.t("options_back_to_steam"));
     expect(back?.hasAttribute("aria-label")).toBe(false);
@@ -927,8 +927,8 @@ describe("the page around the tabs", () => {
 
   it("renders no header or gear by default", async () => {
     const { root } = await setup(POPUP);
-    expect(root.querySelector(".sar-options-header")).toBeNull();
-    expect(root.querySelector(".sar-gear")).toBeNull();
+    expect(root.querySelector(".tks-options-header")).toBeNull();
+    expect(root.querySelector(".tks-gear")).toBeNull();
   });
 
   it("reads Spanish from the shipped catalog, down to the titles and the tab labels", async () => {
@@ -937,10 +937,10 @@ describe("the page around the tabs", () => {
     expect(tabIds()).toEqual([GENERAL_TAB, ...KIND_IDS]);
     expect(tab(GENERAL_TAB).textContent).toBe(spanish.t("options_tab_general"));
     for (const kind of KINDS) {
-      expect(tab(kind.id).querySelector(".sar-tab-key")?.textContent).toBe(
+      expect(tab(kind.id).querySelector(".tks-tab-key")?.textContent).toBe(
         keyText(spanish, kind).label,
       );
-      expect(panel(kind.id).querySelector(".sar-card-title")?.textContent).toBe(
+      expect(panel(kind.id).querySelector(".tks-card-title")?.textContent).toBe(
         spanish.t(kind.messages.heading),
       );
     }
@@ -950,10 +950,10 @@ describe("the page around the tabs", () => {
 });
 
 describe("the toolbar popup", () => {
-  const rows = (root: HTMLElement) => [...root.querySelectorAll<HTMLElement>(".sar-kind-row")];
+  const rows = (root: HTMLElement) => [...root.querySelectorAll<HTMLElement>(".tks-kind-row")];
   const row = (root: HTMLElement, id: KindId): HTMLElement => {
     const found = rows(root).find((each) =>
-      each.querySelector(`[data-sar-open-tab="${id}"]`) !== null
+      each.querySelector(`[data-tks-open-tab="${id}"]`) !== null
     );
     if (found === undefined) {
       throw new TypeError(id);
@@ -967,16 +967,16 @@ describe("the toolbar popup", () => {
   it("shows one row per tag, in the default order, and nothing else to set", async () => {
     const { root } = await popup();
     const ids = rows(root).map((each) =>
-      each.querySelector("[data-sar-open-tab]")?.getAttribute("data-sar-open-tab")
+      each.querySelector("[data-tks-open-tab]")?.getAttribute("data-tks-open-tab")
     );
     expect(ids).toEqual(KIND_IDS);
     const settings = new Set(
-      [...root.querySelectorAll("[data-sar-setting]")].map((each) =>
-        each.getAttribute("data-sar-setting")
+      [...root.querySelectorAll("[data-tks-setting]")].map((each) =>
+        each.getAttribute("data-tks-setting")
       ),
     );
     expect(settings).toEqual(new Set(["enabled", "filter"]));
-    for (const absent of ["[role=tab]", "select", ".sar-allow-group", ".sar-empty", "section"]) {
+    for (const absent of ["[role=tab]", "select", ".tks-allow-group", ".tks-empty", "section"]) {
       expect(root.querySelector(absent), absent).toBeNull();
     }
   });
@@ -984,7 +984,7 @@ describe("the toolbar popup", () => {
   it("names a row by the tag's key, whatever its chip text, and keeps its place", async () => {
     const { root, settings } = await popup();
     await writeSettings(settings, make.settings.chipText({ pvp: { chip: make.chipText() } }));
-    expect(row(root, "pvp").querySelector(".sar-tab-label")?.textContent).toBe(
+    expect(row(root, "pvp").querySelector(".tks-tab-label")?.textContent).toBe(
       keyText(i18n, KIND_BY_ID.pvp).label,
     );
     expect(rows(root).indexOf(row(root, "pvp"))).toBe(KIND_IDS.indexOf("pvp"));
@@ -997,10 +997,10 @@ describe("the toolbar popup", () => {
       const link = row(root, id).querySelector("a");
       expect(link?.getAttribute("href")).toBe(`${allSettingsUrl}#tab=${id}`);
       expect(link?.getAttribute("target")).toBe("_blank");
-      expect(link?.querySelector(".sar-vh")?.textContent).toBe(
+      expect(link?.querySelector(".tks-vh")?.textContent).toBe(
         keyText(i18n, KIND_BY_ID[id]).name,
       );
-      const enabled = row(root, id).querySelector("[data-sar-setting=enabled]");
+      const enabled = row(root, id).querySelector("[data-tks-setting=enabled]");
       expect(enabled?.getAttribute("role")).toBe("switch");
       expect(enabled?.getAttribute("aria-labelledby")).toBe(link?.id);
       const labels = row(root, id).querySelector("fieldset")?.getAttribute("aria-labelledby");
@@ -1040,10 +1040,10 @@ describe("the toolbar popup", () => {
   it.each([
     [
       "a tag's name",
-      (root: HTMLElement) => row(root, "drm").querySelector(".sar-tab-label"),
+      (root: HTMLElement) => row(root, "drm").querySelector(".tks-tab-label"),
       "drm",
     ],
-    ["the gear", (root: HTMLElement) => root.querySelector(".sar-gear svg"), undefined],
+    ["the gear", (root: HTMLElement) => root.querySelector(".tks-gear svg"), undefined],
   ])("hands a click on %s to the page while the form still loads", async (_name, find, tab) => {
     const openSettings = vi.fn();
     let release = (): void => undefined;
@@ -1069,7 +1069,7 @@ describe("the toolbar popup", () => {
 
   it.each([
     ["a tag's name", (root: HTMLElement) => row(root, "drm").querySelector("a")],
-    ["the gear", (root: HTMLElement) => root.querySelector("a.sar-gear")],
+    ["the gear", (root: HTMLElement) => root.querySelector("a.tks-gear")],
   ])("leaves %s to the browser when the page has no way to open the settings", async (_n, find) => {
     const { root } = await popup({ header: { version: make.text.version() } });
     const click = new MouseEvent("click", { bubbles: true, cancelable: true });
@@ -1093,12 +1093,12 @@ describe("the toolbar popup", () => {
 describe("the accessible names of the controls", () => {
   it("names every card by its heading, with a heading of its own", async () => {
     const { root } = await setup();
-    const sections = [...root.querySelectorAll<HTMLElement>("section.sar-card")];
+    const sections = [...root.querySelectorAll<HTMLElement>("section.tks-card")];
     expect(sections.length).toBeGreaterThan(KINDS.length * 2);
     const ids = sections.map((section) => section.getAttribute("aria-labelledby") ?? "");
     expect(new Set(ids).size).toBe(sections.length);
     for (const section of sections) {
-      const title = section.querySelector(".sar-card-title");
+      const title = section.querySelector(".tks-card-title");
       expect(title?.id).toBe(section.getAttribute("aria-labelledby"));
     }
   });
@@ -1106,9 +1106,9 @@ describe("the accessible names of the controls", () => {
   it("makes each switch a switch inside a label that says what it does", async () => {
     const { card } = await setup();
     const labels = (id: KindId) =>
-      [...card(id).querySelectorAll<HTMLLabelElement>("label.sar-field")].map((label) => {
+      [...card(id).querySelectorAll<HTMLLabelElement>("label.tks-field")].map((label) => {
         const box = label.querySelector("input");
-        return [box?.getAttribute("role"), label.querySelector(".sar-field-label")?.textContent];
+        return [box?.getAttribute("role"), label.querySelector(".tks-field-label")?.textContent];
       });
     expect(labels("drm")).toEqual([
       ["switch", i18n.t("options_kind_enabled")],
@@ -1127,7 +1127,7 @@ describe("the accessible names of the controls", () => {
     const { card, root } = await setup();
     const names = new Set<string>();
     for (const kind of KINDS) {
-      const fieldset = card(kind.id).querySelector("fieldset.sar-segment");
+      const fieldset = card(kind.id).querySelector("fieldset.tks-segment");
       const label = root.querySelector(`#${fieldset?.getAttribute("aria-labelledby") ?? "x"}`);
       expect(label?.textContent).toBe(i18n.t("options_filter_label"));
       const radios = [...(fieldset?.querySelectorAll("input") ?? [])];
@@ -1158,15 +1158,15 @@ const SURFACES: readonly (readonly [
     {},
     (root) =>
       [...root.querySelectorAll("[role=tab]")].slice(1).map((each) =>
-        each.getAttribute("data-sar-tab")
+        each.getAttribute("data-tks-tab")
       ),
   ],
   [
     "the popup rows",
     { ...POPUP, allSettingsUrl: make.text.url() },
     (root) =>
-      [...root.querySelectorAll("[data-sar-open-tab]")].map((each) =>
-        each.getAttribute("data-sar-open-tab")
+      [...root.querySelectorAll("[data-tks-open-tab]")].map((each) =>
+        each.getAttribute("data-tks-open-tab")
       ),
   ],
 ];
@@ -1202,11 +1202,11 @@ describe("the tabs", () => {
     const { tabIds, tab } = await setup();
     expect(tabIds()).toEqual([GENERAL_TAB, ...KIND_IDS]);
     expect(tab(GENERAL_TAB).textContent).toBe(i18n.t("options_tab_general"));
-    expect(tab(GENERAL_TAB).classList.contains("sar-tab-general")).toBe(true);
-    expect(tab(GENERAL_TAB).querySelector(".sar-tab-state")).toBeNull();
+    expect(tab(GENERAL_TAB).classList.contains("tks-tab-general")).toBe(true);
+    expect(tab(GENERAL_TAB).querySelector(".tks-tab-state")).toBeNull();
     for (const id of KIND_IDS) {
-      expect(tab(id).classList.contains("sar-tab-general")).toBe(false);
-      expect(tab(id).querySelector(".sar-tab-state")).not.toBeNull();
+      expect(tab(id).classList.contains("tks-tab-general")).toBe(false);
+      expect(tab(id).querySelector(".tks-tab-state")).not.toBeNull();
     }
   });
 
@@ -1217,13 +1217,13 @@ describe("the tabs", () => {
       const chip = make.chipText();
       await writeSettings(settings, make.settings.chipText({ [id]: { chip } }));
       const text = keyText(i18n, KIND_BY_ID[id]);
-      const description = tab(id).querySelector(".sar-tab-description");
-      expect(tab(id).querySelector(".sar-tab-key")?.textContent).toBe(text.label);
-      expect(tab(id).querySelector(".sar-vh")?.textContent).toBe(text.name);
+      const description = tab(id).querySelector(".tks-tab-description");
+      expect(tab(id).querySelector(".tks-tab-key")?.textContent).toBe(text.label);
+      expect(tab(id).querySelector(".tks-vh")?.textContent).toBe(text.name);
       expect(text.name).toContain(heading(id));
       expect(description?.textContent).toBe(keyDescription(i18n, KIND_BY_ID[id]));
       expect(description?.getAttribute("aria-hidden")).toBe("true");
-      expect(tab(id).querySelector(".sar-tab-state")?.textContent).toBe(
+      expect(tab(id).querySelector(".tks-tab-state")?.textContent).toBe(
         i18n.t(STATE_KEYS[`${DEFAULT_SETTINGS.kinds[id].enabled}`]),
       );
       expect(tab(id).textContent).not.toContain(chip);
@@ -1250,17 +1250,17 @@ describe("the tabs", () => {
 
   it("follows the master switch on the tab, here and from another tab", async () => {
     const { tab, input, settings } = await setup();
-    const state = (id: KindId) => tab(id).querySelector(".sar-tab-state");
+    const state = (id: KindId) => tab(id).querySelector(".tks-tab-state");
     const master = input("ai", "enabled");
     master.checked = false;
     change(master);
     await vi.waitFor(() => {
       expect(state("ai")?.textContent).toBe(i18n.t("options_state_off"));
     });
-    expect(state("ai")?.hasAttribute("data-sar-on")).toBe(false);
+    expect(state("ai")?.hasAttribute("data-tks-on")).toBe(false);
     await writeSettings(settings, make.settings.kind("pvp", { enabled: true }));
     expect(state("pvp")?.textContent).toBe(i18n.t("options_state_on"));
-    expect(state("pvp")?.hasAttribute("data-sar-on")).toBe(true);
+    expect(state("pvp")?.hasAttribute("data-tks-on")).toBe(true);
   });
 
   it.each<[string, Partial<SettingsFormDeps>, readonly (readonly [string, JsonValue])[], TabId]>([
@@ -1326,9 +1326,9 @@ describe("the tabs", () => {
     const last = tabIds().at(-1);
     tab(GENERAL_TAB).focus();
     press(tab(GENERAL_TAB), "ArrowDown");
-    expect(document.activeElement?.getAttribute("data-sar-tab")).toBe(second);
+    expect(document.activeElement?.getAttribute("data-tks-tab")).toBe(second);
     press(document.activeElement ?? tab(GENERAL_TAB), "End");
-    expect(document.activeElement?.getAttribute("data-sar-tab")).toBe(last);
+    expect(document.activeElement?.getAttribute("data-tks-tab")).toBe(last);
     expect(document.activeElement?.getAttribute("aria-selected")).toBe("false");
     expect(tab(GENERAL_TAB).getAttribute("aria-selected")).toBe("true");
     expect(onTabChange).not.toHaveBeenCalled();
@@ -1361,8 +1361,8 @@ describe("the ignored items", () => {
     expect(names(ignored("kernel"))).toEqual([games.older.name]);
     expect(names(ignored("drm"))).toEqual([games.drm.name]);
     expect(names(ignored("pvp"))).toEqual([]);
-    expect(root.querySelector(".sar-allow-name b")).toBeNull();
-    const captions = [...ignored("ai").querySelectorAll(".sar-allow-scope")];
+    expect(root.querySelector(".tks-allow-name b")).toBeNull();
+    const captions = [...ignored("ai").querySelectorAll(".tks-allow-scope")];
     expect(captions.map((caption) => [caption.tagName, caption.textContent])).toEqual([
       ["H4", i18n.t("options_section_allow")],
     ]);
@@ -1371,18 +1371,18 @@ describe("the ignored items", () => {
   it("links each game to its store page and dates it", async () => {
     const { ignored, games } = await setup();
     const all = ignored(ALLOW_ALL);
-    expect(all.querySelector(".sar-allow-name")?.getAttribute("href")).toBe(
+    expect(all.querySelector(".tks-allow-name")?.getAttribute("href")).toBe(
       `https://store.steampowered.com/app/${String(games.every.id)}/`,
     );
     const date = new Intl.DateTimeFormat("en", { dateStyle: "medium" }).format(games.every.added);
-    expect(all.querySelector(".sar-allow-meta")?.textContent).toBe(
+    expect(all.querySelector(".tks-allow-meta")?.textContent).toBe(
       i18n.t("options_allow_since", { date }),
     );
   });
 
   it("names each quiet button by its item and its scope, so no two are alike", async () => {
     const { root, games } = await setup();
-    const buttons = [...root.querySelectorAll("[data-sar-restore]")];
+    const buttons = [...root.querySelectorAll("[data-tks-restore]")];
     const labels = buttons.map((button) => button.getAttribute("aria-label"));
     expect(labels).toContain(
       i18n.t("options_allow_restore_label", { name: games.older.name, scope: heading("ai") }),
@@ -1394,12 +1394,12 @@ describe("the ignored items", () => {
       }),
     );
     expect(new Set(labels).size).toBe(labels.length);
-    expect(buttons.every((button) => button.getAttribute("data-sar-variant") === "quiet")).toBe(
+    expect(buttons.every((button) => button.getAttribute("data-tks-variant") === "quiet")).toBe(
       true,
     );
-    for (const group of root.querySelectorAll(".sar-allow-group")) {
+    for (const group of root.querySelectorAll(".tks-allow-group")) {
       expect(group.getAttribute("role")).toBe("group");
-      const title = group.querySelector(".sar-allow-scope");
+      const title = group.querySelector(".tks-allow-scope");
       expect(group.getAttribute("aria-labelledby")).toBe(title?.id);
     }
   });
@@ -1423,9 +1423,9 @@ describe("the ignored items", () => {
     const { control, ignored, games } = await setup();
     control(restore(games.drm.id, "drm")).click();
     await vi.waitFor(() => {
-      expect(ignored("drm").querySelector(".sar-empty")).not.toBeNull();
+      expect(ignored("drm").querySelector(".tks-empty")).not.toBeNull();
     });
-    expect(document.activeElement).toBe(ignored("drm").querySelector(".sar-card-title"));
+    expect(document.activeElement).toBe(ignored("drm").querySelector(".tks-card-title"));
   });
 
   it("says a game is no longer ignored for all tags when that was the scope", async () => {
@@ -1444,7 +1444,7 @@ describe("the ignored items", () => {
     const { ignored } = await setup({
       lists: createIgnoreLists(fake.store(), fake.clock(make.time())),
     });
-    expect(ignored(of).querySelector(".sar-empty")?.textContent).toBe(
+    expect(ignored(of).querySelector(".tks-empty")?.textContent).toBe(
       i18n.t("options_allow_empty", { action: i18n.t(action) }),
     );
   });
@@ -1455,7 +1455,7 @@ describe("the ignored items", () => {
     const { ignored } = await setup({ lists });
     for (const  of of[ALLOW_ALL, "drm"] as const) {
       expect(ignored(of).textContent).toContain(i18n.t("error_allow_list_load"));
-      expect(ignored(of).querySelector(".sar-empty")).toBeNull();
+      expect(ignored(of).querySelector(".tks-empty")).toBeNull();
     }
   });
 
@@ -1464,7 +1464,7 @@ describe("the ignored items", () => {
     vi.spyOn(allowList, "remove").mockRejectedValue(new Error());
     const button = control(restore(games.newer.id, "ai"));
     button.click();
-    const error = button.parentElement?.querySelector<HTMLElement>(".sar-field-error");
+    const error = button.parentElement?.querySelector<HTMLElement>(".tks-field-error");
     await vi.waitFor(() => {
       expect(error?.hidden).toBe(false);
     });
@@ -1492,7 +1492,7 @@ describe("the ignored items", () => {
 describe("the note on what all tags ignore", () => {
   it("counts in each tag's card what all tags ignore, and General has no note", async () => {
     const { ignored, lists, form } = await setup();
-    const note = (of: AllowScope) => ignored(of).querySelector(".sar-allow-note");
+    const note = (of: AllowScope) => ignored(of).querySelector(".tks-allow-note");
     for (const kind of KINDS) {
       expect(note(kind.id)?.firstChild?.textContent).toBe(i18n.plural("options_allow_all_note", 1));
     }
@@ -1505,25 +1505,25 @@ describe("the note on what all tags ignore", () => {
 
   it("leads to the list in General with a button that changes no address", async () => {
     const { ignored, tab } = await setup();
-    const show = ignored("ai").querySelector<HTMLElement>(".sar-allow-note button");
+    const show = ignored("ai").querySelector<HTMLElement>(".tks-allow-note button");
     expect(show?.textContent).toBe(i18n.t("options_allow_all_show"));
-    expect(show?.getAttribute("data-sar-variant")).toBe("quiet");
+    expect(show?.getAttribute("data-tks-variant")).toBe("quiet");
     expect(show?.closest("a")).toBeNull();
     show?.click();
     expect(tab(GENERAL_TAB).getAttribute("aria-selected")).toBe("true");
-    expect(document.activeElement).toBe(ignored(ALLOW_ALL).querySelector(".sar-card-title"));
+    expect(document.activeElement).toBe(ignored(ALLOW_ALL).querySelector(".tks-card-title"));
   });
 });
 
 describe("a failed read of the settings", () => {
   it("shows the defaults and an error above the tabs when settings cannot be read", async () => {
     const { root } = await mountForm({ settings: unreadableSettings() });
-    const error = root.querySelector<HTMLElement>(":scope > .sar-field-error");
+    const error = root.querySelector<HTMLElement>(":scope > .tks-field-error");
     expect(error?.hidden).toBe(false);
     expect(error?.textContent).toBe(i18n.t("error_settings_load"));
     expect(error?.nextElementSibling?.querySelector("[role=tablist]")).not.toBeNull();
     expect(
-      root.querySelector<HTMLInputElement>("[data-sar-setting=banner]")?.checked,
+      root.querySelector<HTMLInputElement>("[data-tks-setting=banner]")?.checked,
     ).toBe(true);
   });
 
@@ -1533,14 +1533,14 @@ describe("a failed read of the settings", () => {
     const settings = createSettingsSource(store);
     store.break();
     const { root } = await mountForm({ settings, locales: ["en", "es"] });
-    const error = root.querySelector<HTMLElement>(":scope > .sar-field-error");
+    const error = root.querySelector<HTMLElement>(":scope > .tks-field-error");
     expect(error?.hidden).toBe(false);
-    const controls = [...root.querySelectorAll<HTMLInputElement>("[data-sar-setting]")];
+    const controls = [...root.querySelectorAll<HTMLInputElement>("[data-tks-setting]")];
     expect(controls.length).toBeGreaterThan(KINDS.length);
     expect(controls.every((control) => control.disabled)).toBe(true);
 
     // A change event that still gets through (a script, an older browser) saves nothing.
-    const banner = root.querySelector<HTMLInputElement>("[data-sar-setting=banner]");
+    const banner = root.querySelector<HTMLInputElement>("[data-tks-setting=banner]");
     if (banner === null) {
       throw new TypeError();
     }
@@ -1567,12 +1567,12 @@ describe("a failed read of the settings", () => {
     vi.spyOn(settings, "read").mockRejectedValueOnce(new Error());
     const { root } = await mountForm({ settings });
     const banner = root.querySelector<HTMLInputElement>(
-      "[data-sar-setting=banner][data-sar-for=ai]",
+      "[data-tks-setting=banner][data-tks-for=ai]",
     );
     expect(banner?.disabled).toBe(true);
     await writeSettings(settings, make.settings.kind("ai", { banner: false }));
     expect(banner?.disabled).toBe(false);
-    expect(root.querySelector<HTMLElement>(":scope > .sar-field-error")?.hidden).toBe(true);
+    expect(root.querySelector<HTMLElement>(":scope > .tks-field-error")?.hidden).toBe(true);
     expect(banner?.checked).toBe(false);
   });
 });
@@ -1614,7 +1614,7 @@ describe.each(CREATOR_ROLES)("the ignored %ss", (role) => {
   const caption = i18n.t(ROLE_WORDS[role].caption);
   const roleName = i18n.t(ROLE_WORDS[role].role);
   const stop = (key: string, scope: AllowScope) =>
-    `[data-sar-list="allow-${role}s"]${restore(key, scope)}`;
+    `[data-tks-list="allow-${role}s"]${restore(key, scope)}`;
   /** One creator keyed by clan, named with markup, and one keyed by name. */
   const byClan = make.creator.of([make.text.markup(), make.creator.clan()]);
   const byName = make.creator.of(make.text.creator());
@@ -1631,22 +1631,22 @@ describe.each(CREATOR_ROLES)("the ignored %ss", (role) => {
 
   /** The block of this role's list in a scope's card. */
   function block(section: HTMLElement): Element | undefined {
-    return [...section.querySelectorAll(".sar-allow-group")].find((group) =>
-      group.querySelector(".sar-allow-scope")?.textContent === caption
+    return [...section.querySelectorAll(".tks-allow-group")].find((group) =>
+      group.querySelector(".tks-allow-scope")?.textContent === caption
     );
   }
 
   it("lists the creators of each scope under their own caption, apart from the games", async () => {
     const { root, ignored } = await seeded();
     const names = (section: HTMLElement) =>
-      [...(block(section)?.querySelectorAll(".sar-allow-name") ?? [])].map((name) => [
+      [...(block(section)?.querySelectorAll(".tks-allow-name") ?? [])].map((name) => [
         name.tagName,
         name.textContent,
       ]);
     expect(names(ignored("ai"))).toEqual([["SPAN", byClan.name]]);
     expect(names(ignored(ALLOW_ALL))).toEqual([["SPAN", byName.name]]);
     expect(block(ignored("ai"))?.querySelector("a")).toBeNull();
-    expect(root.querySelectorAll('[data-sar-list="allow"]')).toHaveLength(5);
+    expect(root.querySelectorAll('[data-tks-list="allow"]')).toHaveLength(5);
     const ids = [...root.querySelectorAll("[role=group]")].map((group) =>
       group.getAttribute("aria-labelledby")
     );
@@ -1660,8 +1660,8 @@ describe.each(CREATOR_ROLES)("the ignored %ss", (role) => {
       expect((await list.list()).ai.size).toBe(0);
     });
     expect([...(await list.list())[ALLOW_ALL].keys()]).toEqual([byName.key]);
-    expect(root.querySelectorAll('[data-sar-list="allow"]')).toHaveLength(5);
-    expect(root.querySelector(":scope > .sar-vh")?.textContent).toBe(
+    expect(root.querySelectorAll('[data-tks-list="allow"]')).toHaveLength(5);
+    expect(root.querySelector(":scope > .tks-vh")?.textContent).toBe(
       i18n.t("notice_creator_restored_kind", {
         name: byClan.name,
         role: roleName,
@@ -1674,7 +1674,7 @@ describe.each(CREATOR_ROLES)("the ignored %ss", (role) => {
     const { root, control } = await seeded();
     control(stop(byName.key, ALLOW_ALL)).click();
     await vi.waitFor(() => {
-      expect(root.querySelector(":scope > .sar-vh")?.textContent).toBe(
+      expect(root.querySelector(":scope > .tks-vh")?.textContent).toBe(
         i18n.t("notice_creator_restored", { name: byName.name, role: roleName }),
       );
     });
@@ -1692,7 +1692,7 @@ describe.each(CREATOR_ROLES)("the ignored %ss", (role) => {
     vi.spyOn(list, "remove").mockRejectedValue(new Error());
     const button = control(stop(byClan.key, "ai"));
     button.click();
-    const error = button.parentElement?.querySelector<HTMLElement>(".sar-field-error");
+    const error = button.parentElement?.querySelector<HTMLElement>(".tks-field-error");
     await vi.waitFor(() => {
       expect(error?.hidden).toBe(false);
     });

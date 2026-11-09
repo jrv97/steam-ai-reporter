@@ -53,7 +53,7 @@ export async function mountForm(overrides: Partial<SettingsFormDeps> = {}): Prom
   document.body.append(root);
   const form = await mountSettingsForm(root, formDeps(overrides));
   const tab = (id: TabId): HTMLElement =>
-    found(root.querySelector<HTMLElement>(`[role=tab][data-sar-tab="${id}"]`), id);
+    found(root.querySelector<HTMLElement>(`[role=tab][data-tks-tab="${id}"]`), id);
   return {
     root,
     form,
@@ -65,7 +65,7 @@ export async function mountForm(overrides: Partial<SettingsFormDeps> = {}): Prom
       ),
     tabIds: () =>
       [...root.querySelectorAll("[role=tab]")].map((each) =>
-        each.getAttribute("data-sar-tab") ?? ""
+        each.getAttribute("data-tks-tab") ?? ""
       ),
   };
 }

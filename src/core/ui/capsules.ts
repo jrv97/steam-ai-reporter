@@ -16,7 +16,7 @@ const ROW_POSITION = {
   end: "beforeend",
 } as const satisfies Record<RowPlacement["slot"], InsertPosition>;
 /** Set on a capsule image box that computes to `position: static`; CSS makes it relative. */
-const ANCHOR_MARK = "data-sar-anchor";
+const ANCHOR_MARK = "data-tks-anchor";
 /** Positions that already contain an absolutely placed badge. */
 const POSITIONED: ReadonlySet<string> = new Set(["relative", "absolute", "fixed", "sticky"]);
 

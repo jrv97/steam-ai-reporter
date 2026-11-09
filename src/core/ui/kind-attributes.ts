@@ -4,11 +4,11 @@ import { effectiveSettings, type KindSettings } from "../kinds/kind-settings";
 import { KINDS } from "../kinds/registry";
 
 /** On a chip: the id of the kind it shows. */
-export const KIND_ATTRIBUTE = "data-sar-kind";
+export const KIND_ATTRIBUTE = "data-tks-kind";
 
 /** The root attribute that holds a kind's list filter: `off`, `dim` or `hide`. */
 export function filterAttribute(id: KindId): string {
-  return `data-sar-filter-${id}`;
+  return `data-tks-filter-${id}`;
 }
 
 /**
@@ -16,7 +16,7 @@ export function filterAttribute(id: KindId): string {
  * default violet tokens.
  */
 export function colorProperty(id: KindId): string {
-  return `--sar-kind-color-${id}`;
+  return `--tks-kind-color-${id}`;
 }
 
 /** Sets the attribute unless it holds the value already, so a repeated draw mutates nothing. */

@@ -1,4 +1,4 @@
-import { SarError } from "./errors";
+import { TksError } from "./errors";
 import type { MessageKey, MessageParams } from "./i18n/keys.gen";
 import type { I18n } from "./i18n/t";
 
@@ -10,9 +10,9 @@ export interface ConsoleSink {
   debug(...data: readonly unknown[]): void;
 }
 
-/** Logs catalog messages by key (rule 9), each line prefixed with `[sar]`. */
+/** Logs catalog messages by key (rule 9), each line prefixed with `[tks]`. */
 export interface Logger {
-  /** A `SarError` logs its own message; anything else logs `error_unexpected` and the value. */
+  /** A `TksError` logs its own message; anything else logs `error_unexpected` and the value. */
   error(problem: unknown): void;
   warn<K extends MessageKey>(code: K, params: MessageParams[K]): void;
   info<K extends MessageKey>(code: K, params: MessageParams[K]): void;
@@ -20,12 +20,12 @@ export interface Logger {
   debug<K extends MessageKey>(code: K, params: MessageParams[K]): void;
 }
 
-const LOG_PREFIX = "[sar]";
+const LOG_PREFIX = "[tks]";
 
 export function createLogger(i18n: I18n, sink: ConsoleSink, debug: boolean): Logger {
   return {
     error(problem) {
-      if (problem instanceof SarError) {
+      if (problem instanceof TksError) {
         sink.error(LOG_PREFIX, i18n.t(problem.code, problem.params), problem);
       } else {
         sink.error(LOG_PREFIX, i18n.t("error_unexpected"), problem);

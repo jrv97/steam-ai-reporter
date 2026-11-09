@@ -10,15 +10,15 @@ import {
 import type { ScopedList } from "../settings/allow-list";
 
 /** What marks a "Stop ignoring" button, with the key of the item it restores. */
-export const RESTORE_ATTRIBUTE = "data-sar-restore";
+export const RESTORE_ATTRIBUTE = "data-tks-restore";
 /** Names the list a "Stop ignoring" button belongs to. */
-export const LIST_ATTRIBUTE = "data-sar-list";
+export const LIST_ATTRIBUTE = "data-tks-list";
 /** Names the scope a "Stop ignoring" button restores the item in. */
-export const SCOPE_ATTRIBUTE = "data-sar-scope";
+export const SCOPE_ATTRIBUTE = "data-tks-scope";
 
 /** What differs between the lists of ignored items: games, developers and publishers. */
 export interface AllowSpec<Key> {
-  /** Names the list; the heading ids of its groups and its buttons' `data-sar-list` follow it. */
+  /** Names the list; the heading ids of its groups and its buttons' `data-tks-list` follow it. */
   readonly id: string;
   readonly list: ScopedList<Key>;
   readonly parseKey: ParseKey<Key>;
@@ -67,7 +67,7 @@ export interface AllowSource {
 
 function errorLine(doc: Document, text: string): HTMLElement {
   const error = doc.createElement("p");
-  error.className = "sar-field-error";
+  error.className = "tks-field-error";
   error.textContent = text;
   error.setAttribute("role", "alert");
   return error;
@@ -95,16 +95,16 @@ export function createAllowSource<Key extends string | number>(
   }
 
   function item(of: AllowScope, key: Key, entry: AllowEntry): HTMLElement {
-    const node = element("li", "sar-allow-item");
+    const node = element("li", "tks-allow-item");
     const text = doc.createElement("div");
     const since = dates.format(new Date(entry.added));
     text.append(
       spec.nameOf(key, entry),
-      element("span", "sar-allow-meta", i18n.t("options_allow_since", { date: since })),
+      element("span", "tks-allow-meta", i18n.t("options_allow_since", { date: since })),
     );
-    const stop = element("button", "sar-button", i18n.t("options_allow_restore"));
+    const stop = element("button", "tks-button", i18n.t("options_allow_restore"));
     stop.type = "button";
-    stop.setAttribute("data-sar-variant", "quiet");
+    stop.setAttribute("data-tks-variant", "quiet");
     stop.setAttribute(RESTORE_ATTRIBUTE, String(key));
     stop.setAttribute(LIST_ATTRIBUTE, spec.id);
     stop.setAttribute(SCOPE_ATTRIBUTE, of);
@@ -139,12 +139,12 @@ export function createAllowSource<Key extends string | number>(
       if (listed === undefined || listed.size === 0) {
         return undefined;
       }
-      const node = element("div", "sar-allow-group");
-      const title = element(level, "sar-allow-scope", caption);
+      const node = element("div", "tks-allow-group");
+      const title = element(level, "tks-allow-scope", caption);
       title.id = `${prefix}${spec.id}-${of}`;
       node.setAttribute("role", "group");
       node.setAttribute("aria-labelledby", title.id);
-      const list = element("ul", "sar-allow-list");
+      const list = element("ul", "tks-allow-list");
       const newestFirst = [...listed].sort(([, a], [, b]) => b.added - a.added);
       list.append(...newestFirst.map(([key, entry]) => item(of, key, entry)));
       node.append(title, list);
@@ -159,12 +159,12 @@ export function createAllowSource<Key extends string | number>(
       if (key === undefined || of === undefined) {
         return undefined;
       }
-      const row = button.closest(".sar-allow-item");
-      const name = row?.querySelector(".sar-allow-name")?.textContent ?? "";
+      const row = button.closest(".tks-allow-item");
+      const name = row?.querySelector(".tks-allow-name")?.textContent ?? "";
       try {
         await spec.list.remove(of, key);
       } catch {
-        const error = row?.querySelector<HTMLElement>(".sar-field-error");
+        const error = row?.querySelector<HTMLElement>(".tks-field-error");
         if (error !== null && error !== undefined) {
           error.hidden = false;
         }

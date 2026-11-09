@@ -162,7 +162,7 @@ describe("createBanner", () => {
   it("renders the developer's notes verbatim, markup included, as plain text", () => {
     const { banner, root } = setup();
     banner.show(view([make.verdict.disclosed("ai", { notes: NOTES })]));
-    const quote = query(root, "blockquote.sar-banner-quote");
+    const quote = query(root, "blockquote.tks-banner-quote");
     expect(quote.textContent).toBe(SHOWN_NOTES);
     expect(quote.children).toHaveLength(0);
   });
@@ -171,9 +171,9 @@ describe("createBanner", () => {
     const { banner, root } = setup();
     banner.show(view([make.verdict.disclosed("ai")]));
     expect(query(root, "h2").textContent).toBe(i18n.t("kind_ai_heading"));
-    expect(query(root, ".sar-banner-source").textContent).toBe(i18n.t("banner_source"));
-    expect(query(root, ".sar-banner-action").textContent).toBe(i18n.t("banner_ignore_kind"));
-    expect(query(root, ".sar-banner-foot .sar-banner-link").textContent).toBe(
+    expect(query(root, ".tks-banner-source").textContent).toBe(i18n.t("banner_source"));
+    expect(query(root, ".tks-banner-action").textContent).toBe(i18n.t("banner_ignore_kind"));
+    expect(query(root, ".tks-banner-foot .tks-banner-link").textContent).toBe(
       i18n.t("banner_ignore"),
     );
     expect(root.querySelector("svg")).toBeNull();
@@ -186,7 +186,7 @@ describe("createBanner", () => {
       const service = make.text.service();
       const lent = make.verdict.lent(make.verdict.disclosed("ai", { notes: NOTES, service }));
       banner.show(view([lent, make.verdict.disclosed("anticheat")]));
-      const lines = [...root.querySelectorAll(".sar-banner-entry")].map((entry) =>
+      const lines = [...root.querySelectorAll(".tks-banner-entry")].map((entry) =>
         [...entry.querySelectorAll("p")].map((line) => line.textContent)
       );
       const full = [
@@ -203,7 +203,7 @@ describe("createBanner", () => {
     const { banner, root } = setup();
     const service = make.text.markup();
     banner.show(view([make.verdict.disclosed("ai", { service })]));
-    const line = query(root, ".sar-banner-service");
+    const line = query(root, ".tks-banner-service");
     expect(line.textContent).toBe(`${i18n.t("badge_card_service_label")} ${service}`);
     expect(line.querySelector("a, b")).toBeNull();
   });
@@ -211,23 +211,23 @@ describe("createBanner", () => {
   it("omits the service line when the developer named none", () => {
     const { banner, root } = setup();
     banner.show(view([make.verdict.disclosed("ai", { service: "" })]));
-    expect(root.querySelector(".sar-banner-service")).toBeNull();
+    expect(root.querySelector(".tks-banner-service")).toBeNull();
   });
 
   it("keeps long notes collapsed behind a toggle", () => {
     const { banner, root, runFrames } = setup({ overflows: () => true });
     banner.show(view([make.verdict.disclosed("ai")]));
-    const quote = query(root, ".sar-banner-quote");
-    const toggle = query(root, '[data-sar-action="toggle"]');
+    const quote = query(root, ".tks-banner-quote");
+    const toggle = query(root, '[data-tks-action="toggle"]');
     expect(toggle.hidden).toBe(true);
     runFrames();
     expect(toggle.hidden).toBe(false);
     toggle.click();
-    expect(quote.getAttribute("data-sar-collapsed")).toBe("false");
+    expect(quote.getAttribute("data-tks-collapsed")).toBe("false");
     expect(toggle.getAttribute("aria-expanded")).toBe("true");
     expect(toggle.textContent).toBe(i18n.t("banner_collapse"));
     toggle.click();
-    expect(quote.getAttribute("data-sar-collapsed")).toBe("true");
+    expect(quote.getAttribute("data-tks-collapsed")).toBe("true");
     expect(toggle.textContent).toBe(i18n.t("banner_expand"));
   });
 
@@ -235,8 +235,8 @@ describe("createBanner", () => {
     const { banner, root, runFrames } = setup({ overflows: () => false });
     banner.show(view([make.verdict.disclosed("ai")]));
     runFrames();
-    expect(query(root, ".sar-banner-quote").hasAttribute("data-sar-collapsed")).toBe(false);
-    expect(root.querySelector('[data-sar-action="toggle"]')).toBeNull();
+    expect(query(root, ".tks-banner-quote").hasAttribute("data-tks-collapsed")).toBe(false);
+    expect(root.querySelector('[data-tks-action="toggle"]')).toBeNull();
   });
 
   const ai = make.verdict.disclosed("ai");
@@ -289,7 +289,7 @@ describe("the entries of the captured games", () => {
   it("leaves the short lines of a kind to Steam's own boxes and the hover card", () => {
     const { banner, root } = setup();
     banner.show(view(SEVERAL));
-    expect(root.querySelector("a, blockquote, .sar-banner-service")).toBeNull();
+    expect(root.querySelector("a, blockquote, .tks-banner-service")).toBeNull();
     expect(root.textContent).not.toContain("Denuvo Anti-tamper");
     expect(root.textContent).not.toContain("Ubisoft Account");
     expect(root.textContent).not.toContain(i18n.t("kind_account_links"));
@@ -307,9 +307,9 @@ describe("the entries of the captured games", () => {
     const shown = bannerList(captured(id));
     banner.show(view(shown));
     expect(texts(root, "h2")).toEqual(shown.map(heading));
-    expect(root.querySelectorAll(".sar-banner-entry")).toHaveLength(shown.length);
-    expect(root.querySelectorAll(".sar-banner-action")).toHaveLength(shown.length);
-    expect(root.querySelector("p:not(.sar-banner-error)")).toBeNull();
+    expect(root.querySelectorAll(".tks-banner-entry")).toHaveLength(shown.length);
+    expect(root.querySelectorAll(".tks-banner-action")).toHaveLength(shown.length);
+    expect(root.querySelector("p:not(.tks-banner-error)")).toBeNull();
   });
 
   it("quotes the AI notes of a game that also declares an anti-cheat and a EULA", () => {
@@ -332,7 +332,7 @@ describe("the entries of the captured games", () => {
     const { banner, root } = setup();
     banner.show(view([make.verdict.disclosed("ai")]));
     const quote = query(root, "blockquote");
-    expect(query(root, '[data-sar-action="toggle"]').getAttribute("aria-controls")).toBe(quote.id);
+    expect(query(root, '[data-tks-action="toggle"]').getAttribute("aria-controls")).toBe(quote.id);
     expect(root.querySelectorAll(`[id="${quote.id}"]`)).toHaveLength(1);
   });
 });
@@ -370,7 +370,7 @@ describe("the banner's accessibility", () => {
   it("names each ignore button by its action and the kind it belongs to", () => {
     const { banner, root } = setup();
     banner.show(view(SEVERAL));
-    const buttons = [...root.querySelectorAll<HTMLButtonElement>(".sar-banner-action")];
+    const buttons = [...root.querySelectorAll<HTMLButtonElement>(".tks-banner-action")];
     expect(buttons.map((button) => button.tagName)).toEqual([
       "BUTTON",
       "BUTTON",
@@ -409,16 +409,16 @@ describe("the banner's accessibility", () => {
   )("marks %s", (_name, shown, kind) => {
     const { banner, root } = setup();
     banner.show(shown);
-    expect(query(root, "aside").getAttribute("data-sar-kind")).toBe(kind);
+    expect(query(root, "aside").getAttribute("data-tks-kind")).toBe(kind);
     expect(query(root, "aside").hasAttribute("style")).toBe(false);
   });
 
   it("steps the headings down when it lists several kinds", () => {
     const { banner, root } = setup();
     banner.show(view([make.verdict.disclosed("ai")]));
-    expect(query(root, "aside").hasAttribute("data-sar-entries")).toBe(false);
+    expect(query(root, "aside").hasAttribute("data-tks-entries")).toBe(false);
     banner.show(view(SEVERAL));
-    expect(query(root, "aside").getAttribute("data-sar-entries")).toBe("many");
+    expect(query(root, "aside").getAttribute("data-tks-entries")).toBe("many");
   });
 });
 
@@ -429,13 +429,13 @@ describe("the banner in Spanish", () => {
     expect(texts(root, "h2")).toEqual(
       SEVERAL.map((verdict) => spanish.t(KIND_BY_ID[verdict.kind].messages.heading)),
     );
-    expect(texts(root, ".sar-banner-action")).toEqual(
+    expect(texts(root, ".tks-banner-action")).toEqual(
       SEVERAL.map(() => spanish.t("banner_ignore_kind")),
     );
-    expect(texts(root, ".sar-banner-ignored-text")).toEqual([
+    expect(texts(root, ".tks-banner-ignored-text")).toEqual([
       spanish.t("banner_ignored_kind", { heading: spanish.t("kind_pvp_heading") }),
     ]);
-    expect(query(root, ".sar-banner-foot button").textContent).toBe(spanish.t("banner_ignore"));
+    expect(query(root, ".tks-banner-foot button").textContent).toBe(spanish.t("banner_ignore"));
     expect(spanish.t("banner_ignore_kind")).not.toBe(i18n.t("banner_ignore_kind"));
   });
 });
@@ -444,20 +444,20 @@ describe("the notes for ignored scopes", () => {
   it("shows a game ignored for all tags as one line with Undo and nothing else", () => {
     const { banner, root } = setup();
     banner.show(view([], { ignored: [ALLOW_ALL] }));
-    expect(query(root, "aside").getAttribute("data-sar-variant")).toBe("ignored");
-    expect(query(root, ".sar-banner-ignored-text").textContent).toBe(i18n.t("banner_ignored"));
-    expect(query(root, ".sar-banner-link").textContent).toBe(i18n.t("banner_undo"));
-    expect(root.querySelector("blockquote, h2, .sar-banner-action, .sar-banner-foot")).toBeNull();
+    expect(query(root, "aside").getAttribute("data-tks-variant")).toBe("ignored");
+    expect(query(root, ".tks-banner-ignored-text").textContent).toBe(i18n.t("banner_ignored"));
+    expect(query(root, ".tks-banner-link").textContent).toBe(i18n.t("banner_undo"));
+    expect(root.querySelector("blockquote, h2, .tks-banner-action, .tks-banner-foot")).toBeNull();
   });
 
   it("notes a kind ignored on its own beside the entries that remain", () => {
     const { banner, root } = setup();
     const rest = withoutDrm(SEVERAL);
     banner.show(view(rest, { ignored: ["drm"] }));
-    expect(query(root, "aside").hasAttribute("data-sar-variant")).toBe(false);
+    expect(query(root, "aside").hasAttribute("data-tks-variant")).toBe(false);
     expect(texts(root, "h2")).toEqual(rest.map(heading));
-    expect(query(root, ".sar-banner-ignored-text").textContent).toBe(ignoredKind("drm"));
-    expect(nameOf(root, query(root, '[data-sar-action="undo"]'))).toBe(
+    expect(query(root, ".tks-banner-ignored-text").textContent).toBe(ignoredKind("drm"));
+    expect(nameOf(root, query(root, '[data-tks-action="undo"]'))).toBe(
       `${i18n.t("banner_undo")} ${ignoredKind("drm")}`,
     );
   });
@@ -465,8 +465,8 @@ describe("the notes for ignored scopes", () => {
   it("offers no ignore for all tags when no entry is left", () => {
     const { banner, root } = setup();
     banner.show(view([], { ignored: ["drm", "pvp"] }));
-    expect(root.querySelector(".sar-banner-foot")).toBeNull();
-    expect(texts(root, ".sar-banner-ignored-text")).toEqual([
+    expect(root.querySelector(".tks-banner-foot")).toBeNull();
+    expect(texts(root, ".tks-banner-ignored-text")).toEqual([
       ignoredKind("drm"),
       ignoredKind("pvp"),
     ]);
@@ -478,15 +478,15 @@ describe("ignoring from the banner", () => {
     const { root, ignore, calls, thenShow } = wired(view(SEVERAL));
     thenShow(view(withoutDrm(SEVERAL), { ignored: ["drm"] }));
 
-    query(root, '.sar-banner-action[data-sar-scope="drm"]').click();
-    query(root, '.sar-banner-action[data-sar-scope="drm"]').click();
+    query(root, '.tks-banner-action[data-tks-scope="drm"]').click();
+    query(root, '.tks-banner-action[data-tks-scope="drm"]').click();
     expect(ignore).toHaveBeenCalledTimes(1);
     expect(ignore).toHaveBeenCalledWith("drm");
     calls[0]?.resolve();
     await vi.waitFor(() => {
-      expect(root.querySelector('[data-sar-action="undo"][data-sar-scope="drm"]')).not.toBeNull();
+      expect(root.querySelector('[data-tks-action="undo"][data-tks-scope="drm"]')).not.toBeNull();
     });
-    expect(root.activeElement).toBe(query(root, '[data-sar-action="undo"]'));
+    expect(root.activeElement).toBe(query(root, '[data-tks-action="undo"]'));
     await vi.waitFor(() => {
       expect(query(root, "[aria-live]").textContent).toBe(
         i18n.t("notice_marking_stopped_kind", { heading: i18n.t("kind_drm_heading") }),
@@ -499,13 +499,13 @@ describe("ignoring from the banner", () => {
     const { root, ignore, calls, thenShow } = wired(view(SEVERAL));
     thenShow(view([], { ignored: [ALLOW_ALL] }));
 
-    query(root, '.sar-banner-foot [data-sar-action="ignore"]').click();
+    query(root, '.tks-banner-foot [data-tks-action="ignore"]').click();
     expect(ignore).toHaveBeenCalledWith(ALLOW_ALL);
     calls[0]?.resolve();
     await vi.waitFor(() => {
-      expect(query(root, "aside").getAttribute("data-sar-variant")).toBe("ignored");
+      expect(query(root, "aside").getAttribute("data-tks-variant")).toBe("ignored");
     });
-    expect(root.activeElement).toBe(query(root, '[data-sar-action="undo"]'));
+    expect(root.activeElement).toBe(query(root, '[data-tks-action="undo"]'));
     await vi.waitFor(() => {
       expect(query(root, "[aria-live]").textContent).toBe(i18n.t("notice_marking_stopped"));
     });
@@ -517,13 +517,13 @@ describe("ignoring from the banner", () => {
     );
     thenShow(view(SEVERAL));
 
-    query(root, '[data-sar-action="undo"]').click();
+    query(root, '[data-tks-action="undo"]').click();
     expect(restore).toHaveBeenCalledWith("drm");
     calls[0]?.resolve();
     await vi.waitFor(() => {
       expect(texts(root, "h2")).toHaveLength(SEVERAL.length);
     });
-    expect(root.activeElement).toBe(query(root, '.sar-banner-action[data-sar-scope="drm"]'));
+    expect(root.activeElement).toBe(query(root, '.tks-banner-action[data-tks-scope="drm"]'));
     await vi.waitFor(() => {
       expect(query(root, "[aria-live]").textContent).toBe(
         i18n.t("notice_marking_restored_kind", { heading: i18n.t("kind_drm_heading") }),
@@ -535,12 +535,12 @@ describe("ignoring from the banner", () => {
     const { root, calls, thenShow } = wired(view([], { ignored: [ALLOW_ALL] }));
     thenShow(view(SEVERAL));
 
-    query(root, '[data-sar-action="undo"]').click();
+    query(root, '[data-tks-action="undo"]').click();
     calls[0]?.resolve();
     await vi.waitFor(() => {
       expect(root.querySelector("h2")).not.toBeNull();
     });
-    expect(root.activeElement).toBe(query(root, '.sar-banner-foot [data-sar-action="ignore"]'));
+    expect(root.activeElement).toBe(query(root, '.tks-banner-foot [data-tks-action="ignore"]'));
   });
 
   it.each(
@@ -548,16 +548,16 @@ describe("ignoring from the banner", () => {
       [
         "the ignore list",
         view([make.verdict.disclosed("ai")]),
-        ".sar-banner-action",
+        ".tks-banner-action",
         "error_allow_list_save",
         "blockquote",
       ],
       [
         "the creator list",
         view(SEVERAL, { creators: [DEVELOPER] }),
-        ".sar-banner-creator button",
+        ".tks-banner-creator button",
         "error_creator_list_save",
-        ".sar-banner-creator",
+        ".tks-banner-creator",
       ],
     ] as const,
   )(
@@ -567,10 +567,10 @@ describe("ignoring from the banner", () => {
       query(root, button).click();
       calls[0]?.reject();
       await vi.waitFor(() => {
-        expect(query(root, ".sar-banner-error").hidden).toBe(false);
+        expect(query(root, ".tks-banner-error").hidden).toBe(false);
       });
-      expect(query(root, ".sar-banner-error").textContent).toBe(i18n.t(error));
-      expect(query(root, ".sar-banner-error").getAttribute("role")).toBe("alert");
+      expect(query(root, ".tks-banner-error").textContent).toBe(i18n.t(error));
+      expect(query(root, ".tks-banner-error").getAttribute("role")).toBe("alert");
       expect(root.querySelectorAll(kept)).toHaveLength(1);
     },
   );
@@ -579,15 +579,15 @@ describe("ignoring from the banner", () => {
   const creatorView = view(SEVERAL, { creators: [DEVELOPER] });
 
   it.each([
-    ["a scope", kindView, ".sar-banner-action", "data-sar-scope", "nothing"],
-    ["an action", kindView, ".sar-banner-action", "data-sar-action", "other"],
-    ["a role", creatorView, ".sar-banner-creator button", "data-sar-role", "other"],
-    ["a key", creatorView, ".sar-banner-creator button", "data-sar-creator", CREATOR_NAME],
+    ["a scope", kindView, ".tks-banner-action", "data-tks-scope", "nothing"],
+    ["an action", kindView, ".tks-banner-action", "data-tks-action", "other"],
+    ["a role", creatorView, ".tks-banner-creator button", "data-tks-role", "other"],
+    ["a key", creatorView, ".tks-banner-creator button", "data-tks-creator", CREATOR_NAME],
     [
       "a creator the view lacks",
       creatorView,
-      ".sar-banner-creator button",
-      "data-sar-creator",
+      ".tks-banner-creator button",
+      "data-tks-creator",
       `c:${String(make.creator.clan())}`,
     ],
   ])("does nothing for %s it does not know", (_name, initial, button, attribute, value) => {
@@ -624,15 +624,15 @@ describe("the creators section", () => {
   const chip = (id: "ai" | "drm" | "account" | "iap") => i18n.t(KIND_BY_ID[id].messages.chip);
 
   const rows = (root: ShadowRoot) =>
-    [...root.querySelectorAll(".sar-banner-creator")].map((row) => ({
-      label: row.querySelector(".sar-banner-creator-label")?.textContent,
+    [...root.querySelectorAll(".tks-banner-creator")].map((row) => ({
+      label: row.querySelector(".tks-banner-creator-label")?.textContent,
       buttons: [...row.querySelectorAll("button")].map((button) => button.textContent),
     }));
 
   it("is a closed section with a row for each name and role, and a button for each tag", () => {
     const { banner, root } = setup();
     banner.show(view(SEVERAL, { creators: [DEVELOPER, PUBLISHER] }));
-    const section = query(root, "details.sar-banner-creators");
+    const section = query(root, "details.tks-banner-creators");
     expect(section.hasAttribute("open")).toBe(false);
     expect(query(root, "summary").textContent).toBe(i18n.t("banner_creators_toggle"));
     const tags = [
@@ -651,7 +651,7 @@ describe("the creators section", () => {
   it("names a button by its text and the creator's name and role", () => {
     const { banner, root } = setup();
     banner.show(view(SEVERAL, { creators: [DEVELOPER] }));
-    const first = query(root, ".sar-banner-creator button");
+    const first = query(root, ".tks-banner-creator button");
     expect(nameOf(root, first)).toBe(`${first.textContent} ${CREATOR_NAME} ${role("developer")}`);
     const ids = [...root.querySelectorAll("[id]")].map((node) => node.id);
     expect(new Set(ids).size).toBe(ids.length);
@@ -689,8 +689,8 @@ describe("the creators section", () => {
     const { banner, root } = setup();
     const name = make.text.markup();
     banner.show(view(SEVERAL, { creators: [make.creator.banner("developer", name)] }));
-    expect(root.querySelector(".sar-banner-creator b")).toBeNull();
-    expect(query(root, ".sar-banner-creator-name").textContent).toBe(name);
+    expect(root.querySelector(".tks-banner-creator b")).toBeNull();
+    expect(query(root, ".tks-banner-creator-name").textContent).toBe(name);
   });
 
   it("keeps the section open across a redraw, and closed on a new banner", () => {
@@ -717,14 +717,14 @@ describe("the creators section", () => {
       }),
     );
     const who = (which: CreatorRole) => ({ name: CREATOR_NAME, role: role(which) });
-    expect(texts(root, ".sar-banner-ignored-text")).toEqual([
+    expect(texts(root, ".tks-banner-ignored-text")).toEqual([
       i18n.t("banner_ignored_creator", who("developer")),
       i18n.t("banner_ignored_creator_kind", {
         ...who("publisher"),
         heading: i18n.t("kind_drm_heading"),
       }),
     ]);
-    const undo = query(root, '[data-sar-action="undo-creator"]');
+    const undo = query(root, '[data-tks-action="undo-creator"]');
     expect(nameOf(root, undo)).toBe(
       `${i18n.t("banner_undo")} ${i18n.t("banner_ignored_creator", who("developer"))}`,
     );
@@ -740,7 +740,7 @@ describe("the creators section", () => {
         creatorNotes: [make.creator.note("developer", CREATOR_SPEC, "drm")],
       }),
     );
-    const button = [...root.querySelectorAll<HTMLElement>(".sar-banner-creator button")].find(
+    const button = [...root.querySelectorAll<HTMLElement>(".tks-banner-creator button")].find(
       (each) => each.textContent === i18n.t("banner_ignore_creator_kind", { chip: chip("drm") }),
     );
     button?.click();
@@ -749,7 +749,7 @@ describe("the creators section", () => {
     expect(ignoreCreator).toHaveBeenCalledWith("developer", DEVELOPER.creator, "drm");
     calls[0]?.resolve();
     await vi.waitFor(() => {
-      expect(root.activeElement).toBe(query(root, '[data-sar-action="undo-creator"]'));
+      expect(root.activeElement).toBe(query(root, '[data-tks-action="undo-creator"]'));
     });
     await vi.waitFor(() => {
       expect(query(root, "[aria-live]").textContent).toBe(
@@ -769,7 +769,7 @@ describe("the creators section", () => {
     thenShow(
       view([], { creatorNotes: [make.creator.note("developer", CREATOR_SPEC, ALLOW_ALL)] }),
     );
-    const buttons = [...root.querySelectorAll<HTMLElement>(".sar-banner-creator button")];
+    const buttons = [...root.querySelectorAll<HTMLElement>(".tks-banner-creator button")];
     buttons.at(-1)?.click();
     expect(ignoreCreator).toHaveBeenCalledWith("developer", DEVELOPER.creator, ALLOW_ALL);
     calls[0]?.resolve();
@@ -787,12 +787,12 @@ describe("the creators section", () => {
       view(withoutDrm(SEVERAL), { creators: [DEVELOPER], creatorNotes: [byName] }),
     );
     thenShow(view(SEVERAL, { creators: [DEVELOPER] }));
-    query(root, '[data-sar-action="undo-creator"]').click();
+    query(root, '[data-tks-action="undo-creator"]').click();
     expect(restoreCreator).toHaveBeenCalledWith("developer", key, "drm");
     calls[0]?.resolve();
     await vi.waitFor(() => {
       expect(root.activeElement).toBe(
-        query(root, '.sar-banner-creator button[data-sar-scope="drm"]'),
+        query(root, '.tks-banner-creator button[data-tks-scope="drm"]'),
       );
     });
     await vi.waitFor(() => {
@@ -815,10 +815,10 @@ describe("the creators section", () => {
       }),
     );
     expect(query(root, "summary").textContent).toBe(spanish.t("banner_creators_toggle"));
-    expect(query(root, ".sar-banner-creator-role").textContent).toBe(
+    expect(query(root, ".tks-banner-creator-role").textContent).toBe(
       spanish.t("banner_role_developer"),
     );
-    expect(query(root, ".sar-banner-ignored-text").textContent).toBe(
+    expect(query(root, ".tks-banner-ignored-text").textContent).toBe(
       spanish.t("banner_ignored_creator", {
         name: CREATOR_NAME,
         role: spanish.t("banner_role_publisher"),

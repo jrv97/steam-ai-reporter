@@ -55,7 +55,7 @@ describe("createBackupFile", () => {
   it("names the file after the local date", async () => {
     const at = new Date(2026, 0, 5, 9).getTime();
     const file = await createBackupFile({ ...backupDeps(), clock: fake.clock(at) });
-    expect(file.name).toBe("ai-reporter-backup-2026-01-05.json");
+    expect(file.name).toBe("tag-kit-backup-2026-01-05.json");
   });
 
   it("leaves out the verdict cache and the tab last shown", async () => {

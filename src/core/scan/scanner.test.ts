@@ -79,9 +79,9 @@ function dimmed(kind: KindId): readonly Element[] {
   for (const host of found()) {
     kindsRenderer.render(hostView(host.element, { verdicts: make.verdicts.only([kind]) }));
   }
-  document.documentElement.setAttribute(`data-sar-filter-${kind}`, "dim");
+  document.documentElement.setAttribute(`data-tks-filter-${kind}`, "dim");
   return [
-    ...document.querySelectorAll(`[data-sar-filter-${kind}="dim"] [data-sar-kinds~="${kind}"]`),
+    ...document.querySelectorAll(`[data-tks-filter-${kind}="dim"] [data-tks-kinds~="${kind}"]`),
   ];
 }
 
@@ -309,7 +309,7 @@ describe("host rule", () => {
       `<div id="footer">${appLink(make.appId())}</div>`
         + `<div data-featuretarget="footer">${appLink(make.appId())}</div>`
         + `<div class="breadcrumbs">${appLink(make.appId())}</div>`
-        + `<div class="sar-banner-host">${appLink(make.appId())}</div>`,
+        + `<div class="tks-banner-host">${appLink(make.appId())}</div>`,
     );
     await startScanner();
     expect(found()).toHaveLength(0);
@@ -544,7 +544,7 @@ describe("observing", () => {
     loadPage(make.page.surface("search"));
     await startScanner();
     const badge = document.createElement("span");
-    badge.className = "sar-badge";
+    badge.className = "tks-badge";
     the("a.search_result_row").append(badge);
     await settle();
     expect(reports).toHaveLength(1);
@@ -554,18 +554,18 @@ describe("observing", () => {
     loadPage(make.page.surface("tag-hub"));
     await startScanner({ badges: true });
     const host = the(".capsule_index_0");
-    expect(host.querySelectorAll(".sar-badge")).toHaveLength(1);
+    expect(host.querySelectorAll(".tks-badge")).toHaveLength(1);
     const fresh = new DOMParser().parseFromString(make.page.surface("tag-hub"), "text/html");
     const rendered = the(".capsule_index_0", fresh);
     host.replaceChildren(...rendered.childNodes);
-    expect(host.querySelectorAll(".sar-badge")).toHaveLength(0);
+    expect(host.querySelectorAll(".tks-badge")).toHaveLength(0);
     await settle();
     expect(renderer.batches.at(-1)?.found).toStrictEqual([]);
     expect(renderer.batches.at(-1)?.changed.map((changed) => changed.element)).toStrictEqual([
       host,
     ]);
-    expect(host.querySelectorAll(".sar-badge")).toHaveLength(1);
-    expect(the(".sar-badge", host).parentElement).toBe(the(".CapsuleImageCtn", host));
+    expect(host.querySelectorAll(".tks-badge")).toHaveLength(1);
+    expect(the(".tks-badge", host).parentElement).toBe(the(".CapsuleImageCtn", host));
   });
 
   it("resets a host reused for another app and finds the new app's host", async () => {
@@ -588,7 +588,7 @@ describe("observing", () => {
     ]);
     expect(slot.getAttribute(HOST_APPID)).toBe(String(after));
     expect(slot.querySelectorAll(`[${HOST_APPID}]`)).toHaveLength(0);
-    expect(slot.querySelectorAll(".sar-badge")).toHaveLength(1);
+    expect(slot.querySelectorAll(".tks-badge")).toHaveLength(1);
   });
 
   it("keeps each queue player slot's badge on its own game when a new slide mounts", async () => {
@@ -606,7 +606,7 @@ describe("observing", () => {
       [...SURFACE_APPS.queue, next].map(String),
     );
     expect(slides.map((slide) => queueTitle(slide)?.lastElementChild?.className)).toStrictEqual(
-      slides.map(() => "sar-badge"),
+      slides.map(() => "tks-badge"),
     );
   });
 
@@ -632,7 +632,7 @@ describe("observing", () => {
     await startScanner({ badges: true });
     const host = the(".capsule_index_0");
     const box = the(".CapsuleImageCtn", host);
-    expect(box.querySelectorAll(".sar-badge")).toHaveLength(1);
+    expect(box.querySelectorAll(".tks-badge")).toHaveLength(1);
     const popup = nodes(
       `<div class="popup" style="position: fixed">`
         + `${appLink(make.fixture.app.hubCarousel, `<div class="art"><img></div>`)}</div>`,
@@ -640,11 +640,11 @@ describe("observing", () => {
     the(".ImpressionTrackedElement", host).prepend(...popup);
     await settle();
     expect(renderer.batches.at(-1)?.changed.map((changed) => changed.anchor)).toStrictEqual([box]);
-    expect(box.querySelectorAll(".sar-badge")).toHaveLength(1);
-    expect(the(".popup", host).querySelectorAll(".sar-badge")).toHaveLength(0);
+    expect(box.querySelectorAll(".tks-badge")).toHaveLength(1);
+    expect(the(".popup", host).querySelectorAll(".tks-badge")).toHaveLength(0);
     the(".popup", host).remove();
     await settle();
-    expect(box.querySelectorAll(".sar-badge")).toHaveLength(1);
+    expect(box.querySelectorAll(".tks-badge")).toHaveLength(1);
   });
 
   it("gives a carousel clone its own host and removes the copied badge", async () => {
@@ -655,12 +655,12 @@ describe("observing", () => {
     if (!(clone instanceof Element)) {
       throw new TypeError();
     }
-    expect(clone.querySelectorAll(".sar-badge")).toHaveLength(1);
+    expect(clone.querySelectorAll(".tks-badge")).toHaveLength(1);
     original.after(clone);
     await settle();
     expect(renderer.batches.at(-1)?.found.map((host) => host.element)).toStrictEqual([clone]);
-    expect(original.querySelectorAll(".sar-badge")).toHaveLength(1);
-    expect(clone.querySelectorAll(".sar-badge")).toHaveLength(1);
+    expect(original.querySelectorAll(".tks-badge")).toHaveLength(1);
+    expect(clone.querySelectorAll(".tks-badge")).toHaveLength(1);
     // The first discount capsule.
     expect(clone.getAttribute(HOST_APPID)).toBe(String(SURFACE_APPS.home[2]));
   });
@@ -670,11 +670,11 @@ describe("observing", () => {
     const row = the("a.search_result_row");
     row.setAttribute(HOST_APPID, String(make.fixture.searchRows[0]));
     row.setAttribute(HOST_KINDS, "ai");
-    row.append(...nodes(`<span class="sar-badge"></span><span class="sar-badge"></span>`));
+    row.append(...nodes(`<span class="tks-badge"></span><span class="tks-badge"></span>`));
     await startScanner({ badges: true });
     expect(hostElements()).toContain(row);
     expect(row.hasAttribute(HOST_KINDS)).toBe(false);
-    expect(row.querySelectorAll(".sar-badge")).toHaveLength(1);
+    expect(row.querySelectorAll(".tks-badge")).toHaveLength(1);
   });
 
   it("disconnects on pagehide and rescans the page on a bfcache pageshow", async () => {

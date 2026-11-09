@@ -32,10 +32,10 @@ export interface OrderCard {
 }
 
 /** Names the kind a handle moves; the handle is the one control of its row. */
-const ORDER_ATTRIBUTE = "data-sar-order";
-const RESET_ATTRIBUTE = "data-sar-order-reset";
-const HELD_ATTRIBUTE = "data-sar-held";
-const DRAGGING_ATTRIBUTE = "data-sar-dragging";
+const ORDER_ATTRIBUTE = "data-tks-order";
+const RESET_ATTRIBUTE = "data-tks-order-reset";
+const HELD_ATTRIBUTE = "data-tks-held";
+const DRAGGING_ATTRIBUTE = "data-tks-dragging";
 const PRESSED = "aria-pressed";
 const TRUE = "true";
 /** How far a pressed pointer moves before the press is a drag, in CSS pixels. */
@@ -121,18 +121,18 @@ interface Drag {
  */
 export function createOrderCard(doc: Document, deps: OrderCardDeps): OrderCard {
   const { i18n, idPrefix } = deps;
-  const section = createElement(doc, "section", "sar-card");
-  const title = createElement(doc, "h3", "sar-card-title", i18n.t("options_order_title"));
+  const section = createElement(doc, "section", "tks-card");
+  const title = createElement(doc, "h3", "tks-card-title", i18n.t("options_order_title"));
   title.id = `${idPrefix}order`;
   title.tabIndex = -1;
   section.setAttribute("aria-labelledby", title.id);
-  const how = createElement(doc, "p", "sar-field-help", i18n.t("options_order_how"));
+  const how = createElement(doc, "p", "tks-field-help", i18n.t("options_order_how"));
   how.id = `${idPrefix}order-how`;
-  const list = createElement(doc, "ul", "sar-order-list");
+  const list = createElement(doc, "ul", "tks-order-list");
   const grip = parseIcon(doc, GRIP_SVG);
   const rows = new Map<KindId, Row>();
   for (const id of KIND_IDS) {
-    const handle = createElement(doc, "button", "sar-order-handle");
+    const handle = createElement(doc, "button", "tks-order-handle");
     handle.type = "button";
     handle.setAttribute(ORDER_ATTRIBUTE, id);
     handle.setAttribute("aria-describedby", how.id);
@@ -142,34 +142,34 @@ export function createOrderCard(doc: Document, deps: OrderCardDeps): OrderCard {
     const kind = KIND_BY_ID[id];
     const name = keyText(i18n, kind).label;
     handle.setAttribute("aria-label", i18n.t("options_order_handle", { name }));
-    const element = createElement(doc, "li", "sar-order-row");
+    const element = createElement(doc, "li", "tks-order-row");
     element.append(
       handle,
-      createElement(doc, "span", "sar-order-key", name),
-      createElement(doc, "span", "sar-order-description", keyDescription(i18n, kind)),
+      createElement(doc, "span", "tks-order-key", name),
+      createElement(doc, "span", "tks-order-description", keyDescription(i18n, kind)),
     );
     rows.set(id, { element, handle });
   }
   // A line after the last row each limited surface shows; a hidden copy reads them out
   const limits = cuts(i18n);
   const cues = limits.map(({ after, text }) => {
-    const cue = createElement(doc, "li", "sar-order-cue", text);
+    const cue = createElement(doc, "li", "tks-order-cue", text);
     cue.setAttribute("aria-hidden", TRUE);
     return { after, cue };
   });
   const spokenCuts = createElement(
     doc,
     "p",
-    "sar-vh",
+    "tks-vh",
     limits.map(({ text }) => text).join(" "),
   );
-  const reset = createElement(doc, "button", "sar-button", i18n.t("options_order_reset"));
+  const reset = createElement(doc, "button", "tks-button", i18n.t("options_order_reset"));
   reset.type = "button";
-  reset.setAttribute("data-sar-variant", "quiet");
+  reset.setAttribute("data-tks-variant", "quiet");
   reset.setAttribute(RESET_ATTRIBUTE, "");
   section.append(
     title,
-    createElement(doc, "p", "sar-field-help", i18n.t("options_order_help")),
+    createElement(doc, "p", "tks-field-help", i18n.t("options_order_help")),
     spokenCuts,
     how,
     list,

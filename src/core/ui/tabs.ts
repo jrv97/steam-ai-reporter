@@ -1,5 +1,5 @@
 /** Names the tab a tab button, or a button that switches to a tab, belongs to. */
-export const TAB_ATTRIBUTE = "data-sar-tab";
+export const TAB_ATTRIBUTE = "data-tks-tab";
 
 const TAB_ROLE = "tab";
 const HIDDEN = "true";
@@ -50,7 +50,7 @@ export function createTabs<Id extends string>(options: TabsOptions<Id>): Tabs<Id
   const { doc, idPrefix } = options;
   let { ids } = options;
   const list = doc.createElement("div");
-  list.className = "sar-tablist";
+  list.className = "tks-tablist";
   list.setAttribute("role", "tablist");
   list.setAttribute("aria-label", options.label);
   const tabs = new Map<Id, HTMLButtonElement>();
@@ -59,12 +59,12 @@ export function createTabs<Id extends string>(options: TabsOptions<Id>): Tabs<Id
   for (const id of ids) {
     const tab = doc.createElement("button");
     tab.type = "button";
-    tab.className = "sar-tab";
+    tab.className = "tks-tab";
     tab.id = `${idPrefix}tab-${id}`;
     tab.setAttribute("role", TAB_ROLE);
     tab.setAttribute(TAB_ATTRIBUTE, id);
     const panel = doc.createElement("div");
-    panel.className = "sar-tabpanel";
+    panel.className = "tks-tabpanel";
     panel.id = `${idPrefix}panel-${id}`;
     panel.setAttribute("role", "tabpanel");
     panel.setAttribute("aria-labelledby", tab.id);
@@ -75,7 +75,7 @@ export function createTabs<Id extends string>(options: TabsOptions<Id>): Tabs<Id
   }
   const { group } = options;
   const caption = doc.createElement("div");
-  caption.className = "sar-tab-group";
+  caption.className = "tks-tab-group";
   caption.setAttribute("aria-hidden", HIDDEN);
   caption.textContent = group?.caption ?? "";
 

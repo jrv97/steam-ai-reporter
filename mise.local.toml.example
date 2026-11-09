@@ -5,16 +5,16 @@
 # Firefox Nightly only, used by `mise run run-gecko` and `mise run e2e` and checked by
 # `mise run setup`. Never point this at the regular Firefox: run_browser.py refuses a binary whose
 # update channel is not "nightly", and there is no fallback to a Firefox on PATH.
-SAR_GECKO_BIN = "C:/Program Files/Firefox Nightly/firefox.exe"
+TKS_GECKO_BIN = "C:/Program Files/Firefox Nightly/firefox.exe"
 # A profile directory dedicated to this project, outside the repo, so the Steam login survives
 # restarts. An absolute path; it is created on first run. A profile last used by another Firefox
 # install is refused.
-SAR_GECKO_PROFILE = "C:/Users/you/dev-profiles/tag-kit-for-steam-nightly"
+TKS_GECKO_PROFILE = "C:/Users/you/dev-profiles/tag-kit-for-steam-nightly"
 
 # Chromium and a profile directory dedicated to this project, used by `mise run run-chromium`.
 # `mise run e2e` uses the binary with a fresh profile on each run.
-SAR_CHROMIUM_BIN = "C:/Users/you/AppData/Local/Chromium/Application/chrome.exe"
-SAR_CHROMIUM_PROFILE = "C:/Users/you/dev-profiles/tag-kit-for-steam-chromium"
+TKS_CHROMIUM_BIN = "C:/Users/you/AppData/Local/Chromium/Application/chrome.exe"
+TKS_CHROMIUM_PROFILE = "C:/Users/you/dev-profiles/tag-kit-for-steam-chromium"
 
 # Windows only. From PowerShell or cmd, `bash` is WSL's bash.exe, which cannot run the tasks'
 # shell scripts. Put Git for Windows' bin folder first on PATH so tasks find Git Bash. Git hooks

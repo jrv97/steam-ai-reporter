@@ -48,7 +48,7 @@ it.each(ENGINES)("%s: the popup's gear opens the settings page", async (engine) 
 /** Clicks the popup's DRM row in the frame that draws it, before the form has read storage. */
 function clickDrmRowAtOnce(): void {
   new MutationObserver((_records, observer) => {
-    const link = document.querySelector('a[data-sar-open-tab="drm"]');
+    const link = document.querySelector('a[data-tks-open-tab="drm"]');
     if (link instanceof HTMLElement) {
       observer.disconnect();
       link.click();
@@ -63,7 +63,7 @@ it("chromium: a popup row clicked at once opens the settings at its tab", async 
       "options.html",
       () => browser.visit("options.html?context=popup", clickDrmRowAtOnce),
     );
-    await settings.waitForSelector('[role=tab][data-sar-tab="drm"][aria-selected="true"]');
+    await settings.waitForSelector('[role=tab][data-tks-tab="drm"][aria-selected="true"]');
   } finally {
     await browser.close();
   }

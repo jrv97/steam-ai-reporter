@@ -1,6 +1,6 @@
 """Write the mark's color files and the extension icon PNGs in assets/icons/.
 
-mark-<color>.svg is mark.svg with its currentColor replaced. Headless Chromium ($SAR_CHROMIUM_BIN)
+mark-<color>.svg is mark.svg with its currentColor replaced. Headless Chromium ($TKS_CHROMIUM_BIN)
 paints icon-<size>.png from mark-purple.svg, or from icon-<size>.svg when that hand-hinted file
 exists. The 16 and 32 px renders from the mark are interim; no icon-<size>.svg is ever written.
 
@@ -134,11 +134,11 @@ def write_all(browser: Path, work: Path) -> None:
 
 
 def main() -> None:
-    browser = env_path("SAR_CHROMIUM_BIN")
+    browser = env_path("TKS_CHROMIUM_BIN")
     if not browser.is_file():
-        fail(f"SAR_CHROMIUM_BIN does not exist: {browser}")
+        fail(f"TKS_CHROMIUM_BIN does not exist: {browser}")
     # The profile is a throwaway folder, so a running Chromium and its profiles stay untouched.
-    scratch = tempfile.TemporaryDirectory(prefix="sar-icons-", ignore_cleanup_errors=True)
+    scratch = tempfile.TemporaryDirectory(prefix="tks-icons-", ignore_cleanup_errors=True)
     try:
         write_all(browser, Path(scratch.name))
     finally:

@@ -23,18 +23,18 @@ async function setup(settings: Settings = make.settings()) {
   await writeSettings(source, settings);
   const { root, tab } = await mountForm({ settings: source });
   const box = (id: KindId, field: ChipTextField): HTMLInputElement => {
-    const found = root.querySelector(`input[data-sar-setting=${field}][data-sar-for=${id}]`);
+    const found = root.querySelector(`input[data-tks-setting=${field}][data-tks-for=${id}]`);
     if (!(found instanceof HTMLInputElement)) {
       throw new TypeError([id, field].join(" "));
     }
     return found;
   };
   const reset = (id: KindId, field: ChipTextField) =>
-    root.querySelector<HTMLElement>(`[data-sar-chip-reset=${field}][data-sar-for=${id}]`);
+    root.querySelector<HTMLElement>(`[data-tks-chip-reset=${field}][data-tks-for=${id}]`);
   /** The visible text of the preview's badge and small image chip. */
   const preview = (id: KindId) =>
     [
-      ...(box(id, "chip").closest("[role=tabpanel]")?.querySelectorAll(".sar-chip-preview > *")
+      ...(box(id, "chip").closest("[role=tabpanel]")?.querySelectorAll(".tks-chip-preview > *")
         ?? []),
     ].map((chip) => [chip.className, chip.querySelector("[aria-hidden]")?.textContent]);
   const stored = async (id: KindId) => parseSettings(await source.read()).kinds[id];
@@ -111,7 +111,7 @@ describe("the chip text fields", () => {
     for (const [field, text] of typed) {
       type(box("ai", field), text);
     }
-    expect(preview("ai")).toEqual([["sar-badge", labels[0]], ["sar-compact", labels[1]]]);
+    expect(preview("ai")).toEqual([["tks-badge", labels[0]], ["tks-compact", labels[1]]]);
   });
 
   it("preview a tag with values by its first picked value", async () => {
@@ -121,7 +121,7 @@ describe("the chip text fields", () => {
     const text = make.chipText();
     type(box("deck", "chip"), text);
     const label = i18n.t("kind_facet_chip", { chip: text, value: i18n.t("kind_compat_playable") });
-    expect(preview("deck")).toEqual([["sar-badge", label], ["sar-compact", label]]);
+    expect(preview("deck")).toEqual([["tks-badge", label], ["tks-compact", label]]);
   });
 
   it("count what each box holds, of the most it takes", async () => {

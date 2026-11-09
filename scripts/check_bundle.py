@@ -81,7 +81,6 @@ from repo import (
     REPO_URL,
     ROOT,
     SLUG,
-    USERSCRIPT_SLUG,
     VALIBOT_LICENSE,
     fail,
     json_object,
@@ -96,7 +95,7 @@ KIB = 1024
 BUDGETS = {
     **{DIST / target / "content.js": 215 * KIB for target in EXTENSION_TARGETS},
     **{DIST / target / "options.js": 217 * KIB for target in EXTENSION_TARGETS},
-    DIST / "userscript" / f"{USERSCRIPT_SLUG}.user.js": 372 * KIB,
+    DIST / "userscript" / f"{SLUG}.user.js": 372 * KIB,
 }
 ENGLISH = ROOT / "src" / "locales" / DEFAULT_LOCALE / "messages.json"
 STORE_MATCH = ["https://store.steampowered.com/*"]
@@ -283,8 +282,8 @@ def header_problems(where: str, header: str) -> list[str]:
     problems: list[str] = []
     expected = {
         "@match": STORE_MATCH,
-        "@updateURL": [f"{RELEASE_BASE}/{USERSCRIPT_SLUG}.meta.js"],
-        "@downloadURL": [f"{RELEASE_BASE}/{USERSCRIPT_SLUG}.user.js"],
+        "@updateURL": [f"{RELEASE_BASE}/{SLUG}.meta.js"],
+        "@downloadURL": [f"{RELEASE_BASE}/{SLUG}.user.js"],
     }
     for key, values in expected.items():
         if fields.get(key) != values:
@@ -397,7 +396,7 @@ def artifact_problems() -> list[str]:
     version = package_version()
     extensions = [f"{SLUG}-{target}-{version}.zip" for target in EXTENSION_TARGETS]
     source = f"{SLUG}-source-{version}.zip"
-    expected = {*extensions, source, f"{USERSCRIPT_SLUG}.user.js", f"{USERSCRIPT_SLUG}.meta.js"}
+    expected = {*extensions, source, f"{SLUG}.user.js", f"{SLUG}.meta.js"}
     present = {path.name for path in ARTIFACTS.iterdir()}
     problems = [f"artifacts/{name}: missing" for name in sorted(expected - present)]
     problems += [f"artifacts/{name}: unexpected" for name in sorted(present - expected)]

@@ -19,7 +19,7 @@ import { normalizeBreaks } from "./notes";
 import { adoptStyles, BANNER_CSS } from "./styles";
 
 /** The banner host's id. */
-export const BANNER_ID = "sar-banner";
+export const BANNER_ID = "tks-banner";
 
 /** The store's left description column; the banner goes first in it, above the purchase box. */
 const COLUMN_SELECTOR = ".game_description_column";
@@ -74,15 +74,15 @@ export interface BannerView {
 }
 
 export interface Banner {
-  /** `div.sar-banner-host`, the light-DOM element that holds the shadow root. */
+  /** `div.tks-banner-host`, the light-DOM element that holds the shadow root. */
   readonly host: HTMLElement;
   /** Shows the entries and the notes. Same view: no change. */
   show(view: BannerView): void;
 }
 
 /** Name the role and the key of the creator a button acts on. */
-const ROLE_ATTRIBUTE = "data-sar-role";
-const CREATOR_ATTRIBUTE = "data-sar-creator";
+const ROLE_ATTRIBUTE = "data-tks-role";
+const CREATOR_ATTRIBUTE = "data-tks-creator";
 
 /** What a row and a note of a creator share. */
 type BannerCreatorRef = Pick<BannerCreator, "role" | "creator">;
@@ -112,7 +112,7 @@ function defaultOverflows(quote: HTMLElement): boolean {
 
 /** The id of a part of an entry or note, unique in the banner. */
 function partId(scope: string, part: string): string {
-  return `sar-banner-${scope}-${part}`;
+  return `tks-banner-${scope}-${part}`;
 }
 
 /**
@@ -173,13 +173,13 @@ export function createBanner(
   const overflows = options.overflows ?? defaultOverflows;
 
   const host = doc.createElement("div");
-  host.className = "sar-banner-host";
+  host.className = "tks-banner-host";
   host.id = BANNER_ID;
   const shadow = host.attachShadow({ mode: "open" });
   adoptStyles(shadow, BANNER_CSS);
 
   let box = doc.createElement("aside");
-  const live = element("div", "sar-vh");
+  const live = element("div", "tks-vh");
   live.setAttribute("aria-live", POLITE);
   shadow.append(box, live);
 
@@ -209,9 +209,9 @@ export function createBanner(
   ): HTMLButtonElement {
     const node = element("button", className, label);
     node.type = "button";
-    node.setAttribute("data-sar-action", action);
+    node.setAttribute("data-tks-action", action);
     if (scope !== undefined) {
-      node.setAttribute("data-sar-scope", scope);
+      node.setAttribute("data-tks-scope", scope);
     }
     return node;
   }
@@ -232,7 +232,7 @@ export function createBanner(
   }
 
   function errorLine(): HTMLElement {
-    const line = element("p", "sar-banner-error");
+    const line = element("p", "tks-banner-error");
     line.setAttribute("role", "alert");
     line.hidden = true;
     return line;
@@ -246,21 +246,21 @@ export function createBanner(
     if (overflows(quote)) {
       toggle.hidden = false;
     } else {
-      quote.removeAttribute("data-sar-collapsed");
+      quote.removeAttribute("data-tks-collapsed");
       toggle.remove();
     }
   }
 
   /** The developer's long text behind its source line, with a toggle once it overflows. */
   function appendQuote(entry: HTMLElement, id: string, text: string): void {
-    const quote = element("blockquote", "sar-banner-quote", normalizeBreaks(text));
+    const quote = element("blockquote", "tks-banner-quote", normalizeBreaks(text));
     quote.id = id;
-    quote.setAttribute("data-sar-collapsed", "true");
-    const toggle = button("sar-banner-link", "toggle", i18n.t("banner_expand"));
+    quote.setAttribute("data-tks-collapsed", "true");
+    const toggle = button("tks-banner-link", "toggle", i18n.t("banner_expand"));
     toggle.setAttribute("aria-expanded", String(false));
     toggle.setAttribute("aria-controls", id);
     toggle.hidden = true;
-    entry.append(element("p", "sar-banner-source", i18n.t("banner_source")), quote, toggle);
+    entry.append(element("p", "tks-banner-source", i18n.t("banner_source")), quote, toggle);
     frame(() => {
       measure(quote, toggle);
     });
@@ -271,8 +271,8 @@ export function createBanner(
       appendQuote(entry, quoteId, detail.text);
       return;
     }
-    const line = element("p", "sar-banner-service", i18n.t(detail.key));
-    line.append(" ", element("span", "sar-banner-service-name", detail.text));
+    const line = element("p", "tks-banner-service", i18n.t(detail.key));
+    line.append(" ", element("span", "tks-banner-service-name", detail.text));
     entry.append(line);
   }
 
@@ -281,24 +281,24 @@ export function createBanner(
    * the full game declared it, then the developer's text.
    */
   function buildEntry(verdict: AnyDisclosed): HTMLElement {
-    const entry = element("div", "sar-banner-entry");
+    const entry = element("div", "tks-banner-entry");
     const titleId = partId(verdict.kind, "title");
     const ignoreId = partId(verdict.kind, "ignore");
-    const title = element("h2", "sar-banner-title", entryName(i18n, verdict));
+    const title = element("h2", "tks-banner-title", entryName(i18n, verdict));
     title.id = titleId;
     const ignore = button(
-      "sar-banner-action",
+      "tks-banner-action",
       "ignore",
       i18n.t("banner_ignore_kind"),
       verdict.kind,
     );
     ignore.id = ignoreId;
     ignore.setAttribute("aria-labelledby", [ignoreId, titleId].join(" "));
-    const head = element("div", "sar-banner-head");
+    const head = element("div", "tks-banner-head");
     head.append(title, ignore);
     entry.append(head);
     if (verdict.fullGame === true) {
-      entry.append(element("p", "sar-banner-full-game", i18n.t(fullGameLine(verdict))));
+      entry.append(element("p", "tks-banner-full-game", i18n.t(fullGameLine(verdict))));
     }
     for (const [index, detail] of kindDetails(verdict).filter(isDeveloperText).entries()) {
       appendDetail(entry, detail, `${partId(verdict.kind, "notes")}-${String(index)}`);
@@ -314,10 +314,10 @@ export function createBanner(
   }
 
   function buildNote(scope: AllowScope): HTMLElement {
-    const note = element("p", "sar-banner-note");
-    const text = element("span", "sar-banner-ignored-text", noteText(scope));
+    const note = element("p", "tks-banner-note");
+    const text = element("span", "tks-banner-ignored-text", noteText(scope));
     text.id = partId(scope, "note");
-    const undo = button("sar-banner-link", "undo", i18n.t("banner_undo"), scope);
+    const undo = button("tks-banner-link", "undo", i18n.t("banner_undo"), scope);
     undo.id = partId(scope, "undo");
     undo.setAttribute("aria-labelledby", [undo.id, text.id].join(" "));
     note.append(text, undo);
@@ -341,12 +341,12 @@ export function createBanner(
   }
 
   function buildCreatorNote(note: CreatorNote, index: number): HTMLElement {
-    const node = element("p", "sar-banner-note");
+    const node = element("p", "tks-banner-note");
     const id = partId(`creator${String(index)}`, "note");
-    const text = element("span", "sar-banner-ignored-text", creatorNoteText(note));
+    const text = element("span", "tks-banner-ignored-text", creatorNoteText(note));
     text.id = id;
     const undo = creatorButton(
-      "sar-banner-link",
+      "tks-banner-link",
       "undo-creator",
       i18n.t("banner_undo"),
       note.role,
@@ -361,16 +361,16 @@ export function createBanner(
 
   /** One row per developer or publisher: a button for each shown tag it is not ignored for. */
   function buildCreatorRow(row: BannerCreator, index: number, view: BannerView): HTMLElement {
-    const item = element("li", "sar-banner-creator");
+    const item = element("li", "tks-banner-creator");
     const who = nameAndRole(row.role, row.creator);
-    const label = element("span", "sar-banner-creator-label");
+    const label = element("span", "tks-banner-creator-label");
     label.append(
-      element("span", "sar-banner-creator-name", who.name),
+      element("span", "tks-banner-creator-name", who.name),
       " ",
-      element("span", "sar-banner-creator-role", who.role),
+      element("span", "tks-banner-creator-role", who.role),
     );
     label.id = partId(`row${String(index)}`, "label");
-    const actions = element("span", "sar-banner-creator-actions");
+    const actions = element("span", "tks-banner-creator-actions");
     const ignoredIn = new Set(row.ignored.map((each) => each.scope));
     const choices: AllowScope[] = view.shown.map((verdict) => verdict.kind).filter((kind) =>
       !ignoredIn.has(kind)
@@ -385,7 +385,7 @@ export function createBanner(
           chip: view.words?.[scope]?.chip ?? i18n.t(KIND_BY_ID[scope].messages.chip),
         });
       const choice = creatorButton(
-        "sar-banner-link",
+        "tks-banner-link",
         "ignore-creator",
         text,
         row.role,
@@ -403,21 +403,21 @@ export function createBanner(
   /** The closed section that lists the game's developers and publishers. */
   function buildCreators(view: BannerView): HTMLElement {
     const section = doc.createElement("details");
-    section.className = "sar-banner-creators";
+    section.className = "tks-banner-creators";
     section.open = creatorsOpen;
     const summary = element(
       "summary",
-      "sar-banner-creators-toggle",
+      "tks-banner-creators-toggle",
       i18n.t("banner_creators_toggle"),
     );
-    const list = element("ul", "sar-banner-creator-list");
+    const list = element("ul", "tks-banner-creator-list");
     list.append(...view.creators.map((row, index) => buildCreatorRow(row, index, view)));
     section.append(summary, list);
     return section;
   }
 
   function build(view: BannerView): HTMLElement {
-    const aside = element("aside", "sar-banner");
+    const aside = element("aside", "tks-banner");
     aside.tabIndex = -1;
     const [only] = view.shown;
     const single = view.ignored.length === 0 && view.creatorNotes.length === 0;
@@ -429,11 +429,11 @@ export function createBanner(
       aside.setAttribute("aria-label", i18n.t(label));
     }
     if (only === undefined) {
-      aside.setAttribute("data-sar-variant", "ignored");
+      aside.setAttribute("data-tks-variant", "ignored");
     } else {
       // A banner with one tag takes its color; several tags keep the default violet.
       if (view.shown.length > 1) {
-        aside.setAttribute("data-sar-entries", "many");
+        aside.setAttribute("data-tks-entries", "many");
       } else {
         aside.setAttribute(KIND_ATTRIBUTE, only.kind);
       }
@@ -451,8 +451,8 @@ export function createBanner(
       if (view.creators.length > 0) {
         aside.append(buildCreators(view));
       }
-      const foot = element("div", "sar-banner-foot");
-      foot.append(button("sar-banner-link", "ignore", i18n.t("banner_ignore"), ALLOW_ALL));
+      const foot = element("div", "tks-banner-foot");
+      foot.append(button("tks-banner-link", "ignore", i18n.t("banner_ignore"), ALLOW_ALL));
       aside.append(foot);
     }
     aside.append(errorLine());
@@ -471,8 +471,8 @@ export function createBanner(
     if (quote === null) {
       return;
     }
-    const expand = quote.getAttribute("data-sar-collapsed") === "true";
-    quote.setAttribute("data-sar-collapsed", expand ? "false" : "true");
+    const expand = quote.getAttribute("data-tks-collapsed") === "true";
+    quote.setAttribute("data-tks-collapsed", expand ? "false" : "true");
     toggle.setAttribute("aria-expanded", expand ? "true" : "false");
     toggle.textContent = i18n.t(expand ? "banner_collapse" : "banner_expand");
   }
@@ -483,9 +483,9 @@ export function createBanner(
     scope: AllowScope,
     creator?: { readonly role: CreatorRole; readonly key: CreatorKey; },
   ): HTMLElement | undefined {
-    return [...box.querySelectorAll<HTMLElement>("[data-sar-action]")].find((candidate) =>
-      candidate.getAttribute("data-sar-action") === action
-      && candidate.getAttribute("data-sar-scope") === scope
+    return [...box.querySelectorAll<HTMLElement>("[data-tks-action]")].find((candidate) =>
+      candidate.getAttribute("data-tks-action") === action
+      && candidate.getAttribute("data-tks-scope") === scope
       && (creator === undefined || (candidate.getAttribute(ROLE_ATTRIBUTE) === creator.role
         && candidate.getAttribute(CREATOR_ATTRIBUTE) === creator.key))
     );
@@ -532,7 +532,7 @@ export function createBanner(
   function focusAfterCreator(action: Action, creator: BannerCreatorRef, scope: AllowScope): void {
     const next = action === "undo-creator" ? "ignore-creator" : "undo-creator";
     const own = { role: creator.role, key: creator.creator.key };
-    const summary = box.querySelector<HTMLElement>(".sar-banner-creators-toggle");
+    const summary = box.querySelector<HTMLElement>(".tks-banner-creators-toggle");
     (control(next, scope, own) ?? summary ?? box).focus();
   }
 
@@ -552,7 +552,7 @@ export function createBanner(
     try {
       await change();
     } catch {
-      const error = box.querySelector<HTMLElement>(".sar-banner-error");
+      const error = box.querySelector<HTMLElement>(".tks-banner-error");
       if (error !== null) {
         error.textContent = i18n.t(failure);
         error.hidden = false;
@@ -605,8 +605,8 @@ export function createBanner(
   }
 
   function onClick(clicked: Element): void {
-    const action = parseAction(clicked.getAttribute("data-sar-action"));
-    const scope = toAllowScope(clicked.getAttribute("data-sar-scope"));
+    const action = parseAction(clicked.getAttribute("data-tks-action"));
+    const scope = toAllowScope(clicked.getAttribute("data-tks-scope"));
     if (action === "toggle") {
       toggleNotes(clicked);
       return;
@@ -628,7 +628,7 @@ export function createBanner(
 
   shadow.addEventListener("click", (event) => {
     const target = event.target;
-    const clicked = target instanceof Element ? target.closest("[data-sar-action]") : null;
+    const clicked = target instanceof Element ? target.closest("[data-tks-action]") : null;
     if (clicked !== null) {
       onClick(clicked);
     }

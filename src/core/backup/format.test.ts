@@ -94,6 +94,13 @@ describe("readBackup", () => {
     expect(readBackup(text)).toStrictEqual({ kind: "invalid" });
   });
 
+  it("reads the sample config and writes it back unchanged", () => {
+    const { contents, skipped } = backupOf(readBackup(make.backup.sample));
+
+    expect(skipped).toBe(0);
+    expect(encodeBackup(contents)).toBe(make.backup.sample);
+  });
+
   it("calls a later format version newer", () => {
     expect(readBackup(make.backup.text({ version: BACKUP_VERSION + 1 }))).toStrictEqual({
       kind: "newer",

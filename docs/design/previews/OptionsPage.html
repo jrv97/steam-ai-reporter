@@ -6,206 +6,206 @@
 <link rel="stylesheet" href="../reference.css">
 <title>Options page and popup</title>
 <style>
-  body { margin: 0; background: var(--sar-color-bg-sunken); }
+  body { margin: 0; background: var(--tks-color-bg-sunken); }
   .two {
     display: grid;
     grid-template-columns: minmax(0, 880px) 362px;
-    gap: var(--sar-space-5);
+    gap: var(--tks-space-5);
     align-items: start;
-    padding: var(--sar-space-4);
+    padding: var(--tks-space-4);
   }
   .popup-frame { border: 1px solid #3d4450; }
-  .one { max-inline-size: 880px; padding: 0 var(--sar-space-4) var(--sar-space-4); }
+  .one { max-inline-size: 880px; padding: 0 var(--tks-space-4) var(--tks-space-4); }
 </style>
 </head>
 <body>
 <div class="two">
-  <div class="sar-options" data-sar-context="page" data-sar-view="tabs">
-    <header class="sar-options-header">
+  <div class="tks-options" data-tks-context="page" data-tks-view="tabs">
+    <header class="tks-options-header">
       <img src="../../../assets/icons/mark-purple.svg" alt="">
       <div>
-        <h1 class="sar-options-title">Tag Kit for Steam</h1>
-        <div class="sar-options-version">Version 2026.10.20</div>
+        <h1 class="tks-options-title">Tag Kit for Steam</h1>
+        <div class="tks-options-version">Version 2026.10.20</div>
       </div>
-      <button class="sar-button" type="button" data-sar-go-back>Go back to Steam</button>
+      <button class="tks-button" type="button" data-tks-go-back>Go back to Steam</button>
     </header>
-  <div class="sar-tabs">
-    <div class="sar-tablist" role="tablist" aria-label="Settings sections">
-      <button class="sar-tab sar-tab-general" type="button" role="tab" id="o-t-general"
+  <div class="tks-tabs">
+    <div class="tks-tablist" role="tablist" aria-label="Settings sections">
+      <button class="tks-tab tks-tab-general" type="button" role="tab" id="o-t-general"
         aria-controls="o-p-general" aria-selected="false" tabindex="-1">
         General
       </button>
-      <div class="sar-tab-group" aria-hidden="true">Tags</div>
-      <button class="sar-tab" type="button" role="tab" id="o-t-ai"
+      <div class="tks-tab-group" aria-hidden="true">Tags</div>
+      <button class="tks-tab" type="button" role="tab" id="o-t-ai"
         aria-controls="o-p-ai" aria-selected="false" tabindex="-1">
-        <span class="sar-tab-key" aria-hidden="true">AI</span>
-        <span class="sar-vh">AI: AI Generated Content Disclosure</span>
-        <span class="sar-tab-state" data-sar-on>On</span>
-        <span class="sar-tab-description" aria-hidden="true">AI Generated Content Disclosure</span>
+        <span class="tks-tab-key" aria-hidden="true">AI</span>
+        <span class="tks-vh">AI: AI Generated Content Disclosure</span>
+        <span class="tks-tab-state" data-tks-on>On</span>
+        <span class="tks-tab-description" aria-hidden="true">AI Generated Content Disclosure</span>
       </button>
-      <button class="sar-tab" type="button" role="tab" id="o-t-earlyaccess"
+      <button class="tks-tab" type="button" role="tab" id="o-t-earlyaccess"
         aria-controls="o-p-earlyaccess" aria-selected="false" tabindex="-1">
-        <span class="sar-tab-key" aria-hidden="true">Early Access</span>
-        <span class="sar-vh">Early Access: Early Access Game</span>
-        <span class="sar-tab-state" data-sar-on>On</span>
-        <span class="sar-tab-description" aria-hidden="true">
+        <span class="tks-tab-key" aria-hidden="true">Early Access</span>
+        <span class="tks-vh">Early Access: Early Access Game</span>
+        <span class="tks-tab-state" data-tks-on>On</span>
+        <span class="tks-tab-description" aria-hidden="true">
           This game is still in Early Access
         </span>
       </button>
-      <button class="sar-tab" type="button" role="tab" id="o-t-family"
+      <button class="tks-tab" type="button" role="tab" id="o-t-family"
         aria-controls="o-p-family" aria-selected="false" tabindex="-1">
-        <span class="sar-tab-key" aria-hidden="true">Family Sharing</span>
-        <span class="sar-vh">Family Sharing</span>
-        <span class="sar-tab-state">Off</span>
-        <span class="sar-tab-description" aria-hidden="true">Steam Family Sharing support</span>
+        <span class="tks-tab-key" aria-hidden="true">Family Sharing</span>
+        <span class="tks-vh">Family Sharing</span>
+        <span class="tks-tab-state">Off</span>
+        <span class="tks-tab-description" aria-hidden="true">Steam Family Sharing support</span>
       </button>
-      <button class="sar-tab" type="button" role="tab" id="o-t-iap"
+      <button class="tks-tab" type="button" role="tab" id="o-t-iap"
         aria-controls="o-p-iap" aria-selected="false" tabindex="-1">
-        <span class="sar-tab-key" aria-hidden="true">In-app purchases</span>
-        <span class="sar-vh">In-app purchases: In-App Purchases</span>
-        <span class="sar-tab-state">Off</span>
-        <span class="sar-tab-description" aria-hidden="true">Contains In-App Purchases</span>
+        <span class="tks-tab-key" aria-hidden="true">In-app purchases</span>
+        <span class="tks-vh">In-app purchases: In-App Purchases</span>
+        <span class="tks-tab-state">Off</span>
+        <span class="tks-tab-description" aria-hidden="true">Contains In-App Purchases</span>
       </button>
-      <button class="sar-tab" type="button" role="tab" id="o-t-drm"
+      <button class="tks-tab" type="button" role="tab" id="o-t-drm"
         aria-controls="o-p-drm" aria-selected="false" tabindex="-1">
-        <span class="sar-tab-key" aria-hidden="true">3rd-party DRM</span>
-        <span class="sar-vh">3rd-party DRM: Incorporates 3rd-party DRM</span>
-        <span class="sar-tab-state" data-sar-on>On</span>
-        <span class="sar-tab-description" aria-hidden="true">Incorporates 3rd-party DRM</span>
+        <span class="tks-tab-key" aria-hidden="true">3rd-party DRM</span>
+        <span class="tks-vh">3rd-party DRM: Incorporates 3rd-party DRM</span>
+        <span class="tks-tab-state" data-tks-on>On</span>
+        <span class="tks-tab-description" aria-hidden="true">Incorporates 3rd-party DRM</span>
       </button>
-      <button class="sar-tab" type="button" role="tab" id="o-t-pvp"
+      <button class="tks-tab" type="button" role="tab" id="o-t-pvp"
         aria-controls="o-p-pvp" aria-selected="false" tabindex="-1">
-        <span class="sar-tab-key" aria-hidden="true">PvP</span>
-        <span class="sar-vh">PvP</span>
-        <span class="sar-tab-state">Off</span>
-        <span class="sar-tab-description" aria-hidden="true">Online, LAN or split-screen PvP</span>
+        <span class="tks-tab-key" aria-hidden="true">PvP</span>
+        <span class="tks-vh">PvP</span>
+        <span class="tks-tab-state">Off</span>
+        <span class="tks-tab-description" aria-hidden="true">Online, LAN or split-screen PvP</span>
       </button>
-      <button class="sar-tab" type="button" role="tab" id="o-t-account"
+      <button class="tks-tab" type="button" role="tab" id="o-t-account"
         aria-controls="o-p-account" aria-selected="false" tabindex="-1">
-        <span class="sar-tab-key" aria-hidden="true">3rd-party account</span>
-        <span class="sar-vh">3rd-party account: Requires 3rd-Party Account</span>
-        <span class="sar-tab-state" data-sar-on>On</span>
-        <span class="sar-tab-description" aria-hidden="true">Requires 3rd-Party Account</span>
+        <span class="tks-tab-key" aria-hidden="true">3rd-party account</span>
+        <span class="tks-vh">3rd-party account: Requires 3rd-Party Account</span>
+        <span class="tks-tab-state" data-tks-on>On</span>
+        <span class="tks-tab-description" aria-hidden="true">Requires 3rd-Party Account</span>
       </button>
-      <button class="sar-tab" type="button" role="tab" id="o-t-eula"
+      <button class="tks-tab" type="button" role="tab" id="o-t-eula"
         aria-controls="o-p-eula" aria-selected="false" tabindex="-1">
-        <span class="sar-tab-key" aria-hidden="true">3rd-party EULA</span>
-        <span class="sar-vh">3rd-party EULA: Requires agreement to a 3rd-party EULA</span>
-        <span class="sar-tab-state" data-sar-on>On</span>
-        <span class="sar-tab-description" aria-hidden="true">
+        <span class="tks-tab-key" aria-hidden="true">3rd-party EULA</span>
+        <span class="tks-vh">3rd-party EULA: Requires agreement to a 3rd-party EULA</span>
+        <span class="tks-tab-state" data-tks-on>On</span>
+        <span class="tks-tab-description" aria-hidden="true">
           Requires agreement to a 3rd-party EULA
         </span>
       </button>
-      <button class="sar-tab" type="button" role="tab" id="o-t-deck"
+      <button class="tks-tab" type="button" role="tab" id="o-t-deck"
         aria-controls="o-p-deck" aria-selected="false" tabindex="-1">
-        <span class="sar-tab-key" aria-hidden="true">Steam Deck</span>
-        <span class="sar-vh">Steam Deck: Steam Deck Compatibility</span>
-        <span class="sar-tab-state">Off</span>
-        <span class="sar-tab-description" aria-hidden="true">Steam Deck Compatibility</span>
+        <span class="tks-tab-key" aria-hidden="true">Steam Deck</span>
+        <span class="tks-vh">Steam Deck: Steam Deck Compatibility</span>
+        <span class="tks-tab-state">Off</span>
+        <span class="tks-tab-description" aria-hidden="true">Steam Deck Compatibility</span>
       </button>
-      <button class="sar-tab" type="button" role="tab" id="o-t-machine"
+      <button class="tks-tab" type="button" role="tab" id="o-t-machine"
         aria-controls="o-p-machine" aria-selected="false" tabindex="-1">
-        <span class="sar-tab-key" aria-hidden="true">Steam Machine</span>
-        <span class="sar-vh">Steam Machine: Steam Machine Compatibility</span>
-        <span class="sar-tab-state">Off</span>
-        <span class="sar-tab-description" aria-hidden="true">Steam Machine Compatibility</span>
+        <span class="tks-tab-key" aria-hidden="true">Steam Machine</span>
+        <span class="tks-vh">Steam Machine: Steam Machine Compatibility</span>
+        <span class="tks-tab-state">Off</span>
+        <span class="tks-tab-description" aria-hidden="true">Steam Machine Compatibility</span>
       </button>
-      <button class="sar-tab" type="button" role="tab" id="o-t-anticheat"
+      <button class="tks-tab" type="button" role="tab" id="o-t-anticheat"
         aria-controls="o-p-anticheat" aria-selected="false" tabindex="-1">
-        <span class="sar-tab-key" aria-hidden="true">Anti-cheat</span>
-        <span class="sar-vh">Anti-cheat: Uses Anti-Cheat Software</span>
-        <span class="sar-tab-state" data-sar-on>On</span>
-        <span class="sar-tab-description" aria-hidden="true">Uses Anti-Cheat Software</span>
+        <span class="tks-tab-key" aria-hidden="true">Anti-cheat</span>
+        <span class="tks-vh">Anti-cheat: Uses Anti-Cheat Software</span>
+        <span class="tks-tab-state" data-tks-on>On</span>
+        <span class="tks-tab-description" aria-hidden="true">Uses Anti-Cheat Software</span>
       </button>
-      <button class="sar-tab" type="button" role="tab" id="o-t-kernel"
+      <button class="tks-tab" type="button" role="tab" id="o-t-kernel"
         aria-controls="o-p-kernel" aria-selected="true" tabindex="0">
-        <span class="sar-tab-key" aria-hidden="true">Kernel-level anti-cheat</span>
-        <span class="sar-vh">Kernel-level anti-cheat: Uses Kernel Level Anti-Cheat</span>
-        <span class="sar-tab-state" data-sar-on>On</span>
-        <span class="sar-tab-description" aria-hidden="true">Uses Kernel Level Anti-Cheat</span>
+        <span class="tks-tab-key" aria-hidden="true">Kernel-level anti-cheat</span>
+        <span class="tks-vh">Kernel-level anti-cheat: Uses Kernel Level Anti-Cheat</span>
+        <span class="tks-tab-state" data-tks-on>On</span>
+        <span class="tks-tab-description" aria-hidden="true">Uses Kernel Level Anti-Cheat</span>
       </button>
     </div>
-    <div class="sar-tabpanel" role="tabpanel" id="o-p-general"
+    <div class="tks-tabpanel" role="tabpanel" id="o-p-general"
       aria-labelledby="o-t-general" hidden>
-      <h2 class="sar-panel-title">General</h2>
+      <h2 class="tks-panel-title">General</h2>
     </div>
-    <div class="sar-tabpanel" role="tabpanel" id="o-p-kernel"
+    <div class="tks-tabpanel" role="tabpanel" id="o-p-kernel"
       aria-labelledby="o-t-kernel">
-      <section class="sar-card" aria-labelledby="o-kernel">
-        <h2 class="sar-card-title" id="o-kernel" tabindex="-1">Uses Kernel Level Anti-Cheat</h2>
-        <label class="sar-field">
-          <span class="sar-field-label">Use this tag</span>
-          <input class="sar-toggle" type="checkbox" role="switch" checked>
-          <span class="sar-field-help">Off removes its badges, its entry in the banner and its
+      <section class="tks-card" aria-labelledby="o-kernel">
+        <h2 class="tks-card-title" id="o-kernel" tabindex="-1">Uses Kernel Level Anti-Cheat</h2>
+        <label class="tks-field">
+          <span class="tks-field-label">Use this tag</span>
+          <input class="tks-toggle" type="checkbox" role="switch" checked>
+          <span class="tks-field-help">Off removes its badges, its entry in the banner and its
             list filter.</span>
         </label>
-        <fieldset class="sar-kind-options">
-          <label class="sar-field">
-            <span class="sar-field-label">Badge on games</span>
-            <input class="sar-toggle" type="checkbox" role="switch" checked>
-            <span class="sar-field-help">Adds "KLAC" to search and wishlist rows and to game
+        <fieldset class="tks-kind-options">
+          <label class="tks-field">
+            <span class="tks-field-label">Badge on games</span>
+            <input class="tks-toggle" type="checkbox" role="switch" checked>
+            <span class="tks-field-help">Adds "KLAC" to search and wishlist rows and to game
               images.</span>
           </label>
-          <label class="sar-field">
-            <span class="sar-field-label">Entry in the banner on game pages</span>
-            <input class="sar-toggle" type="checkbox" role="switch" checked>
+          <label class="tks-field">
+            <span class="tks-field-label">Entry in the banner on game pages</span>
+            <input class="tks-toggle" type="checkbox" role="switch" checked>
           </label>
-          <div class="sar-field" data-sar-layout="stacked">
-            <label class="sar-field-label" for="o-chip">Chip text</label>
-            <div class="sar-text-entry">
-              <input class="sar-input" id="o-chip" type="text" autocomplete="off" maxlength="32"
+          <div class="tks-field" data-tks-layout="stacked">
+            <label class="tks-field-label" for="o-chip">Chip text</label>
+            <div class="tks-text-entry">
+              <input class="tks-input" id="o-chip" type="text" autocomplete="off" maxlength="32"
                 placeholder="KLAC" value="Kernel"
                 aria-describedby="o-chip-help o-chip-count">
-              <button class="sar-button" data-sar-variant="quiet" type="button"
+              <button class="tks-button" data-tks-variant="quiet" type="button"
                 aria-label="Reset the chip text of Uses Kernel Level Anti-Cheat">Reset</button>
             </div>
-            <span class="sar-field-count" id="o-chip-count">6 of 32</span>
-            <span class="sar-field-help" id="o-chip-help">Your own words for this tag's badges,
+            <span class="tks-field-count" id="o-chip-count">6 of 32</span>
+            <span class="tks-field-help" id="o-chip-help">Your own words for this tag's badges,
               its tab and its Ignore buttons. Leave it empty for the default. Hover cards, banner
               headings and screen readers still give Steam's words.</span>
           </div>
-          <div class="sar-field" data-sar-layout="stacked">
-            <label class="sar-field-label" for="o-chip-compact">Short chip text for small
+          <div class="tks-field" data-tks-layout="stacked">
+            <label class="tks-field-label" for="o-chip-compact">Short chip text for small
               images</label>
-            <div class="sar-text-entry">
-              <input class="sar-input" id="o-chip-compact" type="text" autocomplete="off"
+            <div class="tks-text-entry">
+              <input class="tks-input" id="o-chip-compact" type="text" autocomplete="off"
                 maxlength="16" placeholder="Kernel"
                 aria-describedby="o-chip-compact-help o-chip-compact-count">
-              <button class="sar-button" data-sar-variant="quiet" type="button" hidden
+              <button class="tks-button" data-tks-variant="quiet" type="button" hidden
                 aria-label="Reset the short chip text of Uses Kernel Level Anti-Cheat"
                 >Reset</button>
             </div>
-            <span class="sar-field-count" id="o-chip-compact-count">0 of 16</span>
-            <span class="sar-field-help" id="o-chip-compact-help">Shown on game images narrower
+            <span class="tks-field-count" id="o-chip-compact-count">0 of 16</span>
+            <span class="tks-field-help" id="o-chip-compact-help">Shown on game images narrower
               than 400 pixels. Leave it empty to use the chip text.</span>
           </div>
-          <div class="sar-field" data-sar-layout="stacked">
-            <span class="sar-field-label" id="o-preview">Preview</span>
-            <div class="sar-chip-preview" role="group" aria-labelledby="o-preview"
-              style="--sar-tag-tint: rgb(232 89 12 / 0.2); --sar-tag-text: #f5bf9f;
-                --sar-tag-edge: #e8590c; --sar-tag-solid: #331404; --sar-tag-light: #fbe3d4">
-              <span class="sar-badge"><span class="sar-badge-label"
-                  aria-hidden="true">Kernel</span><span class="sar-vh">Kernel: Uses Kernel Level
+          <div class="tks-field" data-tks-layout="stacked">
+            <span class="tks-field-label" id="o-preview">Preview</span>
+            <div class="tks-chip-preview" role="group" aria-labelledby="o-preview"
+              style="--tks-tag-tint: rgb(232 89 12 / 0.2); --tks-tag-text: #f5bf9f;
+                --tks-tag-edge: #e8590c; --tks-tag-solid: #331404; --tks-tag-light: #fbe3d4">
+              <span class="tks-badge"><span class="tks-badge-label"
+                  aria-hidden="true">Kernel</span><span class="tks-vh">Kernel: Uses Kernel Level
                   Anti-Cheat</span></span>
-              <span class="sar-compact" data-sar-size="text"><span class="sar-compact-label"
-                  aria-hidden="true">Kernel</span><span class="sar-vh">Kernel: Uses Kernel Level
+              <span class="tks-compact" data-tks-size="text"><span class="tks-compact-label"
+                  aria-hidden="true">Kernel</span><span class="tks-vh">Kernel: Uses Kernel Level
                   Anti-Cheat</span></span>
             </div>
           </div>
-          <div class="sar-field sar-color" data-sar-layout="stacked">
-            <label class="sar-field-label" for="o-color">Badge color (experimental)</label>
-            <div class="sar-color-entry">
-              <input class="sar-color-pick" type="color" value="#e8590c"
+          <div class="tks-field tks-color" data-tks-layout="stacked">
+            <label class="tks-field-label" for="o-color">Badge color (experimental)</label>
+            <div class="tks-color-entry">
+              <input class="tks-color-pick" type="color" value="#e8590c"
                 aria-label="Pick the badge color of Uses Kernel Level Anti-Cheat">
-              <input class="sar-input" id="o-color" type="text" autocomplete="off"
+              <input class="tks-input" id="o-color" type="text" autocomplete="off"
                 spellcheck="false" placeholder="Default" value="#e8590c">
-              <button class="sar-button" data-sar-variant="quiet" type="button">Reset</button>
+              <button class="tks-button" data-tks-variant="quiet" type="button">Reset</button>
             </div>
-            <span class="sar-field-help">Contrast is not checked. See General.</span>
+            <span class="tks-field-help">Contrast is not checked. See General.</span>
           </div>
-          <div class="sar-field" data-sar-layout="stacked">
-            <span class="sar-field-label" id="o-filter">Games with this tag</span>
-            <fieldset class="sar-segment" aria-labelledby="o-filter">
+          <div class="tks-field" data-tks-layout="stacked">
+            <span class="tks-field-label" id="o-filter">Games with this tag</span>
+            <fieldset class="tks-segment" aria-labelledby="o-filter">
               <input type="radio" name="o-f" id="o-f-off">
               <label for="o-f-off">Show</label>
               <input type="radio" name="o-f" id="o-f-dim" checked>
@@ -213,90 +213,90 @@
               <input type="radio" name="o-f" id="o-f-hide">
               <label for="o-f-hide">Hide</label>
             </fieldset>
-            <span class="sar-field-help">Fades these games in lists. Hover to see one
+            <span class="tks-field-help">Fades these games in lists. Hover to see one
               clearly.</span>
           </div>
         </fieldset>
       </section>
-      <section class="sar-card" aria-labelledby="o-ign">
-        <h3 class="sar-card-title" id="o-ign" tabindex="-1">Ignored for this tag</h3>
-        <div class="sar-allow-group" role="group" aria-labelledby="o-ign-games">
-          <h4 class="sar-allow-scope" id="o-ign-games">Games you ignored</h4>
-          <ul class="sar-allow-list">
-            <li class="sar-allow-item">
-              <div><a class="sar-allow-name" href="#">A game with a long name that ends in an
-                ellipsis</a><span class="sar-allow-meta">Since Oct 20, 2026</span></div>
-              <button class="sar-button" data-sar-variant="quiet" type="button"
+      <section class="tks-card" aria-labelledby="o-ign">
+        <h3 class="tks-card-title" id="o-ign" tabindex="-1">Ignored for this tag</h3>
+        <div class="tks-allow-group" role="group" aria-labelledby="o-ign-games">
+          <h4 class="tks-allow-scope" id="o-ign-games">Games you ignored</h4>
+          <ul class="tks-allow-list">
+            <li class="tks-allow-item">
+              <div><a class="tks-allow-name" href="#">A game with a long name that ends in an
+                ellipsis</a><span class="tks-allow-meta">Since Oct 20, 2026</span></div>
+              <button class="tks-button" data-tks-variant="quiet" type="button"
                 aria-label="Stop ignoring A game with a long name (Uses Kernel Level Anti-Cheat)">
                 Stop ignoring</button>
             </li>
           </ul>
         </div>
-        <div class="sar-allow-group" role="group" aria-labelledby="o-ign-devs">
-          <h4 class="sar-allow-scope" id="o-ign-devs">Developers you ignored</h4>
-          <ul class="sar-allow-list">
-            <li class="sar-allow-item">
-              <div><span class="sar-allow-name">A studio</span><span class="sar-allow-meta">Since
+        <div class="tks-allow-group" role="group" aria-labelledby="o-ign-devs">
+          <h4 class="tks-allow-scope" id="o-ign-devs">Developers you ignored</h4>
+          <ul class="tks-allow-list">
+            <li class="tks-allow-item">
+              <div><span class="tks-allow-name">A studio</span><span class="tks-allow-meta">Since
                 Sep 30, 2026</span></div>
-              <button class="sar-button" data-sar-variant="quiet" type="button"
+              <button class="tks-button" data-tks-variant="quiet" type="button"
                 aria-label="Stop ignoring A studio (Uses Kernel Level Anti-Cheat)">
                 Stop ignoring</button>
             </li>
           </ul>
         </div>
-        <p class="sar-allow-note">2 items ignored for all tags also apply here.
-          <button class="sar-button" data-sar-variant="quiet" type="button">Show in
+        <p class="tks-allow-note">2 items ignored for all tags also apply here.
+          <button class="tks-button" data-tks-variant="quiet" type="button">Show in
             General</button></p>
       </section>
     </div>
-    <div class="sar-tabpanel" role="tabpanel" id="o-p-account"
+    <div class="tks-tabpanel" role="tabpanel" id="o-p-account"
       aria-labelledby="o-t-account" hidden></div>
-    <div class="sar-tabpanel" role="tabpanel" id="o-p-ai"
+    <div class="tks-tabpanel" role="tabpanel" id="o-p-ai"
       aria-labelledby="o-t-ai" hidden></div>
-    <div class="sar-tabpanel" role="tabpanel" id="o-p-anticheat"
+    <div class="tks-tabpanel" role="tabpanel" id="o-p-anticheat"
       aria-labelledby="o-t-anticheat" hidden></div>
-    <div class="sar-tabpanel" role="tabpanel" id="o-p-deck"
+    <div class="tks-tabpanel" role="tabpanel" id="o-p-deck"
       aria-labelledby="o-t-deck" hidden></div>
-    <div class="sar-tabpanel" role="tabpanel" id="o-p-drm"
+    <div class="tks-tabpanel" role="tabpanel" id="o-p-drm"
       aria-labelledby="o-t-drm" hidden></div>
-    <div class="sar-tabpanel" role="tabpanel" id="o-p-earlyaccess"
+    <div class="tks-tabpanel" role="tabpanel" id="o-p-earlyaccess"
       aria-labelledby="o-t-earlyaccess" hidden></div>
-    <div class="sar-tabpanel" role="tabpanel" id="o-p-eula"
+    <div class="tks-tabpanel" role="tabpanel" id="o-p-eula"
       aria-labelledby="o-t-eula" hidden></div>
-    <div class="sar-tabpanel" role="tabpanel" id="o-p-family"
+    <div class="tks-tabpanel" role="tabpanel" id="o-p-family"
       aria-labelledby="o-t-family" hidden></div>
-    <div class="sar-tabpanel" role="tabpanel" id="o-p-iap"
+    <div class="tks-tabpanel" role="tabpanel" id="o-p-iap"
       aria-labelledby="o-t-iap" hidden></div>
-    <div class="sar-tabpanel" role="tabpanel" id="o-p-pvp"
+    <div class="tks-tabpanel" role="tabpanel" id="o-p-pvp"
       aria-labelledby="o-t-pvp" hidden></div>
-    <div class="sar-tabpanel" role="tabpanel" id="o-p-machine"
+    <div class="tks-tabpanel" role="tabpanel" id="o-p-machine"
       aria-labelledby="o-t-machine" hidden></div>
   </div>
-    <div class="sar-options-footer"><p>Not affiliated with or endorsed by Valve Corporation.
+    <div class="tks-options-footer"><p>Not affiliated with or endorsed by Valve Corporation.
       Steam is a trademark of Valve Corporation.</p></div>
   </div>
   <div class="popup-frame">
-    <div class="sar-options" data-sar-context="popup" data-sar-view="list">
-      <header class="sar-options-header">
+    <div class="tks-options" data-tks-context="popup" data-tks-view="list">
+      <header class="tks-options-header">
         <img src="../../../assets/icons/icon-32.png" alt="">
         <div>
-          <h1 class="sar-options-title">Tag Kit for Steam</h1>
-          <div class="sar-options-version">Version 2026.10.20</div>
+          <h1 class="tks-options-title">Tag Kit for Steam</h1>
+          <div class="tks-options-version">Version 2026.10.20</div>
         </div>
-        <a class="sar-gear" href="#" aria-label="All settings" title="All settings">
+        <a class="tks-gear" href="#" aria-label="All settings" title="All settings">
           <svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><path fill-rule="evenodd"
             d="M40 26 45 30 43 35 37 34 34 37 35 43 30 45 26 40 22 40 18 45 13 43 14 37
             11 34 5 35 3 30 8 26 8 22 3 18 5 13 11 14 14 11 13 5 18 3 22 8 26 8 30 3 35 5
             34 11 37 14 43 13 45 18 40 22ZM31 24a7 7 0 1 0-14 0 7 7 0 1 0 14 0Z"/></svg></a>
       </header>
-      <div class="sar-kind-rows">
-      <div class="sar-kind-row">
-        <a class="sar-kind-link" id="q-account" href="#tab=account">
-          <span class="sar-tab-label" aria-hidden="true">3rd-party account</span>
-          <span class="sar-vh">3rd-party account: Requires 3rd-Party Account</span>
+      <div class="tks-kind-rows">
+      <div class="tks-kind-row">
+        <a class="tks-kind-link" id="q-account" href="#tab=account">
+          <span class="tks-tab-label" aria-hidden="true">3rd-party account</span>
+          <span class="tks-vh">3rd-party account: Requires 3rd-Party Account</span>
         </a>
-        <span class="sar-vh" id="q-account-f">Games with this tag</span>
-        <fieldset class="sar-segment" aria-labelledby="q-account q-account-f">
+        <span class="tks-vh" id="q-account-f">Games with this tag</span>
+        <fieldset class="tks-segment" aria-labelledby="q-account q-account-f">
           <input type="radio" name="q-account" id="q-account-off" checked>
           <label for="q-account-off">Show</label>
           <input type="radio" name="q-account" id="q-account-dim">
@@ -304,16 +304,16 @@
           <input type="radio" name="q-account" id="q-account-hide">
           <label for="q-account-hide">Hide</label>
         </fieldset>
-        <input class="sar-toggle" type="checkbox" role="switch"
+        <input class="tks-toggle" type="checkbox" role="switch"
           aria-labelledby="q-account" checked>
       </div>
-      <div class="sar-kind-row">
-        <a class="sar-kind-link" id="q-ai" href="#tab=ai">
-          <span class="sar-tab-label" aria-hidden="true">AI</span>
-          <span class="sar-vh">AI: AI Generated Content Disclosure</span>
+      <div class="tks-kind-row">
+        <a class="tks-kind-link" id="q-ai" href="#tab=ai">
+          <span class="tks-tab-label" aria-hidden="true">AI</span>
+          <span class="tks-vh">AI: AI Generated Content Disclosure</span>
         </a>
-        <span class="sar-vh" id="q-ai-f">Games with this tag</span>
-        <fieldset class="sar-segment" aria-labelledby="q-ai q-ai-f">
+        <span class="tks-vh" id="q-ai-f">Games with this tag</span>
+        <fieldset class="tks-segment" aria-labelledby="q-ai q-ai-f">
           <input type="radio" name="q-ai" id="q-ai-off" checked>
           <label for="q-ai-off">Show</label>
           <input type="radio" name="q-ai" id="q-ai-dim">
@@ -321,16 +321,16 @@
           <input type="radio" name="q-ai" id="q-ai-hide">
           <label for="q-ai-hide">Hide</label>
         </fieldset>
-        <input class="sar-toggle" type="checkbox" role="switch"
+        <input class="tks-toggle" type="checkbox" role="switch"
           aria-labelledby="q-ai" checked>
       </div>
-      <div class="sar-kind-row">
-        <a class="sar-kind-link" id="q-anticheat" href="#tab=anticheat">
-          <span class="sar-tab-label" aria-hidden="true">Anti-cheat</span>
-          <span class="sar-vh">Anti-cheat: Uses Anti-Cheat Software</span>
+      <div class="tks-kind-row">
+        <a class="tks-kind-link" id="q-anticheat" href="#tab=anticheat">
+          <span class="tks-tab-label" aria-hidden="true">Anti-cheat</span>
+          <span class="tks-vh">Anti-cheat: Uses Anti-Cheat Software</span>
         </a>
-        <span class="sar-vh" id="q-anticheat-f">Games with this tag</span>
-        <fieldset class="sar-segment" aria-labelledby="q-anticheat q-anticheat-f">
+        <span class="tks-vh" id="q-anticheat-f">Games with this tag</span>
+        <fieldset class="tks-segment" aria-labelledby="q-anticheat q-anticheat-f">
           <input type="radio" name="q-anticheat" id="q-anticheat-off" checked>
           <label for="q-anticheat-off">Show</label>
           <input type="radio" name="q-anticheat" id="q-anticheat-dim">
@@ -338,16 +338,16 @@
           <input type="radio" name="q-anticheat" id="q-anticheat-hide">
           <label for="q-anticheat-hide">Hide</label>
         </fieldset>
-        <input class="sar-toggle" type="checkbox" role="switch"
+        <input class="tks-toggle" type="checkbox" role="switch"
           aria-labelledby="q-anticheat" checked>
       </div>
-      <div class="sar-kind-row">
-        <a class="sar-kind-link" id="q-deck" href="#tab=deck">
-          <span class="sar-tab-label" aria-hidden="true">Steam Deck</span>
-          <span class="sar-vh">Steam Deck: Steam Deck Compatibility</span>
+      <div class="tks-kind-row">
+        <a class="tks-kind-link" id="q-deck" href="#tab=deck">
+          <span class="tks-tab-label" aria-hidden="true">Steam Deck</span>
+          <span class="tks-vh">Steam Deck: Steam Deck Compatibility</span>
         </a>
-        <span class="sar-vh" id="q-deck-f">Games with this tag</span>
-        <fieldset class="sar-segment" aria-labelledby="q-deck q-deck-f" disabled>
+        <span class="tks-vh" id="q-deck-f">Games with this tag</span>
+        <fieldset class="tks-segment" aria-labelledby="q-deck q-deck-f" disabled>
           <input type="radio" name="q-deck" id="q-deck-off" checked>
           <label for="q-deck-off">Show</label>
           <input type="radio" name="q-deck" id="q-deck-dim">
@@ -355,16 +355,16 @@
           <input type="radio" name="q-deck" id="q-deck-hide">
           <label for="q-deck-hide">Hide</label>
         </fieldset>
-        <input class="sar-toggle" type="checkbox" role="switch"
+        <input class="tks-toggle" type="checkbox" role="switch"
           aria-labelledby="q-deck">
       </div>
-      <div class="sar-kind-row">
-        <a class="sar-kind-link" id="q-drm" href="#tab=drm">
-          <span class="sar-tab-label" aria-hidden="true">3rd-party DRM</span>
-          <span class="sar-vh">3rd-party DRM: Incorporates 3rd-party DRM</span>
+      <div class="tks-kind-row">
+        <a class="tks-kind-link" id="q-drm" href="#tab=drm">
+          <span class="tks-tab-label" aria-hidden="true">3rd-party DRM</span>
+          <span class="tks-vh">3rd-party DRM: Incorporates 3rd-party DRM</span>
         </a>
-        <span class="sar-vh" id="q-drm-f">Games with this tag</span>
-        <fieldset class="sar-segment" aria-labelledby="q-drm q-drm-f">
+        <span class="tks-vh" id="q-drm-f">Games with this tag</span>
+        <fieldset class="tks-segment" aria-labelledby="q-drm q-drm-f">
           <input type="radio" name="q-drm" id="q-drm-off" checked>
           <label for="q-drm-off">Show</label>
           <input type="radio" name="q-drm" id="q-drm-dim">
@@ -372,16 +372,16 @@
           <input type="radio" name="q-drm" id="q-drm-hide">
           <label for="q-drm-hide">Hide</label>
         </fieldset>
-        <input class="sar-toggle" type="checkbox" role="switch"
+        <input class="tks-toggle" type="checkbox" role="switch"
           aria-labelledby="q-drm" checked>
       </div>
-      <div class="sar-kind-row">
-        <a class="sar-kind-link" id="q-earlyaccess" href="#tab=earlyaccess">
-          <span class="sar-tab-label" aria-hidden="true">Early Access</span>
-          <span class="sar-vh">Early Access: Early Access Game</span>
+      <div class="tks-kind-row">
+        <a class="tks-kind-link" id="q-earlyaccess" href="#tab=earlyaccess">
+          <span class="tks-tab-label" aria-hidden="true">Early Access</span>
+          <span class="tks-vh">Early Access: Early Access Game</span>
         </a>
-        <span class="sar-vh" id="q-earlyaccess-f">Games with this tag</span>
-        <fieldset class="sar-segment" aria-labelledby="q-earlyaccess q-earlyaccess-f">
+        <span class="tks-vh" id="q-earlyaccess-f">Games with this tag</span>
+        <fieldset class="tks-segment" aria-labelledby="q-earlyaccess q-earlyaccess-f">
           <input type="radio" name="q-earlyaccess" id="q-earlyaccess-off" checked>
           <label for="q-earlyaccess-off">Show</label>
           <input type="radio" name="q-earlyaccess" id="q-earlyaccess-dim">
@@ -389,16 +389,16 @@
           <input type="radio" name="q-earlyaccess" id="q-earlyaccess-hide">
           <label for="q-earlyaccess-hide">Hide</label>
         </fieldset>
-        <input class="sar-toggle" type="checkbox" role="switch"
+        <input class="tks-toggle" type="checkbox" role="switch"
           aria-labelledby="q-earlyaccess" checked>
       </div>
-      <div class="sar-kind-row">
-        <a class="sar-kind-link" id="q-eula" href="#tab=eula">
-          <span class="sar-tab-label" aria-hidden="true">3rd-party EULA</span>
-          <span class="sar-vh">3rd-party EULA: Requires agreement to a 3rd-party EULA</span>
+      <div class="tks-kind-row">
+        <a class="tks-kind-link" id="q-eula" href="#tab=eula">
+          <span class="tks-tab-label" aria-hidden="true">3rd-party EULA</span>
+          <span class="tks-vh">3rd-party EULA: Requires agreement to a 3rd-party EULA</span>
         </a>
-        <span class="sar-vh" id="q-eula-f">Games with this tag</span>
-        <fieldset class="sar-segment" aria-labelledby="q-eula q-eula-f">
+        <span class="tks-vh" id="q-eula-f">Games with this tag</span>
+        <fieldset class="tks-segment" aria-labelledby="q-eula q-eula-f">
           <input type="radio" name="q-eula" id="q-eula-off" checked>
           <label for="q-eula-off">Show</label>
           <input type="radio" name="q-eula" id="q-eula-dim">
@@ -406,16 +406,16 @@
           <input type="radio" name="q-eula" id="q-eula-hide">
           <label for="q-eula-hide">Hide</label>
         </fieldset>
-        <input class="sar-toggle" type="checkbox" role="switch"
+        <input class="tks-toggle" type="checkbox" role="switch"
           aria-labelledby="q-eula" checked>
       </div>
-      <div class="sar-kind-row">
-        <a class="sar-kind-link" id="q-family" href="#tab=family">
-          <span class="sar-tab-label" aria-hidden="true">Family Sharing</span>
-          <span class="sar-vh">Family Sharing</span>
+      <div class="tks-kind-row">
+        <a class="tks-kind-link" id="q-family" href="#tab=family">
+          <span class="tks-tab-label" aria-hidden="true">Family Sharing</span>
+          <span class="tks-vh">Family Sharing</span>
         </a>
-        <span class="sar-vh" id="q-family-f">Games with this tag</span>
-        <fieldset class="sar-segment" aria-labelledby="q-family q-family-f" disabled>
+        <span class="tks-vh" id="q-family-f">Games with this tag</span>
+        <fieldset class="tks-segment" aria-labelledby="q-family q-family-f" disabled>
           <input type="radio" name="q-family" id="q-family-off" checked>
           <label for="q-family-off">Show</label>
           <input type="radio" name="q-family" id="q-family-dim">
@@ -423,16 +423,16 @@
           <input type="radio" name="q-family" id="q-family-hide">
           <label for="q-family-hide">Hide</label>
         </fieldset>
-        <input class="sar-toggle" type="checkbox" role="switch"
+        <input class="tks-toggle" type="checkbox" role="switch"
           aria-labelledby="q-family">
       </div>
-      <div class="sar-kind-row">
-        <a class="sar-kind-link" id="q-iap" href="#tab=iap">
-          <span class="sar-tab-label" aria-hidden="true">In-app purchases</span>
-          <span class="sar-vh">In-app purchases: In-App Purchases</span>
+      <div class="tks-kind-row">
+        <a class="tks-kind-link" id="q-iap" href="#tab=iap">
+          <span class="tks-tab-label" aria-hidden="true">In-app purchases</span>
+          <span class="tks-vh">In-app purchases: In-App Purchases</span>
         </a>
-        <span class="sar-vh" id="q-iap-f">Games with this tag</span>
-        <fieldset class="sar-segment" aria-labelledby="q-iap q-iap-f" disabled>
+        <span class="tks-vh" id="q-iap-f">Games with this tag</span>
+        <fieldset class="tks-segment" aria-labelledby="q-iap q-iap-f" disabled>
           <input type="radio" name="q-iap" id="q-iap-off" checked>
           <label for="q-iap-off">Show</label>
           <input type="radio" name="q-iap" id="q-iap-dim">
@@ -440,16 +440,16 @@
           <input type="radio" name="q-iap" id="q-iap-hide">
           <label for="q-iap-hide">Hide</label>
         </fieldset>
-        <input class="sar-toggle" type="checkbox" role="switch"
+        <input class="tks-toggle" type="checkbox" role="switch"
           aria-labelledby="q-iap">
       </div>
-      <div class="sar-kind-row">
-        <a class="sar-kind-link" id="q-kernel" href="#tab=kernel">
-          <span class="sar-tab-label" aria-hidden="true">Kernel-level anti-cheat</span>
-          <span class="sar-vh">Kernel-level anti-cheat: Uses Kernel Level Anti-Cheat</span>
+      <div class="tks-kind-row">
+        <a class="tks-kind-link" id="q-kernel" href="#tab=kernel">
+          <span class="tks-tab-label" aria-hidden="true">Kernel-level anti-cheat</span>
+          <span class="tks-vh">Kernel-level anti-cheat: Uses Kernel Level Anti-Cheat</span>
         </a>
-        <span class="sar-vh" id="q-kernel-f">Games with this tag</span>
-        <fieldset class="sar-segment" aria-labelledby="q-kernel q-kernel-f">
+        <span class="tks-vh" id="q-kernel-f">Games with this tag</span>
+        <fieldset class="tks-segment" aria-labelledby="q-kernel q-kernel-f">
           <input type="radio" name="q-kernel" id="q-kernel-off" checked>
           <label for="q-kernel-off">Show</label>
           <input type="radio" name="q-kernel" id="q-kernel-dim">
@@ -457,16 +457,16 @@
           <input type="radio" name="q-kernel" id="q-kernel-hide">
           <label for="q-kernel-hide">Hide</label>
         </fieldset>
-        <input class="sar-toggle" type="checkbox" role="switch"
+        <input class="tks-toggle" type="checkbox" role="switch"
           aria-labelledby="q-kernel" checked>
       </div>
-      <div class="sar-kind-row">
-        <a class="sar-kind-link" id="q-pvp" href="#tab=pvp">
-          <span class="sar-tab-label" aria-hidden="true">PvP</span>
-          <span class="sar-vh">PvP</span>
+      <div class="tks-kind-row">
+        <a class="tks-kind-link" id="q-pvp" href="#tab=pvp">
+          <span class="tks-tab-label" aria-hidden="true">PvP</span>
+          <span class="tks-vh">PvP</span>
         </a>
-        <span class="sar-vh" id="q-pvp-f">Games with this tag</span>
-        <fieldset class="sar-segment" aria-labelledby="q-pvp q-pvp-f" disabled>
+        <span class="tks-vh" id="q-pvp-f">Games with this tag</span>
+        <fieldset class="tks-segment" aria-labelledby="q-pvp q-pvp-f" disabled>
           <input type="radio" name="q-pvp" id="q-pvp-off" checked>
           <label for="q-pvp-off">Show</label>
           <input type="radio" name="q-pvp" id="q-pvp-dim">
@@ -474,16 +474,16 @@
           <input type="radio" name="q-pvp" id="q-pvp-hide">
           <label for="q-pvp-hide">Hide</label>
         </fieldset>
-        <input class="sar-toggle" type="checkbox" role="switch"
+        <input class="tks-toggle" type="checkbox" role="switch"
           aria-labelledby="q-pvp">
       </div>
-      <div class="sar-kind-row">
-        <a class="sar-kind-link" id="q-machine" href="#tab=machine">
-          <span class="sar-tab-label" aria-hidden="true">Steam Machine</span>
-          <span class="sar-vh">Steam Machine: Steam Machine Compatibility</span>
+      <div class="tks-kind-row">
+        <a class="tks-kind-link" id="q-machine" href="#tab=machine">
+          <span class="tks-tab-label" aria-hidden="true">Steam Machine</span>
+          <span class="tks-vh">Steam Machine: Steam Machine Compatibility</span>
         </a>
-        <span class="sar-vh" id="q-machine-f">Games with this tag</span>
-        <fieldset class="sar-segment" aria-labelledby="q-machine q-machine-f" disabled>
+        <span class="tks-vh" id="q-machine-f">Games with this tag</span>
+        <fieldset class="tks-segment" aria-labelledby="q-machine q-machine-f" disabled>
           <input type="radio" name="q-machine" id="q-machine-off" checked>
           <label for="q-machine-off">Show</label>
           <input type="radio" name="q-machine" id="q-machine-dim">
@@ -491,150 +491,150 @@
           <input type="radio" name="q-machine" id="q-machine-hide">
           <label for="q-machine-hide">Hide</label>
         </fieldset>
-        <input class="sar-toggle" type="checkbox" role="switch"
+        <input class="tks-toggle" type="checkbox" role="switch"
           aria-labelledby="q-machine">
       </div>
       </div>
-      <div class="sar-options-footer"><p>Sends no reports. It only reads what developers report on
+      <div class="tks-options-footer"><p>Sends no reports. It only reads what developers report on
         Steam.</p><p>Not affiliated with Valve. Nothing leaves your browser except lookups to
         Valve's store.</p></div>
     </div>
   </div>
 </div>
 <div class="one">
-  <div class="sar-options" data-sar-context="page" data-sar-view="tabs">
-    <h2 class="sar-panel-title">General: Tag order, Kernel-level anti-cheat picked up</h2>
-    <section class="sar-card" aria-labelledby="g-order">
-      <h3 class="sar-card-title" id="g-order" tabindex="-1">Tag order</h3>
-      <p class="sar-field-help">Tags at the top have priority: badges, banners and summaries list
+  <div class="tks-options" data-tks-context="page" data-tks-view="tabs">
+    <h2 class="tks-panel-title">General: Tag order, Kernel-level anti-cheat picked up</h2>
+    <section class="tks-card" aria-labelledby="g-order">
+      <h3 class="tks-card-title" id="g-order" tabindex="-1">Tag order</h3>
+      <p class="tks-field-help">Tags at the top have priority: badges, banners and summaries list
         tags in this order, and where room is short the first ones take it. The settings tabs and
         the popup follow the same order.</p>
-      <p class="sar-vh">Only the first 2 tags fit on game images and search suggestions; the rest go
+      <p class="tks-vh">Only the first 2 tags fit on game images and search suggestions; the rest go
         into "+N". Only the first 3 tags fit on search, wishlist and DLC rows; the rest go into
         "+N".</p>
-      <p class="sar-field-help" id="g-order-how">Drag a tag by its handle, or click the handle and
+      <p class="tks-field-help" id="g-order-how">Drag a tag by its handle, or click the handle and
         then the handle of the place it goes to. With a keyboard, Space or Enter picks a tag up, the
         arrow keys move it, Space or Enter drops it and Escape puts it back.</p>
-      <ul class="sar-order-list">
-      <li class="sar-order-row">
-        <button class="sar-order-handle" type="button" data-sar-order="ai"
+      <ul class="tks-order-list">
+      <li class="tks-order-row">
+        <button class="tks-order-handle" type="button" data-tks-order="ai"
           aria-label="Reorder AI" aria-describedby="g-order-how" aria-pressed="false">
           <svg viewBox="0 0 10 16" aria-hidden="true" focusable="false">
             <path d="M2 1h2v2H2zm4 0h2v2H6zM2 7h2v2H2zm4 0h2v2H6zM2 13h2v2H2zm4 0h2v2H6z"/></svg>
         </button>
-        <span class="sar-order-key">AI</span>
-        <span class="sar-order-description">AI Generated Content Disclosure</span>
+        <span class="tks-order-key">AI</span>
+        <span class="tks-order-description">AI Generated Content Disclosure</span>
       </li>
-      <li class="sar-order-row" data-sar-held>
-        <button class="sar-order-handle" type="button" data-sar-order="kernel"
+      <li class="tks-order-row" data-tks-held>
+        <button class="tks-order-handle" type="button" data-tks-order="kernel"
           aria-label="Reorder Kernel-level anti-cheat" aria-describedby="g-order-how"
           aria-pressed="true">
           <svg viewBox="0 0 10 16" aria-hidden="true" focusable="false">
             <path d="M2 1h2v2H2zm4 0h2v2H6zM2 7h2v2H2zm4 0h2v2H6zM2 13h2v2H2zm4 0h2v2H6z"/></svg>
         </button>
-        <span class="sar-order-key">Kernel-level anti-cheat</span>
-        <span class="sar-order-description">Uses Kernel Level Anti-Cheat</span>
+        <span class="tks-order-key">Kernel-level anti-cheat</span>
+        <span class="tks-order-description">Uses Kernel Level Anti-Cheat</span>
       </li>
-      <li class="sar-order-cue" aria-hidden="true">
+      <li class="tks-order-cue" aria-hidden="true">
         Only the first 2 tags fit on game images and search suggestions; the rest go into "+N".
       </li>
-      <li class="sar-order-row">
-        <button class="sar-order-handle" type="button" data-sar-order="anticheat"
+      <li class="tks-order-row">
+        <button class="tks-order-handle" type="button" data-tks-order="anticheat"
           aria-label="Reorder Anti-cheat" aria-describedby="g-order-how" aria-pressed="false">
           <svg viewBox="0 0 10 16" aria-hidden="true" focusable="false">
             <path d="M2 1h2v2H2zm4 0h2v2H6zM2 7h2v2H2zm4 0h2v2H6zM2 13h2v2H2zm4 0h2v2H6z"/></svg>
         </button>
-        <span class="sar-order-key">Anti-cheat</span>
-        <span class="sar-order-description">Uses Anti-Cheat Software</span>
+        <span class="tks-order-key">Anti-cheat</span>
+        <span class="tks-order-description">Uses Anti-Cheat Software</span>
       </li>
-      <li class="sar-order-cue" aria-hidden="true">
+      <li class="tks-order-cue" aria-hidden="true">
         Only the first 3 tags fit on search, wishlist and DLC rows; the rest go into "+N".
       </li>
-      <li class="sar-order-row">
-        <button class="sar-order-handle" type="button" data-sar-order="drm"
+      <li class="tks-order-row">
+        <button class="tks-order-handle" type="button" data-tks-order="drm"
           aria-label="Reorder 3rd-party DRM" aria-describedby="g-order-how" aria-pressed="false">
           <svg viewBox="0 0 10 16" aria-hidden="true" focusable="false">
             <path d="M2 1h2v2H2zm4 0h2v2H6zM2 7h2v2H2zm4 0h2v2H6zM2 13h2v2H2zm4 0h2v2H6z"/></svg>
         </button>
-        <span class="sar-order-key">3rd-party DRM</span>
-        <span class="sar-order-description">Incorporates 3rd-party DRM</span>
+        <span class="tks-order-key">3rd-party DRM</span>
+        <span class="tks-order-description">Incorporates 3rd-party DRM</span>
       </li>
-      <li class="sar-order-row">
-        <button class="sar-order-handle" type="button" data-sar-order="account"
+      <li class="tks-order-row">
+        <button class="tks-order-handle" type="button" data-tks-order="account"
           aria-label="Reorder 3rd-party account" aria-describedby="g-order-how"
           aria-pressed="false">
           <svg viewBox="0 0 10 16" aria-hidden="true" focusable="false">
             <path d="M2 1h2v2H2zm4 0h2v2H6zM2 7h2v2H2zm4 0h2v2H6zM2 13h2v2H2zm4 0h2v2H6z"/></svg>
         </button>
-        <span class="sar-order-key">3rd-party account</span>
-        <span class="sar-order-description">Requires 3rd-Party Account</span>
+        <span class="tks-order-key">3rd-party account</span>
+        <span class="tks-order-description">Requires 3rd-Party Account</span>
       </li>
-      <li class="sar-order-row">
-        <button class="sar-order-handle" type="button" data-sar-order="eula"
+      <li class="tks-order-row">
+        <button class="tks-order-handle" type="button" data-tks-order="eula"
           aria-label="Reorder 3rd-party EULA" aria-describedby="g-order-how" aria-pressed="false">
           <svg viewBox="0 0 10 16" aria-hidden="true" focusable="false">
             <path d="M2 1h2v2H2zm4 0h2v2H6zM2 7h2v2H2zm4 0h2v2H6zM2 13h2v2H2zm4 0h2v2H6z"/></svg>
         </button>
-        <span class="sar-order-key">3rd-party EULA</span>
-        <span class="sar-order-description">Requires agreement to a 3rd-party EULA</span>
+        <span class="tks-order-key">3rd-party EULA</span>
+        <span class="tks-order-description">Requires agreement to a 3rd-party EULA</span>
       </li>
-      <li class="sar-order-row">
-        <button class="sar-order-handle" type="button" data-sar-order="pvp"
+      <li class="tks-order-row">
+        <button class="tks-order-handle" type="button" data-tks-order="pvp"
           aria-label="Reorder PvP" aria-describedby="g-order-how" aria-pressed="false">
           <svg viewBox="0 0 10 16" aria-hidden="true" focusable="false">
             <path d="M2 1h2v2H2zm4 0h2v2H6zM2 7h2v2H2zm4 0h2v2H6zM2 13h2v2H2zm4 0h2v2H6z"/></svg>
         </button>
-        <span class="sar-order-key">PvP</span>
-        <span class="sar-order-description">Online, LAN or split-screen PvP</span>
+        <span class="tks-order-key">PvP</span>
+        <span class="tks-order-description">Online, LAN or split-screen PvP</span>
       </li>
-      <li class="sar-order-row">
-        <button class="sar-order-handle" type="button" data-sar-order="iap"
+      <li class="tks-order-row">
+        <button class="tks-order-handle" type="button" data-tks-order="iap"
           aria-label="Reorder In-app purchases" aria-describedby="g-order-how" aria-pressed="false">
           <svg viewBox="0 0 10 16" aria-hidden="true" focusable="false">
             <path d="M2 1h2v2H2zm4 0h2v2H6zM2 7h2v2H2zm4 0h2v2H6zM2 13h2v2H2zm4 0h2v2H6z"/></svg>
         </button>
-        <span class="sar-order-key">In-app purchases</span>
-        <span class="sar-order-description">Contains In-App Purchases</span>
+        <span class="tks-order-key">In-app purchases</span>
+        <span class="tks-order-description">Contains In-App Purchases</span>
       </li>
-      <li class="sar-order-row">
-        <button class="sar-order-handle" type="button" data-sar-order="deck"
+      <li class="tks-order-row">
+        <button class="tks-order-handle" type="button" data-tks-order="deck"
           aria-label="Reorder Steam Deck" aria-describedby="g-order-how" aria-pressed="false">
           <svg viewBox="0 0 10 16" aria-hidden="true" focusable="false">
             <path d="M2 1h2v2H2zm4 0h2v2H6zM2 7h2v2H2zm4 0h2v2H6zM2 13h2v2H2zm4 0h2v2H6z"/></svg>
         </button>
-        <span class="sar-order-key">Steam Deck</span>
-        <span class="sar-order-description">Steam Deck Compatibility</span>
+        <span class="tks-order-key">Steam Deck</span>
+        <span class="tks-order-description">Steam Deck Compatibility</span>
       </li>
-      <li class="sar-order-row">
-        <button class="sar-order-handle" type="button" data-sar-order="machine"
+      <li class="tks-order-row">
+        <button class="tks-order-handle" type="button" data-tks-order="machine"
           aria-label="Reorder Steam Machine" aria-describedby="g-order-how" aria-pressed="false">
           <svg viewBox="0 0 10 16" aria-hidden="true" focusable="false">
             <path d="M2 1h2v2H2zm4 0h2v2H6zM2 7h2v2H2zm4 0h2v2H6zM2 13h2v2H2zm4 0h2v2H6z"/></svg>
         </button>
-        <span class="sar-order-key">Steam Machine</span>
-        <span class="sar-order-description">Steam Machine Compatibility</span>
+        <span class="tks-order-key">Steam Machine</span>
+        <span class="tks-order-description">Steam Machine Compatibility</span>
       </li>
-      <li class="sar-order-row">
-        <button class="sar-order-handle" type="button" data-sar-order="family"
+      <li class="tks-order-row">
+        <button class="tks-order-handle" type="button" data-tks-order="family"
           aria-label="Reorder Family Sharing" aria-describedby="g-order-how" aria-pressed="false">
           <svg viewBox="0 0 10 16" aria-hidden="true" focusable="false">
             <path d="M2 1h2v2H2zm4 0h2v2H6zM2 7h2v2H2zm4 0h2v2H6zM2 13h2v2H2zm4 0h2v2H6z"/></svg>
         </button>
-        <span class="sar-order-key">Family Sharing</span>
-        <span class="sar-order-description">Steam Family Sharing support</span>
+        <span class="tks-order-key">Family Sharing</span>
+        <span class="tks-order-description">Steam Family Sharing support</span>
       </li>
-      <li class="sar-order-row">
-        <button class="sar-order-handle" type="button" data-sar-order="earlyaccess"
+      <li class="tks-order-row">
+        <button class="tks-order-handle" type="button" data-tks-order="earlyaccess"
           aria-label="Reorder Early Access" aria-describedby="g-order-how" aria-pressed="false">
           <svg viewBox="0 0 10 16" aria-hidden="true" focusable="false">
             <path d="M2 1h2v2H2zm4 0h2v2H6zM2 7h2v2H2zm4 0h2v2H6zM2 13h2v2H2zm4 0h2v2H6z"/></svg>
         </button>
-        <span class="sar-order-key">Early Access</span>
-        <span class="sar-order-description">This game is still in Early Access</span>
+        <span class="tks-order-key">Early Access</span>
+        <span class="tks-order-description">This game is still in Early Access</span>
       </li>
       </ul>
-      <button class="sar-button" type="button" data-sar-variant="quiet"
-        data-sar-order-reset>Reset order</button>
+      <button class="tks-button" type="button" data-tks-variant="quiet"
+        data-tks-order-reset>Reset order</button>
     </section>
   </div>
 </div>

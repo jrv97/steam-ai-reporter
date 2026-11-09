@@ -8,33 +8,33 @@
 @import "./shared.css";
 
 /* Store CSS styles bare span and a in places; the reset leaves custom properties alone */
-.sar-chips,
-.sar-badge,
-.sar-badge *,
-.sar-compact,
-.sar-compact *,
-.sar-tag-section,
-.sar-tag-section *,
-.sar-hovercard,
-.sar-hovercard *,
-.sar-list-notice,
-.sar-list-notice * {
+.tks-chips,
+.tks-badge,
+.tks-badge *,
+.tks-compact,
+.tks-compact *,
+.tks-tag-section,
+.tks-tag-section *,
+.tks-hovercard,
+.tks-hovercard *,
+.tks-list-notice,
+.tks-list-notice * {
   all: unset;
   box-sizing: border-box;
 }
 
 /* Set by a placement on an image container that computed to position: static */
-[data-sar-anchor] {
+[data-tks-anchor] {
   position: relative;
 }
 
 /* A host's chips: one group per host, so a row or an image overlay places them as one. The
    store's own tag chips sit 2px apart. */
 
-.sar-chips {
+.tks-chips {
   display: inline-flex;
   align-items: center;
-  gap: var(--sar-space-0);
+  gap: var(--tks-space-0);
   flex: none;
   min-inline-size: 0;
   vertical-align: middle;
@@ -45,14 +45,14 @@
 /* Search rows: right after the title. On a disclosed row the one-line title box becomes a wrapping
    flex row. A long title ends in an ellipsis, and the chips drop to a second line before the title
    gets narrower than its basis. */
-.search_result_row[data-sar-kinds] .search_name {
+.search_result_row[data-tks-kinds] .search_name {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
 }
 
-.search_result_row[data-sar-kinds] .search_name > .title {
-  flex: 1 1 var(--sar-row-title-basis);
+.search_result_row[data-tks-kinds] .search_name > .title {
+  flex: 1 1 var(--tks-row-title-basis);
   min-inline-size: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -61,44 +61,44 @@
 
 /* DLC rows: at the end of the name. A disclosed name becomes a flex row, which drops its
    trailing space. The badge's margin is then the whole gap, as on search rows. */
-.game_area_dlc_row[data-sar-kinds] .game_area_dlc_name {
+.game_area_dlc_row[data-tks-kinds] .game_area_dlc_name {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
 }
 
 /* On a row the group wraps inside its line, so a third chip or the "+N" chip is never clipped */
-.sar-chips[data-sar-chips="full"] {
+.tks-chips[data-tks-chips="full"] {
   flex-wrap: wrap;
   max-inline-size: 100%;
 }
 
-.search_name > .sar-chips,
-.game_area_dlc_name > .sar-chips {
-  margin-inline-start: var(--sar-space-2);
+.search_name > .tks-chips,
+.game_area_dlc_name > .tks-chips {
+  margin-inline-start: var(--tks-space-2);
 }
 
 /* Compact badge: mirrors the store's corner flags, at the inline-end corner. The group sits there
    and its chips shrink to the image's width, the label ending in an ellipsis. */
 
-.sar-chips[data-sar-chips="compact"] {
+.tks-chips[data-tks-chips="compact"] {
   position: absolute;
-  inset-block-start: var(--sar-compact-inset-block);
-  inset-inline-end: var(--sar-compact-inset-inline);
-  z-index: var(--sar-z-badge);
+  inset-block-start: var(--tks-compact-inset-block);
+  inset-inline-end: var(--tks-compact-inset-inline);
+  z-index: var(--tks-z-badge);
   flex: initial;
-  max-inline-size: calc(100% - var(--sar-compact-inset-inline));
+  max-inline-size: calc(100% - var(--tks-compact-inset-inline));
   pointer-events: none;
 }
 
 /* Inside the capsule link: hovering a chip is hovering the link, and the hover card opens. The
    chips take the link's pointer state, so a carousel slide hidden from the pointer lets it pass. */
-.sar-chips[data-sar-chips="compact"][data-sar-in-link="true"],
-.sar-chips[data-sar-in-link="true"] > .sar-compact {
+.tks-chips[data-tks-chips="compact"][data-tks-in-link="true"],
+.tks-chips[data-tks-in-link="true"] > .tks-compact {
   pointer-events: inherit;
 }
 
-.sar-chips[data-sar-in-link="true"] > .sar-compact {
+.tks-chips[data-tks-in-link="true"] > .tks-compact {
   cursor: pointer;
 }
 
@@ -106,258 +106,258 @@
    like the store's tags label; the chips are the full badge in the store's tag font, 2px apart,
    and wrap to more rows. */
 
-.sar-tag-section {
+.tks-tag-section {
   display: block;
-  margin-block-start: var(--sar-space-2);
+  margin-block-start: var(--tks-space-2);
 }
 
-.sar-tag-section-label {
+.tks-tag-section-label {
   display: block;
-  margin-block-end: var(--sar-space-1);
-  color: var(--sar-color-text-muted);
-  font: var(--sar-summary-tag-font);
+  margin-block-end: var(--tks-space-1);
+  color: var(--tks-color-text-muted);
+  font: var(--tks-summary-tag-font);
 }
 
-.sar-tag-section .sar-badge {
-  font: var(--sar-summary-tag-font);
+.tks-tag-section .tks-badge {
+  font: var(--tks-summary-tag-font);
 }
 
-.sar-tag-section .sar-badge:focus-visible {
-  outline: var(--sar-focus-width) solid var(--sar-focus-color);
-  outline-offset: var(--sar-focus-offset);
+.tks-tag-section .tks-badge:focus-visible {
+  outline: var(--tks-focus-width) solid var(--tks-focus-color);
+  outline-offset: var(--tks-focus-offset);
 }
 
 /* Package summary: the tag section's label over one line per tag, above the included games */
 
-.sar-summary {
-  margin-block-end: var(--sar-space-2);
+.tks-summary {
+  margin-block-end: var(--tks-space-2);
 }
 
-.sar-summary-line {
+.tks-summary-line {
   display: block;
-  color: var(--sar-color-text);
-  font: var(--sar-summary-tag-font);
+  color: var(--tks-color-text);
+  font: var(--tks-summary-tag-font);
 }
 
 /* Hover card: the store's game hover popup in our type. One per page, fixed to the viewport;
    hover-card.ts sets its top and left. */
 
-.sar-hovercard {
+.tks-hovercard {
   position: fixed;
-  z-index: var(--sar-z-hovercard);
+  z-index: var(--tks-z-hovercard);
   display: flex;
   flex-direction: column;
-  gap: var(--sar-hovercard-gap);
+  gap: var(--tks-hovercard-gap);
   box-sizing: border-box;
-  inline-size: var(--sar-hovercard-inline-size);
-  max-inline-size: calc(100vw - 2 * var(--sar-hovercard-offset));
-  padding: var(--sar-hovercard-pad);
-  background: var(--sar-hovercard-bg);
-  box-shadow: var(--sar-hovercard-shadow);
-  color: var(--sar-color-text);
-  font: var(--sar-hovercard-meta-font);
+  inline-size: var(--tks-hovercard-inline-size);
+  max-inline-size: calc(100vw - 2 * var(--tks-hovercard-offset));
+  padding: var(--tks-hovercard-pad);
+  background: var(--tks-hovercard-bg);
+  box-shadow: var(--tks-hovercard-shadow);
+  color: var(--tks-color-text);
+  font: var(--tks-hovercard-meta-font);
   text-align: start;
   white-space: normal;
   overflow-wrap: anywhere;
   /* Never taller than the viewport less the offsets; a long list scrolls inside the card. */
-  max-block-size: calc(100vh - 2 * var(--sar-hovercard-offset));
+  max-block-size: calc(100vh - 2 * var(--tks-hovercard-offset));
   overflow-y: auto;
   pointer-events: auto;
   opacity: 1;
-  transition: opacity var(--sar-duration-fast) var(--sar-ease);
+  transition: opacity var(--tks-duration-fast) var(--tks-ease);
 }
 
 @starting-style {
-  .sar-hovercard {
+  .tks-hovercard {
     opacity: 0;
   }
 }
 
 /* The reset unsets the user agent's hidden rule */
-.sar-hovercard[hidden],
-.sar-hovercard [hidden] {
+.tks-hovercard[hidden],
+.tks-hovercard [hidden] {
   display: none !important;
 }
 
 /* One entry per kind: Steam's line as a violet title, then its details. */
-.sar-hovercard-entry {
+.tks-hovercard-entry {
   display: flex;
   flex-direction: column;
-  gap: var(--sar-hovercard-gap);
+  gap: var(--tks-hovercard-gap);
 }
 
-.sar-hovercard-entry + .sar-hovercard-entry {
-  margin-block-start: var(--sar-space-2);
+.tks-hovercard-entry + .tks-hovercard-entry {
+  margin-block-start: var(--tks-space-2);
 }
 
-.sar-hovercard-title {
+.tks-hovercard-title {
   display: block;
-  color: var(--sar-tag-text, var(--sar-badge-fg));
-  font: var(--sar-hovercard-title-font);
+  color: var(--tks-tag-text, var(--tks-badge-fg));
+  font: var(--tks-hovercard-title-font);
 }
 
-.sar-hovercard-source,
-.sar-hovercard-service,
-.sar-hovercard-more,
-.sar-hovercard-full-game {
+.tks-hovercard-source,
+.tks-hovercard-service,
+.tks-hovercard-more,
+.tks-hovercard-full-game {
   display: block;
-  color: var(--sar-color-text-muted);
-  font: var(--sar-hovercard-meta-font);
+  color: var(--tks-color-text-muted);
+  font: var(--tks-hovercard-meta-font);
 }
 
-.sar-hovercard-detail {
+.tks-hovercard-detail {
   display: -webkit-box;
   overflow: hidden;
-  color: var(--sar-color-text);
-  font: var(--sar-hovercard-meta-font);
+  color: var(--tks-color-text);
+  font: var(--tks-hovercard-meta-font);
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: var(--sar-hovercard-detail-lines);
-  line-clamp: var(--sar-hovercard-detail-lines);
+  -webkit-line-clamp: var(--tks-hovercard-detail-lines);
+  line-clamp: var(--tks-hovercard-detail-lines);
 }
 
-.sar-hovercard-notes {
+.tks-hovercard-notes {
   display: -webkit-box;
   overflow: hidden;
-  color: var(--sar-color-text);
-  font: var(--sar-hovercard-notes-font);
+  color: var(--tks-color-text);
+  font: var(--tks-hovercard-notes-font);
   white-space: pre-line;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: var(--sar-hovercard-notes-lines);
-  line-clamp: var(--sar-hovercard-notes-lines);
+  -webkit-line-clamp: var(--tks-hovercard-notes-lines);
+  line-clamp: var(--tks-hovercard-notes-lines);
 }
 
-.sar-hovercard-service-name {
-  color: var(--sar-color-text);
+.tks-hovercard-service-name {
+  color: var(--tks-color-text);
 }
 
 /* The store's game hover stays hidden while the card is open, or both open on a search row */
-[data-sar-hovercard="open"] #global_hover {
+[data-tks-hovercard="open"] #global_hover {
   visibility: hidden !important;
 }
 
-/* List filter: data-sar-filter-<kind> on the root element, data-sar-kinds on each host. A kind
+/* List filter: data-tks-filter-<kind> on the root element, data-tks-kinds on each host. A kind
    dims or hides the hosts that carry it. Several kinds on one host need no extra rule: a hidden
    host ignores a dim, and where hiding would break the list the hide dims, as the dim does. The dim
    is a filter opacity: it multiplies with the store's own opacity, so a carousel slide the store
    hides with opacity 0 stays hidden. No transition on a mode change, so every host flips in one
-   pass. While data-sar-reveal is on the root, a hide dims as well: the hidden results notice sets
+   pass. While data-tks-reveal is on the root, a hide dims as well: the hidden results notice sets
    it. */
 
-[data-sar-filter-ai="dim"] [data-sar-kinds~="ai"],
-[data-sar-filter-kernel="dim"] [data-sar-kinds~="kernel"],
-[data-sar-filter-anticheat="dim"] [data-sar-kinds~="anticheat"],
-[data-sar-filter-drm="dim"] [data-sar-kinds~="drm"],
-[data-sar-filter-account="dim"] [data-sar-kinds~="account"],
-[data-sar-filter-eula="dim"] [data-sar-kinds~="eula"],
-[data-sar-filter-pvp="dim"] [data-sar-kinds~="pvp"],
-[data-sar-filter-iap="dim"] [data-sar-kinds~="iap"],
-[data-sar-filter-deck="dim"] [data-sar-kinds~="deck"],
-[data-sar-filter-machine="dim"] [data-sar-kinds~="machine"],
-[data-sar-filter-family="dim"] [data-sar-kinds~="family"],
-[data-sar-filter-earlyaccess="dim"] [data-sar-kinds~="earlyaccess"],
-[data-sar-filter-ai="hide"]
-  [data-sar-kinds~="ai"]:is([data-sar-hideable="false"], [data-sar-reveal] *),
-[data-sar-filter-kernel="hide"]
-  [data-sar-kinds~="kernel"]:is([data-sar-hideable="false"], [data-sar-reveal] *),
-[data-sar-filter-anticheat="hide"]
-  [data-sar-kinds~="anticheat"]:is([data-sar-hideable="false"], [data-sar-reveal] *),
-[data-sar-filter-drm="hide"]
-  [data-sar-kinds~="drm"]:is([data-sar-hideable="false"], [data-sar-reveal] *),
-[data-sar-filter-account="hide"]
-  [data-sar-kinds~="account"]:is([data-sar-hideable="false"], [data-sar-reveal] *),
-[data-sar-filter-eula="hide"]
-  [data-sar-kinds~="eula"]:is([data-sar-hideable="false"], [data-sar-reveal] *),
-[data-sar-filter-pvp="hide"]
-  [data-sar-kinds~="pvp"]:is([data-sar-hideable="false"], [data-sar-reveal] *),
-[data-sar-filter-iap="hide"]
-  [data-sar-kinds~="iap"]:is([data-sar-hideable="false"], [data-sar-reveal] *),
-[data-sar-filter-deck="hide"]
-  [data-sar-kinds~="deck"]:is([data-sar-hideable="false"], [data-sar-reveal] *),
-[data-sar-filter-machine="hide"]
-  [data-sar-kinds~="machine"]:is([data-sar-hideable="false"], [data-sar-reveal] *),
-[data-sar-filter-family="hide"]
-  [data-sar-kinds~="family"]:is([data-sar-hideable="false"], [data-sar-reveal] *),
-[data-sar-filter-earlyaccess="hide"]
-  [data-sar-kinds~="earlyaccess"]:is([data-sar-hideable="false"], [data-sar-reveal] *) {
-  filter: opacity(var(--sar-dim-opacity)) !important;
+[data-tks-filter-ai="dim"] [data-tks-kinds~="ai"],
+[data-tks-filter-kernel="dim"] [data-tks-kinds~="kernel"],
+[data-tks-filter-anticheat="dim"] [data-tks-kinds~="anticheat"],
+[data-tks-filter-drm="dim"] [data-tks-kinds~="drm"],
+[data-tks-filter-account="dim"] [data-tks-kinds~="account"],
+[data-tks-filter-eula="dim"] [data-tks-kinds~="eula"],
+[data-tks-filter-pvp="dim"] [data-tks-kinds~="pvp"],
+[data-tks-filter-iap="dim"] [data-tks-kinds~="iap"],
+[data-tks-filter-deck="dim"] [data-tks-kinds~="deck"],
+[data-tks-filter-machine="dim"] [data-tks-kinds~="machine"],
+[data-tks-filter-family="dim"] [data-tks-kinds~="family"],
+[data-tks-filter-earlyaccess="dim"] [data-tks-kinds~="earlyaccess"],
+[data-tks-filter-ai="hide"]
+  [data-tks-kinds~="ai"]:is([data-tks-hideable="false"], [data-tks-reveal] *),
+[data-tks-filter-kernel="hide"]
+  [data-tks-kinds~="kernel"]:is([data-tks-hideable="false"], [data-tks-reveal] *),
+[data-tks-filter-anticheat="hide"]
+  [data-tks-kinds~="anticheat"]:is([data-tks-hideable="false"], [data-tks-reveal] *),
+[data-tks-filter-drm="hide"]
+  [data-tks-kinds~="drm"]:is([data-tks-hideable="false"], [data-tks-reveal] *),
+[data-tks-filter-account="hide"]
+  [data-tks-kinds~="account"]:is([data-tks-hideable="false"], [data-tks-reveal] *),
+[data-tks-filter-eula="hide"]
+  [data-tks-kinds~="eula"]:is([data-tks-hideable="false"], [data-tks-reveal] *),
+[data-tks-filter-pvp="hide"]
+  [data-tks-kinds~="pvp"]:is([data-tks-hideable="false"], [data-tks-reveal] *),
+[data-tks-filter-iap="hide"]
+  [data-tks-kinds~="iap"]:is([data-tks-hideable="false"], [data-tks-reveal] *),
+[data-tks-filter-deck="hide"]
+  [data-tks-kinds~="deck"]:is([data-tks-hideable="false"], [data-tks-reveal] *),
+[data-tks-filter-machine="hide"]
+  [data-tks-kinds~="machine"]:is([data-tks-hideable="false"], [data-tks-reveal] *),
+[data-tks-filter-family="hide"]
+  [data-tks-kinds~="family"]:is([data-tks-hideable="false"], [data-tks-reveal] *),
+[data-tks-filter-earlyaccess="hide"]
+  [data-tks-kinds~="earlyaccess"]:is([data-tks-hideable="false"], [data-tks-reveal] *) {
+  filter: opacity(var(--tks-dim-opacity)) !important;
 }
 
-[data-sar-filter-ai="dim"] [data-sar-kinds~="ai"]:is(:hover, :focus-within),
-[data-sar-filter-kernel="dim"] [data-sar-kinds~="kernel"]:is(:hover, :focus-within),
-[data-sar-filter-anticheat="dim"] [data-sar-kinds~="anticheat"]:is(:hover, :focus-within),
-[data-sar-filter-drm="dim"] [data-sar-kinds~="drm"]:is(:hover, :focus-within),
-[data-sar-filter-account="dim"] [data-sar-kinds~="account"]:is(:hover, :focus-within),
-[data-sar-filter-eula="dim"] [data-sar-kinds~="eula"]:is(:hover, :focus-within),
-[data-sar-filter-pvp="dim"] [data-sar-kinds~="pvp"]:is(:hover, :focus-within),
-[data-sar-filter-iap="dim"] [data-sar-kinds~="iap"]:is(:hover, :focus-within),
-[data-sar-filter-deck="dim"] [data-sar-kinds~="deck"]:is(:hover, :focus-within),
-[data-sar-filter-machine="dim"] [data-sar-kinds~="machine"]:is(:hover, :focus-within),
-[data-sar-filter-family="dim"] [data-sar-kinds~="family"]:is(:hover, :focus-within),
-[data-sar-filter-earlyaccess="dim"] [data-sar-kinds~="earlyaccess"]:is(:hover, :focus-within),
-[data-sar-filter-ai="hide"]
-  [data-sar-kinds~="ai"]:is([data-sar-hideable="false"], [data-sar-reveal]
+[data-tks-filter-ai="dim"] [data-tks-kinds~="ai"]:is(:hover, :focus-within),
+[data-tks-filter-kernel="dim"] [data-tks-kinds~="kernel"]:is(:hover, :focus-within),
+[data-tks-filter-anticheat="dim"] [data-tks-kinds~="anticheat"]:is(:hover, :focus-within),
+[data-tks-filter-drm="dim"] [data-tks-kinds~="drm"]:is(:hover, :focus-within),
+[data-tks-filter-account="dim"] [data-tks-kinds~="account"]:is(:hover, :focus-within),
+[data-tks-filter-eula="dim"] [data-tks-kinds~="eula"]:is(:hover, :focus-within),
+[data-tks-filter-pvp="dim"] [data-tks-kinds~="pvp"]:is(:hover, :focus-within),
+[data-tks-filter-iap="dim"] [data-tks-kinds~="iap"]:is(:hover, :focus-within),
+[data-tks-filter-deck="dim"] [data-tks-kinds~="deck"]:is(:hover, :focus-within),
+[data-tks-filter-machine="dim"] [data-tks-kinds~="machine"]:is(:hover, :focus-within),
+[data-tks-filter-family="dim"] [data-tks-kinds~="family"]:is(:hover, :focus-within),
+[data-tks-filter-earlyaccess="dim"] [data-tks-kinds~="earlyaccess"]:is(:hover, :focus-within),
+[data-tks-filter-ai="hide"]
+  [data-tks-kinds~="ai"]:is([data-tks-hideable="false"], [data-tks-reveal]
     *):is(:hover, :focus-within),
-[data-sar-filter-kernel="hide"]
-  [data-sar-kinds~="kernel"]:is([data-sar-hideable="false"], [data-sar-reveal]
+[data-tks-filter-kernel="hide"]
+  [data-tks-kinds~="kernel"]:is([data-tks-hideable="false"], [data-tks-reveal]
     *):is(:hover, :focus-within),
-[data-sar-filter-anticheat="hide"]
-  [data-sar-kinds~="anticheat"]:is([data-sar-hideable="false"], [data-sar-reveal]
+[data-tks-filter-anticheat="hide"]
+  [data-tks-kinds~="anticheat"]:is([data-tks-hideable="false"], [data-tks-reveal]
     *):is(:hover, :focus-within),
-[data-sar-filter-drm="hide"]
-  [data-sar-kinds~="drm"]:is([data-sar-hideable="false"], [data-sar-reveal]
+[data-tks-filter-drm="hide"]
+  [data-tks-kinds~="drm"]:is([data-tks-hideable="false"], [data-tks-reveal]
     *):is(:hover, :focus-within),
-[data-sar-filter-account="hide"]
-  [data-sar-kinds~="account"]:is([data-sar-hideable="false"], [data-sar-reveal]
+[data-tks-filter-account="hide"]
+  [data-tks-kinds~="account"]:is([data-tks-hideable="false"], [data-tks-reveal]
     *):is(:hover, :focus-within),
-[data-sar-filter-eula="hide"]
-  [data-sar-kinds~="eula"]:is([data-sar-hideable="false"], [data-sar-reveal]
+[data-tks-filter-eula="hide"]
+  [data-tks-kinds~="eula"]:is([data-tks-hideable="false"], [data-tks-reveal]
     *):is(:hover, :focus-within),
-[data-sar-filter-pvp="hide"]
-  [data-sar-kinds~="pvp"]:is([data-sar-hideable="false"], [data-sar-reveal]
+[data-tks-filter-pvp="hide"]
+  [data-tks-kinds~="pvp"]:is([data-tks-hideable="false"], [data-tks-reveal]
     *):is(:hover, :focus-within),
-[data-sar-filter-iap="hide"]
-  [data-sar-kinds~="iap"]:is([data-sar-hideable="false"], [data-sar-reveal]
+[data-tks-filter-iap="hide"]
+  [data-tks-kinds~="iap"]:is([data-tks-hideable="false"], [data-tks-reveal]
     *):is(:hover, :focus-within),
-[data-sar-filter-deck="hide"]
-  [data-sar-kinds~="deck"]:is([data-sar-hideable="false"], [data-sar-reveal]
+[data-tks-filter-deck="hide"]
+  [data-tks-kinds~="deck"]:is([data-tks-hideable="false"], [data-tks-reveal]
     *):is(:hover, :focus-within),
-[data-sar-filter-machine="hide"]
-  [data-sar-kinds~="machine"]:is([data-sar-hideable="false"], [data-sar-reveal]
+[data-tks-filter-machine="hide"]
+  [data-tks-kinds~="machine"]:is([data-tks-hideable="false"], [data-tks-reveal]
     *):is(:hover, :focus-within),
-[data-sar-filter-family="hide"]
-  [data-sar-kinds~="family"]:is([data-sar-hideable="false"], [data-sar-reveal]
+[data-tks-filter-family="hide"]
+  [data-tks-kinds~="family"]:is([data-tks-hideable="false"], [data-tks-reveal]
     *):is(:hover, :focus-within),
-[data-sar-filter-earlyaccess="hide"]
-  [data-sar-kinds~="earlyaccess"]:is([data-sar-hideable="false"], [data-sar-reveal]
+[data-tks-filter-earlyaccess="hide"]
+  [data-tks-kinds~="earlyaccess"]:is([data-tks-hideable="false"], [data-tks-reveal]
     *):is(:hover, :focus-within) {
   filter: none !important;
-  transition: filter var(--sar-duration-fast) var(--sar-ease);
+  transition: filter var(--tks-duration-fast) var(--tks-ease);
 }
 
-[data-sar-filter-ai="hide"]:not([data-sar-reveal])
-  [data-sar-kinds~="ai"]:not([data-sar-hideable="false"]),
-[data-sar-filter-kernel="hide"]:not([data-sar-reveal])
-  [data-sar-kinds~="kernel"]:not([data-sar-hideable="false"]),
-[data-sar-filter-anticheat="hide"]:not([data-sar-reveal])
-  [data-sar-kinds~="anticheat"]:not([data-sar-hideable="false"]),
-[data-sar-filter-drm="hide"]:not([data-sar-reveal])
-  [data-sar-kinds~="drm"]:not([data-sar-hideable="false"]),
-[data-sar-filter-account="hide"]:not([data-sar-reveal])
-  [data-sar-kinds~="account"]:not([data-sar-hideable="false"]),
-[data-sar-filter-eula="hide"]:not([data-sar-reveal])
-  [data-sar-kinds~="eula"]:not([data-sar-hideable="false"]),
-[data-sar-filter-pvp="hide"]:not([data-sar-reveal])
-  [data-sar-kinds~="pvp"]:not([data-sar-hideable="false"]),
-[data-sar-filter-iap="hide"]:not([data-sar-reveal])
-  [data-sar-kinds~="iap"]:not([data-sar-hideable="false"]),
-[data-sar-filter-deck="hide"]:not([data-sar-reveal])
-  [data-sar-kinds~="deck"]:not([data-sar-hideable="false"]),
-[data-sar-filter-machine="hide"]:not([data-sar-reveal])
-  [data-sar-kinds~="machine"]:not([data-sar-hideable="false"]),
-[data-sar-filter-family="hide"]:not([data-sar-reveal])
-  [data-sar-kinds~="family"]:not([data-sar-hideable="false"]),
-[data-sar-filter-earlyaccess="hide"]:not([data-sar-reveal])
-  [data-sar-kinds~="earlyaccess"]:not([data-sar-hideable="false"]) {
+[data-tks-filter-ai="hide"]:not([data-tks-reveal])
+  [data-tks-kinds~="ai"]:not([data-tks-hideable="false"]),
+[data-tks-filter-kernel="hide"]:not([data-tks-reveal])
+  [data-tks-kinds~="kernel"]:not([data-tks-hideable="false"]),
+[data-tks-filter-anticheat="hide"]:not([data-tks-reveal])
+  [data-tks-kinds~="anticheat"]:not([data-tks-hideable="false"]),
+[data-tks-filter-drm="hide"]:not([data-tks-reveal])
+  [data-tks-kinds~="drm"]:not([data-tks-hideable="false"]),
+[data-tks-filter-account="hide"]:not([data-tks-reveal])
+  [data-tks-kinds~="account"]:not([data-tks-hideable="false"]),
+[data-tks-filter-eula="hide"]:not([data-tks-reveal])
+  [data-tks-kinds~="eula"]:not([data-tks-hideable="false"]),
+[data-tks-filter-pvp="hide"]:not([data-tks-reveal])
+  [data-tks-kinds~="pvp"]:not([data-tks-hideable="false"]),
+[data-tks-filter-iap="hide"]:not([data-tks-reveal])
+  [data-tks-kinds~="iap"]:not([data-tks-hideable="false"]),
+[data-tks-filter-deck="hide"]:not([data-tks-reveal])
+  [data-tks-kinds~="deck"]:not([data-tks-hideable="false"]),
+[data-tks-filter-machine="hide"]:not([data-tks-reveal])
+  [data-tks-kinds~="machine"]:not([data-tks-hideable="false"]),
+[data-tks-filter-family="hide"]:not([data-tks-reveal])
+  [data-tks-kinds~="family"]:not([data-tks-hideable="false"]),
+[data-tks-filter-earlyaccess="hide"]:not([data-tks-reveal])
+  [data-tks-kinds~="earlyaccess"]:not([data-tks-hideable="false"]) {
   display: none !important;
 }
 
@@ -365,38 +365,38 @@
    right after it when the page has one: its ground, yellowish text, padding and type, full width.
    The button is an underlined link in the sentence, as the store's own link there. */
 
-.sar-list-notice {
+.tks-list-notice {
   display: block;
-  margin-block-end: var(--sar-store-notice-margin-block-end);
-  padding: var(--sar-store-notice-pad);
-  background: var(--sar-store-notice-bg);
-  color: var(--sar-store-notice-fg);
-  font: var(--sar-store-notice-font);
+  margin-block-end: var(--tks-store-notice-margin-block-end);
+  padding: var(--tks-store-notice-pad);
+  background: var(--tks-store-notice-bg);
+  color: var(--tks-store-notice-fg);
+  font: var(--tks-store-notice-font);
 }
 
-.sar-list-notice[hidden] {
+.tks-list-notice[hidden] {
   display: none !important;
 }
 
-.sar-list-notice-button {
-  margin-inline-start: var(--sar-space-1);
-  color: var(--sar-store-notice-fg);
+.tks-list-notice-button {
+  margin-inline-start: var(--tks-space-1);
+  color: var(--tks-store-notice-fg);
   text-decoration: underline;
   cursor: pointer;
 }
 
-.sar-list-notice-button:hover {
-  color: var(--sar-store-notice-link-hover);
+.tks-list-notice-button:hover {
+  color: var(--tks-store-notice-link-hover);
 }
 
-.sar-list-notice-button:focus-visible {
-  outline: var(--sar-focus-width) solid var(--sar-focus-color);
-  outline-offset: var(--sar-focus-offset);
+.tks-list-notice-button:focus-visible {
+  outline: var(--tks-focus-width) solid var(--tks-focus-color);
+  outline-offset: var(--tks-focus-offset);
 }
 
 @media (forced-colors: active) {
-  .sar-badge,
-  .sar-compact {
+  .tks-badge,
+  .tks-compact {
     border: 1px solid CanvasText;
     forced-color-adjust: none;
     background: Canvas;
@@ -406,8 +406,8 @@
 
 /* The card keeps system colors; only its edge needs adding once the shadow is gone */
 @media (forced-colors: active) {
-  .sar-hovercard,
-  .sar-list-notice {
+  .tks-hovercard,
+  .tks-list-notice {
     border: 1px solid CanvasText;
   }
 }

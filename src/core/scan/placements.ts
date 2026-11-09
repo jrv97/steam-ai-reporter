@@ -15,7 +15,7 @@ interface PlacementBase {
   readonly host: string;
   /**
    * False where hiding the host would break the list (virtualized or carousel lists); the list
-   * filter dims those hosts instead, through `data-sar-hideable="false"`.
+   * filter dims those hosts instead, through `data-tks-hideable="false"`.
    */
   readonly hideable: boolean;
   /**

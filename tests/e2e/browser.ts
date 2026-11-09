@@ -1,6 +1,6 @@
 /**
  * Launches Chromium or Firefox Nightly with the built extension installed, on a throwaway profile,
- * through puppeteer-core (ADR 0020). The binaries come from SAR_CHROMIUM_BIN and SAR_GECKO_BIN,
+ * through puppeteer-core (ADR 0020). The binaries come from TKS_CHROMIUM_BIN and TKS_GECKO_BIN,
  * which `mise run e2e` checks before the tests start.
  */
 import type { ChildProcess } from "node:child_process";
@@ -81,8 +81,8 @@ export function launch(engine: "gecko", headed?: boolean): Promise<GeckoExtensio
 export function launch(engine: Engine, headed?: boolean): Promise<ExtensionBrowser>;
 /** Launches `engine` with the extension, headed when `headed` is true. */
 export async function launch(engine: Engine, headed = false): Promise<ExtensionBrowser> {
-  // Headless, so a run takes no focus from the desktop. SAR_E2E_HEADED=1 shows the windows.
-  const hidden = !headed && process.env["SAR_E2E_HEADED"] !== "1";
+  // Headless, so a run takes no focus from the desktop. TKS_E2E_HEADED=1 shows the windows.
+  const hidden = !headed && process.env["TKS_E2E_HEADED"] !== "1";
   return engine === "chromium" ? launchChromium(hidden) : launchGecko(hidden);
 }
 
@@ -111,7 +111,7 @@ async function installed(browser: Browser, engine: Engine): Promise<string> {
 async function launchChromium(hidden: boolean): Promise<ExtensionBrowser> {
   // Pipe mode plus extension debugging lets the driver install the unpacked build.
   const browser = await puppeteer.launch({
-    executablePath: envPath("SAR_CHROMIUM_BIN"),
+    executablePath: envPath("TKS_CHROMIUM_BIN"),
     headless: hidden,
     pipe: true,
     enableExtensions: true,
@@ -222,12 +222,12 @@ async function launchGecko(hidden: boolean): Promise<GeckoExtensionBrowser> {
   // A random UUID per launch, preset through a pref, gives a known moz-extension:// origin.
   const uuid = crypto.randomUUID();
   // After a reconnect puppeteer skips its own profile cleanup, so this module owns the profile.
-  const profile = await mkdtemp(join(tmpdir(), "sar-e2e-gecko-"));
+  const profile = await mkdtemp(join(tmpdir(), "tks-e2e-gecko-"));
   let launched: Browser | undefined;
   try {
     launched = await puppeteer.launch({
       browser: "firefox",
-      executablePath: envPath("SAR_GECKO_BIN"),
+      executablePath: envPath("TKS_GECKO_BIN"),
       userDataDir: profile,
       headless: hidden,
       // Firefox treats extension pages as privileged and refuses to drive them without this.

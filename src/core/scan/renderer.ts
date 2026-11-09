@@ -7,7 +7,7 @@ import type { Placement } from "./placements";
 
 /** A capsule host the scanner marked, with what its placement found during the read phase. */
 export interface CapsuleHost {
-  /** The host element; it carries `data-sar-appid`. */
+  /** The host element; it carries `data-tks-appid`. */
   readonly element: Element;
   readonly appId: AppId;
   readonly placement: Placement;
@@ -30,7 +30,7 @@ export interface ScanBatch {
  * Receives the scanner's batches. `render` runs in the scan's animation frame after the scanner's
  * own writes, so it must not read layout synchronously; it schedules its own read and write
  * phases. It must be idempotent per host: a host whose badge is in place stays unchanged, and any
- * badge it inserts sits inside the host and carries a `sar-` class.
+ * badge it inserts sits inside the host and carries a `tks-` class.
  */
 export interface CapsuleRenderer {
   render(batch: ScanBatch): void;

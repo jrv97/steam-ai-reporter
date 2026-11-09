@@ -59,7 +59,7 @@ async function setup(games: Games = {}) {
   };
   /** The text of a node of the Backup card, or undefined while it or a parent is hidden. */
   const shown = (selector: string): string | undefined => {
-    const card = root.querySelector(".sar-backup-help")?.parentElement;
+    const card = root.querySelector(".tks-backup-help")?.parentElement;
     const node = card?.querySelector(selector);
     return node?.closest("[hidden]") === null ? node.textContent : undefined;
   };
@@ -113,7 +113,7 @@ describe("the Backup card", () => {
     expect(files.files.map((file) => readBackup(file.text))).toMatchObject([
       { kind: "backup", contents: { games: make.allow.games(games) } },
     ]);
-    expect(shown(".sar-backup-status")).toBe(i18n.t("notice_backup_downloaded"));
+    expect(shown(".tks-backup-status")).toBe(i18n.t("notice_backup_downloaded"));
   });
 
   it.each<readonly [string, (card: Card) => void]>([
@@ -127,7 +127,7 @@ describe("the Backup card", () => {
     const card = await setup();
     fail(card);
     await card.click("options_backup_download");
-    expect(card.shown(".sar-field-error")).toBe(i18n.t("error_backup_create"));
+    expect(card.shown(".tks-field-error")).toBe(i18n.t("error_backup_create"));
   });
 });
 
@@ -138,13 +138,13 @@ describe("picking a backup file", () => {
     await pick(backupFile(games));
     const number = String(Object.values(games).flat().length);
     const date = new Intl.DateTimeFormat("en", { dateStyle: "medium" }).format(make.backup.time);
-    expect(shown(".sar-backup-summary-title")).toBe(
+    expect(shown(".tks-backup-summary-title")).toBe(
       i18n.t("options_backup_summary_title", { date }),
     );
-    expect(root.querySelector(".sar-backup-contents li")?.textContent).toBe(
+    expect(root.querySelector(".tks-backup-contents li")?.textContent).toBe(
       i18n.t("options_backup_summary_list", { list: i18n.t("options_section_allow"), number }),
     );
-    expect(document.activeElement?.className).toBe("sar-backup-summary-title");
+    expect(document.activeElement?.className).toBe("tks-backup-summary-title");
     expect(await stored()).toStrictEqual(DEFAULT_SETTINGS);
   });
 
@@ -173,8 +173,8 @@ describe("picking a backup file", () => {
   )("names a file that is %s, and opens no check", async (_case, file, key) => {
     const { pick, shown } = await setup();
     await pick(file);
-    expect(shown(".sar-field-error")).toBe(i18n.t(key, { name }));
-    expect(shown(".sar-backup-summary-title")).toBeUndefined();
+    expect(shown(".tks-field-error")).toBe(i18n.t(key, { name }));
+    expect(shown(".tks-backup-summary-title")).toBeUndefined();
   });
 
   it("shows file text as text, never as markup", async () => {
@@ -192,7 +192,7 @@ describe("picking a backup file", () => {
     const { button, pick, click, shown, stored } = await setup();
     await pick(backupFile());
     await click("options_backup_cancel");
-    expect(shown(".sar-backup-summary-title")).toBeUndefined();
+    expect(shown(".tks-backup-summary-title")).toBeUndefined();
     expect(await stored()).toStrictEqual(DEFAULT_SETTINGS);
     expect(document.activeElement).toBe(button("options_backup_restore"));
   });
@@ -206,7 +206,7 @@ describe("confirming a restore", () => {
     await click("options_backup_confirm");
     expect(await stored()).toStrictEqual(HIDE_AI);
     expect(root.textContent).toContain(added[1]);
-    expect(shown(".sar-backup-status")).toBe(i18n.plural("notice_backup_restored", 1));
+    expect(shown(".tks-backup-status")).toBe(i18n.plural("notice_backup_restored", 1));
     expect(document.activeElement).toBe(button("options_backup_restore"));
   });
 
@@ -216,9 +216,9 @@ describe("confirming a restore", () => {
     const all = Object.fromEntries(broken);
     await pick(make.backup.file(make.backup.text({ ignored: { games: { all } } })));
     const skipped = i18n.plural("options_backup_summary_skipped", broken.length);
-    expect(root.querySelector(".sar-backup-contents")?.textContent).toContain(skipped);
+    expect(root.querySelector(".tks-backup-contents")?.textContent).toContain(skipped);
     await click("options_backup_confirm");
-    expect(shown(".sar-backup-status")).toBe(
+    expect(shown(".tks-backup-status")).toBe(
       [
         i18n.plural("notice_backup_restored", 0),
         i18n.plural("notice_backup_skipped", broken.length),
@@ -231,7 +231,7 @@ describe("confirming a restore", () => {
     await pick(backupFile());
     store.break();
     await click("options_backup_confirm");
-    expect(shown(".sar-field-error")).toBe(i18n.t("error_backup_restore"));
-    expect(shown(".sar-backup-summary-title")).toBeDefined();
+    expect(shown(".tks-field-error")).toBe(i18n.t("error_backup_restore"));
+    expect(shown(".tks-backup-summary-title")).toBeDefined();
   });
 });

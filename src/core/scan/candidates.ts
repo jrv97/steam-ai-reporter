@@ -1,6 +1,6 @@
 import type { AppId } from "../types";
 import { appIdFromDataAttribute, appIdFromHref } from "./appid";
-import { SAR_NODE } from "./marks";
+import { TKS_NODE } from "./marks";
 
 // Elements that name an app (rq6, S5): classic surfaces put a `data-ds-appid` on the capsule
 // itself; React surfaces carry only `/app/<id>` links.
@@ -35,7 +35,7 @@ export const ANY_CANDIDATE = [DATA_CANDIDATE, LINK_CANDIDATE, OTHER_ITEM_LINK]
  * search suggestions, and its navigation links carry no image, so the host rule drops them.
  */
 export const SKIPPED =
-  `#footer, [data-featuretarget='footer'], .breadcrumbs, .game_area_dlc_bubble, ${SAR_NODE}`;
+  `#footer, [data-featuretarget='footer'], .breadcrumbs, .game_area_dlc_bubble, ${TKS_NODE}`;
 
 /**
  * Small capsules of other apps that a store surface nests inside one app's capsule. Inside

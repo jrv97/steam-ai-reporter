@@ -54,7 +54,7 @@ const AllowSchema = v.object({
 
 const CreatorAllowSchema = v.optional(v.record(v.string(), v.record(v.string(), v.unknown())), {});
 
-const banner = () => document.getElementById("sar-banner")?.shadowRoot ?? null;
+const banner = () => document.getElementById("tks-banner")?.shadowRoot ?? null;
 const control = (selector: string) => banner()?.querySelector<HTMLElement>(selector);
 const headings = () =>
   [...(banner()?.querySelectorAll("h2") ?? [])].map((heading) => heading.textContent);
@@ -133,14 +133,14 @@ describe("start on an English app page", () => {
     await expect.poll(() => http.calls.length).toBe(1);
     expect(getItemsRequest(http.calls[0] ?? "").ids).toEqual([OPEN]);
     const column = document.querySelector(".game_description_column");
-    expect(column?.firstElementChild?.id).toBe("sar-banner");
+    expect(column?.firstElementChild?.id).toBe("tks-banner");
     expect(headings()).toEqual([aiHeading]);
     expect(banner()?.querySelector("blockquote")?.textContent).toBe(
       quotedNotes(make.fixture.pageVerdicts("5072580-ai-first.html", OPEN)),
     );
-    expect(banner()?.querySelector(".sar-banner-service")).toBeNull();
+    expect(banner()?.querySelector(".tks-banner-service")).toBeNull();
     release();
-    await expect.poll(() => banner()?.querySelector(".sar-banner-service")?.textContent).toContain(
+    await expect.poll(() => banner()?.querySelector(".tks-banner-service")?.textContent).toContain(
       i18n.t("badge_card_service_label"),
     );
   });
@@ -165,10 +165,10 @@ describe("start on an English app page", () => {
     });
     await vi.advanceTimersByTimeAsync(RETRY_DELAY_MS - 1000);
     expect(http.calls).toHaveLength(0);
-    expect(banner()?.querySelector(".sar-banner-service")).toBeNull();
+    expect(banner()?.querySelector(".tks-banner-service")).toBeNull();
     await vi.advanceTimersByTimeAsync(1000);
     expect(http.calls).toHaveLength(1);
-    await expect.poll(() => banner()?.querySelector(".sar-banner-service")?.textContent).toContain(
+    await expect.poll(() => banner()?.querySelector(".tks-banner-service")?.textContent).toContain(
       i18n.t("badge_card_service_label"),
     );
   });
@@ -197,14 +197,14 @@ describe("start on an English app page", () => {
   it("ignores the AI kind from its entry and brings it back with Undo", async () => {
     const { stored } = await startOnAiPage();
 
-    control('.sar-banner-action[data-sar-scope="ai"]')?.click();
-    await expect.poll(() => control('[data-sar-action="undo"]')?.getAttribute("data-sar-scope"))
+    control('.tks-banner-action[data-tks-scope="ai"]')?.click();
+    await expect.poll(() => control('[data-tks-action="undo"]')?.getAttribute("data-tks-scope"))
       .toBe("ai");
     expect(Object.keys((await stored()).ai)).toEqual([String(OPEN)]);
     expect(Object.keys((await stored()).all)).toEqual([]);
-    expect(banner()?.querySelector("aside")?.getAttribute("data-sar-variant")).toBe("ignored");
+    expect(banner()?.querySelector("aside")?.getAttribute("data-tks-variant")).toBe("ignored");
 
-    control('[data-sar-action="undo"]')?.click();
+    control('[data-tks-action="undo"]')?.click();
     await expect.poll(() => banner()?.querySelector("blockquote")).toBeInstanceOf(HTMLElement);
     expect(Object.keys((await stored()).ai)).toEqual([]);
   });
@@ -212,8 +212,8 @@ describe("start on an English app page", () => {
   it("ignores the game for all tags from the link below the entries", async () => {
     const { stored } = await startOnAiPage();
 
-    control('.sar-banner-foot [data-sar-action="ignore"]')?.click();
-    await expect.poll(() => control(".sar-banner-ignored-text")?.textContent).toBe(
+    control('.tks-banner-foot [data-tks-action="ignore"]')?.click();
+    await expect.poll(() => control(".tks-banner-ignored-text")?.textContent).toBe(
       i18n.t("banner_ignored"),
     );
     expect(Object.keys((await stored()).all)).toEqual([String(OPEN)]);
@@ -229,16 +229,16 @@ describe("start on an English app page", () => {
       ...make.fixture.itemAs(mixedStates, OPEN, OPEN),
       ...make.item.creators({ developers: [[developer, clan]], publishers: [publisher] }),
     };
-    const rows = () => [...(banner()?.querySelectorAll(".sar-banner-creator") ?? [])];
+    const rows = () => [...(banner()?.querySelectorAll(".tks-banner-creator") ?? [])];
     const ignoreButton = (row: number, scope: string) =>
-      rows()[row]?.querySelector<HTMLElement>(`button[data-sar-scope="${scope}"]`);
+      rows()[row]?.querySelector<HTMLElement>(`button[data-tks-scope="${scope}"]`);
 
     it("lists them once Steam's data arrives, and not before", async () => {
       const { release } = await startOnAiPage({ route: make.item.route([studio]), held: true });
       expect(banner()?.querySelector("details")).toBeNull();
       release();
       await expect.poll(() => rows().length).toBe(2);
-      expect(rows().map((row) => row.querySelector(".sar-banner-creator-name")?.textContent))
+      expect(rows().map((row) => row.querySelector(".tks-banner-creator-name")?.textContent))
         .toEqual([developer, publisher]);
     });
 
@@ -247,11 +247,11 @@ describe("start on an English app page", () => {
       await expect.poll(() => rows().length).toBe(2);
 
       ignoreButton(0, "ai")?.click();
-      await expect.poll(() => control('[data-sar-action="undo-creator"]')).not.toBeNull();
+      await expect.poll(() => control('[data-tks-action="undo-creator"]')).not.toBeNull();
       expect(await storedCreators("developer", "ai")).toEqual([`c:${String(clan)}`]);
       expect(await storedCreators("publisher", "ai")).toEqual([]);
       expect(headings()).toEqual([]);
-      expect(control(".sar-banner-ignored-text")?.textContent).toBe(
+      expect(control(".tks-banner-ignored-text")?.textContent).toBe(
         i18n.t("banner_ignored_creator_kind", {
           name: developer,
           role: i18n.t("banner_role_developer"),
@@ -259,7 +259,7 @@ describe("start on an English app page", () => {
         }),
       );
 
-      control('[data-sar-action="undo-creator"]')?.click();
+      control('[data-tks-action="undo-creator"]')?.click();
       await expect.poll(() => headings()).toEqual([aiHeading]);
       expect(await storedCreators("developer", "ai")).toEqual([]);
     });
@@ -269,7 +269,7 @@ describe("start on an English app page", () => {
       await expect.poll(() => rows().length).toBe(2);
 
       ignoreButton(1, "all")?.click();
-      await expect.poll(() => control('[data-sar-action="undo-creator"]')).not.toBeNull();
+      await expect.poll(() => control('[data-tks-action="undo-creator"]')).not.toBeNull();
       expect(await storedCreators("publisher", "all")).toEqual([`n:${publisher}`]);
       expect(await storedCreators("developer", "all")).toEqual([]);
     });
@@ -277,9 +277,9 @@ describe("start on an English app page", () => {
     it("applies a stored developer ignore at once, with its note and Undo", async () => {
       const initial = ignoring("ai", [`c:${String(clan)}`], CREATOR_ALLOW_KEYS.developer);
       await startOnAiPage({ route: make.item.route([studio]), initial });
-      await expect.poll(() => control('[data-sar-action="undo-creator"]')).not.toBeNull();
+      await expect.poll(() => control('[data-tks-action="undo-creator"]')).not.toBeNull();
       expect(headings()).toEqual([]);
-      expect(document.querySelector(".sar-tag-section")).toBeNull();
+      expect(document.querySelector(".tks-tag-section")).toBeNull();
     });
   });
 
@@ -294,7 +294,7 @@ describe("start on an English app page", () => {
 
     it("shows the banner of a kind when its base game is not ignored for it", async () => {
       await startOnAiPage({ route, initial: ignoring("kernel", [base]) });
-      await expect.poll(() => banner()?.querySelector(".sar-banner-service")).not.toBeNull();
+      await expect.poll(() => banner()?.querySelector(".tks-banner-service")).not.toBeNull();
       expect(headings()).toEqual([aiHeading]);
     });
 
@@ -309,15 +309,15 @@ describe("start on an English app page", () => {
         // The page's own disclosure draws first; the base game is not known until the answer.
         expect(headings()).toEqual([aiHeading]);
         release();
-        await expect.poll(() => document.getElementById("sar-banner")).toBeNull();
+        await expect.poll(() => document.getElementById("tks-banner")).toBeNull();
       },
     );
 
     it("still ignores the DLC itself, never the base game, from its own page", async () => {
       const { stored } = await startOnAiPage({ route, initial: ignoring("kernel", [base]) });
-      await expect.poll(() => banner()?.querySelector(".sar-banner-service")).not.toBeNull();
-      control('.sar-banner-foot [data-sar-action="ignore"]')?.click();
-      await expect.poll(() => control(".sar-banner-ignored-text")?.textContent).toBe(
+      await expect.poll(() => banner()?.querySelector(".tks-banner-service")).not.toBeNull();
+      control('.tks-banner-foot [data-tks-action="ignore"]')?.click();
+      await expect.poll(() => control(".tks-banner-ignored-text")?.textContent).toBe(
         i18n.t("banner_ignored"),
       );
       expect(Object.keys((await stored()).all)).toEqual([String(OPEN)]);
@@ -334,7 +334,7 @@ describe("start on an English app page", () => {
     ]);
     const kinds = ["kind_ai_heading", "kind_eula_heading", "kind_kernel_heading"] as const;
     const lines = () =>
-      [...(banner()?.querySelectorAll(".sar-banner-full-game") ?? [])].map((line) =>
+      [...(banner()?.querySelectorAll(".tks-banner-full-game") ?? [])].map((line) =>
         line.textContent
       );
 
@@ -355,7 +355,7 @@ describe("start on an English app page", () => {
       expect(banner()?.querySelector("blockquote")?.textContent).toBe(
         quotedNotes(make.fixture.verdicts(GAME)),
       );
-      expect(banner()?.querySelector(".sar-banner-source")?.textContent).toBe(
+      expect(banner()?.querySelector(".tks-banner-source")?.textContent).toBe(
         i18n.t("banner_source"),
       );
     });
@@ -363,7 +363,7 @@ describe("start on an English app page", () => {
     it("leaves out a tag the full game is ignored for, with no note", async () => {
       await startOnDemo(ignoring("ai", [GAME]));
       await expect.poll(headings).toEqual(kinds.slice(1).map((key) => i18n.t(key)));
-      expect(banner()?.querySelector(".sar-banner-note")).toBeNull();
+      expect(banner()?.querySelector(".tks-banner-note")).toBeNull();
     });
   });
 
@@ -374,7 +374,7 @@ describe("start on an English app page", () => {
     const { settings } = await startOnAiPage();
 
     await writeSettings(settings, make.settings.kind("ai", patch));
-    expect(document.getElementById("sar-banner")).toBeNull();
+    expect(document.getElementById("tks-banner")).toBeNull();
     await writeSettings(settings, DEFAULT_SETTINGS);
     expect(headings()).toEqual([aiHeading]);
   });

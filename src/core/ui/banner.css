@@ -14,115 +14,115 @@
   display: none !important;
 }
 
-.sar-banner {
+.tks-banner {
   box-sizing: border-box;
   display: block;
-  margin: 0 0 var(--sar-banner-margin-bottom);
-  padding-block: var(--sar-banner-pad-block-start) var(--sar-banner-pad-block-end);
-  padding-inline: var(--sar-banner-pad-inline);
+  margin: 0 0 var(--tks-banner-margin-bottom);
+  padding-block: var(--tks-banner-pad-block-start) var(--tks-banner-pad-block-end);
+  padding-inline: var(--tks-banner-pad-inline);
   border: 0;
   border-radius: 0;
   background: linear-gradient(
     135deg,
-    var(--sar-tag-wash-start, var(--sar-banner-wash-start)) 10%,
-    var(--sar-tag-wash-end, var(--sar-banner-wash-end)) 100%
+    var(--tks-tag-wash-start, var(--tks-banner-wash-start)) 10%,
+    var(--tks-tag-wash-end, var(--tks-banner-wash-end)) 100%
   );
   box-shadow: none;
-  color: var(--sar-banner-fg);
-  font: var(--sar-banner-meta-font);
+  color: var(--tks-banner-fg);
+  font: var(--tks-banner-meta-font);
   text-align: start;
   overflow-wrap: break-word;
 }
 
-.sar-banner:focus {
+.tks-banner:focus {
   outline: none;
 }
 
 /* Title and button share a line in English; a longer title wraps first, then the button moves
    under it, aligned to inline-end */
-.sar-banner-head {
+.tks-banner-head {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  column-gap: var(--sar-banner-gap);
-  row-gap: var(--sar-space-1);
+  column-gap: var(--tks-banner-gap);
+  row-gap: var(--tks-space-1);
 }
 
-.sar-banner-title {
+.tks-banner-title {
   margin: 0;
   padding: 0;
   background: none;
-  color: var(--sar-banner-fg);
-  font: var(--sar-banner-title-font);
+  color: var(--tks-banner-fg);
+  font: var(--tks-banner-title-font);
   letter-spacing: normal;
   text-transform: none;
   flex: 1 1 12em;
   min-inline-size: 0;
 }
 
-.sar-banner-source,
-.sar-banner-service,
-.sar-banner-full-game {
-  margin: var(--sar-space-1) 0 0;
-  color: var(--sar-banner-fg);
-  font: var(--sar-banner-meta-font);
+.tks-banner-source,
+.tks-banner-service,
+.tks-banner-full-game {
+  margin: var(--tks-space-1) 0 0;
+  color: var(--tks-banner-fg);
+  font: var(--tks-banner-meta-font);
 }
 
 /* One entry per kind. With several, the headings step down from the store's notice heading */
-.sar-banner-entry + .sar-banner-entry {
-  margin-block-start: var(--sar-space-3);
+.tks-banner-entry + .tks-banner-entry {
+  margin-block-start: var(--tks-space-3);
 }
 
-.sar-banner[data-sar-entries="many"] .sar-banner-title {
-  font: var(--sar-weight-light) var(--sar-size-2xl) / var(--sar-leading-2xl) var(--sar-font-page);
+.tks-banner[data-tks-entries="many"] .tks-banner-title {
+  font: var(--tks-weight-light) var(--tks-size-2xl) / var(--tks-leading-2xl) var(--tks-font-page);
 }
 
-.sar-banner-quote {
-  margin: var(--sar-space-1) 0 0;
+.tks-banner-quote {
+  margin: var(--tks-space-1) 0 0;
   padding: 0;
-  color: var(--sar-banner-fg);
-  font: var(--sar-banner-quote-font);
+  color: var(--tks-banner-fg);
+  font: var(--tks-banner-quote-font);
   white-space: pre-line;
   overflow-wrap: anywhere;
 }
 
-.sar-banner-quote[data-sar-collapsed="true"] {
+.tks-banner-quote[data-tks-collapsed="true"] {
   display: -webkit-box;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: var(--sar-banner-quote-lines);
-  line-clamp: var(--sar-banner-quote-lines);
+  -webkit-line-clamp: var(--tks-banner-quote-lines);
+  line-clamp: var(--tks-banner-quote-lines);
   overflow: hidden;
 }
 
 /* "Ignore this game": the store's outlined button, at least 24px tall */
-.sar-banner-action {
+.tks-banner-action {
   appearance: none;
   display: inline-flex;
   align-items: center;
   max-inline-size: 100%;
   margin: 0;
   margin-inline-start: auto;
-  min-block-size: var(--sar-control-height-xs);
-  padding-block: var(--sar-banner-button-pad-block);
-  padding-inline: var(--sar-banner-button-pad-inline);
-  border: 1px solid var(--sar-banner-button-border);
-  border-radius: var(--sar-radius-sm);
+  min-block-size: var(--tks-control-height-xs);
+  padding-block: var(--tks-banner-button-pad-block);
+  padding-inline: var(--tks-banner-button-pad-inline);
+  border: 1px solid var(--tks-banner-button-border);
+  border-radius: var(--tks-radius-sm);
   background: transparent;
-  color: var(--sar-banner-button-fg);
-  font: var(--sar-banner-button-font);
+  color: var(--tks-banner-button-fg);
+  font: var(--tks-banner-button-font);
   text-align: start;
   white-space: normal;
   cursor: pointer;
   flex: none;
-  transition: background-color var(--sar-duration-fast) var(--sar-ease);
+  transition: background-color var(--tks-duration-fast) var(--tks-ease);
 }
 
-.sar-banner-action:hover {
-  background: var(--sar-banner-button-bg-hover);
+.tks-banner-action:hover {
+  background: var(--tks-banner-button-bg-hover);
 }
 
 /* "Show full report" and "Undo": the store's underlined in-bubble links, as buttons */
-.sar-banner-link {
+.tks-banner-link {
   appearance: none;
   display: inline-flex;
   align-items: center;
@@ -132,7 +132,7 @@
   padding: 0;
   border: 0;
   background: transparent;
-  color: var(--sar-banner-link-color);
+  color: var(--tks-banner-link-color);
   font: inherit;
   text-align: start;
   text-decoration: underline;
@@ -141,112 +141,112 @@
   flex: none;
 }
 
-.sar-banner-quote + .sar-banner-link {
-  margin-block-start: var(--sar-space-0);
+.tks-banner-quote + .tks-banner-link {
+  margin-block-start: var(--tks-space-0);
 }
 
-.sar-banner-action:focus-visible,
-.sar-banner-link:focus-visible,
-.sar-banner-creators-toggle:focus-visible {
-  outline: var(--sar-focus-width) solid var(--sar-focus-color);
-  outline-offset: var(--sar-focus-offset);
+.tks-banner-action:focus-visible,
+.tks-banner-link:focus-visible,
+.tks-banner-creators-toggle:focus-visible {
+  outline: var(--tks-focus-width) solid var(--tks-focus-color);
+  outline-offset: var(--tks-focus-offset);
 }
 
-.sar-banner-error {
-  margin: var(--sar-space-1) 0 0;
-  color: var(--sar-banner-error);
-  font: var(--sar-banner-meta-font);
+.tks-banner-error {
+  margin: var(--tks-space-1) 0 0;
+  color: var(--tks-banner-error);
+  font: var(--tks-banner-meta-font);
 }
 
 /* A note for an ignored scope: the text and its Undo wrap inside their own boxes. In the full
    banner it follows the entries; alone, it takes the store's DRM-notice geometry in neutral. */
-.sar-banner-note {
+.tks-banner-note {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--sar-banner-gap);
-  margin: var(--sar-space-2) 0 0;
+  gap: var(--tks-banner-gap);
+  margin: var(--tks-space-2) 0 0;
 }
 
-.sar-banner-ignored-text {
+.tks-banner-ignored-text {
   flex: 1 1 0;
   min-inline-size: 0;
 }
 
-.sar-banner-note .sar-banner-link {
+.tks-banner-note .tks-banner-link {
   flex: 0 1 auto;
   max-inline-size: 50%;
 }
 
 /* The closed section that ignores a developer or publisher: a link-style summary, then a row for
    each name and role with a link-style button for each tag and one for all tags */
-.sar-banner-creators {
-  margin-block-start: var(--sar-space-2);
+.tks-banner-creators {
+  margin-block-start: var(--tks-space-2);
 }
 
-.sar-banner-creators-toggle {
+.tks-banner-creators-toggle {
   display: list-item;
   min-block-size: 24px;
-  color: var(--sar-banner-link-color);
+  color: var(--tks-banner-link-color);
   text-decoration: underline;
   cursor: pointer;
 }
 
-.sar-banner-creator-list {
-  margin: var(--sar-space-1) 0 0;
+.tks-banner-creator-list {
+  margin: var(--tks-space-1) 0 0;
   padding: 0;
   list-style: none;
 }
 
-.sar-banner-creator {
+.tks-banner-creator {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--sar-space-1) var(--sar-banner-gap);
-  padding-block: var(--sar-space-1);
+  gap: var(--tks-space-1) var(--tks-banner-gap);
+  padding-block: var(--tks-space-1);
 }
 
-.sar-banner-creator-label {
+.tks-banner-creator-label {
   flex: 1 1 12em;
   min-inline-size: 0;
 }
 
-.sar-banner-creator-role {
-  color: var(--sar-color-text-muted);
+.tks-banner-creator-role {
+  color: var(--tks-color-text-muted);
 }
 
-.sar-banner-creator-actions {
+.tks-banner-creator-actions {
   display: inline-flex;
   flex-wrap: wrap;
-  gap: var(--sar-space-1) var(--sar-banner-gap);
+  gap: var(--tks-space-1) var(--tks-banner-gap);
 }
 
-.sar-banner-foot {
+.tks-banner-foot {
   display: flex;
   justify-content: flex-end;
-  margin-block-start: var(--sar-space-2);
+  margin-block-start: var(--tks-space-2);
 }
 
-.sar-banner[data-sar-variant="ignored"] {
-  padding-block: var(--sar-space-1);
-  padding-inline: var(--sar-space-2);
-  border-radius: var(--sar-radius-xs);
-  background: var(--sar-banner-note-bg);
-  color: var(--sar-color-text-muted);
-  font: var(--sar-banner-note-font);
+.tks-banner[data-tks-variant="ignored"] {
+  padding-block: var(--tks-space-1);
+  padding-inline: var(--tks-space-2);
+  border-radius: var(--tks-radius-xs);
+  background: var(--tks-banner-note-bg);
+  color: var(--tks-color-text-muted);
+  font: var(--tks-banner-note-font);
 }
 
-.sar-banner[data-sar-variant="ignored"] .sar-banner-note {
+.tks-banner[data-tks-variant="ignored"] .tks-banner-note {
   margin: 0;
 }
 
-.sar-banner[data-sar-variant="ignored"] .sar-banner-note + .sar-banner-note {
-  margin-block-start: var(--sar-space-1);
+.tks-banner[data-tks-variant="ignored"] .tks-banner-note + .tks-banner-note {
+  margin-block-start: var(--tks-space-1);
 }
 
 /* The wash disappears in forced colors; an edge keeps the banner a distinct region */
 @media (forced-colors: active) {
-  .sar-banner {
+  .tks-banner {
     border: 1px solid CanvasText;
   }
 }

@@ -6,14 +6,14 @@
 
 dialog {
   box-sizing: border-box;
-  inline-size: min(760px, calc(100vw - var(--sar-space-6)));
-  max-block-size: calc(100vh - var(--sar-space-6));
+  inline-size: min(760px, calc(100vw - var(--tks-space-6)));
+  max-block-size: calc(100vh - var(--tks-space-6));
   margin: auto;
   padding: 0;
-  border: 1px solid var(--sar-color-border);
-  border-radius: var(--sar-radius-lg);
-  background: var(--sar-color-bg-panel);
-  color: var(--sar-color-text);
+  border: 1px solid var(--tks-color-border);
+  border-radius: var(--tks-radius-lg);
+  background: var(--tks-color-bg-panel);
+  color: var(--tks-color-text);
   overflow: auto;
   color-scheme: dark;
 }
@@ -22,35 +22,35 @@ dialog::backdrop {
   background: rgba(0, 0, 0, 0.6);
 }
 
-.sar-dialog-head {
+.tks-dialog-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--sar-space-3);
-  padding-block: var(--sar-space-3);
-  padding-inline: var(--sar-space-4);
-  border-block-end: 1px solid var(--sar-color-divider);
+  gap: var(--tks-space-3);
+  padding-block: var(--tks-space-3);
+  padding-inline: var(--tks-space-4);
+  border-block-end: 1px solid var(--tks-color-divider);
 }
 
-.sar-dialog-title {
+.tks-dialog-title {
   margin: 0;
-  color: var(--sar-color-text-strong);
-  font: var(--sar-weight-medium) var(--sar-size-xl) / var(--sar-leading-md) var(--sar-font-page);
+  color: var(--tks-color-text-strong);
+  font: var(--tks-weight-medium) var(--tks-size-xl) / var(--tks-leading-md) var(--tks-font-page);
 }
 
 /* The form sits flush: the dialog supplies the frame, the form the padding */
-.sar-dialog-body .sar-options[data-sar-context] {
+.tks-dialog-body .tks-options[data-tks-context] {
   inline-size: auto;
   max-inline-size: none;
 }
 
-.sar-dialog-note {
+.tks-dialog-note {
   margin: 0;
-  padding-block: var(--sar-space-3);
-  padding-inline: var(--sar-space-4);
-  color: var(--sar-color-text-subtle);
-  font-size: var(--sar-size-sm);
-  line-height: var(--sar-leading-sm);
+  padding-block: var(--tks-space-3);
+  padding-inline: var(--tks-space-4);
+  color: var(--tks-color-text-subtle);
+  font-size: var(--tks-size-sm);
+  line-height: var(--tks-leading-sm);
 }
 
 /* Fixed frame (decision 74): the dialog keeps one height, its head, rail, footer and feedback bar
@@ -59,18 +59,18 @@ dialog::backdrop {
   dialog[open] {
     display: flex;
     flex-direction: column;
-    block-size: calc(100vh - var(--sar-space-6));
+    block-size: calc(100vh - var(--tks-space-6));
     overflow: hidden;
   }
 
-  .sar-dialog-body {
+  .tks-dialog-body {
     display: flex;
     flex: 1 1 auto;
     flex-direction: column;
     min-block-size: 0;
   }
 
-  .sar-dialog-body .sar-options {
+  .tks-dialog-body .tks-options {
     flex: 1 1 auto;
     min-block-size: 0;
   }

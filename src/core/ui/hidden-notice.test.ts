@@ -15,7 +15,7 @@ import { createHostKindsRenderer } from "./list-filter";
 const i18n = englishI18n();
 const LIST = "#search_resultsRows";
 const STORE_BAR = "#search_results_filtered_warning_persistent";
-const BUTTON = ".sar-list-notice-button";
+const BUTTON = ".tks-list-notice-button";
 const renderer = createHostKindsRenderer();
 
 let notice: HiddenNotice | undefined;
@@ -35,12 +35,12 @@ const rowAt = (index: number): Element => {
   }
   return row;
 };
-const box = () => document.querySelector(".sar-list-notice");
+const box = () => document.querySelector(".tks-list-notice");
 const shown = () => {
   const element = box();
   return element !== null && !element.hasAttribute("hidden");
 };
-const line = () => box()?.querySelector(".sar-list-notice-text")?.textContent;
+const line = () => box()?.querySelector(".tks-list-notice-text")?.textContent;
 const button = () => {
   const found = document.querySelector<HTMLButtonElement>(BUTTON);
   if (found === null) {

@@ -2,7 +2,7 @@
 # Write the release artifacts to artifacts/ from the current dist/ (run `mise run build` first).
 #   tag-kit-for-steam-chromium-<version>.zip   dist/chromium
 #   tag-kit-for-steam-gecko-<version>.zip      dist/gecko
-#   steam-ai-reporter.user.js / .meta.js       dist/userscript (fixed names, stable URLs)
+#   tag-kit-for-steam.user.js / .meta.js       dist/userscript (fixed names, stable URLs)
 #   tag-kit-for-steam-source-<version>.zip     git archive of HEAD (AMO): lockfile in, docs/ out
 #                                              except the design tokens the build reads
 # dist/dev (the dev injection bundle) is never packaged.
@@ -15,7 +15,6 @@ fi
 
 cd "$(dirname "$0")/.."
 slug="tag-kit-for-steam"
-userscript_slug="steam-ai-reporter"
 version="$(python -c 'import json; print(json.load(open("package.json"))["version"])')"
 
 for path in dist/chromium dist/gecko dist/userscript; do
@@ -32,9 +31,7 @@ rm -rf artifacts
 mkdir -p artifacts
 python scripts/zip_dir.py dist/chromium "artifacts/${slug}-chromium-${version}.zip"
 python scripts/zip_dir.py dist/gecko "artifacts/${slug}-gecko-${version}.zip"
-for ext in user.js meta.js; do
-  cp "dist/userscript/${userscript_slug}.${ext}" artifacts/
-done
+cp "dist/userscript/${slug}.user.js" "dist/userscript/${slug}.meta.js" artifacts/
 # A pathspec exclude of docs would drop the tokens too, so list every other top-level entry.
 paths=()
 while IFS= read -r entry; do

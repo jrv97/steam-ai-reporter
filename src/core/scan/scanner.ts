@@ -9,7 +9,7 @@ import {
   SKIPPED,
 } from "./candidates";
 import { createHostFinder } from "./hosts";
-import { HOST_APPID, HOST_HIDEABLE, HOST_KINDS, isInSarNode, isSarNode, SAR_NODE } from "./marks";
+import { HOST_APPID, HOST_HIDEABLE, HOST_KINDS, isInSarNode, isSarNode, TKS_NODE } from "./marks";
 import { placeHost, type Placement, PLACEMENTS } from "./placements";
 import type { CapsuleHost, CapsuleRenderer } from "./renderer";
 
@@ -262,7 +262,7 @@ export function createScanner(options: ScannerOptions): Scanner {
       element.removeAttribute(HOST_APPID);
       element.removeAttribute(HOST_KINDS);
       element.removeAttribute(HOST_HIDEABLE);
-      for (const copy of element.querySelectorAll(SAR_NODE)) {
+      for (const copy of element.querySelectorAll(TKS_NODE)) {
         copy.remove();
       }
     }

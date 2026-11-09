@@ -74,7 +74,7 @@ describe("createBreaker", () => {
       new Map([[API_BREAKER_KEY, { until: T0 + PAUSE }]]),
     );
     expect(sink.warn).toHaveBeenCalledWith(
-      "[sar]",
+      "[tks]",
       i18n.t("warn_breaker_opened", { seconds: String(PAUSE / 1000), breaker: API_BREAKER_KEY }),
     );
     clock.advance(PAUSE - 1);
@@ -84,7 +84,7 @@ describe("createBreaker", () => {
     expect(await breaker.isOpen()).toBe(false);
     expect(sink.info).toHaveBeenCalledOnce();
     expect(sink.info).toHaveBeenCalledWith(
-      "[sar]",
+      "[tks]",
       i18n.t("notice_breaker_closed", { breaker: API_BREAKER_KEY }),
     );
   });

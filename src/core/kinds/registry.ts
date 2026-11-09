@@ -1,4 +1,4 @@
-import { SarError } from "../errors";
+import { TksError } from "../errors";
 import { ACCOUNT_KIND } from "./account";
 import { AI_KIND } from "./ai";
 import { ANTICHEAT_KIND } from "./anticheat";
@@ -67,7 +67,7 @@ export function perKind<T>(make: (kind: TagKind) => T): Readonly<Record<KindId, 
   if (holdsEveryKind(values)) {
     return values;
   }
-  throw new SarError("error_unexpected", {});
+  throw new TksError("error_unexpected", {});
 }
 
 /** Each registered kind's definition by id, for code that holds a verdict and needs its words. */

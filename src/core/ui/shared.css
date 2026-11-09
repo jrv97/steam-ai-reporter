@@ -1,7 +1,7 @@
 /* Rules every UI stylesheet needs. Imported by styles.css, banner.css and settings.css. */
 
 /* Visually hidden, still read: live regions */
-.sar-vh {
+.tks-vh {
   position: absolute !important;
   width: 1px !important;
   height: 1px !important;
@@ -13,80 +13,80 @@
   border: 0 !important;
 }
 
-/* A tag's custom color (experimental). Whatever carries data-sar-kind reads that kind's color
+/* A tag's custom color (experimental). Whatever carries data-tks-kind reads that kind's color
    from the root custom property the app writes, and derives every shade from it. With no color
    set, the property is empty and so is every shade, so each rule falls back to the violet tokens.
    The kinds are listed by hand because a custom property name cannot be built from an attribute;
    styles.test.ts fails for a kind missing here. */
-[data-sar-kind="ai"] {
-  --sar-kind-color: var(--sar-kind-color-ai);
+[data-tks-kind="ai"] {
+  --tks-kind-color: var(--tks-kind-color-ai);
 }
 
-[data-sar-kind="kernel"] {
-  --sar-kind-color: var(--sar-kind-color-kernel);
+[data-tks-kind="kernel"] {
+  --tks-kind-color: var(--tks-kind-color-kernel);
 }
 
-[data-sar-kind="anticheat"] {
-  --sar-kind-color: var(--sar-kind-color-anticheat);
+[data-tks-kind="anticheat"] {
+  --tks-kind-color: var(--tks-kind-color-anticheat);
 }
 
-[data-sar-kind="drm"] {
-  --sar-kind-color: var(--sar-kind-color-drm);
+[data-tks-kind="drm"] {
+  --tks-kind-color: var(--tks-kind-color-drm);
 }
 
-[data-sar-kind="account"] {
-  --sar-kind-color: var(--sar-kind-color-account);
+[data-tks-kind="account"] {
+  --tks-kind-color: var(--tks-kind-color-account);
 }
 
-[data-sar-kind="eula"] {
-  --sar-kind-color: var(--sar-kind-color-eula);
+[data-tks-kind="eula"] {
+  --tks-kind-color: var(--tks-kind-color-eula);
 }
 
-[data-sar-kind="pvp"] {
-  --sar-kind-color: var(--sar-kind-color-pvp);
+[data-tks-kind="pvp"] {
+  --tks-kind-color: var(--tks-kind-color-pvp);
 }
 
-[data-sar-kind="iap"] {
-  --sar-kind-color: var(--sar-kind-color-iap);
+[data-tks-kind="iap"] {
+  --tks-kind-color: var(--tks-kind-color-iap);
 }
 
-[data-sar-kind="deck"] {
-  --sar-kind-color: var(--sar-kind-color-deck);
+[data-tks-kind="deck"] {
+  --tks-kind-color: var(--tks-kind-color-deck);
 }
 
-[data-sar-kind="machine"] {
-  --sar-kind-color: var(--sar-kind-color-machine);
+[data-tks-kind="machine"] {
+  --tks-kind-color: var(--tks-kind-color-machine);
 }
 
-[data-sar-kind="family"] {
-  --sar-kind-color: var(--sar-kind-color-family);
+[data-tks-kind="family"] {
+  --tks-kind-color: var(--tks-kind-color-family);
 }
 
-[data-sar-kind="earlyaccess"] {
-  --sar-kind-color: var(--sar-kind-color-earlyaccess);
+[data-tks-kind="earlyaccess"] {
+  --tks-kind-color: var(--tks-kind-color-earlyaccess);
 }
 
-[data-sar-kind] {
-  --sar-tag-edge: var(--sar-kind-color);
-  --sar-tag-tint: color-mix(
+[data-tks-kind] {
+  --tks-tag-edge: var(--tks-kind-color);
+  --tks-tag-tint: color-mix(
     in srgb,
-    var(--sar-kind-color) var(--sar-kind-mix-tint),
+    var(--tks-kind-color) var(--tks-kind-mix-tint),
     transparent
   );
-  --sar-tag-text: color-mix(in srgb, var(--sar-kind-color) var(--sar-kind-mix-text), white);
-  --sar-tag-light: color-mix(in srgb, var(--sar-kind-color) var(--sar-kind-mix-light), white);
-  --sar-tag-solid: color-mix(in srgb, var(--sar-kind-color) var(--sar-kind-mix-solid), black);
-  --sar-tag-wash-start: color-mix(
+  --tks-tag-text: color-mix(in srgb, var(--tks-kind-color) var(--tks-kind-mix-text), white);
+  --tks-tag-light: color-mix(in srgb, var(--tks-kind-color) var(--tks-kind-mix-light), white);
+  --tks-tag-solid: color-mix(in srgb, var(--tks-kind-color) var(--tks-kind-mix-solid), black);
+  --tks-tag-wash-start: color-mix(
     in srgb,
-    color-mix(in srgb, var(--sar-kind-color) var(--sar-kind-mix-wash-start), black) var(
-      --sar-kind-mix-wash-alpha
+    color-mix(in srgb, var(--tks-kind-color) var(--tks-kind-mix-wash-start), black) var(
+      --tks-kind-mix-wash-alpha
     ),
     transparent
   );
-  --sar-tag-wash-end: color-mix(
+  --tks-tag-wash-end: color-mix(
     in srgb,
-    color-mix(in srgb, var(--sar-kind-color) var(--sar-kind-mix-wash-end), black) var(
-      --sar-kind-mix-wash-alpha
+    color-mix(in srgb, var(--tks-kind-color) var(--tks-kind-mix-wash-end), black) var(
+      --tks-kind-mix-wash-alpha
     ),
     transparent
   );

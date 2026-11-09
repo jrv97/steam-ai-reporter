@@ -11,7 +11,7 @@ import { openSettingsDialog } from "./settings-dialog";
 
 const i18n = englishI18n();
 
-const host = () => document.querySelector(".sar-dialog-host");
+const host = () => document.querySelector(".tks-dialog-host");
 const dialog = () => host()?.shadowRoot?.querySelector("dialog") ?? null;
 
 afterEach(() => {
@@ -24,9 +24,9 @@ describe("openSettingsDialog", () => {
     await openSettingsDialog(deps(true));
 
     expect(dialog()?.open).toBe(true);
-    expect(dialog()?.querySelector(".sar-dialog-title")?.textContent).toBe(i18n.t("ext_name"));
-    expect(dialog()?.querySelector("[data-sar-setting='badge']")).not.toBeNull();
-    expect(document.querySelector("[data-sar-setting='badge']")).toBeNull();
+    expect(dialog()?.querySelector(".tks-dialog-title")?.textContent).toBe(i18n.t("ext_name"));
+    expect(dialog()?.querySelector("[data-tks-setting='badge']")).not.toBeNull();
+    expect(document.querySelector("[data-tks-setting='badge']")).toBeNull();
   });
 
   it("has the Backup card, whose file input stays inside the modal dialog", async () => {
@@ -40,11 +40,11 @@ describe("openSettingsDialog", () => {
   it("shows a color field for each tag, which the toolbar popup does not", async () => {
     await openSettingsDialog(deps(true));
 
-    const fields = dialog()?.querySelectorAll("[data-sar-setting='color']") ?? [];
+    const fields = dialog()?.querySelectorAll("[data-tks-setting='color']") ?? [];
     expect(fields).toHaveLength(KINDS.length);
     const label = dialog()?.querySelector(`label[for="${fields[0]?.id}"]`);
     expect(label?.textContent).toBe(i18n.t("options_color_label"));
-    expect(dialog()?.querySelector(".sar-options")?.getAttribute("data-sar-context")).toBe("popup");
+    expect(dialog()?.querySelector(".tks-options")?.getAttribute("data-tks-context")).toBe("popup");
   });
 
   it("saves a typed color and applies it inside the dialog", async () => {
@@ -52,7 +52,7 @@ describe("openSettingsDialog", () => {
     await openSettingsDialog(deps(true, store));
 
     const field = dialog()?.querySelector<HTMLInputElement>(
-      "[data-sar-setting='color'][data-sar-for='ai']",
+      "[data-tks-setting='color'][data-tks-for='ai']",
     );
     if (field === null || field === undefined) {
       throw new TypeError();
@@ -65,8 +65,8 @@ describe("openSettingsDialog", () => {
     await vi.waitFor(() => {
       expect(field.value).toBe(color);
     });
-    const form = dialog()?.querySelector<HTMLElement>(".sar-options");
-    expect(form?.style.getPropertyValue("--sar-kind-color-ai")).toBe(color);
+    const form = dialog()?.querySelector<HTMLElement>(".tks-options");
+    expect(form?.style.getPropertyValue("--tks-kind-color-ai")).toBe(color);
     const stored = parseSettings(await createSettingsSource(store).read());
     expect(stored.kinds.ai.color).toBe(color);
   });
@@ -76,9 +76,9 @@ describe("openSettingsDialog", () => {
     await openSettingsDialog(deps(true, store));
 
     const general = dialog()?.querySelector("[role=tabpanel]:not([hidden])");
-    expect(general?.querySelector("select[data-sar-setting='locale']")).not.toBeNull();
+    expect(general?.querySelector("select[data-tks-setting='locale']")).not.toBeNull();
     const before = location.href;
-    dialog()?.querySelector<HTMLElement>("[role=tab][data-sar-tab='drm']")?.click();
+    dialog()?.querySelector<HTMLElement>("[role=tab][data-tks-tab='drm']")?.click();
     expect(location.href).toBe(before);
     await vi.waitFor(async () => {
       expect(await createUiState(store).read()).toBe("drm");
@@ -89,7 +89,7 @@ describe("openSettingsDialog", () => {
     await openSettingsDialog(deps(true));
     await openSettingsDialog(deps(true));
 
-    expect(document.querySelectorAll(".sar-dialog-host")).toHaveLength(1);
+    expect(document.querySelectorAll(".tks-dialog-host")).toHaveLength(1);
   });
 
   it("closes with its close button, removes itself and returns focus", async () => {
@@ -98,7 +98,7 @@ describe("openSettingsDialog", () => {
     opener.focus();
     await openSettingsDialog(deps(true));
 
-    const close = dialog()?.querySelector<HTMLElement>("[data-sar-close]");
+    const close = dialog()?.querySelector<HTMLElement>("[data-tks-close]");
     expect(close?.textContent).toBe(i18n.t("userscript_close"));
     close?.click();
 
@@ -119,6 +119,6 @@ describe("openSettingsDialog", () => {
   ])("with live changes %s, notes %j about applying on reload", async (live, note) => {
     await openSettingsDialog(deps(live));
     expect(dialog()?.open).toBe(true);
-    expect(dialog()?.querySelector(".sar-dialog-note")?.textContent).toBe(note);
+    expect(dialog()?.querySelector(".tks-dialog-note")?.textContent).toBe(note);
   });
 });

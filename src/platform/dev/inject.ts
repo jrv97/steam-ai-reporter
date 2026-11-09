@@ -17,7 +17,7 @@ import { memoryStore } from "./memory-store";
 declare global {
   interface Window {
     /** The running dev app; a second injection stops it first. */
-    sarDev?: App;
+    tksDev?: App;
   }
 }
 
@@ -25,7 +25,7 @@ const store = memoryStore(
   new Map([[SETTINGS_KEY, encodeSettings({ ...DEFAULT_SETTINGS, debug: true })]]),
 );
 
-window.sarDev?.stop();
+window.tksDev?.stop();
 start({
   document,
   http: createFetchHttp((url, init) => fetch(url, init)),
@@ -38,7 +38,7 @@ start({
   addPageStyles: adoptPageStyles,
 }).then(
   (app) => {
-    window.sarDev = app;
+    window.tksDev = app;
   },
   (problem: unknown) => {
     createLogger(createI18n(SHIPPED_CATALOGS, DEFAULT_LOCALE), console, true).error(problem);

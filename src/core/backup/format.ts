@@ -10,8 +10,8 @@ import { type JsonValue, parseJson } from "../json";
 import { type AllowEntries, decodeScopes, encodeAllow, parseGameKey } from "../settings/allow-data";
 import { encodeSettings, parseSettings, type Settings } from "../settings/settings";
 
-/** Names the file as a backup of ours: an identifier like the `sar-` prefix, never shown. */
-export const BACKUP_FORMAT = "sar-backup";
+/** Names the file as a backup of ours: an identifier like the `tks-` prefix, never shown. */
+export const BACKUP_FORMAT = "tks-backup";
 
 /**
  * Each step turns the body of one format version into the next: index 0 upgrades version 1 to 2.

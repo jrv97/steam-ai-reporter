@@ -8,57 +8,57 @@
 <style>
   body {
     margin: 0;
-    background: var(--sar-color-bg-page);
-    color: var(--sar-color-text-subtle);
-    font: 12px/16px var(--sar-font-page);
+    background: var(--tks-color-bg-page);
+    color: var(--tks-color-text-subtle);
+    font: 12px/16px var(--tks-font-page);
   }
-  .stage { padding: var(--sar-space-4); }
+  .stage { padding: var(--tks-space-4); }
   .col { inline-size: 616px; max-inline-size: 100%; }
   /* Stand-in for the store's purchase box, so the banner's place in the stack shows */
   .purchase {
     block-size: 56px;
-    margin-block-end: var(--sar-space-5);
-    border-radius: var(--sar-radius-md);
-    background: var(--sar-color-bg-raised);
+    margin-block-end: var(--tks-space-5);
+    border-radius: var(--tks-radius-md);
+    background: var(--tks-color-bg-raised);
     box-shadow: 2px 2px 15px rgb(0 0 0 / 0.4);
   }
-  .cap { margin: 0 0 var(--sar-space-2); }
+  .cap { margin: 0 0 var(--tks-space-2); }
 </style>
 </head>
 <body>
 <div class="stage"><div class="col">
   <p class="cap">Long notes, collapsed after 3 lines, with a named service</p>
-  <aside class="sar-banner" aria-labelledby="t1">
-    <div class="sar-banner-head">
-      <h2 class="sar-banner-title" id="t1">AI use reported</h2>
-      <button class="sar-banner-action" type="button">Ignore this game</button>
+  <aside class="tks-banner" aria-labelledby="t1">
+    <div class="tks-banner-head">
+      <h2 class="tks-banner-title" id="t1">AI use reported</h2>
+      <button class="tks-banner-action" type="button">Ignore this game</button>
     </div>
-    <p class="sar-banner-source">In the developer's own words:</p>
-    <blockquote class="sar-banner-quote" id="n1" data-sar-collapsed="true"></blockquote>
-    <button class="sar-banner-link" type="button" aria-expanded="false" aria-controls="n1">Show full
+    <p class="tks-banner-source">In the developer's own words:</p>
+    <blockquote class="tks-banner-quote" id="n1" data-tks-collapsed="true"></blockquote>
+    <button class="tks-banner-link" type="button" aria-expanded="false" aria-controls="n1">Show full
       report</button>
-    <p class="sar-banner-service">AI service named by the developer:
-      <span class="sar-banner-service-name">Example AI API</span></p>
+    <p class="tks-banner-service">AI service named by the developer:
+      <span class="tks-banner-service-name">Example AI API</span></p>
   </aside>
   <div class="purchase"></div>
 
   <p class="cap">Short notes: no toggle, no service line</p>
-  <aside class="sar-banner" aria-labelledby="t2">
-    <div class="sar-banner-head">
-      <h2 class="sar-banner-title" id="t2">AI use reported</h2>
-      <button class="sar-banner-action" type="button">Ignore this game</button>
+  <aside class="tks-banner" aria-labelledby="t2">
+    <div class="tks-banner-head">
+      <h2 class="tks-banner-title" id="t2">AI use reported</h2>
+      <button class="tks-banner-action" type="button">Ignore this game</button>
     </div>
-    <p class="sar-banner-source">In the developer's own words:</p>
-    <blockquote class="sar-banner-quote">We used an AI upscaler on some older textures.
+    <p class="tks-banner-source">In the developer's own words:</p>
+    <blockquote class="tks-banner-quote">We used an AI upscaler on some older textures.
 All other art was made by hand.</blockquote>
-    <p class="sar-banner-error" role="alert">Could not update this game. Try again.</p>
+    <p class="tks-banner-error" role="alert">Could not update this game. Try again.</p>
   </aside>
   <div class="purchase"></div>
 
   <p class="cap">Allow-listed: one line, with undo</p>
-  <aside class="sar-banner" data-sar-variant="ignored" aria-label="AI use report">
-    <span class="sar-banner-ignored-text">Game ignored</span>
-    <button class="sar-banner-link" type="button">Undo</button>
+  <aside class="tks-banner" data-tks-variant="ignored" aria-label="AI use report">
+    <span class="tks-banner-ignored-text">Game ignored</span>
+    <button class="tks-banner-link" type="button">Undo</button>
   </aside>
   <div class="purchase"></div>
 </div></div>
