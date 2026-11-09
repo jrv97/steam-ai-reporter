@@ -23,6 +23,7 @@ from repo import (
     EXTENSION_TARGETS,
     ICON_SIZES,
     ICONS_DIR,
+    ISSUES_URL,
     REPO_URL,
     ROOT,
     SLUG,
@@ -47,7 +48,6 @@ CONTENT_CSS = ("TOKENS_CSS", "PAGE_CSS")
 USERSCRIPT_MATCH = "https://store.steampowered.com/*"
 USERSCRIPT_NAMESPACE = REPO_URL
 USERSCRIPT_UPDATE_BASE = f"{REPO_URL}/releases/latest/download"
-USERSCRIPT_SUPPORT = f"{REPO_URL}/issues"
 USERSCRIPT_GRANTS = (
     "GM.getValue",
     "GM.setValue",
@@ -165,7 +165,7 @@ def userscript_header(version: str, catalogs: dict[str, dict[str, object]]) -> s
             fields.append((f"@description:{locale}", message(catalog, "ext_description", locale)))
     fields += [
         ("@homepageURL", REPO_URL),
-        ("@supportURL", USERSCRIPT_SUPPORT),
+        ("@supportURL", ISSUES_URL),
         ("@icon", png_data_uri(USERSCRIPT_ICON)),
         ("@license", "MIT"),
         ("@match", USERSCRIPT_MATCH),

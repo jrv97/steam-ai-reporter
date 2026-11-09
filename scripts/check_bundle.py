@@ -79,6 +79,7 @@ from repo import (
     ARTIFACTS,
     DIST,
     EXTENSION_TARGETS,
+    ISSUES_URL,
     REPO_URL,
     ROOT,
     SLUG,
@@ -107,8 +108,8 @@ ALLOWED_HOSTS = {"api.steampowered.com", "store.steampowered.com"}
 # The feedback links of the settings (src/core/feedback-links.ts): plain links a person opens in a
 # tab, never requested. Only these exact URLs, and only in the bundles that show the settings.
 FEEDBACK_URLS = (
-    f"{REPO_URL}/issues/new?template=bug_report.yml",
-    f"{REPO_URL}/issues/new?template=feature_request.yml",
+    f"{ISSUES_URL}/new?template=bug_report.yml",
+    f"{ISSUES_URL}/new?template=feature_request.yml",
     "https://forms.gle/Fo652zzyFWUQn2qK9",
 )
 HEADER_START = "// ==UserScript=="
@@ -288,7 +289,7 @@ def header_problems(where: str, header: str) -> list[str]:
         "@updateURL": [f"{RELEASE_BASE}/{SLUG}.meta.js"],
         "@downloadURL": [f"{RELEASE_BASE}/{SLUG}.user.js"],
         "@homepageURL": [REPO_URL],
-        "@supportURL": [f"{REPO_URL}/issues"],
+        "@supportURL": [ISSUES_URL],
         "@icon": [png_data_uri(USERSCRIPT_ICON)],
     }
     for key, values in expected.items():

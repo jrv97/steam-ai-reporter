@@ -12,6 +12,7 @@ ROOT = Path(__file__).resolve().parent.parent
 DIST = ROOT / "dist"
 ARTIFACTS = ROOT / "artifacts"
 REPO_URL = "https://github.com/jrv97/tag-kit-for-steam"
+ISSUES_URL = f"{REPO_URL}/issues"
 SLUG = "tag-kit-for-steam"
 # The extension builds, named after their browser engines: dist/<target>, manifest.<target>.json.
 EXTENSION_TARGETS = ("chromium", "gecko")
