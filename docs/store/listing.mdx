@@ -94,17 +94,21 @@ The extension has no background script, requests no host permissions and makes n
 
 ## Screenshots
 
-`docs/store/screenshots/` holds the listing screenshots, 1280 x 800 JPEG, in upload order. The Chrome Web Store takes five and AMO takes any number.
+`docs/store/screenshots/` holds the listing screenshots, 1280 x 800 PNG, in upload order. The Chrome Web Store takes the first five; AMO takes all nine, each with the caption below. `mise run screenshots` takes them again from `docs/store/sample-config.json`; the runbook is [Store screenshots](screenshots.mdx).
 
-1. `01-search.jpg`: search results for "roguelike" with three badged rows.
-2. `02-app-banner.jpg`: the banner on app 1808500, with its badged DLC rows.
-3. `03-hover-card.jpg`: the panel that opens on a search badge. While it is open, Steam's own game hover stays hidden.
-4. `04-next-fest.jpg`: Next Fest sale cards with the compact badge on the game image.
-5. `05-options.jpg`: the options page with the list filter on Dim and one game in the allow-list.
+| File              | AMO caption                                                                                                                                             |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `01-search.png`   | Search results with a chip for each tag Steam lists for a game. Dimmed games fade, and the panel on a chip gives Steam's words and the developer's own. |
+| `02-app.png`      | A game's page: the tag row under Steam's tags, and the banner above the purchase box with the developer's note in their own words.                      |
+| `03-home.png`     | The store home with chips on game images, and the toolbar popup with Show, Dim and Hide for each tag.                                                   |
+| `04-settings.png` | Settings, General tab: the tag order decides which tags fit on small game images and rows.                                                              |
+| `05-tag.png`      | A tag's own settings: which values to tag, the badge and banner switches, your own chip text and a preview.                                             |
+| `06-queue.png`    | The discovery queue with chips beside each game it shows.                                                                                               |
+| `07-wishlist.png` | The wishlist with chips after each game's name; dimmed games fade.                                                                                      |
+| `08-calendar.png` | The store home's personal calendar and recommendations with chips on game images.                                                                       |
+| `09-deck.png`     | The store home's Steam Deck, wishlist and DLC rows with chips on game images.                                                                           |
 
-`list-dim.jpg` (Dim mode in search) and `popup.jpg` (the toolbar popup, 360 px wide) appear in the README only.
-
-They were captured on 2026-10-22 in headless Chrome with a fresh, signed-out profile, a 1280 x 800 viewport and Steam's cookie banner hidden. The store pages run the dev bundle (`dist/dev/inject.js`) built from main at commit 59417c5. The options page and the popup are `dist/chromium/options.html` with `chrome.storage` stubbed in memory. Prices show in euros because of the capture location.
+Prices show in euros because of the capture location, and the store pages show the account that took them.
 
 ## Graphics
 

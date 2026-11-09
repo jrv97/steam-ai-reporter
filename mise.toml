@@ -131,6 +131,7 @@ run = [
   "python scripts/check_versions.py",
   "python scripts/check_i18n.py",
   "python scripts/check_bundle.py",
+  "python scripts/check_screenshots.py",
 ]
 
 [tasks.check-branch]
@@ -191,6 +192,12 @@ run = [
   "python scripts/run_browser.py gecko --check",
   "vitest run --config vitest.e2e.config.ts",
 ]
+
+# Local only, against live Steam (ADR 0022); the runbook is docs/store/screenshots.mdx.
+[tasks.screenshots]
+description = "Capture the store screenshots headless in Chromium from the sample config"
+depends = ["build"]
+run = ["python scripts/run_browser.py chromium --check", "python scripts/screenshots.py"]
 
 [tasks.package]
 description = "Write the store zips, the userscript and the AMO source archive to artifacts/"
