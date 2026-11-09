@@ -455,23 +455,19 @@
   },
   "banner_ignore": {
     "message": "Ignore this game",
-    "description": "Title of the option in the ignore menu's Game group that stops every tag and this notice for one game, in this extension only. The store has its own Ignore button; this one does not touch it. Also names the action in announcements."
+    "description": "Title of the first option in the ignore menu, under no heading, that stops every tag and this notice for one game, in this extension only. The store has its own Ignore button; this one does not touch it. Also names the action in announcements."
   },
   "banner_menu_ignore": {
-    "message": "Ignore",
-    "description": "Main half of the split button at the foot of the notice, worded like Steam's own Ignore button. It ignores the game for every tag, in this extension only; Steam's own Ignore list is not touched."
+    "message": "Ignore tags for this game",
+    "description": "Main half of the split button at the foot of the notice. It ignores every tag on this game and its DLC, in this extension only; Steam's own Ignore list is not touched. Hovering or clicking the arrow beside it opens the ignore menu."
   },
   "banner_menu_ignored": {
-    "message": "Ignored",
-    "description": "The same button once the game is ignored for every tag. Pressing it again stops ignoring the game."
+    "message": "Tags ignored for this game",
+    "description": "The same button once the game is ignored for every tag, after a tick. Pressing it again stops ignoring the game."
   },
   "banner_menu_label": {
     "message": "Ignore options",
     "description": "Accessible name of the arrow beside the Ignore button, which opens the ignore menu. Worded like the alt text of Steam's own arrow."
-  },
-  "banner_menu_group_game": {
-    "message": "Game",
-    "description": "Heading of the ignore menu's group with the option that ignores this game."
   },
   "banner_menu_group_developers": {
     "message": "Developers",
@@ -933,7 +929,7 @@
   },
   "options_allow_empty": {
     "message": "None yet. Use the Ignore menu on a game page.",
-    "description": "Shown in a card of ignored items when it lists nothing. \"Ignore\" is the split button at the foot of the notice on a game page; its arrow opens the ignore menu."
+    "description": "Shown in a card of ignored items when it lists nothing. The ignore menu opens from the arrow beside \"Ignore tags for this game\" at the foot of the notice on a game page."
   },
   "options_section_allow_developers": {
     "message": "Developers you ignored",

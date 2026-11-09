@@ -6,13 +6,14 @@ import { KIND_BY_ID } from "../kinds/registry";
 import type { MessageCatalog } from "../ports";
 import { ALLOW_ALL, type AllowScope } from "../settings/allow-data";
 
-/** The menu's groups, in the order they show. A creator group is named by its role. */
-export const MENU_GROUPS = ["game", ...CREATOR_ROLES, "tags"] as const;
+/** The menu's groups, in the order they show after the game's own row. A creator group is named
+ * by its role. */
+export const MENU_GROUPS = ["tags", ...CREATOR_ROLES] as const;
 
 export type MenuGroup = (typeof MENU_GROUPS)[number];
 
 /** The groups open on a fresh page; a creator lists one option per tag, so those start closed. */
-export const OPEN_GROUPS: readonly MenuGroup[] = ["game", "tags"];
+export const OPEN_GROUPS: readonly MenuGroup[] = ["tags"];
 
 /** Name the role and the key of the creator an option acts on, and the group a head opens. */
 export const ROLE_ATTRIBUTE = "data-tks-role";
@@ -56,7 +57,6 @@ export interface MenuState {
 }
 
 const GROUP_LABELS: Readonly<Record<MenuGroup, BareMessageKey>> = {
-  game: "banner_menu_group_game",
   developer: "banner_menu_group_developers",
   publisher: "banner_menu_group_publishers",
   tags: "banner_menu_group_tags",
@@ -137,17 +137,19 @@ export function buildIgnoreMenu(
     return i18n.t(KIND_BY_ID[kind].messages.heading);
   }
 
-  function gameOptions(): readonly HTMLElement[] {
-    return [
-      option(
-        itemId("option", "game", ALLOW_ALL),
-        "game",
-        ALLOW_ALL,
-        view.ignored.includes(ALLOW_ALL),
-        i18n.t("banner_ignore"),
-        i18n.t("banner_menu_game_note"),
-      ),
-    ];
+  /** The game's own row, first in the menu and under no heading. */
+  function gameRow(): HTMLElement {
+    const row = element("div", "tks-ignore-section");
+    row.setAttribute("role", "none");
+    row.append(option(
+      itemId("option", "game", ALLOW_ALL),
+      "game",
+      ALLOW_ALL,
+      view.ignored.includes(ALLOW_ALL),
+      i18n.t("banner_ignore"),
+      i18n.t("banner_menu_game_note"),
+    ));
+    return row;
   }
 
   function tagOptions(): readonly HTMLElement[] {
@@ -192,8 +194,6 @@ export function buildIgnoreMenu(
 
   function groupItems(group: MenuGroup): readonly HTMLElement[] {
     switch (group) {
-      case "game":
-        return gameOptions();
       case "tags":
         return tagOptions();
       case "developer":
@@ -253,7 +253,7 @@ export function buildIgnoreMenu(
   menu.setAttribute("role", "menu");
   menu.setAttribute("aria-labelledby", MENU_BUTTON_ID);
   menu.hidden = !state.open;
-  menu.append(...MENU_GROUPS.flatMap((group) => section(group) ?? []));
+  menu.append(gameRow(), ...MENU_GROUPS.flatMap((group) => section(group) ?? []));
 
   const split = element("div", "tks-ignore-split");
   split.append(main, caret);

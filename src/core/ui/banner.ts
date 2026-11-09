@@ -97,6 +97,9 @@ export interface Banner {
 }
 
 const ACTIONS = ["toggle", ...MENU_ACTIONS] as const;
+/** How long a menu opened by hover stays open after the pointer leaves the button and menu. */
+export const HOVER_CLOSE_MS = 300;
+const SPLIT_SELECTOR = ".tks-ignore";
 
 type Action = (typeof ACTIONS)[number];
 
@@ -207,6 +210,9 @@ export function createBanner(
   /** Whether the menu is open and which groups are; both survive a redraw but not a reload. */
   let menuOpen = false;
   const groupsOpen = new Set<MenuGroup>(OPEN_GROUPS);
+  /** Whether hover opened the menu, which then closes when the pointer leaves it. */
+  let hovered = false;
+  let leaving: ReturnType<typeof setTimeout> | undefined;
 
   function element<K extends keyof HTMLElementTagNameMap>(
     tag: K,
@@ -384,9 +390,16 @@ export function createBanner(
     }
   }
 
-  /** Opens or closes the menu in place; opening focuses its first or last item. */
+  function stayOpen(): void {
+    clearTimeout(leaving);
+    leaving = undefined;
+  }
+
+  /** Opens or closes the menu in place; opening by click or key focuses its first or last item. */
   function setMenu(open: boolean, focus?: "first" | "last"): void {
     menuOpen = open;
+    hovered = false;
+    stayOpen();
     const flyout = menu();
     shadow.getElementById(MENU_BUTTON_ID)?.setAttribute("aria-expanded", String(open));
     if (flyout !== null) {
@@ -394,7 +407,7 @@ export function createBanner(
     }
     if (open) {
       doc.addEventListener("pointerdown", onOutside, true);
-      const items = flyout === null ? [] : visibleItems(flyout);
+      const items = flyout === null || focus === undefined ? [] : visibleItems(flyout);
       (focus === "last" ? items[items.length - 1] : items[0])?.focus();
     } else {
       doc.removeEventListener("pointerdown", onOutside, true);
@@ -512,7 +525,8 @@ export function createBanner(
         toggleNotes(clicked);
         return;
       case "menu":
-        setMenu(!menuOpen, "first");
+        // A click on a menu that hover opened keeps it open and takes it over.
+        setMenu(!menuOpen || hovered, "first");
         return;
       case "group": {
         const group = parseGroup(clicked.getAttribute(GROUP_ATTRIBUTE));
@@ -564,6 +578,36 @@ export function createBanner(
     if (clicked !== null) {
       onClick(clicked);
     }
+  });
+
+  shadow.addEventListener("pointerover", (event) => {
+    const target = event.target;
+    if (
+      !(event instanceof PointerEvent) || event.pointerType === "touch"
+      || !(target instanceof Element) || target.closest(SPLIT_SELECTOR) === null
+    ) {
+      return;
+    }
+    stayOpen();
+    if (!menuOpen && target.closest(`#${MENU_BUTTON_ID}`) !== null) {
+      setMenu(true);
+      hovered = true;
+    }
+  });
+
+  shadow.addEventListener("pointerout", (event) => {
+    const next = event instanceof PointerEvent ? event.relatedTarget : null;
+    const within = next instanceof Node
+      && box.querySelector(SPLIT_SELECTOR)?.contains(next) === true;
+    if (!hovered || within) {
+      return;
+    }
+    stayOpen();
+    leaving = setTimeout(() => {
+      if (hovered) {
+        setMenu(false);
+      }
+    }, HOVER_CLOSE_MS);
   });
 
   shadow.addEventListener("keydown", (event) => {

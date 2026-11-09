@@ -370,25 +370,28 @@ Preview: `previews/Banner.html`.
         </div>
         <div class="tks-ignore-flyout" id="tks-banner-menu" role="menu" aria-labelledby="tks-banner-menu-button" hidden>
           <div class="tks-ignore-section" role="none">
-            <button class="tks-ignore-group-head" id="tks-banner-group-game" type="button" role="menuitem"
-                    tabindex="-1" data-tks-action="group" data-tks-group="game" aria-expanded="true"
-                    aria-controls="tks-banner-group-game-items">t('banner_menu_group_game')</button>
-            <div class="tks-ignore-group" id="tks-banner-group-game-items" role="group"
-                 aria-labelledby="tks-banner-group-game">
-              <button class="tks-ignore-option" id="tks-banner-option-game-all" type="button"
-                      role="menuitemcheckbox" aria-checked="false" tabindex="-1"
-                      data-tks-action="game" data-tks-scope="all">
-                <span class="tks-ignore-box" aria-hidden="true"></span>
-                <span class="tks-ignore-label">
-                  <span class="tks-ignore-title">t('banner_ignore')</span>
-                  <span class="tks-ignore-subtitle">t('banner_menu_game_note')</span>
-                </span>
-              </button>
+            <button class="tks-ignore-option" id="tks-banner-option-game-all" type="button"
+                    role="menuitemcheckbox" aria-checked="false" tabindex="-1"
+                    data-tks-action="game" data-tks-scope="all">
+              <span class="tks-ignore-box" aria-hidden="true"></span>
+              <span class="tks-ignore-label">
+                <span class="tks-ignore-title">t('banner_ignore')</span>
+                <span class="tks-ignore-subtitle">t('banner_menu_game_note')</span>
+              </span>
+            </button>
+          </div>
+          <div class="tks-ignore-section" role="none">
+            <button class="tks-ignore-group-head" id="tks-banner-group-tags" type="button" role="menuitem"
+                    tabindex="-1" data-tks-action="group" data-tks-group="tags" aria-expanded="true"
+                    aria-controls="tks-banner-group-tags-items">t('banner_menu_group_tags')</button>
+            <div class="tks-ignore-group" id="tks-banner-group-tags-items" role="group"
+                 aria-labelledby="tks-banner-group-tags">
+              <!-- one option per listed tag (id tks-banner-option-tag-<kind>) -->
             </div>
           </div>
-          <!-- Developers and Publishers: per name a role="group" labelled by the name, with
+          <!-- Developers, then Publishers: per name a role="group" labelled by the name, with
                "All tags" then one option per listed tag (data-tks-action="creator",
-               data-tks-role, data-tks-creator). Tags: one option per listed tag. -->
+               data-tks-role, data-tks-creator). -->
         </div>
       </div>
     </div>
@@ -417,7 +420,7 @@ Modeled on the store's per-app notice bubbles (the DLC notice sits in the same s
 - No border, no radius, no shadow.
 - Padding `tks-space-2` at block-start, `tks-space-3` at block-end, `tks-space-4` inline. `tks-space-4` below: the store's own 2px would glue the banner to the purchase box and read as part of the offer.
 - All text in `tks-banner-fg`. Heading `tks-text-banner-title` (24/30 light) when the banner holds one entry. With two or more, the headings step down to 18/23 light (`tks-size-2xl`) and the entries sit `tks-space-3` apart. Detail, source and service lines `tks-text-banner-meta` (13/19 light). Notes `tks-text-banner-quote` (14/21, italic like the notes in the store's own disclosure section).
-- The split Ignore button sits at inline-end under the last entry. Both halves match the store's outlined buttons right below the banner ("Compare Editions", "Browse all"): `tks-text-banner-button` (11/14 regular, the store's size) in `tks-banner-button-fg`, `tks-banner-button-pad-block` (2px) and `tks-banner-button-pad-inline` (15px), a 1px `tks-banner-button-border` (white at 40%), `tks-radius-sm` on the outer corners, and a `tks-banner-button-bg-hover` wash on hover and while the menu is open. Each half stays at least `tks-control-height-xs` (24px) tall and wide for the target size (WCAG 2.5.8). Once the game is ignored for all tags the main half reads `banner_menu_ignored` behind the store's tick.
+- The split Ignore button sits at inline-end under the last entry. Both halves match the store's outlined buttons right below the banner ("Compare Editions", "Browse all"): `tks-text-banner-button` (11/14 regular, the store's size) in `tks-banner-button-fg`, `tks-banner-button-pad-block` (2px) and `tks-banner-button-pad-inline` (15px), a 1px `tks-banner-button-border` (white at 40%), `tks-radius-sm` on the outer corners, and a `tks-banner-button-bg-hover` wash on hover and while the menu is open. Each half stays at least `tks-control-height-xs` (24px) tall and wide for the target size (WCAG 2.5.8). The main half reads `banner_menu_ignore` ("Ignore tags for this game"); once the game is ignored for all tags it reads `banner_menu_ignored` behind the store's tick.
 - The menu is the store's Ignore dropdown, sampled signed in (`tests/fixtures/surfaces/app-ignore-menu/`): `tks-menu-width` (300px) at inline-end under the caret, `tks-menu-bg` under `tks-menu-glow`, `tks-menu-shadow`, at most 70vh tall with its own scroll. Options take 12px padding, a 16px box in `tks-menu-box` with a tick when checked, the title at 14/17 in `tks-menu-title` and the muted line at 12/14 in `tks-menu-subtitle` under it. Hover and focus paint `tks-menu-item-bg-hover` and lift the muted line to `tks-menu-subtitle-hover`. The store's own muted colors miss 4.5:1, so ours are lighter. A group head is a 14/17 title with a chevron that turns when open; groups part with a 1px line in the hover color.
 - "Show full report" is the store's underlined in-bubble link, in `tks-banner-link-color`, as a `button` element with a 24px minimum target. A EULA link looks the same, as an anchor.
 - Errors in `tks-banner-error`, never `tks-color-error` (4.21:1 on the bright end).
@@ -434,19 +437,19 @@ Modeled on the store's per-app notice bubbles (the DLC notice sits in the same s
 
 ### Behavior
 
-- The main half of the split button adds the app ID (with the name and today's date) to the list for all tags, and every entry gives way to one note; pressed again, it removes it. The caret opens the menu. Nothing calls the store's own ignore feature.
+- The main half of the split button adds the app ID (with the name and today's date) to the list for all tags, and every entry gives way to one note; pressed again, it removes it. Hovering the caret with a mouse or pen, or clicking it, opens the menu. Nothing calls the store's own ignore feature.
 - Checking an option adds the game or the creator to that scope's list; unchecking removes it again. The menu stays open, the focus stays on the option through the redraw, and the entries and notes follow.
 - Chips on the game's capsules follow the same lists, so they leave and return with the entries.
 
 #### The ignore menu
 
-Up to four groups, each a head (`role="menuitem"`, `aria-expanded`) over its options, in this order: Game (`banner_menu_group_game`), Developers, Publishers and Tags (`banner_menu_group_tags`). An empty group is left out. Game and Tags start open and the creator groups start closed; what is open, and whether the menu is, survives a redraw but not a reload.
-
-- **Game:** one option, `banner_ignore` over `banner_menu_game_note`, checked while the game is ignored for all tags. It and the main half act on one scope.
+The game's own option comes first, under no heading: `banner_ignore` over `banner_menu_game_note`, checked while the game is ignored for all tags. It and the main half act on one scope. Up to three groups follow, each a head (`role="menuitem"`, `aria-expanded`) over its options, in this order: Tags (`banner_menu_group_tags`), Developers and Publishers. An empty group is left out. Tags starts open and the creator groups start closed; what is open, and whether the menu is, survives a redraw but not a reload.
 - **Developers, Publishers:** one block per name and role from `basic_info` (`role="group"`, labelled by the name, written as text). Each starts with `banner_menu_all_tags` over `banner_menu_developer_all_note` or `banner_menu_publisher_all_note`, then one option per tag the banner lists: the tag's short label (the person's chip text when set) over Steam's heading. A company that develops and publishes has a block in each group, and each ignores that role only. A creator without a clan ID is keyed by its name (`n:<name>`), one with an ID by `c:<id>`; unchecking removes the key that is on the list.
 - **Tags:** one option per tag the banner lists, ignored or not, the short label over Steam's heading. These are our tags, never Steam's user tags.
 
 Keyboard (the WAI-ARIA menu button): Enter, Space or Down on the caret opens the menu on its first item, Up on its last. Up and Down move between the visible heads and options and wrap, Home and End jump. Right opens a group and Left closes it; Left on an option moves to its group's head. Enter or Space toggles. Escape closes and returns focus to the caret; Tab closes and lets focus move on. A press outside the banner closes it through one document listener that exists only while the menu is open. Everything else goes through the banner's delegated listeners.
+
+Hover: a mouse or pen over the caret opens the menu without moving the focus. That menu closes `HOVER_CLOSE_MS` (300ms) after the pointer leaves both the split button and the menu, and coming back in time keeps it open. A click on the caret takes it over: it stays open and focuses its first item, and then closes only as a clicked menu does. A touch never opens it by hover.
 
 A tag silenced through a creator is a note (`banner_ignored_creator_kind`), and a creator ignored for all tags is one note (`banner_ignored_creator`), after the game's own notes. A creator note shows only while the banner would list a tag it covers. The polite live region announces `notice_marking_stopped`, `notice_marking_restored`, `notice_creator_stopped`, `notice_creator_restored` or their `_kind` forms. A failed save shows `error_allow_list_save` or `error_creator_list_save` in the error line, and the option keeps its state.
 
@@ -1221,9 +1224,9 @@ For every translator:
 | `banner_expand` | Show full report | Expands the collapsed text. |
 | `banner_collapse` | Show less | Collapses it again. |
 | `banner_ignore` | Ignore this game | The Game option of the ignore menu: stops every tag and the banner for one game, in this extension. The store has its own Ignore button. |
-| `banner_menu_ignore`, `banner_menu_ignored` | Ignore, Ignored | The main half of the split button, before and after the game is ignored for all tags. |
+| `banner_menu_ignore`, `banner_menu_ignored` | Ignore tags for this game, Tags ignored for this game | The main half of the split button, before and after the game is ignored for all tags. |
 | `banner_menu_label` | Ignore options | Accessible name of the caret that opens the menu. |
-| `banner_menu_group_game`, `_developers`, `_publishers`, `_tags` | Game, Developers, Publishers, Tags | The menu's group heads. |
+| `banner_menu_group_tags`, `_developers`, `_publishers` | Tags, Developers, Publishers | The menu's group heads. |
 | `banner_menu_game_note` | Every tag on this game and its DLC | Muted line under `banner_ignore`. |
 | `banner_menu_all_tags` | All tags | A creator's first option. |
 | `banner_menu_developer_all_note`, `banner_menu_publisher_all_note` | On every game they develop, publish | Muted line under a creator's All tags. |

@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { setBody } from "../../../tests/helpers/dom";
 import { make } from "../../../tests/helpers/factory";
 import { bannerList } from "../../../tests/helpers/fixture-verdicts";
@@ -16,6 +16,7 @@ import {
   type BannerOptions,
   type BannerView,
   createBanner,
+  HOVER_CLOSE_MS,
   placeBanner,
 } from "./banner";
 
@@ -75,6 +76,7 @@ const gameOption = (scope: AllowScope) =>
 const creatorOption = (which: CreatorRole, scope: AllowScope) =>
   `#tks-banner-option-${which}-0-${scope}`;
 const groupHead = (group: string) => `#tks-banner-group-${group}`;
+const GAME_ROW = gameOption(ALLOW_ALL);
 
 interface Pending {
   resolve(): void;
@@ -443,19 +445,20 @@ describe("the ignore menu", () => {
     note: "banner_menu_developer_all_note" | "banner_menu_publisher_all_note",
   ) => [[i18n.t("banner_menu_all_tags"), i18n.t(note)], ...tagLines];
 
-  it("groups every ignore under Game, Developers, Publishers and Tags, each a checkbox", () => {
+  it("puts the game's own row first, then the tag, developer and publisher groups", () => {
     const { banner, root } = setup();
     banner.show(view(SEVERAL, { creators: [DEVELOPER, PUBLISHER] }));
     const menu = query(root, MENU);
     expect(menu.getAttribute("role")).toBe("menu");
+    expect(menu.querySelector("[role^='menuitem']")).toBe(query(root, GAME_ROW));
+    expect(texts(query(root, GAME_ROW), ".tks-ignore-title, .tks-ignore-subtitle")).toEqual([
+      i18n.t("banner_ignore"),
+      i18n.t("banner_menu_game_note"),
+    ]);
     expect(texts(root, ".tks-ignore-group-head")).toEqual([
-      i18n.t("banner_menu_group_game"),
+      i18n.t("banner_menu_group_tags"),
       i18n.t("banner_menu_group_developers"),
       i18n.t("banner_menu_group_publishers"),
-      i18n.t("banner_menu_group_tags"),
-    ]);
-    expect(options(root, "game")).toEqual([
-      [i18n.t("banner_ignore"), i18n.t("banner_menu_game_note")],
     ]);
     expect(options(root, "developer")).toEqual(creatorLines("banner_menu_developer_all_note"));
     expect(options(root, "publisher")).toEqual(creatorLines("banner_menu_publisher_all_note"));
@@ -478,7 +481,7 @@ describe("the ignore menu", () => {
 
   it.each([
     ["nothing ignored", view(SEVERAL, { creators: [DEVELOPER] }), []],
-    ["the game for all tags", silenced({ creators: [DEVELOPER] }), [MAIN, gameOption(ALLOW_ALL)]],
+    ["the game for all tags", silenced({ creators: [DEVELOPER] }), [MAIN, GAME_ROW]],
     [
       "one tag of the game",
       view(withoutDrm(SEVERAL), { listed: SEVERAL_KINDS, ignored: ["drm"] }),
@@ -501,7 +504,7 @@ describe("the ignore menu", () => {
     expect(on.map((each) => `#${each.id}`)).toEqual(checked);
   });
 
-  it("reads Ignored on the main button once the game is ignored for all tags", () => {
+  it("reads its ignored label on the main button once the game is ignored for all tags", () => {
     const { banner, root } = setup();
     banner.show(silenced());
     expect(query(root, MAIN).textContent).toBe(i18n.t("banner_menu_ignored"));
@@ -515,14 +518,14 @@ describe("the ignore menu", () => {
     caret.click();
     expect(caret.getAttribute("aria-expanded")).toBe("true");
     expect(query(root, MENU).hidden).toBe(false);
-    expect(root.activeElement).toBe(query(root, groupHead("game")));
+    expect(root.activeElement).toBe(query(root, GAME_ROW));
     caret.click();
     expect(caret.getAttribute("aria-expanded")).toBe("false");
     expect(query(root, MENU).hidden).toBe(true);
   });
 
   it.each([
-    ["Down", "ArrowDown", groupHead("game")],
+    ["Down", "ArrowDown", GAME_ROW],
     ["Up", "ArrowUp", gameOption("eula")],
   ])("opens from the caret on %s", (_name, key, focused) => {
     const { banner, root } = setup();
@@ -533,11 +536,11 @@ describe("the ignore menu", () => {
   });
 
   it.each([
-    ["Down to the next item", gameOption(ALLOW_ALL), "ArrowDown", groupHead("tags")],
-    ["Down from the last item to the first", gameOption("eula"), "ArrowDown", groupHead("game")],
-    ["Up from the first item to the last", groupHead("game"), "ArrowUp", gameOption("eula")],
-    ["Home to the first item", gameOption("drm"), "Home", groupHead("game")],
-    ["End to the last item", groupHead("game"), "End", gameOption("eula")],
+    ["Down to the next item", GAME_ROW, "ArrowDown", groupHead("tags")],
+    ["Down from the last item to the first", gameOption("eula"), "ArrowDown", GAME_ROW],
+    ["Up from the first item to the last", GAME_ROW, "ArrowUp", gameOption("eula")],
+    ["Home to the first item", gameOption("drm"), "Home", GAME_ROW],
+    ["End to the last item", GAME_ROW, "End", gameOption("eula")],
     ["Left from an option to its group", gameOption("drm"), "ArrowLeft", groupHead("tags")],
   ])("moves with %s", (_name, from, key, focused) => {
     const { banner, root } = setup();
@@ -556,7 +559,7 @@ describe("the ignore menu", () => {
     expect(head.getAttribute("aria-expanded")).toBe("false");
     head.focus();
     press(head, "ArrowDown");
-    expect(root.activeElement).toBe(query(root, groupHead("tags")));
+    expect(root.activeElement).toBe(query(root, GAME_ROW));
     press(head, "ArrowRight");
     expect(head.getAttribute("aria-expanded")).toBe("true");
     expect(query(root, `${groupHead("developer")}-items`).hidden).toBe(false);
@@ -568,12 +571,12 @@ describe("the ignore menu", () => {
 
   it.each([
     ["Escape, back on the caret", "Escape", CARET],
-    ["Tab", "Tab", groupHead("game")],
+    ["Tab", "Tab", GAME_ROW],
   ])("closes on %s", (_name, key, focused) => {
     const { banner, root } = setup();
     banner.show(view(SEVERAL));
     query(root, CARET).click();
-    press(query(root, groupHead("game")), key);
+    press(query(root, GAME_ROW), key);
     expect(query(root, MENU).hidden).toBe(true);
     expect(root.activeElement).toBe(query(root, focused));
   });
@@ -606,9 +609,64 @@ describe("the ignore menu", () => {
     fresh.banner.show(view(SEVERAL, { creators: [DEVELOPER] }));
     expect(query(fresh.root, MENU).hidden).toBe(true);
     expect(texts(fresh.root, '.tks-ignore-group-head[aria-expanded="true"]')).toEqual([
-      i18n.t("banner_menu_group_game"),
       i18n.t("banner_menu_group_tags"),
     ]);
+  });
+});
+
+describe("the ignore menu on hover", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  const hover = (target: Element, pointerType = "mouse") =>
+    target.dispatchEvent(new PointerEvent("pointerover", { bubbles: true, pointerType }));
+  const leave = (target: Element, relatedTarget: EventTarget) =>
+    target.dispatchEvent(
+      new PointerEvent("pointerout", { bubbles: true, pointerType: "mouse", relatedTarget }),
+    );
+
+  it.each([
+    ["opens over the arrow with a mouse", CARET, "mouse", false],
+    ["stays closed over the main button", MAIN, "mouse", true],
+    ["stays closed on a touch", CARET, "touch", true],
+  ])("%s, leaving the focus where it was", (_name, over, pointerType, hidden) => {
+    const { banner, root } = setup();
+    banner.show(view(SEVERAL));
+    hover(query(root, over), pointerType);
+    expect(query(root, MENU).hidden).toBe(hidden);
+    expect(root.activeElement).toBeNull();
+  });
+
+  it("closes once the pointer has left the button and the menu for a moment", () => {
+    const { banner, root } = setup();
+    banner.show(view(SEVERAL));
+    hover(query(root, CARET));
+    leave(query(root, CARET), query(root, MAIN));
+    leave(query(root, CARET), root.host);
+    hover(query(root, GAME_ROW));
+    vi.advanceTimersByTime(HOVER_CLOSE_MS);
+    expect(query(root, MENU).hidden).toBe(false);
+    leave(query(root, GAME_ROW), document.body);
+    vi.advanceTimersByTime(HOVER_CLOSE_MS - 1);
+    expect(query(root, MENU).hidden).toBe(false);
+    vi.advanceTimersByTime(1);
+    expect(query(root, MENU).hidden).toBe(true);
+  });
+
+  it("keeps a menu that hover opened once the arrow is clicked", () => {
+    const { banner, root } = setup();
+    banner.show(view(SEVERAL));
+    hover(query(root, CARET));
+    query(root, CARET).click();
+    expect(root.activeElement).toBe(query(root, GAME_ROW));
+    leave(query(root, CARET), document.body);
+    vi.advanceTimersByTime(HOVER_CLOSE_MS);
+    expect(query(root, MENU).hidden).toBe(false);
   });
 });
 
@@ -635,9 +693,8 @@ describe("the banner in Spanish", () => {
     ]);
     expect(query(root, MAIN).textContent).toBe(spanish.t("banner_menu_ignore"));
     expect(texts(root, ".tks-ignore-group-head")).toEqual([
-      spanish.t("banner_menu_group_game"),
-      spanish.t("banner_menu_group_developers"),
       spanish.t("banner_menu_group_tags"),
+      spanish.t("banner_menu_group_developers"),
     ]);
     expect(options(root, "developer")[0]).toEqual([
       spanish.t("banner_menu_all_tags"),
