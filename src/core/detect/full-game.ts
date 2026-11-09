@@ -4,7 +4,7 @@ import { isKindVerdicts, type KindVerdict, type KindVerdicts } from "../kinds/ve
 import type { Logger } from "../log";
 import type { Detector } from "../ports";
 import type { AppId } from "../types";
-import { settle } from "./settle";
+import { createSettle } from "./settle";
 
 /** The full game of a demo; undefined for any other app, a DLC included. */
 function fullGameOf(verdicts: KindVerdicts): AppId | undefined {
@@ -46,6 +46,7 @@ function withFullGame(own: KindVerdicts, game: KindVerdicts): KindVerdicts {
  * a demo itself lends only its own declarations.
  */
 export function createFullGameDetector(inner: Detector, logger: Pick<Logger, "error">): Detector {
+  const settle = createSettle(logger);
   return {
     async detect(ids) {
       const own = await inner.detect(ids);
@@ -56,7 +57,7 @@ export function createFullGameDetector(inner: Detector, logger: Pick<Logger, "er
           games.add(game);
         }
       }
-      const fetched = games.size === 0 ? own : await settle(inner, [...games], logger);
+      const fetched = games.size === 0 ? own : await settle(inner, [...games]);
       const answers = new Map<AppId, KindVerdicts>();
       for (const [id, verdicts] of own) {
         const game = fullGameOf(verdicts);

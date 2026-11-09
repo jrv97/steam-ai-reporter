@@ -2,6 +2,7 @@ import * as v from "valibot";
 import { readSettingsI18n } from "../../core/i18n/settings-i18n";
 import type { BareMessageKey, I18n } from "../../core/i18n/t";
 import { createIgnoreLists } from "../../core/ignored";
+import { createLogger } from "../../core/log";
 import type { KeyValueStore } from "../../core/ports";
 import { parseSettings } from "../../core/settings/settings";
 import { ALLOW_KEY, CREATOR_ALLOW_KEYS, UI_STATE_KEY } from "../../core/storage-keys";
@@ -91,12 +92,14 @@ async function main(): Promise<void> {
   const catalogs = CATALOGS;
 
   // On a failed read the page renders in the browser language and the form shows the error.
-  const { setting, i18n } = await readSettingsI18n(
+  const { setting, i18n, failure } = await readSettingsI18n(
     settings,
     catalogs,
     { browserLang: navigator.language },
-    console,
   );
+  if (failure !== undefined) {
+    createLogger(i18n, console, false).error(failure.problem);
+  }
   fillText(document, i18n);
 
   const page = context === "page";

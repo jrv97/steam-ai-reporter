@@ -2,7 +2,7 @@ import { type KindVerdicts, UNKNOWN_KINDS } from "../kinds/verdicts";
 import type { Logger } from "../log";
 import type { Detector } from "../ports";
 import type { AppId } from "../types";
-import { settle } from "./settle";
+import { createSettle } from "./settle";
 
 type Answer = Promise<ReadonlyMap<AppId, KindVerdicts>>;
 
@@ -28,11 +28,12 @@ function nextMicrotask(): Promise<void> {
 export function createDedupingDetector(inner: Detector, logger: Pick<Logger, "error">): Detector {
   const inFlight = new Map<AppId, Answer>();
   let tick: Tick | undefined;
+  const settle = createSettle(logger);
 
   async function flush(ids: readonly AppId[]): Answer {
     await nextMicrotask();
     tick = undefined;
-    const verdicts = await settle(inner, ids, logger);
+    const verdicts = await settle(inner, ids);
     for (const id of ids) {
       inFlight.delete(id);
     }

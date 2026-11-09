@@ -1,7 +1,6 @@
 import { type App, start } from "../../core/app";
 import { createFetchHttp, type Fetch } from "../../core/http";
-import { readSettingsI18n } from "../../core/i18n/settings-i18n";
-import type { I18n } from "../../core/i18n/t";
+import { readSettingsI18n, type SettingsI18n } from "../../core/i18n/settings-i18n";
 import { createIgnoreLists } from "../../core/ignored";
 import { type ConsoleSink, createLogger } from "../../core/log";
 import { createSettingsSource } from "../../core/settings/settings-source";
@@ -37,12 +36,13 @@ export async function startUserscript(env: UserscriptEnv): Promise<App | undefin
   const settings = createSettingsSource(store, remote);
   const clock = { now: () => Date.now() };
   // The menu caption and the dialog follow a language change; `start()` resolves its own once.
-  const currentI18n = async (): Promise<I18n> => {
+  const currentI18n = (): Promise<SettingsI18n> => {
     const pageLang = doc.documentElement.lang;
     const context = browserLang === undefined ? { pageLang } : { pageLang, browserLang };
-    return (await readSettingsI18n(settings, CATALOGS, context, env.console)).i18n;
+    return readSettingsI18n(settings, CATALOGS, context);
   };
-  const i18n = await currentI18n();
+  // A failed read on load is left to `start()`, which logs its own read of the same settings.
+  const { i18n } = await currentI18n();
   const logger = createLogger(i18n, env.console, false);
 
   // The page stylesheet goes in through GM_addStyle; core's own adoption is the fallback
@@ -60,9 +60,13 @@ export async function startUserscript(env: UserscriptEnv): Promise<App | undefin
 
   env.registerMenuCommand?.(i18n.t("userscript_menu_settings"), () => {
     void (async () => {
+      const current = await currentI18n();
+      if (current.failure !== undefined) {
+        logger.error(current.failure.problem);
+      }
       await openSettingsDialog({
         document: doc,
-        i18n: await currentI18n(),
+        i18n: current.i18n,
         catalogs: CATALOGS,
         settings,
         lists: createIgnoreLists(store, clock),

@@ -1,6 +1,6 @@
 import * as v from "valibot";
 import { TksError } from "../errors";
-import type { Logger } from "../log";
+import { createFailureStreak, type Logger } from "../log";
 import type { Clock, HttpResult, KeyValueStore } from "../ports";
 
 // The circuit breaker that pauses detection after Steam refuses a request (ADR 0001, rq6 S1).
@@ -46,7 +46,7 @@ const StoredBreakerSchema = v.object({ until: v.pipe(v.number(), v.safeInteger()
 
 /**
  * A persisted circuit breaker. Both methods never reject: when storage fails, the breaker keeps
- * working on what this tab knows, and logs the first storage failure of each streak.
+ * working on what this tab knows, and logs the first failed read and write of each streak.
  */
 export interface Breaker {
   /** Whether requests are held back now, by this tab's state or by another tab's. */
@@ -80,19 +80,12 @@ export function createBreaker(options: BreakerOptions): Breaker {
   /** This tab's own pause, which holds even when storage cannot be read or written. */
   let localUntil = 0;
   let open = false;
-  /** Whether the last storage call failed, so a streak of failures logs once. */
-  let storeFailing = false;
-
-  function storeWorked(): void {
-    storeFailing = false;
-  }
-
-  function storeFailed(problem: unknown): void {
-    if (!storeFailing) {
-      logger.error(new TksError("error_breaker_store", { breaker: key }, { cause: problem }));
-    }
-    storeFailing = true;
-  }
+  // Reads and writes keep apart streaks, so a working read does not end a streak of failed writes.
+  const logStoreFailure = (problem: unknown): void => {
+    logger.error(new TksError("error_breaker_store", { breaker: key }, { cause: problem }));
+  };
+  const reads = createFailureStreak(logStoreFailure);
+  const writes = createFailureStreak(logStoreFailure);
 
   /** Another tab's pause. Values out of range (corrupt, or a clock moved back) are ignored. */
   async function storedUntil(now: number): Promise<number> {
@@ -100,10 +93,10 @@ export function createBreaker(options: BreakerOptions): Breaker {
     try {
       stored = (await store.get([key])).get(key);
     } catch (problem) {
-      storeFailed(problem);
+      reads.failed(problem);
       return 0;
     }
-    storeWorked();
+    reads.worked();
     const parsed = v.safeParse(StoredBreakerSchema, stored);
     return parsed.success && parsed.output.until <= now + longest ? parsed.output.until : 0;
   }
@@ -137,10 +130,10 @@ export function createBreaker(options: BreakerOptions): Breaker {
         await store.set(new Map([[key, { until }]]));
       } catch (problem) {
         // This tab still honors `localUntil`; other tabs find out from their own requests.
-        storeFailed(problem);
+        writes.failed(problem);
         return;
       }
-      storeWorked();
+      writes.worked();
     },
   };
 }

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import type { CountingStore } from "../../../tests/helpers/counting-store";
 import { make } from "../../../tests/helpers/factory";
 import type { Reply } from "../../../tests/helpers/fake-http";
 import { fake } from "../../../tests/helpers/fakes";
@@ -136,23 +137,35 @@ describe("createBreaker", () => {
     expect(await breaker.isOpen()).toBe(true);
   });
 
-  it("logs a storage failure once per streak of failures", async () => {
+  it.each<readonly [string, (store: CountingStore) => void, number]>([
+    ["reads and writes", (store) => {
+      store.break();
+    }, 2],
+    ["only writes", (store) => {
+      store.breakWrites();
+    }, 1],
+  ])("logs failed %s once per streak of failures", async (_name, breakStore, perStreak) => {
     const store = fake.countingStore(fake.store());
     const { breaker, sink } = setup({ store });
-    store.break();
-    await breaker.isOpen();
-    await breaker.record(result({ status: 429 }));
-    await breaker.isOpen();
-    expect(sink.error).toHaveBeenCalledExactlyOnceWith(
+    const tripTwice = async () => {
+      for (let trip = 0; trip < 2; trip += 1) {
+        await breaker.isOpen();
+        await breaker.record(result({ status: 429 }));
+      }
+    };
+    breakStore(store);
+    await tripTwice();
+    expect(sink.error).toHaveBeenCalledTimes(perStreak);
+    expect(sink.error).toHaveBeenCalledWith(
       "[tks]",
       i18n.t("error_breaker_store", { breaker: API_BREAKER_KEY }),
       expect.any(Error),
     );
     store.heal();
-    await breaker.isOpen();
-    store.break();
-    await breaker.isOpen();
-    expect(sink.error).toHaveBeenCalledTimes(2);
+    await tripTwice();
+    breakStore(store);
+    await tripTwice();
+    expect(sink.error).toHaveBeenCalledTimes(2 * perStreak);
   });
 
   it("never shortens a pause when it trips again", async () => {

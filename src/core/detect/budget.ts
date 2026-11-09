@@ -2,7 +2,7 @@ import { type KindVerdicts, UNKNOWN_KINDS } from "../kinds/verdicts";
 import type { Logger } from "../log";
 import type { Detector } from "../ports";
 import type { AppId } from "../types";
-import { settle } from "./settle";
+import { createSettle } from "./settle";
 
 /** HTML fallback apps per page view (ADR 0001): each one is a full app page request. */
 export const DEFAULT_HTML_BUDGET = 10;
@@ -19,6 +19,7 @@ export function createBudgetDetector(
   limit = DEFAULT_HTML_BUDGET,
 ): Detector {
   let left = limit;
+  const settle = createSettle(logger);
   return {
     async detect(ids) {
       const distinct = [...new Set(ids)];
@@ -31,7 +32,7 @@ export function createBudgetDetector(
         ]),
       );
       if (allowed.length > 0) {
-        for (const [id, found] of await settle(inner, allowed, logger)) {
+        for (const [id, found] of await settle(inner, allowed)) {
           verdicts.set(id, found);
         }
       }
