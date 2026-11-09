@@ -640,8 +640,14 @@ describe("the ignore menu on hover", () => {
     vi.useRealTimers();
   });
 
-  const hover = (target: Element, pointerType = "mouse") =>
-    target.dispatchEvent(new PointerEvent("pointerover", { bubbles: true, pointerType }));
+  const hover = (
+    target: Element,
+    pointerType = "mouse",
+    relatedTarget: EventTarget | null = null,
+  ) =>
+    target.dispatchEvent(
+      new PointerEvent("pointerover", { bubbles: true, pointerType, relatedTarget }),
+    );
   const leave = (target: Element, relatedTarget: EventTarget) =>
     target.dispatchEvent(
       new PointerEvent("pointerout", { bubbles: true, pointerType: "mouse", relatedTarget }),
@@ -672,6 +678,16 @@ describe("the ignore menu on hover", () => {
     vi.advanceTimersByTime(HOVER_CLOSE_MS - 1);
     expect(query(root, MENU).hidden).toBe(false);
     vi.advanceTimersByTime(1);
+    expect(query(root, MENU).hidden).toBe(true);
+  });
+
+  it("stays closed after Escape while the pointer moves inside the arrow", () => {
+    const { banner, root } = setup();
+    banner.show(view(SEVERAL));
+    hover(query(root, CARET));
+    press(query(root, CARET), "Escape");
+    hover(query(root, `${CARET} .tks-ignore-arrow`), "mouse", query(root, CARET));
+    hover(query(root, CARET), "mouse", query(root, `${CARET} .tks-ignore-arrow`));
     expect(query(root, MENU).hidden).toBe(true);
   });
 

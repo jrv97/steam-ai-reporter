@@ -591,7 +591,10 @@ export function createBanner(
       return;
     }
     stayOpen();
-    if (!menuOpen && target.closest(`#${MENU_BUTTON_ID}`) !== null) {
+    // Only a pointer that enters the caret from outside opens it; moves inside it do not.
+    const caret = target.closest(`#${MENU_BUTTON_ID}`);
+    const from = event.relatedTarget;
+    if (!menuOpen && caret !== null && !(from instanceof Node && caret.contains(from))) {
       setMenu(true);
       hovered = true;
     }
