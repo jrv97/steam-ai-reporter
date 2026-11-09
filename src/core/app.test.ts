@@ -102,10 +102,10 @@ const row = (id: number) =>
   document.querySelector(`a.search_result_row[data-ds-appid="${String(id)}"]`);
 const rootMark = (name: string) => document.documentElement.getAttribute(name);
 /** The row's marks: null when the row carries no mark attribute. */
-const marks = (id: number) => row(id)?.getAttribute("data-sar-kinds");
+const marks = (id: number) => row(id)?.getAttribute("data-tks-kinds");
 const labels = (id: number) =>
   Array.from(
-    row(id)?.querySelectorAll(".sar-chips > .sar-badge > .sar-badge-label") ?? [],
+    row(id)?.querySelectorAll(".tks-chips > .tks-badge > .tks-badge-label") ?? [],
     (label) => label.textContent,
   );
 const chip = (id: KindId) => i18n.t(KIND_BY_ID[id].messages.chip);
@@ -178,7 +178,7 @@ describe("start on a package page", () => {
   ) => {
     setBody(make.page.package(itemIds(items)));
     const { http } = await startOnLoaded({ initial: storing(settings), items });
-    const lines = () => document.querySelectorAll(".sar-summary .sar-summary-line");
+    const lines = () => document.querySelectorAll(".tks-summary .tks-summary-line");
     await expect.poll(() => lines()[0]?.textContent).toBe(
       i18n.plural("badge_summary_games", games, { kind, tagged: "1" }),
     );
@@ -190,15 +190,15 @@ describe("start on a package page", () => {
 describe("start on the search page", () => {
   it("badges the disclosed row after one GetItems request for the page", async () => {
     const { http } = await startOnSearch();
-    await expect.poll(() => document.querySelectorAll(".sar-badge").length).toBe(DISCLOSED_BADGES);
+    await expect.poll(() => document.querySelectorAll(".tks-badge").length).toBe(DISCLOSED_BADGES);
 
     expect(http.calls).toHaveLength(1);
     expect(getItemsRequest(http.calls[0] ?? "").ids).toEqual(SEARCH_IDS);
-    const badge = row(DISCLOSED)?.querySelector(".search_name > .title + .sar-chips > .sar-badge");
-    expect(badge?.querySelector(".sar-badge-label")?.textContent).toBe(chip("ai"));
+    const badge = row(DISCLOSED)?.querySelector(".search_name > .title + .tks-chips > .tks-badge");
+    expect(badge?.querySelector(".tks-badge-label")?.textContent).toBe(chip("ai"));
     expect(marks(DISCLOSED)).toBe(DISCLOSED_KINDS);
     const others = SEARCH_IDS.filter((id) => id !== DISCLOSED);
-    expect(others.map((id) => row(id)?.hasAttribute("data-sar-kinds"))).toEqual(
+    expect(others.map((id) => row(id)?.hasAttribute("data-tks-kinds"))).toEqual(
       others.map(() => false),
     );
     expect(document.adoptedStyleSheets.length).toBeGreaterThan(0);
@@ -207,11 +207,11 @@ describe("start on the search page", () => {
   it("switches one kind to hide mode with one root attribute per setting", async () => {
     const { settings } = await startOnSearch();
     await expect.poll(() => marks(DISCLOSED)).toBe(DISCLOSED_KINDS);
-    expect(rootMark("data-sar-filter-ai")).toBe("off");
+    expect(rootMark("data-tks-filter-ai")).toBe("off");
 
     await writeSettings(settings, make.settings.kind("ai", { filter: "hide", badge: false }));
-    expect(rootMark("data-sar-filter-ai")).toBe("hide");
-    expect(rootMark("data-sar-filter-kernel")).toBe("off");
+    expect(rootMark("data-tks-filter-ai")).toBe("hide");
+    expect(rootMark("data-tks-filter-kernel")).toBe("off");
     expect(display(DISCLOSED)).toBe("none");
     expect(display(searchId(0))).not.toBe("none");
   });
@@ -220,10 +220,10 @@ describe("start on the search page", () => {
     const { settings, store } = await startOnSearch();
     await writeSettings(settings, make.settings.kind("ai", { filter: "hide" }));
     const stored = await store.get([SETTINGS_KEY]);
-    const line = () => document.querySelector(".sar-list-notice-text")?.textContent;
+    const line = () => document.querySelector(".tks-list-notice-text")?.textContent;
     await expect.poll(line).toBe(i18n.plural("notice_list_hidden", 1));
 
-    document.querySelector<HTMLButtonElement>(".sar-list-notice-button")?.click();
+    document.querySelector<HTMLButtonElement>(".tks-list-notice-button")?.click();
     expect(display(DISCLOSED)).not.toBe("none");
     expect(line()).toBe(i18n.plural("notice_list_revealed", 1));
     expect(await store.get([SETTINGS_KEY])).toStrictEqual(stored);
@@ -238,7 +238,7 @@ describe("start on the search page", () => {
     });
     await vi.advanceTimersByTimeAsync(RETRY_DELAY_MS - 1000);
     expect(http.calls).toHaveLength(0);
-    expect(document.querySelectorAll("[data-sar-kinds]")).toHaveLength(0);
+    expect(document.querySelectorAll("[data-tks-kinds]")).toHaveLength(0);
     await vi.advanceTimersByTimeAsync(1000);
     expect(http.calls).toHaveLength(1);
     await expect.poll(() => SEARCH_IDS.map(marks)).toEqual(SEARCH_IDS.map(() => "ai"));
@@ -369,7 +369,7 @@ describe("start on the search page", () => {
       );
       const { http } = await startOnSearch({ initial, items: dlc });
       await drawn(http);
-      expect(rootMark("data-sar-filter-ai")).toBe("hide");
+      expect(rootMark("data-tks-filter-ai")).toBe("hide");
       expect(display(DISCLOSED) === "none").toBe(hidden);
     });
   });
@@ -404,11 +404,11 @@ describe("start on the search page", () => {
       const { http } = await startDemos();
       await expect.poll(() => marks(DISCLOSED)).toBe(ARC_KINDS);
       expect(marks(SIBLING)).toBe(ARC_KINDS);
-      expect(row(ROW_DEMO)?.hasAttribute("data-sar-kinds")).toBe(false);
+      expect(row(ROW_DEMO)?.hasAttribute("data-tks-kinds")).toBe(false);
       expect(asked(http)).toStrictEqual([SEARCH_IDS, [ARC_RAIDERS]]);
       expect(labels(DISCLOSED)).toStrictEqual([chip("ai"), chip("eula"), chip("kernel")]);
       row(DISCLOSED)?.dispatchEvent(new FocusEvent("focusin", { bubbles: true }));
-      const lines = [...document.querySelectorAll(".sar-hovercard-full-game")];
+      const lines = [...document.querySelectorAll(".tks-hovercard-full-game")];
       expect(lines.map((line) => line.textContent)).toStrictEqual(
         labels(DISCLOSED).map(() => i18n.t("kind_full_game")),
       );
@@ -447,7 +447,7 @@ describe("start on the search page", () => {
       }];
       const { http } = await startDemos(new Map(), failingOnce);
       await expect.poll(() => http.calls.length).toBe(2);
-      expect(row(DISCLOSED)?.hasAttribute("data-sar-kinds")).toBe(false);
+      expect(row(DISCLOSED)?.hasAttribute("data-tks-kinds")).toBe(false);
       await vi.advanceTimersByTimeAsync(RETRY_DELAY_MS);
       await expect.poll(() => marks(DISCLOSED)).toBe(ARC_KINDS);
       expect(asked(http)).toStrictEqual([SEARCH_IDS, [ARC_RAIDERS], [ARC_RAIDERS]]);
@@ -516,20 +516,20 @@ describe("start on the search page", () => {
     const { http } = await startOnSearch({ initial: ignoring(scope, [DISCLOSED]) });
     await drawn(http);
     expect(marks(DISCLOSED)).toBe(expectedMarks);
-    const badges = [...document.querySelectorAll(".sar-badge")];
+    const badges = [...document.querySelectorAll(".tks-badge")];
     expect(badges.map((badge) => badge.getAttribute(KIND_ATTRIBUTE))).toEqual(badgeKinds);
   });
 
   it("shows no badge and filters nothing while the kind is disabled", async () => {
     const { settings } = await startOnSearch();
-    await expect.poll(() => document.querySelectorAll(".sar-badge").length).toBe(DISCLOSED_BADGES);
+    await expect.poll(() => document.querySelectorAll(".tks-badge").length).toBe(DISCLOSED_BADGES);
     await writeSettings(settings, make.settings.kind("ai", { enabled: false, filter: "hide" }));
-    expect(rootMark("data-sar-filter-ai")).toBe("off");
-    await expect.poll(() => document.querySelectorAll(".sar-badge").length).toBe(1);
-    expect(document.querySelector(".sar-badge")?.getAttribute(KIND_ATTRIBUTE)).toBe("earlyaccess");
+    expect(rootMark("data-tks-filter-ai")).toBe("off");
+    await expect.poll(() => document.querySelectorAll(".tks-badge").length).toBe(1);
+    expect(document.querySelector(".tks-badge")?.getAttribute(KIND_ATTRIBUTE)).toBe("earlyaccess");
     await writeSettings(settings, DEFAULT_SETTINGS);
-    expect(rootMark("data-sar-filter-ai")).toBe("off");
-    await expect.poll(() => document.querySelectorAll(".sar-badge").length).toBe(DISCLOSED_BADGES);
+    expect(rootMark("data-tks-filter-ai")).toBe("off");
+    await expect.poll(() => document.querySelectorAll(".tks-badge").length).toBe(DISCLOSED_BADGES);
   });
 
   describe("with the early access kind", () => {
@@ -555,7 +555,7 @@ describe("start on the search page", () => {
       await drawn(http);
       await expect.poll(() => marks(DISCLOSED)).toBe("earlyaccess");
       row(DISCLOSED)?.dispatchEvent(new FocusEvent("focusin", { bubbles: true }));
-      const entry = document.querySelector(`#${HOVER_CARD_ID} .sar-hovercard-entry`);
+      const entry = document.querySelector(`#${HOVER_CARD_ID} .tks-hovercard-entry`);
       expect(Array.from(entry?.children ?? [], (line) => line.textContent)).toEqual([
         i18n.t("kind_earlyaccess_heading"),
         note,
@@ -597,7 +597,7 @@ describe("start on the search page", () => {
       await new Promise((resolve) => requestAnimationFrame(resolve));
       expect(http.calls).toHaveLength(1);
       expect(labels(UNSUPPORTED)).toEqual([]);
-      expect(row(UNSUPPORTED)?.hasAttribute("data-sar-kinds")).toBe(false);
+      expect(row(UNSUPPORTED)?.hasAttribute("data-tks-kinds")).toBe(false);
       await expect.poll(() => labels(UNSUPPORTED), { timeout: 5000 }).toEqual([
         deckChip("unsupported"),
       ]);
@@ -614,16 +614,16 @@ describe("start on the search page", () => {
       const { http, settings } = await startOnSearch({ initial: storing(deckOn), items: rated });
       await drawn(http);
       expect(labels(VERIFIED)).toEqual([]);
-      expect(row(VERIFIED)?.hasAttribute("data-sar-kinds")).toBe(false);
+      expect(row(VERIFIED)?.hasAttribute("data-tks-kinds")).toBe(false);
       const verified = { tagged: make.settings.tagged.one("verified") };
       await writeSettings(settings, make.settings.kind("deck", verified, deckOn));
       await expect.poll(() => labels(VERIFIED)).toEqual([deckChip("verified")]);
       expect(marks(VERIFIED)).toBe("deck");
       expect(labels(UNSUPPORTED)).toEqual([]);
-      expect(row(UNSUPPORTED)?.hasAttribute("data-sar-kinds")).toBe(false);
+      expect(row(UNSUPPORTED)?.hasAttribute("data-tks-kinds")).toBe(false);
       await writeSettings(settings, deckOn);
       await expect.poll(() => labels(VERIFIED)).toEqual([]);
-      expect(row(VERIFIED)?.hasAttribute("data-sar-kinds")).toBe(false);
+      expect(row(VERIFIED)?.hasAttribute("data-tks-kinds")).toBe(false);
       expect(labels(UNSUPPORTED)).toEqual([deckChip("unsupported")]);
       expect(http.calls).toHaveLength(1);
     });
@@ -638,7 +638,7 @@ describe("start on the search page", () => {
       expect(labels(UNSUPPORTED)).toEqual([deckChip("unsupported")]);
       expect(marks(UNSUPPORTED)).toBe("deck");
       expect(labels(id)).toEqual([]);
-      expect(row(id)?.hasAttribute("data-sar-kinds")).toBe(false);
+      expect(row(id)?.hasAttribute("data-tks-kinds")).toBe(false);
       expect(display(id)).not.toBe("none");
     });
   });
@@ -665,7 +665,7 @@ describe("start on the search page", () => {
     const familyOn = make.settings.kind("family", { enabled: true });
     const chips = (id: number) =>
       Array.from(
-        row(id)?.querySelectorAll(".sar-chips > .sar-badge") ?? [],
+        row(id)?.querySelectorAll(".tks-chips > .tks-badge") ?? [],
         (badge) => Array.from(badge.children, (part) => part.textContent),
       );
     const unlistedChip = i18n.t("kind_family_unsupported_chip");
@@ -706,7 +706,7 @@ describe("start on the search page", () => {
         make.settings.kind("family", { tagged: make.settings.tagged.many() }, familyOn),
       );
       await expect.poll(() => chips(LISTED)).toEqual([]);
-      expect(row(LISTED)?.hasAttribute("data-sar-kinds")).toBe(false);
+      expect(row(LISTED)?.hasAttribute("data-tks-kinds")).toBe(false);
       expect(http.calls).toHaveLength(1);
     });
 
@@ -724,15 +724,15 @@ describe("start on the search page", () => {
       await drawn(http);
       expect(chips(UNLISTED)).toEqual([unlisted]);
       expect(chips(id)).toEqual([]);
-      expect(row(id)?.hasAttribute("data-sar-kinds")).toBe(false);
+      expect(row(id)?.hasAttribute("data-tks-kinds")).toBe(false);
       expect(display(id)).not.toBe("none");
     });
   });
 
   describe("with a custom tag color", () => {
-    const property = "--sar-kind-color-ai";
+    const property = "--tks-kind-color-ai";
     const colorOnRoot = () => document.documentElement.style.getPropertyValue(property);
-    const badges = () => document.querySelectorAll(".sar-badge").length;
+    const badges = () => document.querySelectorAll(".tks-badge").length;
 
     it("sets nothing by default, so the badges keep the violet", async () => {
       await startOnSearch();
@@ -746,30 +746,30 @@ describe("start on the search page", () => {
       await startOnSearch({ initial: storing(make.settings.kind("ai", { color })) });
       await expect.poll(badges).toBe(DISCLOSED_BADGES);
       expect(colorOnRoot()).toBe(color);
-      expect(document.querySelector(".sar-badge")?.getAttribute(KIND_ATTRIBUTE)).toBe("ai");
-      expect(document.querySelector(".sar-badge")?.hasAttribute("style")).toBe(false);
-      expect(document.querySelector(".sar-chips")?.hasAttribute("style")).toBe(false);
+      expect(document.querySelector(".tks-badge")?.getAttribute(KIND_ATTRIBUTE)).toBe("ai");
+      expect(document.querySelector(".tks-badge")?.hasAttribute("style")).toBe(false);
+      expect(document.querySelector(".tks-chips")?.hasAttribute("style")).toBe(false);
     });
 
     it("follows a change and its removal without drawing a badge again", async () => {
       const [first, second] = [make.color(), make.color()];
       const { settings } = await startOnSearch();
       await expect.poll(badges).toBe(DISCLOSED_BADGES);
-      const badge = document.querySelector(".sar-badge");
+      const badge = document.querySelector(".tks-badge");
       await writeSettings(settings, make.settings.kind("ai", { color: first }));
       expect(colorOnRoot()).toBe(first);
       await writeSettings(settings, make.settings.kind("ai", { color: second }));
       expect(colorOnRoot()).toBe(second);
       await writeSettings(settings, DEFAULT_SETTINGS);
       expect(colorOnRoot()).toBe("");
-      expect(document.querySelector(".sar-badge")).toBe(badge);
+      expect(document.querySelector(".tks-badge")).toBe(badge);
     });
 
     it("keeps the other kinds on the default", async () => {
       const color = make.color();
       const { settings } = await startOnSearch();
       await writeSettings(settings, make.settings.kind("drm", { color }));
-      expect(document.documentElement.style.getPropertyValue("--sar-kind-color-drm")).toBe(color);
+      expect(document.documentElement.style.getPropertyValue("--tks-kind-color-drm")).toBe(color);
       expect(colorOnRoot()).toBe("");
     });
   });
@@ -785,8 +785,8 @@ describe("start on the search page", () => {
       i18n.t("error_unexpected"),
       problem,
     );
-    expect(rootMark("data-sar-filter-ai")).toBe("off");
-    await expect.poll(() => document.querySelectorAll(".sar-badge").length).toBe(DISCLOSED_BADGES);
+    expect(rootMark("data-tks-filter-ai")).toBe("off");
+    await expect.poll(() => document.querySelectorAll(".tks-badge").length).toBe(DISCLOSED_BADGES);
   });
 
   it("starts on the settings and the ignored games a v1 install stored", async () => {
@@ -799,8 +799,8 @@ describe("start on the search page", () => {
     await drawn(http);
     // The v1 install knew the AI kind only, so the row keeps its Early Access tag.
     expect(marks(DISCLOSED)).toBe("earlyaccess");
-    expect(rootMark("data-sar-filter-ai")).toBe("dim");
-    expect(rootMark("data-sar-filter-kernel")).toBe("off");
+    expect(rootMark("data-tks-filter-ai")).toBe("dim");
+    expect(rootMark("data-tks-filter-kernel")).toBe("off");
     const keys = await store.keys();
     expect(keys).toContain("v2:settings");
     expect(keys).toContain("v2:allow");

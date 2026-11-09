@@ -1101,7 +1101,7 @@
     "placeholders": {
       "name": {
         "content": "$1",
-        "example": "ai-reporter-backup-2026-10-20.json"
+        "example": "tag-kit-backup-2026-10-20.json"
       }
     }
   },
@@ -1111,7 +1111,7 @@
     "placeholders": {
       "name": {
         "content": "$1",
-        "example": "ai-reporter-backup-2026-10-20.json"
+        "example": "tag-kit-backup-2026-10-20.json"
       }
     }
   },
@@ -1121,7 +1121,7 @@
     "placeholders": {
       "name": {
         "content": "$1",
-        "example": "ai-reporter-backup-2026-10-20.json"
+        "example": "tag-kit-backup-2026-10-20.json"
       }
     }
   },

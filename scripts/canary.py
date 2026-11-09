@@ -32,7 +32,7 @@ from repo import fail
 
 GETITEMS_URL = "https://api.steampowered.com/IStoreBrowseService/GetItems/v1"
 APP_PAGE_URL = "https://store.steampowered.com/app/{appid}/?l=english"
-USER_AGENT = "steam-ai-reporter-canary (+https://github.com/jrv97/steam-ai-reporter)"
+USER_AGENT = "tag-kit-for-steam-canary (+https://github.com/jrv97/tag-kit-for-steam)"
 TIMEOUT_SECONDS = 30
 HEADING = "AI Generated Content Disclosure"
 # Apps that between them declare every kind. A page hook takes the first app that shows its

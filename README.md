@@ -102,13 +102,13 @@ The toolbar popup lists every tag by its short name, with its Show, Dim and Hide
 
 - <img src="https://cdn.simpleicons.org/chromewebstore" alt="" width="16" height="16"> [Chrome Web Store](https://chromewebstore.google.com/detail/ai-reporter-for-steam/jpbjlfnkdmmdccfiocblhkjdejaihnkp).
 - <img src="https://cdn.simpleicons.org/firefoxbrowser" alt="" width="16" height="16"> [Firefox Add-ons (AMO)](https://addons.mozilla.org/en-US/firefox/addon/tag-kit-for-steam/).
-- <img src="https://cdn.simpleicons.org/github/8b949e" alt="" width="16" height="16"> Userscript: open [steam-ai-reporter.user.js](https://github.com/jrv97/steam-ai-reporter/releases/latest/download/steam-ai-reporter.user.js) from the latest release in Tampermonkey or Violentmonkey.
+- <img src="https://cdn.simpleicons.org/github/8b949e" alt="" width="16" height="16"> Userscript: open the `.user.js` file from the [latest release](https://github.com/jrv97/tag-kit-for-steam/releases/latest) in Tampermonkey or Violentmonkey.
 
 ## Feedback
 
-- <img src="https://api.iconify.design/lucide/bug.svg?color=%238f73f3" alt="" width="16" height="16"> [Report a bug](https://github.com/jrv97/steam-ai-reporter/issues/new?template=bug_report.yml)
-- <img src="https://api.iconify.design/lucide/lightbulb.svg?color=%238f73f3" alt="" width="16" height="16"> [Request a feature](https://github.com/jrv97/steam-ai-reporter/issues/new?template=feature_request.yml)
-- <img src="https://api.iconify.design/lucide/languages.svg?color=%238f73f3" alt="" width="16" height="16"> [Request a language or fix a translation](https://github.com/jrv97/steam-ai-reporter/issues/new?template=translation.yml)
+- <img src="https://api.iconify.design/lucide/bug.svg?color=%238f73f3" alt="" width="16" height="16"> [Report a bug](https://github.com/jrv97/tag-kit-for-steam/issues/new?template=bug_report.yml)
+- <img src="https://api.iconify.design/lucide/lightbulb.svg?color=%238f73f3" alt="" width="16" height="16"> [Request a feature](https://github.com/jrv97/tag-kit-for-steam/issues/new?template=feature_request.yml)
+- <img src="https://api.iconify.design/lucide/languages.svg?color=%238f73f3" alt="" width="16" height="16"> [Request a language or fix a translation](https://github.com/jrv97/tag-kit-for-steam/issues/new?template=translation.yml)
 - <img src="https://api.iconify.design/lucide/message-square-heart.svg?color=%238f73f3" alt="" width="16" height="16"> [Send quick anonymous feedback](https://forms.gle/Fo652zzyFWUQn2qK9)
 
 ## Privacy
@@ -124,7 +124,7 @@ mise trust
 mise run setup
 ```
 
-`setup` installs the tools and the JavaScript dependencies, writes the pre-commit and pre-push Git hooks, and checks the browser paths. Copy `mise.local.toml.example` to `mise.local.toml` (ignored by Git) and set `SAR_GECKO_BIN` and `SAR_GECKO_PROFILE` (Firefox Nightly and a profile dedicated to this project), plus `SAR_CHROMIUM_BIN` and `SAR_CHROMIUM_PROFILE` (Chromium and its own profile).
+`setup` installs the tools and the JavaScript dependencies, writes the pre-commit and pre-push Git hooks, and checks the browser paths. Copy `mise.local.toml.example` to `mise.local.toml` (ignored by Git) and set `TKS_GECKO_BIN` and `TKS_GECKO_PROFILE` (Firefox Nightly and a profile dedicated to this project), plus `TKS_CHROMIUM_BIN` and `TKS_CHROMIUM_PROFILE` (Chromium and its own profile).
 
 Main tasks:
 
@@ -134,11 +134,11 @@ Main tasks:
 - `mise run check`: text, catalog, version and bundle checks on top of the build.
 - `mise run ci`: everything CI runs. The pre-push hook runs `prepush`, which is the same without the reproducibility check and `web-ext lint`.
 - `mise run dev`: rebuild on change. In another terminal, `mise run run-gecko` (Firefox Nightly only) or `mise run run-chromium` loads the build with auto-reload.
-- `mise run e2e`: build, then drive the extension in Chromium and Firefox Nightly (`SAR_CHROMIUM_BIN`, `SAR_GECKO_BIN`) with puppeteer-core, on a fresh profile per run. It opens real windows and is not part of `ci` (ADR 0020).
+- `mise run e2e`: build, then drive the extension in Chromium and Firefox Nightly (`TKS_CHROMIUM_BIN`, `TKS_GECKO_BIN`) with puppeteer-core, on a fresh profile per run. It opens real windows and is not part of `ci` (ADR 0020).
 - `mise run package`: write the Chromium and Gecko zips, the userscript and its `.meta.js`, and the source archive for store reviewers to `artifacts/`, then check them.
 - `mise run canary`: before a release, check that live Steam still answers in the shape the detectors expect (five requests). It is not part of `ci`.
 - `mise run capture-fixtures`: refresh the public test fixtures from the live store.
-- `mise run icons`: render the extension icon PNGs in `assets/icons/` from `mark-purple.svg` with headless Chromium (`SAR_CHROMIUM_BIN`).
+- `mise run icons`: render the extension icon PNGs in `assets/icons/` from `mark-purple.svg` with headless Chromium (`TKS_CHROMIUM_BIN`).
 - `mise run change-new`: add a changelog fragment. A pull request that changes `src/` needs one, unless it carries the `no-changelog-fragment` label.
 
 ### Try a build in your browser
@@ -147,21 +147,21 @@ For the quick loop, `mise run run-chromium` or `mise run run-gecko` builds, open
 
 To test what a release ships, run `mise run package`. It writes these files to `artifacts/`:
 
-- `steam-ai-reporter-chromium-<version>.zip` and `steam-ai-reporter-gecko-<version>.zip`.
-- `steam-ai-reporter.user.js` and `steam-ai-reporter.meta.js`.
-- `steam-ai-reporter-source-<version>.zip`, the archive for store reviewers.
+- `tag-kit-for-steam-chromium-<version>.zip` and `tag-kit-for-steam-gecko-<version>.zip`.
+- `tag-kit-for-steam.user.js` and `tag-kit-for-steam.meta.js`.
+- `tag-kit-for-steam-source-<version>.zip`, the archive for store reviewers.
 
 `<version>` is the `package.json` version, which holds the last release, so a local package carries that number. Load it like this:
 
 - Chromium: open `chrome://extensions`, turn on Developer mode, choose "Load unpacked" and pick `dist/chromium`. Chromium cannot load the zip.
 - Firefox Nightly: open `about:debugging#/runtime/this-firefox`, choose "Load Temporary Add-on" and pick the Gecko zip. The browser removes it on restart.
-- Userscript: open `artifacts/steam-ai-reporter.user.js` in Tampermonkey or Violentmonkey.
+- Userscript: open `artifacts/tag-kit-for-steam.user.js` in Tampermonkey or Violentmonkey.
 
 Run `mise run ci` before trusting a package. It adds the reproducibility check and `web-ext lint`.
 
 ## Build from source
 
-For store reviewers and anyone who wants to reproduce a release. The build runs on Linux, macOS and Windows; releases are built on Ubuntu 24.04. The source archive in each release (`steam-ai-reporter-source-<version>.zip`) holds everything below needs, including the lockfiles. It leaves out `docs/` apart from `docs/design/tokens.css`, which the build reads.
+For store reviewers and anyone who wants to reproduce a release. The build runs on Linux, macOS and Windows; releases are built on Ubuntu 24.04. The source archive in each release (`tag-kit-for-steam-source-<version>.zip`) holds everything below needs, including the lockfiles. It leaves out `docs/` apart from `docs/design/tokens.css`, which the build reads.
 
 1. Install mise: `curl https://mise.run | sh` (see [mise's install guide](https://mise.jdx.dev/getting-started.html) for other options).
 2. In the source folder, run `mise trust`, then `mise install`. This installs the exact tool versions pinned in `mise.toml` and `mise.lock`.

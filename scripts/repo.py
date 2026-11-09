@@ -10,7 +10,8 @@ from typing import NamedTuple, NoReturn
 ROOT = Path(__file__).resolve().parent.parent
 DIST = ROOT / "dist"
 ARTIFACTS = ROOT / "artifacts"
-SLUG = "steam-ai-reporter"
+REPO_URL = "https://github.com/jrv97/tag-kit-for-steam"
+SLUG = "tag-kit-for-steam"
 # The extension builds, named after their browser engines: dist/<target>, manifest.<target>.json.
 EXTENSION_TARGETS = ("chromium", "gecko")
 ICONS_DIR = ROOT / "assets" / "icons"

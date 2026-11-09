@@ -29,7 +29,7 @@ from repo import ROOT, fail
 
 FIXTURES = ROOT / "tests" / "fixtures"
 GETITEMS_URL = "https://api.steampowered.com/IStoreBrowseService/GetItems/v1"
-USER_AGENT = "steam-ai-reporter-fixtures (+https://github.com/jrv97/steam-ai-reporter)"
+USER_AGENT = "tag-kit-for-steam-fixtures (+https://github.com/jrv97/tag-kit-for-steam)"
 TIMEOUT_SECONDS = 30
 SPACING_SECONDS = 1.0
 

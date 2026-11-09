@@ -7,268 +7,268 @@
 @import "./shared.css";
 @import "./chips.css";
 
-.sar-options {
+.tks-options {
   box-sizing: border-box;
-  max-inline-size: var(--sar-options-max-width);
+  max-inline-size: var(--tks-options-max-width);
   margin-inline: auto;
-  padding-block: var(--sar-space-4);
-  padding-inline: var(--sar-space-4);
-  background: var(--sar-color-bg-panel);
-  color: var(--sar-color-text);
-  font: var(--sar-weight-regular) var(--sar-size-md) / var(--sar-leading-md) var(--sar-font-ext);
+  padding-block: var(--tks-space-4);
+  padding-inline: var(--tks-space-4);
+  background: var(--tks-color-bg-panel);
+  color: var(--tks-color-text);
+  font: var(--tks-weight-regular) var(--tks-size-md) / var(--tks-leading-md) var(--tks-font-ext);
   overflow-wrap: break-word;
   color-scheme: dark;
 }
 
-.sar-options *,
-.sar-options *::before,
-.sar-options *::after {
+.tks-options *,
+.tks-options *::before,
+.tks-options *::after {
   box-sizing: border-box;
 }
 
 /* Author display rules would otherwise beat the user agent's [hidden] */
-.sar-options [hidden] {
+.tks-options [hidden] {
   display: none !important;
 }
 
-.sar-options[data-sar-context="popup"] {
-  inline-size: var(--sar-popup-width);
+.tks-options[data-tks-context="popup"] {
+  inline-size: var(--tks-popup-width);
   max-inline-size: none;
-  padding-block: var(--sar-space-3);
-  padding-inline: var(--sar-space-3);
+  padding-block: var(--tks-space-3);
+  padding-inline: var(--tks-space-3);
 }
 
 /* Popup: flat sections split by a divider instead of cards, small uppercase captions instead of
    card titles, tighter rows and the store's 24px control height. The full page keeps its cards. */
-.sar-options[data-sar-context="popup"] .sar-options-header {
-  margin-block-end: var(--sar-space-2);
+.tks-options[data-tks-context="popup"] .tks-options-header {
+  margin-block-end: var(--tks-space-2);
 }
 
-.sar-options[data-sar-context="popup"] .sar-card {
+.tks-options[data-tks-context="popup"] .tks-card {
   margin: 0;
-  padding-block: var(--sar-space-2);
+  padding-block: var(--tks-space-2);
   padding-inline: 0;
   border-radius: 0;
   background: none;
 }
 
-.sar-options[data-sar-context="popup"] .sar-card + .sar-card {
-  border-block-start: 1px solid var(--sar-color-divider);
+.tks-options[data-tks-context="popup"] .tks-card + .tks-card {
+  border-block-start: 1px solid var(--tks-color-divider);
 }
 
-.sar-options[data-sar-context="popup"] .sar-card-title {
-  margin-block-end: var(--sar-space-1);
-  color: var(--sar-color-text-subtle);
-  font: var(--sar-weight-medium) var(--sar-size-xs) / var(--sar-leading-sm) var(--sar-font-ext);
+.tks-options[data-tks-context="popup"] .tks-card-title {
+  margin-block-end: var(--tks-space-1);
+  color: var(--tks-color-text-subtle);
+  font: var(--tks-weight-medium) var(--tks-size-xs) / var(--tks-leading-sm) var(--tks-font-ext);
   text-transform: uppercase;
 }
 
-.sar-options[data-sar-context="popup"] .sar-field {
-  padding-block: var(--sar-space-1);
+.tks-options[data-tks-context="popup"] .tks-field {
+  padding-block: var(--tks-space-1);
 }
 
-.sar-options[data-sar-context="popup"] .sar-field[data-sar-layout="stacked"] {
-  row-gap: var(--sar-space-1);
+.tks-options[data-tks-context="popup"] .tks-field[data-tks-layout="stacked"] {
+  row-gap: var(--tks-space-1);
 }
 
-.sar-options[data-sar-context="popup"] .sar-segment label {
-  min-block-size: var(--sar-control-height-xs);
+.tks-options[data-tks-context="popup"] .tks-segment label {
+  min-block-size: var(--tks-control-height-xs);
   padding-block: 0;
 }
 
-.sar-options[data-sar-context="popup"] .sar-allow-item {
-  padding-block: var(--sar-space-1);
+.tks-options[data-tks-context="popup"] .tks-allow-item {
+  padding-block: var(--tks-space-1);
 }
 
-.sar-options[data-sar-context="popup"] .sar-options-footer {
-  margin-block-start: var(--sar-space-2);
+.tks-options[data-tks-context="popup"] .tks-options-footer {
+  margin-block-start: var(--tks-space-2);
 }
 
-.sar-options-header {
+.tks-options-header {
   display: flex;
   align-items: center;
-  gap: var(--sar-space-3);
-  margin-block-end: var(--sar-space-3);
+  gap: var(--tks-space-3);
+  margin-block-end: var(--tks-space-3);
 }
 
-.sar-options-header img {
+.tks-options-header img {
   inline-size: 32px;
   block-size: 32px;
   flex: none;
 }
 
 /* The page's Go back to Steam, at the end of the header */
-.sar-options-header .sar-button {
+.tks-options-header .tks-button {
   flex: none;
   margin-inline-start: auto;
 }
 
-.sar-options-title {
+.tks-options-title {
   margin: 0;
-  color: var(--sar-color-text-strong);
-  font: var(--sar-weight-medium) var(--sar-size-2xl) / var(--sar-leading-2xl) var(--sar-font-ext);
+  color: var(--tks-color-text-strong);
+  font: var(--tks-weight-medium) var(--tks-size-2xl) / var(--tks-leading-2xl) var(--tks-font-ext);
 }
 
-.sar-options-version {
-  color: var(--sar-color-text-subtle);
-  font-size: var(--sar-size-sm);
+.tks-options-version {
+  color: var(--tks-color-text-subtle);
+  font-size: var(--tks-size-sm);
 }
 
-.sar-card {
-  margin: 0 0 var(--sar-space-2);
-  padding: var(--sar-card-pad);
-  border-radius: var(--sar-card-radius);
-  background: var(--sar-color-bg-raised);
+.tks-card {
+  margin: 0 0 var(--tks-space-2);
+  padding: var(--tks-card-pad);
+  border-radius: var(--tks-card-radius);
+  background: var(--tks-color-bg-raised);
 }
 
-.sar-card-title {
-  margin: 0 0 var(--sar-space-2);
-  color: var(--sar-color-text-strong);
-  font: var(--sar-weight-medium) var(--sar-size-xl) / var(--sar-leading-xl) var(--sar-font-ext);
+.tks-card-title {
+  margin: 0 0 var(--tks-space-2);
+  color: var(--tks-color-text-strong);
+  font: var(--tks-weight-medium) var(--tks-size-xl) / var(--tks-leading-xl) var(--tks-font-ext);
 }
 
-.sar-card-title:focus {
+.tks-card-title:focus {
   outline: none;
 }
 
 /* Tabs: a row that wraps under the header on narrow screens, a sticky rail beside the panels from
    800px. The selected tab has a bar and strong text, so it never relies on color alone. */
-.sar-tabs {
+.tks-tabs {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: var(--sar-space-3);
+  gap: var(--tks-space-3);
 }
 
-.sar-tablist {
+.tks-tablist {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--sar-space-1);
+  gap: var(--tks-space-1);
 }
 
-.sar-tab {
+.tks-tab {
   appearance: none;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--sar-space-2);
-  min-block-size: var(--sar-control-height-sm);
-  padding-block: var(--sar-space-1);
-  padding-inline: var(--sar-space-2);
+  gap: var(--tks-space-2);
+  min-block-size: var(--tks-control-height-sm);
+  padding-block: var(--tks-space-1);
+  padding-inline: var(--tks-space-2);
   border: 0;
   border-block-end: 2px solid transparent;
-  border-radius: var(--sar-radius-sm) var(--sar-radius-sm) 0 0;
+  border-radius: var(--tks-radius-sm) var(--tks-radius-sm) 0 0;
   background: none;
-  color: var(--sar-color-text);
+  color: var(--tks-color-text);
   font: inherit;
   text-align: start;
   cursor: pointer;
 }
 
-.sar-tab:hover {
-  background: var(--sar-color-bg-raised);
+.tks-tab:hover {
+  background: var(--tks-color-bg-raised);
 }
 
-.sar-tab[aria-selected="true"] {
-  border-color: var(--sar-accent-400);
-  background: var(--sar-color-bg-raised);
-  color: var(--sar-color-text-strong);
-  font-weight: var(--sar-weight-medium);
+.tks-tab[aria-selected="true"] {
+  border-color: var(--tks-accent-400);
+  background: var(--tks-color-bg-raised);
+  color: var(--tks-color-text-strong);
+  font-weight: var(--tks-weight-medium);
 }
 
 /* A long key or description wraps inside the tab, so the rail never scrolls sideways */
-.sar-tab {
+.tks-tab {
   max-inline-size: 100%;
 }
 
-.sar-tab-label {
+.tks-tab-label {
   min-inline-size: 0;
   overflow-wrap: anywhere;
 }
 
 /* A tag's tab: its key in bold and its state on one line, the line that describes it beneath */
-.sar-tab:not(.sar-tab-general) {
+.tks-tab:not(.tks-tab-general) {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: baseline;
 }
 
-.sar-tab-key {
+.tks-tab-key {
   min-inline-size: 0;
   overflow-wrap: anywhere;
-  font-weight: var(--sar-weight-bold);
+  font-weight: var(--tks-weight-bold);
 }
 
 /* The wrapping row stays short: descriptions show only in the rail */
-.sar-tab-description {
+.tks-tab-description {
   display: none;
   grid-column: 1 / -1;
   min-inline-size: 0;
   overflow-wrap: anywhere;
-  color: var(--sar-color-text-subtle);
-  font-size: var(--sar-size-sm);
-  font-weight: var(--sar-weight-regular);
+  color: var(--tks-color-text-subtle);
+  font-size: var(--tks-size-sm);
+  font-weight: var(--tks-weight-regular);
 }
 
 /* General stands apart from the tags, with heavier text */
-.sar-tab-general {
-  font-weight: var(--sar-weight-medium);
+.tks-tab-general {
+  font-weight: var(--tks-weight-medium);
 }
 
 /* The divider and caption over the tags' tabs; in the wrapping row it starts a line of its own */
-.sar-tab-group {
+.tks-tab-group {
   flex-basis: 100%;
-  margin-block-start: var(--sar-space-1);
-  padding-block-start: var(--sar-space-2);
-  padding-inline: var(--sar-space-2);
-  border-block-start: 1px solid var(--sar-color-divider);
-  color: var(--sar-color-text-subtle);
-  font-size: var(--sar-size-sm);
-  font-weight: var(--sar-weight-medium);
+  margin-block-start: var(--tks-space-1);
+  padding-block-start: var(--tks-space-2);
+  padding-inline: var(--tks-space-2);
+  border-block-start: 1px solid var(--tks-color-divider);
+  color: var(--tks-color-text-subtle);
+  font-size: var(--tks-size-sm);
+  font-weight: var(--tks-weight-medium);
 }
 
 /* The tag's state in words beside its key: on in the switch's accent, off in a quieter tone */
-.sar-tab-state {
+.tks-tab-state {
   flex: none;
-  color: var(--sar-color-text-subtle);
-  font-size: var(--sar-size-sm);
-  font-weight: var(--sar-weight-regular);
+  color: var(--tks-color-text-subtle);
+  font-size: var(--tks-size-sm);
+  font-weight: var(--tks-weight-regular);
 }
 
-.sar-tab-state[data-sar-on] {
-  color: var(--sar-accent-300);
+.tks-tab-state[data-tks-on] {
+  color: var(--tks-accent-300);
 }
 
-.sar-panel-title {
-  margin: 0 0 var(--sar-space-2);
-  color: var(--sar-color-text-strong);
-  font: var(--sar-weight-medium) var(--sar-size-xl) / var(--sar-leading-xl) var(--sar-font-ext);
+.tks-panel-title {
+  margin: 0 0 var(--tks-space-2);
+  color: var(--tks-color-text-strong);
+  font: var(--tks-weight-medium) var(--tks-size-xl) / var(--tks-leading-xl) var(--tks-font-ext);
 }
 
 @media (min-width: 800px) {
   /* Room for a long heading and its state, which wrap to a second line */
-  .sar-tabs {
+  .tks-tabs {
     grid-template-columns: 200px minmax(0, 1fr);
     align-items: start;
   }
 
-  .sar-tablist {
+  .tks-tablist {
     position: sticky;
     inset-block-start: 0;
     flex-direction: column;
     flex-wrap: nowrap;
   }
 
-  .sar-tab {
+  .tks-tab {
     border-block-end: 0;
     border-inline-start: 2px solid transparent;
-    border-radius: 0 var(--sar-radius-sm) var(--sar-radius-sm) 0;
+    border-radius: 0 var(--tks-radius-sm) var(--tks-radius-sm) 0;
   }
 
-  .sar-tab-description {
+  .tks-tab-description {
     display: block;
   }
 
-  .sar-tab-group {
+  .tks-tab-group {
     flex-basis: auto;
   }
 }
@@ -278,47 +278,47 @@
    scroll and the sticky rail above. The popup list view is not tabbed and never matches. */
 @media (min-width: 800px) and (min-height: 560px) {
   /* The page's form is its body. A default body margin would add to the viewport height. */
-  .sar-options[data-sar-context="page"] {
+  .tks-options[data-tks-context="page"] {
     block-size: 100dvh;
     margin-block: 0;
   }
 
-  .sar-options[data-sar-view="tabs"] {
+  .tks-options[data-tks-view="tabs"] {
     display: flex;
     flex-direction: column;
   }
 
-  .sar-options > .sar-tabs {
+  .tks-options > .tks-tabs {
     flex: 1;
     grid-template-rows: minmax(0, 1fr);
     min-block-size: 0;
   }
 
-  .sar-tablist,
-  .sar-tabpanel {
+  .tks-tablist,
+  .tks-tabpanel {
     max-block-size: 100%;
     overflow-y: auto;
   }
 
   /* A short rail scrolls; its tabs keep their height */
-  .sar-tab {
+  .tks-tab {
     flex: none;
   }
 
   /* Hidden inputs and live regions are absolutely positioned. The panel contains and clips them. */
-  .sar-tabpanel {
+  .tks-tabpanel {
     position: relative;
     scrollbar-gutter: stable;
   }
 
   /* A scroll container counts its last child's margin as overflow */
-  .sar-tabpanel > :last-child {
+  .tks-tabpanel > :last-child {
     margin-block-end: 0;
   }
 }
 
 @media (forced-colors: active) {
-  .sar-tab[aria-selected="true"] {
+  .tks-tab[aria-selected="true"] {
     border-color: Highlight;
     outline: 1px solid CanvasText;
   }
@@ -326,159 +326,159 @@
 
 /* Popup: the gear at the end of the header, which stays in view, and one row per tag with its
    name, list filter and master switch. A tag that is off keeps its filter, disabled. */
-.sar-options[data-sar-view="list"] .sar-options-header {
+.tks-options[data-tks-view="list"] .tks-options-header {
   position: sticky;
   inset-block-start: 0;
   z-index: 1;
-  background: var(--sar-color-bg-panel);
+  background: var(--tks-color-bg-panel);
 }
 
-.sar-gear {
+.tks-gear {
   display: inline-flex;
   flex: none;
   align-items: center;
   justify-content: center;
-  inline-size: var(--sar-control-height-sm);
-  block-size: var(--sar-control-height-sm);
+  inline-size: var(--tks-control-height-sm);
+  block-size: var(--tks-control-height-sm);
   margin-inline-start: auto;
-  border-radius: var(--sar-radius-sm);
+  border-radius: var(--tks-radius-sm);
 }
 
-.sar-gear:hover {
-  background: var(--sar-button-secondary-bg);
+.tks-gear:hover {
+  background: var(--tks-button-secondary-bg);
 }
 
-.sar-gear svg {
+.tks-gear svg {
   inline-size: 20px;
   block-size: 20px;
   fill: currentColor;
 }
 
-.sar-kind-row {
+.tks-kind-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto auto;
   align-items: center;
-  column-gap: var(--sar-space-2);
-  padding-block: var(--sar-space-1);
+  column-gap: var(--tks-space-2);
+  padding-block: var(--tks-space-1);
 }
 
-.sar-kind-row + .sar-kind-row {
-  border-block-start: 1px solid var(--sar-color-divider);
+.tks-kind-row + .tks-kind-row {
+  border-block-start: 1px solid var(--tks-color-divider);
 }
 
-.sar-options .sar-kind-link {
+.tks-options .tks-kind-link {
   overflow: hidden;
-  color: var(--sar-color-text);
+  color: var(--tks-color-text);
   text-decoration: none;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.sar-options .sar-kind-link:hover {
+.tks-options .tks-kind-link:hover {
   text-decoration: underline;
 }
 
-.sar-kind-row .sar-segment label {
-  min-block-size: var(--sar-control-height-xs);
+.tks-kind-row .tks-segment label {
+  min-block-size: var(--tks-control-height-xs);
   padding-block: 0;
-  font-size: var(--sar-size-sm);
+  font-size: var(--tks-size-sm);
 }
 
-.sar-segment:disabled label {
-  color: var(--sar-color-text-subtle);
+.tks-segment:disabled label {
+  color: var(--tks-color-text-subtle);
   cursor: default;
 }
 
-.sar-segment:disabled input:checked + label {
-  border-color: var(--sar-color-border);
+.tks-segment:disabled input:checked + label {
+  border-color: var(--tks-color-border);
   background: none;
-  color: var(--sar-color-text-subtle);
+  color: var(--tks-color-text-subtle);
 }
 
 /* The label wraps in column 1; the switch keeps column 2 */
-.sar-field {
+.tks-field {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  column-gap: var(--sar-space-4);
-  padding-block: var(--sar-space-2);
+  column-gap: var(--tks-space-4);
+  padding-block: var(--tks-space-2);
 }
 
-.sar-field + .sar-field {
-  border-block-start: 1px solid var(--sar-color-divider);
+.tks-field + .tks-field {
+  border-block-start: 1px solid var(--tks-color-divider);
 }
 
 /* A tag's switches below its master switch: one divider above them, then the usual ones. A tag
    that is off keeps every control in place, disabled and dimmed (decision 75). */
-.sar-kind-options {
+.tks-kind-options {
   min-inline-size: 0;
   margin: 0;
   padding: 0;
   border: 0;
-  border-block-start: 1px solid var(--sar-color-divider);
+  border-block-start: 1px solid var(--tks-color-divider);
 }
 
-.sar-kind-options:disabled {
-  opacity: var(--sar-dim-opacity);
+.tks-kind-options:disabled {
+  opacity: var(--tks-dim-opacity);
 }
 
-.sar-kind-options > .sar-field:first-child {
+.tks-kind-options > .tks-field:first-child {
   border-block-start: 0;
 }
 
-.sar-field-label {
-  color: var(--sar-color-text);
+.tks-field-label {
+  color: var(--tks-color-text);
 }
 
-.sar-field-help {
+.tks-field-help {
   grid-column: 1 / -1;
-  margin-block-start: var(--sar-space-1);
-  color: var(--sar-color-text-subtle);
-  font-size: var(--sar-size-sm);
-  line-height: var(--sar-leading-sm);
+  margin-block-start: var(--tks-space-1);
+  color: var(--tks-color-text-subtle);
+  font-size: var(--tks-size-sm);
+  line-height: var(--tks-leading-sm);
 }
 
 /* Fields whose control needs the full row (segmented control, select) */
-.sar-field[data-sar-layout="stacked"] {
+.tks-field[data-tks-layout="stacked"] {
   grid-template-columns: minmax(0, 1fr);
-  row-gap: var(--sar-space-2);
+  row-gap: var(--tks-space-2);
 }
 
-.sar-field-error {
+.tks-field-error {
   grid-column: 1 / -1;
-  margin: var(--sar-space-1) 0 0;
-  color: var(--sar-color-error);
-  font-size: var(--sar-size-sm);
-  line-height: var(--sar-leading-sm);
+  margin: var(--tks-space-1) 0 0;
+  color: var(--tks-color-error);
+  font-size: var(--tks-size-sm);
+  line-height: var(--tks-leading-sm);
 }
 
 /* The load error sits above the tabs, where no tab can hide it */
-.sar-options > .sar-field-error {
-  margin: 0 0 var(--sar-space-2);
+.tks-options > .tks-field-error {
+  margin: 0 0 var(--tks-space-2);
 }
 
 /* Full page: help and error lines at the body size; the popup keeps them small */
-.sar-options[data-sar-context="page"] .sar-field-help,
-.sar-options[data-sar-context="page"] .sar-field-error {
-  font-size: var(--sar-size-md);
-  line-height: var(--sar-leading-md);
+.tks-options[data-tks-context="page"] .tks-field-help,
+.tks-options[data-tks-context="page"] .tks-field-error {
+  font-size: var(--tks-size-md);
+  line-height: var(--tks-leading-md);
 }
 
 /* Switch: a checkbox with role="switch" */
-.sar-toggle {
+.tks-toggle {
   appearance: none;
   position: relative;
-  inline-size: var(--sar-toggle-width);
-  block-size: var(--sar-toggle-height);
+  inline-size: var(--tks-toggle-width);
+  block-size: var(--tks-toggle-height);
   margin: 0;
-  border: 1px solid var(--sar-toggle-track-off-border);
-  border-radius: var(--sar-radius-pill);
-  background: var(--sar-toggle-track-off);
+  border: 1px solid var(--tks-toggle-track-off-border);
+  border-radius: var(--tks-radius-pill);
+  background: var(--tks-toggle-track-off);
   cursor: pointer;
-  transition: background-color var(--sar-duration-fast) var(--sar-ease);
+  transition: background-color var(--tks-duration-fast) var(--tks-ease);
 }
 
-.sar-toggle::after {
+.tks-toggle::after {
   content: "";
   position: absolute;
   inset-block-start: 2px;
@@ -486,447 +486,447 @@
   inline-size: 14px;
   block-size: 14px;
   border-radius: 50%;
-  background: var(--sar-toggle-thumb);
-  transition: transform var(--sar-duration-fast) var(--sar-ease);
+  background: var(--tks-toggle-thumb);
+  transition: transform var(--tks-duration-fast) var(--tks-ease);
 }
 
-.sar-toggle:checked {
-  border-color: var(--sar-toggle-track-on);
-  background: var(--sar-toggle-track-on);
+.tks-toggle:checked {
+  border-color: var(--tks-toggle-track-on);
+  background: var(--tks-toggle-track-on);
 }
 
 /* Physical translate: the one spot to flip if right-to-left lands */
-.sar-toggle:checked::after {
+.tks-toggle:checked::after {
   transform: translateX(16px);
 }
 
 /* Segmented control: a fieldset of radios, equal columns */
-.sar-segment {
+.tks-segment {
   display: grid;
   grid-auto-flow: column;
   grid-auto-columns: minmax(0, 1fr);
   margin: 0;
-  padding: var(--sar-space-0);
-  border: 1px solid var(--sar-color-border);
-  border-radius: var(--sar-radius-md);
-  background: var(--sar-segment-bg);
+  padding: var(--tks-space-0);
+  border: 1px solid var(--tks-color-border);
+  border-radius: var(--tks-radius-md);
+  background: var(--tks-segment-bg);
 }
 
-.sar-segment input {
+.tks-segment input {
   position: absolute;
   opacity: 0;
   inline-size: 1px;
   block-size: 1px;
 }
 
-.sar-segment label {
+.tks-segment label {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-block-size: var(--sar-control-height-sm);
-  padding-block: var(--sar-space-1);
-  padding-inline: var(--sar-space-2);
+  min-block-size: var(--tks-control-height-sm);
+  padding-block: var(--tks-space-1);
+  padding-inline: var(--tks-space-2);
   border: 1px solid transparent;
-  border-radius: var(--sar-radius-sm);
-  color: var(--sar-color-text);
+  border-radius: var(--tks-radius-sm);
+  color: var(--tks-color-text);
   text-align: center;
   cursor: pointer;
 }
 
-.sar-segment input:checked + label {
-  border-color: var(--sar-segment-selected-border);
-  background: var(--sar-segment-selected-bg);
-  color: var(--sar-segment-selected-fg);
+.tks-segment input:checked + label {
+  border-color: var(--tks-segment-selected-border);
+  background: var(--tks-segment-selected-bg);
+  color: var(--tks-segment-selected-fg);
 }
 
 /* Full page: the well hugs its segments, which share one width: the widest label or the min */
-.sar-options[data-sar-context="page"] .sar-segment {
-  grid-auto-columns: minmax(var(--sar-segment-min-inline-size), 1fr);
+.tks-options[data-tks-context="page"] .tks-segment {
+  grid-auto-columns: minmax(var(--tks-segment-min-inline-size), 1fr);
   inline-size: max-content;
   max-inline-size: 100%;
 }
 
 /* A tag's values: native checkboxes in a row that wraps, each labelled with Steam's word */
-.sar-checks {
+.tks-checks {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--sar-space-1) var(--sar-space-4);
+  gap: var(--tks-space-1) var(--tks-space-4);
   margin: 0;
   padding: 0;
   border: 0;
 }
 
-.sar-checks label {
+.tks-checks label {
   display: inline-flex;
   align-items: center;
-  gap: var(--sar-space-1);
-  color: var(--sar-color-text);
+  gap: var(--tks-space-1);
+  color: var(--tks-color-text);
   cursor: pointer;
 }
 
-.sar-checks input {
+.tks-checks input {
   margin: 0;
-  accent-color: var(--sar-toggle-track-on);
+  accent-color: var(--tks-toggle-track-on);
 }
 
-.sar-select {
-  min-block-size: var(--sar-control-height-sm);
+.tks-select {
+  min-block-size: var(--tks-control-height-sm);
   max-inline-size: 100%;
-  padding-inline: var(--sar-space-2);
-  border: 1px solid var(--sar-color-border);
-  border-radius: var(--sar-radius-sm);
-  background: var(--sar-color-bg-sunken);
-  color: var(--sar-color-text);
+  padding-inline: var(--tks-space-2);
+  border: 1px solid var(--tks-color-border);
+  border-radius: var(--tks-radius-sm);
+  background: var(--tks-color-bg-sunken);
+  color: var(--tks-color-text);
   font: inherit;
 }
 
-.sar-toggle:focus-visible,
-.sar-segment input:focus-visible + label,
-.sar-select:focus-visible,
-.sar-input:focus-visible,
-.sar-color-pick:focus-visible,
-.sar-button:focus-visible,
-.sar-tab:focus-visible,
-.sar-order-handle:focus-visible,
-.sar-options a:focus-visible {
-  outline: var(--sar-focus-width) solid var(--sar-focus-color);
-  outline-offset: var(--sar-focus-offset);
+.tks-toggle:focus-visible,
+.tks-segment input:focus-visible + label,
+.tks-select:focus-visible,
+.tks-input:focus-visible,
+.tks-color-pick:focus-visible,
+.tks-button:focus-visible,
+.tks-tab:focus-visible,
+.tks-order-handle:focus-visible,
+.tks-options a:focus-visible {
+  outline: var(--tks-focus-width) solid var(--tks-focus-color);
+  outline-offset: var(--tks-focus-offset);
 }
 
 /* A tag's color field: the color square, the hex text and Reset in one row; with no color set the
    square shows the default violet. A chip text field puts its text box and Reset in a row the
    same way. */
-.sar-color-entry,
-.sar-text-entry {
+.tks-color-entry,
+.tks-text-entry {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--sar-space-2);
+  gap: var(--tks-space-2);
 }
 
-.sar-text-entry > .sar-input {
-  inline-size: var(--sar-chip-input-inline-size);
+.tks-text-entry > .tks-input {
+  inline-size: var(--tks-chip-input-inline-size);
   max-inline-size: 100%;
 }
 
 /* How many characters a chip text field holds, of the most it takes */
-.sar-field-count {
+.tks-field-count {
   grid-column: 1 / -1;
-  color: var(--sar-color-text-subtle);
-  font-size: var(--sar-size-sm);
-  line-height: var(--sar-leading-sm);
+  color: var(--tks-color-text-subtle);
+  font-size: var(--tks-size-sm);
+  line-height: var(--tks-leading-sm);
   font-variant-numeric: tabular-nums;
 }
 
 /* The live preview of a tag's chips: the badge of a row, then the chip of a small image, drawn by
    the store page's own chip rules (chips.css) in the tag's color */
-.sar-chip-preview {
+.tks-chip-preview {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--sar-space-2);
+  gap: var(--tks-space-2);
   min-inline-size: 0;
 }
 
-.sar-chip-preview .sar-compact {
-  max-inline-size: var(--sar-chip-preview-compact-max);
+.tks-chip-preview .tks-compact {
+  max-inline-size: var(--tks-chip-preview-compact-max);
 }
 
 /* The color square: the browser's own color picker, drawn as a square of the picked color. The
    engines name the inner swatch differently, so each gets a rule of its own. */
-.sar-color-pick {
+.tks-color-pick {
   flex: none;
   box-sizing: border-box;
-  inline-size: var(--sar-control-height-sm);
-  block-size: var(--sar-control-height-sm);
+  inline-size: var(--tks-control-height-sm);
+  block-size: var(--tks-control-height-sm);
   padding: 0;
-  border: 1px solid var(--sar-color-border);
-  border-radius: var(--sar-radius-sm);
+  border: 1px solid var(--tks-color-border);
+  border-radius: var(--tks-radius-sm);
   background: none;
   cursor: pointer;
 }
 
-.sar-color-pick::-webkit-color-swatch-wrapper {
+.tks-color-pick::-webkit-color-swatch-wrapper {
   padding: 0;
 }
 
-.sar-color-pick::-webkit-color-swatch {
+.tks-color-pick::-webkit-color-swatch {
   border: 0;
-  border-radius: var(--sar-radius-sm);
+  border-radius: var(--tks-radius-sm);
 }
 
-.sar-color-pick::-moz-color-swatch {
+.tks-color-pick::-moz-color-swatch {
   border: 0;
-  border-radius: var(--sar-radius-sm);
+  border-radius: var(--tks-radius-sm);
 }
 
-.sar-input {
+.tks-input {
   box-sizing: border-box;
-  inline-size: var(--sar-color-input-inline-size);
+  inline-size: var(--tks-color-input-inline-size);
   min-inline-size: 0;
-  min-block-size: var(--sar-control-height-sm);
-  padding-inline: var(--sar-space-2);
-  border: 1px solid var(--sar-color-border);
-  border-radius: var(--sar-radius-sm);
-  background: var(--sar-color-bg-sunken);
-  color: var(--sar-color-text);
+  min-block-size: var(--tks-control-height-sm);
+  padding-inline: var(--tks-space-2);
+  border: 1px solid var(--tks-color-border);
+  border-radius: var(--tks-radius-sm);
+  background: var(--tks-color-bg-sunken);
+  color: var(--tks-color-text);
   font: inherit;
 }
 
-.sar-input::placeholder {
-  color: var(--sar-color-text-subtle);
+.tks-input::placeholder {
+  color: var(--tks-color-text-subtle);
   opacity: 1;
 }
 
-.sar-input[aria-invalid="true"] {
-  border-color: var(--sar-color-error);
+.tks-input[aria-invalid="true"] {
+  border-color: var(--tks-color-error);
 }
 
-.sar-button {
+.tks-button {
   appearance: none;
   display: inline-flex;
   align-items: center;
-  min-block-size: var(--sar-control-height-sm);
+  min-block-size: var(--tks-control-height-sm);
   max-inline-size: 100%;
-  padding-block: var(--sar-space-1);
-  padding-inline: var(--sar-space-3);
+  padding-block: var(--tks-space-1);
+  padding-inline: var(--tks-space-3);
   border: 0;
-  border-radius: var(--sar-radius-sm);
-  background: var(--sar-button-secondary-bg);
-  color: var(--sar-button-secondary-fg);
+  border-radius: var(--tks-radius-sm);
+  background: var(--tks-button-secondary-bg);
+  color: var(--tks-button-secondary-fg);
   font: inherit;
   text-align: center;
   cursor: pointer;
 }
 
-.sar-button:hover {
-  background: var(--sar-button-secondary-bg-hover);
+.tks-button:hover {
+  background: var(--tks-button-secondary-bg-hover);
 }
 
 /* Reset, Stop ignoring and Show in General: quiet text buttons that read as links, at the same
    target size as the other buttons */
-.sar-button[data-sar-variant="quiet"] {
+.tks-button[data-tks-variant="quiet"] {
   padding-inline: 0;
   background: none;
-  color: var(--sar-accent-300);
+  color: var(--tks-accent-300);
   text-decoration: underline;
 }
 
-.sar-button[data-sar-variant="quiet"]:hover {
+.tks-button[data-tks-variant="quiet"]:hover {
   background: none;
-  color: var(--sar-color-text-strong);
+  color: var(--tks-color-text-strong);
 }
 
-.sar-options a {
-  color: var(--sar-accent-300);
+.tks-options a {
+  color: var(--tks-accent-300);
 }
 
-.sar-allow-list {
+.tks-allow-list {
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
 /* Each list of a scope's card sits under a quiet caption: games, developers, publishers */
-.sar-allow-group + .sar-allow-group {
-  margin-block-start: var(--sar-space-3);
+.tks-allow-group + .tks-allow-group {
+  margin-block-start: var(--tks-space-3);
 }
 
-.sar-allow-scope {
+.tks-allow-scope {
   margin: 0;
-  color: var(--sar-color-text-subtle);
-  font: var(--sar-weight-medium) var(--sar-size-sm) / var(--sar-leading-sm) var(--sar-font-ext);
+  color: var(--tks-color-text-subtle);
+  font: var(--tks-weight-medium) var(--tks-size-sm) / var(--tks-leading-sm) var(--tks-font-ext);
 }
 
-.sar-options[data-sar-context="popup"] .sar-allow-list {
+.tks-options[data-tks-context="popup"] .tks-allow-list {
   max-block-size: 240px;
   overflow-y: auto;
 }
 
 /* Name and date keep at least 40% of the row; a long button label wraps inside the rest */
-.sar-allow-item {
+.tks-allow-item {
   display: grid;
   grid-template-columns: minmax(40%, 1fr) auto;
   align-items: center;
-  column-gap: var(--sar-space-3);
-  padding-block: var(--sar-space-2);
+  column-gap: var(--tks-space-3);
+  padding-block: var(--tks-space-2);
 }
 
-.sar-allow-item + .sar-allow-item {
-  border-block-start: 1px solid var(--sar-color-divider);
+.tks-allow-item + .tks-allow-item {
+  border-block-start: 1px solid var(--tks-color-divider);
 }
 
-.sar-allow-name {
+.tks-allow-name {
   display: block;
   overflow: hidden;
-  color: var(--sar-color-text);
+  color: var(--tks-color-text);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.sar-allow-meta {
+.tks-allow-meta {
   display: block;
-  color: var(--sar-color-text-subtle);
-  font-size: var(--sar-size-sm);
+  color: var(--tks-color-text-subtle);
+  font-size: var(--tks-size-sm);
 }
 
-.sar-empty {
+.tks-empty {
   margin: 0;
-  color: var(--sar-color-text-subtle);
+  color: var(--tks-color-text-subtle);
 }
 
 /* What all tags ignore, counted under a tag's own list, with its way to General */
-.sar-allow-note {
-  margin: var(--sar-space-2) 0 0;
-  color: var(--sar-color-text-subtle);
+.tks-allow-note {
+  margin: var(--tks-space-2) 0 0;
+  color: var(--tks-color-text-subtle);
 }
 
-.sar-allow-note .sar-button {
-  min-block-size: var(--sar-control-height-xs);
+.tks-allow-note .tks-button {
+  min-block-size: var(--tks-control-height-xs);
   padding-block: 0;
 }
 
 /* Tag order: one list, a grip handle per row. A dragged row follows the pointer with a transform
    while the rows between slide aside to open its gap; the DOM reorders on the drop. */
-.sar-order-list {
-  margin: var(--sar-space-2) 0;
+.tks-order-list {
+  margin: var(--tks-space-2) 0;
   padding: 0;
   list-style: none;
 }
 
-.sar-order-row {
+.tks-order-row {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  column-gap: var(--sar-space-2);
-  padding-block: var(--sar-space-1);
-  border-block-start: 1px solid var(--sar-color-divider);
-  background: var(--sar-color-bg-raised);
+  column-gap: var(--tks-space-2);
+  padding-block: var(--tks-space-1);
+  border-block-start: 1px solid var(--tks-color-divider);
+  background: var(--tks-color-bg-raised);
 }
 
-.sar-order-handle {
+.tks-order-handle {
   appearance: none;
   display: inline-flex;
   flex: none;
   align-items: center;
   justify-content: center;
-  inline-size: var(--sar-control-height-sm);
-  block-size: var(--sar-control-height-sm);
+  inline-size: var(--tks-control-height-sm);
+  block-size: var(--tks-control-height-sm);
   padding: 0;
   border: 1px solid transparent;
-  border-radius: var(--sar-radius-sm);
+  border-radius: var(--tks-radius-sm);
   background: none;
-  color: var(--sar-color-text-subtle);
+  color: var(--tks-color-text-subtle);
   cursor: grab;
   touch-action: none;
 }
 
-.sar-order-handle:hover,
-.sar-order-row[data-sar-held] .sar-order-handle {
-  background: var(--sar-button-secondary-bg);
-  color: var(--sar-color-text-strong);
+.tks-order-handle:hover,
+.tks-order-row[data-tks-held] .tks-order-handle {
+  background: var(--tks-button-secondary-bg);
+  color: var(--tks-color-text-strong);
 }
 
-.sar-order-handle svg {
+.tks-order-handle svg {
   inline-size: 10px;
   block-size: 16px;
   fill: currentColor;
 }
 
-.sar-order-key {
-  color: var(--sar-color-text-strong);
-  font-weight: var(--sar-weight-medium);
+.tks-order-key {
+  color: var(--tks-color-text-strong);
+  font-weight: var(--tks-weight-medium);
 }
 
-.sar-order-description,
-.sar-order-cue {
-  color: var(--sar-color-text-subtle);
-  font-size: var(--sar-size-sm);
+.tks-order-description,
+.tks-order-cue {
+  color: var(--tks-color-text-subtle);
+  font-size: var(--tks-size-sm);
 }
 
 /* Where limited surfaces stop: a dashed line, with the surfaces beneath it. No focus stop. */
-.sar-order-cue {
-  padding-block: var(--sar-space-1);
-  border-block-start: 1px dashed var(--sar-accent-400);
+.tks-order-cue {
+  padding-block: var(--tks-space-1);
+  border-block-start: 1px dashed var(--tks-accent-400);
 }
 
-.sar-order-row[data-sar-held] {
+.tks-order-row[data-tks-held] {
   position: relative;
   z-index: 1;
-  outline: 1px solid var(--sar-accent-400);
+  outline: 1px solid var(--tks-accent-400);
 }
 
-.sar-order-list[data-sar-dragging] .sar-order-row {
-  transition: transform var(--sar-duration-fast) var(--sar-ease);
+.tks-order-list[data-tks-dragging] .tks-order-row {
+  transition: transform var(--tks-duration-fast) var(--tks-ease);
 }
 
-.sar-order-list[data-sar-dragging] .sar-order-row[data-sar-held] {
+.tks-order-list[data-tks-dragging] .tks-order-row[data-tks-held] {
   transition: none;
-  box-shadow: var(--sar-hovercard-shadow);
+  box-shadow: var(--tks-hovercard-shadow);
 }
 
-.sar-order-list[data-sar-dragging] .sar-order-handle {
+.tks-order-list[data-tks-dragging] .tks-order-handle {
   cursor: grabbing;
 }
 
 @media (forced-colors: active) {
-  .sar-order-handle {
+  .tks-order-handle {
     border-color: ButtonText;
   }
 
-  .sar-order-row[data-sar-held] {
+  .tks-order-row[data-tks-held] {
     outline: 2px solid Highlight;
   }
 }
 
-.sar-privacy {
+.tks-privacy {
   margin: 0;
-  padding-inline-start: var(--sar-space-4);
+  padding-inline-start: var(--tks-space-4);
 }
 
-.sar-privacy li + li {
-  margin-block-start: var(--sar-space-1);
+.tks-privacy li + li {
+  margin-block-start: var(--tks-space-1);
 }
 
-.sar-options-footer {
-  margin: var(--sar-space-4) 0 0;
-  color: var(--sar-color-text-subtle);
-  font-size: var(--sar-size-sm);
-  line-height: var(--sar-leading-sm);
+.tks-options-footer {
+  margin: var(--tks-space-4) 0 0;
+  color: var(--tks-color-text-subtle);
+  font-size: var(--tks-size-sm);
+  line-height: var(--tks-leading-sm);
 }
 
 /* Feedback links: a bar that stays at the bottom of the viewport (the dialog's scrollport in the
    userscript) while the tabs scroll, on the page and in the dialog. It takes the panel's color so
    nothing shows through, and wraps its links on a narrow screen. */
-.sar-feedback {
+.tks-feedback {
   position: sticky;
   inset-block-end: 0;
   z-index: 1;
   display: flex;
   flex-wrap: wrap;
-  column-gap: var(--sar-space-4);
-  row-gap: var(--sar-space-1);
-  margin-block-start: var(--sar-space-3);
-  padding-block: var(--sar-space-1);
-  border-block-start: 1px solid var(--sar-color-divider);
-  background: var(--sar-color-bg-panel);
-  font-size: var(--sar-size-sm);
-  line-height: var(--sar-leading-sm);
+  column-gap: var(--tks-space-4);
+  row-gap: var(--tks-space-1);
+  margin-block-start: var(--tks-space-3);
+  padding-block: var(--tks-space-1);
+  border-block-start: 1px solid var(--tks-color-divider);
+  background: var(--tks-color-bg-panel);
+  font-size: var(--tks-size-sm);
+  line-height: var(--tks-leading-sm);
 }
 
-.sar-options[data-sar-context="popup"] .sar-feedback {
-  margin-block-start: var(--sar-space-2);
+.tks-options[data-tks-context="popup"] .tks-feedback {
+  margin-block-start: var(--tks-space-2);
 }
 
-.sar-feedback-link {
+.tks-feedback-link {
   display: inline-flex;
   align-items: center;
-  gap: var(--sar-space-1);
-  min-block-size: var(--sar-control-height-sm);
+  gap: var(--tks-space-1);
+  min-block-size: var(--tks-control-height-sm);
 }
 
 /* A Lucide line icon (`ui/lucide.ts`) takes the stroke its source sets, in the current color */
-.sar-icon {
+.tks-icon {
   flex: none;
   fill: none;
   stroke: currentColor;
@@ -936,65 +936,65 @@
 }
 
 /* Each feedback icon fills one line of the bar's text, in the accent violet */
-.sar-feedback-link .sar-icon {
-  inline-size: var(--sar-leading-sm);
-  block-size: var(--sar-leading-sm);
-  color: var(--sar-accent-400);
+.tks-feedback-link .tks-icon {
+  inline-size: var(--tks-leading-sm);
+  block-size: var(--tks-leading-sm);
+  color: var(--tks-accent-400);
 }
 
 /* Backup: the one primary button confirms the only action that overwrites settings */
-.sar-button[data-sar-variant="primary"] {
-  background: var(--sar-button-primary-bg);
-  color: var(--sar-button-primary-fg);
+.tks-button[data-tks-variant="primary"] {
+  background: var(--tks-button-primary-bg);
+  color: var(--tks-button-primary-fg);
 }
 
-.sar-button[data-sar-variant="primary"]:hover {
-  background: var(--sar-button-primary-bg-hover);
+.tks-button[data-tks-variant="primary"]:hover {
+  background: var(--tks-button-primary-bg-hover);
 }
 
-.sar-backup-help,
-.sar-backup-note {
-  margin: 0 0 var(--sar-space-2);
-  color: var(--sar-color-text-subtle);
-  font-size: var(--sar-size-sm);
-  line-height: var(--sar-leading-sm);
+.tks-backup-help,
+.tks-backup-note {
+  margin: 0 0 var(--tks-space-2);
+  color: var(--tks-color-text-subtle);
+  font-size: var(--tks-size-sm);
+  line-height: var(--tks-leading-sm);
 }
 
-.sar-backup-actions {
+.tks-backup-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--sar-space-2);
+  gap: var(--tks-space-2);
 }
 
 /* The check's Restore and Cancel sit on the right, Restore first, like the store's dialogs */
-.sar-backup-actions[data-sar-align="end"] {
+.tks-backup-actions[data-tks-align="end"] {
   justify-content: flex-end;
-  gap: var(--sar-space-3);
+  gap: var(--tks-space-3);
 }
 
-.sar-backup-summary {
-  margin-block-start: var(--sar-space-3);
-  padding: var(--sar-space-3);
-  border: 1px solid var(--sar-color-border);
-  border-radius: var(--sar-radius-md);
-  background: var(--sar-color-bg-sunken);
+.tks-backup-summary {
+  margin-block-start: var(--tks-space-3);
+  padding: var(--tks-space-3);
+  border: 1px solid var(--tks-color-border);
+  border-radius: var(--tks-radius-md);
+  background: var(--tks-color-bg-sunken);
 }
 
-.sar-backup-summary-title {
-  margin: 0 0 var(--sar-space-2);
-  color: var(--sar-color-text-strong);
-  font-weight: var(--sar-weight-medium);
+.tks-backup-summary-title {
+  margin: 0 0 var(--tks-space-2);
+  color: var(--tks-color-text-strong);
+  font-weight: var(--tks-weight-medium);
 }
 
-.sar-backup-contents {
-  margin: 0 0 var(--sar-space-2);
-  padding-inline-start: var(--sar-space-4);
-  color: var(--sar-color-text);
+.tks-backup-contents {
+  margin: 0 0 var(--tks-space-2);
+  padding-inline-start: var(--tks-space-4);
+  color: var(--tks-color-text);
 }
 
-.sar-backup-status {
-  margin: var(--sar-space-2) 0 0;
-  color: var(--sar-color-text);
-  font-size: var(--sar-size-sm);
-  line-height: var(--sar-leading-sm);
+.tks-backup-status {
+  margin: var(--tks-space-2) 0 0;
+  color: var(--tks-color-text);
+  font-size: var(--tks-size-sm);
+  line-height: var(--tks-leading-sm);
 }

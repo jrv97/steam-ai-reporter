@@ -36,9 +36,9 @@ describe("start and the page stylesheet", () => {
       catalogs: SHIPPED_CATALOGS,
       addPageStyles,
     });
-    await expect.poll(() => document.querySelectorAll(".sar-badge").length).toBe(DISCLOSED_BADGES);
+    await expect.poll(() => document.querySelectorAll(".tks-badge").length).toBe(DISCLOSED_BADGES);
     expect(addPageStyles).toHaveBeenCalledExactlyOnceWith(document);
     expect(document.adoptedStyleSheets).toHaveLength(0);
-    expect(document.querySelector("style.sar-styles")).toBeNull();
+    expect(document.querySelector("style.tks-styles")).toBeNull();
   });
 });

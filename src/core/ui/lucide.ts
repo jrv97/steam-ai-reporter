@@ -1,6 +1,6 @@
 // Path data copied from Lucide 1.70.0 (`icons/<name>.svg`), ISC licensed.
 // THIRD_PARTY_NOTICES.md carries the notice. None of these derives from Feather.
-// Stroke width, caps and joins come from `.sar-icon` in settings.css.
+// Stroke width, caps and joins come from `.tks-icon` in settings.css.
 export const LUCIDE_PATHS = {
   bug: [
     "M12 20v-9",
@@ -33,7 +33,7 @@ export const LUCIDE_PATHS = {
 export type LucideName = keyof typeof LUCIDE_PATHS;
 
 /** Hidden from assistive technology and never a tab stop: the link's label names it. */
-const SVG_ATTRIBUTES = 'class="sar-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"';
+const SVG_ATTRIBUTES = 'class="tks-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"';
 
 /** The named icon's markup, for `parseIcon`. */
 export function lucideMarkup(name: LucideName): string {

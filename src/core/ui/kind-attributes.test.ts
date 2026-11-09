@@ -22,14 +22,14 @@ afterEach(() => {
 
 describe("attribute names", () => {
   it("name the kind after a fixed prefix", () => {
-    expect(filterAttribute("drm")).toBe("data-sar-filter-drm");
-    expect(filterAttribute("pvp")).toBe("data-sar-filter-pvp");
-    expect(KIND_ATTRIBUTE).toBe("data-sar-kind");
+    expect(filterAttribute("drm")).toBe("data-tks-filter-drm");
+    expect(filterAttribute("pvp")).toBe("data-tks-filter-pvp");
+    expect(KIND_ATTRIBUTE).toBe("data-tks-kind");
   });
 
   it("name the root custom property of a kind's color after a fixed prefix", () => {
-    expect(colorProperty("drm")).toBe("--sar-kind-color-drm");
-    expect(colorProperty("anticheat")).toBe("--sar-kind-color-anticheat");
+    expect(colorProperty("drm")).toBe("--tks-kind-color-drm");
+    expect(colorProperty("anticheat")).toBe("--tks-kind-color-anticheat");
   });
 });
 

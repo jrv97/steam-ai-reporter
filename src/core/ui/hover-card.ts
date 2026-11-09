@@ -8,13 +8,13 @@ import { fromValve, fullGameLine, type KindDetail, kindDetails, sourceLine } fro
 import { normalizeBreaks } from "./notes";
 
 /** The card's id, the target of `aria-describedby` while focus holds it open. */
-export const HOVER_CARD_ID = "sar-hovercard";
+export const HOVER_CARD_ID = "tks-hovercard";
 
 /** Set to `open` on the root element while the card shows; page CSS hides the store's hover. */
-const OPEN_MARK = "data-sar-hovercard";
+const OPEN_MARK = "data-tks-hovercard";
 
 /** Elements that can open the card. */
-const TRIGGER_SELECTOR = ".sar-badge, .sar-compact";
+const TRIGGER_SELECTOR = ".tks-badge, .tks-compact";
 
 /** A pointer at rest this long opens the card; a sweep across a grid opens nothing. */
 const OPEN_DELAY = 150;
@@ -27,7 +27,7 @@ const DESCRIBED_BY = "aria-describedby";
 const ESCAPE = "Escape";
 
 /** The token that sets the gap between trigger and card, and the card's viewport margin. */
-const OFFSET_TOKEN = "--sar-hovercard-offset";
+const OFFSET_TOKEN = "--tks-hovercard-offset";
 
 export interface Box {
   readonly left: number;
@@ -227,12 +227,12 @@ export function createHoverCard(
       return card;
     }
     const root = doc.createElement("div");
-    root.className = "sar-hovercard";
+    root.className = "tks-hovercard";
     root.id = HOVER_CARD_ID;
     root.setAttribute("role", "tooltip");
     root.setAttribute("popover", "manual");
     root.hidden = true;
-    const more = line("sar-hovercard-more", i18n.t("badge_card_more"));
+    const more = line("tks-hovercard-more", i18n.t("badge_card_more"));
     more.hidden = true;
     doc.body.append(root);
     card = { root, more };
@@ -243,25 +243,25 @@ export function createHoverCard(
   function detailLine(detail: KindDetail): HTMLElement {
     switch (detail.kind) {
       case "message":
-        return line("sar-hovercard-detail", i18n.t(detail.key));
+        return line("tks-hovercard-detail", i18n.t(detail.key));
       case "text":
-        return line("sar-hovercard-detail", detail.text);
+        return line("tks-hovercard-detail", detail.text);
       case "quote": {
-        const quote = line("sar-hovercard-notes", normalizeBreaks(detail.text));
+        const quote = line("tks-hovercard-notes", normalizeBreaks(detail.text));
         quotes.push(quote);
         return quote;
       }
       case "labeled": {
-        const labeled = line("sar-hovercard-service", i18n.t(detail.key));
+        const labeled = line("tks-hovercard-service", i18n.t(detail.key));
         const name = doc.createElement("span");
-        name.className = "sar-hovercard-service-name";
+        name.className = "tks-hovercard-service-name";
         name.textContent = detail.text;
         labeled.append(" ", name);
         return labeled;
       }
       case "dated":
         return line(
-          "sar-hovercard-detail",
+          "tks-hovercard-detail",
           i18n.t(detail.key, { date: dates().format(detail.time * MS_PER_SECOND) }),
         );
     }
@@ -274,12 +274,12 @@ export function createHoverCard(
   function entry(verdict: AnyDisclosed): HTMLElement {
     const heading = i18n.t(KIND_BY_ID[verdict.kind].messages.heading);
     const node = doc.createElement("div");
-    node.className = "sar-hovercard-entry";
+    node.className = "tks-hovercard-entry";
     node.setAttribute(KIND_ATTRIBUTE, verdict.kind);
     node.append(
-      line("sar-hovercard-title", heading),
+      line("tks-hovercard-title", heading),
       ...(verdict.fullGame === true
-        ? [line("sar-hovercard-full-game", i18n.t(fullGameLine(verdict)))]
+        ? [line("tks-hovercard-full-game", i18n.t(fullGameLine(verdict)))]
         : []),
       ...kindDetails(verdict)
         .filter((detail) => !(detail.kind === "message" && i18n.t(detail.key) === heading))
@@ -296,7 +296,7 @@ export function createHoverCard(
     for (const verdict of entries) {
       keys.add(sourceLine(verdict));
     }
-    return Array.from(keys, (key) => line("sar-hovercard-source", i18n.t(key)));
+    return Array.from(keys, (key) => line("tks-hovercard-source", i18n.t(key)));
   }
 
   /** Rebuilds the shown card for other verdicts; the same verdicts keep what is there. */
@@ -401,7 +401,7 @@ export function createHoverCard(
     placed = {
       size: { width: size.width, height: size.height },
       offset: Number.isFinite(token) ? token : 0,
-      align: trigger.classList.contains("sar-compact") ? "end" : "start",
+      align: trigger.classList.contains("tks-compact") ? "end" : "start",
     };
     write(target, placeCard(box, placed.size, viewportSize(), placed.offset, placed.align));
   }
@@ -413,7 +413,7 @@ export function createHoverCard(
   function write(target: Card, position: CardPosition): void {
     target.root.style.left = `${position.left}px`;
     target.root.style.top = `${position.top}px`;
-    target.root.setAttribute("data-sar-side", position.side);
+    target.root.setAttribute("data-tks-side", position.side);
   }
 
   /**

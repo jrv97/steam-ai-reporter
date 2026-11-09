@@ -3,9 +3,13 @@ import type { CreatorKey } from "../../src/core/creator";
 import type { PickedFile } from "../../src/core/ports";
 import { type AllowEntries, type AllowScope, perScope } from "../../src/core/settings/allow-data";
 import { DEFAULT_SETTINGS } from "../../src/core/settings/settings";
+import sampleConfig from "../fixtures/backup/sample-config.json?raw";
 import { appId } from "./app-ids";
 import { keyOf } from "./creators";
 import { freshAppId, freshClanId, freshCreator, freshName, freshTime } from "./sequence";
+
+/** A full backup of every kind, kept current; load it to try the settings by hand. */
+export const SAMPLE_CONFIG = sampleConfig;
 
 /** When the backups in tests were made: 2026-10-20, midday UTC. */
 export const BACKUP_TIME = Date.UTC(2026, 9, 20, 12);

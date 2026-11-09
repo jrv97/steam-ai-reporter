@@ -9,12 +9,12 @@ import { filterAttribute } from "./kind-attributes";
  * On the root element while the person shows what the list filter hides, on this page only. The
  * hide rules skip it and the hosts dim instead. Nothing stores it.
  */
-export const REVEAL_ATTRIBUTE = "data-sar-reveal";
+export const REVEAL_ATTRIBUTE = "data-tks-reveal";
 /** Quiet time after the last change of the notice before the live region speaks. */
 export const ANNOUNCE_DELAY_MS = 1000;
 
-const NOTICE_CLASS = "sar-list-notice";
-const TEXT_ID = "sar-list-notice-text";
+const NOTICE_CLASS = "tks-list-notice";
+const TEXT_ID = "tks-list-notice-text";
 const FILTERS = KINDS.map((kind) => filterAttribute(kind.id));
 const MARKED = `[${HOST_KINDS}]`;
 
@@ -99,14 +99,14 @@ export function createHiddenNotice(options: HiddenNoticeOptions): HiddenNotice {
   box.className = NOTICE_CLASS;
   box.hidden = true;
   const text = doc.createElement("span");
-  text.className = "sar-list-notice-text";
+  text.className = "tks-list-notice-text";
   text.id = TEXT_ID;
   const button = doc.createElement("button");
   button.type = "button";
-  button.className = "sar-list-notice-button";
+  button.className = "tks-list-notice-button";
   button.setAttribute("aria-describedby", TEXT_ID);
   const live = doc.createElement("span");
-  live.className = "sar-vh";
+  live.className = "tks-vh";
   live.setAttribute("aria-live", POLITE);
   box.append(text, button, live);
 

@@ -25,71 +25,71 @@
 
   /* The store's classic page body, sampled 2026-10-20. A ground our injected UI sits on (badges,
      banner); we never paint it on store pages. */
-  --sar-color-bg-page: #1b2838;
+  --tks-color-bg-page: #1b2838;
   /* The store's React page body (wishlist), sampled. A ground for the full badge; never painted by
      us. */
-  --sar-color-bg-page-deep: #0f1924;
+  --tks-color-bg-page-deep: #0f1924;
   /* A store search row (20% black over the page), sampled. The ground the full badge is checked on;
      never painted by us. */
-  --sar-color-bg-row: #16202d;
+  --tks-color-bg-row: #16202d;
   /* Segmented control, select and the backup summary backgrounds on extension pages. */
-  --sar-color-bg-sunken: #0e141b;
+  --tks-color-bg-sunken: #0e141b;
   /* Options page and action popup background. */
-  --sar-color-bg-panel: #171d25;
+  --tks-color-bg-panel: #171d25;
   /* Cards on the options page and popup. */
-  --sar-color-bg-raised: #1f2630;
+  --tks-color-bg-raised: #1f2630;
   /* Hover wash for rows on extension pages. Defined; no reference rule uses it yet. */
-  --sar-color-bg-hover: rgba(255, 255, 255, 0.06);
+  --tks-color-bg-hover: rgba(255, 255, 255, 0.06);
   /* The store's game hover popup panel, sampled 2026-10-21. Hover card surface: white 10.14:1,
-     sar-color-text 6.70:1, sar-color-text-muted 4.74:1, sar-accent-200 6.64:1. Not for subtle. */
-  --sar-hovercard-bg: #344352;
+     tks-color-text 6.70:1, tks-color-text-muted 4.74:1, tks-accent-200 6.64:1. Not for subtle. */
+  --tks-hovercard-bg: #344352;
 
   /* Text, edges and errors */
 
   /* Headings on extension pages: options and card titles, on panel and raised. */
-  --sar-color-text-strong: #ffffff;
+  --tks-color-text-strong: #ffffff;
   /* Body copy on extension pages: 10.07:1 on raised, 12.24:1 on sunken. */
-  --sar-color-text: #c6d4df;
+  --tks-color-text: #c6d4df;
   /* Meta lines on solid grounds and the allow-listed note (7.68:1 on its strip); 6.97:1 or more on
      page, row, panel and raised. Never on the banner wash (3.77:1 at its bright end). */
-  --sar-color-text-muted: #acb2b8;
+  --tks-color-text-muted: #acb2b8;
   /* Help text, versions, dates and footers on page, row, panel, raised and sunken (5.09:1 or more).
      Never on the banner wash or the store's row hover (3.32:1). */
-  --sar-color-text-subtle: #8f98a0;
+  --tks-color-text-subtle: #8f98a0;
   /* Form control edges and the off switch's edge: 3.48:1 on raised, 3.88:1 on panel, 4.23:1 on
      sunken. */
-  --sar-color-border: #6e7a88;
-  /* Inline error text on extension pages: 7.97:1 on raised. Inside the banner use sar-banner-error.
+  --tks-color-border: #6e7a88;
+  /* Inline error text on extension pages: 7.97:1 on raised. Inside the banner use tks-banner-error.
      Always paired with words; never a red fill. */
-  --sar-color-error: #ffa39e;
+  --tks-color-error: #ffa39e;
   /* Decorative separators between fields and allow-list items. Carries no meaning. */
-  --sar-color-divider: rgba(255, 255, 255, 0.08);
+  --tks-color-divider: rgba(255, 255, 255, 0.08);
 
   /* Accent (ours) */
 
   /* Compact badge text, 12.65:1 on accent 900. */
-  --sar-accent-100: #e4dcff;
+  --tks-accent-100: #e4dcff;
   /* Full badge text: on its tint 8.19:1 over a row, 7.46:1 over the page, 5.21:1 over the store's
      row hover. Links on the store's row hover. */
-  --sar-accent-200: #d6caff;
+  --tks-accent-200: #d6caff;
   /* Links on dark grounds and the focus ring: 6.84:1 on page, 6.98:1 on raised, 3.69:1 against the
      banner wash's bright end (a ring there, never text). On the store's row hover it is 4.45:1, so
      links there use accent 200. */
-  --sar-accent-300: #b7a2ff;
+  --tks-accent-300: #b7a2ff;
   /* The brand fill, non-text only: icon tag, switch on track (4.29:1 on raised), compact badge edge
      (5.91:1 against black art), selected segment edge, and the full badge tint at 20%. */
-  --sar-accent-400: #8f73f3;
+  --tks-accent-400: #8f73f3;
   /* Primary button hover fill (white text 4.98:1). */
-  --sar-accent-500: #7458e0;
+  --tks-accent-500: #7458e0;
   /* Primary button fill (white text 6.77:1), and the banner wash's bright stop at 80%. */
-  --sar-accent-600: #5f42c8;
+  --tks-accent-600: #5f42c8;
   /* Selected segment fill; white text 10.02:1. */
-  --sar-accent-700: #46318f;
+  --tks-accent-700: #46318f;
   /* The banner wash's dark stop at 80%. */
-  --sar-accent-800: #2c2160;
+  --tks-accent-800: #2c2160;
   /* The compact badge's solid surface, so its text never depends on the art: 16.63:1 against white
      art, 4.21:1 against mid grey, 3.34:1 against violet. */
-  --sar-accent-900: #1f1840;
+  --tks-accent-900: #1f1840;
 
   /* A tag's custom color (experimental) */
 
@@ -97,352 +97,352 @@
      where the violet scale sits from accent 400, so a custom color makes a scale of the same
      shape. Nothing here checks contrast: a custom color lifts the AA and 3:1 pairs for the person
      who picked it, and the defaults keep them (decisions.mdx, decision 49). The color itself is
-     the root custom property --sar-kind-color-<id>, written by the app, never in this file. */
+     the root custom property --tks-kind-color-<id>, written by the app, never in this file. */
 
   /* Full badge tint: the color over transparent (accent 400 at 20%). */
-  --sar-kind-mix-tint: 20%;
+  --tks-kind-mix-tint: 20%;
   /* Full badge text and hover card title: the color over white (accent 200). */
-  --sar-kind-mix-text: 37%;
+  --tks-kind-mix-text: 37%;
   /* Compact badge text: the color over white (accent 100). */
-  --sar-kind-mix-light: 24%;
+  --tks-kind-mix-light: 24%;
   /* Compact badge surface: the color over black (accent 900). */
-  --sar-kind-mix-solid: 22%;
+  --tks-kind-mix-solid: 22%;
   /* Banner wash, dark stop: the color over black (accent 800). */
-  --sar-kind-mix-wash-start: 31%;
+  --tks-kind-mix-wash-start: 31%;
   /* Banner wash, bright stop: the color over black (accent 600). */
-  --sar-kind-mix-wash-end: 66%;
+  --tks-kind-mix-wash-end: 66%;
   /* Both wash stops are drawn at this share, as the violet wash is. */
-  --sar-kind-mix-wash-alpha: 80%;
+  --tks-kind-mix-wash-alpha: 80%;
 
   /* Focus */
 
   /* Keyboard focus ring: a solid 2px outline at 2px offset on :focus-visible only. 3.69:1 or more
      on every ground listed here, the banner wash included. */
-  --sar-focus-color: var(--sar-accent-300);
+  --tks-focus-color: var(--tks-accent-300);
 
   /* Full badge */
 
   /* Full badge label. */
-  --sar-badge-fg: var(--sar-accent-200);
+  --tks-badge-fg: var(--tks-accent-200);
   /* Full badge tint: accent 400 at 20%, the store's tag-chip recipe in our hue. No border, like the
      store's chips. */
-  --sar-badge-bg: rgba(143, 115, 243, 0.2);
+  --tks-badge-bg: rgba(143, 115, 243, 0.2);
 
   /* Compact badge */
 
   /* Compact badge surface: solid, like the store's corner flags, but dark. With the edge, every art
      case has a boundary at 3:1 or more; against black art (1.26:1) the edge carries it. */
-  --sar-compact-bg: var(--sar-accent-900);
+  --tks-compact-bg: var(--tks-accent-900);
   /* Compact badge label, 12.65:1 on its surface whatever the art. */
-  --sar-compact-fg: var(--sar-accent-100);
+  --tks-compact-fg: var(--tks-accent-100);
   /* Compact badge edge: 5.91:1 against black art, 3.55:1 against white. On mid grey (1.11:1) and
      violet art the surface carries the boundary instead. */
-  --sar-compact-border: var(--sar-accent-400);
+  --tks-compact-border: var(--tks-accent-400);
 
   /* App page banner */
 
   /* Banner wash, dark stop: accent 800 at 80%, the store's DLC-notice recipe in our hue (#292258
      over the page). */
-  --sar-banner-wash-start: rgba(44, 33, 96, 0.8);
+  --tks-banner-wash-start: rgba(44, 33, 96, 0.8);
   /* Banner wash, bright stop: accent 600 at 80% (#513dab over the page). Every banner text pair is
      measured on this end. */
-  --sar-banner-wash-end: rgba(95, 66, 200, 0.8);
+  --tks-banner-wash-end: rgba(95, 66, 200, 0.8);
   /* All banner text: title, source and service lines, notes. The store's bubble text color: 5.54:1
      on the bright end, 9.84:1 on the dark end. */
-  --sar-banner-fg: #d5d6d8;
+  --tks-banner-fg: #d5d6d8;
   /* Show full report and Undo, underlined like the store's in-bubble links (the store's own
      #c3c1c0 would be 4.49:1 here). */
-  --sar-banner-link-color: var(--sar-banner-fg);
+  --tks-banner-link-color: var(--tks-banner-fg);
   /* Ignore this game, as the store's outlined buttons: 8.06:1 on the bright end. */
-  --sar-banner-button-fg: #ffffff;
+  --tks-banner-button-fg: #ffffff;
   /* That button's edge, the store's own: 2.63:1 on the bright end. The label identifies it. */
-  --sar-banner-button-border: rgba(255, 255, 255, 0.4);
+  --tks-banner-button-border: rgba(255, 255, 255, 0.4);
   /* Hover wash behind that button (white text 6.29:1). Not sampled from the store. */
-  --sar-banner-button-bg-hover: rgba(255, 255, 255, 0.1);
-  /* Error text inside the banner: 4.97:1 on the bright end, where sar-color-error drops to 4.21:1.
+  --tks-banner-button-bg-hover: rgba(255, 255, 255, 0.1);
+  /* Error text inside the banner: 4.97:1 on the bright end, where tks-color-error drops to 4.21:1.
   */
-  --sar-banner-error: #ffbab6;
+  --tks-banner-error: #ffbab6;
   /* The allow-listed one-line note: the store's DRM-notice geometry in neutral, no violet. */
-  --sar-banner-note-bg: rgba(0, 0, 0, 0.2);
+  --tks-banner-note-bg: rgba(0, 0, 0, 0.2);
 
   /* Hidden results notice: the look of the store's own notice bar above search results, from its
      text cell in #search_results_filtered_warning_persistent, sampled on 2026-10-26 in Firefox. */
 
   /* The store bar's ground: black at 20%, #16202d over the page. */
-  --sar-store-notice-bg: rgba(0, 0, 0, 0.2);
+  --tks-store-notice-bg: rgba(0, 0, 0, 0.2);
   /* The store bar's text, also our underlined button: 15.38:1 on its ground. */
-  --sar-store-notice-fg: #fafad2;
+  --tks-store-notice-fg: #fafad2;
   /* Button hover: the store's usual link hover, not sampled on the bar. 8.14:1 on its ground. */
-  --sar-store-notice-link-hover: #66c0f4;
+  --tks-store-notice-link-hover: #66c0f4;
   /* The store bar's padding, on every side. */
-  --sar-store-notice-pad: 10px;
+  --tks-store-notice-pad: 10px;
   /* The gap below the store bar, kept under ours so the rows start where they would. */
-  --sar-store-notice-margin-block-end: 5px;
+  --tks-store-notice-margin-block-end: 5px;
 
   /* Buttons */
 
   /* Primary button fill: Restore in the backup summary, the only primary action. */
-  --sar-button-primary-bg: var(--sar-accent-600);
+  --tks-button-primary-bg: var(--tks-accent-600);
   /* Primary button hover fill. */
-  --sar-button-primary-bg-hover: var(--sar-accent-500);
+  --tks-button-primary-bg-hover: var(--tks-accent-500);
   /* Primary button label: 6.77:1 on the fill, 4.98:1 on hover. */
-  --sar-button-primary-fg: #ffffff;
+  --tks-button-primary-fg: #ffffff;
   /* Secondary button fill (Stop ignoring). */
-  --sar-button-secondary-bg: rgba(255, 255, 255, 0.08);
+  --tks-button-secondary-bg: rgba(255, 255, 255, 0.08);
   /* Secondary button hover fill. */
-  --sar-button-secondary-bg-hover: rgba(255, 255, 255, 0.14);
+  --tks-button-secondary-bg-hover: rgba(255, 255, 255, 0.14);
   /* Secondary button label: 7.89:1 at rest over raised, 6.46:1 on hover. */
-  --sar-button-secondary-fg: var(--sar-color-text);
+  --tks-button-secondary-fg: var(--tks-color-text);
 
   /* Switch */
 
   /* Switch track when off. 1.55:1 against raised, so its edge carries the 3:1. */
-  --sar-toggle-track-off: #3d4450;
+  --tks-toggle-track-off: #3d4450;
   /* Switch edge when off (3.48:1 on raised). */
-  --sar-toggle-track-off-border: var(--sar-color-border);
+  --tks-toggle-track-off-border: var(--tks-color-border);
   /* Switch track when on (4.29:1 on raised). */
-  --sar-toggle-track-on: var(--sar-accent-400);
+  --tks-toggle-track-on: var(--tks-accent-400);
   /* Switch thumb: 3.55:1 on the on track, 9.81:1 on the off track. */
-  --sar-toggle-thumb: #ffffff;
+  --tks-toggle-thumb: #ffffff;
 
   /* Segmented control */
 
   /* Segmented control well. */
-  --sar-segment-bg: var(--sar-color-bg-sunken);
+  --tks-segment-bg: var(--tks-color-bg-sunken);
   /* Selected segment fill. */
-  --sar-segment-selected-bg: var(--sar-accent-700);
+  --tks-segment-selected-bg: var(--tks-accent-700);
   /* Selected segment edge (5.21:1 against the well). */
-  --sar-segment-selected-border: var(--sar-accent-400);
+  --tks-segment-selected-border: var(--tks-accent-400);
   /* Selected segment label (10.02:1). */
-  --sar-segment-selected-fg: #ffffff;
+  --tks-segment-selected-fg: #ffffff;
 
   /* Shadows */
 
   /* Compact badge: an outer ring plus a soft drop that keeps the edge crisp over busy art. The
      store's flags have none. */
-  --sar-compact-shadow: 0 0 0 1px rgba(0, 0, 0, 0.45), 0 1px 3px rgba(0, 0, 0, 0.5);
+  --tks-compact-shadow: 0 0 0 1px rgba(0, 0, 0, 0.45), 0 1px 3px rgba(0, 0, 0, 0.5);
 
   /* Space */
 
   /* Segmented control inner padding; banner toggle nudge. */
-  --sar-space-0: 2px;
+  --tks-space-0: 2px;
   /* Gaps between a line and its meta; button block padding; the allow-listed note's block padding.
   */
-  --sar-space-1: 4px;
+  --tks-space-1: 4px;
   /* Banner block-start padding and head gap; field block padding; the allow-listed note's inline
      padding; badge gap before platform icons. */
-  --sar-space-2: 8px;
+  --tks-space-2: 8px;
   /* Banner block-end padding; space between cards; secondary button inline padding. */
-  --sar-space-3: 12px;
+  --tks-space-3: 12px;
   /* Banner inline padding and bottom margin; card padding; page inline padding. */
-  --sar-space-4: 16px;
+  --tks-space-4: 16px;
   /* Options page block padding. */
-  --sar-space-5: 24px;
+  --tks-space-5: 24px;
   /* The scale's top step, matching the store's React scale. No use yet. */
-  --sar-space-6: 32px;
+  --tks-space-6: 32px;
   /* Full badge inline padding, as the store's tag chips. */
-  --sar-badge-pad-inline: 7px;
+  --tks-badge-pad-inline: 7px;
   /* Compact badge inline padding, text tier. */
-  --sar-compact-pad-inline: 5px;
+  --tks-compact-pad-inline: 5px;
   /* Banner button inline padding, as the store's outlined buttons. */
-  --sar-banner-button-pad-inline: 15px;
+  --tks-banner-button-pad-inline: 15px;
   /* Banner button block padding, as the store's outlined buttons. */
-  --sar-banner-button-pad-block: var(--sar-space-0);
+  --tks-banner-button-pad-block: var(--tks-space-0);
   /* Compact badge offset from the image's block-start edge: the store's corner flags sit 5px down.
   */
-  --sar-compact-inset-block: 5px;
+  --tks-compact-inset-block: 5px;
   /* Compact badge offset from the inline-end edge: equal to the block offset, so the badge sits the
      same distance from the top and the end edge. */
-  --sar-compact-inset-inline: 5px;
+  --tks-compact-inset-inline: 5px;
   /* Compact badge inline padding, large tier. */
-  --sar-compact-pad-inline-lg: 7px;
+  --tks-compact-pad-inline-lg: 7px;
   /* Gap between a control and its focus ring. */
-  --sar-focus-offset: 2px;
+  --tks-focus-offset: 2px;
 
   /* Radii */
 
   /* The allow-listed note, like the store's DRM notice. */
-  --sar-radius-xs: 1px;
+  --tks-radius-xs: 1px;
   /* Full badge, banner button, buttons, segments, selects: the store's chip radius. */
-  --sar-radius-sm: 2px;
+  --tks-radius-sm: 2px;
   /* Cards and the segmented control well on extension pages. */
-  --sar-radius-md: 4px;
+  --tks-radius-md: 4px;
   /* The store's largest step. No use yet. */
-  --sar-radius-lg: 8px;
+  --tks-radius-lg: 8px;
   /* Switch track. */
-  --sar-radius-pill: 9999px;
+  --tks-radius-pill: 9999px;
 
   /* Sizes */
 
   /* Full badge block size: the store's tag-chip height. */
-  --sar-badge-height: 19px;
+  --tks-badge-height: 19px;
   /* Full badge cap. English needs about 90px; past the cap the label ends in an ellipsis. */
-  --sar-badge-max-inline-size: 180px;
+  --tks-badge-max-inline-size: 180px;
   /* A row title keeps room for about this much before its chips wrap to a second line. */
-  --sar-row-title-basis: 8em;
+  --tks-row-title-basis: 8em;
   /* Compact badge block size, text tier: the store's corner-flag height. */
-  --sar-compact-height: 19px;
+  --tks-compact-height: 19px;
   /* Compact badge block size, large tier. */
-  --sar-compact-height-lg: 22px;
+  --tks-compact-height-lg: 22px;
   /* The store's standard control height. No use yet. */
-  --sar-control-height: 36px;
+  --tks-control-height: 36px;
   /* Minimum block size of buttons, selects, and segments on the full page. */
-  --sar-control-height-sm: 28px;
+  --tks-control-height-sm: 28px;
   /* Popup segments; the banner button's minimum, above the store's 22px for the target size. */
-  --sar-control-height-xs: 24px;
+  --tks-control-height-xs: 24px;
   /* The hex text box of a tag's color field: room for #rrggbb and the placeholder word. */
-  --sar-color-input-inline-size: 9em;
+  --tks-color-input-inline-size: 9em;
   /* The chip text boxes of a tag: room for 32 characters of a short label. */
-  --sar-chip-input-inline-size: 18em;
+  --tks-chip-input-inline-size: 18em;
   /* The compact chip of the settings preview: the narrowest store image less the two insets. */
-  --sar-chip-preview-compact-max: 174px;
+  --tks-chip-preview-compact-max: 174px;
   /* Options page column: the tab rail and the panels beside it. */
-  --sar-options-max-width: 880px;
+  --tks-options-max-width: 880px;
   /* Action popup width. */
-  --sar-popup-width: 360px;
+  --tks-popup-width: 360px;
   /* Switch track inline size. */
-  --sar-toggle-width: 36px;
+  --tks-toggle-width: 36px;
   /* Switch track block size. */
-  --sar-toggle-height: 20px;
+  --tks-toggle-height: 20px;
   /* Segment minimum inline size on the full options page. */
-  --sar-segment-min-inline-size: 72px;
+  --tks-segment-min-inline-size: 72px;
 
   /* Font sizes */
 
   /* Badges; the banner button, as the store's outlined buttons. */
-  --sar-size-xs: 11px;
+  --tks-size-xs: 11px;
   /* Help, dates, the allow-listed note, the hidden results notice, the large compact badge. */
-  --sar-size-sm: 12px;
+  --tks-size-sm: 12px;
   /* Body copy on extension pages; banner source and service lines. */
-  --sar-size-md: 13px;
+  --tks-size-md: 13px;
   /* Banner notes: the store's description size. */
-  --sar-size-lg: 14px;
+  --tks-size-lg: 14px;
   /* Card titles. */
-  --sar-size-xl: 15px;
+  --tks-size-xl: 15px;
   /* Options page title. */
-  --sar-size-2xl: 18px;
+  --tks-size-2xl: 18px;
   /* Banner title: the store's notice-bubble heading. */
-  --sar-size-3xl: 24px;
+  --tks-size-3xl: 24px;
 
   /* Line heights */
 
-  /* Pairs with sar-size-xs: the banner button. Badges set their own 18px and 16px. */
-  --sar-leading-xs: 14px;
-  /* Pairs with sar-size-sm. */
-  --sar-leading-sm: 16px;
-  /* Pairs with sar-size-md. */
-  --sar-leading-md: 18px;
-  /* Pairs with sar-size-lg. */
-  --sar-leading-lg: 21px;
-  /* Pairs with sar-size-xl. */
-  --sar-leading-xl: 20px;
-  /* Pairs with sar-size-2xl. */
-  --sar-leading-2xl: 23px;
+  /* Pairs with tks-size-xs: the banner button. Badges set their own 18px and 16px. */
+  --tks-leading-xs: 14px;
+  /* Pairs with tks-size-sm. */
+  --tks-leading-sm: 16px;
+  /* Pairs with tks-size-md. */
+  --tks-leading-md: 18px;
+  /* Pairs with tks-size-lg. */
+  --tks-leading-lg: 21px;
+  /* Pairs with tks-size-xl. */
+  --tks-leading-xl: 20px;
+  /* Pairs with tks-size-2xl. */
+  --tks-leading-2xl: 23px;
 
   /* Font weights */
 
   /* Banner title and meta lines: the store sets its notices light. */
-  --sar-weight-light: 300;
+  --tks-weight-light: 300;
   /* Everything by default. */
-  --sar-weight-regular: 400;
+  --tks-weight-regular: 400;
   /* Compact badge label, options and card titles. */
-  --sar-weight-medium: 500;
+  --tks-weight-medium: 500;
   /* A tag's key on its settings tab. */
-  --sar-weight-bold: 700;
+  --tks-weight-bold: 700;
 
   /* Line widths */
 
   /* Focus ring width. */
-  --sar-focus-width: 2px;
+  --tks-focus-width: 2px;
 
   /* Opacity */
 
   /* Dimmed list hosts. Lighter than the store's own ignored state (0.3); hover and focus restore 1.
   */
-  --sar-dim-opacity: 0.4;
+  --tks-dim-opacity: 0.4;
 
   /* Layering */
 
   /* Compact badge: over capsule art, the store's corner flags and its hover microtrailer video
      (3, added after the badge), under the store's hover popups. */
-  --sar-z-badge: 4;
+  --tks-z-badge: 4;
   /* Hover card: over the store's game hover popup (1526) and its React capsule hover layer (2000),
      sampled 2026-10-21. */
-  --sar-z-hovercard: 2100;
+  --tks-z-hovercard: 2100;
 
   /* Line clamp */
 
   /* Banner notes collapse after this many lines (63px), keeping the purchase box near the fold. */
-  --sar-banner-quote-lines: 3;
+  --tks-banner-quote-lines: 3;
   /* Hover card notes clamp after this many lines (108px); a line then points to the store page. */
-  --sar-hovercard-notes-lines: 6;
+  --tks-hovercard-notes-lines: 6;
   /* Each short detail line of the hover card (a name, a DRM text) clamps after this many lines. */
-  --sar-hovercard-detail-lines: 2;
+  --tks-hovercard-detail-lines: 2;
 
   /* Font families: referenced by name only, never bundled */
 
-  --sar-font-page: "Motiva Sans", "Noto Sans", Arial, Helvetica, sans-serif;
-  --sar-font-ext: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", Arial, sans-serif;
-  --sar-font-summary: Arial, Helvetica, sans-serif;
+  --tks-font-page: "Motiva Sans", "Noto Sans", Arial, Helvetica, sans-serif;
+  --tks-font-ext: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", Arial, sans-serif;
+  --tks-font-summary: Arial, Helvetica, sans-serif;
 
   /* Aliases and composites */
 
-  --sar-duration-fast: 120ms;
-  --sar-duration-base: 180ms;
-  --sar-ease: cubic-bezier(0.2, 0, 0, 1);
+  --tks-duration-fast: 120ms;
+  --tks-duration-base: 180ms;
+  --tks-ease: cubic-bezier(0.2, 0, 0, 1);
 
-  --sar-badge-font: var(--sar-weight-regular) var(--sar-size-xs) / 19px var(--sar-font-page);
-  --sar-badge-radius: var(--sar-radius-sm);
+  --tks-badge-font: var(--tks-weight-regular) var(--tks-size-xs) / 19px var(--tks-font-page);
+  --tks-badge-radius: var(--tks-radius-sm);
 
-  --sar-compact-font: var(--sar-weight-medium) var(--sar-size-xs) / 17px var(--sar-font-page);
-  --sar-compact-font-lg: var(--sar-weight-medium) var(--sar-size-sm) / 20px var(--sar-font-page);
+  --tks-compact-font: var(--tks-weight-medium) var(--tks-size-xs) / 17px var(--tks-font-page);
+  --tks-compact-font-lg: var(--tks-weight-medium) var(--tks-size-sm) / 20px var(--tks-font-page);
 
   /* The store's DLC bubble recipe: 135 degrees, stops at 10% and 100% */
-  --sar-banner-bg: linear-gradient(
+  --tks-banner-bg: linear-gradient(
     135deg,
-    var(--sar-banner-wash-start) 10%,
-    var(--sar-banner-wash-end) 100%
+    var(--tks-banner-wash-start) 10%,
+    var(--tks-banner-wash-end) 100%
   );
-  --sar-banner-pad-block-start: var(--sar-space-2);
-  --sar-banner-pad-block-end: var(--sar-space-3);
-  --sar-banner-pad-inline: var(--sar-space-4);
-  --sar-banner-gap: var(--sar-space-2);
+  --tks-banner-pad-block-start: var(--tks-space-2);
+  --tks-banner-pad-block-end: var(--tks-space-3);
+  --tks-banner-pad-inline: var(--tks-space-4);
+  --tks-banner-gap: var(--tks-space-2);
   /* Not the store bubble's 2px: that would glue the banner to the purchase box */
-  --sar-banner-margin-bottom: var(--sar-space-4);
-  --sar-banner-title-font: var(--sar-weight-light) var(--sar-size-3xl) / 30px var(--sar-font-page);
-  --sar-banner-meta-font: var(--sar-weight-light) var(--sar-size-md) / 19px var(--sar-font-page);
-  --sar-banner-quote-font: italic var(--sar-weight-regular) var(--sar-size-lg) /
-    var(--sar-leading-lg) var(--sar-font-page);
-  --sar-banner-button-font: var(--sar-weight-regular) var(--sar-size-xs) /
-    var(--sar-leading-xs) var(--sar-font-page);
-  --sar-banner-note-font: var(--sar-weight-regular) var(--sar-size-sm) / 17px var(--sar-font-page);
+  --tks-banner-margin-bottom: var(--tks-space-4);
+  --tks-banner-title-font: var(--tks-weight-light) var(--tks-size-3xl) / 30px var(--tks-font-page);
+  --tks-banner-meta-font: var(--tks-weight-light) var(--tks-size-md) / 19px var(--tks-font-page);
+  --tks-banner-quote-font: italic var(--tks-weight-regular) var(--tks-size-lg) /
+    var(--tks-leading-lg) var(--tks-font-page);
+  --tks-banner-button-font: var(--tks-weight-regular) var(--tks-size-xs) /
+    var(--tks-leading-xs) var(--tks-font-page);
+  --tks-banner-note-font: var(--tks-weight-regular) var(--tks-size-sm) / 17px var(--tks-font-page);
   /* The store bar's type, sampled: 12px Arial, Helvetica, sans-serif at a normal line height */
-  --sar-store-notice-font: var(--sar-weight-regular) var(--sar-size-sm) / normal
-    var(--sar-font-summary);
+  --tks-store-notice-font: var(--tks-weight-regular) var(--tks-size-sm) / normal
+    var(--tks-font-summary);
 
-  --sar-summary-tag-font: var(--sar-weight-regular) var(--sar-size-xs) / 19px
-    var(--sar-font-summary);
+  --tks-summary-tag-font: var(--tks-weight-regular) var(--tks-size-xs) / 19px
+    var(--tks-font-summary);
 
-  --sar-card-pad: var(--sar-space-3);
-  --sar-card-radius: var(--sar-radius-md);
+  --tks-card-pad: var(--tks-space-3);
+  --tks-card-radius: var(--tks-radius-md);
 
   /* The store's game hover popup: 306px wide, 16px padding, a 20px black shadow at 50% */
-  --sar-hovercard-inline-size: 306px;
-  --sar-hovercard-pad: var(--sar-space-4);
-  --sar-hovercard-gap: var(--sar-space-1);
-  --sar-hovercard-offset: var(--sar-space-2);
-  --sar-hovercard-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
-  --sar-hovercard-title-font: var(--sar-weight-regular) var(--sar-size-xl) / 17px
-    var(--sar-font-page);
-  --sar-hovercard-meta-font: var(--sar-weight-regular) var(--sar-size-xs) / 16px
-    var(--sar-font-page);
-  --sar-hovercard-notes-font: italic var(--sar-weight-regular) var(--sar-size-sm) / 18px
-    var(--sar-font-page);
+  --tks-hovercard-inline-size: 306px;
+  --tks-hovercard-pad: var(--tks-space-4);
+  --tks-hovercard-gap: var(--tks-space-1);
+  --tks-hovercard-offset: var(--tks-space-2);
+  --tks-hovercard-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+  --tks-hovercard-title-font: var(--tks-weight-regular) var(--tks-size-xl) / 17px
+    var(--tks-font-page);
+  --tks-hovercard-meta-font: var(--tks-weight-regular) var(--tks-size-xs) / 16px
+    var(--tks-font-page);
+  --tks-hovercard-notes-font: italic var(--tks-weight-regular) var(--tks-size-sm) / 18px
+    var(--tks-font-page);
 }
 
 @media (prefers-reduced-motion: reduce) {
   :root {
-    --sar-duration-fast: 0ms;
-    --sar-duration-base: 0ms;
+    --tks-duration-fast: 0ms;
+    --tks-duration-base: 0ms;
   }
 }

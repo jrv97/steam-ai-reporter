@@ -40,10 +40,10 @@ export interface ChipFields {
 }
 
 /** The setting a text box changes and the kind it is for, as the form's controls name them. */
-const SETTING_ATTRIBUTE = "data-sar-setting";
-const FOR_ATTRIBUTE = "data-sar-for";
+const SETTING_ATTRIBUTE = "data-tks-setting";
+const FOR_ATTRIBUTE = "data-tks-for";
 /** What marks the Reset button of a chip text field, with the field it clears. */
-const RESET_ATTRIBUTE = "data-sar-chip-reset";
+const RESET_ATTRIBUTE = "data-tks-chip-reset";
 /** The compact tier the short text names (`compactSize` in badge.ts). */
 const TEXT_TIER = "text";
 
@@ -90,16 +90,16 @@ export function createChipFields(deps: ChipFieldsDeps): ChipFields {
 
   function field(kind: TagKind, name: ChipTextField): { row: HTMLElement; field: Field; } {
     const keys = KEYS[name];
-    const row = createElement(doc, "div", "sar-field");
-    row.setAttribute("data-sar-layout", "stacked");
-    const input = createElement(doc, "input", "sar-input");
+    const row = createElement(doc, "div", "tks-field");
+    row.setAttribute("data-tks-layout", "stacked");
+    const input = createElement(doc, "input", "tks-input");
     input.type = "text";
     input.id = `${idPrefix}${kind.id}-${name}`;
     input.maxLength = CHIP_TEXT_LIMITS[name];
     input.autocomplete = "off";
     input.setAttribute(SETTING_ATTRIBUTE, name);
     input.setAttribute(FOR_ATTRIBUTE, kind.id);
-    const label = createElement(doc, "label", "sar-field-label", i18n.t(keys.label));
+    const label = createElement(doc, "label", "tks-field-label", i18n.t(keys.label));
     label.htmlFor = input.id;
     const reset = deps.quietButton(i18n.t("options_color_reset"));
     reset.setAttribute(RESET_ATTRIBUTE, name);
@@ -111,11 +111,11 @@ export function createChipFields(deps: ChipFieldsDeps): ChipFields {
         ? i18n.t("options_chip_reset_label", { heading })
         : i18n.t("options_chip_compact_reset_label", { heading }),
     );
-    const entry = createElement(doc, "div", "sar-text-entry");
+    const entry = createElement(doc, "div", "tks-text-entry");
     entry.append(input, reset);
-    const count = createElement(doc, "span", "sar-field-count");
+    const count = createElement(doc, "span", "tks-field-count");
     count.id = `${input.id}-count`;
-    const help = createElement(doc, "span", "sar-field-help", i18n.t(keys.help));
+    const help = createElement(doc, "span", "tks-field-help", i18n.t(keys.help));
     help.id = `${input.id}-help`;
     input.setAttribute("aria-describedby", [help.id, count.id].join(" "));
     row.append(label, entry, count, help, deps.error(name, kind.id));
@@ -123,11 +123,11 @@ export function createChipFields(deps: ChipFieldsDeps): ChipFields {
   }
 
   function preview(kind: TagKind): { row: HTMLElement; box: HTMLElement; } {
-    const row = createElement(doc, "div", "sar-field");
-    row.setAttribute("data-sar-layout", "stacked");
-    const label = createElement(doc, "span", "sar-field-label", i18n.t("options_chip_preview"));
+    const row = createElement(doc, "div", "tks-field");
+    row.setAttribute("data-tks-layout", "stacked");
+    const label = createElement(doc, "span", "tks-field-label", i18n.t("options_chip_preview"));
     label.id = `${idPrefix}${kind.id}-preview`;
-    const box = createElement(doc, "div", "sar-chip-preview");
+    const box = createElement(doc, "div", "tks-chip-preview");
     box.setAttribute("role", "group");
     box.setAttribute("aria-labelledby", label.id);
     row.append(label, box);
@@ -160,18 +160,18 @@ export function createChipFields(deps: ChipFieldsDeps): ChipFields {
     const full = createChipElement(
       doc,
       chipText(i18n, kind, facet, chip),
-      "sar-badge",
-      "sar-badge-label",
+      "tks-badge",
+      "tks-badge-label",
       kind.id,
     );
     const small = createChipElement(
       doc,
       chipText(i18n, kind, facet, compact),
-      "sar-compact",
-      "sar-compact-label",
+      "tks-compact",
+      "tks-compact-label",
       kind.id,
     );
-    small.setAttribute("data-sar-size", TEXT_TIER);
+    small.setAttribute("data-tks-size", TEXT_TIER);
     box.replaceChildren(full, small);
   }
 

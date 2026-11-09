@@ -27,7 +27,7 @@ afterEach(() => {
 
 describe("createHostKindsRenderer", () => {
   const renderer = createHostKindsRenderer();
-  const kinds = (element: Element) => element.getAttribute("data-sar-kinds");
+  const kinds = (element: Element) => element.getAttribute("data-tks-kinds");
 
   it("lists every disclosed kind in registry order", () => {
     const element = host();
@@ -53,7 +53,7 @@ describe("createHostKindsRenderer", () => {
   ])("marks no kind for a game that is %s", (_case, options) => {
     const element = host();
     renderer.render(hostView(element, options));
-    expect(element.hasAttribute("data-sar-kinds")).toBe(false);
+    expect(element.hasAttribute("data-tks-kinds")).toBe(false);
   });
 
   it("follows the verdicts when they change, and drops the attribute when none is left", () => {
@@ -63,15 +63,15 @@ describe("createHostKindsRenderer", () => {
     renderer.render(hostView(element, { verdicts: make.verdicts.only(["eula"]) }));
     expect(kinds(element)).toBe("eula");
     renderer.render(hostView(element, { verdicts: make.verdicts.only([]) }));
-    expect(element.hasAttribute("data-sar-kinds")).toBe(false);
+    expect(element.hasAttribute("data-tks-kinds")).toBe(false);
   });
 
   it("marks hosts that must not be hidden, and clears the mark", () => {
     const element = host();
     renderer.render(hostView(element, { hideable: false }));
-    expect(element.getAttribute("data-sar-hideable")).toBe("false");
+    expect(element.getAttribute("data-tks-hideable")).toBe("false");
     renderer.render(hostView(element));
-    expect(element.hasAttribute("data-sar-hideable")).toBe(false);
+    expect(element.hasAttribute("data-tks-hideable")).toBe(false);
   });
 
   it("writes nothing when nothing changed", () => {

@@ -33,7 +33,7 @@ function paths(icon: Element): readonly (string | null)[] {
 }
 
 function shown(scope: ParentNode | null | undefined): readonly Shown[] {
-  const links = scope?.querySelectorAll<HTMLAnchorElement>(".sar-feedback a") ?? [];
+  const links = scope?.querySelectorAll<HTMLAnchorElement>(".tks-feedback a") ?? [];
   return [...links].map((link) => {
     const icon = link.firstElementChild;
     return {
@@ -47,7 +47,7 @@ function shown(scope: ParentNode | null | undefined): readonly Shown[] {
 }
 
 function dialogOf(doc: Document): ParentNode | undefined {
-  return doc.querySelector(".sar-dialog-host")?.shadowRoot?.querySelector("dialog") ?? undefined;
+  return doc.querySelector(".tks-dialog-host")?.shadowRoot?.querySelector("dialog") ?? undefined;
 }
 
 type Surface = readonly [string, () => Promise<ParentNode | undefined>, readonly Shown[]];
@@ -70,7 +70,7 @@ const SURFACES: readonly Surface[] = [
 ];
 
 afterEach(() => {
-  document.querySelector(".sar-dialog-host")?.remove();
+  document.querySelector(".tks-dialog-host")?.remove();
   document.body.replaceChildren();
 });
 
@@ -80,7 +80,7 @@ describe("feedback footer", () => {
   });
 
   it("stays at the bottom of the view while the tabs scroll", () => {
-    const sticky = /\.sar-feedback\s*\{[^}]*position:\s*sticky;[^}]*inset-block-end:/;
+    const sticky = /\.tks-feedback\s*\{[^}]*position:\s*sticky;[^}]*inset-block-end:/;
     expect(SETTINGS_CSS).toMatch(sticky);
   });
 

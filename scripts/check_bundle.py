@@ -78,6 +78,7 @@ from repo import (
     ARTIFACTS,
     DIST,
     EXTENSION_TARGETS,
+    REPO_URL,
     ROOT,
     SLUG,
     VALIBOT_LICENSE,
@@ -98,13 +99,13 @@ BUDGETS = {
 }
 ENGLISH = ROOT / "src" / "locales" / DEFAULT_LOCALE / "messages.json"
 STORE_MATCH = ["https://store.steampowered.com/*"]
-RELEASE_BASE = "https://github.com/jrv97/steam-ai-reporter/releases/latest/download"
+RELEASE_BASE = f"{REPO_URL}/releases/latest/download"
 ALLOWED_HOSTS = {"api.steampowered.com", "store.steampowered.com"}
 # The feedback links of the settings (src/core/feedback-links.ts): plain links a person opens in a
 # tab, never requested. Only these exact URLs, and only in the bundles that show the settings.
 FEEDBACK_URLS = (
-    "https://github.com/jrv97/steam-ai-reporter/issues/new?template=bug_report.yml",
-    "https://github.com/jrv97/steam-ai-reporter/issues/new?template=feature_request.yml",
+    f"{REPO_URL}/issues/new?template=bug_report.yml",
+    f"{REPO_URL}/issues/new?template=feature_request.yml",
     "https://forms.gle/Fo652zzyFWUQn2qK9",
 )
 HEADER_START = "// ==UserScript=="

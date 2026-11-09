@@ -128,9 +128,9 @@ const NO_OPENER = "noopener";
 const TRUE = "true";
 const TAB_ROLE = "tab";
 /** Names the tab a popup row's link opens. */
-const OPEN_TAB_ATTRIBUTE = "data-sar-open-tab";
+const OPEN_TAB_ATTRIBUTE = "data-tks-open-tab";
 /** Marks the popup's gear, which opens the options page on the tab shown last. */
-const OPEN_SETTINGS_ATTRIBUTE = "data-sar-open-settings";
+const OPEN_SETTINGS_ATTRIBUTE = "data-tks-open-settings";
 /** An original gear, eight teeth around a hole on a 48 unit grid (`parseIcon`). */
 const GEAR_SVG = '<svg viewBox="0 0 48 48" aria-hidden="true" focusable="false">'
   + '<path fill-rule="evenodd" d="M40 26 45 30 43 35 37 34 34 37 35 43 30 45 26 40 22 40 18 45 '
@@ -140,13 +140,13 @@ const GEAR_SVG = '<svg viewBox="0 0 48 48" aria-hidden="true" focusable="false">
 /** The header icon's rendered size in CSS pixels (components.mdx section 6). */
 const ICON_SIZE = 32;
 
-/** What a control changes, named in its `data-sar-setting`. A kind's control names its kind. */
+/** What a control changes, named in its `data-tks-setting`. A kind's control names its kind. */
 const FIELDS = ["enabled", "badge", "banner", "filter", "facets", "color", "locale"] as const;
 type Field = (typeof FIELDS)[number];
 const FieldSchema = v.picklist(FIELDS);
 const KindIdSchema = v.picklist(KIND_IDS);
 
-/** The switches of a kind, which `data-sar-setting` names as the kind setting they flip. */
+/** The switches of a kind, which `data-tks-setting` names as the kind setting they flip. */
 type SwitchField = "enabled" | "badge" | "banner";
 
 const FILTER_LABELS: Readonly<Record<ListFilter, BareMessageKey>> = {
@@ -176,14 +176,14 @@ const FACET_CONTROLS: Readonly<
 };
 
 /** What marks the Reset button of a color field, with the kind it resets. */
-const COLOR_RESET_ATTRIBUTE = "data-sar-color-reset";
+const COLOR_RESET_ATTRIBUTE = "data-tks-color-reset";
 /** What marks the color square of a color field, with its kind. */
-const PICKER_ATTRIBUTE = "data-sar-picker";
+const PICKER_ATTRIBUTE = "data-tks-picker";
 /** The default violet, accent 400 of tokens.css, which the square shows while no color is set. */
 export const DEFAULT_TAG_COLOR = "#8f73f3";
 /** The quiet, link-like look of Reset, Stop ignoring and Show in General. */
 const QUIET = "quiet";
-const VARIANT_ATTRIBUTE = "data-sar-variant";
+const VARIANT_ATTRIBUTE = "data-tks-variant";
 
 /** The controls of one kind's color field. */
 interface ColorControls {
@@ -241,7 +241,7 @@ function forKind(id: KindId, settings: Partial<KindSettings>): SettingsPatch {
   return { kinds: { [id]: settings } };
 }
 
-/** The error key of the Tag order card, which holds no `data-sar-setting` control. */
+/** The error key of the Tag order card, which holds no `data-tks-setting` control. */
 const ORDER_ERROR = "order";
 
 function errorKey(field: string, kind?: KindId): string {
@@ -260,7 +260,7 @@ export async function mountSettingsForm(
   const { i18n, settings, lists, context } = deps;
   const doc = root.ownerDocument;
   mounts += 1;
-  const prefix = `sar-${String(mounts)}-`;
+  const prefix = `tks-${String(mounts)}-`;
   const dates = dateFormat(i18n.locale);
   /** The page header's Go back to Steam, when the page has a way back. */
   let goBackButton: HTMLButtonElement | undefined;
@@ -294,14 +294,14 @@ export async function mountSettingsForm(
   }
 
   function quietButton(text: string): HTMLButtonElement {
-    const button = element("button", "sar-button", text);
+    const button = element("button", "tks-button", text);
     button.type = "button";
     button.setAttribute(VARIANT_ATTRIBUTE, QUIET);
     return button;
   }
 
   function fieldError(): HTMLElement {
-    const error = element("p", "sar-field-error", i18n.t("error_settings_save"));
+    const error = element("p", "tks-field-error", i18n.t("error_settings_save"));
     error.setAttribute("role", "alert");
     error.hidden = true;
     return error;
@@ -309,14 +309,14 @@ export async function mountSettingsForm(
 
   /** The title of a card; focus lands on it after a restore, so it takes focus but is no stop. */
   function cardTitle(title: string, id: string, level: "h2" | "h3"): HTMLElement {
-    const heading = element(level, "sar-card-title", title);
+    const heading = element(level, "tks-card-title", title);
     heading.id = prefix + id;
     heading.tabIndex = -1;
     return heading;
   }
 
   function card(title: string, id: string, level: "h2" | "h3" = "h3"): HTMLElement {
-    const section = element("section", "sar-card");
+    const section = element("section", "tks-card");
     const heading = cardTitle(title, id, level);
     section.setAttribute("aria-labelledby", heading.id);
     section.append(heading);
@@ -324,7 +324,7 @@ export async function mountSettingsForm(
   }
 
   function header(info: SettingsHeader): HTMLElement {
-    const node = element("header", "sar-options-header");
+    const node = element("header", "tks-options-header");
     if (info.iconUrl !== undefined) {
       const icon = element("img", "");
       icon.src = info.iconUrl;
@@ -335,15 +335,15 @@ export async function mountSettingsForm(
     }
     const text = element("div", "");
     text.append(
-      element("h1", "sar-options-title", i18n.t("ext_name")),
-      element("div", "sar-options-version", i18n.t("options_version", { version: info.version })),
+      element("h1", "tks-options-title", i18n.t("ext_name")),
+      element("div", "tks-options-version", i18n.t("options_version", { version: info.version })),
     );
     node.append(text);
     if (deps.allSettingsUrl !== undefined) {
       node.append(gear(deps.allSettingsUrl));
     }
     if (deps.goBack !== undefined) {
-      goBackButton = element("button", "sar-button", i18n.t("options_back_to_steam"));
+      goBackButton = element("button", "tks-button", i18n.t("options_back_to_steam"));
       goBackButton.type = "button";
       node.append(goBackButton);
     }
@@ -352,7 +352,7 @@ export async function mountSettingsForm(
 
   /** The popup's way to every setting: a gear link, the one icon in the settings chrome. */
   function gear(url: string): HTMLElement {
-    const link = element("a", "sar-gear");
+    const link = element("a", "tks-gear");
     link.href = url;
     link.target = NEW_TAB;
     link.rel = NO_OPENER;
@@ -379,16 +379,16 @@ export async function mountSettingsForm(
     readonly input: HTMLInputElement;
     readonly help: HTMLElement;
   } {
-    const row = element("label", "sar-field");
-    const input = element("input", "sar-toggle");
+    const row = element("label", "tks-field");
+    const input = element("input", "tks-toggle");
     input.type = "checkbox";
     input.setAttribute("role", "switch");
-    input.setAttribute("data-sar-setting", field);
-    input.setAttribute("data-sar-for", kind);
+    input.setAttribute("data-tks-setting", field);
+    input.setAttribute("data-tks-for", kind);
     const error = fieldError();
     errors.set(errorKey(field, kind), error);
-    const helpText = element("span", "sar-field-help", help);
-    row.append(element("span", "sar-field-label", i18n.t(label)), input, helpText, error);
+    const helpText = element("span", "tks-field-help", help);
+    row.append(element("span", "tks-field-label", i18n.t(label)), input, helpText, error);
     return { row, input, help: helpText };
   }
 
@@ -397,7 +397,7 @@ export async function mountSettingsForm(
     readonly segment: HTMLFieldSetElement;
     readonly radios: ReadonlyMap<ListFilter, HTMLInputElement>;
   } {
-    const segment = element("fieldset", "sar-segment");
+    const segment = element("fieldset", "tks-segment");
     segment.setAttribute("aria-labelledby", labelledBy);
     const name = `${prefix}${kind.id}-filter-value`;
     const radios = new Map<ListFilter, HTMLInputElement>();
@@ -407,8 +407,8 @@ export async function mountSettingsForm(
       input.name = name;
       input.id = `${name}-${value}`;
       input.value = value;
-      input.setAttribute("data-sar-setting", "filter");
-      input.setAttribute("data-sar-for", kind.id);
+      input.setAttribute("data-tks-setting", "filter");
+      input.setAttribute("data-tks-for", kind.id);
       radios.set(value, input);
       const text = element("label", "", i18n.t(FILTER_LABELS[value]));
       text.htmlFor = input.id;
@@ -423,12 +423,12 @@ export async function mountSettingsForm(
     readonly radios: ReadonlyMap<ListFilter, HTMLInputElement>;
     readonly help: HTMLElement;
   } {
-    const row = element("div", "sar-field");
-    row.setAttribute("data-sar-layout", "stacked");
-    const label = element("span", "sar-field-label", i18n.t("options_filter_label"));
+    const row = element("div", "tks-field");
+    row.setAttribute("data-tks-layout", "stacked");
+    const label = element("span", "tks-field-label", i18n.t("options_filter_label"));
     label.id = `${prefix}${kind.id}-filter`;
     const { segment, radios } = filterSegment(kind, label.id);
-    const help = element("span", "sar-field-help");
+    const help = element("span", "tks-field-help");
     const error = fieldError();
     errors.set(errorKey("filter", kind.id), error);
     row.append(label, segment, help, error);
@@ -444,11 +444,11 @@ export async function mountSettingsForm(
     readonly boxes: ReadonlyMap<FacetId, HTMLInputElement>;
   } {
     const control = FACET_CONTROLS[kind.defaults.tagged?.pick ?? "many"];
-    const row = element("div", "sar-field");
-    row.setAttribute("data-sar-layout", "stacked");
-    const label = element("span", "sar-field-label", i18n.t(control.label));
+    const row = element("div", "tks-field");
+    row.setAttribute("data-tks-layout", "stacked");
+    const label = element("span", "tks-field-label", i18n.t(control.label));
     label.id = `${prefix}${kind.id}-facets`;
-    const group = element("fieldset", "sar-checks");
+    const group = element("fieldset", "tks-checks");
     group.setAttribute("aria-labelledby", label.id);
     const boxes = new Map<FacetId, HTMLInputElement>();
     const heading = i18n.t(kind.messages.heading);
@@ -457,8 +457,8 @@ export async function mountSettingsForm(
       input.type = control.type;
       input.name = label.id;
       input.value = facet.id;
-      input.setAttribute("data-sar-setting", "facets");
-      input.setAttribute("data-sar-for", kind.id);
+      input.setAttribute("data-tks-setting", "facets");
+      input.setAttribute("data-tks-for", kind.id);
       boxes.set(facet.id, input);
       const choice = i18n.t(facetChoiceKey(kind.id, facet));
       // The name adds the tag, which the group's label leaves out
@@ -472,14 +472,14 @@ export async function mountSettingsForm(
     row.append(
       label,
       group,
-      element("span", "sar-field-help", i18n.t(control.help)),
+      element("span", "tks-field-help", i18n.t(control.help)),
       error,
     );
     return { row, boxes };
   }
 
   /** The full color help, once in General; every color field points at it. */
-  const colorHelp = element("p", "sar-field-help", i18n.t("options_color_help"));
+  const colorHelp = element("p", "tks-field-help", i18n.t("options_color_help"));
   colorHelp.id = `${prefix}color-help`;
 
   /**
@@ -491,21 +491,21 @@ export async function mountSettingsForm(
     readonly row: HTMLElement;
     readonly controls: ColorControls;
   } {
-    const row = element("div", "sar-field sar-color");
-    row.setAttribute("data-sar-layout", "stacked");
+    const row = element("div", "tks-field tks-color");
+    row.setAttribute("data-tks-layout", "stacked");
     row.setAttribute(KIND_ATTRIBUTE, kind.id);
-    const label = element("label", "sar-field-label", i18n.t("options_color_label"));
-    const input = element("input", "sar-input");
+    const label = element("label", "tks-field-label", i18n.t("options_color_label"));
+    const input = element("input", "tks-input");
     input.type = "text";
     input.id = `${prefix}${kind.id}-color`;
     input.autocomplete = "off";
     input.spellcheck = false;
     input.placeholder = i18n.t("options_color_placeholder");
-    input.setAttribute("data-sar-setting", "color");
-    input.setAttribute("data-sar-for", kind.id);
+    input.setAttribute("data-tks-setting", "color");
+    input.setAttribute("data-tks-for", kind.id);
     label.htmlFor = input.id;
     const heading = i18n.t(kind.messages.heading);
-    const picker = element("input", "sar-color-pick");
+    const picker = element("input", "tks-color-pick");
     picker.type = "color";
     picker.value = DEFAULT_TAG_COLOR;
     picker.setAttribute(PICKER_ATTRIBUTE, kind.id);
@@ -513,10 +513,10 @@ export async function mountSettingsForm(
     const reset = quietButton(i18n.t("options_color_reset"));
     reset.setAttribute(COLOR_RESET_ATTRIBUTE, kind.id);
     reset.setAttribute("aria-label", i18n.t("options_color_reset_label", { heading }));
-    const entry = element("div", "sar-color-entry");
+    const entry = element("div", "tks-color-entry");
     entry.append(picker, input, reset);
-    const help = element("span", "sar-field-help", i18n.t("options_color_help_short"));
-    const invalid = element("p", "sar-field-error", i18n.t("options_color_invalid"));
+    const help = element("span", "tks-field-help", i18n.t("options_color_help_short"));
+    const invalid = element("p", "tks-field-error", i18n.t("options_color_invalid"));
     invalid.id = `${input.id}-invalid`;
     invalid.setAttribute("role", "alert");
     invalid.hidden = true;
@@ -576,7 +576,7 @@ export async function mountSettingsForm(
     const color = deps.colors ? colorField(kind) : undefined;
     const facetList: readonly FacetDefinition<FacetId>[] = kind.facets ?? [];
     const facets = facetList.length === 0 ? undefined : facetsField(kind, facetList);
-    const options = element("fieldset", "sar-kind-options");
+    const options = element("fieldset", "tks-kind-options");
     if (facets !== undefined) {
       options.append(facets.row);
     }
@@ -607,28 +607,28 @@ export async function mountSettingsForm(
     const text = keyText(i18n, kind);
     const label = element("span", className, text.label);
     label.setAttribute("aria-hidden", TRUE);
-    return [label, element("span", "sar-vh", text.name)];
+    return [label, element("span", "tks-vh", text.name)];
   }
 
   /** A popup row: the tag's name, a link to its tab, then its list filter and master switch. */
   function kindRow(kind: TagKind): HTMLElement {
-    const row = element("div", "sar-kind-row");
-    const link = element("a", "sar-kind-link");
+    const row = element("div", "tks-kind-row");
+    const link = element("a", "tks-kind-link");
     link.id = `${prefix}${kind.id}-name`;
     link.href = `${deps.allSettingsUrl ?? ""}${tabHash(kind.id)}`;
     link.target = NEW_TAB;
     link.rel = NO_OPENER;
     link.setAttribute(OPEN_TAB_ATTRIBUTE, kind.id);
-    link.append(...kindName(kind, "sar-tab-label"));
-    const filterName = element("span", "sar-vh", i18n.t("options_filter_label"));
+    link.append(...kindName(kind, "tks-tab-label"));
+    const filterName = element("span", "tks-vh", i18n.t("options_filter_label"));
     filterName.id = `${prefix}${kind.id}-filter`;
     const { segment, radios } = filterSegment(kind, `${link.id} ${filterName.id}`);
-    const enabled = element("input", "sar-toggle");
+    const enabled = element("input", "tks-toggle");
     enabled.type = "checkbox";
     enabled.setAttribute("role", "switch");
     enabled.setAttribute("aria-labelledby", link.id);
-    enabled.setAttribute("data-sar-setting", "enabled");
-    enabled.setAttribute("data-sar-for", kind.id);
+    enabled.setAttribute("data-tks-setting", "enabled");
+    enabled.setAttribute("data-tks-for", kind.id);
     const error = fieldError();
     errors.set(errorKey("enabled", kind.id), error);
     errors.set(errorKey("filter", kind.id), error);
@@ -647,7 +647,7 @@ export async function mountSettingsForm(
 
   /** The card of what is ignored in a scope, drawn by `renderScope` from the lists. */
   function scopeCard(of: AllowScope, title: BareMessageKey): ScopeCard {
-    const section = element("section", "sar-card");
+    const section = element("section", "tks-card");
     const heading = cardTitle(i18n.t(title), `allow-${of}`, "h3");
     const body = element("div", "");
     section.setAttribute("aria-labelledby", heading.id);
@@ -655,7 +655,7 @@ export async function mountSettingsForm(
     return { of, section, title: heading, body };
   }
 
-  const loadError = element("p", "sar-field-error", i18n.t("error_settings_load"));
+  const loadError = element("p", "tks-field-error", i18n.t("error_settings_load"));
   loadError.setAttribute("role", "alert");
   loadError.hidden = true;
 
@@ -671,10 +671,10 @@ export async function mountSettingsForm(
       group: { after: GENERAL_TAB, caption: i18n.t("options_tabs_group_tags") },
     });
   const scopes = new Map<AllowScope, ScopeCard>();
-  const live = element("div", "sar-vh");
+  const live = element("div", "tks-vh");
   live.setAttribute("aria-live", POLITE);
   // The popup's rows follow the same order as the tabs
-  const rows = element("div", "sar-kind-rows");
+  const rows = element("div", "tks-kind-rows");
   const rowOf = new Map<KindId, HTMLElement>();
   for (const kind of tabs === undefined ? KINDS : []) {
     const row = kindRow(kind);
@@ -692,16 +692,16 @@ export async function mountSettingsForm(
   } {
     const general = tabs.panel(GENERAL_TAB);
     // General stands apart from the tags: it has a style of its own and no state
-    tabs.tab(GENERAL_TAB).classList.add("sar-tab-general");
+    tabs.tab(GENERAL_TAB).classList.add("tks-tab-general");
     tabs.tab(GENERAL_TAB).textContent = i18n.t("options_tab_general");
-    general.append(element("h2", "sar-panel-title", i18n.t("options_tab_general")));
+    general.append(element("h2", "tks-panel-title", i18n.t("options_tab_general")));
 
     for (const kind of KINDS) {
-      const state = element("span", "sar-tab-state");
+      const state = element("span", "tks-tab-state");
       // The tag's key and its state in words, then the line that describes it, for sighted readers
-      const description = element("span", "sar-tab-description", keyDescription(i18n, kind));
+      const description = element("span", "tks-tab-description", keyDescription(i18n, kind));
       description.setAttribute("aria-hidden", TRUE);
-      tabs.tab(kind.id).append(...kindName(kind, "sar-tab-key"), " ", state, description);
+      tabs.tab(kind.id).append(...kindName(kind, "tks-tab-key"), " ", state, description);
       const ignored = scopeCard(kind.id, "options_allow_kind_title");
       scopes.set(kind.id, ignored);
       tabs.panel(kind.id).append(kindCard(kind, state), ignored.section);
@@ -709,12 +709,12 @@ export async function mountSettingsForm(
 
     // General: language, color help, what is ignored for all tags, backup and privacy
     const languageCard = card(i18n.t("options_section_language"), "language");
-    const languageField = element("div", "sar-field");
-    languageField.setAttribute("data-sar-layout", "stacked");
-    const languageLabel = element("label", "sar-field-label", i18n.t("options_language_label"));
-    const picker = element("select", "sar-select");
+    const languageField = element("div", "tks-field");
+    languageField.setAttribute("data-tks-layout", "stacked");
+    const languageLabel = element("label", "tks-field-label", i18n.t("options_language_label"));
+    const picker = element("select", "tks-select");
     picker.id = `${prefix}locale`;
-    picker.setAttribute("data-sar-setting", "locale");
+    picker.setAttribute("data-tks-setting", "locale");
     languageLabel.htmlFor = picker.id;
     const auto = element("option", "", i18n.t("options_language_auto"));
     auto.value = AUTO_LOCALE;
@@ -730,7 +730,7 @@ export async function mountSettingsForm(
     languageField.append(
       languageLabel,
       picker,
-      element("span", "sar-field-help", i18n.t("options_language_help")),
+      element("span", "tks-field-help", i18n.t("options_language_help")),
       languageError,
     );
     languageCard.append(languageField);
@@ -784,7 +784,7 @@ export async function mountSettingsForm(
 
     if (context === "page") {
       const privacy = card(i18n.t("options_section_privacy"), "privacy");
-      const bullets = element("ul", "sar-privacy");
+      const bullets = element("ul", "tks-privacy");
       const keys: readonly BareMessageKey[] = [
         "options_privacy_no_reports",
         "options_privacy_storage",
@@ -796,12 +796,12 @@ export async function mountSettingsForm(
       general.append(privacy);
     }
 
-    const frame = element("div", "sar-tabs");
+    const frame = element("div", "tks-tabs");
     frame.append(tabs.list, ...TAB_IDS.map((id) => tabs.panel(id)));
     return { frame, picker, allIgnored, order };
   }
 
-  const footer = element("div", "sar-options-footer");
+  const footer = element("div", "tks-options-footer");
   if (context === "popup") {
     footer.append(element("p", "", i18n.t("options_privacy_no_reports")));
   }
@@ -815,9 +815,9 @@ export async function mountSettingsForm(
 
   const top: HTMLElement[] = deps.header === undefined ? [] : [header(deps.header)];
   tabs?.select((await firstTab) ?? GENERAL_TAB);
-  root.classList.add("sar-options");
-  root.setAttribute("data-sar-context", context);
-  root.setAttribute("data-sar-view", deps.layout);
+  root.classList.add("tks-options");
+  root.setAttribute("data-tks-context", context);
+  root.setAttribute("data-tks-view", deps.layout);
   // Above the tabs, where no tab can hide it
   // The feedback bar goes with the tabs, on the page and in the dialog; the popup has none
   const feedback = built === undefined ? [] : [createFeedbackFooter(doc, i18n)];
@@ -831,7 +831,7 @@ export async function mountSettingsForm(
 
   /** Controls stay off while the load error shows, so no save puts defaults over v1 data. */
   const settingControls = root.querySelectorAll<HTMLInputElement | HTMLSelectElement>(
-    `[data-sar-setting], [${PICKER_ATTRIBUTE}]`,
+    `[data-tks-setting], [${PICKER_ATTRIBUTE}]`,
   );
   function allowChanges(allowed: boolean): void {
     for (const control of settingControls) {
@@ -906,7 +906,7 @@ export async function mountSettingsForm(
       own.options.disabled = !kind.enabled;
       if (own.state !== undefined) {
         own.state.textContent = i18n.t(kind.enabled ? "options_state_on" : "options_state_off");
-        own.state.toggleAttribute("data-sar-on", kind.enabled);
+        own.state.toggleAttribute("data-tks-on", kind.enabled);
       }
     }
     if (built !== undefined) {
@@ -1027,7 +1027,7 @@ export async function mountSettingsForm(
     if (!(target instanceof HTMLInputElement || target instanceof HTMLSelectElement)) {
       return;
     }
-    const field = v.safeParse(FieldSchema, target.getAttribute("data-sar-setting"));
+    const field = v.safeParse(FieldSchema, target.getAttribute("data-tks-setting"));
     if (!field.success) {
       return;
     }
@@ -1035,7 +1035,7 @@ export async function mountSettingsForm(
       sync();
       return;
     }
-    const id = v.safeParse(KindIdSchema, target.getAttribute("data-sar-for"));
+    const id = v.safeParse(KindIdSchema, target.getAttribute("data-tks-for"));
     const kind = id.success ? KIND_BY_ID[id.output] : undefined;
     if (field.output === "color") {
       const own = kind === undefined ? undefined : controls.get(kind.id)?.color;
@@ -1068,7 +1068,7 @@ export async function mountSettingsForm(
       title: developer ? "options_section_allow_developers" : "options_section_allow_publishers",
       saveError: "error_creator_list_save",
       loadError: "error_creator_list_load",
-      nameOf: (_key, entry) => element("span", "sar-allow-name", entry.name),
+      nameOf: (_key, entry) => element("span", "tks-allow-name", entry.name),
       restored: (name, of) =>
         of === ALLOW_ALL
           ? i18n.t("notice_creator_restored", { name, role: roleName })
@@ -1090,7 +1090,7 @@ export async function mountSettingsForm(
     saveError: "error_allow_list_save",
     loadError: "error_allow_list_load",
     nameOf: (key, entry) => {
-      const name = element("a", "sar-allow-name", entry.name);
+      const name = element("a", "tks-allow-name", entry.name);
       name.href = `${STORE_APP_URL}${String(key)}/`;
       return name;
     },
@@ -1110,8 +1110,8 @@ export async function mountSettingsForm(
     if (!source.failed()) {
       return source.group(of, caption, "h4");
     }
-    const block = element("div", "sar-allow-group");
-    block.append(element("h4", "sar-allow-scope", caption), source.loadError());
+    const block = element("div", "tks-allow-group");
+    block.append(element("h4", "tks-allow-scope", caption), source.loadError());
     return block;
   }
 
@@ -1121,10 +1121,10 @@ export async function mountSettingsForm(
     if (count === 0) {
       return undefined;
     }
-    const note = element("p", "sar-allow-note", i18n.plural("options_allow_all_note", count));
+    const note = element("p", "tks-allow-note", i18n.plural("options_allow_all_note", count));
     // A button, not a hash link: in the userscript dialog a hash would change the store's URL
     const show = quietButton(i18n.t("options_allow_all_show"));
-    show.setAttribute("data-sar-tab", GENERAL_TAB);
+    show.setAttribute("data-tks-tab", GENERAL_TAB);
     note.append(" ", show);
     return note;
   }
@@ -1134,7 +1134,7 @@ export async function mountSettingsForm(
     const blocks = sources.flatMap((source) => listBlock(source, of) ?? []);
     const action = of === ALLOW_ALL ? "banner_ignore" : "banner_ignore_kind";
     const shown: HTMLElement[] = blocks.length === 0
-      ? [element("p", "sar-empty", i18n.t("options_allow_empty", { action: i18n.t(action) }))]
+      ? [element("p", "tks-empty", i18n.t("options_allow_empty", { action: i18n.t(action) }))]
       : blocks;
     const note = of === ALLOW_ALL ? undefined : allNote();
     body.replaceChildren(...shown, ...(note === undefined ? [] : [note]));
@@ -1190,8 +1190,8 @@ export async function mountSettingsForm(
     if (!(target instanceof HTMLInputElement) || loadFailed) {
       return;
     }
-    const id = v.safeParse(KindIdSchema, target.getAttribute("data-sar-for"));
-    const field = v.safeParse(FieldSchema, target.getAttribute("data-sar-setting"));
+    const id = v.safeParse(KindIdSchema, target.getAttribute("data-tks-for"));
+    const field = v.safeParse(FieldSchema, target.getAttribute("data-tks-setting"));
     const own = id.success ? controls.get(id.output)?.color : undefined;
     if (id.success && field.success && field.output === "color" && own !== undefined) {
       onColorInput(KIND_BY_ID[id.output], own);

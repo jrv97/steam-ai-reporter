@@ -9,7 +9,7 @@ import {
   SKIPPED,
 } from "./candidates";
 import { createHostFinder } from "./hosts";
-import { HOST_APPID, HOST_HIDEABLE, HOST_KINDS, isInSarNode, isSarNode, SAR_NODE } from "./marks";
+import { HOST_APPID, HOST_HIDEABLE, HOST_KINDS, isInTksNode, isTksNode, TKS_NODE } from "./marks";
 import { placeHost, type Placement, PLACEMENTS } from "./placements";
 import type { CapsuleHost, CapsuleRenderer } from "./renderer";
 
@@ -84,7 +84,7 @@ export function createScanner(options: ScannerOptions): Scanner {
     let added = false;
     for (const record of records) {
       for (const node of record.addedNodes) {
-        if (node instanceof Element && !isSarNode(node)) {
+        if (node instanceof Element && !isTksNode(node)) {
           pending.add(node);
           added = true;
         }
@@ -262,7 +262,7 @@ export function createScanner(options: ScannerOptions): Scanner {
       element.removeAttribute(HOST_APPID);
       element.removeAttribute(HOST_KINDS);
       element.removeAttribute(HOST_HIDEABLE);
-      for (const copy of element.querySelectorAll(SAR_NODE)) {
+      for (const copy of element.querySelectorAll(TKS_NODE)) {
         copy.remove();
       }
     }
@@ -331,7 +331,7 @@ export function createScanner(options: ScannerOptions): Scanner {
 function liveRoots(pending: ReadonlySet<Element>): Element[] {
   const roots: Element[] = [];
   for (const root of pending) {
-    if (root.isConnected && !isInSarNode(root)) {
+    if (root.isConnected && !isInTksNode(root)) {
       roots.push(root);
     }
   }

@@ -1,5 +1,5 @@
 import * as v from "valibot";
-import { SarError } from "../errors";
+import { TksError } from "../errors";
 import { type JsonValue, parseWithDefaults } from "../json";
 import { LIST_FILTERS } from "../kinds/kind-settings";
 import type { KeyValueStore } from "../ports";
@@ -96,7 +96,7 @@ async function migrateMove(store: KeyValueStore, move: Move): Promise<Migration>
   await store.set(new Map([[move.to, move.convert(legacy.get(move.from))]]));
   const stored = (await store.get([move.to])).get(move.to);
   if (!isUsable(stored)) {
-    throw new SarError("error_settings_load", {}, { cause: { key: move.to, stored } });
+    throw new TksError("error_settings_load", {}, { cause: { key: move.to, stored } });
   }
   return "migrated";
 }
@@ -118,7 +118,7 @@ export async function migrateStorage(store: KeyValueStore): Promise<Migration> {
     }
   }
   if (failure !== undefined) {
-    throw new SarError("error_settings_load", {}, { cause: failure.problem });
+    throw new TksError("error_settings_load", {}, { cause: failure.problem });
   }
   return result;
 }

@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # Write the release artifacts to artifacts/ from the current dist/ (run `mise run build` first).
-#   steam-ai-reporter-chromium-<version>.zip   dist/chromium
-#   steam-ai-reporter-gecko-<version>.zip      dist/gecko
-#   steam-ai-reporter.user.js / .meta.js       dist/userscript (fixed names, stable URLs)
-#   steam-ai-reporter-source-<version>.zip     git archive of HEAD (AMO): lockfile in, docs/ out
+#   tag-kit-for-steam-chromium-<version>.zip   dist/chromium
+#   tag-kit-for-steam-gecko-<version>.zip      dist/gecko
+#   tag-kit-for-steam.user.js / .meta.js       dist/userscript (fixed names, stable URLs)
+#   tag-kit-for-steam-source-<version>.zip     git archive of HEAD (AMO): lockfile in, docs/ out
 #                                              except the design tokens the build reads
 # dist/dev (the dev injection bundle) is never packaged.
 set -euo pipefail
@@ -14,7 +14,7 @@ if [[ -n "${WSL_DISTRO_NAME:-}" ]]; then
 fi
 
 cd "$(dirname "$0")/.."
-slug="steam-ai-reporter"
+slug="tag-kit-for-steam"
 version="$(python -c 'import json; print(json.load(open("package.json"))["version"])')"
 
 for path in dist/chromium dist/gecko dist/userscript; do

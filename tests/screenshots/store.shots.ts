@@ -42,21 +42,21 @@ const WISHLIST = `${STORE}/wishlist/`;
 /** The kind whose tab the last settings shot opens: it has values to tag and chip text. */
 const KIND_TAB: KindId = "deck";
 
-const BADGE = ".sar-badge";
-const COMPACT = ".sar-compact";
-const CHIPS = ".sar-chips";
-const HOVER_CARD = ">>> .sar-hovercard";
-const HIDDEN_NOTICE = ">>> .sar-list-notice-text";
-const BANNER = ">>> .sar-banner-host";
-const TAG_SECTION = ".sar-tag-section-label";
-const ORDER_HANDLE = ".sar-order-handle";
-const ORDER_CARD = ".sar-card:has(.sar-order-handle)";
+const BADGE = ".tks-badge";
+const COMPACT = ".tks-compact";
+const CHIPS = ".tks-chips";
+const HOVER_CARD = ">>> .tks-hovercard";
+const HIDDEN_NOTICE = ">>> .tks-list-notice-text";
+const BANNER = ">>> .tks-banner-host";
+const TAG_SECTION = ".tks-tag-section-label";
+const ORDER_HANDLE = ".tks-order-handle";
+const ORDER_CARD = ".tks-card:has(.tks-order-handle)";
 /** The open tab's preview: every tag's panel is in the page, and only one is shown. */
-const CHIP_PREVIEW = "[role=tabpanel]:not([hidden]) .sar-chip-preview";
-const POPUP = ".sar-options";
+const CHIP_PREVIEW = "[role=tabpanel]:not([hidden]) .tks-chip-preview";
+const POPUP = ".tks-options";
 const DECK_ROW = "#home_deck_content";
 const QUEUE = "[role=dialog]";
-const QUEUE_CHIPS = `${QUEUE} .sar-chips`;
+const QUEUE_CHIPS = `${QUEUE} .tks-chips`;
 
 /** How far the densest-frame search wheels through a page, and the chips it must find. */
 const SEARCH_STEPS = 12;

@@ -1,12 +1,12 @@
 """Run a build in a development browser through `web-ext run`, reloading on every rebuild.
 
-gecko: the Gecko build in Firefox Nightly only, from SAR_GECKO_BIN, with the dedicated profile
-directory in SAR_GECKO_PROFILE. There is no fallback to a Firefox on PATH: a personal Firefox and
+gecko: the Gecko build in Firefox Nightly only, from TKS_GECKO_BIN, with the dedicated profile
+directory in TKS_GECKO_PROFILE. There is no fallback to a Firefox on PATH: a personal Firefox and
 its profiles are never launched or touched. The binary must be a Nightly build (its
 channel-prefs.js says "nightly"), and a profile last used by another Firefox install is refused.
 
-chromium: the Chromium build in the browser at SAR_CHROMIUM_BIN, with the dedicated profile
-directory in SAR_CHROMIUM_PROFILE.
+chromium: the Chromium build in the browser at TKS_CHROMIUM_BIN, with the dedicated profile
+directory in TKS_CHROMIUM_PROFILE.
 
 The variables live in mise.local.toml (see mise.local.toml.example).
 
@@ -73,15 +73,15 @@ def check_profile(name: str, profile: Path, binary: Path | None) -> None:
 
 
 def gecko_args(check_only: bool) -> list[str]:
-    binary = env_path("SAR_GECKO_BIN")
+    binary = env_path("TKS_GECKO_BIN")
     if not binary.is_file():
-        fail(f"SAR_GECKO_BIN does not exist: {binary}")
+        fail(f"TKS_GECKO_BIN does not exist: {binary}")
     channel = firefox_channel(binary)
     if channel != "nightly":
         found = f'channel "{channel}"' if channel else "no update channel"
-        fail(f"SAR_GECKO_BIN must be Firefox Nightly; {binary} has {found}")
-    profile = env_path("SAR_GECKO_PROFILE")
-    check_profile("SAR_GECKO_PROFILE", profile, binary)
+        fail(f"TKS_GECKO_BIN must be Firefox Nightly; {binary} has {found}")
+    profile = env_path("TKS_GECKO_PROFILE")
+    check_profile("TKS_GECKO_PROFILE", profile, binary)
     if check_only:
         return []
     return [
@@ -95,11 +95,11 @@ def gecko_args(check_only: bool) -> list[str]:
 
 
 def chromium_args(check_only: bool) -> list[str]:
-    binary = env_path("SAR_CHROMIUM_BIN")
+    binary = env_path("TKS_CHROMIUM_BIN")
     if not binary.is_file():
-        fail(f"SAR_CHROMIUM_BIN does not exist: {binary}")
-    profile = env_path("SAR_CHROMIUM_PROFILE")
-    check_profile("SAR_CHROMIUM_PROFILE", profile, None)
+        fail(f"TKS_CHROMIUM_BIN does not exist: {binary}")
+    profile = env_path("TKS_CHROMIUM_PROFILE")
+    check_profile("TKS_CHROMIUM_PROFILE", profile, None)
     if check_only:
         return []
     return [
@@ -123,7 +123,7 @@ def main() -> None:
         print(f"{args.target}: development browser settings look right")
         return
     # web-ext creates a missing profile directory, but not its missing parents.
-    profile_var = "SAR_GECKO_PROFILE" if args.target == "gecko" else "SAR_CHROMIUM_PROFILE"
+    profile_var = "TKS_GECKO_PROFILE" if args.target == "gecko" else "TKS_CHROMIUM_PROFILE"
     env_path(profile_var).parent.mkdir(parents=True, exist_ok=True)
     web_ext = shutil.which("web-ext")
     if web_ext is None:

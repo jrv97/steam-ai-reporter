@@ -36,6 +36,7 @@ import {
   gameRow,
   nameRow,
   pickedFile,
+  SAMPLE_CONFIG,
   unreadableFile,
 } from "./backup";
 import {
@@ -244,6 +245,7 @@ export const make = {
     time: BACKUP_TIME,
     contents: backupContents,
     text: backupText,
+    sample: SAMPLE_CONFIG,
     file: pickedFile,
     unreadableFile,
   },

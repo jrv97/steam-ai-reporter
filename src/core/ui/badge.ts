@@ -78,7 +78,7 @@ export function createChipElement(
   label.setAttribute("aria-hidden", TRUE);
   label.textContent = text.label;
   const name = doc.createElement("span");
-  name.className = "sar-vh";
+  name.className = "tks-vh";
   name.textContent = text.name;
   chip.append(label, name);
   return chip;
@@ -94,22 +94,22 @@ export function createChip(
   return createChipElement(
     doc,
     verdictText(i18n, verdict, words),
-    "sar-badge",
-    "sar-badge-label",
+    "tks-badge",
+    "tks-badge-label",
     verdict.kind,
   );
 }
 
-/** The `span.sar-chips` that holds chips of one size, so a row or a section places them as one. */
+/** The `span.tks-chips` that holds chips of one size, so a row or a section places them as one. */
 export function createChipGroup(doc: Document, size: BadgeSlot["kind"]): HTMLElement {
   const group = doc.createElement("span");
-  group.className = "sar-chips";
-  group.setAttribute("data-sar-chips", size);
+  group.className = "tks-chips";
+  group.setAttribute("data-tks-chips", size);
   return group;
 }
 
 interface Drawn {
-  /** The `span.sar-chips` that holds this host's chips. */
+  /** The `span.tks-chips` that holds this host's chips. */
   readonly group: HTMLElement;
   /** The disclosed verdicts the chips stand for, in chip order. */
   readonly present: readonly AnyDisclosed[];
@@ -154,10 +154,10 @@ export function createBadgeRenderer(
 
   function chipFor(slot: BadgeSlot, text: ChipText, kind?: KindId): HTMLElement {
     if (slot.kind === "full") {
-      return createChipElement(doc, text, "sar-badge", "sar-badge-label", kind);
+      return createChipElement(doc, text, "tks-badge", "tks-badge-label", kind);
     }
-    const chip = createChipElement(doc, text, "sar-compact", "sar-compact-label", kind);
-    chip.setAttribute("data-sar-size", slot.size);
+    const chip = createChipElement(doc, text, "tks-compact", "tks-compact-label", kind);
+    chip.setAttribute("data-tks-size", slot.size);
     return chip;
   }
 
@@ -182,7 +182,7 @@ export function createBadgeRenderer(
   function linkCompact(group: HTMLElement, host: Element): void {
     const link = group.parentElement?.closest("a");
     if (link !== null && link !== undefined && (host.contains(link) || link.contains(host))) {
-      group.setAttribute("data-sar-in-link", TRUE);
+      group.setAttribute("data-tks-in-link", TRUE);
     }
   }
 

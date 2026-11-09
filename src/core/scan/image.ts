@@ -1,4 +1,4 @@
-import { isInSarNode } from "./marks";
+import { isInTksNode } from "./marks";
 
 /**
  * What counts as a capsule image (rq6, S5): an `img`, or an element with an inline
@@ -23,7 +23,7 @@ export function firstImage(root: Element): Element | undefined {
     return root;
   }
   for (const image of root.querySelectorAll(IMAGE)) {
-    if (!isInSarNode(image)) {
+    if (!isInTksNode(image)) {
       return image;
     }
   }

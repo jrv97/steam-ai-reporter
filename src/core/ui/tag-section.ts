@@ -12,7 +12,7 @@ import type { CardTriggers } from "./hover-card";
 const ANCHORS = [".popular_tags_ctn", ".glance_ctn_responsive_left .dev_row"] as const;
 
 /** The label's id, which the section's group points to for its name. */
-const LABEL_ID = "sar-tag-section-label";
+const LABEL_ID = "tks-tag-section-label";
 
 /** The tag section of the game's own page. */
 export interface TagSection {
@@ -55,7 +55,7 @@ export function createTagBlock(
   element.setAttribute("role", "group");
   element.setAttribute("aria-labelledby", labelId);
   const label = doc.createElement("div");
-  label.className = "sar-tag-section-label";
+  label.className = "tks-tag-section-label";
   label.id = labelId;
   label.textContent = i18n.t("badge_tags_title");
   element.append(label);
@@ -76,7 +76,7 @@ export function createTagSection(
   let drawn: Drawn | undefined;
 
   function build(verdicts: readonly AnyDisclosed[], words: ChipWords | undefined): HTMLElement {
-    const element = createTagBlock(doc, i18n, "sar-tag-section", LABEL_ID);
+    const element = createTagBlock(doc, i18n, "tks-tag-section", LABEL_ID);
     const group = createChipGroup(doc, "full");
     for (const verdict of verdicts) {
       const chip = createChip(doc, i18n, verdict, words);

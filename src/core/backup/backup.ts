@@ -26,14 +26,14 @@ export interface RestoreResult {
   readonly kept: number;
 }
 
-/** A technical file name prefix that outlives the product name, like the `sar-` prefix. */
-const FILE_PREFIX = "ai-reporter-backup-";
+/** Names the file after the product, for the person who finds it in their downloads. */
+const FILE_PREFIX = "tag-kit-backup-";
 
 function twoDigits(value: number): string {
   return String(value).padStart(2, "0");
 }
 
-/** `ai-reporter-backup-YYYY-MM-DD.json`, in local time. */
+/** `tag-kit-backup-YYYY-MM-DD.json`, in local time. */
 function fileName(time: number): string {
   const at = new Date(time);
   const day = [at.getFullYear(), twoDigits(at.getMonth() + 1), twoDigits(at.getDate())].join("-");

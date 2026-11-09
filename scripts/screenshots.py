@@ -1,10 +1,10 @@
 """Capture the store screenshots headless in Chromium (ADR 0022), then check them.
 
-The capture runs on a copy of the dedicated Chromium profile in SAR_CHROMIUM_PROFILE, so Steam
+The capture runs on a copy of the dedicated Chromium profile in TKS_CHROMIUM_PROFILE, so Steam
 shows the pages signed in. The copy lives in a temporary folder and is deleted afterwards; the
 profile itself is only read, and Chromium must be closed while it is copied.
-SAR_SCREENSHOT_FRESH=1 runs on a new, signed-out profile instead, and takes shots 01 to 05 only.
-SAR_SCREENSHOT_LOCALE=es captures in Spanish into docs/store/screenshots/es/.
+TKS_SCREENSHOT_FRESH=1 runs on a new, signed-out profile instead, and takes shots 01 to 05 only.
+TKS_SCREENSHOT_LOCALE=es captures in Spanish into docs/store/screenshots/es/.
 
 The runbook is docs/store/screenshots.mdx.
 
@@ -44,15 +44,15 @@ SKIPPED = shutil.ignore_patterns(
 
 
 def profile_dir() -> Path:
-    value = os.environ.get("SAR_CHROMIUM_PROFILE", "").strip()
+    value = os.environ.get("TKS_CHROMIUM_PROFILE", "").strip()
     if not value:
-        fail("SAR_CHROMIUM_PROFILE is not set; add it to mise.local.toml")
+        fail("TKS_CHROMIUM_PROFILE is not set; add it to mise.local.toml")
     path = Path(value)
     if not path.is_dir():
-        fail(f"SAR_CHROMIUM_PROFILE is not a folder: {path}")
+        fail(f"TKS_CHROMIUM_PROFILE is not a folder: {path}")
     # The capture launches the copy as a user-data folder, so a profile inside one would not load.
     if not (path / "Local State").is_file():
-        fail(f"SAR_CHROMIUM_PROFILE is not a Chromium user-data folder (no Local State): {path}")
+        fail(f"TKS_CHROMIUM_PROFILE is not a Chromium user-data folder (no Local State): {path}")
     return path
 
 
@@ -84,18 +84,18 @@ def capture(env: dict[str, str], args: list[str]) -> None:
 def main() -> None:
     env = dict(os.environ)
     args = sys.argv[1:]
-    if env.get("SAR_SCREENSHOT_FRESH") == "1":
-        env.pop("SAR_SCREENSHOT_PROFILE", None)
+    if env.get("TKS_SCREENSHOT_FRESH") == "1":
+        env.pop("TKS_SCREENSHOT_PROFILE", None)
         capture(env, args)
     else:
         profile = profile_dir()
         if in_use(profile):
             fail(f"Chromium is running on {profile}; close it and run again")
-        temp = Path(tempfile.mkdtemp(prefix="sar-screenshots-"))
+        temp = Path(tempfile.mkdtemp(prefix="tks-screenshots-"))
         try:
             copy = temp / "profile"
             shutil.copytree(profile, copy, ignore=SKIPPED)
-            env["SAR_SCREENSHOT_PROFILE"] = str(copy)
+            env["TKS_SCREENSHOT_PROFILE"] = str(copy)
             capture(env, args)
         finally:
             remove(temp)

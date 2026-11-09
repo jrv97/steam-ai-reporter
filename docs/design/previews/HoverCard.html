@@ -8,56 +8,56 @@
 <style>
   body {
     margin: 0;
-    background: var(--sar-color-bg-page);
-    color: var(--sar-color-text-subtle);
-    font: 12px/16px var(--sar-font-page);
+    background: var(--tks-color-bg-page);
+    color: var(--tks-color-text-subtle);
+    font: 12px/16px var(--tks-font-page);
   }
   .stage {
     display: flex;
     flex-wrap: wrap;
     align-items: flex-start;
-    gap: var(--sar-space-5);
-    padding: var(--sar-space-4);
+    gap: var(--tks-space-5);
+    padding: var(--tks-space-4);
   }
-  .cap { margin: 0 0 var(--sar-space-2); max-inline-size: 306px; }
+  .cap { margin: 0 0 var(--tks-space-2); max-inline-size: 306px; }
   /* The card is fixed to the viewport on store pages; here it sits in the flow under its badge */
-  .stage .sar-hovercard { position: relative; margin-block-start: var(--sar-hovercard-offset); }
+  .stage .tks-hovercard { position: relative; margin-block-start: var(--tks-hovercard-offset); }
 </style>
 </head>
 <body>
 <div class="stage">
   <div>
     <p class="cap">Short notes with a named service, under a full badge</p>
-    <span class="sar-badge"><span class="sar-badge-label">AI use reported</span></span>
-    <div class="sar-hovercard" role="tooltip" data-sar-side="below">
-      <p class="sar-hovercard-title">AI use reported</p>
-      <p class="sar-hovercard-source">In the developer's own words:</p>
-      <p class="sar-hovercard-notes" id="n1"></p>
-      <p class="sar-hovercard-service">AI service named by the developer:
-        <span class="sar-hovercard-service-name">Midjourney</span></p>
-      <p class="sar-hovercard-more" hidden>The full text is on the game's store page.</p>
+    <span class="tks-badge"><span class="tks-badge-label">AI use reported</span></span>
+    <div class="tks-hovercard" role="tooltip" data-tks-side="below">
+      <p class="tks-hovercard-title">AI use reported</p>
+      <p class="tks-hovercard-source">In the developer's own words:</p>
+      <p class="tks-hovercard-notes" id="n1"></p>
+      <p class="tks-hovercard-service">AI service named by the developer:
+        <span class="tks-hovercard-service-name">Midjourney</span></p>
+      <p class="tks-hovercard-more" hidden>The full text is on the game's store page.</p>
     </div>
   </div>
   <div>
     <p class="cap">Long notes, clamped after 6 lines, pointing to the store page</p>
-    <span class="sar-badge"><span class="sar-badge-label">AI use reported</span></span>
-    <div class="sar-hovercard" role="tooltip" data-sar-side="below">
-      <p class="sar-hovercard-title">AI use reported</p>
-      <p class="sar-hovercard-source">In the developer's own words:</p>
-      <p class="sar-hovercard-notes" id="n2"></p>
-      <p class="sar-hovercard-more">The full text is on the game's store page.</p>
+    <span class="tks-badge"><span class="tks-badge-label">AI use reported</span></span>
+    <div class="tks-hovercard" role="tooltip" data-tks-side="below">
+      <p class="tks-hovercard-title">AI use reported</p>
+      <p class="tks-hovercard-source">In the developer's own words:</p>
+      <p class="tks-hovercard-notes" id="n2"></p>
+      <p class="tks-hovercard-more">The full text is on the game's store page.</p>
     </div>
   </div>
   <div lang="es">
     <p class="cap">Spanish, with the store page line shown to check its length</p>
-    <span class="sar-badge"><span class="sar-badge-label">Uso de IA declarado</span></span>
-    <div class="sar-hovercard" role="tooltip" data-sar-side="below">
-      <p class="sar-hovercard-title">Uso de IA declarado</p>
-      <p class="sar-hovercard-source">En palabras del desarrollador:</p>
-      <p class="sar-hovercard-notes" id="n3"></p>
-      <p class="sar-hovercard-service">Servicio de IA nombrado por el desarrollador:
-        <span class="sar-hovercard-service-name">Stable Diffusion</span></p>
-      <p class="sar-hovercard-more">El texto completo est&#225; en la p&#225;gina de la
+    <span class="tks-badge"><span class="tks-badge-label">Uso de IA declarado</span></span>
+    <div class="tks-hovercard" role="tooltip" data-tks-side="below">
+      <p class="tks-hovercard-title">Uso de IA declarado</p>
+      <p class="tks-hovercard-source">En palabras del desarrollador:</p>
+      <p class="tks-hovercard-notes" id="n3"></p>
+      <p class="tks-hovercard-service">Servicio de IA nombrado por el desarrollador:
+        <span class="tks-hovercard-service-name">Stable Diffusion</span></p>
+      <p class="tks-hovercard-more">El texto completo est&#225; en la p&#225;gina de la
         tienda del juego.</p>
     </div>
   </div>

@@ -78,18 +78,18 @@ function envValue(name: string): string | undefined {
   return value === undefined || value === "" ? undefined : value;
 }
 
-/** The locale SAR_SCREENSHOT_LOCALE names, English by default. */
+/** The locale TKS_SCREENSHOT_LOCALE names, English by default. */
 export function captureLocale(): CaptureLocale {
   const name = v.parse(
     v.optional(v.picklist(["en", "es"]), "en"),
-    envValue("SAR_SCREENSHOT_LOCALE"),
+    envValue("TKS_SCREENSHOT_LOCALE"),
   );
   return LOCALES[name];
 }
 
 /** The copied Chromium profile the capture runs on, or undefined for a fresh one. */
 export function captureProfile(): string | undefined {
-  return envValue("SAR_SCREENSHOT_PROFILE");
+  return envValue("TKS_SCREENSHOT_PROFILE");
 }
 
 /** The path of screenshot `name` (without extension) for `locale`. */
@@ -111,11 +111,11 @@ export async function restoreSampleConfig(browser: ExtensionBrowser): Promise<vo
   const page = await browser.open(`options.html${tabHash(GENERAL_TAB)}`);
   const [chooser] = await Promise.all([
     page.waitForFileChooser(WAIT),
-    page.locator('[data-sar-backup="pick"]').click(),
+    page.locator('[data-tks-backup="pick"]').click(),
   ]);
   await chooser.accept([SAMPLE_CONFIG]);
-  await page.locator('[data-sar-backup="confirm"]').setTimeout(WAIT.timeout).click();
-  await page.waitForSelector('[data-sar-backup="confirm"]', { ...WAIT, hidden: true });
+  await page.locator('[data-tks-backup="confirm"]').setTimeout(WAIT.timeout).click();
+  await page.waitForSelector('[data-tks-backup="confirm"]', { ...WAIT, hidden: true });
   await page.close();
 }
 
@@ -235,11 +235,11 @@ export async function scrollPast(page: Page, selector: string): Promise<void> {
  */
 export async function strangers(page: Page): Promise<string[]> {
   return page.evaluate(() =>
-    [...document.querySelectorAll("[data-sar-appid]")].flatMap((host) => {
+    [...document.querySelectorAll("[data-tks-appid]")].flatMap((host) => {
       const link = host.closest("a[href]") ?? host.querySelector("a[href]");
       const linked = /\/app\/(\d+)/.exec(link?.getAttribute("href") ?? "")?.[1];
       const named = host.closest("[data-ds-appid]")?.getAttribute("data-ds-appid");
-      const tagged = host.getAttribute("data-sar-appid") ?? "";
+      const tagged = host.getAttribute("data-tks-appid") ?? "";
       const known = [linked, named].filter((id) => typeof id === "string");
       return known.length === 0 || known.includes(tagged)
         ? []
@@ -251,7 +251,7 @@ export async function strangers(page: Page): Promise<string[]> {
 /** How many chips sit fully inside the frame, on shown rows. */
 export function chipsInView(page: Page): Promise<number> {
   return page.evaluate(() =>
-    [...document.querySelectorAll(".sar-chips")]
+    [...document.querySelectorAll(".tks-chips")]
       .filter((node) => {
         const box = node.getBoundingClientRect();
         return box.height > 0 && box.top >= 0 && box.bottom <= window.innerHeight;

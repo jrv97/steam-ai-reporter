@@ -94,11 +94,11 @@ describe("createHoverCard", () => {
     setBody(`
       <a class="row" href="/app/${String(make.appId())}/">
       <span class="title">${make.text.name()}</span>
-      <span class="sar-badge" data-sar-kind="ai">
-      <span class="sar-badge-label">${label}</span></span></a>
+      <span class="tks-badge" data-tks-kind="ai">
+      <span class="tks-badge-label">${label}</span></span></a>
       <a class="other" href="/app/${String(make.appId())}/">${make.text.name()}</a>`);
     const link = document.querySelector<HTMLAnchorElement>(".row");
-    const badge = document.querySelector<HTMLElement>(".sar-badge");
+    const badge = document.querySelector<HTMLElement>(".tks-badge");
     const other = document.querySelector<HTMLElement>(".other");
     if (link === null || badge === null || other === null) {
       throw new TypeError();
@@ -148,14 +148,14 @@ describe("createHoverCard", () => {
     flush();
     const node = shown();
     expect(node?.getAttribute("role")).toBe("tooltip");
-    expect(node?.querySelector(".sar-hovercard-title")?.textContent)
+    expect(node?.querySelector(".tks-hovercard-title")?.textContent)
       .toBe(i18n.t("kind_ai_heading"));
-    expect(node?.lastElementChild?.className).toBe("sar-hovercard-source");
+    expect(node?.lastElementChild?.className).toBe("tks-hovercard-source");
     expect(node?.lastElementChild?.textContent).toBe(i18n.t("badge_card_declared"));
-    expect(node?.querySelector(".sar-hovercard-notes")?.textContent).toBe(`${first}\n${second}`);
-    expect(node?.querySelector(".sar-hovercard-service")?.textContent)
+    expect(node?.querySelector(".tks-hovercard-notes")?.textContent).toBe(`${first}\n${second}`);
+    expect(node?.querySelector(".tks-hovercard-service")?.textContent)
       .toBe(`${i18n.t("badge_card_service_label")} ${service}`);
-    expect(node?.getAttribute("data-sar-side")).toBe("below");
+    expect(node?.getAttribute("data-tks-side")).toBe("below");
   });
 
   it("shows the card in the top layer on every open, above store popovers opened before it", () => {
@@ -167,7 +167,7 @@ describe("createHoverCard", () => {
     });
     try {
       const { badge, other } = page();
-      const second = triggerIn(other, "sar-badge");
+      const second = triggerIn(other, "tks-badge");
       const hover = start();
       hover.bind(badge, [make.verdict.disclosed("ai")]);
       hover.bind(second, [make.verdict.disclosed("ai")]);
@@ -210,18 +210,18 @@ describe("createHoverCard", () => {
     start().bind(badge, [make.verdict.disclosed("ai")]);
     pointerOver(badge);
     flush();
-    expect(document.documentElement.getAttribute("data-sar-hovercard")).toBe("open");
+    expect(document.documentElement.getAttribute("data-tks-hovercard")).toBe("open");
     expect(getComputedStyle(storeHover).visibility).toBe("hidden");
     pointerOver(other);
     flush();
-    expect(document.documentElement.hasAttribute("data-sar-hovercard")).toBe(false);
+    expect(document.documentElement.hasAttribute("data-tks-hovercard")).toBe(false);
   });
 
   it("clears the root mark on Escape, on pagehide and on stop", () => {
     const { badge, other } = page();
     const hover = start();
     hover.bind(badge, [make.verdict.disclosed("ai")]);
-    const marked = () => document.documentElement.hasAttribute("data-sar-hovercard");
+    const marked = () => document.documentElement.hasAttribute("data-tks-hovercard");
     const reopen = () => {
       pointerOver(other);
       pointerOver(badge);
@@ -245,7 +245,7 @@ describe("createHoverCard", () => {
     start().bind(badge, [unnamed]);
     pointerOver(badge);
     flush();
-    expect(shown()?.querySelector(".sar-hovercard-service")).toBeNull();
+    expect(shown()?.querySelector(".tks-hovercard-service")).toBeNull();
   });
 
   it("points to the store page only when the clamp cuts a long note", () => {
@@ -256,16 +256,16 @@ describe("createHoverCard", () => {
     hover.bind(badge, [make.verdict.disclosed("ai", { notes })]);
     pointerOver(badge);
     flush();
-    const more = shown()?.querySelector<HTMLElement>(".sar-hovercard-more");
+    const more = shown()?.querySelector<HTMLElement>(".tks-hovercard-more");
     expect(more?.hidden).toBe(false);
     expect(more?.textContent).toBe(i18n.t("badge_card_more"));
-    expect(shown()?.querySelector(".sar-hovercard-notes")?.textContent).toBe(notes);
+    expect(shown()?.querySelector(".tks-hovercard-notes")?.textContent).toBe(notes);
 
     overflowing = () => false;
-    const second = triggerIn(other, "sar-badge");
+    const second = triggerIn(other, "tks-badge");
     hover.bind(second, [make.verdict.disclosed("ai", { notes: make.text.note() })]);
     pointerOver(second);
-    expect(shown()?.querySelector<HTMLElement>(".sar-hovercard-more")?.hidden).toBe(true);
+    expect(shown()?.querySelector<HTMLElement>(".tks-hovercard-more")?.hidden).toBe(true);
   });
 
   it("opens for a focusable chip on the game's own page and closes when focus leaves", () => {
@@ -289,26 +289,26 @@ describe("createHoverCard", () => {
     hover.bind(badge, [verdict], true);
     pointerOver(badge);
     flush();
-    expect(shown()?.querySelector<HTMLElement>(".sar-hovercard-more")?.hidden).toBe(true);
+    expect(shown()?.querySelector<HTMLElement>(".tks-hovercard-more")?.hidden).toBe(true);
 
-    const capsule = triggerIn(other, "sar-compact");
+    const capsule = triggerIn(other, "tks-compact");
     hover.bind(capsule, [verdict]);
     pointerOver(capsule);
-    expect(shown()?.querySelector<HTMLElement>(".sar-hovercard-more")?.hidden).toBe(false);
+    expect(shown()?.querySelector<HTMLElement>(".tks-hovercard-more")?.hidden).toBe(false);
   });
 
   it("adds six document listeners and none per badge, however many badges there are", () => {
     const add = vi.spyOn(Node.prototype, "addEventListener");
-    setBody(Array.from({ length: 200 }, () => '<span class="sar-badge"></span>').join(""));
+    setBody(Array.from({ length: 200 }, () => '<span class="tks-badge"></span>').join(""));
     const hover = start();
-    for (const badge of document.querySelectorAll(".sar-badge")) {
+    for (const badge of document.querySelectorAll(".tks-badge")) {
       hover.bind(badge, [make.verdict.disclosed("ai")]);
     }
-    pointerOver(document.querySelectorAll(".sar-badge")[150] ?? document.body);
+    pointerOver(document.querySelectorAll(".tks-badge")[150] ?? document.body);
     flush();
     expect(add.mock.contexts.filter((target) => target === document)).toHaveLength(6);
     expect(add.mock.contexts.filter((target) => target !== document)).toHaveLength(0);
-    expect(document.querySelectorAll(".sar-hovercard")).toHaveLength(1);
+    expect(document.querySelectorAll(".tks-hovercard")).toHaveLength(1);
     add.mockRestore();
   });
 
@@ -340,7 +340,7 @@ describe("createHoverCard", () => {
   it("opens at once on focus of a link holding a badge, and describes the link", () => {
     const { link, other } = page();
     link.setAttribute("aria-describedby", STORE_NOTE_ID);
-    start().bind(the(".sar-badge", link), [make.verdict.disclosed("ai")]);
+    start().bind(the(".tks-badge", link), [make.verdict.disclosed("ai")]);
     focusIn(link);
     expect(shown()).not.toBeNull();
     expect(link.getAttribute("aria-describedby")).toBe(`${STORE_NOTE_ID} ${HOVER_CARD_ID}`);
@@ -455,7 +455,7 @@ describe("createHoverCard", () => {
     function entries(): string[][] {
       const node = shown();
       return Array.from(
-        node?.querySelectorAll(".sar-hovercard-entry") ?? [],
+        node?.querySelectorAll(".tks-hovercard-entry") ?? [],
         (entry) => Array.from(entry.children, (line) => line.textContent),
       );
     }
@@ -504,7 +504,7 @@ describe("createHoverCard", () => {
     it("lists every kind in the order given", () => {
       open(full);
       expect(entries().map(([title]) => title)).toEqual(KIND_IDS.map(heading));
-      expect(shown()?.querySelectorAll(".sar-hovercard-title")).toHaveLength(KIND_IDS.length);
+      expect(shown()?.querySelectorAll(".tks-hovercard-title")).toHaveLength(KIND_IDS.length);
     });
 
     it.each(
@@ -520,18 +520,18 @@ describe("createHoverCard", () => {
       ] as const,
     )("closes %s with the lines that name their source", (_name, kinds, keys) => {
       open(kinds.map((id) => make.verdict.disclosed(id)));
-      const lines = [...(shown()?.querySelectorAll(".sar-hovercard-source") ?? [])];
+      const lines = [...(shown()?.querySelectorAll(".tks-hovercard-source") ?? [])];
       expect(lines.map((line) => line.textContent)).toEqual(keys.map((key) => i18n.t(key)));
       expect(shown()?.lastElementChild).toBe(lines.at(-1));
     });
 
     it("marks each entry with its kind, so a custom color reaches its title", () => {
       open(full);
-      const kinds = [...(shown()?.querySelectorAll(".sar-hovercard-entry") ?? [])].map((entry) =>
-        entry.getAttribute("data-sar-kind")
+      const kinds = [...(shown()?.querySelectorAll(".tks-hovercard-entry") ?? [])].map((entry) =>
+        entry.getAttribute("data-tks-kind")
       );
       expect(kinds).toEqual([...KIND_IDS]);
-      expect(shown()?.querySelector(".sar-hovercard-title")?.hasAttribute("style")).toBe(false);
+      expect(shown()?.querySelector(".tks-hovercard-title")?.hasAttribute("style")).toBe(false);
     });
 
     // Family Sharing as a paid game whose Steam features leave it out shows it.
@@ -708,7 +708,7 @@ describe("createHoverCard", () => {
         make.verdict.disclosed("kernel", { name: markup }),
         make.verdict.disclosed("earlyaccess", { note: bbcode }),
       ]);
-      expect(document.querySelector(".sar-hovercard b")).toBeNull();
+      expect(document.querySelector(".tks-hovercard b")).toBeNull();
       expect(entries().map((lines) => lines[1])).toEqual([
         markup,
         markup,
@@ -718,12 +718,12 @@ describe("createHoverCard", () => {
         markup,
         bbcode,
       ]);
-      expect(shown()?.querySelector(".sar-hovercard-service-name")?.textContent).toBe(markup);
+      expect(shown()?.querySelector(".tks-hovercard-service-name")?.textContent).toBe(markup);
     });
 
     it("refills the card for other kinds and keeps it for the same verdicts", () => {
       const { badge, other } = page();
-      const second = triggerIn(other, "sar-badge");
+      const second = triggerIn(other, "tks-badge");
       const hover = start();
       const first = full.slice(0, 2);
       hover.bind(badge, first);
@@ -743,7 +743,7 @@ describe("createHoverCard", () => {
       const note = make.text.note();
       overflowing = (quote) => quote.textContent === note;
       open([make.verdict.disclosed("ai"), make.verdict.disclosed("earlyaccess", { note })]);
-      expect(the(".sar-hovercard-more")).toHaveProperty("hidden", false);
+      expect(the(".tks-hovercard-more")).toHaveProperty("hidden", false);
     });
 
     it("opens nothing for a trigger bound to no kind", () => {

@@ -55,7 +55,7 @@ export function adoptStyles(root: Document | ShadowRoot, css: string): void {
     // Fall through to a style element.
   }
   const style = doc.createElement("style");
-  style.className = "sar-styles";
+  style.className = "tks-styles";
   style.textContent = css;
   ("host" in root ? root : root.head).append(style);
 }

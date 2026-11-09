@@ -125,8 +125,8 @@ These are hard rules. A change that breaks one needs an ADR first.
   install is personal: never launch it, install into it, or touch its profiles.
 - Chromium (not the regular Chrome release) is the project's Chromium browser and is used only for
   this project; loading the unpacked build there is fine.
-- Machine-specific paths (`SAR_GECKO_BIN`, `SAR_GECKO_PROFILE`, `SAR_CHROMIUM_BIN`,
-  `SAR_CHROMIUM_PROFILE`) live in the gitignored `mise.local.toml` of the main checkout. Edit it
+- Machine-specific paths (`TKS_GECKO_BIN`, `TKS_GECKO_PROFILE`, `TKS_CHROMIUM_BIN`,
+  `TKS_CHROMIUM_PROFILE`) live in the gitignored `mise.local.toml` of the main checkout. Edit it
   there; `.worktreeinclude` copies it into each new worktree, and an older worktree copies it by
   hand.
 - The Claude desktop app's built-in browser cannot load extensions; agents use it to inject the

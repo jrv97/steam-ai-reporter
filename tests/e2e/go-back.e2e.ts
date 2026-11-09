@@ -16,11 +16,11 @@ const BLANK = "about:blank";
 const SETTINGS_PATH = "options.html";
 const TAG: KindId = "drm";
 const GEAR = `a[aria-label="${i18n.t("options_all_settings")}"]`;
-const TAG_LINK = `a[data-sar-open-tab="${TAG}"]`;
+const TAG_LINK = `a[data-tks-open-tab="${TAG}"]`;
 const SELECTED_TAB = `[role=tab][aria-selected=true]`;
 const BACK = i18n.t("options_back_to_steam");
 /** The control page's session storage key that collects the settings page's errors. */
-const ERRORS_KEY = "sar-e2e-errors";
+const ERRORS_KEY = "tks-e2e-errors";
 const WAIT = { timeout: 10_000, interval: 100 };
 /** How Firefox names the cookie store of a container tab. */
 const CONTAINER_PREFIX = "firefox-container-";
@@ -130,7 +130,7 @@ async function settingsTab(browser: ExtensionBrowser): Promise<number> {
             const button = [...(doc?.querySelectorAll("button") ?? [])].some(
               (node) => node.textContent === back,
             );
-            return button && (doc?.querySelector(".sar-empty") ?? null) !== null;
+            return button && (doc?.querySelector(".tks-empty") ?? null) !== null;
           });
           const popups = ext.extension.getViews({ type: "popup" });
           const stored = await ext.storage.session.get(key);

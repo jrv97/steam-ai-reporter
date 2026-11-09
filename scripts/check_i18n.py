@@ -9,9 +9,6 @@ Shipped catalogs (src/locales/<locale>/messages.json):
 - every English key is used: as a string in src/**/*.ts, as `__MSG_<key>__` in a manifest, or in
   scripts/build.py (the userscript header).
 
-src/locales/<locale>/userscript.json holds the userscript name, which only scripts/build.py reads:
-it gets the same entry checks and the same parity with English.
-
 Every catalog, shipped or test-only (tests/locales/), must be valid and must not say "uses AI",
 "AI-free" or "no AI": the product reports disclosures, it does not judge games.
 
@@ -233,11 +230,6 @@ def main() -> None:
         ]
         if path.parent.name != DEFAULT_LOCALE:
             problems += parity_problems(path.parent.name, catalog, english)
-    names = {path.parent.name: load(path) for path in sorted(SHIPPED.glob("*/userscript.json"))}
-    for locale, catalog in names.items():
-        problems += entry_problems(SHIPPED / locale / "userscript.json", catalog)
-        if locale != DEFAULT_LOCALE:
-            problems += parity_problems(locale, catalog, names.get(DEFAULT_LOCALE, {}))
     for path in sorted(TEST_CATALOGS.glob("*/messages.json")):
         problems += entry_problems(path, load(path))
     problems += unused_problems(english)

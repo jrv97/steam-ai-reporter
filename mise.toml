@@ -174,18 +174,18 @@ depends = ["build"]
 run = "web-ext lint --source-dir dist/gecko --warnings-as-errors"
 
 [tasks.run-gecko]
-description = "Run the Gecko build in Firefox Nightly ($SAR_GECKO_BIN) with auto-reload"
+description = "Run the Gecko build in Firefox Nightly ($TKS_GECKO_BIN) with auto-reload"
 depends = ["build"]
 run = "python scripts/run_browser.py gecko"
 
 [tasks.run-chromium]
-description = "Run the Chromium build in Chromium ($SAR_CHROMIUM_BIN) with auto-reload"
+description = "Run the Chromium build in Chromium ($TKS_CHROMIUM_BIN) with auto-reload"
 depends = ["build"]
 run = "python scripts/run_browser.py chromium"
 
 # Local only: ci has neither browser.
 [tasks.e2e]
-description = "Drive the build headless in Chromium and Firefox Nightly; SAR_E2E_HEADED=1 shows it"
+description = "Drive the build headless in Chromium and Firefox Nightly; TKS_E2E_HEADED=1 shows it"
 depends = ["build"]
 run = [
   "python scripts/run_browser.py chromium --check",

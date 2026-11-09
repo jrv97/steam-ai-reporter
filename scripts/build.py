@@ -23,6 +23,7 @@ from repo import (
     EXTENSION_TARGETS,
     ICON_SIZES,
     ICONS_DIR,
+    REPO_URL,
     ROOT,
     SLUG,
     fail,
@@ -42,11 +43,8 @@ DEFAULT_LOCALE = "en"
 CONTENT_CSS = ("TOKENS_CSS", "PAGE_CSS")
 
 USERSCRIPT_MATCH = "https://store.steampowered.com/*"
-# The userscript @name comes from this catalog file and key. Set them to messages.json and ext_name,
-# then delete the userscript.json files, to follow the product name.
-USERSCRIPT_NAME = ("userscript.json", "userscript_name")
-USERSCRIPT_NAMESPACE = "https://github.com/jrv97/steam-ai-reporter"
-USERSCRIPT_UPDATE_BASE = f"{USERSCRIPT_NAMESPACE}/releases/latest/download"
+USERSCRIPT_NAMESPACE = REPO_URL
+USERSCRIPT_UPDATE_BASE = f"{REPO_URL}/releases/latest/download"
 USERSCRIPT_GRANTS = (
     "GM.getValue",
     "GM.setValue",
@@ -148,14 +146,12 @@ def write_extension(target: str, version: str) -> None:
 
 def userscript_header(version: str, catalogs: dict[str, dict[str, object]]) -> str:
     english = catalogs[DEFAULT_LOCALE]
-    name_file, name_key = USERSCRIPT_NAME
-    names = load_catalogs(name_file)
     fields: list[tuple[str, str]] = [
-        ("@name", message(names[DEFAULT_LOCALE], name_key, DEFAULT_LOCALE)),
+        ("@name", message(english, "ext_name", DEFAULT_LOCALE)),
     ]
-    for locale, catalog in names.items():
+    for locale, catalog in catalogs.items():
         if locale != DEFAULT_LOCALE:
-            fields.append((f"@name:{locale}", message(catalog, name_key, locale)))
+            fields.append((f"@name:{locale}", message(catalog, "ext_name", locale)))
     fields += [
         ("@namespace", USERSCRIPT_NAMESPACE),
         ("@version", version),

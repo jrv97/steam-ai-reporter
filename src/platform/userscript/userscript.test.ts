@@ -17,7 +17,7 @@ const DISCLOSED_BADGES = 2;
 
 /** The list filter mode the page root carries for `kind`. */
 function filterOf(kind: KindId): string | null {
-  return document.documentElement.getAttribute(`data-sar-filter-${kind}`);
+  return document.documentElement.getAttribute(`data-tks-filter-${kind}`);
 }
 
 let app: App | undefined;
@@ -45,22 +45,22 @@ function setup(overrides: Partial<UserscriptEnv> = {}) {
 afterEach(() => {
   app?.stop();
   app = undefined;
-  document.querySelector(".sar-dialog-host")?.remove();
-  document.documentElement.removeAttribute("data-sar-filter");
+  document.querySelector(".tks-dialog-host")?.remove();
+  document.documentElement.removeAttribute("data-tks-filter");
 });
 
 describe("startUserscript", () => {
   it("badges the search rows with one cookie-less GetItems request", async () => {
     const { env, server, gm, added } = setup();
     app = await startUserscript(env);
-    await expect.poll(() => document.querySelectorAll(".sar-badge").length).toBe(DISCLOSED_BADGES);
+    await expect.poll(() => document.querySelectorAll(".tks-badge").length).toBe(DISCLOSED_BADGES);
 
     expect(server.calls).toHaveLength(1);
     expect(server.calls[0]?.init.credentials).toBe("omit");
     // The verdicts went to GM storage, not to the page
     expect(gm.writes.some(isVerdictKey)).toBe(true);
     // The page CSS went through addStyle, not through adopted sheets
-    expect(added.join(" ")).toContain(".sar-badge");
+    expect(added.join(" ")).toContain(".tks-badge");
     expect(document.adoptedStyleSheets).toHaveLength(0);
   });
 
@@ -73,7 +73,7 @@ describe("startUserscript", () => {
     app = await startUserscript(env);
 
     expect(
-      document.adoptedStyleSheets.length + document.querySelectorAll("style.sar-styles").length,
+      document.adoptedStyleSheets.length + document.querySelectorAll("style.tks-styles").length,
     )
       .toBeGreaterThan(0);
   });
@@ -85,11 +85,11 @@ describe("startUserscript", () => {
     const caption = i18n.t("userscript_menu_settings");
     expect([...commands.keys()]).toStrictEqual([caption]);
     commands.get(caption)?.();
-    await expect.poll(() => document.querySelector(".sar-dialog-host")).not.toBeNull();
-    const dialog = document.querySelector(".sar-dialog-host")?.shadowRoot?.querySelector("dialog");
+    await expect.poll(() => document.querySelector(".tks-dialog-host")).not.toBeNull();
+    const dialog = document.querySelector(".tks-dialog-host")?.shadowRoot?.querySelector("dialog");
     expect(dialog?.open).toBe(true);
     // No value change listener here, so the dialog says settings apply on reload
-    expect(dialog?.querySelector(".sar-dialog-note")).not.toBeNull();
+    expect(dialog?.querySelector(".tks-dialog-note")).not.toBeNull();
   });
 
   it("applies settings changed in another tab where the manager reports them", async () => {

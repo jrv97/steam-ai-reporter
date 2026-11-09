@@ -16,7 +16,7 @@ export interface ConsoleMocks {
 
 export interface RecordingLogger {
   readonly logger: Logger;
-  /** The console mocks the logger writes to; each call gets `[sar]` and the English text. */
+  /** The console mocks the logger writes to; each call gets `[tks]` and the English text. */
   readonly sink: ConsoleMocks;
 }
 

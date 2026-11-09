@@ -162,8 +162,8 @@
     "eslint/no-param-reassign": "error",
     "eslint/no-debugger": "error",
     "eslint/no-alert": "error",
-    "sar/no-hardcoded-copy": "error",
-    "sar/no-json-parse": "error"
+    "tks/no-hardcoded-copy": "error",
+    "tks/no-json-parse": "error"
   },
   "overrides": [
     {
@@ -171,7 +171,7 @@
         "src/core/json.ts"
       ],
       "rules": {
-        "sar/no-json-parse": "off"
+        "tks/no-json-parse": "off"
       }
     }
   ]

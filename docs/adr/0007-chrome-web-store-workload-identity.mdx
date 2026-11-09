@@ -31,9 +31,9 @@ Chosen option 1.
 
 A Google Cloud service account with no IAM roles is added under Settings > Service account in the Chrome Web Store developer dashboard. A publisher can register one service account.
 
-A workload identity pool has a GitHub OIDC provider that maps `google.subject` to the token's `sub`. Its attribute condition admits a token only when `repository_id` is `1426952065` (`jrv97/steam-ai-reporter`), `ref` starts with `refs/tags/`, and `environment` is `chrome-web-store`. Only the subject `repo:jrv97@60591482/steam-ai-reporter@1426952065:environment:chrome-web-store` holds `roles/iam.workloadIdentityUser` on the service account.
+A workload identity pool has a GitHub OIDC provider that maps `google.subject` to the token's `sub`. Its attribute condition admits a token only when `repository_id` is `1426952065` (`jrv97/tag-kit-for-steam`), `ref` starts with `refs/tags/`, and `environment` is `chrome-web-store`. Only the subject `repo:jrv97@60591482/tag-kit-for-steam@1426952065:environment:chrome-web-store` holds `roles/iam.workloadIdentityUser` on the service account.
 
-The repository's `sub` claim uses GitHub's immutable form, which names the owner and the repository by numeric ID. `gh api repos/jrv97/steam-ai-reporter/actions/oidc/customization/sub` shows its prefix. A binding written with the plain `repo:jrv97/steam-ai-reporter:environment:chrome-web-store` subject did not match in the first prod run, and the job failed with `iam.serviceAccounts.getAccessToken` denied.
+The repository's `sub` claim uses GitHub's immutable form, which names the owner and the repository by numeric ID. `gh api repos/jrv97/tag-kit-for-steam/actions/oidc/customization/sub` shows its prefix. A binding written with the plain `repo:jrv97/steam-ai-reporter:environment:chrome-web-store` subject did not match in the first prod run, and the job failed with `iam.serviceAccounts.getAccessToken` denied.
 
 The Chrome job asks for `id-token: write`. `google-github-actions/auth` 3.0.0 exchanges the GitHub OIDC token for an access token that lasts 15 minutes, with the Chrome Web Store scope, and writes no credentials file.
 
@@ -71,3 +71,7 @@ The `chrome-web-store` environment holds four variables and no secrets: `CWS_WOR
 - Chrome Web Store service accounts: https://developer.chrome.com/docs/webstore/service-accounts
 - Chrome Web Store API v2 reference: https://developer.chrome.com/docs/webstore/api/reference/rest
 - This ADR replaces the Chrome Web Store auth choice in [ADR 0005](0005-release-pipeline.mdx).
+
+## Amendment 2026-11-09: repo rename
+
+The repository moved from `jrv97/steam-ai-reporter` to `jrv97/tag-kit-for-steam`. The immutable `sub` claim names the repository as well as its ID, and its prefix became `repo:jrv97@60591482/tag-kit-for-steam@1426952065`. The IAM binding has to name the new subject before the next Chrome Web Store run. The attribute condition checks `repository_id`, which the rename left unchanged.

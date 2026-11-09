@@ -16,9 +16,9 @@ const WITH_TAGS =
   `<div class="glance_ctn_responsive_left">${make.page.devRows}${make.page.userTags}</div>`;
 const WITHOUT_TAGS = `<div class="glance_ctn_responsive_left">${make.page.devRows}</div>`;
 
-const sections = () => [...document.querySelectorAll(".sar-tag-section")];
-const chips = () => [...document.querySelectorAll(".sar-tag-section .sar-badge")];
-const kinds = () => chips().map((chip) => chip.getAttribute("data-sar-kind"));
+const sections = () => [...document.querySelectorAll(".tks-tag-section")];
+const chips = () => [...document.querySelectorAll(".tks-tag-section .tks-badge")];
+const kinds = () => chips().map((chip) => chip.getAttribute("data-tks-kind"));
 
 /** A tag section over a page made of `html`. */
 function mounted(html = WITH_TAGS, card?: Parameters<typeof createTagSection>[2]) {
@@ -42,24 +42,24 @@ describe("createTagSection", () => {
   it("draws the label and one chip for every verdict, in order, with no overflow chip", () => {
     mounted().render(all);
     expect(kinds()).toEqual([...KIND_IDS]);
-    expect(document.querySelectorAll(".sar-badge-label")).toHaveLength(KIND_IDS.length);
-    expect(document.querySelector(".sar-tag-section-label")?.textContent).toBe(
+    expect(document.querySelectorAll(".tks-badge-label")).toHaveLength(KIND_IDS.length);
+    expect(document.querySelector(".tks-tag-section-label")?.textContent).toBe(
       i18n.t("badge_tags_title"),
     );
     const root = sections()[0];
     expect(root?.getAttribute("role")).toBe("group");
     expect(root?.getAttribute("aria-labelledby")).toBe(
-      document.querySelector(".sar-tag-section-label")?.id,
+      document.querySelector(".tks-tag-section-label")?.id,
     );
-    expect(root?.querySelector(".sar-chips")?.getAttribute("data-sar-chips")).toBe("full");
+    expect(root?.querySelector(".tks-chips")?.getAttribute("data-tks-chips")).toBe("full");
     expect(root?.textContent).not.toContain("+");
   });
 
   it("puts the chip text and the accessible name in the chip", () => {
     mounted().render([kernel]);
     const chip = chips()[0];
-    expect(chip?.querySelector(".sar-badge-label")?.textContent).toBe(i18n.t("kind_kernel_chip"));
-    expect(chip?.querySelector(".sar-vh")?.textContent).toBe(
+    expect(chip?.querySelector(".tks-badge-label")?.textContent).toBe(i18n.t("kind_kernel_chip"));
+    expect(chip?.querySelector(".tks-vh")?.textContent).toBe(
       i18n.t("kind_chip_name", {
         chip: i18n.t("kind_kernel_chip"),
         heading: i18n.t("kind_kernel_heading"),
@@ -92,7 +92,7 @@ describe("createTagSection", () => {
     expect(sections()).toHaveLength(1);
     section.render([]);
     expect(sections()).toHaveLength(0);
-    expect(document.querySelector(".sar-tag-section-label")).toBeNull();
+    expect(document.querySelector(".tks-tag-section-label")).toBeNull();
   });
 
   it("changes nothing for the same verdicts and never doubles the section", () => {

@@ -20,7 +20,7 @@ export interface BackupCardDeps extends BackupDeps {
 }
 
 /** Names what a button of the card does. */
-const ACTION_ATTRIBUTE = "data-sar-backup";
+const ACTION_ATTRIBUTE = "data-tks-backup";
 const ACTIONS = ["save", "pick", "confirm", "cancel"] as const;
 type Action = (typeof ACTIONS)[number];
 const ActionSchema = v.picklist(ACTIONS);
@@ -49,7 +49,7 @@ export function createBackupCard(doc: Document, deps: BackupCardDeps): HTMLEleme
   }
 
   function button(action: Action, label: BareMessageKey): HTMLButtonElement {
-    const node = element("button", "sar-button", i18n.t(label));
+    const node = element("button", "tks-button", i18n.t(label));
     node.type = "button";
     node.setAttribute(ACTION_ATTRIBUTE, action);
     return node;
@@ -62,42 +62,42 @@ export function createBackupCard(doc: Document, deps: BackupCardDeps): HTMLEleme
     return node;
   }
 
-  const section = element("section", "sar-card");
+  const section = element("section", "tks-card");
   const title = focusTarget(
-    element("h3", "sar-card-title", i18n.t("options_section_backup")),
+    element("h3", "tks-card-title", i18n.t("options_section_backup")),
     "backup",
   );
   section.setAttribute("aria-labelledby", title.id);
   const pickButton = button("pick", "options_backup_restore");
-  const actions = element("div", "sar-backup-actions");
+  const actions = element("div", "tks-backup-actions");
   actions.append(button("save", "options_backup_download"), pickButton);
 
-  const summaryTitle = focusTarget(element("p", "sar-backup-summary-title"), "backup-summary");
-  const contents = element("ul", "sar-backup-contents");
+  const summaryTitle = focusTarget(element("p", "tks-backup-summary-title"), "backup-summary");
+  const contents = element("ul", "tks-backup-contents");
   const confirm = button("confirm", "options_backup_confirm");
-  confirm.setAttribute("data-sar-variant", "primary");
-  const choices = element("div", "sar-backup-actions");
-  choices.setAttribute("data-sar-align", "end");
+  confirm.setAttribute("data-tks-variant", "primary");
+  const choices = element("div", "tks-backup-actions");
+  choices.setAttribute("data-tks-align", "end");
   choices.append(confirm, button("cancel", "options_backup_cancel"));
-  const summary = element("div", "sar-backup-summary");
+  const summary = element("div", "tks-backup-summary");
   summary.setAttribute("role", "group");
   summary.setAttribute("aria-labelledby", summaryTitle.id);
   summary.hidden = true;
   summary.append(
     summaryTitle,
     contents,
-    element("p", "sar-backup-note", i18n.t("options_backup_restore_note")),
+    element("p", "tks-backup-note", i18n.t("options_backup_restore_note")),
     choices,
   );
 
-  const status = element("p", "sar-backup-status");
-  const error = element("p", "sar-field-error");
+  const status = element("p", "tks-backup-status");
+  const error = element("p", "tks-field-error");
   error.setAttribute("role", "alert");
   status.hidden = true;
   error.hidden = true;
   section.append(
     title,
-    element("p", "sar-backup-help", i18n.t("options_backup_help")),
+    element("p", "tks-backup-help", i18n.t("options_backup_help")),
     actions,
     summary,
     status,

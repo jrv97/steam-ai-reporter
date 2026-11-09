@@ -83,7 +83,7 @@ Sequencing: the changie setup (`.changie.yaml`, `.changes/`) and the pull reques
 
 ## Amendment 2026-10-21: as built
 
-The release app is a GitHub App owned by a personal account and installed only on `jrv97/steam-ai-reporter`. The workflows read its ID and key from the repository secrets `RELEASE_APP_ID` and `RELEASE_APP_PRIVATE_KEY` through `actions/create-github-app-token`. The app opens the batch PR, which lets CI run on it, and the tag ruleset admits only this app.
+The release app is a GitHub App owned by a personal account and installed only on `jrv97/tag-kit-for-steam`. The workflows read its ID and key from the repository secrets `RELEASE_APP_ID` and `RELEASE_APP_PRIVATE_KEY` through `actions/create-github-app-token`. The app opens the batch PR, which lets CI run on it, and the tag ruleset admits only this app.
 
 The Chrome Web Store job gets a 15-minute access token through Workload Identity Federation and a service account, and `scripts/cws.py` calls API v2 with it. [ADR 0007](0007-chrome-web-store-workload-identity.mdx) records that choice and the options it replaced.
 

@@ -27,14 +27,14 @@ const AI_DRM = { verdicts: make.verdicts.only(["ai", "drm"]) };
 const NOTHING = { verdicts: make.verdicts.only([]) };
 const UNKNOWN = { verdicts: make.verdicts.uniform("missing") };
 
-const summary = () => document.querySelector(".sar-summary");
+const summary = () => document.querySelector(".tks-summary");
 
 /** The summary's lines, or undefined when there is no summary. */
 function lines(): readonly string[] | undefined {
   const box = summary();
   return box === null
     ? undefined
-    : [...box.querySelectorAll(".sar-summary-line")].map((line) => line.textContent);
+    : [...box.querySelectorAll(".tks-summary-line")].map((line) => line.textContent);
 }
 
 /** Draws each row that has a view, then lets the summary's one draw run. */

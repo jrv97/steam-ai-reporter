@@ -22,8 +22,8 @@ export interface SettingsDialogDeps {
   readonly live: boolean;
 }
 
-const HOST_CLASS = "sar-dialog-host";
-const CLOSE_ATTRIBUTE = "data-sar-close";
+const HOST_CLASS = "tks-dialog-host";
+const CLOSE_ATTRIBUTE = "data-tks-close";
 
 /**
  * Opens the settings in a modal `dialog` inside a shadow root, so store CSS cannot reach it and
@@ -44,29 +44,29 @@ export async function openSettingsDialog(deps: SettingsDialogDeps): Promise<void
 
   const dialog = doc.createElement("dialog");
   const title = doc.createElement("h1");
-  title.className = "sar-dialog-title";
-  title.id = "sar-dialog-title";
+  title.className = "tks-dialog-title";
+  title.id = "tks-dialog-title";
   title.textContent = i18n.t("ext_name");
   dialog.setAttribute("aria-labelledby", title.id);
 
   const close = doc.createElement("button");
   close.type = "button";
-  close.className = "sar-button";
+  close.className = "tks-button";
   close.setAttribute(CLOSE_ATTRIBUTE, "");
   close.textContent = i18n.t("userscript_close");
 
   const head = doc.createElement("div");
-  head.className = "sar-dialog-head";
+  head.className = "tks-dialog-head";
   head.append(title, close);
 
   const formRoot = doc.createElement("div");
   const body = doc.createElement("div");
-  body.className = "sar-dialog-body";
+  body.className = "tks-dialog-body";
   body.append(formRoot);
   dialog.append(head, body);
   if (!deps.live) {
     const note = doc.createElement("p");
-    note.className = "sar-dialog-note";
+    note.className = "tks-dialog-note";
     note.textContent = i18n.t("userscript_reload_note");
     dialog.append(note);
   }

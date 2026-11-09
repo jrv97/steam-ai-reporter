@@ -17,7 +17,7 @@ In the context of five listing screenshots that go stale with every visible chan
 
 ## Details
 
-- `scripts/screenshots.py` copies `SAR_CHROMIUM_PROFILE` to a temporary folder without its caches, refuses to run while Chromium holds the profile, and deletes the copy at the end. The dev profile itself is only read. `SAR_SCREENSHOT_FRESH=1` runs on a new, signed-out profile instead.
+- `scripts/screenshots.py` copies `TKS_CHROMIUM_PROFILE` to a temporary folder without its caches, refuses to run while Chromium holds the profile, and deletes the copy at the end. The dev profile itself is only read. `TKS_SCREENSHOT_FRESH=1` runs on a new, signed-out profile instead.
 - The capture installs the worktree's build, so the extension ID and its storage are new on every run. `docs/store/sample-config.json`, made with Download backup, carries the settings and the ignore lists; the capture restores it through Restore from a backup, as a person would.
 - Each shot checks that the elements it shows are on the page before it saves. Data that drifted fails the run with no image written.
 - Store pages load with Steam's `l` parameter for the capture locale. Steam's cookie banner, when it shows, gets Reject All.
