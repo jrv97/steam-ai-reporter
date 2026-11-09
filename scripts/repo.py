@@ -1,9 +1,10 @@
-"""Shared helpers for the scripts in this folder: repository paths, Git file lists, failures."""
+"""Shared helpers for the scripts in this folder: repository paths, tool runs, Git, failures."""
 
 import json
 import struct
 import subprocess
 import sys
+from collections.abc import Mapping
 from pathlib import Path
 from typing import NamedTuple, NoReturn
 
@@ -63,11 +64,23 @@ def fail(message: str) -> NoReturn:
     sys.exit(1)
 
 
-def git(*args: str) -> str:
+def run(*args: str, env: Mapping[str, str] | None = None) -> str:
+    """Run a tool from the repository root and return its stdout; a failure exits with stderr."""
     result = subprocess.run(
-        ["git", *args], cwd=ROOT, check=True, capture_output=True, text=True, encoding="utf-8"
+        list(args), cwd=ROOT, env=env, check=False, capture_output=True, text=True, encoding="utf-8"
     )
+    if result.returncode != 0:
+        fail(f"{' '.join(args[:2])} failed:\n{result.stderr.strip()}")
     return result.stdout
+
+
+def run_status(*args: str, env: Mapping[str, str] | None = None) -> int:
+    """Run a tool from the repository root on the terminal and return its exit code."""
+    return subprocess.run(list(args), cwd=ROOT, env=env, check=False).returncode
+
+
+def git(*args: str) -> str:
+    return run("git", *args)
 
 
 def git_paths(*args: str) -> list[str]:
@@ -102,6 +115,11 @@ def json_string(value: object, where: str) -> str:
     return value
 
 
-def package_version() -> str:
-    package = json_object(read_json(ROOT / "package.json"), "package.json")
+def package_version(revision: str | None = None) -> str:
+    """The package.json version in the working tree, or at a Git revision."""
+    if revision is None:
+        text = (ROOT / "package.json").read_text(encoding="utf-8")
+    else:
+        text = git("show", f"{revision}:package.json")
+    package = json_object(json.loads(text), "package.json")
     return json_string(package.get("version"), "package.json version")

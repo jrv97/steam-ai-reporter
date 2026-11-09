@@ -13,14 +13,13 @@ Usage: screenshots.py [vitest arguments, such as -t 01-search to retake one shot
 
 import os
 import shutil
-import subprocess
 import sys
 import tempfile
 import time
 from pathlib import Path
 
 from check_screenshots import main as check
-from repo import ROOT, fail
+from repo import fail, run_status
 
 CONFIG = "vitest.screenshots.config.ts"
 REMOVE_TRIES = 10
@@ -74,10 +73,7 @@ def capture(env: dict[str, str], args: list[str]) -> None:
     vitest = shutil.which("vitest")
     if vitest is None:
         fail("vitest is not on PATH; run `mise run setup`")
-    result = subprocess.run(
-        [vitest, "run", "--config", CONFIG, *args], cwd=ROOT, env=env, check=False
-    )
-    if result.returncode != 0:
+    if run_status(vitest, "run", "--config", CONFIG, *args, env=env) != 0:
         fail("the capture failed; no screenshot was checked")
 
 

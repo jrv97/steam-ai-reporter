@@ -17,7 +17,6 @@ import argparse
 import json
 import os
 import re
-import subprocess
 import tempfile
 import zipfile
 from pathlib import Path
@@ -35,6 +34,8 @@ from repo import (
     json_object,
     json_string,
     package_version,
+    run,
+    run_status,
 )
 
 CHANGES = ROOT / ".changes"
@@ -46,19 +47,17 @@ PACKAGE_VERSION = re.compile(r'^(\s*"version":\s*)"[^"]*"', re.MULTILINE)
 GREEN_LOOKBACK = 100
 
 
-def run(*args: str, token: str | None = None) -> str:
-    """Run a tool and return its stdout. A `token` replaces GH_TOKEN for this call."""
-    env = os.environ | ({"GH_TOKEN": token} if token else {})
-    result = subprocess.run(
-        list(args), cwd=ROOT, env=env, check=False, capture_output=True, text=True, encoding="utf-8"
-    )
-    if result.returncode != 0:
-        fail(f"{args[0]} {args[1] if len(args) > 1 else ''} failed:\n{result.stderr.strip()}")
-    return result.stdout
+def token_env(token: str | None) -> dict[str, str] | None:
+    """The environment where `token` replaces GH_TOKEN, for gh and for Git through gh."""
+    return os.environ | {"GH_TOKEN": token} if token else None
+
+
+def gh(*args: str, token: str | None = None) -> str:
+    return run("gh", *args, env=token_env(token))
 
 
 def gh_json(*args: str, token: str | None = None) -> object:
-    parsed: object = json.loads(run("gh", *args, token=token))
+    parsed: object = json.loads(gh(*args, token=token))
     return parsed
 
 
@@ -162,7 +161,7 @@ def set_package_version(version: str) -> None:
 
 def open_batch_pr(version: str, base: str) -> None:
     token, slug = app_token(), env("RELEASE_APP_SLUG")
-    app_user_id = run("gh", "api", f"users/{slug}[bot]", "--jq", ".id", token=token).strip()
+    app_user_id = gh("api", f"users/{slug}[bot]", "--jq", ".id", token=token).strip()
     branch, title = f"{RELEASE_BRANCH}{version}", f"chore(release): {version}"
     git("switch", "--create", branch, base)
     batch_changelog(version)
@@ -177,15 +176,15 @@ def open_batch_pr(version: str, base: str) -> None:
         "--message",
         title,
     )
-    run("gh", "auth", "setup-git", token=token)
-    run("git", "push", "origin", f"HEAD:refs/heads/{branch}", token=token)
+    gh("auth", "setup-git", token=token)
+    run("git", "push", "origin", f"HEAD:refs/heads/{branch}", env=token_env(token))
     body = f"Batches the changelog fragments into {version} and sets the package.json version."
     create = ["pr", "create", "--base", "main", "--head", branch, "--title", title, "--body", body]
-    url = run("gh", *create, token=token).strip()
-    run("gh", "pr", "merge", url, "--auto", "--squash", token=token)
+    url = gh(*create, token=token).strip()
+    gh("pr", "merge", url, "--auto", "--squash", token=token)
     decision = gh_json("pr", "view", url, "--json", "reviewDecision")
     if json_object(decision, "pr view").get("reviewDecision") == "REVIEW_REQUIRED":
-        run("gh", "pr", "review", url, "--approve", "--body", "Release batch.")
+        gh("pr", "review", url, "--approve", "--body", "Release batch.")
     summary(f"Opened {url}; it merges once the required checks pass.")
 
 
@@ -219,16 +218,11 @@ def train(dry_run: bool) -> None:
     open_batch_pr(version, base)
 
 
-def version_at(revision: str) -> str:
-    package = json_object(json.loads(git("show", f"{revision}:package.json")), "package.json")
-    return json_string(package.get("version"), "package.json version")
-
-
 def tag() -> None:
     sha = env("RELEASE_SHA")
-    version = version_at(sha)
+    version = package_version(sha)
     parsed = parse(version)
-    if parsed is None or version == version_at(f"{sha}^1"):
+    if parsed is None or version == package_version(f"{sha}^1"):
         summary(f"{sha[:12]} is not a release batch commit; nothing to tag.")
         return
     tags = release_tags()
@@ -242,9 +236,9 @@ def tag() -> None:
         fail(f"CI has not passed for {sha}")
     token = app_token()
     ref_api = "repos/{owner}/{repo}/git/refs"
-    run("gh", "api", ref_api, "-f", f"ref=refs/tags/{version}", "-f", f"sha={sha}", token=token)
+    gh("api", ref_api, "-f", f"ref=refs/tags/{version}", "-f", f"sha={sha}", token=token)
     dispatch = ["workflow", "run", NIGHTLY_WORKFLOW, "--ref", version, "-f", f"tag={version}"]
-    run("gh", *dispatch, token=token)
+    gh(*dispatch, token=token)
     summary(f"Tagged {sha[:12]} as {version} and dispatched {NIGHTLY_WORKFLOW}.")
 
 
@@ -274,9 +268,7 @@ def validate(release: bool) -> None:
         fail(f"the checkout is not at the tag {version}")
     if package_version() != version:
         fail(f"package.json at {version} holds version {package_version()}")
-    try:
-        git("merge-base", "--is-ancestor", sha, "origin/main")
-    except subprocess.CalledProcessError:
+    if run_status("git", "merge-base", "--is-ancestor", sha, "origin/main") != 0:
         fail(f"{version} ({sha[:12]}) is not on origin/main")
     if not ci_passed(sha):
         fail(f"CI has not passed for {version} ({sha[:12]})")
@@ -309,14 +301,14 @@ def publish_nightly() -> None:
         notes = Path(folder) / "notes.md"
         notes.write_text(release_notes(version) + "\n", encoding="utf-8")
         options = ["--prerelease", "--verify-tag", "--title", version, "--notes-file", str(notes)]
-        run("gh", "release", "create", version, *map(str, files), *options)
+        gh("release", "create", version, *map(str, files), *options)
     summary(f"Created the prerelease {version} with {len(files)} assets. No store was touched.")
 
 
 def download(version: str, *names: str) -> list[Path]:
     ARTIFACTS.mkdir(exist_ok=True)
     patterns = [arg for name in names for arg in ("--pattern", name)]
-    run("gh", "release", "download", version, "--dir", str(ARTIFACTS), "--clobber", *patterns)
+    gh("release", "download", version, "--dir", str(ARTIFACTS), "--clobber", *patterns)
     return [ARTIFACTS / name for name in names]
 
 
@@ -380,7 +372,7 @@ def amo() -> None:
 
 def latest() -> None:
     version = release_tag()
-    run("gh", "release", "edit", version, "--prerelease=false", "--latest")
+    gh("release", "edit", version, "--prerelease=false", "--latest")
     summary(f"{version} is now the latest release; userscript installs will update.")
 
 
