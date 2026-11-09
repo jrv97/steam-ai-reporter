@@ -315,7 +315,11 @@ describe("the settings tab rules", () => {
   it.each(
     [
       ["SETTINGS_CSS", '.sar-options[data-sar-context="page"]', /block-size: 100dvh/],
+      ["SETTINGS_CSS", '.sar-options[data-sar-context="page"]', /margin-block: 0/],
       ["SETTINGS_CSS", ".sar-tabpanel", /overflow-y: auto/],
+      ["SETTINGS_CSS", ".sar-tabpanel", /position: relative/],
+      ["SETTINGS_CSS", ".sar-tabpanel > :last-child", /margin-block-end: 0/],
+      ["SETTINGS_CSS", ".sar-tab", /flex: none/],
       ["DIALOG_CSS", "dialog[open]", /block-size: calc\(100vh/],
     ] as const,
   )("fixes the frame only from 800 by 560: %s %s", (sheet, selector, declaration) => {
