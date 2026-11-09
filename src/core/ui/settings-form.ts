@@ -800,6 +800,12 @@ export async function mountSettingsForm(
   // The feedback bar goes with the tabs, on the page and in the dialog; the popup has none
   const feedback = built === undefined ? [] : [createFeedbackFooter(doc, i18n)];
   root.replaceChildren(...top, loadError, built?.frame ?? rows, footer, ...feedback, live);
+  // The links to the settings work from the first frame; other events wait for the reads.
+  let ready = false;
+  const events = ["change", "input", "click", "keydown", "pointerdown"] as const;
+  for (const type of events) {
+    root.addEventListener(type, onEvent);
+  }
 
   /** Controls stay off while the load error shows, so no save puts defaults over v1 data. */
   const settingControls = root.querySelectorAll<HTMLInputElement | HTMLSelectElement>(
@@ -1205,7 +1211,24 @@ export async function mountSettingsForm(
     }
   }
 
-  function onClick(event: Event | undefined, target: EventTarget | null): void {
+  /** A popup row or the gear: the page opens the settings, if it can. */
+  function onOpen(event: Event): boolean {
+    const { target } = event;
+    if (event.type !== "click" || !(target instanceof Element) || deps.openSettings === undefined) {
+      return false;
+    }
+    const open = toTabId(
+      target.closest(`[${OPEN_TAB_ATTRIBUTE}]`)?.getAttribute(OPEN_TAB_ATTRIBUTE),
+    );
+    if (open === undefined && target.closest(`[${OPEN_SETTINGS_ATTRIBUTE}]`) === null) {
+      return false;
+    }
+    event.preventDefault();
+    deps.openSettings(open);
+    return true;
+  }
+
+  function onClick(target: EventTarget | null): void {
     if (!(target instanceof Element)) {
       return;
     }
@@ -1223,15 +1246,6 @@ export async function mountSettingsForm(
       }
       return;
     }
-    const open = toTabId(
-      target.closest(`[${OPEN_TAB_ATTRIBUTE}]`)?.getAttribute(OPEN_TAB_ATTRIBUTE),
-    );
-    const gear = target.closest(`[${OPEN_SETTINGS_ATTRIBUTE}]`) !== null;
-    if ((open !== undefined || gear) && event !== undefined && deps.openSettings !== undefined) {
-      event.preventDefault();
-      deps.openSettings(open);
-      return;
-    }
     const reset = target.closest<HTMLElement>(`[${COLOR_RESET_ATTRIBUTE}]`);
     if (reset !== null) {
       resetColor(reset);
@@ -1244,6 +1258,9 @@ export async function mountSettingsForm(
   }
 
   function onEvent(event: Event): void {
+    if (onOpen(event) || !ready) {
+      return;
+    }
     built?.order.handle(event);
     if (chipFields.handle(event)) {
       return;
@@ -1263,16 +1280,13 @@ export async function mountSettingsForm(
       case "pointerdown":
         break;
       default:
-        onClick(event, event.target);
+        onClick(event.target);
     }
   }
 
-  const events = ["change", "input", "click", "keydown", "pointerdown"] as const;
   sync();
   await refreshAllowList();
-  for (const type of events) {
-    root.addEventListener(type, onEvent);
-  }
+  ready = true;
   const unsubscribe = settings.subscribe((value) => {
     current = parseSettings(value);
     loadFailed = false;

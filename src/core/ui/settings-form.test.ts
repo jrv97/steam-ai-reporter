@@ -1014,11 +1014,25 @@ describe("the toolbar popup", () => {
       "drm",
     ],
     ["the gear", (root: HTMLElement) => root.querySelector(".sar-gear svg"), undefined],
-  ])("hands a click on %s to the page, which opens the settings", async (_name, find, tab) => {
+  ])("hands a click on %s to the page while the form still loads", async (_name, find, tab) => {
     const openSettings = vi.fn();
-    const { root } = await popup({ openSettings, header: { version: make.text.version() } });
+    let release = (): void => undefined;
+    const held = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const settings = createSettingsSource(fake.loggingStore(fake.store(), () => held));
+    const mounting = popup({ openSettings, settings, header: { version: make.text.version() } });
+    const target = await vi.waitFor(() => {
+      const shown = find(document.body);
+      if (shown === null) {
+        throw new TypeError();
+      }
+      return shown;
+    });
     const click = new MouseEvent("click", { bubbles: true, cancelable: true });
-    find(root)?.dispatchEvent(click);
+    target.dispatchEvent(click);
+    release();
+    await mounting;
     expect(openSettings.mock.calls).toEqual([[tab]]);
     expect(click.defaultPrevented).toBe(true);
   });
