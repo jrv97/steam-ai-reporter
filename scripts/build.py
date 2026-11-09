@@ -23,8 +23,9 @@ from repo import (
     EXTENSION_TARGETS,
     ICON_SIZES,
     ICONS_DIR,
+    REPO_URL,
     ROOT,
-    SLUG,
+    USERSCRIPT_SLUG,
     fail,
     json_object,
     json_string,
@@ -45,8 +46,9 @@ USERSCRIPT_MATCH = "https://store.steampowered.com/*"
 # The userscript @name comes from this catalog file and key. Set them to messages.json and ext_name,
 # then delete the userscript.json files, to follow the product name.
 USERSCRIPT_NAME = ("userscript.json", "userscript_name")
+# Managers key an install by @name and @namespace. A new namespace would install a second copy.
 USERSCRIPT_NAMESPACE = "https://github.com/jrv97/steam-ai-reporter"
-USERSCRIPT_UPDATE_BASE = f"{USERSCRIPT_NAMESPACE}/releases/latest/download"
+USERSCRIPT_UPDATE_BASE = f"{REPO_URL}/releases/latest/download"
 USERSCRIPT_GRANTS = (
     "GM.getValue",
     "GM.setValue",
@@ -169,8 +171,8 @@ def userscript_header(version: str, catalogs: dict[str, dict[str, object]]) -> s
         ("@match", USERSCRIPT_MATCH),
         ("@noframes", ""),
         ("@run-at", "document-idle"),
-        ("@updateURL", f"{USERSCRIPT_UPDATE_BASE}/{SLUG}.meta.js"),
-        ("@downloadURL", f"{USERSCRIPT_UPDATE_BASE}/{SLUG}.user.js"),
+        ("@updateURL", f"{USERSCRIPT_UPDATE_BASE}/{USERSCRIPT_SLUG}.meta.js"),
+        ("@downloadURL", f"{USERSCRIPT_UPDATE_BASE}/{USERSCRIPT_SLUG}.user.js"),
     ]
     fields += [("@grant", grant) for grant in USERSCRIPT_GRANTS]
     width = max(len(key) for key, _ in fields) + 1
@@ -189,7 +191,7 @@ def bundles(header: str) -> list[Bundle]:
     result.append(
         Bundle(
             "src/platform/userscript/main.ts",
-            DIST / "userscript" / f"{SLUG}.user.js",
+            DIST / "userscript" / f"{USERSCRIPT_SLUG}.user.js",
             banner=f"{header}\n{valibot_notice()}",
         )
     )
@@ -218,7 +220,7 @@ def main() -> None:
     shutil.rmtree(DIST, ignore_errors=True)
     for target in EXTENSION_TARGETS:
         write_extension(target, version)
-    write_text(DIST / "userscript" / f"{SLUG}.meta.js", header + "\n")
+    write_text(DIST / "userscript" / f"{USERSCRIPT_SLUG}.meta.js", header + "\n")
     run_esbuild(bundles(header), watch=False)
     if args.watch:
         print("watching src/ (manifests and catalogs follow on the next `mise run build`)")

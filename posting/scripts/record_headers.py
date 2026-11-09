@@ -1,6 +1,6 @@
 """Posting on_response hook: print the response headers and save them for the spike notes.
 
-Each response is written as JSON to <system temp>/steam-ai-reporter-posting/, one file per
+Each response is written as JSON to <system temp>/tag-kit-for-steam-posting/, one file per
 request origin and path. Cookie values are never written; only the cookie names are kept.
 """
 
@@ -44,7 +44,7 @@ class _Response(Protocol):
     def request(self) -> _Request: ...
 
 
-OUT_DIR = Path(tempfile.gettempdir()) / "steam-ai-reporter-posting"
+OUT_DIR = Path(tempfile.gettempdir()) / "tag-kit-for-steam-posting"
 
 
 def on_response(response: _Response) -> None:

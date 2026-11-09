@@ -11,7 +11,7 @@
 
 A browser extension for Chromium-based browsers and Firefox, and a userscript (Tampermonkey and Violentmonkey) that tag items on the Steam store with what Valve's own data says about them: AI Generated Content Disclosure, Anti-Cheat (Kernel Level flagged separately), 3rd-party DRM, 3rd-Party Account, 3rd-party EULA, PvP (friend request), In-App Purchases, Valve's Steam Deck and Steam Machine compatibility ratings, Family Sharing as Steam's features list it, and Early Access.
 
-> Status: [releases](https://github.com/jrv97/steam-ai-reporter/releases) are on GitHub. The Firefox link below is a placeholder.
+> Status: [releases](https://github.com/jrv97/tag-kit-for-steam/releases) are on GitHub. The Firefox link below is a placeholder.
 
 The extension only reads what Steam's store data and developers report there, and sends no reports anywhere.
 
@@ -96,13 +96,13 @@ The toolbar popup lists every tag with its Show, Dim and Hide control and its on
 
 - [Chrome Web Store](https://chromewebstore.google.com/detail/ai-reporter-for-steam/jpbjlfnkdmmdccfiocblhkjdejaihnkp).
 - [Firefox Add-ons (AMO)](https://addons.mozilla.org/en-US/firefox/addon/tag-kit-for-steam/).
-- Userscript: open [steam-ai-reporter.user.js](https://github.com/jrv97/steam-ai-reporter/releases/latest/download/steam-ai-reporter.user.js) from the latest release in Tampermonkey or Violentmonkey.
+- Userscript: open [steam-ai-reporter.user.js](https://github.com/jrv97/tag-kit-for-steam/releases/latest/download/steam-ai-reporter.user.js) from the latest release in Tampermonkey or Violentmonkey.
 
 ## Feedback
 
-- &#128030; [Report a bug](https://github.com/jrv97/steam-ai-reporter/issues/new?template=bug_report.yml)
-- &#128221; [Request a feature](https://github.com/jrv97/steam-ai-reporter/issues/new?template=feature_request.yml)
-- [Request a language or fix a translation](https://github.com/jrv97/steam-ai-reporter/issues/new?template=translation.yml)
+- &#128030; [Report a bug](https://github.com/jrv97/tag-kit-for-steam/issues/new?template=bug_report.yml)
+- &#128221; [Request a feature](https://github.com/jrv97/tag-kit-for-steam/issues/new?template=feature_request.yml)
+- [Request a language or fix a translation](https://github.com/jrv97/tag-kit-for-steam/issues/new?template=translation.yml)
 - &#128123; [Send quick anonymous feedback](https://forms.gle/Fo652zzyFWUQn2qK9)
 
 ## Privacy
@@ -141,9 +141,9 @@ For the quick loop, `mise run run-chromium` or `mise run run-gecko` builds, open
 
 To test what a release ships, run `mise run package`. It writes these files to `artifacts/`:
 
-- `steam-ai-reporter-chromium-<version>.zip` and `steam-ai-reporter-gecko-<version>.zip`.
+- `tag-kit-for-steam-chromium-<version>.zip` and `tag-kit-for-steam-gecko-<version>.zip`.
 - `steam-ai-reporter.user.js` and `steam-ai-reporter.meta.js`.
-- `steam-ai-reporter-source-<version>.zip`, the archive for store reviewers.
+- `tag-kit-for-steam-source-<version>.zip`, the archive for store reviewers.
 
 `<version>` is the `package.json` version, which holds the last release, so a local package carries that number. Load it like this:
 
@@ -155,7 +155,7 @@ Run `mise run ci` before trusting a package. It adds the reproducibility check a
 
 ## Build from source
 
-For store reviewers and anyone who wants to reproduce a release. The build runs on Linux, macOS and Windows; releases are built on Ubuntu 24.04. The source archive in each release (`steam-ai-reporter-source-<version>.zip`) holds everything below needs, including the lockfiles. It leaves out `docs/` apart from `docs/design/tokens.css`, which the build reads.
+For store reviewers and anyone who wants to reproduce a release. The build runs on Linux, macOS and Windows; releases are built on Ubuntu 24.04. The source archive in each release (`tag-kit-for-steam-source-<version>.zip`) holds everything below needs, including the lockfiles. It leaves out `docs/` apart from `docs/design/tokens.css`, which the build reads.
 
 1. Install mise: `curl https://mise.run | sh` (see [mise's install guide](https://mise.jdx.dev/getting-started.html) for other options).
 2. In the source folder, run `mise trust`, then `mise install`. This installs the exact tool versions pinned in `mise.toml` and `mise.lock`.

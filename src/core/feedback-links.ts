@@ -6,9 +6,9 @@ import type { BareMessageKey } from "./i18n/t";
 // (rule 1).
 
 export const BUG_REPORT_URL =
-  "https://github.com/jrv97/steam-ai-reporter/issues/new?template=bug_report.yml";
+  "https://github.com/jrv97/tag-kit-for-steam/issues/new?template=bug_report.yml";
 export const FEEDBACK_URL =
-  "https://github.com/jrv97/steam-ai-reporter/issues/new?template=feature_request.yml";
+  "https://github.com/jrv97/tag-kit-for-steam/issues/new?template=feature_request.yml";
 export const ANONYMOUS_FEEDBACK_URL = "https://forms.gle/Fo652zzyFWUQn2qK9";
 
 export interface FeedbackLink {

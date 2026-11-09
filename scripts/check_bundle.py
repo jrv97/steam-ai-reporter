@@ -78,8 +78,10 @@ from repo import (
     ARTIFACTS,
     DIST,
     EXTENSION_TARGETS,
+    REPO_URL,
     ROOT,
     SLUG,
+    USERSCRIPT_SLUG,
     VALIBOT_LICENSE,
     fail,
     json_object,
@@ -94,17 +96,17 @@ KIB = 1024
 BUDGETS = {
     **{DIST / target / "content.js": 215 * KIB for target in EXTENSION_TARGETS},
     **{DIST / target / "options.js": 217 * KIB for target in EXTENSION_TARGETS},
-    DIST / "userscript" / f"{SLUG}.user.js": 372 * KIB,
+    DIST / "userscript" / f"{USERSCRIPT_SLUG}.user.js": 372 * KIB,
 }
 ENGLISH = ROOT / "src" / "locales" / DEFAULT_LOCALE / "messages.json"
 STORE_MATCH = ["https://store.steampowered.com/*"]
-RELEASE_BASE = "https://github.com/jrv97/steam-ai-reporter/releases/latest/download"
+RELEASE_BASE = f"{REPO_URL}/releases/latest/download"
 ALLOWED_HOSTS = {"api.steampowered.com", "store.steampowered.com"}
 # The feedback links of the settings (src/core/feedback-links.ts): plain links a person opens in a
 # tab, never requested. Only these exact URLs, and only in the bundles that show the settings.
 FEEDBACK_URLS = (
-    "https://github.com/jrv97/steam-ai-reporter/issues/new?template=bug_report.yml",
-    "https://github.com/jrv97/steam-ai-reporter/issues/new?template=feature_request.yml",
+    f"{REPO_URL}/issues/new?template=bug_report.yml",
+    f"{REPO_URL}/issues/new?template=feature_request.yml",
     "https://forms.gle/Fo652zzyFWUQn2qK9",
 )
 HEADER_START = "// ==UserScript=="
@@ -281,8 +283,8 @@ def header_problems(where: str, header: str) -> list[str]:
     problems: list[str] = []
     expected = {
         "@match": STORE_MATCH,
-        "@updateURL": [f"{RELEASE_BASE}/{SLUG}.meta.js"],
-        "@downloadURL": [f"{RELEASE_BASE}/{SLUG}.user.js"],
+        "@updateURL": [f"{RELEASE_BASE}/{USERSCRIPT_SLUG}.meta.js"],
+        "@downloadURL": [f"{RELEASE_BASE}/{USERSCRIPT_SLUG}.user.js"],
     }
     for key, values in expected.items():
         if fields.get(key) != values:
@@ -395,7 +397,7 @@ def artifact_problems() -> list[str]:
     version = package_version()
     extensions = [f"{SLUG}-{target}-{version}.zip" for target in EXTENSION_TARGETS]
     source = f"{SLUG}-source-{version}.zip"
-    expected = {*extensions, source, f"{SLUG}.user.js", f"{SLUG}.meta.js"}
+    expected = {*extensions, source, f"{USERSCRIPT_SLUG}.user.js", f"{USERSCRIPT_SLUG}.meta.js"}
     present = {path.name for path in ARTIFACTS.iterdir()}
     problems = [f"artifacts/{name}: missing" for name in sorted(expected - present)]
     problems += [f"artifacts/{name}: unexpected" for name in sorted(present - expected)]

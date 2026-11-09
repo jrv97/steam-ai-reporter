@@ -10,7 +10,11 @@ from typing import NoReturn
 ROOT = Path(__file__).resolve().parent.parent
 DIST = ROOT / "dist"
 ARTIFACTS = ROOT / "artifacts"
-SLUG = "steam-ai-reporter"
+REPO_URL = "https://github.com/jrv97/tag-kit-for-steam"
+# The release archives take the repo name.
+SLUG = "tag-kit-for-steam"
+# Installed userscripts poll these file names through @updateURL, so they never change.
+USERSCRIPT_SLUG = "steam-ai-reporter"
 # The extension builds, named after their browser engines: dist/<target>, manifest.<target>.json.
 EXTENSION_TARGETS = ("chromium", "gecko")
 ICONS_DIR = ROOT / "assets" / "icons"
