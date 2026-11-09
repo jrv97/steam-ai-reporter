@@ -5,7 +5,7 @@ import struct
 import subprocess
 import sys
 from pathlib import Path
-from typing import NoReturn
+from typing import NamedTuple, NoReturn
 
 ROOT = Path(__file__).resolve().parent.parent
 DIST = ROOT / "dist"
@@ -26,16 +26,35 @@ def valibot_notice() -> str:
     return f"/*! valibot\n{text}\n*/"
 
 
-def png_size(path: Path) -> tuple[int, int] | None:
-    """The width and height from a PNG's header bytes, or None when the file is no PNG."""
+PNG_IHDR_SIZE = PNG_HEADER_SIZE + 2
+PNG_RGB = 2
+
+
+class PngHeader(NamedTuple):
+    """The fields of a PNG's IHDR chunk that the checks read."""
+
+    width: int
+    height: int
+    bit_depth: int
+    color_type: int
+
+
+def png_header(path: Path) -> PngHeader | None:
+    """The size, bit depth and color type from a PNG's header bytes, or None for no PNG."""
     with path.open("rb") as file:
-        header = file.read(PNG_HEADER_SIZE)
-    if len(header) < PNG_HEADER_SIZE or not header.startswith(PNG_SIGNATURE):
+        header = file.read(PNG_IHDR_SIZE)
+    if len(header) < PNG_IHDR_SIZE or not header.startswith(PNG_SIGNATURE):
         return None
     if header[12:16] != b"IHDR":
         return None
-    width, height = struct.unpack(">II", header[16:PNG_HEADER_SIZE])
-    return width, height
+    width, height, bit_depth, color_type = struct.unpack(">IIBB", header[16:PNG_IHDR_SIZE])
+    return PngHeader(width, height, bit_depth, color_type)
+
+
+def png_size(path: Path) -> tuple[int, int] | None:
+    """The width and height from a PNG's header bytes, or None when the file is no PNG."""
+    header = png_header(path)
+    return None if header is None else (header.width, header.height)
 
 
 def fail(message: str) -> NoReturn:

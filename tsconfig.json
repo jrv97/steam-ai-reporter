@@ -26,6 +26,13 @@
     "forceConsistentCasingInFileNames": true,
     "types": ["chrome"]
   },
-  "include": ["src", "tests", "lint", "vitest.config.ts", "vitest.e2e.config.ts"],
+  "include": [
+    "src",
+    "tests",
+    "lint",
+    "vitest.config.ts",
+    "vitest.e2e.config.ts",
+    "vitest.screenshots.config.ts"
+  ],
   "exclude": ["tests/fixtures"]
 }

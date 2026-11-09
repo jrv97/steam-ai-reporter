@@ -56,35 +56,39 @@ The AI badge does not say a game uses AI, and the absence of a badge does not me
 
 ### On the store
 
-![Steam search results for "roguelike", where three rows carry an "AI use reported" badge after the game's name](docs/store/screenshots/01-search.jpg)
+![Steam search results where rows carry chips such as IAP, EULA, PvP and Early Access after the game's name, dimmed rows are faded, and a panel under one row names its tags in Steam's words](docs/store/screenshots/01-search.png)
 
 In search results, rows of games whose developers reported AI use carry the badge after the name.
 
-![A game's store page with a purple banner above the purchase box that reads "AI use reported" and quotes the developer's report; the DLC rows below are badged too](docs/store/screenshots/02-app-banner.jpg)
+![A game's store page with a tag row under Steam's tags and a purple banner that quotes the developer's AI Generated Content Disclosure and lists the game's other tags, each with an Ignore button](docs/store/screenshots/02-app.png)
 
 On a game's page, a banner above the purchase box quotes the developer's report in their own words. The page's DLC rows get badges too. "Ignore this game" stops the badges and the banner for that game in this extension and does not touch Steam's own Ignore button.
 
-![A search row's badge with a panel open below it that quotes the developer's report](docs/store/screenshots/03-hover-card.jpg)
-
 Hovering or tabbing to a badge opens a panel in the style of Steam's game hover, with the developer's own text, any AI service they named and a line for each other tag the game carries.
 
-![Next Fest sale cards where two game images carry a small "AI use reported" badge in their corner](docs/store/screenshots/04-next-fest.jpg)
+![The store home's personal calendar and a recommendation row, where game images carry compact chips such as EULA, EA, PvP and SD Unsupported in their corner](docs/store/screenshots/08-calendar.png)
 
 Sale pages such as Next Fest, tag and category hubs and the home page get a compact badge on the game's image.
 
+![The store home's Top Played on Steam Deck, Your Wishlist and DLC for Your Games rows with compact chips on the game images](docs/store/screenshots/09-deck.png)
+
+![The discovery queue player opened from the store home, with chips beside the game in its right column](docs/store/screenshots/06-queue.png)
+
 ### Settings
 
-![The options page: switches for badges and the banner, a Show, Dim and Hide control for lists, a language picker, and a list of games you ignored](docs/store/screenshots/05-options.jpg)
+![The settings page on its General tab, with the tag tabs on the left and the Tag order card listing every tag with a drag handle](docs/store/screenshots/04-settings.png)
 
 The options page has a tab for each tag, named by Steam's heading for it and in the tag order (alphabetical until you reorder them), with switches for the tag, its badge and its banner entry, a Show, Dim and Hide control for lists, and what you ignored for that tag alone. A General tab picks the language (automatic follows the store page) and lists what you ignored for all tags, each item with "Stop ignoring", beside the backup. Its Tag order card puts the tags in the order badges, the banner, summaries, the tabs and the popup list them: drag a tag by its handle, click its handle and then another, or use Space and the arrow keys; a small game image shows the first two. The page remembers the last tab, and a link to `options.html#tab=drm` opens the DRM tab.
 
 In a tag's tab you can also name its chips in your own words, with a shorter text for small game images and a preview as you type, and pick its badge color (experimental) with the color square or a hex code. The popup and the Tag order card show your chip text too; the tabs keep Steam's headings. The hover panel, the banner's headings and screen readers keep Steam's words: a screen reader reads your text first, then Steam's.
 
-![The same search results with the list filter set to Dim, where the three badged rows are faded](docs/store/screenshots/list-dim.jpg)
+![The settings tab of the Steam Deck tag: the switch for the tag, the value to tag, the badge and banner switches, custom chip texts and their preview](docs/store/screenshots/05-tag.png)
+
+![A wishlist where rows carry chips such as EULA, Account, No Family Sharing and Steam Deck Unsupported, and the rows whose tags are set to Dim are faded](docs/store/screenshots/07-wishlist.png)
 
 With the list filter on Dim, badged games fade in lists and come back on hover. Hide removes them from lists; on search results one line says how many it hid, and its button shows them again, dimmed, until you reload. Show, the default, leaves lists as they are.
 
-<img src="docs/store/screenshots/popup.jpg" alt="The toolbar popup with the badge and banner switches, the Show, Dim and Hide control, one game you ignored, and a link to all settings" width="360">
+![The store home with the toolbar popup open over it, listing every tag with its Show, Dim and Hide control and its on or off switch](docs/store/screenshots/03-home.png)
 
 The toolbar popup lists every tag with its Show, Dim and Hide control and its on or off switch. A tag's name opens its tab on the options page, and the gear at the top opens all settings. The userscript opens the same tabs in a dialog from the script manager's menu.
 

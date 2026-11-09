@@ -1,0 +1,170 @@
+{
+  "format": "sar-backup",
+  "version": 1,
+  "created": 1794248020324,
+  "settings": {
+    "locale": "auto",
+    "debug": false,
+    "kinds": {
+      "ai": {
+        "enabled": true,
+        "badge": true,
+        "banner": true,
+        "filter": "hide"
+      },
+      "earlyaccess": {
+        "enabled": true,
+        "badge": true,
+        "banner": false,
+        "filter": "off",
+        "color": "#97c459",
+        "chip": "Early Access",
+        "chipCompact": "EA"
+      },
+      "family": {
+        "enabled": true,
+        "badge": true,
+        "banner": false,
+        "filter": "dim",
+        "color": "#e0609a",
+        "facets": [
+          "unsupported"
+        ]
+      },
+      "iap": {
+        "enabled": true,
+        "badge": true,
+        "banner": true,
+        "filter": "dim",
+        "color": "#d4b43a"
+      },
+      "drm": {
+        "enabled": true,
+        "badge": true,
+        "banner": true,
+        "filter": "dim",
+        "color": "#e09a2e"
+      },
+      "pvp": {
+        "enabled": true,
+        "badge": true,
+        "banner": true,
+        "filter": "off",
+        "color": "#e5534b"
+      },
+      "account": {
+        "enabled": true,
+        "badge": true,
+        "banner": true,
+        "filter": "dim",
+        "color": "#e09a2e"
+      },
+      "eula": {
+        "enabled": true,
+        "badge": true,
+        "banner": true,
+        "filter": "dim",
+        "color": "#e09a2e"
+      },
+      "deck": {
+        "enabled": true,
+        "badge": true,
+        "banner": false,
+        "filter": "off",
+        "color": "#5b7cf0",
+        "facets": [
+          "unsupported"
+        ],
+        "chip": "Steam Deck",
+        "chipCompact": "SD"
+      },
+      "machine": {
+        "enabled": false,
+        "badge": true,
+        "banner": false,
+        "filter": "off",
+        "color": "#5b7cf0",
+        "facets": [
+          "unsupported"
+        ],
+        "chip": "Steam Machine not Supported",
+        "chipCompact": "SM"
+      },
+      "anticheat": {
+        "enabled": true,
+        "badge": true,
+        "banner": true,
+        "filter": "dim",
+        "color": "#ec7a3c"
+      },
+      "kernel": {
+        "enabled": true,
+        "badge": true,
+        "banner": true,
+        "filter": "hide",
+        "color": "#bb231b"
+      }
+    },
+    "order": [
+      "ai",
+      "kernel",
+      "family",
+      "iap",
+      "account",
+      "eula",
+      "drm",
+      "anticheat",
+      "deck",
+      "pvp",
+      "earlyaccess",
+      "machine"
+    ]
+  },
+  "ignored": {
+    "games": {
+      "all": {},
+      "ai": {},
+      "earlyaccess": {},
+      "family": {},
+      "iap": {},
+      "drm": {},
+      "pvp": {},
+      "account": {},
+      "eula": {},
+      "deck": {},
+      "machine": {},
+      "anticheat": {},
+      "kernel": {}
+    },
+    "developer": {
+      "all": {},
+      "ai": {},
+      "earlyaccess": {},
+      "family": {},
+      "iap": {},
+      "drm": {},
+      "pvp": {},
+      "account": {},
+      "eula": {},
+      "deck": {},
+      "machine": {},
+      "anticheat": {},
+      "kernel": {}
+    },
+    "publisher": {
+      "all": {},
+      "ai": {},
+      "earlyaccess": {},
+      "family": {},
+      "iap": {},
+      "drm": {},
+      "pvp": {},
+      "account": {},
+      "eula": {},
+      "deck": {},
+      "machine": {},
+      "anticheat": {},
+      "kernel": {}
+    }
+  }
+}

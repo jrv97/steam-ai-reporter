@@ -1,0 +1,72 @@
+# Store screenshots runbook
+
+The listing screenshots for AMO and the Chrome Web Store live in `docs/store/screenshots/`, and `mise run screenshots` takes them again. The tooling decision is [ADR 0022](../adr/0022-store-screenshots-with-the-e2e-harness.mdx); the store limits are in `docs/research/store-screenshots/rq1-store-image-rules.md`.
+
+## What the folder holds
+
+| File              | Shows                                                                       |
+| ----------------- | --------------------------------------------------------------------------- |
+| `01-search.png`   | The search results frame with the most chips, dimmed games and a hover card |
+| `02-app.png`      | A game page: the tag row under Steam's tags and the banner                  |
+| `03-home.png`     | The store home with badges on capsules, and the toolbar popup               |
+| `04-settings.png` | Settings, General tab, at Tag order, with Go back to Steam                  |
+| `05-tag.png`      | Settings, one tag's tab: values, switches, chip text and its preview        |
+| `06-queue.png`    | The discovery queue player, opened from the store home (signed in only)     |
+| `07-wishlist.png` | The wishlist frame with the most chips (signed in only)                     |
+| `08-calendar.png` | The home page's personal calendar (signed in only)                          |
+| `09-deck.png`     | The home page's Steam Deck, wishlist and DLC rows                           |
+
+The numbered files are the upload order. The Chrome Web Store takes the first five, AMO and the README take them all. `docs/store/listing.mdx` holds their captions. A Spanish set, if one is ever taken, goes to `docs/store/screenshots/es/`.
+
+## When to retake
+
+Retake the set in the same PR as any change that alters what a shot shows:
+
+- CSS or layout under `src/core/ui/` that a chip, badge, hover card, banner, notice, popup or settings tab draws;
+- catalog text that appears in a shot;
+- a new tag kind, a new setting, or a change to the settings tabs;
+- a new placement on a page the shots cover.
+
+Before a store release, look at the images against the build being released. A shot that fails because Steam changed (a game left a list, a disclosure changed) needs a new game or query in `tests/screenshots/store.shots.ts`, then a retake.
+
+## Before the first run on a machine
+
+1. `mise.local.toml` names `SAR_CHROMIUM_BIN` and `SAR_CHROMIUM_PROFILE` (see `mise.local.toml.example`).
+2. In that Chromium profile (`mise run run-chromium`), sign in to Steam and answer Steam's cookie banner. The capture runs on a copy of this profile, so the store pages show signed in. Without a sign-in, the queue, wishlist and calendar shots cannot run.
+3. `docs/store/sample-config.json` is the settings the shots start from. To change them, set them on the settings page, use Download backup, and save the file over `docs/store/sample-config.json`.
+
+## Run
+
+Close every Chromium window that uses the dev profile, then:
+
+```bash
+mise run screenshots
+```
+
+The task builds the extension, copies the profile to a temporary folder, runs the shots headless, deletes the copy and checks the images. Nothing takes focus. A shot fails, and writes no image, when an element it needs never shows, or when a tagged game on the page carries an app ID that neither its link nor Steam's own `data-ds-appid` names.
+
+Variants:
+
+- `SAR_SCREENSHOT_FRESH=1 mise run screenshots` runs on a new, signed-out profile and skips the queue, wishlist and calendar.
+- `mise run screenshots -- -t 01-search` retakes one shot; the arguments go to vitest.
+- `SAR_SCREENSHOT_LOCALE=es mise run screenshots` captures with Spanish Steam pages and settings into `es/`.
+- `SAR_E2E_HEADED=1` shows the browser window, for debugging only.
+
+## Check
+
+`mise run screenshots` ends with `scripts/check_screenshots.py`, and `mise run check` runs it as well. It fails unless:
+
+- the folder holds numbered PNG files from `01-` up, at least five and without gaps, and no other format;
+- each numbered file is 1280x800;
+- every PNG is 24-bit RGB without alpha and at most 4 MiB.
+
+Then look at each image before committing it:
+
+- the signed-in pages show the account's name, wishlist and cart counts, and friends; blur any of them by hand where they matter;
+- the hover card, notice, banner and popup are fully drawn, with no Steam cookie banner or tooltip over them;
+- chips use Steam's words or the sample config's chip text, and nothing in the frame claims more about a game than Steam does.
+
+## Upload
+
+- Chrome Web Store: Store listing, Screenshots, files `01-` to `05-` in order.
+- AMO: Edit Product Page, Screenshots, every numbered file in order, with the captions from `docs/store/listing.mdx`.
