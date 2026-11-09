@@ -456,7 +456,8 @@ export function createBanner(
 
   /**
    * Runs one change, one at a time. A failed save shows the error line; a saved one announces
-   * the change and puts the focus back on the control when the redraw lost it.
+   * the change and puts the focus back on the control when the redraw dropped it to the page's
+   * body. Focus the person moved anywhere else stays there.
    */
   async function perform(
     clicked: Element,
@@ -480,7 +481,8 @@ export function createBanner(
     } finally {
       pending = false;
     }
-    if (!box.contains(shadow.activeElement)) {
+    const active = doc.activeElement;
+    if (!box.contains(shadow.activeElement) && (active === null || active === doc.body)) {
       (shadow.getElementById(clicked.id) ?? shadow.getElementById(MENU_BUTTON_ID) ?? box).focus();
     }
     announce(doc, live, message);

@@ -871,6 +871,19 @@ describe("ignoring from the menu", () => {
     },
   );
 
+  it("leaves the focus where the person moved it while the save ran", async () => {
+    const { root, calls, thenShow } = wired(view(SEVERAL));
+    thenShow(silenced());
+    const elsewhere = document.body.appendChild(document.createElement("button"));
+    query(root, MAIN).click();
+    elsewhere.focus();
+    calls[0]?.resolve();
+    await vi.waitFor(() => {
+      expect(query(root, "[aria-live]").textContent).toBe(i18n.t("notice_marking_stopped"));
+    });
+    expect(document.activeElement).toBe(elsewhere);
+  });
+
   it.each(
     [
       [
