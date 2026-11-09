@@ -8,9 +8,10 @@
   valibot text equals node_modules/valibot/LICENSE.md once whitespace is normalized.
 - Extension pages carry no copy (rule 9): only whitespace text, and `data-i18n` keys that resolve.
   Each page links an icon that exists, or its browser tab shows a puzzle piece.
-- Userscript: header present, no @connect, exact @match, @updateURL and @downloadURL; every `GM`
-  name in the bundle has an @grant and every @grant is used; valibot's license block is in the
-  body; no userscript header in any other bundle.
+- Userscript: header present, no @connect, exact @match, @updateURL, @downloadURL, @homepageURL,
+  @supportURL and @icon (the 48 px icon as a data URI); every `GM` name in the bundle has an
+  @grant and every @grant is used; valibot's license block is in the body; no userscript header
+  in any other bundle.
 - No eval( or new Function in any bundle (rule 2); no URL outside the two Valve hosts, except the
   three feedback links of the settings footer, which options.js and the userscript may carry.
 - Catalogs: each shipped bundle carries exactly the messages its code reads (decision 58). Every
@@ -78,14 +79,17 @@ from repo import (
     ARTIFACTS,
     DIST,
     EXTENSION_TARGETS,
+    ISSUES_URL,
     REPO_URL,
     ROOT,
     SLUG,
+    USERSCRIPT_ICON,
     VALIBOT_LICENSE,
     fail,
     json_object,
     json_string,
     package_version,
+    png_data_uri,
     png_size,
     read_json,
     valibot_notice,
@@ -104,8 +108,8 @@ ALLOWED_HOSTS = {"api.steampowered.com", "store.steampowered.com"}
 # The feedback links of the settings (src/core/feedback-links.ts): plain links a person opens in a
 # tab, never requested. Only these exact URLs, and only in the bundles that show the settings.
 FEEDBACK_URLS = (
-    f"{REPO_URL}/issues/new?template=bug_report.yml",
-    f"{REPO_URL}/issues/new?template=feature_request.yml",
+    f"{ISSUES_URL}/new?template=bug_report.yml",
+    f"{ISSUES_URL}/new?template=feature_request.yml",
     "https://forms.gle/Fo652zzyFWUQn2qK9",
 )
 HEADER_START = "// ==UserScript=="
@@ -278,12 +282,16 @@ def header_fields(header: str) -> dict[str, list[str]]:
 
 
 def header_problems(where: str, header: str) -> list[str]:
+    """Each fixed header field that is missing or holds another value, and a missing @noframes."""
     fields = header_fields(header)
     problems: list[str] = []
     expected = {
         "@match": STORE_MATCH,
         "@updateURL": [f"{RELEASE_BASE}/{SLUG}.meta.js"],
         "@downloadURL": [f"{RELEASE_BASE}/{SLUG}.user.js"],
+        "@homepageURL": [REPO_URL],
+        "@supportURL": [ISSUES_URL],
+        "@icon": [png_data_uri(USERSCRIPT_ICON)],
     }
     for key, values in expected.items():
         if fields.get(key) != values:

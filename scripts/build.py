@@ -23,13 +23,16 @@ from repo import (
     EXTENSION_TARGETS,
     ICON_SIZES,
     ICONS_DIR,
+    ISSUES_URL,
     REPO_URL,
     ROOT,
     SLUG,
+    USERSCRIPT_ICON,
     fail,
     json_object,
     json_string,
     package_version,
+    png_data_uri,
     read_json,
     run_status,
     valibot_notice,
@@ -146,6 +149,7 @@ def write_extension(target: str, version: str) -> None:
 
 
 def userscript_header(version: str, catalogs: dict[str, dict[str, object]]) -> str:
+    """The metadata block of the userscript and its .meta.js, one aligned field per line."""
     english = catalogs[DEFAULT_LOCALE]
     fields: list[tuple[str, str]] = [
         ("@name", message(english, "ext_name", DEFAULT_LOCALE)),
@@ -162,6 +166,9 @@ def userscript_header(version: str, catalogs: dict[str, dict[str, object]]) -> s
         if locale != DEFAULT_LOCALE:
             fields.append((f"@description:{locale}", message(catalog, "ext_description", locale)))
     fields += [
+        ("@homepageURL", REPO_URL),
+        ("@supportURL", ISSUES_URL),
+        ("@icon", png_data_uri(USERSCRIPT_ICON)),
         ("@license", "MIT"),
         ("@match", USERSCRIPT_MATCH),
         ("@noframes", ""),
