@@ -21,7 +21,12 @@ import {
 import { createI18n } from "./i18n/t";
 import { createIgnoreLists, isIgnored, loadIgnored } from "./ignored";
 import { taggedView } from "./kinds/facets";
-import { type ChipWords, effectiveSettings, type KindSettings } from "./kinds/kind-settings";
+import {
+  type ChipWords,
+  effectiveSettings,
+  type KindSettings,
+  taggedFacets,
+} from "./kinds/kind-settings";
 import { kindsInOrder, sameOrder } from "./kinds/order";
 import { KINDS } from "./kinds/registry";
 import { coversSections, requestSections, type Section } from "./kinds/sections";
@@ -123,7 +128,8 @@ const SHOWS_BANNER = (settings: KindSettings): boolean => settings.banner;
 /** Whether some kind tags other values in `after` than in `before`. */
 function facetsChanged(before: Settings, after: Settings): boolean {
   return KINDS.some((kind) =>
-    String(before.kinds[kind.id].facets) !== String(after.kinds[kind.id].facets)
+    String(taggedFacets(before.kinds[kind.id].tagged))
+      !== String(taggedFacets(after.kinds[kind.id].tagged))
   );
 }
 

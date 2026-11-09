@@ -13,13 +13,14 @@ import {
 } from "./settings";
 
 const PLAIN = { enabled: true, badge: true, banner: true, filter: "off" } as const;
+const { one, many } = make.settings.tagged;
 
 describe("DEFAULT_SETTINGS", () => {
   it("follows the page language, leaves every kind but PvP and IAP on, with a plain list", () => {
     expect(DEFAULT_SETTINGS).toStrictEqual({
       locale: "auto",
       debug: false,
-      kinds: make.raw.v2Kinds(PLAIN),
+      kinds: make.settings.plain(PLAIN),
       order: KIND_IDS,
     });
   });
@@ -64,15 +65,17 @@ describe("parseSettings", () => {
       kinds: {
         ...perKind((kind): KindSettings => {
           const off: KindSettings = { enabled: false, badge: false, banner: false, filter: "hide" };
-          return kind.facets === undefined
+          const [facet] = kind.facets ?? [];
+          const pick = kind.defaults.tagged?.pick;
+          return facet === undefined || pick === undefined
             ? off
-            : { ...off, facets: kind.facets.slice(0, 1).map((facet) => facet.id) };
+            : { ...off, tagged: { one: one(facet.id), many: many(facet.id) }[pick] };
         }),
         kernel: { enabled: true, badge: false, banner: true, filter: "dim" },
       },
       order: KIND_IDS.toReversed(),
     };
-    expect(parseSettings(stored)).toStrictEqual(stored);
+    expect(parseSettings(encodeSettings(stored))).toStrictEqual(stored);
     expect(parseSettings({ locale: "es" }).locale).toBe("es");
     expect(parseSettings({ locale: "zh-CN" }).locale).toBe("zh-CN");
   });

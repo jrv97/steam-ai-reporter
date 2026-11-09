@@ -14,7 +14,6 @@ import { type App, start } from "./app";
 import { dateFormat } from "./i18n/date-format";
 import { SHIPPED_CATALOGS } from "./i18n/shipped";
 import type { JsonValue } from "./json";
-import { COMPAT_FACETS } from "./kinds/compat";
 import type { KindSettings } from "./kinds/kind-settings";
 import { DEFAULT_SETTINGS, encodeSettings, type Settings } from "./settings/settings";
 import { createSettingsSource } from "./settings/settings-source";
@@ -148,7 +147,6 @@ describe("start on an English app page of a game with no AI", () => {
       const { ignored } = await startRated({
         enabled: true,
         banner: true,
-        facets: [...COMPAT_FACETS],
       });
       await expect.poll(() => headings().length).toBe(4);
       expect(headings()[3]).toBe(deckEntry);

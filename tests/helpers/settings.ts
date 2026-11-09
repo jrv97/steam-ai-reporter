@@ -10,6 +10,7 @@ import {
   type KindSettings,
   LIST_FILTERS,
   type ListFilter,
+  type TaggedFacets,
 } from "../../src/core/kinds/kind-settings";
 import { perKind } from "../../src/core/kinds/registry";
 import { applyPatch, type Settings, wholePatch } from "../../src/core/settings/settings";
@@ -57,29 +58,63 @@ export function isValveKind(id: KindId): id is ValveKind {
   return VALVE_KINDS.some((kind) => kind === id);
 }
 
-/** One kind's settings as `plainKinds` gives them. */
-export type PlainKind<T> = Omit<T, "enabled" | "banner"> & {
+type PlainBase<T> = Omit<T, "enabled" | "banner"> & {
   readonly enabled: boolean;
   readonly banner: boolean;
-  readonly facets?: readonly FacetId[];
 };
+
+/** One kind's settings as `plainKinds` gives them, with `Tagged` for what a Valve kind tags. */
+export type PlainKind<T, Tagged> = PlainBase<T> | (PlainBase<T> & Tagged);
+
+/** What a kind tags, as storage holds it: one `facet`, or a `facets` list. */
+interface StoredTagged {
+  readonly facet?: FacetId;
+  readonly facets?: readonly FacetId[];
+}
+
+function storedTagged(tagged: TaggedFacets): StoredTagged {
+  switch (tagged.pick) {
+    case "one":
+      return { facet: tagged.facet };
+    case "many":
+      return { facets: tagged.facets };
+    default:
+      return tagged satisfies never;
+  }
+}
 
 /**
  * Each kind's settings as `plain`, switched off for the kinds that start off, and for the kinds
- * Valve states with their banner entry off and only Unsupported chosen.
+ * Valve states with their banner entry off and only Unsupported chosen, in `tagged`'s form.
  */
-export function plainKinds<T extends { readonly enabled: boolean; readonly banner: boolean; }>(
+function kindsWith<T extends { readonly enabled: boolean; readonly banner: boolean; }, Tagged>(
   plain: T,
-): Readonly<Record<KindId, PlainKind<T>>> {
-  return perKind((kind) => {
-    if (isValveKind(kind.id)) {
-      return { ...plain, enabled: false, banner: false, facets: ["unsupported"] };
+  tagged: (value: TaggedFacets) => Tagged,
+): Readonly<Record<KindId, PlainKind<T, Tagged>>> {
+  return perKind((kind): PlainKind<T, Tagged> => {
+    const chosen = kind.defaults.tagged;
+    if (isValveKind(kind.id) && chosen !== undefined) {
+      return { ...plain, enabled: false, banner: false, ...tagged(chosen) };
     }
     if (BANNERLESS_KINDS.includes(kind.id)) {
       return { ...plain, banner: false };
     }
     return OFF_KINDS.includes(kind.id) ? { ...plain, enabled: false } : plain;
   });
+}
+
+/** Each kind's settings as `plain`, as `kindsWith` describes, the way the settings hold them. */
+export function plainKinds<T extends { readonly enabled: boolean; readonly banner: boolean; }>(
+  plain: T,
+): Readonly<Record<KindId, PlainKind<T, { readonly tagged: TaggedFacets; }>>> {
+  return kindsWith(plain, (tagged) => ({ tagged }));
+}
+
+/** The same, the way storage holds them. */
+export function storedKinds<T extends { readonly enabled: boolean; readonly banner: boolean; }>(
+  plain: T,
+): Readonly<Record<KindId, PlainKind<T, StoredTagged>>> {
+  return kindsWith(plain, storedTagged);
 }
 
 /** The settings with `patch` applied to one kind's settings. */

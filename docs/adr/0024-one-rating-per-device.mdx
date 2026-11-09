@@ -1,0 +1,30 @@
+---
+status: accepted
+date: 2026-11-09
+decision-makers: Jorge Rodriguez de la Vega
+---
+
+# One rating per device for Steam Deck and Steam Machine, read from the old lists
+
+## Decision
+
+In the context of the settings for Steam Deck Compatibility and Steam Machine Compatibility, where Valve gives a game one rating (Verified, Playable or Unsupported) and the settings stored a list of ratings to tag,
+facing settings in storage and backup files that hold such lists, and a form that let a person tick several ratings for one device,
+we decided to store one rating per device under the key `facet`, to pick it with a radio group whose default is Unsupported, and to read a stored `facets` list as its first known value in Steam's order, or as Unsupported when the list holds none,
+and neglected dropping the old lists, keeping the list in storage behind a radio group, and a new backup format version,
+to achieve a settings type that holds exactly one rating for these kinds and an upgrade that keeps every choice a person made,
+accepting that `readTagged` reads two shapes for these kinds for as long as old settings and backups exist, and that a build from before this change reads a new backup's device rating as Unsupported.
+
+## Considered options
+
+1. Read the old list as one rating (chosen).
+2. Drop the old list. A stored list reads as the default. A person who tagged Verified only would find Unsupported tagged after the update, with no word about it.
+3. Keep the list in storage and put a radio group on top. The type would still allow several ratings, so `taggedView`, the chip preview and the settings parser would keep handling a case the form can no longer produce. Rule 10 asks the type to hold only valid values.
+4. Bump `BACKUP_VERSION` to 2 with an upgrade step. The step would repeat what `readTagged` does for storage. A build from before this change would refuse the whole file as newer, where today it reads every other field and takes Unsupported for the device rating. Backup settings already take their default field by field, as decisions 54 and 61 of `docs/design/decisions.mdx` describe.
+
+## Consequences
+
+- `KindSettings.tagged` is a discriminated union: `{ pick: "one", facet }` for Steam Deck and Steam Machine, `{ pick: "many", facets }` for Family Sharing. A kind's default names its pick, and `switch` statements over it end in `satisfies never`.
+- Storage and backups keep flat keys: `facet` for one rating, `facets` for a list. A file or storage value with both reads `facet` first.
+- `BACKUP_VERSION` stays 1.
+- Family Sharing keeps its checkboxes and its list. A game can show both of its values on different pages, and a person may tag either or both.

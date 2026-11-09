@@ -34,7 +34,8 @@ export type CompatDisclosed<Id extends string> = v.InferOutput<
  * A device's compatibility as Valve rates it, from `platforms.<field>` (`include_platforms`).
  * Unknown when the section has no such field or a value outside 0 to 3; 0 (Valve's Unknown) is
  * not disclosed, which draws nothing and is never shown as Unsupported. Valve states it, not the
- * developer, and it starts off with only Unsupported chosen and no banner entry.
+ * developer. A person tags one rating, since a game has one; the kind starts off with
+ * Unsupported chosen and no banner entry.
  */
 export function compatKind<const Id extends string>(
   id: Id,
@@ -68,7 +69,11 @@ export function compatKind<const Id extends string>(
     stored: storedCompat(id),
 
     messages,
-    defaults: { ...OFF_KIND_SETTINGS, banner: false, facets: ["unsupported"] },
+    defaults: {
+      ...OFF_KIND_SETTINGS,
+      banner: false,
+      tagged: { pick: "one", facet: "unsupported" },
+    },
     // Valve rates a game rarely, so an entry without a rating keeps as long as any other kind.
     ttl: WEEK_TTL,
   };

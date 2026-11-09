@@ -209,23 +209,34 @@ describe("the settings of each tag", () => {
     }
   });
 
-  it.each<readonly [KindId, readonly BareMessageKey[], readonly boolean[]]>([
+  it.each<
+    readonly [KindId, BareMessageKey, string, readonly BareMessageKey[], readonly boolean[]]
+  >([
     ...STATUS_KINDS.map((id) =>
       [
         id,
+        "options_facet_label",
+        "radio",
         ["kind_compat_verified", "kind_compat_playable", "kind_compat_unsupported"],
         [false, false, true],
       ] as const
     ),
-    ["family", ["options_facet_available", "options_facet_unavailable"], [false, true]],
+    [
+      "family",
+      "options_facets_label",
+      "checkbox",
+      ["options_facet_available", "options_facet_unavailable"],
+      [false, true],
+    ],
   ])(
-    "gives %s a labelled group of its values in its own words, the unlisted one ticked",
-    async (id, words, ticked) => {
+    "gives %s a group named %s of %s controls, one per value in its own words, the default on",
+    async (id, name, type, words, ticked) => {
       const { card, root } = await setup();
       const group = card(id).querySelector("fieldset.sar-checks");
       const label = root.querySelector(`#${group?.getAttribute("aria-labelledby") ?? "x"}`);
-      expect(label?.textContent).toBe(i18n.t("options_facets_label"));
+      expect(label?.textContent).toBe(i18n.t(name));
       const boxes = [...(group?.querySelectorAll("input") ?? [])];
+      expect(boxes.map((box) => box.type)).toEqual(words.map(() => type));
       expect(boxes.map((box) => box.closest("label")?.textContent)).toEqual(
         words.map((key) => i18n.t(key)),
       );
@@ -253,25 +264,43 @@ describe("the settings of each tag", () => {
     },
   );
 
+  it("saves the one rating chosen, as one value, and leaves the other device alone", async () => {
+    const { input, settings } = await setup();
+    for (const value of ["playable", "verified"] as const) {
+      const radio = input("deck", "facets", value);
+      radio.checked = true;
+      change(radio);
+      await vi.waitFor(async () => {
+        expect(parseSettings(await settings.read()).kinds.deck.tagged).toEqual(
+          make.settings.tagged.one(value),
+        );
+      });
+      expect(input("deck", "facets", "unsupported").checked).toBe(false);
+    }
+    expect(parseSettings(await settings.read()).kinds.machine.tagged).toEqual(
+      make.settings.tagged.one("unsupported"),
+    );
+  });
+
   it("saves the ticked values in the kind's order, and none when all are unticked", async () => {
     const { input, settings } = await setup();
-    const box = (value: string) => input("deck", "facets", value);
-    box("verified").checked = true;
-    change(box("verified"));
+    const box = (value: string) => input("family", "facets", value);
+    box("supported").checked = true;
+    change(box("supported"));
     await vi.waitFor(async () => {
-      expect(parseSettings(await settings.read()).kinds.deck.facets).toEqual([
-        "verified",
-        "unsupported",
-      ]);
+      expect(parseSettings(await settings.read()).kinds.family.tagged).toEqual(
+        make.settings.tagged.many("supported", "unsupported"),
+      );
     });
-    for (const value of ["verified", "unsupported"]) {
+    for (const value of ["supported", "unsupported"]) {
       box(value).checked = false;
       change(box(value));
     }
     await vi.waitFor(async () => {
-      expect(parseSettings(await settings.read()).kinds.deck.facets).toEqual([]);
+      expect(parseSettings(await settings.read()).kinds.family.tagged).toEqual(
+        make.settings.tagged.many(),
+      );
     });
-    expect(parseSettings(await settings.read()).kinds.machine.facets).toEqual(["unsupported"]);
   });
 
   it("shows the settings stored for each kind", async () => {

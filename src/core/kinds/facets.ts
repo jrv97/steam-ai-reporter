@@ -1,7 +1,7 @@
 import { NOT_DISCLOSED } from "../types";
 import type { KindId } from "./id";
 import type { FacetDefinition, FacetId } from "./kind";
-import type { KindSettings } from "./kind-settings";
+import { type KindSettings, taggedFacets } from "./kind-settings";
 import { KIND_BY_ID, KINDS } from "./registry";
 import { type AnyDisclosed, isKindVerdicts, type KindVerdict, type KindVerdicts } from "./verdicts";
 
@@ -17,7 +17,7 @@ export function facetOf(verdict: AnyDisclosed): FacetDefinition<FacetId> | undef
 /** Whether a kind's verdict draws: disclosed, with a facet the settings choose when it has one. */
 function isChosen(verdict: KindVerdict, settings: KindSettings): boolean {
   return verdict.state !== "disclosed" || !("facet" in verdict)
-    || (settings.facets ?? []).includes(verdict.facet);
+    || taggedFacets(settings.tagged).includes(verdict.facet);
 }
 
 /**

@@ -19,7 +19,7 @@ import { DEFAULT_SPACING_MS } from "./detect/throttle";
 import { dateFormat } from "./i18n/date-format";
 import { SHIPPED_CATALOGS } from "./i18n/shipped";
 import type { JsonValue } from "./json";
-import { COMPAT_FACETS, type CompatFacet } from "./kinds/compat";
+import type { CompatFacet } from "./kinds/compat";
 import { FAMILY_CATEGORY_ID } from "./kinds/family";
 import type { KindId } from "./kinds/id";
 import { parseOrder } from "./kinds/order";
@@ -610,30 +610,29 @@ describe("start on the search page", () => {
       expect(http.calls).toHaveLength(2);
     });
 
-    it("draws and marks a value once it is ticked, and drops it once unticked", async () => {
+    it("draws and marks only the chosen rating, and follows a new choice", async () => {
       const { http, settings } = await startOnSearch({ initial: storing(deckOn), items: rated });
       await drawn(http);
       expect(labels(VERIFIED)).toEqual([]);
       expect(row(VERIFIED)?.hasAttribute("data-sar-kinds")).toBe(false);
-      await writeSettings(settings, make.settings.kind("deck", { facets: ["verified"] }, deckOn));
+      const verified = { tagged: make.settings.tagged.one("verified") };
+      await writeSettings(settings, make.settings.kind("deck", verified, deckOn));
       await expect.poll(() => labels(VERIFIED)).toEqual([deckChip("verified")]);
       expect(marks(VERIFIED)).toBe("deck");
       expect(labels(UNSUPPORTED)).toEqual([]);
-      await writeSettings(settings, make.settings.kind("deck", { facets: [] }, deckOn));
+      expect(row(UNSUPPORTED)?.hasAttribute("data-sar-kinds")).toBe(false);
+      await writeSettings(settings, deckOn);
       await expect.poll(() => labels(VERIFIED)).toEqual([]);
       expect(row(VERIFIED)?.hasAttribute("data-sar-kinds")).toBe(false);
+      expect(labels(UNSUPPORTED)).toEqual([deckChip("unsupported")]);
       expect(http.calls).toHaveLength(1);
     });
 
     it.each([
       ["Valve's Unknown (0)", UNRATED],
       ["an item without a platforms section", UNASKED],
-    ])("never marks %s, with every value ticked and Hide on", async (_name, id) => {
-      const every = make.settings.kind(
-        "deck",
-        { facets: [...COMPAT_FACETS], filter: "hide" },
-        deckOn,
-      );
+    ])("never marks %s, with Unsupported chosen and Hide on", async (_name, id) => {
+      const every = make.settings.kind("deck", { filter: "hide" }, deckOn);
       const { http } = await startOnSearch({ initial: storing(every), items: rated });
       await drawn(http);
       expect(labels(UNSUPPORTED)).toEqual([deckChip("unsupported")]);
@@ -696,13 +695,16 @@ describe("start on the search page", () => {
       expect(chips(LISTED)).toEqual([]);
       await writeSettings(
         settings,
-        make.settings.kind("family", { facets: ["supported"] }, familyOn),
+        make.settings.kind("family", { tagged: make.settings.tagged.many("supported") }, familyOn),
       );
       await expect.poll(() => chips(LISTED)).toEqual([
         [i18n.t("kind_family_heading"), i18n.t("kind_family_heading")],
       ]);
       expect(chips(UNLISTED)).toEqual([]);
-      await writeSettings(settings, make.settings.kind("family", { facets: [] }, familyOn));
+      await writeSettings(
+        settings,
+        make.settings.kind("family", { tagged: make.settings.tagged.many() }, familyOn),
+      );
       await expect.poll(() => chips(LISTED)).toEqual([]);
       expect(row(LISTED)?.hasAttribute("data-sar-kinds")).toBe(false);
       expect(http.calls).toHaveLength(1);
@@ -715,7 +717,7 @@ describe("start on the search page", () => {
     ])("never marks %s, with every value ticked and Hide on", async (_name, id) => {
       const every = make.settings.kind(
         "family",
-        { facets: ["supported", "unsupported"], filter: "hide" },
+        { tagged: make.settings.tagged.many("supported", "unsupported"), filter: "hide" },
         familyOn,
       );
       const { http } = await startOnSearch({ initial: storing(every), items: featured });

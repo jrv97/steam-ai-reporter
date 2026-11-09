@@ -27,7 +27,7 @@ describe("requestSections", () => {
         "the deck kind off with its badge, banner and values set",
         make.settings.kind(
           "deck",
-          { badge: true, banner: true, facets: ["verified"] },
+          { badge: true, banner: true, tagged: make.settings.tagged.one("verified") },
           NO_EARLY_ACCESS,
         ),
         BASE_SECTIONS,

@@ -59,7 +59,11 @@ describe("the chip text fields", () => {
     ["ai", make.settings(), i18n.t("kind_ai_chip")],
     ["deck", make.settings(), i18n.t("kind_deck_chip")],
     ["family", make.settings(), i18n.t("kind_family_unsupported_chip")],
-    ["family", make.settings.kind("family", { facets: [] }), i18n.t("kind_family_heading")],
+    [
+      "family",
+      make.settings.kind("family", { tagged: make.settings.tagged.many() }),
+      i18n.t("kind_family_heading"),
+    ],
   ])(
     "show the catalog's word for %s, the default, as each placeholder",
     async (id, settings, word) => {
@@ -112,7 +116,7 @@ describe("the chip text fields", () => {
 
   it("preview a tag with values by its first picked value", async () => {
     const { box, preview } = await setup(
-      make.settings.kind("deck", { facets: ["playable"] }),
+      make.settings.kind("deck", { tagged: make.settings.tagged.one("playable") }),
     );
     const text = make.chipText();
     type(box("deck", "chip"), text);

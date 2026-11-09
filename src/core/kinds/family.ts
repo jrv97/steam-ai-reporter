@@ -75,6 +75,10 @@ export const FAMILY_KIND: KindDefinition<FamilyDisclosed> = {
     source: "kind_family_source",
   },
   // Most paid games are listed, so the tag starts off, warning of the unlisted ones when turned on.
-  defaults: { ...OFF_KIND_SETTINGS, banner: false, facets: ["unsupported"] },
+  defaults: {
+    ...OFF_KIND_SETTINGS,
+    banner: false,
+    tagged: { pick: "many", facets: ["unsupported"] },
+  },
   ttl: WEEK_TTL,
 };

@@ -6,7 +6,14 @@ import type { IgnoreLists } from "../ignored";
 import { type HexColor, readTypedColor } from "../kinds/color";
 import { KIND_IDS, type KindId } from "../kinds/id";
 import type { FacetDefinition, FacetId, TagKind } from "../kinds/kind";
-import { type KindSettings, LIST_FILTERS, type ListFilter } from "../kinds/kind-settings";
+import {
+  type KindSettings,
+  LIST_FILTERS,
+  type ListFilter,
+  readTagged,
+  type TaggedFacets,
+  taggedFacets,
+} from "../kinds/kind-settings";
 import { sameOrder } from "../kinds/order";
 import { KIND_BY_ID, KINDS } from "../kinds/registry";
 import type { Clock, FileTransfer, MessageCatalog } from "../ports";
@@ -153,6 +160,21 @@ const FILTER_HELP: Readonly<Record<ListFilter, BareMessageKey>> = {
   hide: "options_filter_hide_help",
 };
 
+/** How a kind's values are picked: a radio per value for one, a checkbox per value for many. */
+const FACET_CONTROLS: Readonly<
+  Record<
+    TaggedFacets["pick"],
+    {
+      readonly type: "radio" | "checkbox";
+      readonly label: BareMessageKey;
+      readonly help: BareMessageKey;
+    }
+  >
+> = {
+  one: { type: "radio", label: "options_facet_label", help: "options_facet_help" },
+  many: { type: "checkbox", label: "options_facets_label", help: "options_facets_help" },
+};
+
 /** What marks the Reset button of a color field, with the kind it resets. */
 const COLOR_RESET_ATTRIBUTE = "data-sar-color-reset";
 /** What marks the color square of a color field, with its kind. */
@@ -183,7 +205,7 @@ interface KindControls {
   readonly switches: ReadonlyMap<SwitchField, HTMLInputElement>;
   readonly radios: ReadonlyMap<ListFilter, HTMLInputElement>;
   readonly filterHelp: HTMLElement | undefined;
-  /** One checkbox per value a kind with facets can tag; empty for the other kinds. */
+  /** One radio or checkbox per value a kind with facets can tag; empty for the other kinds. */
   readonly facets: ReadonlyMap<FacetId, HTMLInputElement>;
   /** Absent where the form has no color fields. */
   readonly color: ColorControls | undefined;
@@ -413,14 +435,18 @@ export async function mountSettingsForm(
     return { row, radios, help };
   }
 
-  /** The values a kind tags: a labelled fieldset with a checkbox per value, in Steam's words. */
+  /**
+   * The values a kind tags: a labelled fieldset with a control per value, in Steam's words. A kind
+   * that tags one value gets radios, one that tags many gets checkboxes.
+   */
   function facetsField(kind: TagKind, facets: readonly FacetDefinition<FacetId>[]): {
     readonly row: HTMLElement;
     readonly boxes: ReadonlyMap<FacetId, HTMLInputElement>;
   } {
+    const control = FACET_CONTROLS[kind.defaults.tagged?.pick ?? "many"];
     const row = element("div", "sar-field");
     row.setAttribute("data-sar-layout", "stacked");
-    const label = element("span", "sar-field-label", i18n.t("options_facets_label"));
+    const label = element("span", "sar-field-label", i18n.t(control.label));
     label.id = `${prefix}${kind.id}-facets`;
     const group = element("fieldset", "sar-checks");
     group.setAttribute("aria-labelledby", label.id);
@@ -428,7 +454,8 @@ export async function mountSettingsForm(
     const heading = i18n.t(kind.messages.heading);
     for (const facet of facets) {
       const input = element("input", "");
-      input.type = "checkbox";
+      input.type = control.type;
+      input.name = label.id;
       input.value = facet.id;
       input.setAttribute("data-sar-setting", "facets");
       input.setAttribute("data-sar-for", kind.id);
@@ -445,7 +472,7 @@ export async function mountSettingsForm(
     row.append(
       label,
       group,
-      element("span", "sar-field-help", i18n.t("options_facets_help")),
+      element("span", "sar-field-help", i18n.t(control.help)),
       error,
     );
     return { row, boxes };
@@ -871,7 +898,7 @@ export async function mountSettingsForm(
         own.filterHelp.textContent = i18n.t(FILTER_HELP[kind.filter]);
       }
       for (const [facet, box] of own.facets) {
-        box.checked = kind.facets?.includes(facet) ?? false;
+        box.checked = taggedFacets(kind.tagged).includes(facet);
       }
       if (own.color !== undefined) {
         syncColor(id, own.color, kind.color);
@@ -917,9 +944,10 @@ export async function mountSettingsForm(
         });
       case "facets": {
         const boxes = controls.get(kind.id)?.facets ?? new Map<FacetId, HTMLInputElement>();
-        return forKind(kind.id, {
-          facets: [...boxes].filter(([, box]) => box.checked).map(([facet]) => facet),
-        });
+        const facets = [...boxes].filter(([, box]) => box.checked).map(([facet]) => facet);
+        // A radio fires `change` only when chosen, so its own value is the one value tagged
+        const tagged = readTagged(kind, { facet: control.value, facets });
+        return tagged === undefined ? undefined : forKind(kind.id, { tagged });
       }
     }
   }

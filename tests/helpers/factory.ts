@@ -1,5 +1,6 @@
 import type { KindId } from "../../src/core/kinds/id";
-import type { KindSettings } from "../../src/core/kinds/kind-settings";
+import type { FacetId } from "../../src/core/kinds/kind";
+import type { KindSettings, TaggedFacets } from "../../src/core/kinds/kind-settings";
 import type { KindVerdicts } from "../../src/core/kinds/verdicts";
 import {
   applyPatch,
@@ -105,7 +106,7 @@ import {
   freshVersion,
   largestAppIds,
 } from "./sequence";
-import { plainKinds, switchedOnKinds, withChipText, withKind } from "./settings";
+import { plainKinds, storedKinds, switchedOnKinds, withChipText, withKind } from "./settings";
 import {
   appIdBounds,
   badAllowEntries,
@@ -217,6 +218,13 @@ export const make = {
     ) => withChipText(base, texts),
     /** Every kind's settings, switched on, as `applyKindSettings` takes them. */
     kinds: switchedOnKinds,
+    /** Every kind's settings as `plain`, but for the kinds that start off or without a banner. */
+    plain: plainKinds,
+    /** What a kind with facets tags: one value of a rating, or any set of values. */
+    tagged: {
+      one: (facet: FacetId): TaggedFacets => ({ pick: "one", facet }),
+      many: (...facets: FacetId[]): TaggedFacets => ({ pick: "many", facets }),
+    },
   }),
   allow: {
     games: gameEntries,
@@ -297,6 +305,6 @@ export const make = {
     badAppIds,
     badTabIds,
     json: storedJson,
-    v2Kinds: plainKinds,
+    v2Kinds: storedKinds,
   },
 } as const;

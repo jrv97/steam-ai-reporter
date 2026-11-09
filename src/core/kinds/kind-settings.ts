@@ -10,6 +10,14 @@ export const LIST_FILTERS = ["off", "dim", "hide"] as const;
 
 export type ListFilter = (typeof LIST_FILTERS)[number];
 
+/**
+ * The values a kind with facets tags. `one` holds a single value of an exclusive status, such as a
+ * device rating. `many` holds any set of values in the kind's order, and an empty set tags nothing.
+ */
+export type TaggedFacets =
+  | { readonly pick: "one"; readonly facet: FacetId; }
+  | { readonly pick: "many"; readonly facets: readonly FacetId[]; };
+
 /** The user's settings for one tag kind. */
 export interface KindSettings {
   /** Master switch: a disabled kind draws no badge, banner or filter. */
@@ -21,11 +29,8 @@ export interface KindSettings {
   readonly filter: ListFilter;
   /** The tag's own color on every surface that carries it; absent, the default violet. */
   readonly color?: HexColor | undefined;
-  /**
-   * For a kind with facets only: the values it tags, in the kind's order. Chips, the banner and
-   * the list filter act on these; an empty list tags nothing.
-   */
-  readonly facets?: readonly FacetId[];
+  /** For a kind with facets only: the values chips, the banner and the list filter act on. */
+  readonly tagged?: TaggedFacets;
   /** The person's own text for every chip of the kind; absent, the catalog's (ADR 0017). */
   readonly chip?: ChipText | undefined;
   /** The person's own text for the chips of small game images; absent, `chip`'s. */
@@ -65,17 +70,81 @@ function knownFacets(facets: readonly FacetDefinition<FacetId>[], values: readon
   return facets.filter((facet) => values.includes(facet.id)).map((facet) => facet.id);
 }
 
-function kindSettingsSchema({ defaults, facets = [] }: KindSettingsSpec) {
+/** The values `tagged` holds, in the kind's order; none without it. */
+export function taggedFacets(tagged: TaggedFacets | undefined): readonly FacetId[] {
+  if (tagged === undefined) {
+    return [];
+  }
+  switch (tagged.pick) {
+    case "one":
+      return [tagged.facet];
+    case "many":
+      return tagged.facets;
+    default:
+      return tagged satisfies never;
+  }
+}
+
+/** The stored fields a kind's tagged values come from: `facet` for one, `facets` for many. */
+export interface StoredTagged {
+  readonly facet?: unknown;
+  readonly facets?: readonly unknown[] | undefined;
+}
+
+/**
+ * What a kind with facets tags, from its stored fields; none for a kind without facets. A kind
+ * that tags one value takes `facet`, else the first known value of a stored `facets` list, the
+ * shape it had before, else its default. A kind that tags many takes the known values of `facets`.
+ */
+export function readTagged(
+  { defaults, facets }: KindSettingsSpec,
+  stored: StoredTagged,
+): TaggedFacets | undefined {
+  if (facets === undefined) {
+    return undefined;
+  }
+  const fallback = defaults.tagged ?? { pick: "many", facets: [] };
+  switch (fallback.pick) {
+    case "one": {
+      const [facet] = [
+        ...knownFacets(facets, [stored.facet]),
+        ...knownFacets(facets, stored.facets ?? []),
+      ];
+      return facet === undefined ? fallback : { pick: "one", facet };
+    }
+    case "many":
+      return stored.facets === undefined
+        ? fallback
+        : { pick: "many", facets: knownFacets(facets, stored.facets) };
+    default:
+      return fallback satisfies never;
+  }
+}
+
+/** The stored fields of a kind's tagged values, as `readTagged` reads them back. */
+function encodeTagged(tagged: TaggedFacets | undefined): StoredTagged {
+  if (tagged === undefined) {
+    return {};
+  }
+  switch (tagged.pick) {
+    case "one":
+      return { facet: tagged.facet };
+    case "many":
+      return { facets: tagged.facets };
+    default:
+      return tagged satisfies never;
+  }
+}
+
+function kindSettingsSchema({ defaults }: KindSettingsSpec) {
   return v.object({
     enabled: v.fallback(v.boolean(), defaults.enabled),
     badge: v.fallback(v.boolean(), defaults.badge),
     banner: v.fallback(v.boolean(), defaults.banner),
     filter: v.fallback(v.picklist(LIST_FILTERS), defaults.filter),
     color: v.fallback(v.optional(HexColorSchema), defaults.color),
-    facets: v.fallback(
-      v.pipe(v.array(v.unknown()), v.transform((values) => knownFacets(facets, values))),
-      defaults.facets ?? [],
-    ),
+    facet: v.optional(v.unknown()),
+    facets: v.fallback(v.optional(v.array(v.unknown())), undefined),
     chip: v.fallback(v.optional(CHIP_TEXT_SCHEMAS.chip), defaults.chip),
     chipCompact: v.fallback(v.optional(CHIP_TEXT_SCHEMAS.chipCompact), defaults.chipCompact),
   });
@@ -103,8 +172,7 @@ function trimmed(settings: KindSettings): KindSettings {
 
 /**
  * The stored settings: each valid field, and the default for every other one. A kind with facets
- * keeps the known stored ones (none tags nothing), and a stored value that is no list takes the
- * default ones.
+ * reads its tagged values through `readTagged`.
  */
 export function parseKindSettings(kind: KindSettingsSpec, stored: unknown): KindSettings {
   let schema = schemas.get(kind);
@@ -112,9 +180,10 @@ export function parseKindSettings(kind: KindSettingsSpec, stored: unknown): Kind
     schema = kindSettingsSchema(kind);
     schemas.set(kind, schema);
   }
-  const { facets, ...rest } = parseWithDefaults(schema, stored);
+  const { facet, facets, ...rest } = parseWithDefaults(schema, stored);
+  const tagged = readTagged(kind, { facet, facets });
   // Only the keys that apply, so settings read back equal the defaults they came from.
-  return trimmed(kind.facets === undefined ? rest : { ...rest, facets });
+  return trimmed(tagged === undefined ? rest : { ...rest, tagged });
 }
 
 /**
@@ -133,17 +202,16 @@ export function mergeKindSettings(
  * unset field is left out, so what is stored stays what it was before the field existed.
  */
 export function encodeKindSettings(settings: KindSettings): JsonValue {
-  const fields: Readonly<Record<keyof KindSettings, unknown>> = {
+  const fields: Readonly<Record<Exclude<keyof KindSettings, "tagged">, unknown>> = {
     enabled: settings.enabled,
     badge: settings.badge,
     banner: settings.banner,
     filter: settings.filter,
     color: settings.color,
-    facets: settings.facets,
     chip: settings.chip,
     chipCompact: settings.chipCompact,
   };
-  return toJsonValue(fields) ?? {};
+  return toJsonValue({ ...fields, ...encodeTagged(settings.tagged) }) ?? {};
 }
 
 /** The settings that take effect: a disabled kind shows no badge or banner and filters nothing. */
