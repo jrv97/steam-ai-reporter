@@ -653,6 +653,14 @@
     "message": "Los marcadores, las entradas del aviso y el filtro de listas actúan sobre los valores marcados aquí. Si no marcas ninguno, la etiqueta no marca ningún juego.",
     "description": "Help under those checkboxes."
   },
+  "options_facet_label": {
+    "message": "Valor que etiquetar",
+    "description": "Label of a group of radio buttons in the settings of Steam Deck and Steam Machine Compatibility, one per rating Steam gives (Verified, Playable, Unsupported). A game has one rating, so only one can be chosen, and only that one gets the tag."
+  },
+  "options_facet_help": {
+    "message": "Los marcadores, las entradas del aviso y el filtro de listas actúan sobre el valor elegido aquí.",
+    "description": "Help under those radio buttons."
+  },
   "options_filter_off": {
     "message": "Mostrar",
     "description": "Leave these games as they are."

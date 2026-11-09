@@ -9,7 +9,7 @@ import {
 } from "../kinds/chip-text";
 import { KIND_IDS, type KindId } from "../kinds/id";
 import type { FacetDefinition, FacetId, TagKind } from "../kinds/kind";
-import type { KindSettings } from "../kinds/kind-settings";
+import { type KindSettings, taggedFacets } from "../kinds/kind-settings";
 import type { MessageCatalog } from "../ports";
 import type { SettingsPatch } from "../settings/settings";
 import { createChipElement } from "./badge";
@@ -137,7 +137,7 @@ export function createChipFields(deps: ChipFieldsDeps): ChipFields {
   /** The value whose chip the preview shows: the first one picked, else the kind's first. */
   function previewFacet(kind: TagKind): FacetDefinition<FacetId> | undefined {
     const facets: readonly FacetDefinition<FacetId>[] = kind.facets ?? [];
-    const picked = kinds?.[kind.id].facets ?? [];
+    const picked = taggedFacets(kinds?.[kind.id].tagged);
     return facets.find((facet) => picked.includes(facet.id)) ?? facets[0];
   }
 

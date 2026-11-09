@@ -35,10 +35,14 @@ describe("readBackup", () => {
   it("reads back what encodeBackup wrote", () => {
     const settings = make.settings.kind(
       "family",
-      { enabled: true, banner: true, facets: ["supported", "unsupported"] },
+      {
+        enabled: true,
+        banner: true,
+        tagged: make.settings.tagged.many("supported", "unsupported"),
+      },
       make.settings.kind(
         "deck",
-        { enabled: true, facets: ["verified", "playable"] },
+        { enabled: true, tagged: make.settings.tagged.one("playable") },
         make.settings.kind(
           "iap",
           { enabled: true, filter: "dim" },
@@ -158,6 +162,23 @@ describe("readBackup", () => {
       make.settings.kind("drm", { badge: false }),
     );
   });
+
+  it.each(
+    [
+      [["unsupported", "playable"], "playable"],
+      [[], "unsupported"],
+    ] as const,
+  )(
+    "reads a device's list of values %j, the shape before one rating, as %s",
+    (facets, facet) => {
+      const reading = readBackup(
+        make.backup.text({ settings: { kinds: { machine: { facets } } } }),
+      );
+      expect(backupOf(reading).contents.settings).toStrictEqual(
+        make.settings.kind("machine", { tagged: make.settings.tagged.one(facet) }),
+      );
+    },
+  );
 });
 
 describe("countEntries", () => {

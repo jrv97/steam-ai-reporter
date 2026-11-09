@@ -15,7 +15,7 @@ describe("KINDS", () => {
 
   it("starts each kind with a badge and an untouched list, some off and without a banner", () => {
     expect(perKind((kind) => kind.defaults)).toStrictEqual(
-      make.raw.v2Kinds({ enabled: true, badge: true, banner: true, filter: "off" }),
+      make.settings.plain({ enabled: true, badge: true, banner: true, filter: "off" }),
     );
   });
 });

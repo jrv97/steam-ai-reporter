@@ -13,6 +13,7 @@ import {
 
 const DEFAULTS: KindSettings = { enabled: true, badge: true, banner: true, filter: "off" };
 const VIOLET = make.color();
+const { one, many } = make.settings.tagged;
 
 describe("LIST_FILTERS", () => {
   it("lists the three filters in the order the settings show them", () => {
@@ -84,31 +85,55 @@ describe("parseKindSettings", () => {
     );
   });
 
-  it("gives a kind without facets no facets key, whatever is stored", () => {
-    expect(parseKindSettings({ defaults: DEFAULTS }, { facets: ["verified"] })).toStrictEqual(
-      DEFAULTS,
-    );
+  it("gives a kind without facets no tagged key, whatever is stored", () => {
+    const stored = { facet: "verified", facets: ["verified"] };
+    expect(parseKindSettings({ defaults: DEFAULTS }, stored)).toStrictEqual(DEFAULTS);
+    expect(encodeKindSettings(DEFAULTS)).not.toHaveProperty("facets");
   });
 
   it.each([
-    ["no list, which takes the defaults", undefined, ["unsupported"]],
-    ["a value that is not a list, which takes the defaults", "verified", ["unsupported"]],
-    ["an unknown value, which is dropped", ["verified", "great", 3], ["verified"]],
-    ["repeated values, kept once in the kind's order", ["unsupported", "verified", "unsupported"], [
-      "verified",
-      "unsupported",
-    ]],
-    ["an empty list, kept: the kind tags nothing", [], []],
-  ])("reads the facets of a kind with facets from %s", (_name, facets, read) => {
-    expect(parseKindSettings(DECK_KIND, { facets }).facets).toStrictEqual(read);
-  });
-
-  it("keeps only the kind's own values: a device rating is no value of the family kind", () => {
-    const stored = { facets: ["verified", "unsupported", "supported"] };
-    expect(parseKindSettings(FAMILY_KIND, stored).facets).toStrictEqual([
-      "supported",
-      "unsupported",
-    ]);
+    ["nothing", DECK_KIND, {}, one("unsupported")],
+    ["one value", DECK_KIND, { facet: "playable" }, one("playable")],
+    [
+      "an unknown value, which takes the default",
+      DECK_KIND,
+      { facet: "great" },
+      one("unsupported"),
+    ],
+    ["a list, the shape before one value: Steam's order wins", DECK_KIND, {
+      facets: ["unsupported", "playable", "verified"],
+    }, one("verified")],
+    [
+      "a list that skips Verified",
+      DECK_KIND,
+      { facets: ["unsupported", "playable"] },
+      one("playable"),
+    ],
+    ["an empty list, which takes the default", DECK_KIND, { facets: [] }, one("unsupported")],
+    ["a list of unknown values", DECK_KIND, { facets: ["great", 3] }, one("unsupported")],
+    ["one value beside a list, where the value wins", DECK_KIND, {
+      facet: "unsupported",
+      facets: ["verified"],
+    }, one("unsupported")],
+    ["no list, which takes the defaults", FAMILY_KIND, {}, many("unsupported")],
+    ["a value that is not a list", FAMILY_KIND, { facets: "supported" }, many("unsupported")],
+    [
+      "one value, which a kind that tags many ignores",
+      FAMILY_KIND,
+      { facet: "supported" },
+      many(
+        "unsupported",
+      ),
+    ],
+    ["unknown values and a device rating, which are dropped", FAMILY_KIND, {
+      facets: ["verified", "supported", 3],
+    }, many("supported")],
+    ["repeated values, kept once in the kind's order", FAMILY_KIND, {
+      facets: ["unsupported", "supported", "unsupported"],
+    }, many("supported", "unsupported")],
+    ["an empty list, kept: the kind tags nothing", FAMILY_KIND, { facets: [] }, many()],
+  ])("reads what a kind with facets tags from %s", (_name, kind, stored, tagged) => {
+    expect(parseKindSettings(kind, stored).tagged).toStrictEqual(tagged);
   });
 });
 
@@ -166,11 +191,24 @@ describe("encodeKindSettings", () => {
     );
   });
 
-  it("stores the facets of a kind with facets and reads them back", () => {
-    const settings: KindSettings = { ...DECK_KIND.defaults, facets: ["verified", "playable"] };
-    expect(encodeKindSettings(settings)).toMatchObject({ facets: ["verified", "playable"] });
-    expect(parseKindSettings(DECK_KIND, encodeKindSettings(settings))).toStrictEqual(settings);
-    expect(encodeKindSettings(DEFAULTS)).not.toHaveProperty("facets");
+  it.each([
+    { kind: DECK_KIND, tagged: one("playable"), stored: { facet: "playable" } },
+    {
+      kind: FAMILY_KIND,
+      tagged: many("supported", "unsupported"),
+      stored: { facets: ["supported", "unsupported"] },
+    },
+  ])("stores what $kind.id tags and reads it back", ({ kind, tagged, stored }) => {
+    const settings: KindSettings = { ...kind.defaults, tagged };
+    // Both kinds start off, with no banner entry
+    expect(encodeKindSettings(settings)).toStrictEqual({
+      enabled: false,
+      badge: true,
+      banner: false,
+      filter: "off",
+      ...stored,
+    });
+    expect(parseKindSettings(kind, encodeKindSettings(settings))).toStrictEqual(settings);
   });
 
   it("stores a color as the text #rrggbb, and no key at all without one", () => {

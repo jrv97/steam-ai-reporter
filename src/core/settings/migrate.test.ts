@@ -192,7 +192,7 @@ describe("settingsFromV1 and allowFromV1", () => {
       locale: V1_CUSTOM.locale,
       debug: V1_CUSTOM.debug,
       kinds: {
-        ...make.raw.v2Kinds({ enabled: true, badge: true, banner: true, filter: "off" }),
+        ...make.settings.plain({ enabled: true, badge: true, banner: true, filter: "off" }),
         ai: { enabled: true, badge: false, banner: true, filter: "hide" },
       },
     });
