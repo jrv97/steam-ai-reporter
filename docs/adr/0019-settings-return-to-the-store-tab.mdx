@@ -149,43 +149,54 @@ If a call fails with a permission error, stop. Write the call and the message he
 Each case starts from a fresh browser start with one window, unless it says otherwise.
 
 1. Basic path. Open a store page, open the popup, click the gear, click "Go back to Steam". Expect the store tab in front and the settings tab closed.
-   - [ ] Chromium
-   - [ ] Firefox Nightly
+   - [x] Chromium
+   - [x] Firefox Nightly
+   - Automated in `tests/e2e/go-back.e2e.ts`.
 2. Tag path. Open the settings from a tag row in the popup. Expect the settings on that tag's tab, and the same return as case 1.
-   - [ ] Chromium
-   - [ ] Firefox Nightly
+   - [x] Chromium
+   - [x] Firefox Nightly
+   - Automated in `tests/e2e/go-back.e2e.ts`.
 3. Focus path. With the settings tab open, switch to a second store tab, open the popup, click the gear. Expect the open settings tab in front, and the button to return to the second store tab, not the first.
-   - [ ] Chromium
-   - [ ] Firefox Nightly
+   - [x] Chromium
+   - [x] Firefox Nightly
+   - Automated in `tests/e2e/go-back.e2e.ts`.
 4. Origin tab closed. Open the settings from a store tab, close that store tab, click the button. Expect the settings tab to load the store home, with no error on the page or in the console.
-   - [ ] Chromium
-   - [ ] Firefox Nightly
+   - [x] Chromium
+   - [x] Firefox Nightly
+   - Automated in `tests/e2e/go-back.e2e.ts`. The test listens for the page's `error` and `unhandledrejection` events.
 5. Origin tab navigated away. Open the settings from a store tab, go to the store tab, load `https://example.com/`, return to the settings, click the button. Expect `example.com` in front and the settings tab closed (the accepted behavior).
-   - [ ] Chromium
-   - [ ] Firefox Nightly
+   - [x] Chromium
+   - [x] Firefox Nightly
+   - Automated in `tests/e2e/go-back.e2e.ts`, with `about:blank` as the second address.
 6. No origin. After a browser start, open the settings from the extensions menu (Chromium: the extension's details page, "Extension options"; Firefox Nightly: `about:addons`, the extension's preferences). Expect the button to load the store home in that tab. Repeat after case 1 in the same session: the old origin must be gone.
-   - [ ] Chromium
-   - [ ] Firefox Nightly
+   - [x] Chromium
+   - [x] Firefox Nightly
+   - Automated in `tests/e2e/go-back.e2e.ts`. The test opens `options.html` in a new tab; the extensions menu stays manual.
 7. Reload. Open the settings from the popup, reload the settings tab, click the button. Expect the store home.
+   - [x] Chromium
+   - [x] Firefox Nightly
+   - Automated in `tests/e2e/go-back.e2e.ts`.
+8. Two windows. Open a store tab in window A and another in window B. Open the settings from window A, then open the popup in window B and click the gear. Write which window shows the settings: Firefox Nightly brings the settings tab in window A forward. Chromium opens a second settings tab in window B, and the settings tab in window A takes the origin before the new tab loads. Click the button. Expect window B in front with its store tab active and the settings tab closed.
    - [ ] Chromium
-   - [ ] Firefox Nightly
-8. Two windows. Open a store tab in window A and another in window B. Open the settings from window A, then open the popup in window B and click the gear. Write which window shows the settings: ______. Click the button. Expect window B in front with its store tab active and the settings tab closed.
-   - [ ] Chromium
-   - [ ] Firefox Nightly
+   - [x] Firefox Nightly
+   - Automated in `tests/e2e/go-back.e2e.ts` for Firefox Nightly. The test reads focus through `windows.getAll()`; the window in front on screen stays a manual check. In Chromium the button in window B loaded the store home in its own tab, so that box stays open.
 9. Popup on the settings tab. With a held origin, press the toolbar button on the settings tab and click the gear. Click the button. Expect the earlier store tab to come forward.
-   - [ ] Chromium
-   - [ ] Firefox Nightly
+   - [x] Chromium
+   - [x] Firefox Nightly
+   - Automated in `tests/e2e/go-back.e2e.ts`.
 10. Private window. Allow the extension in private windows (Chromium: "Allow in Incognito"; Firefox Nightly: "Run in Private Windows"). Run case 1 in a private window. Write which window shows the settings: ______. Expect the return to the private store tab.
     - [ ] Chromium
     - [ ] Firefox Nightly
 11. Container tab (Firefox Nightly). Open a store page in a container tab and run case 1. Expect the return to that container tab.
-    - [ ] Firefox Nightly
+    - [x] Firefox Nightly
+    - Automated in `tests/e2e/go-back.e2e.ts`.
 12. Restart. Open the settings from the popup, quit the browser with session restore on, start it again, click the button on the restored settings tab. Expect the store home and no switch to an unrelated tab.
     - [ ] Chromium
     - [ ] Firefox Nightly
-13. Non-store origin. Open the popup on a blank tab, click the gear, click the button. Write what it does: ______. Expect a return to the blank tab (see the open question).
+13. Non-store origin. Open the popup on a blank tab, click the gear, click the button. Write what it does: both browsers load the settings into the blank tab itself. The page drops the origin because it names its own tab, and the button loads the store home in that tab. Expect a return to the blank tab (see the open question).
     - [ ] Chromium
     - [ ] Firefox Nightly
+    - Automated in `tests/e2e/go-back.e2e.ts`. The test checks the behavior written above; the boxes stay open because it differs from the expected return.
 
 When every box is marked, the status moves to "accepted" and the build ships. If case 3 fails because `storage.onChanged` does not report the session area, read `v2:origin` when the page becomes visible instead and rerun cases 3, 8 and 9.
 

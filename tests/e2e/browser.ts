@@ -8,7 +8,13 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import puppeteer, { type Browser, type Page } from "puppeteer-core";
+import puppeteer, {
+  type Browser,
+  type JSHandle,
+  type Page,
+  type Target,
+  TargetType,
+} from "puppeteer-core";
 import { BidiBrowser } from "puppeteer-core/internal/bidi/Browser.js";
 import geckoManifest from "../../src/platform/extension/manifest.gecko.json";
 
@@ -25,13 +31,34 @@ export interface ExtensionBrowser {
    * reconnects after the action settles, and pages returned earlier stop working.
    */
   openedBy(path: string, action: () => Promise<void>): Promise<Page>;
+  /** An extension page of its own in a background tab, opened on first use, to drive the API. */
+  control(): Promise<Control>;
+  /** The address tab `tab` shows, as the driver sees it, or "" when the driver cannot tell. */
+  urlOf(tab: number): Promise<string>;
   close(): Promise<void>;
+}
+
+/** Firefox Nightly, which can also open container tabs. */
+export interface GeckoExtensionBrowser extends ExtensionBrowser {
+  /** Opens `url` in a new tab of a new container, without waiting for it to load. */
+  containerTab(url: string): Promise<void>;
+}
+
+/**
+ * An extension page and its WebExtension namespace: `browser` on Firefox, else `chrome`, as the
+ * extension's own code picks. Pass `api` to `page.evaluate` to call the API in the page.
+ */
+export interface Control {
+  readonly page: Page;
+  readonly api: JSHandle<typeof chrome>;
 }
 
 const TIMEOUT_MS = 10_000;
 const POLL_MS = 100;
 const EXIT_MS = 5_000;
 const LOCALE = "en-US";
+/** The extension page behind `control`. */
+const CONTROL_PATH = "options.html?context=popup";
 
 function envPath(name: string): string {
   const value = process.env[name];
@@ -45,8 +72,25 @@ function distDir(engine: Engine): string {
   return fileURLToPath(new URL(`../../dist/${engine}`, import.meta.url));
 }
 
+export function launch(engine: "gecko"): Promise<GeckoExtensionBrowser>;
+export function launch(engine: Engine): Promise<ExtensionBrowser>;
 export async function launch(engine: Engine): Promise<ExtensionBrowser> {
-  return engine === "chromium" ? launchChromium() : launchGecko();
+  // Headless, so a run takes no focus from the desktop. SAR_E2E_HEADED=1 shows the windows.
+  const hidden = process.env["SAR_E2E_HEADED"] !== "1";
+  return engine === "chromium" ? launchChromium(hidden) : launchGecko(hidden);
+}
+
+async function controlOf(page: Page): Promise<Control> {
+  const api = await page.evaluateHandle(() =>
+    "browser" in globalThis ? globalThis.browser : globalThis.chrome
+  );
+  return { page, api };
+}
+
+/** The tab an extension page runs in, or undefined for a page outside a tab. */
+async function tabIdOf(target: Target): Promise<number | undefined> {
+  const page = await target.page();
+  return page?.evaluate(async () => (await chrome.tabs.getCurrent())?.id);
 }
 
 async function installed(browser: Browser, engine: Engine): Promise<string> {
@@ -58,23 +102,50 @@ async function installed(browser: Browser, engine: Engine): Promise<string> {
   }
 }
 
-async function launchChromium(): Promise<ExtensionBrowser> {
+async function launchChromium(hidden: boolean): Promise<ExtensionBrowser> {
   // Pipe mode plus extension debugging lets the driver install the unpacked build.
   const browser = await puppeteer.launch({
     executablePath: envPath("SAR_CHROMIUM_BIN"),
-    headless: false,
+    headless: hidden,
     pipe: true,
     enableExtensions: true,
     args: [`--lang=${LOCALE}`],
   });
   const id = await installed(browser, "chromium");
   const url = (path: string): string => `chrome-extension://${id}/${path}`;
+
+  // Chromium hides a web page's address from an extension without the tabs permission. The driver
+  // ties each extension page's target to its tab ID while the page runs. The target stays the same
+  // when the tab moves on to another address.
+  const targets = new Map<number, Target>();
+  const pending = new Set<Promise<void>>();
+  function track(target: Target): void {
+    if (target.type() !== TargetType.PAGE || !target.url().startsWith(url(""))) {
+      return;
+    }
+    const done = tabIdOf(target)
+      .then((tab) => {
+        if (tab !== undefined) {
+          targets.set(tab, target);
+        }
+      })
+      // A page that moves on before it answers is tracked again at its next extension address.
+      .catch(() => undefined)
+      .finally(() => pending.delete(done));
+    pending.add(done);
+  }
+  browser.on("targetcreated", track);
+  browser.on("targetchanged", track);
+
+  async function open(path: string): Promise<Page> {
+    const page = await browser.newPage();
+    await page.goto(url(path));
+    return page;
+  }
+  let control: Promise<Control> | undefined;
+
   return {
-    async open(path) {
-      const page = await browser.newPage();
-      await page.goto(url(path));
-      return page;
-    },
+    open,
     async openedBy(path, action) {
       // Listen first: the target can appear before the action resolves.
       const [target] = await Promise.all([
@@ -82,6 +153,14 @@ async function launchChromium(): Promise<ExtensionBrowser> {
         action(),
       ]);
       return target.asPage();
+    },
+    control() {
+      control ??= open(CONTROL_PATH).then(controlOf);
+      return control;
+    },
+    async urlOf(tab) {
+      await Promise.all(pending);
+      return targets.get(tab)?.url() ?? "";
     },
     close: () => browser.close(),
   };
@@ -122,7 +201,7 @@ async function removeProfile(profile: string, child: ChildProcess | null | undef
   await rm(profile, { recursive: true, force: true, maxRetries: 5 });
 }
 
-async function launchGecko(): Promise<ExtensionBrowser> {
+async function launchGecko(hidden: boolean): Promise<GeckoExtensionBrowser> {
   // A random UUID per launch, preset through a pref, gives a known moz-extension:// origin.
   const uuid = crypto.randomUUID();
   // After a reconnect puppeteer skips its own profile cleanup, so this module owns the profile.
@@ -133,7 +212,7 @@ async function launchGecko(): Promise<ExtensionBrowser> {
       browser: "firefox",
       executablePath: envPath("SAR_GECKO_BIN"),
       userDataDir: profile,
-      headless: false,
+      headless: hidden,
       // Firefox treats extension pages as privileged and refuses to drive them without this.
       env: { ...process.env, MOZ_REMOTE_ALLOW_SYSTEM_ACCESS: "1" },
       extraPrefsFirefox: {
@@ -181,16 +260,31 @@ async function launchGecko(): Promise<ExtensionBrowser> {
     throw new Error(href);
   }
 
+  async function open(path: string): Promise<Page> {
+    const { result } = await bidi().connection.send("browsingContext.create", { type: "tab" });
+    await bidi().connection.send("browsingContext.navigate", {
+      context: result.context,
+      url: url(path),
+      wait: "complete",
+    });
+    return adopt(url(path));
+  }
+
+  // A reconnect retires the pages of the session before it, so the control page is found again.
+  let held: { readonly session: Browser; readonly page: Page; } | undefined;
+  async function controlPage(): Promise<Page> {
+    if (held?.session !== browser) {
+      const page = held === undefined ? await open(CONTROL_PATH) : await adopt(url(CONTROL_PATH));
+      held = { session: browser, page };
+    }
+    return held.page;
+  }
+
+  // The namespace handle belongs to one session too, so it is fetched on each call.
+  const control = async (): Promise<Control> => controlOf(await controlPage());
+
   return {
-    async open(path) {
-      const { result } = await bidi().connection.send("browsingContext.create", { type: "tab" });
-      await bidi().connection.send("browsingContext.navigate", {
-        context: result.context,
-        url: url(path),
-        wait: "complete",
-      });
-      return adopt(url(path));
-    },
+    open,
     async openedBy(path, action) {
       // A reconnect would cut off a command of the action that is still in flight.
       await action();
@@ -203,6 +297,24 @@ async function launchGecko(): Promise<ExtensionBrowser> {
         await new Promise((resolve) => setTimeout(resolve, POLL_MS));
       }
       return adopt(href);
+    },
+    control,
+    // Firefox shows the extension the address of a store page, which its content script matches.
+    async urlOf(tab) {
+      const { page, api } = await control();
+      return page.evaluate(async (ext, id) => (await ext.tabs.get(id)).url ?? "", api, tab);
+    },
+    async containerTab(address) {
+      const { result: user } = await bidi().connection.send("browser.createUserContext", {});
+      const { result } = await bidi().connection.send("browsingContext.create", {
+        type: "tab",
+        userContext: user.userContext,
+      });
+      await bidi().connection.send("browsingContext.navigate", {
+        context: result.context,
+        url: address,
+        wait: "none",
+      });
     },
     async close() {
       await browser.close();
