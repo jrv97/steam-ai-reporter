@@ -25,12 +25,13 @@ const WAIT = { timeout: 10_000, interval: 100 };
 /** How Firefox names the cookie store of a container tab. */
 const CONTAINER_PREFIX = "firefox-container-";
 
-/** Launches `engine`, runs `body` and closes the browser whatever happens. */
+/** Launches `engine`, headed if asked, runs `body` and closes the browser whatever happens. */
 async function withBrowser(
   engine: Engine,
   body: (browser: ExtensionBrowser) => Promise<void>,
+  headed = false,
 ): Promise<void> {
-  const browser = await launch(engine);
+  const browser = await launch(engine, headed);
   try {
     await body(browser);
   } finally {
@@ -386,20 +387,26 @@ it.each(ENGINES)(
     }),
 );
 
-// In Chromium the gear in the second window opens a second settings tab there, and the first
-// settings tab takes the origin before the new one loads. That case stays manual.
-it("gecko: case 8, two windows: the first window's settings return to the second window", () =>
-  withBrowser("gecko", async (browser) => {
-    const { origin: first, settings } = await settingsFrom(browser, STORE_HOME, GEAR);
+// Firefox brings the settings tab in the first window forward. Chromium opens a second settings
+// tab in the second window, and only that tab, in front, takes the origin. Headless Chromium
+// reports every window as focused, so its run is headed.
+it.each<{ engine: Engine; headed: boolean; }>([
+  { engine: "chromium", headed: true },
+  { engine: "gecko", headed: false },
+])("$engine: case 8, two windows: the settings in front return to the second window", ({
+  engine,
+  headed,
+}) =>
+  withBrowser(engine, async (browser) => {
+    await settingsFrom(browser, STORE_HOME, GEAR);
     const second = await newWindow(browser, STORE_HOME);
     await pressInPopup(browser, second, GEAR);
-    expect(await settingsTab(browser)).toBe(settings);
-    expect(await windowOf(browser, settings)).toBe(await windowOf(browser, first));
+    const settings = await settingsTab(browser);
     await pressBack(browser, settings);
     await expect
       .poll(() => front(browser, settings), WAIT)
       .toEqual({ focused: [await windowOf(browser, second)], active: second, settingsOpen: false });
-  }));
+  }, headed));
 
 it("gecko: case 11, the back button returns to a container tab", async () => {
   const browser = await launch("gecko");

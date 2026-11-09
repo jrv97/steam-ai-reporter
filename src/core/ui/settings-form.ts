@@ -123,8 +123,6 @@ const TAB_ROLE = "tab";
 const OPEN_TAB_ATTRIBUTE = "data-sar-open-tab";
 /** Marks the popup's gear, which opens the options page on the tab shown last. */
 const OPEN_SETTINGS_ATTRIBUTE = "data-sar-open-settings";
-/** Marks the page header's Go back to Steam button. */
-const GO_BACK_ATTRIBUTE = "data-sar-go-back";
 /** An original gear, eight teeth around a hole on a 48 unit grid (`parseIcon`). */
 const GEAR_SVG = '<svg viewBox="0 0 48 48" aria-hidden="true" focusable="false">'
   + '<path fill-rule="evenodd" d="M40 26 45 30 43 35 37 34 34 37 35 43 30 45 26 40 22 40 18 45 '
@@ -241,6 +239,8 @@ export async function mountSettingsForm(
   mounts += 1;
   const prefix = `sar-${String(mounts)}-`;
   const dates = dateFormat(i18n.locale);
+  /** The page header's Go back to Steam, when the page has a way back. */
+  let goBackButton: HTMLButtonElement | undefined;
 
   const scope = root.getRootNode();
   if (scope === doc) {
@@ -320,10 +320,9 @@ export async function mountSettingsForm(
       node.append(gear(deps.allSettingsUrl));
     }
     if (deps.goBack !== undefined) {
-      const back = element("button", "sar-button", i18n.t("options_back_to_steam"));
-      back.type = "button";
-      back.setAttribute(GO_BACK_ATTRIBUTE, "");
-      node.append(back);
+      goBackButton = element("button", "sar-button", i18n.t("options_back_to_steam"));
+      goBackButton.type = "button";
+      node.append(goBackButton);
     }
     return node;
   }
@@ -1211,7 +1210,7 @@ export async function mountSettingsForm(
       return;
     }
     // Outside the load error's lock, so the way back works when the settings fail to load
-    if (target.closest(`[${GO_BACK_ATTRIBUTE}]`) !== null) {
+    if (target === goBackButton) {
       deps.goBack?.();
       return;
     }

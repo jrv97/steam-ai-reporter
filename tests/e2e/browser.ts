@@ -72,11 +72,12 @@ function distDir(engine: Engine): string {
   return fileURLToPath(new URL(`../../dist/${engine}`, import.meta.url));
 }
 
-export function launch(engine: "gecko"): Promise<GeckoExtensionBrowser>;
-export function launch(engine: Engine): Promise<ExtensionBrowser>;
-export async function launch(engine: Engine): Promise<ExtensionBrowser> {
+export function launch(engine: "gecko", headed?: boolean): Promise<GeckoExtensionBrowser>;
+export function launch(engine: Engine, headed?: boolean): Promise<ExtensionBrowser>;
+/** Launches `engine` with the extension, headed when `headed` is true. */
+export async function launch(engine: Engine, headed = false): Promise<ExtensionBrowser> {
   // Headless, so a run takes no focus from the desktop. SAR_E2E_HEADED=1 shows the windows.
-  const hidden = process.env["SAR_E2E_HEADED"] !== "1";
+  const hidden = !headed && process.env["SAR_E2E_HEADED"] !== "1";
   return engine === "chromium" ? launchChromium(hidden) : launchGecko(hidden);
 }
 

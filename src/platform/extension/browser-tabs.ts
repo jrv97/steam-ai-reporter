@@ -8,6 +8,8 @@
 export interface BrowserTabs {
   /** The ID of the active tab in the current window, if the browser gives one. */
   activeTabId(): Promise<number | undefined>;
+  /** The ID of the active tab in the last-focused window, if the browser gives one. */
+  focusedTabId(): Promise<number | undefined>;
   /** The ID of the tab this page runs in, if it runs in one. */
   ownTabId(): Promise<number | undefined>;
   /** Activates a tab and resolves its window ID, or undefined when the browser returns no tab. */

@@ -125,9 +125,7 @@ async function main(): Promise<void> {
           tabs: browserTabs,
           session,
           onChanged: onSessionChanged,
-          navigate: (url) => {
-            location.assign(url);
-          },
+          window,
         }),
         onTabChange: (id) => {
           history.replaceState(null, "", tabHash(id));
