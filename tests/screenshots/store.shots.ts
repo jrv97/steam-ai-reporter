@@ -55,12 +55,15 @@ const ORDER_CARD = ".sar-card:has(.sar-order-handle)";
 const CHIP_PREVIEW = "[role=tabpanel]:not([hidden]) .sar-chip-preview";
 const POPUP = ".sar-options";
 const DECK_ROW = "#home_deck_content";
-const QUEUE_CHIPS = "[role=dialog] .sar-chips";
+const QUEUE = "[role=dialog]";
+const QUEUE_CHIPS = `${QUEUE} .sar-chips`;
 
 /** How far the densest-frame search wheels through a page, and the chips it must find. */
 const SEARCH_STEPS = 12;
 const WISHLIST_STEPS = 40;
 const LAZY_STEPS = 20;
+/** How many queue games the queue shot skips, at most, to find one with chips. */
+const QUEUE_STEPS = 10;
 const SEARCH_CHIPS = 4;
 const WISHLIST_CHIPS = 3;
 
@@ -82,6 +85,19 @@ async function atLeast(page: Page, selector: string, least: number): Promise<voi
     WAIT,
     selector,
     least,
+  );
+}
+
+/** Whether the queue game in the frame shows chips; the other slides sit off screen. */
+function queueShowsChips(page: Page): Promise<boolean> {
+  return page.evaluate(
+    (css) =>
+      [...document.querySelectorAll(css)].some((node) => {
+        const box = node.getBoundingClientRect();
+        const framed = box.height > 0 && box.left >= 0 && box.right <= window.innerWidth;
+        return framed && node.children.length > 0;
+      }),
+    QUEUE_CHIPS,
   );
 }
 
@@ -183,8 +199,14 @@ it.skipIf(signedOut)(
     const widget = `::-p-text(${queueWidget})`;
     await wheelUntil(page, widget, LAZY_STEPS);
     await page.locator(widget).setTimeout(WAIT.timeout).click();
-    await page.waitForSelector(QUEUE_CHIPS, { ...WAIT, visible: true });
+    await page.waitForSelector(QUEUE, { ...WAIT, visible: true });
     await page.waitForNetworkIdle({ idleTime: 1_500, timeout: WAIT.timeout });
+    // The queue starts at whatever game Steam picks; move on until one shows chips.
+    for (let step = 0; step < QUEUE_STEPS && !(await queueShowsChips(page)); step += 1) {
+      await page.keyboard.press("ArrowRight");
+      await page.waitForNetworkIdle({ idleTime: 1_500, timeout: WAIT.timeout });
+    }
+    expect(await queueShowsChips(page)).toBe(true);
     await settle(page);
     await save(page, locale, "06-queue");
     await page.close();
