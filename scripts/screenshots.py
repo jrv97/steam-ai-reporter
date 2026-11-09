@@ -50,6 +50,9 @@ def profile_dir() -> Path:
     path = Path(value)
     if not path.is_dir():
         fail(f"SAR_CHROMIUM_PROFILE is not a folder: {path}")
+    # The capture launches the copy as a user-data folder, so a profile inside one would not load.
+    if not (path / "Local State").is_file():
+        fail(f"SAR_CHROMIUM_PROFILE is not a Chromium user-data folder (no Local State): {path}")
     return path
 
 

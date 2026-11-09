@@ -31,7 +31,7 @@ Before a store release, look at the images against the build being released. A s
 
 ## Before the first run on a machine
 
-1. `mise.local.toml` names `SAR_CHROMIUM_BIN` and `SAR_CHROMIUM_PROFILE` (see `mise.local.toml.example`).
+1. `mise.local.toml` names `SAR_CHROMIUM_BIN` and `SAR_CHROMIUM_PROFILE` (see `mise.local.toml.example`). `SAR_CHROMIUM_PROFILE` is the user-data folder that holds `Local State`, not a profile folder such as `Default` inside it.
 2. In that Chromium profile (`mise run run-chromium`), sign in to Steam and answer Steam's cookie banner. The capture runs on a copy of this profile, so the store pages show signed in. Without a sign-in, the queue, wishlist and calendar shots cannot run.
 3. `docs/store/sample-config.json` is the settings the shots start from. To change them, set them on the settings page, use Download backup, and save the file over `docs/store/sample-config.json`.
 
