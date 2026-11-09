@@ -148,6 +148,7 @@ def write_extension(target: str, version: str) -> None:
 
 
 def userscript_header(version: str, catalogs: dict[str, dict[str, object]]) -> str:
+    """The metadata block of the userscript and its .meta.js, one aligned field per line."""
     english = catalogs[DEFAULT_LOCALE]
     fields: list[tuple[str, str]] = [
         ("@name", message(english, "ext_name", DEFAULT_LOCALE)),

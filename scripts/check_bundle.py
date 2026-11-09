@@ -282,6 +282,7 @@ def header_fields(header: str) -> dict[str, list[str]]:
 
 
 def header_problems(where: str, header: str) -> list[str]:
+    """Each fixed header field that is missing or holds another value, and a missing @noframes."""
     fields = header_fields(header)
     problems: list[str] = []
     expected = {
