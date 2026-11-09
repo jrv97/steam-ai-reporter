@@ -29,7 +29,7 @@ export interface SizeWatch {
 }
 
 /** Makes a size watch that reports elements whose box became non-empty. */
-export type SizeWatchFactory = (onSized: (elements: readonly Element[]) => void) => SizeWatch;
+type SizeWatchFactory = (onSized: (elements: readonly Element[]) => void) => SizeWatch;
 
 /** One `ResizeObserver` for the page; a no-op where the document has no window. */
 function resizeWatch(doc: Document): SizeWatchFactory {

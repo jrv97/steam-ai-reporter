@@ -55,7 +55,7 @@ export interface GeckoExtensionBrowser extends ExtensionBrowser {
  * An extension page and its WebExtension namespace: `browser` on Firefox, else `chrome`, as the
  * extension's own code picks. Pass `api` to `page.evaluate` to call the API in the page.
  */
-export interface Control {
+interface Control {
   readonly page: Page;
   readonly api: JSHandle<typeof chrome>;
 }

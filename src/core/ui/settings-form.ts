@@ -57,10 +57,10 @@ import type { UiState } from "./ui-state";
 export type SettingsContext = "page" | "popup";
 
 /** Tabs with every setting, or a row per tag with its name, list filter and master switch. */
-export type SettingsLayout = "tabs" | "list";
+type SettingsLayout = "tabs" | "list";
 
 /** The product heading above the cards: name, version and, where an icon file ships, the icon. */
-export interface SettingsHeader {
+interface SettingsHeader {
   /** The release version, from `package.json` through the manifest or the userscript header. */
   readonly version: string;
   /** The icon shown at 32px: `icon-48.png` on the page, `icon-32.png` in the popup. */
@@ -105,7 +105,7 @@ export interface SettingsFormDeps {
 }
 
 /** The download and file chooser of the Backup card, and the clock that dates a backup. */
-export interface BackupFormDeps {
+interface BackupFormDeps {
   readonly files: FileTransfer;
   readonly clock: Clock;
 }

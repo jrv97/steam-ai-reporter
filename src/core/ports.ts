@@ -7,7 +7,6 @@ import type { AppId } from "./types";
 
 /** The message catalog port: typed lookup of catalog text by key. */
 export type { I18n as MessageCatalog } from "./i18n/t";
-export type { Logger } from "./log";
 
 /** Stops a subscription. Calling it again does nothing. */
 export type Unsubscribe = () => void;
@@ -27,7 +26,7 @@ export interface HttpResponse {
  * No readable answer: a network failure, or an error answer without CORS headers, which `fetch`
  * reports as a `TypeError` with no status (rq6, S1). `cause` is the rejection, for debug logs.
  */
-export interface HttpFailure {
+interface HttpFailure {
   readonly kind: "failed";
   readonly cause: unknown;
 }

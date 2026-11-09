@@ -5,7 +5,7 @@ import type { MessageParams, PluralParams } from "./keys.gen";
 export type ParamsSchema<S> = { readonly [K in keyof S]: Params; };
 
 /** Keys whose message takes no placeholders, so the params may be omitted. */
-export type BareKey<S> =
+type BareKey<S> =
   & { [K in keyof S]: Record<never, never> extends S[K] ? K : never; }[keyof S]
   & string;
 

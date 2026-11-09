@@ -61,7 +61,7 @@ export function parseLiveAppPage(doc: Document, pageUrl: string): KindVerdicts |
     : undefined;
 }
 
-export function appPageUrl(id: AppId): string {
+function appPageUrl(id: AppId): string {
   return `${APP_PAGE_ORIGIN}/app/${id}/?l=english`;
 }
 

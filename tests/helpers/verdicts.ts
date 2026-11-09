@@ -137,7 +137,7 @@ export function minimalDisclosed<Id extends KindId>(
   return MINIMAL[kind](payload);
 }
 
-export const NOT_DISCLOSED: NotDisclosedVerdict = TYPES_NOT_DISCLOSED.api;
+const NOT_DISCLOSED: NotDisclosedVerdict = TYPES_NOT_DISCLOSED.api;
 
 /** An app's verdicts: the given ones, and unknown `missing` for every other kind. */
 export function verdictsWith(given: Partial<KindVerdicts> = {}): KindVerdicts {

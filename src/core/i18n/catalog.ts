@@ -1,5 +1,5 @@
 /** One message of a Chrome `messages.json` catalog, as far as the runtime reads it. */
-export interface CatalogEntry {
+interface CatalogEntry {
   readonly message: string;
   readonly placeholders?: Readonly<Record<string, unknown>>;
 }

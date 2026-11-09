@@ -9,7 +9,7 @@ import { isInTksNode } from "./marks";
  * React store capsules mount their image box empty and add the `img` inside the app link later.
  * That added subtree holds no link, so the box itself counts as the image.
  */
-export const IMAGE = [
+const IMAGE = [
   "img",
   "[style*='background-image']",
   "[data-background-image-url]",

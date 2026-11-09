@@ -14,7 +14,7 @@ The platform-free heart of Tag Kit for Steam: detection, cache, scanning, placem
 
 ## Ports
 
-Core depends on small interfaces in `ports.ts`: `Http`, `KeyValueStore`, `Clock`, `Logger`, `SettingsSource`, `MessageCatalog` and `FileTransfer` (downloads and the file chooser, which the extension page and the userscript dialog both take from `src/platform/shared/file-transfer.ts`). A port is one capability, as narrow as its callers need (interface segregation). Core receives implementations from a composition root and never constructs a platform object itself.
+Core depends on small interfaces in `ports.ts`: `Http`, `KeyValueStore`, `Clock`, `SettingsSource`, `MessageCatalog` and `FileTransfer` (downloads and the file chooser, which the extension page and the userscript dialog both take from `src/platform/shared/file-transfer.ts`). Logging comes in as a `ConsoleSink` from `log.ts`, and core's `createLogger` wraps it in a `Logger`. A port is one capability, as narrow as its callers need (interface segregation). Core receives implementations from a composition root and never constructs a platform object itself.
 
 The only shipped composition roots are the extension content script and the userscript `main.ts`. `src/platform/dev/inject.ts` is a dev-only root and is never packaged.
 

@@ -20,7 +20,7 @@ export type KindDetail =
   | { readonly kind: "dated"; readonly key: DateMessageKey; readonly time: number; };
 
 /** The catalog lines that hold a date as `$date$`. */
-export type DateMessageKey = "kind_earlyaccess_released" | "kind_earlyaccess_updated";
+type DateMessageKey = "kind_earlyaccess_released" | "kind_earlyaccess_updated";
 
 const message = (key: BareMessageKey): KindDetail => ({ kind: "message", key });
 const text = (value: string): KindDetail => ({ kind: "text", text: value });

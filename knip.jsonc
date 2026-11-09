@@ -1,0 +1,23 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  // The shipped and dev composition roots that scripts/build.py bundles; options.ts is the popup too.
+  "entry": [
+    "src/platform/extension/content.ts",
+    "src/platform/extension/options.ts",
+    "src/platform/userscript/main.ts",
+    "src/platform/dev/inject.ts",
+  ],
+  "project": ["src/**/*.ts", "tests/**/*.ts", "lint/**/*.mjs", "*.config.ts"],
+  "vitest": {
+    "config": ["vitest.config.ts", "vitest.e2e.config.ts", "vitest.screenshots.config.ts"],
+  },
+  "oxlint": {
+    "config": [".oxlintrc.json"],
+  },
+  "ignoreDependencies": [
+    // scripts/build.py runs node_modules/esbuild/bin/esbuild, which knip cannot see from Python.
+    "esbuild",
+    // puppeteer-core's internal BiDi types import rxjs (ADR 0020).
+    "rxjs",
+  ],
+}

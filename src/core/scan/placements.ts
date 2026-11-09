@@ -6,7 +6,7 @@ import { firstImage, imageBox } from "./image";
 // 2 and 5). A new surface is a new entry here, never a scanner edit (rule 11).
 
 /** Finds the element a badge attaches to inside a host, or undefined when it does not fit. */
-export type AnchorRule = (host: Element) => Element | undefined;
+type AnchorRule = (host: Element) => Element | undefined;
 
 interface PlacementBase {
   /** A stable name for tests and debug logs. */
@@ -45,13 +45,13 @@ export interface RowPlacement extends PlacementBase {
 export type Placement = OverlayPlacement | RowPlacement;
 
 /** The box of the host's first capsule image. */
-export const capsuleImage: AnchorRule = (host) => {
+const capsuleImage: AnchorRule = (host) => {
   const image = firstImage(host);
   return image === undefined ? undefined : imageBox(image);
 };
 
 /** The first element in the host matching `selector`. */
-export function inside(selector: string): AnchorRule {
+function inside(selector: string): AnchorRule {
   return (host) => host.querySelector(selector) ?? undefined;
 }
 
@@ -60,7 +60,7 @@ function hasText(element: Element): boolean {
 }
 
 /** The host's first element without child elements that shows text: a row's title line. */
-export const firstTextLeaf: AnchorRule = (host) => {
+const firstTextLeaf: AnchorRule = (host) => {
   for (const element of host.querySelectorAll("*")) {
     if (element.childElementCount === 0 && hasText(element)) {
       return element;
