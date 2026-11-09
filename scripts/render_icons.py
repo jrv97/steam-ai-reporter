@@ -23,10 +23,10 @@ COLORS = {"purple": "#8f73f3", "white": "#ffffff", "black": "#000000"}
 PAINT_COLOR = "purple"
 STORE_SIZE = 128
 STORE_PADDING = 16
-# The mark spans 4 to 285 on the master's 300 unit canvas. Cropping the view box to that span
-# makes the render touch every edge, as design section 14 asks of the full bleed sizes.
-FULL_VIEW_BOX = "0 0 300 300"
-ART_VIEW_BOX = "4 4 281 281"
+# The mark spans 4 to 282.2 across and 4 to 306.2 down on the master's 310 unit canvas. The crop
+# is that span's height, centered across, so the render touches the top and bottom edges.
+FULL_VIEW_BOX = "0 0 310 310"
+ART_VIEW_BOX = "-8 4 302.2 302.2"
 PAGE = (
     "<!doctype html><meta charset=utf-8>"
     "<style>html,body{{margin:0;background:transparent}}"
