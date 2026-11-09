@@ -18,11 +18,10 @@ import configparser
 import os
 import re
 import shutil
-import subprocess
 import sys
 from pathlib import Path
 
-from repo import DIST, EXTENSION_TARGETS, ROOT, fail
+from repo import DIST, EXTENSION_TARGETS, fail, run_status
 
 START_URL = "https://store.steampowered.com/"
 CHANNEL = re.compile(r'pref\(\s*"app\.update\.channel"\s*,\s*"([^"]+)"\s*\)')
@@ -129,7 +128,7 @@ def main() -> None:
     if web_ext is None:
         fail("web-ext is not on PATH; run this through `mise run run-gecko` or `run-chromium`")
     command = [web_ext, "run", *browser_args, f"--start-url={START_URL}"]
-    sys.exit(subprocess.run(command, cwd=ROOT, check=False).returncode)
+    sys.exit(run_status(*command))
 
 
 if __name__ == "__main__":

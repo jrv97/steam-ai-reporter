@@ -12,8 +12,8 @@ Usage: build.py [--watch]
 import argparse
 import json
 import shutil
-import subprocess
 import sys
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -31,6 +31,7 @@ from repo import (
     json_string,
     package_version,
     read_json,
+    run_status,
     valibot_notice,
 )
 
@@ -194,10 +195,12 @@ def bundles(header: str) -> list[Bundle]:
 
 
 def run_esbuild(all_bundles: list[Bundle], watch: bool) -> None:
-    processes = [
-        subprocess.Popen(esbuild_command(bundle, watch), cwd=ROOT) for bundle in all_bundles
-    ]
-    failed = sum(1 for proc in processes if proc.wait() != 0)
+    # One thread per bundle: esbuild runs in parallel, and in watch mode until it is stopped.
+    with ThreadPoolExecutor(max_workers=len(all_bundles)) as pool:
+        codes = list(
+            pool.map(lambda bundle: run_status(*esbuild_command(bundle, watch)), all_bundles)
+        )
+    failed = sum(1 for code in codes if code != 0)
     if failed:
         fail(f"esbuild failed for {failed} target(s)")
 
