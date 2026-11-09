@@ -11,7 +11,7 @@
 
 A browser extension for Chromium-based browsers and Firefox, and a userscript (Tampermonkey and Violentmonkey) that tag items on the Steam store with what Valve's own data says about them: AI Generated Content Disclosure, Anti-Cheat (Kernel Level flagged separately), 3rd-party DRM, 3rd-Party Account, 3rd-party EULA, PvP (friend request), In-App Purchases, Valve's Steam Deck and Steam Machine compatibility ratings, Family Sharing as Steam's features list it, and Early Access.
 
-> Status: [releases](https://github.com/jrv97/steam-ai-reporter/releases) are on GitHub. The Firefox link below is a placeholder.
+> Status: published on the Chrome Web Store and Firefox Add-ons (links under [Install](#install)). [Releases](https://github.com/jrv97/tag-kit-for-steam/releases) are on GitHub.
 
 The extension only reads what Steam's store data and developers report there, and sends no reports anywhere.
 
@@ -100,9 +100,9 @@ The toolbar popup lists every tag by its short name, with its Show, Dim and Hide
 
 ## Install
 
-- [Chrome Web Store](https://chromewebstore.google.com/detail/ai-reporter-for-steam/jpbjlfnkdmmdccfiocblhkjdejaihnkp).
-- [Firefox Add-ons (AMO)](https://addons.mozilla.org/en-US/firefox/addon/tag-kit-for-steam/).
-- Userscript: open [steam-ai-reporter.user.js](https://github.com/jrv97/steam-ai-reporter/releases/latest/download/steam-ai-reporter.user.js) from the latest release in Tampermonkey or Violentmonkey.
+- <img src="https://cdn.simpleicons.org/chromewebstore" alt="" width="16" height="16"> [Chrome Web Store](https://chromewebstore.google.com/detail/ai-reporter-for-steam/jpbjlfnkdmmdccfiocblhkjdejaihnkp).
+- <img src="https://cdn.simpleicons.org/firefoxbrowser" alt="" width="16" height="16"> [Firefox Add-ons (AMO)](https://addons.mozilla.org/en-US/firefox/addon/tag-kit-for-steam/).
+- <img src="https://cdn.simpleicons.org/github/8b949e" alt="" width="16" height="16"> Userscript: open [steam-ai-reporter.user.js](https://github.com/jrv97/steam-ai-reporter/releases/latest/download/steam-ai-reporter.user.js) from the latest release in Tampermonkey or Violentmonkey.
 
 ## Feedback
 
@@ -193,7 +193,7 @@ No code is copied from any of these projects. Ideas that shaped this one are cre
 
 ## How it was built
 
-I built this extension with [Claude Code](https://claude.com/claude-code) and Claude Design. I orchestrated the work and oversaw every decision, with close attention to performance and efficiency, design and testing. The code itself was written with Claude's help, luckily for me. Claude Design kept the design language consistent across the badges, the banner, the hover panel and the settings, small as the app is.
+I built this extension with [Claude Code](https://claude.com/claude-code) and Claude Design. I orchestrated the work and oversaw every decision, with close attention to performance and efficiency, design and testing. The code itself was written with Claude's help, because I wouldn't have time to work on this otherwise, and I've desperately needed this forever. Claude Design kept the design language consistent across the badges, the banner, the hover panel and the settings, small as the app is.
 
 ## Not affiliated with Valve
 
