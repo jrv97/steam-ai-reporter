@@ -100,10 +100,20 @@ export function wholePatch(settings: Settings): SettingsPatch {
   return {
     locale: settings.locale,
     debug: settings.debug,
-    kinds: perKind((kind) => {
-      const own = settings.kinds[kind.id];
-      return { ...own, color: own.color, chip: own.chip, chipCompact: own.chipCompact };
-    }),
+    kinds: wholeKinds(settings),
     order: settings.order,
   };
+}
+
+/** Every kind's settings as a patch that names each field, unset ones as `undefined`. */
+function wholeKinds(settings: Settings): NonNullable<SettingsPatch["kinds"]> {
+  return perKind((kind) => {
+    const own = settings.kinds[kind.id];
+    return { ...own, color: own.color, chip: own.chip, chipCompact: own.chipCompact };
+  });
+}
+
+/** Puts every tag and the tag order back to the defaults; language and debug stay. */
+export function defaultsPatch(): SettingsPatch {
+  return { kinds: wholeKinds(DEFAULT_SETTINGS), order: DEFAULT_SETTINGS.order };
 }

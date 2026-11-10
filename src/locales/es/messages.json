@@ -1025,7 +1025,7 @@
   },
   "options_backup_summary_list": {
     "message": "$list$: $number$",
-    "description": "One line of the check after a backup file is picked: a list in the file and how many entries it holds. $list$ is a settings card title such as \"Games you ignored\", $number$ a number.",
+    "description": "One line of a check in the General tab: a list and how many entries it holds. The Backup check counts the entries in a picked file, and the Stop ignoring everything check those stored now. $list$ is a settings card title such as \"Developers you ignored\", $number$ a number.",
     "placeholders": {
       "list": {
         "content": "$1",
@@ -1067,7 +1067,7 @@
   },
   "options_backup_cancel": {
     "message": "Cancelar",
-    "description": "Button of the check: closes it and changes nothing."
+    "description": "Button of a check in the General tab (Backup restore, Reset all settings, Stop ignoring everything): closes it and changes nothing."
   },
   "notice_backup_downloaded": {
     "message": "Copia descargada.",
@@ -1151,6 +1151,198 @@
     "message": "No se pudo restaurar toda la copia. Inténtalo de nuevo; restaurar el mismo archivo dos veces es seguro.",
     "description": "Error when saving a restore fails. A retry only adds what is missing, so it is safe."
   },
+  "options_section_lookups": {
+    "message": "Resultados de las consultas",
+    "description": "Card title in the General settings tab. The card is about what Steam said about each game, which the extension keeps on this device."
+  },
+  "options_lookups_help": {
+    "message": "Lo que Steam dice de cada juego se guarda en este dispositivo hasta $days$ días, o $hours$ horas cuando Steam no dio respuesta. Después, las páginas de la tienda lo vuelven a consultar.",
+    "description": "Help under the Lookup results title. $days$ and $hours$ are numbers taken from the code, always more than one.",
+    "placeholders": {
+      "days": {
+        "content": "$1",
+        "example": "7"
+      },
+      "hours": {
+        "content": "$2",
+        "example": "6"
+      }
+    }
+  },
+  "options_lookups_count_one": {
+    "message": "Guardado ahora: $count$ juego, $unanswered$ sin respuesta.",
+    "description": "Line in the Lookup results card: how many games have stored results, and how many of them got no answer from Steam. $count$ and $unanswered$ are numbers formatted for the language. Singular form, chosen by $count$.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "1"
+      },
+      "unanswered": {
+        "content": "$2",
+        "example": "0"
+      }
+    }
+  },
+  "options_lookups_count_other": {
+    "message": "Guardados ahora: $count$ juegos, $unanswered$ de ellos sin respuesta.",
+    "description": "Line in the Lookup results card: how many games have stored results, and how many of them got no answer from Steam. $count$ and $unanswered$ are numbers formatted for the language. Plural form, chosen by $count$.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "1,234"
+      },
+      "unanswered": {
+        "content": "$2",
+        "example": "56"
+      }
+    }
+  },
+  "options_lookups_empty": {
+    "message": "Ahora no hay nada guardado.",
+    "description": "Line in the Lookup results card when no game has stored results."
+  },
+  "options_lookups_clear": {
+    "message": "Borrar los resultados de las consultas",
+    "description": "Button in the Lookup results card. It removes every stored result at once, with no confirmation; store pages look the games up again."
+  },
+  "options_lookups_recheck": {
+    "message": "Volver a consultar los juegos sin respuesta",
+    "description": "Button in the Lookup results card. It removes only the stored results of games Steam gave no answer for, so store pages ask about them again."
+  },
+  "notice_lookups_cleared_one": {
+    "message": "Se borró $count$ resultado. Recarga las páginas de la tienda abiertas para volver a consultarlo.",
+    "description": "Status line and screen reader announcement after Clear lookup results. $count$ is how many games had their results removed. Singular form.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "1"
+      }
+    }
+  },
+  "notice_lookups_cleared_other": {
+    "message": "Se borraron $count$ resultados. Recarga las páginas de la tienda abiertas para volver a consultarlos.",
+    "description": "Status line and screen reader announcement after Clear lookup results. $count$ is how many games had their results removed. Plural form.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "1,234"
+      }
+    }
+  },
+  "notice_lookups_rechecked_one": {
+    "message": "Se borró $count$ juego sin respuesta. Recarga las páginas de la tienda abiertas para volver a consultarlo.",
+    "description": "Status line and screen reader announcement after Check unknown games again. $count$ is how many games had their results removed. Singular form.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "1"
+      }
+    }
+  },
+  "notice_lookups_rechecked_other": {
+    "message": "Se borraron $count$ juegos sin respuesta. Recarga las páginas de la tienda abiertas para volver a consultarlos.",
+    "description": "Status line and screen reader announcement after Check unknown games again. $count$ is how many games had their results removed. Plural form.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "56"
+      }
+    }
+  },
+  "error_lookups_read": {
+    "message": "No se pudieron leer los resultados de las consultas. Inténtalo más tarde.",
+    "description": "Error in the Lookup results card when the stored results cannot be counted."
+  },
+  "error_lookups_clear": {
+    "message": "No se pudieron borrar los resultados de las consultas. Inténtalo de nuevo.",
+    "description": "Error in the Lookup results card when removing stored results fails."
+  },
+  "options_section_reset": {
+    "message": "Restablecer",
+    "description": "Card title in the General settings tab, for the actions that undo the person's settings or ignore lists."
+  },
+  "options_reset_help": {
+    "message": "No se pueden deshacer. Descarga antes una copia si quizá quieras recuperar tu configuración o tus listas.",
+    "description": "Help under the Reset title. \"backup\" is the Backup card's file."
+  },
+  "options_reset_settings": {
+    "message": "Restablecer toda la configuración",
+    "description": "Button in the Reset card. It opens a check; nothing changes until the person confirms."
+  },
+  "options_reset_settings_title": {
+    "message": "¿Restablecer toda la configuración?",
+    "description": "Title of the check that Reset all settings opens."
+  },
+  "options_reset_settings_tags": {
+    "message": "Cada etiqueta vuelve a sus valores predeterminados: activada o no, valores, marcador, aviso y filtro de listas.",
+    "description": "Line of the Reset all settings check: what happens to each tag's settings."
+  },
+  "options_reset_settings_words": {
+    "message": "Los textos y los colores de los marcadores se borran.",
+    "description": "Line of the Reset all settings check: the person's own chip texts and colors are removed."
+  },
+  "options_reset_settings_order": {
+    "message": "El orden de las etiquetas vuelve al predeterminado.",
+    "description": "Line of the Reset all settings check."
+  },
+  "options_reset_settings_keep": {
+    "message": "Tu idioma y tus listas de ignorados se mantienen.",
+    "description": "Last line of the Reset all settings check: what the reset does not touch."
+  },
+  "options_reset_settings_confirm": {
+    "message": "Restablecer",
+    "description": "Primary button of the Reset all settings check: puts the settings back to their defaults."
+  },
+  "notice_reset_settings_done": {
+    "message": "Toda la configuración volvió a sus valores predeterminados.",
+    "description": "Status line and screen reader announcement after the settings were reset."
+  },
+  "error_reset_settings": {
+    "message": "No se pudo restablecer la configuración. Inténtalo de nuevo.",
+    "description": "Error when writing the default settings fails. The check stays open."
+  },
+  "options_reset_lists": {
+    "message": "Dejar de ignorar todo",
+    "description": "Button in the Reset card. It opens a check that counts what is ignored; nothing changes until the person confirms."
+  },
+  "options_reset_lists_title": {
+    "message": "¿Dejar de ignorar todo?",
+    "description": "Title of the check that Stop ignoring everything opens."
+  },
+  "options_reset_lists_games": {
+    "message": "$list$: $all$ para todas las etiquetas, $tags$ para una sola etiqueta",
+    "description": "Line of the Stop ignoring everything check. $list$ is the card title \"Games you ignored\"; $all$ counts the games ignored for all tags and $tags$ the entries ignored for a single tag. Both are numbers.",
+    "placeholders": {
+      "list": {
+        "content": "$1",
+        "example": "Games you ignored"
+      },
+      "all": {
+        "content": "$2",
+        "example": "4"
+      },
+      "tags": {
+        "content": "$3",
+        "example": "9"
+      }
+    }
+  },
+  "options_reset_lists_keep": {
+    "message": "Tu configuración se mantiene.",
+    "description": "Last line of the Stop ignoring everything check: the settings are not touched."
+  },
+  "options_reset_lists_confirm": {
+    "message": "Dejar de ignorar",
+    "description": "Primary button of the Stop ignoring everything check: empties the ignore lists of games, developers and publishers."
+  },
+  "notice_reset_lists_done": {
+    "message": "Ya no ignoras ningún juego, desarrollador ni distribuidor.",
+    "description": "Status line and screen reader announcement after every ignore list was emptied."
+  },
+  "error_reset_lists": {
+    "message": "No se pudieron vaciar todas las listas de ignorados. Inténtalo de nuevo.",
+    "description": "Error when emptying an ignore list fails. The check stays open; trying again is safe."
+  },
   "options_section_privacy": {
     "message": "Privacidad",
     "description": "Section heading in the settings."
@@ -1199,9 +1391,9 @@
     "message": "Configuración completa",
     "description": "Screen reader name and tooltip of the gear button at the top of the toolbar popup, which opens the full settings page in a tab."
   },
-  "options_back_to_steam": {
-    "message": "Volver a Steam",
-    "description": "Button at the end of the settings page header. It switches back to the Steam store tab where the toolbar popup opened the settings and closes the settings tab; without such a tab it opens the Steam store home page in this tab."
+  "options_go_back": {
+    "message": "Volver",
+    "description": "Button at the end of the settings page header, after an undo arrow icon. It switches back to the Steam store tab where the toolbar popup opened the settings and closes the settings tab. Without such a tab it closes the settings tab when its window holds other tabs, else it opens the Steam store home page in this tab. Keep it short and neutral: the tab it returns to may not be a Steam page."
   },
   "options_kind_enabled": {
     "message": "Usar esta etiqueta",

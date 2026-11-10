@@ -1,0 +1,3 @@
+kind: Changed
+body: The Go back to Steam button on the All Settings page now reads Go back, after an arrow icon. When the tab you opened the settings from is gone, it closes the settings tab if the window holds other tabs, and opens the Steam store only when the settings tab is alone. The backup buttons start with file icons.
+time: 2026-11-10T12:38:02.5419+01:00

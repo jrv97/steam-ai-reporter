@@ -918,10 +918,11 @@ describe("the page around the tabs", () => {
     const back = root.querySelector<HTMLButtonElement>(".tks-options-header > button");
     expect(back).toBe(root.querySelector(".tks-options-header")?.lastElementChild);
     expect(back?.type).toBe("button");
-    expect(back?.textContent).toBe(i18n.t("options_back_to_steam"));
+    expect(back?.textContent).toBe(i18n.t("options_go_back"));
     expect(back?.hasAttribute("aria-label")).toBe(false);
+    expect(back?.querySelector("svg")?.getAttribute("aria-hidden")).toBe("true");
     expect(back?.disabled).toBe(false);
-    back?.click();
+    back?.querySelector("svg")?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     expect(goBack).toHaveBeenCalledTimes(1);
   });
 

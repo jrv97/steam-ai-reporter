@@ -139,3 +139,13 @@ export function createCreatorList(
     parseKey: toCreatorKey,
   });
 }
+
+/**
+ * Empties the games, developers and publishers lists of every scope, in one write. The v1 list is
+ * not copied again after it, since the v2 key then exists.
+ */
+export async function clearIgnoreLists(store: KeyValueStore): Promise<void> {
+  const empty = encodeAllow(perScope(() => new Map<string, AllowEntry>()));
+  const keys = [ALLOW_KEY, ...Object.values(CREATOR_ALLOW_KEYS)];
+  await store.set(new Map(keys.map((key) => [key, empty])));
+}

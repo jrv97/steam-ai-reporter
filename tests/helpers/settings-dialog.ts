@@ -18,6 +18,7 @@ export function dialogDeps(live = true, store = memoryStore()): SettingsDialogDe
     settings: createSettingsSource(store),
     lists: createIgnoreLists(store, fixedClock(NOW)),
     uiState: createUiState(store),
+    store,
     clock: fixedClock(NOW),
     live,
   };

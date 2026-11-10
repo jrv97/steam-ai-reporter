@@ -48,6 +48,8 @@ type CaptionLevel = "h3" | "h4";
 export interface AllowSource {
   readonly id: string;
   readonly title: BareMessageKey;
+  /** Says that the list could not be read, as text. */
+  readonly loadErrorKey: BareMessageKey;
   /** Reads the list once. A failed read is kept, and drawn, until the next refresh. */
   refresh(): Promise<void>;
   /** Whether the last read failed. */
@@ -121,6 +123,7 @@ export function createAllowSource<Key extends string | number>(
   return {
     id: spec.id,
     title: spec.title,
+    loadErrorKey: spec.loadError,
 
     async refresh() {
       try {

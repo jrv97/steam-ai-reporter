@@ -6,9 +6,9 @@ import { TAB_ATTRIBUTE } from "../../src/core/ui/tabs";
 import { englishI18n } from "../helpers/i18n";
 import { type Engine, ENGINES, type ExtensionBrowser, launch } from "./browser";
 
-// The settings page's Go back to Steam button, the automated cases of ADR 0019's spike part 2. No
-// driver presses the toolbar button: `action.openPopup()` opens the popup, and the control page
-// clicks in it and in the settings page through `extension.getViews()`.
+// The settings page's Go back button, the automated cases of ADR 0019's spike part 2. No driver
+// presses the toolbar button: `action.openPopup()` opens the popup, and the control page clicks in
+// it and in the settings page through `extension.getViews()`.
 
 const i18n = englishI18n();
 const STORE_HOME = `${APP_PAGE_ORIGIN}/`;
@@ -18,7 +18,7 @@ const TAG: KindId = "drm";
 const GEAR = `a[aria-label="${i18n.t("options_all_settings")}"]`;
 const TAG_LINK = `a[data-tks-open-tab="${TAG}"]`;
 const SELECTED_TAB = `[role=tab][aria-selected=true]`;
-const BACK = i18n.t("options_back_to_steam");
+const BACK = i18n.t("options_go_back");
 /** The control page's session storage key that collects the settings page's errors. */
 const ERRORS_KEY = "tks-e2e-errors";
 const WAIT = { timeout: 10_000, interval: 100 };
@@ -148,6 +148,27 @@ async function settingsTab(browser: ExtensionBrowser): Promise<number> {
       ),
     WAIT,
   );
+}
+
+/** Whether tab `settings` is still open. */
+async function isOpen(browser: ExtensionBrowser, settings: number): Promise<boolean> {
+  const { page, api } = await control(browser);
+  return page.evaluate(
+    async (ext, own) => (await ext.tabs.query({})).some((t) => t.id === own),
+    api,
+    settings,
+  );
+}
+
+/** Opens the settings page alone in a new focused window, from its address. */
+async function settingsAlone(browser: ExtensionBrowser): Promise<number> {
+  const { page, api } = await control(browser);
+  await page.evaluate(
+    (ext, path) => ext.windows.create({ url: ext.runtime.getURL(path), focused: true }),
+    api,
+    SETTINGS_PATH,
+  );
+  return settingsTab(browser);
 }
 
 /** Opens the settings page in a new tab from its address, as the extensions menu does. */
@@ -346,11 +367,23 @@ const FALLBACKS: readonly {
   },
 ];
 
+// The control page's tab shares the window, so the settings tab is never the window's only one.
 it.each(ENGINES.flatMap((engine) => FALLBACKS.map((row) => ({ ...row, engine }))))(
-  "$engine: case $name: the back button loads the store home in the settings tab",
+  "$engine: case $name: the back button closes the settings tab beside the others",
   ({ engine, arrange }) =>
     withBrowser(engine, async (browser) => {
       const settings = await arrange(browser);
+      await pressBack(browser, settings);
+      await expect.poll(() => isOpen(browser, settings), WAIT).toBe(false);
+      expect(await pageErrors(browser)).toBe("");
+    }),
+);
+
+it.each(ENGINES)(
+  "%s: case 6, alone in its window: the back button loads the store home in the settings tab",
+  (engine) =>
+    withBrowser(engine, async (browser) => {
+      const settings = await settingsAlone(browser);
       await pressBack(browser, settings);
       await expect.poll(() => originOf(browser, settings), WAIT).toBe(APP_PAGE_ORIGIN);
       expect(await pageErrors(browser)).toBe("");
@@ -436,12 +469,12 @@ it("gecko: case 11, the back button returns to a container tab", async () => {
 
 // Both engines load the settings into a blank active tab instead of opening a new one.
 it.each(ENGINES)(
-  "%s: case 13, the settings load in the blank tab, and the button opens the store home there",
+  "%s: case 13, the settings load in the blank tab, and the button closes it",
   (engine) =>
     withBrowser(engine, async (browser) => {
       const { origin, settings } = await settingsFrom(browser, BLANK, GEAR);
       expect(settings).toBe(origin);
       await pressBack(browser, settings);
-      await expect.poll(() => originOf(browser, settings), WAIT).toBe(APP_PAGE_ORIGIN);
+      await expect.poll(() => isOpen(browser, settings), WAIT).toBe(false);
     }),
 );

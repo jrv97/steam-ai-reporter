@@ -14,6 +14,9 @@ type TabCall = keyof BrowserTabs;
 const HOME = `${APP_PAGE_ORIGIN}/`;
 const TABS = make.tabs();
 const FOCUSED = "focusedTabId";
+/** Counting the window's tabs, then closing the settings tab: the way out without an origin. */
+const COUNTED = "windowTabCount";
+const CLOSED = [COUNTED, `close ${String(TABS.own)}`];
 const SWITCHED = [
   "ownTabId",
   FOCUSED,
@@ -96,21 +99,53 @@ describe("createGoBack", () => {
     [string, JsonValue | undefined, Partial<TabAnswers>, readonly TabCall[], string[], string[]]
   >([
     ["switches to the origin and closes itself", TABS.origin, {}, [], SWITCHED, []],
-    ["opens the store home without an origin", undefined, {}, [], ["ownTabId"], [HOME]],
+    ["closes itself without an origin", undefined, {}, [], ["ownTabId", ...CLOSED], []],
     [
-      "opens the store home when the origin is gone",
+      "closes itself when the origin is gone",
       TABS.origin,
       {},
       ["activate"],
-      SWITCHED.slice(0, 3),
-      [HOME],
+      [...SWITCHED.slice(0, 3), ...CLOSED],
+      [],
     ],
     [
-      "opens the store home when the browser returns no tab",
+      "closes itself when the browser returns no tab",
       TABS.origin,
       { window: undefined },
       [],
-      SWITCHED.slice(0, 3),
+      [...SWITCHED.slice(0, 3), ...CLOSED],
+      [],
+    ],
+    [
+      "opens the store home without an origin in the window's only tab",
+      undefined,
+      { count: 1 },
+      [],
+      ["ownTabId", COUNTED],
+      [HOME],
+    ],
+    [
+      "opens the store home when it cannot count the window's tabs",
+      undefined,
+      {},
+      ["windowTabCount"],
+      ["ownTabId", COUNTED],
+      [HOME],
+    ],
+    [
+      "opens the store home when it cannot close itself",
+      undefined,
+      {},
+      ["close"],
+      ["ownTabId", ...CLOSED],
+      [HOME],
+    ],
+    [
+      "opens the store home when it cannot read its own tab",
+      undefined,
+      {},
+      ["ownTabId"],
+      ["ownTabId"],
       [HOME],
     ],
     ["still closes itself when focus fails", TABS.origin, {}, ["focusWindow"], SWITCHED, []],
@@ -123,17 +158,24 @@ describe("createGoBack", () => {
       SWITCHED.slice(0, -1),
       [],
     ],
-    ["drops an origin equal to its own tab", TABS.own, {}, [], SWITCHED.slice(0, 2), [HOME]],
+    [
+      "drops an origin equal to its own tab",
+      TABS.own,
+      {},
+      [],
+      [...SWITCHED.slice(0, 2), ...CLOSED],
+      [],
+    ],
   ])("%s", async (_name, stored, answers, fails, calls, visited) => {
     const view = await page(stored, answers, fails);
     view.goBack();
     await expectWayBack(view, calls, visited);
   });
 
-  it.each(make.raw.badTabIds())("drops a stored %j and opens the store home", async (stored) => {
+  it.each(make.raw.badTabIds())("drops a stored %j and closes itself", async (stored) => {
     const view = await page(stored);
     view.goBack();
-    await expectWayBack(view, SWITCHED.slice(0, 2), [HOME]);
+    await expectWayBack(view, [...SWITCHED.slice(0, 2), ...CLOSED], []);
   });
 
   it("takes an origin written after load and keeps it over removals and its own tab", async () => {

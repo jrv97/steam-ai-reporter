@@ -12,6 +12,8 @@ export interface BrowserTabs {
   focusedTabId(): Promise<number | undefined>;
   /** The ID of the tab this page runs in, if it runs in one. */
   ownTabId(): Promise<number | undefined>;
+  /** How many tabs the window of this page holds, itself included. */
+  windowTabCount(): Promise<number>;
   /** Activates a tab and resolves its window ID, or undefined when the browser returns no tab. */
   activate(id: number): Promise<number | undefined>;
   focusWindow(id: number): Promise<unknown>;

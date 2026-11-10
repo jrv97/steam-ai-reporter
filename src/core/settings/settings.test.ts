@@ -6,6 +6,7 @@ import { KINDS, perKind } from "../kinds/registry";
 import {
   applyPatch,
   DEFAULT_SETTINGS,
+  defaultsPatch,
   encodeSettings,
   parseSettings,
   type Settings,
@@ -226,6 +227,23 @@ describe("the tag order", () => {
   it("is named by a whole patch", () => {
     const settings = { ...DEFAULT_SETTINGS, order: MOVED };
     expect(applyPatch(DEFAULT_SETTINGS, wholePatch(settings))).toStrictEqual(settings);
+  });
+});
+
+describe("defaultsPatch", () => {
+  it("puts every tag and the order back to the defaults, and keeps language and debug", () => {
+    const own: Settings = {
+      ...make.settings.chipText({ ai: { chip: make.chipText() } }),
+      locale: "es",
+      debug: true,
+      order: [...KIND_IDS].reverse(),
+    };
+    const changed = make.settings.kind("drm", { filter: "hide", color: make.color() }, own);
+    expect(applyPatch(changed, defaultsPatch())).toStrictEqual({
+      ...DEFAULT_SETTINGS,
+      locale: "es",
+      debug: true,
+    });
   });
 });
 

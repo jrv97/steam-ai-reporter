@@ -11,6 +11,8 @@ export interface TabIds {
   readonly window: number;
   /** The active tab of the last-focused window: the settings tab until a test moves it. */
   readonly front: number;
+  /** How many tabs the settings tab's window holds. */
+  readonly count: number;
 }
 
 /** What the calls of `fakeTabs` answer; `undefined` stands for a call that gives no ID. */
@@ -21,11 +23,11 @@ export type TabCall = keyof BrowserTabs;
 
 /**
  * Fresh IDs for the origin tab, the settings tab and the origin's window, with the settings tab in
- * front of the last-focused window.
+ * front of the last-focused window and one more tab beside it.
  */
 export function tabIds(): TabIds {
   const own = freshBrowserId();
-  return { origin: freshBrowserId(), own, window: freshBrowserId(), front: own };
+  return { origin: freshBrowserId(), own, window: freshBrowserId(), front: own, count: 2 };
 }
 
 /**
@@ -47,6 +49,7 @@ export function fakeTabs(
     calls,
     activeTabId: () => answer("activeTabId", "activeTabId", answers.origin),
     ownTabId: () => answer("ownTabId", "ownTabId", answers.own),
+    windowTabCount: () => answer("windowTabCount", "windowTabCount", answers.count ?? 0),
     focusedTabId: () => answer("focusedTabId", "focusedTabId", front),
     activate: (id) => answer("activate", `activate ${String(id)}`, answers.window),
     focusWindow: (id) => answer("focusWindow", `focusWindow ${String(id)}`, undefined),

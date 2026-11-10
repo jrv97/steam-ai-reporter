@@ -7,9 +7,9 @@ export interface CountingStore extends KeyValueStore {
   readonly gets: (readonly string[])[];
   /** The keys of every `set` call, in order. */
   readonly sets: (readonly string[])[];
-  /** Makes the next calls to `get` and `set` reject, until `heal()`. */
+  /** Makes the next calls to `get`, `set` and `remove` reject, until `heal()`. */
   break(): void;
-  /** Makes the next calls to `set` reject, until `heal()`; `get` keeps working. */
+  /** Makes the next calls to `set` and `remove` reject, until `heal()`; `get` keeps working. */
   breakWrites(): void;
   heal(): void;
 }
@@ -47,7 +47,7 @@ export function countingStore(inner: KeyValueStore): CountingStore {
     },
     remove(keys) {
       calls.remove += 1;
-      return inner.remove(keys);
+      return broken || writesBroken ? Promise.reject(new Error()) : inner.remove(keys);
     },
     keys() {
       calls.keys += 1;

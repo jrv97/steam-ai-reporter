@@ -31,7 +31,7 @@ export async function recordOrigin(
   tabs: Pick<BrowserTabs, "activeTabId">,
   session: KeyValueStore,
 ): Promise<void> {
-  // Without an origin the settings page's button opens the store home
+  // Without an origin the settings page's button closes the tab or opens the store home
   const id = toTabId(await tabs.activeTabId().catch(ignore));
   if (id !== undefined) {
     await session.set(new Map([[ORIGIN_KEY, id]])).catch(ignore);
@@ -41,7 +41,7 @@ export async function recordOrigin(
 export interface GoBackDeps {
   readonly tabs: Pick<
     BrowserTabs,
-    "ownTabId" | "focusedTabId" | "activate" | "focusWindow" | "close"
+    "ownTabId" | "focusedTabId" | "activate" | "focusWindow" | "close" | "windowTabCount"
   >;
   /** The store over `storage.session`, where the popup leaves the origin. */
   readonly session: KeyValueStore;
@@ -52,8 +52,9 @@ export interface GoBackDeps {
 }
 
 /**
- * The settings page's Go back to Steam action. It switches to the origin tab, focuses its window
- * and closes the settings tab; with no reachable origin it opens the store home in this tab.
+ * The settings page's Go back action. It switches to the origin tab, focuses its window and closes
+ * the settings tab. With no reachable origin it closes the settings tab when its window holds
+ * another tab, and else opens the store home in this tab.
  */
 export function createGoBack(deps: GoBackDeps): () => void {
   const { tabs, session } = deps;
@@ -92,14 +93,26 @@ export function createGoBack(deps: GoBackDeps): () => void {
     await claim();
   }
 
-  // A browser without the session area still gets the store home
+  // A browser without the session area still gets a way out
   let claims = start().catch(ignore);
+
+  /** Closes this tab when its window keeps another one open; true when it closed. */
+  async function closeAmongOthers(): Promise<boolean> {
+    const count = own === undefined ? undefined : await tabs.windowTabCount().catch(ignore);
+    if (own === undefined || count === undefined || count < 2) {
+      return false;
+    }
+    return tabs.close(own).then(() => true, () => false);
+  }
 
   async function goBack(): Promise<void> {
     await claims;
     const windowId = origin === undefined ? undefined : await tabs.activate(origin).catch(ignore);
     if (windowId === undefined) {
-      deps.window.location.assign(`${APP_PAGE_ORIGIN}/`);
+      // The window's only tab stays open, on the store home
+      if (!(await closeAmongOthers())) {
+        deps.window.location.assign(`${APP_PAGE_ORIGIN}/`);
+      }
       return;
     }
     // The person is on the tab they asked for, so these two failures do not matter
