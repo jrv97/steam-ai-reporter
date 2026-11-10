@@ -1,3 +1,0 @@
-kind: Fixed
-body: Hovering a tag on the shown capsule of a home page carousel opens that game's card again. A hidden slide stacked under it caught the pointer, so the card showed another game's tags and a click opened that hidden game.
-time: 2026-11-09T19:35:00.0000000+01:00

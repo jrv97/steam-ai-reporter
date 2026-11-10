@@ -1,3 +1,0 @@
-kind: Changed
-body: The Steam Deck and Steam Machine settings now take one rating to tag (Verified, Playable or Unsupported), since a game has one rating per device. Settings and backups from earlier versions keep the first rating they ticked, in that order, or Unsupported when none was ticked.
-time: 2026-11-09T20:00:00.0000000+01:00
