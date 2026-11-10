@@ -99,6 +99,7 @@ export function buildIgnoreMenu(
     return node;
   }
 
+  /** A plain button that names what it does in `data-tks-action`. */
   function control(className: string, action: MenuAction, text?: string): HTMLButtonElement {
     const node = element("button", className, text);
     node.type = "button";
@@ -155,6 +156,7 @@ export function buildIgnoreMenu(
     return row;
   }
 
+  /** One option per tag the banner lists, checked while the game is ignored for it. */
   function tagOptions(): readonly HTMLElement[] {
     return view.listed.map((kind) =>
       option(
@@ -195,6 +197,7 @@ export function buildIgnoreMenu(
     return block;
   }
 
+  /** The items of a group: tag options, or one block per developer or publisher. */
   function groupItems(group: MenuGroup): readonly HTMLElement[] {
     switch (group) {
       case "tags":

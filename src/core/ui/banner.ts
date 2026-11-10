@@ -381,6 +381,7 @@ export function createBanner(
     toggle.textContent = i18n.t(expand ? "banner_collapse" : "banner_expand");
   }
 
+  /** The menu while it is drawn, else null. */
   function menu(): HTMLElement | null {
     return shadow.getElementById(MENU_ID);
   }
@@ -392,6 +393,7 @@ export function createBanner(
     }
   }
 
+  /** Cancels a pending hover close. */
   function stayOpen(): void {
     clearTimeout(leaving);
     leaving = undefined;
@@ -521,6 +523,7 @@ export function createBanner(
     );
   }
 
+  /** Runs what a control's `data-tks-action` names: notes, menu, group or a toggle. */
   function onClick(clicked: Element): void {
     const action = parseAction(clicked.getAttribute("data-tks-action"));
     const scope = toAllowScope(clicked.getAttribute("data-tks-scope"));

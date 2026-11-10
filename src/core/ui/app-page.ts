@@ -63,6 +63,7 @@ export interface AppPageOptions extends BannerOptions {
  */
 function bannerView(view: AppPageView): BannerView | undefined {
   const creatorScopes = view.creators.flatMap((row) => row.ignored.map(({ scope }) => scope));
+  /** Ignored on this page: for the game itself or one of its creators. */
   const covered = (kind: KindId) =>
     view.ignored[ALLOW_ALL] || view.ignored[kind] || creatorScopes.includes(ALLOW_ALL)
     || creatorScopes.includes(kind);
