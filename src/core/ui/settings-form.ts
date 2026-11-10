@@ -823,7 +823,6 @@ export async function mountSettingsForm(
         createResetCard(doc, {
           i18n,
           settings,
-          store,
           games: gameSource,
           creators: creatorSources,
           idPrefix: prefix,

@@ -1,8 +1,7 @@
 import type { BareMessageKey } from "../i18n/t";
 import { KIND_IDS } from "../kinds/id";
-import type { KeyValueStore, MessageCatalog } from "../ports";
+import type { MessageCatalog } from "../ports";
 import { ALLOW_ALL, ALLOW_SCOPES } from "../settings/allow-data";
-import { clearIgnoreLists } from "../settings/allow-list";
 import { defaultsPatch } from "../settings/settings";
 import type { StoredSettings } from "../settings/settings-source";
 import type { AllowSource } from "./allow-view";
@@ -23,9 +22,7 @@ import type { LucideName } from "./lucide";
 export interface ResetCardDeps {
   readonly i18n: MessageCatalog;
   readonly settings: StoredSettings;
-  /** The store that holds the ignore lists, which Stop ignoring everything empties at once. */
-  readonly store: KeyValueStore;
-  /** The games list's source, then the creators'; read by the form, never by the card. */
+  /** The games list's source, then the creators'. The form reads them; the card empties them. */
   readonly games: AllowSource;
   readonly creators: readonly AllowSource[];
   /** Starts every id in the card, so two forms on one page never share one. */
@@ -163,7 +160,7 @@ export function createResetCard(doc: Document, deps: ResetCardDeps): ActionCard 
       if (reset === "settings") {
         await deps.settings.patch(defaultsPatch());
       } else {
-        await clearIgnoreLists(deps.store);
+        await Promise.all([deps.games, ...deps.creators].map((source) => source.clear()));
       }
     } catch {
       // The check stays open, so the person can try again

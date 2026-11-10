@@ -5,7 +5,7 @@ import { readKey } from "../../../tests/helpers/store-read";
 import type { JsonValue } from "../json";
 import type { AppId } from "../types";
 import { type AllowEntry, type AllowScope, perScope } from "./allow-data";
-import { clearIgnoreLists, createAllowList, createCreatorList } from "./allow-list";
+import { createAllowList, createCreatorList } from "./allow-list";
 
 /** The ignored games of every scope, none. */
 const NO_ENTRIES = perScope(() => new Map());
@@ -160,18 +160,12 @@ describe("createAllowList", () => {
     expect(store.calls.set).toBe(1);
   });
 
-  it("is cleared with the creator lists in one write, with no v1 list copied back", async () => {
+  it("empties every scope after queued changes, with no v1 list copied back", async () => {
     const { allow, store, clock } = setup({ "v1:allow": make.raw.v1Allow() });
-    const developers = createCreatorList(store, clock, "developer");
-    await allow.add("drm", make.appId(), make.text.name());
-    await developers.merge(make.allow.creators({ all: [make.allow.clanRow()] }));
-    const writes = store.calls.set;
-    await clearIgnoreLists(store);
-    expect(store.calls.set).toBe(writes + 1);
-    expect([await createAllowList(store, clock).list(), await developers.list()]).toStrictEqual([
-      NO_ENTRIES,
-      NO_ENTRIES,
-    ]);
+    const pending = allow.add("drm", make.appId(), make.text.name());
+    await allow.clear();
+    await pending;
+    expect(await createAllowList(store, clock).list()).toStrictEqual(NO_ENTRIES);
   });
 
   it("is shared by every list over the same store", async () => {

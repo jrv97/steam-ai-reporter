@@ -65,6 +65,8 @@ export interface AllowSource {
    * names no item, or a failed write, returns undefined; the write error shows under the item.
    */
   restore(button: Element): Promise<string | undefined>;
+  /** Empties every scope of the list, after the writes already queued. */
+  clear(): Promise<void>;
 }
 
 function errorLine(doc: Document, text: string): HTMLElement {
@@ -134,6 +136,8 @@ export function createAllowSource<Key extends string | number>(
     },
 
     failed: () => entries === undefined,
+
+    clear: () => spec.list.clear(),
 
     count: (of) => entries?.[of].size ?? 0,
 
