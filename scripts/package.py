@@ -67,7 +67,8 @@ def main() -> None:
         )
 
     version = package_version()
-    shutil.rmtree(ARTIFACTS, ignore_errors=True)
+    if ARTIFACTS.exists():
+        shutil.rmtree(ARTIFACTS)
     ARTIFACTS.mkdir()
     for target in EXTENSION_TARGETS:
         zip_dir(DIST / target, ARTIFACTS / f"{SLUG}-{target}-{version}.zip")
