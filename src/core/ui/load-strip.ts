@@ -36,8 +36,6 @@ const STATE_ATTRIBUTE = "data-tks-load";
 /** Fills the bar to its share, from 0 to 1. */
 const SHARE_PROPERTY = "--tks-load-share";
 const MS_PER_SECOND = 1000;
-/** Stands for the countdown while its message is split around it; never shown. */
-const MARK = "\u0000";
 
 function timeout(callback: () => void, ms: number): () => void {
   const id = setTimeout(callback, ms);
@@ -67,7 +65,7 @@ function viewOf(
   if (answered < total && pausedUntil !== undefined && pausedUntil > now) {
     const left = numbers.format(Math.ceil((pausedUntil - now) / MS_PER_SECOND));
     const seconds = i18n.t("options_progress_seconds", { seconds: left });
-    const message = i18n.t("options_progress_paused", { time: MARK });
+    const message = i18n.t("options_progress_paused", { time: seconds });
     const count = i18n.t("options_progress_count", counts);
     return { ...base, state: "paused", message, seconds, count };
   }
@@ -126,10 +124,16 @@ export function createLoadStrip(
     drawnAt = now();
     const view = viewOf(i18n, numbers, latest.progress, drawnAt);
     element.setAttribute(STATE_ATTRIBUTE, view.state);
-    const [before = "", after] = view.message.split(MARK);
-    message.replaceChildren(before);
-    if (after !== undefined) {
-      message.append(createElement(doc, "strong", "", view.seconds), after);
+    // The countdown sits inside the message; bold it where the message holds it.
+    const at = view.seconds === "" ? -1 : view.message.indexOf(view.seconds);
+    if (at < 0) {
+      message.replaceChildren(view.message);
+    } else {
+      message.replaceChildren(
+        view.message.slice(0, at),
+        createElement(doc, "strong", "", view.seconds),
+        view.message.slice(at + view.seconds.length),
+      );
     }
     count.textContent = view.count;
     const max = Math.max(view.total, 1);
