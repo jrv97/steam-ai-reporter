@@ -106,6 +106,19 @@ describe("openSettingsDialog", () => {
     expect(document.activeElement).toBe(opener);
   });
 
+  it("follows the page's load progress above the tabs until it closes", async () => {
+    const progress = fake.progressSource();
+    await openSettingsDialog({ ...deps(true), progress });
+    progress.send(make.progress());
+
+    const options = dialog()?.querySelector(".tks-options");
+    const strip = options?.querySelector(".tks-load");
+    expect(strip?.getAttribute("data-tks-load")).toBe("loading");
+    expect(strip?.nextElementSibling?.matches(".tks-field-error")).toBe(true);
+    dialog()?.close();
+    expect(progress.listening).toBe(0);
+  });
+
   it("closes on a click on the backdrop", async () => {
     await openSettingsDialog(deps(true));
     dialog()?.click();

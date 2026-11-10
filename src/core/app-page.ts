@@ -17,6 +17,7 @@ import {
 } from "./kinds/verdicts";
 import type { Logger } from "./log";
 import type { Detector, MessageCatalog } from "./ports";
+import type { LoadTracker } from "./progress";
 import { ALLOW_SCOPES, type AllowScope, perScope } from "./settings/allow-data";
 import type { Settings } from "./settings/settings";
 import type { AppId } from "./types";
@@ -146,6 +147,8 @@ export interface AppPageDeps {
   readonly logger: Pick<Logger, "debug" | "error">;
   /** Waits out a retry round after a transient answer; `setTimeout` by default. */
   readonly delay?: Delay;
+  /** Hears that the page asks for its game and how the answer lands. */
+  readonly progress?: LoadTracker;
 }
 
 /** A running app page. */
@@ -247,17 +250,28 @@ export function startAppPage(
   }
 
   async function settle(): Promise<void> {
-    const detected = (await detectors.detector.detect([id])).get(id) ?? UNKNOWN_KINDS.missing;
-    const next = withLastUpdate(
-      live === undefined
-        ? await translatedVerdicts(id, deps.language, detected, detectors.getItems)
-        : mergeVerdicts(live, detected, disagree),
-      doc,
-    );
-    if (!stopped) {
-      known = next;
-      render();
-      retry.offer(page, detected);
+    deps.progress?.asked([id]);
+    let answered = false;
+    try {
+      const detected = (await detectors.detector.detect([id])).get(id) ?? UNKNOWN_KINDS.missing;
+      const next = withLastUpdate(
+        live === undefined
+          ? await translatedVerdicts(id, deps.language, detected, detectors.getItems)
+          : mergeVerdicts(live, detected, disagree),
+        doc,
+      );
+      if (!stopped) {
+        known = next;
+        render();
+        const retrying = retry.offer(page, detected);
+        answered = true;
+        deps.progress?.answered(id, detected, retrying);
+      }
+    } finally {
+      // A failed lookup still ends the wait, as unknown.
+      if (!answered && !stopped) {
+        deps.progress?.answered(id, UNKNOWN_KINDS.error, false);
+      }
     }
   }
 

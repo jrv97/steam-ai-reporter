@@ -4,6 +4,7 @@ import { createIgnoreLists } from "../../src/core/ignored";
 import { createSettingsSource } from "../../src/core/settings/settings-source";
 import { createUiState } from "../../src/core/ui/ui-state";
 import type { SettingsDialogDeps } from "../../src/platform/userscript/settings-dialog";
+import { fakeProgressSource } from "./fake-progress";
 import { fixedClock } from "./fixed-clock";
 import { memoryStore } from "./memory-store";
 
@@ -21,5 +22,6 @@ export function dialogDeps(live = true, store = memoryStore()): SettingsDialogDe
     store,
     clock: fixedClock(NOW),
     live,
+    progress: fakeProgressSource(),
   };
 }

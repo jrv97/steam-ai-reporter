@@ -24,10 +24,13 @@ function timeout(callback: () => void, ms: number): () => void {
 
 /** Asks again, in rounds, about what came back transient: a failed or withheld lookup. */
 export interface TransientRetry<Item extends WeakKey> {
-  /** Queues the item for the next round when its verdicts are transient and it has retries left. */
-  offer(item: Item, verdicts: KindVerdicts): void;
-  /** Drops the queued items and cancels the round's timer. */
-  cancel(): void;
+  /**
+   * Queues the item for the next round when its verdicts are transient and it has retries left,
+   * and tells whether it did.
+   */
+  offer(item: Item, verdicts: KindVerdicts): boolean;
+  /** Drops the queued items, cancels the round's timer and returns the items it dropped. */
+  cancel(): readonly Item[];
 }
 
 /**
@@ -54,16 +57,19 @@ export function createTransientRetry<Item extends WeakKey>(
     offer(item, verdicts) {
       const done = tries.get(item) ?? 0;
       if (done >= MAX_RETRIES || !isTransient(verdicts)) {
-        return;
+        return false;
       }
       tries.set(item, done + 1);
       queued.add(item);
       cancelRound ??= delay(fire, RETRY_DELAY_MS);
+      return true;
     },
     cancel() {
       cancelRound?.();
       cancelRound = undefined;
+      const dropped = [...queued];
       queued = new Set();
+      return dropped;
     },
   };
 }

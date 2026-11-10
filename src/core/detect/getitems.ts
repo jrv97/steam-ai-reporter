@@ -238,21 +238,24 @@ export interface GetItemsOptions {
 
 /**
  * The GetItems detector. Batches run one after another, so at most one request is in flight;
- * spacing and backoff come from the `Http` it is given (a throttling decorator).
+ * spacing and backoff come from the `Http` it is given (a throttling decorator). The sink hears
+ * each batch's verdicts as its answer lands.
  */
 export function createGetItemsDetector(options: GetItemsOptions): Detector {
   const { http, language } = options;
   const limits = options.limits ?? DEFAULT_BATCH_LIMITS;
   return {
-    async detect(ids: readonly AppId[]): Promise<ReadonlyMap<AppId, KindVerdicts>> {
+    async detect(ids, sink) {
       const verdicts = new Map<AppId, KindVerdicts>();
       const sections = options.sections?.() ?? BASE_SECTIONS;
       for (const batch of planBatches(ids, language, limits, sections)) {
         // Sequential on purpose: one request in flight (rule 13).
         const result = await http.get(batch.url);
-        for (const [id, verdict] of parseGetItems(batch.ids, result, language, sections)) {
+        const answered = parseGetItems(batch.ids, result, language, sections);
+        for (const [id, verdict] of answered) {
           verdicts.set(id, verdict);
         }
+        sink?.(answered);
       }
       return verdicts;
     },

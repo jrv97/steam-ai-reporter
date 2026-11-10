@@ -2,12 +2,14 @@ import { describe, expect, it, vi } from "vitest";
 import { setBody } from "../../../tests/helpers/dom";
 import { make } from "../../../tests/helpers/factory";
 import { fake } from "../../../tests/helpers/fakes";
+import { createGetItemsDetector, DEFAULT_BATCH_LIMITS } from "../detect/getitems";
 import { MAX_RETRIES } from "../detect/retry";
 import { isIgnored } from "../ignored";
 import type { AiVerdict } from "../kinds/ai";
 import { KIND_IDS, type KindId } from "../kinds/id";
 import type { KindVerdicts, Relations } from "../kinds/verdicts";
 import type { Detector } from "../ports";
+import { createLoadProgress } from "../progress";
 import { GENERIC, type Placement, type RowPlacement } from "../scan/placements";
 import type { CapsuleHost } from "../scan/renderer";
 import type { AppId } from "../types";
@@ -75,6 +77,7 @@ function setup(
     isAllowed,
     isBadged: (kind) => !unbadged.has(kind),
     frame: (callback) => frames.push(callback),
+    logger: fake.logger().logger,
     watchSize: (onSized): SizeWatch => {
       reportSized = onSized;
       return {
@@ -401,6 +404,72 @@ describe("createCapsuleUi", () => {
     });
   });
 
+  it("draws and counts each GetItems batch before the next one answers", async () => {
+    const ids = make.appIds(2);
+    setBody(ids.map((id) => `<div data-tks-appid="${String(id)}"><span></span></div>`).join(""));
+    const hosts = [...document.querySelectorAll("[data-tks-appid]")].map((element, index) => ({
+      element,
+      appId: ids[index] ?? make.appId(),
+      placement: ROW,
+      anchor: element.firstElementChild ?? element,
+    }));
+    const http = fake.heldHttp([make.item.route(ids.map((id) => make.item.disclosed(id)))]);
+    const progress = createLoadProgress(() => undefined);
+    const frames = fake.queue();
+    const drawn: Element[] = [];
+    const ui = createCapsuleUi({
+      document,
+      detector: createGetItemsDetector({
+        http,
+        language: "english",
+        limits: { ...DEFAULT_BATCH_LIMITS, maxIds: 1 },
+      }),
+      renderers: [{ render: (view) => drawn.push(view.host) }],
+      isAllowed: () => false,
+      isBadged: () => true,
+      frame: frames.frame,
+      progress,
+      logger: fake.logger().logger,
+    });
+    const answer = async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      http.answerNext();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      frames.run();
+    };
+    ui.render({ found: hosts, changed: [] });
+    await answer();
+    expect(drawn).toStrictEqual([hosts[0]?.element]);
+    expect(progress.snapshot()).toStrictEqual({ total: 2, answered: 1, unknown: 0 });
+    await answer();
+    expect(drawn).toStrictEqual(hosts.map((each) => each.element));
+    expect(http.calls).toHaveLength(2);
+  });
+
+  it.each(
+    [
+      ["an ID the answer leaves out", fake.partialDetector(new Map()), 0],
+      ["a lookup that rejects, and logs it", fake.rejectingDetector(), 1],
+    ] as const,
+  )("counts as unknown %s", async (_name, detector, logged) => {
+    const { logger, sink } = fake.logger();
+    const progress = createLoadProgress(() => undefined);
+    const ui = createCapsuleUi({
+      document,
+      detector,
+      renderers: [],
+      isAllowed: () => false,
+      isBadged: () => true,
+      frame: fake.queue().frame,
+      progress,
+      logger,
+    });
+    ui.render({ found: [host(make.appId())], changed: [] });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(progress.snapshot()).toStrictEqual({ total: 1, answered: 1, unknown: 1 });
+    expect(sink.error).toHaveBeenCalledTimes(logged);
+  });
+
   describe("after a transient answer", () => {
     const DISCLOSED = make.verdicts({ ai: AI });
     const ERROR = make.verdicts.uniform("error");
@@ -419,6 +488,7 @@ describe("createCapsuleUi", () => {
       const detector = fake.detector(() =>
         answers[Math.min(detector.calls.length, answers.length) - 1] ?? MISSING
       );
+      const progress = createLoadProgress(() => undefined);
       const ui = createCapsuleUi({
         document,
         detector,
@@ -427,25 +497,35 @@ describe("createCapsuleUi", () => {
         isBadged: () => true,
         frame: frames.frame,
         delay: timers.delay,
+        progress,
+        logger: fake.logger().logger,
       });
       /** Lets the pending lookup answer, then draws. */
       const answered = async () => {
         await new Promise((resolve) => setTimeout(resolve, 0));
         frames.run();
       };
-      return { ui, detector, timers, views, answered };
+      return { ui, detector, timers, views, answered, progress };
     }
 
+    // The last column is how many games the load progress counts as still unknown
     it.each(
       [
-        ["unknown error: asked again", [ERROR, DISCLOSED], stay, 2, true],
-        ["unknown rate-limited: asked again", [LIMITED, DISCLOSED], stay, 2, true],
-        ["a host that left the page: not asked again", [ERROR, DISCLOSED], leave, 1, false],
-        ["unknown missing, which is stored: not asked again", [MISSING, DISCLOSED], stay, 1, false],
-        ["rate-limited every time: asked twice more", [LIMITED], stay, 1 + MAX_RETRIES, false],
+        ["unknown error: asked again", [ERROR, DISCLOSED], stay, 2, true, 0],
+        ["unknown rate-limited: asked again", [LIMITED, DISCLOSED], stay, 2, true, 0],
+        ["a host that left the page: not asked again", [ERROR, DISCLOSED], leave, 1, false, 1],
+        [
+          "unknown missing, which is stored: not asked again",
+          [MISSING, DISCLOSED],
+          stay,
+          1,
+          false,
+          1,
+        ],
+        ["rate-limited every time: asked twice more", [LIMITED], stay, 1 + MAX_RETRIES, false, 1],
       ] as const,
-    )("%s", async (_name, answers, after, calls, chips) => {
-      const { ui, detector, timers, views, answered } = retrying(answers);
+    )("%s", async (_name, answers, after, calls, chips, unknown) => {
+      const { ui, detector, timers, views, answered, progress } = retrying(answers);
       const found = host(make.appId());
       ui.render({ found: [found], changed: [] });
       for (let round = 0; round <= MAX_RETRIES + 1; round++) {
@@ -456,6 +536,7 @@ describe("createCapsuleUi", () => {
       expect(detector.calls).toHaveLength(calls);
       expect(timers.size).toBe(0);
       expect(viewAt(views, -1).slot !== undefined).toBe(chips);
+      expect(progress.snapshot()).toStrictEqual({ total: 1, answered: 1, unknown });
     });
 
     it.each<readonly [string, (ui: CapsuleUi) => void]>([
@@ -463,13 +544,14 @@ describe("createCapsuleUi", () => {
       ["stop", (ui) => {
         ui.stop();
       }],
-    ])("cancels the pending retry on %s", async (_end, end) => {
-      const { ui, timers, answered } = retrying([ERROR]);
+    ])("cancels the pending retry on %s, and counts its game as unknown", async (_end, end) => {
+      const { ui, timers, answered, progress } = retrying([ERROR]);
       ui.render({ found: [host(make.appId())], changed: [] });
       await answered();
       expect(timers.size).toBe(1);
       end(ui);
       expect(timers.size).toBe(0);
+      expect(progress.snapshot()).toStrictEqual({ total: 1, answered: 1, unknown: 1 });
     });
   });
 });

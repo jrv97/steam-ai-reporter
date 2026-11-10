@@ -22,4 +22,15 @@ describe("createSettle", () => {
     await settle(rejecting, ids);
     expect(sink.error).toHaveBeenCalledTimes(2);
   });
+
+  it("logs a sink that throws and still answers what the detector found", async () => {
+    const { logger, sink } = fake.logger();
+    const verdicts = make.verdicts();
+    const ids = make.appIds(1);
+    const answer = await createSettle(logger)(fake.detector(() => verdicts), ids, () => {
+      throw new Error();
+    });
+    expect(answer).toStrictEqual(new Map(ids.map((id) => [id, verdicts])));
+    expect(sink.error).toHaveBeenCalledOnce();
+  });
 });

@@ -3,7 +3,7 @@ import { cachedDetector } from "./cache/cached-detector";
 import { maintainCache } from "./cache/maintenance";
 import { createVerdictCache } from "./cache/verdict-cache";
 import { createAppPageDetector, type OpenPage, parseLiveAppPage } from "./detect/app-page";
-import { API_BREAKER_KEY, createBreaker, HTML_BREAKER_KEY } from "./detect/breaker";
+import { API_BREAKER_KEY, type Breaker, createBreaker, HTML_BREAKER_KEY } from "./detect/breaker";
 import { createBudgetDetector } from "./detect/budget";
 import { createChainDetector } from "./detect/chain";
 import { createDedupingDetector } from "./detect/dedupe";
@@ -32,6 +32,7 @@ import { KINDS } from "./kinds/registry";
 import { coversSections, requestSections, type Section } from "./kinds/sections";
 import { type ConsoleSink, createLogger, type Logger } from "./log";
 import type { Clock, Http, KeyValueStore, SettingsSource, Unsubscribe } from "./ports";
+import { createLoadProgress, type LoadProgressFeed } from "./progress";
 import { appIdFromHref } from "./scan/appid";
 import { createScanner } from "./scan/scanner";
 import { readSettingsOrDefault } from "./settings/read";
@@ -70,6 +71,8 @@ export interface AppDeps {
 
 /** A running app on one store page. */
 export interface App {
+  /** How far the page's tags have loaded, for the toolbar popup and the userscript dialog. */
+  readonly progress: LoadProgressFeed;
   /** Stops scanning and listening; what is drawn stays. */
   stop(): void;
 }
@@ -89,16 +92,17 @@ function createDetector(
   sections: () => readonly Section[],
 ) {
   const { http, store, clock } = deps;
-  const throttled = (key: string) =>
-    createThrottledHttp({ http, clock, breaker: createBreaker({ store, clock, logger, key }) });
-  const getItems = createGetItemsDetector({ http: throttled(API_BREAKER_KEY), language, sections });
+  const breakerFor = (key: string) => createBreaker({ store, clock, logger, key });
+  const throttled = (breaker: Breaker) => createThrottledHttp({ http, clock, breaker });
+  const apiBreaker = breakerFor(API_BREAKER_KEY);
+  const getItems = createGetItemsDetector({ http: throttled(apiBreaker), language, sections });
   const appPage = createBudgetDetector(
-    createAppPageDetector(throttled(HTML_BREAKER_KEY), open),
+    createAppPageDetector(throttled(breakerFor(HTML_BREAKER_KEY)), open),
     logger,
   );
   const chain = createDedupingDetector(createChainDetector([getItems, appPage], logger), logger);
   const cached = cachedDetector(chain, createVerdictCache(store, clock), logger, sections);
-  return { getItems, detector: createFullGameDetector(cached, logger) };
+  return { getItems, detector: createFullGameDetector(cached, logger), apiBreaker };
 }
 
 /** Whether some kind's setting, as it takes effect, differs between two settings. */
@@ -177,6 +181,7 @@ export async function start(deps: AppDeps): Promise<App> {
     open,
     () => requestSections(settings.kinds),
   );
+  const progress = createLoadProgress(() => detectors.apiBreaker.pausedUntil());
   const lists = createIgnoreLists(store, clock);
   const ignored = await loadIgnored(lists, logger);
 
@@ -198,6 +203,8 @@ export async function start(deps: AppDeps): Promise<App> {
     isAllowed: (id, forKind, related) => isIgnored(ignored, id, forKind, related),
     isBadged: (forKind) => effectiveSettings(settings.kinds[forKind]).badge,
     tagged: (verdicts) => taggedView(verdicts, settings.kinds),
+    progress,
+    logger,
   });
   const scanner = createScanner({ document: doc, renderer: capsules });
   const notice = createHiddenNotice({ document: doc, i18n });
@@ -243,10 +250,12 @@ export async function start(deps: AppDeps): Promise<App> {
       },
       card,
       logger,
+      progress,
     });
   }
 
   return {
+    progress,
     stop() {
       scanner.stop();
       capsules.stop();

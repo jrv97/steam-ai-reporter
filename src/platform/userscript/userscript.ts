@@ -3,6 +3,7 @@ import { createFetchHttp, type Fetch } from "../../core/http";
 import { readSettingsI18n, type SettingsI18n } from "../../core/i18n/settings-i18n";
 import { createIgnoreLists } from "../../core/ignored";
 import { type ConsoleSink, createLogger } from "../../core/log";
+import { followProgress } from "../../core/progress";
 import { createSettingsSource } from "../../core/settings/settings-source";
 import { adoptPageStyles, PAGE_CSS, TOKENS_CSS } from "../../core/ui/styles";
 import { createUiState } from "../../core/ui/ui-state";
@@ -58,6 +59,26 @@ export async function startUserscript(env: UserscriptEnv): Promise<App | undefin
     }
   };
 
+  const started = (async () => {
+    try {
+      return await start({
+        document: doc,
+        http: createFetchHttp(env.fetch),
+        store,
+        settings,
+        clock,
+        console: env.console,
+        catalogs: CATALOGS,
+        addPageStyles,
+        ...(browserLang === undefined ? {} : { browserLang }),
+      });
+    } catch (problem) {
+      logger.error(problem);
+      return undefined;
+    }
+  })();
+  const progress = followProgress(started.then((app) => app?.progress));
+
   env.registerMenuCommand?.(i18n.t("userscript_menu_settings"), () => {
     void (async () => {
       const current = await currentI18n();
@@ -74,26 +95,12 @@ export async function startUserscript(env: UserscriptEnv): Promise<App | undefin
         store,
         clock,
         live: remote !== undefined,
+        progress,
       });
     })().catch((problem: unknown) => {
       logger.error(problem);
     });
   });
 
-  try {
-    return await start({
-      document: doc,
-      http: createFetchHttp(env.fetch),
-      store,
-      settings,
-      clock,
-      console: env.console,
-      catalogs: CATALOGS,
-      addPageStyles,
-      ...(browserLang === undefined ? {} : { browserLang }),
-    });
-  } catch (problem) {
-    logger.error(problem);
-    return undefined;
-  }
+  return started;
 }

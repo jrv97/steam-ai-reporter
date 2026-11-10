@@ -17,6 +17,7 @@ import {
 import { sameOrder } from "../kinds/order";
 import { KIND_BY_ID, KINDS } from "../kinds/registry";
 import type { Clock, FileTransfer, KeyValueStore, MessageCatalog } from "../ports";
+import type { ProgressSource } from "../progress";
 import { ALLOW_ALL, type AllowScope, parseGameKey } from "../settings/allow-data";
 import {
   AUTO_LOCALE,
@@ -48,6 +49,7 @@ import { parseIcon, withIcon } from "./icon";
 import { KIND_ATTRIBUTE, setColorOnce } from "./kind-attributes";
 import { chipText } from "./kind-details";
 import { keyDescription, keyText } from "./kind-keys";
+import { createLoadStrip } from "./load-strip";
 import { createLookupCard } from "./lookup-card";
 import { createOrderCard, type OrderCard } from "./order-card";
 import { createResetCard } from "./reset-card";
@@ -110,6 +112,11 @@ export interface SettingsFormDeps {
   readonly initialTab?: TabId;
   /** Hears each tab shown after the first, for the page to mirror in its fragment. */
   readonly onTabChange?: (id: TabId) => void;
+  /**
+   * The store page's load progress, which the popup and the dialog show in a strip under the
+   * header; the full page passes none.
+   */
+  readonly progress?: ProgressSource;
 }
 
 /** The download and file chooser of the Backup card, and the clock that dates a backup. */
@@ -864,7 +871,13 @@ export async function mountSettingsForm(
     ),
   );
 
+  const strip = deps.progress === undefined
+    ? undefined
+    : createLoadStrip(doc, i18n, deps.progress, { idPrefix: prefix });
   const top: HTMLElement[] = deps.header === undefined ? [] : [header(deps.header)];
+  if (strip !== undefined) {
+    top.push(strip.element);
+  }
   tabs?.select((await firstTab) ?? GENERAL_TAB);
   root.classList.add("tks-options");
   root.setAttribute("data-tks-context", context);
@@ -1352,6 +1365,7 @@ export async function mountSettingsForm(
     refreshAllowList,
     selectTab: show,
     destroy() {
+      strip?.stop();
       built?.order.stop();
       tabs?.stop();
       unsubscribe();

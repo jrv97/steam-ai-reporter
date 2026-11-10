@@ -1,4 +1,5 @@
 import type { BrowserTabs } from "./browser-tabs";
+import { PROGRESS_PORT, type TabPort } from "./progress-port";
 import type { OnStorageChanged, StorageArea, StorageChange, StorageChanges } from "./storage-area";
 
 // The one module that names the WebExtension APIs. Everything else in the extension takes the
@@ -66,4 +67,46 @@ export function openOptionsPage(): Promise<void> {
 /** The absolute URL of a file packaged with the extension. */
 export function extensionUrl(path: string): string {
   return api.runtime.getURL(path);
+}
+
+function tabPort(port: chrome.runtime.Port): TabPort {
+  return {
+    post: (progress) => {
+      try {
+        port.postMessage(progress);
+      } catch {
+        // The popup closed before its disconnect arrived; nobody is left to tell.
+      }
+    },
+    onMessage: (listener) => {
+      port.onMessage.addListener((message: unknown) => {
+        listener(message);
+      });
+    },
+    onDisconnect: (listener) => {
+      port.onDisconnect.addListener(() => {
+        // Chromium reports a tab with no content script here; reading it marks it handled.
+        void api.runtime.lastError;
+        listener();
+      });
+    },
+    disconnect: () => {
+      port.disconnect();
+    },
+  };
+}
+
+/** Hands each progress port a store page's content script receives to `serve`. */
+export function onProgressConnect(serve: (port: TabPort) => void): void {
+  api.runtime.onConnect.addListener((port) => {
+    if (port.name === PROGRESS_PORT) {
+      serve(tabPort(port));
+    }
+  });
+}
+
+/** Opens a progress port to the content script of the active tab; undefined without a tab. */
+export async function connectActiveTab(): Promise<TabPort | undefined> {
+  const id = await browserTabs.activeTabId();
+  return id === undefined ? undefined : tabPort(api.tabs.connect(id, { name: PROGRESS_PORT }));
 }
