@@ -48,6 +48,7 @@ export const browserTabs: BrowserTabs = {
   focusedTabId: async () =>
     (await api.tabs.query({ active: true, lastFocusedWindow: true }))[0]?.id,
   ownTabId: async () => (await api.tabs.getCurrent())?.id,
+  windowTabCount: async () => (await api.tabs.query({ currentWindow: true })).length,
   activate: async (id) => (await api.tabs.update(id, { active: true }))?.windowId,
   focusWindow: async (id) => api.windows.update(id, { focused: true }),
   close: async (id) => api.tabs.remove(id),

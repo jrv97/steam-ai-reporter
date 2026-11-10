@@ -1147,7 +1147,7 @@
   },
   "options_backup_summary_list": {
     "message": "$list$: $number$",
-    "description": "One line of the check after a backup file is picked: a list in the file and how many entries it holds. $list$ is a settings card title such as \"Games you ignored\", $number$ a number.",
+    "description": "One line of a check in the General tab: a list and how many entries it holds. The Backup check counts the entries in a picked file, and the Stop ignoring everything check those stored now. $list$ is a settings card title such as \"Developers you ignored\", $number$ a number.",
     "placeholders": {
       "list": {
         "content": "$1",
@@ -1189,7 +1189,7 @@
   },
   "options_backup_cancel": {
     "message": "Cancel",
-    "description": "Button of the check: closes it and changes nothing."
+    "description": "Button of a check in the General tab (Backup restore, Reset all settings, Stop ignoring everything): closes it and changes nothing."
   },
   "notice_backup_downloaded": {
     "message": "Backup downloaded.",
@@ -1273,6 +1273,198 @@
     "message": "The backup could not be fully restored. Try again; restoring the same file twice is safe.",
     "description": "Error when saving a restore fails. A retry only adds what is missing, so it is safe."
   },
+  "options_section_lookups": {
+    "message": "Lookup results",
+    "description": "Card title in the General settings tab. The card is about what Steam said about each game, which the extension keeps on this device."
+  },
+  "options_lookups_help": {
+    "message": "What Steam says about each game is kept on this device for up to $days$ days, or $hours$ hours when Steam gave no answer. Store pages then look it up again.",
+    "description": "Help under the Lookup results title. $days$ and $hours$ are numbers taken from the code, always more than one.",
+    "placeholders": {
+      "days": {
+        "content": "$1",
+        "example": "7"
+      },
+      "hours": {
+        "content": "$2",
+        "example": "6"
+      }
+    }
+  },
+  "options_lookups_count_one": {
+    "message": "Kept now: $count$ game, $unanswered$ with no answer.",
+    "description": "Line in the Lookup results card: how many games have stored results, and how many of them got no answer from Steam. $count$ and $unanswered$ are numbers formatted for the language. Singular form, chosen by $count$.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "1"
+      },
+      "unanswered": {
+        "content": "$2",
+        "example": "0"
+      }
+    }
+  },
+  "options_lookups_count_other": {
+    "message": "Kept now: $count$ games, $unanswered$ of them with no answer.",
+    "description": "Line in the Lookup results card: how many games have stored results, and how many of them got no answer from Steam. $count$ and $unanswered$ are numbers formatted for the language. Plural form, chosen by $count$.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "1,234"
+      },
+      "unanswered": {
+        "content": "$2",
+        "example": "56"
+      }
+    }
+  },
+  "options_lookups_empty": {
+    "message": "Nothing is kept now.",
+    "description": "Line in the Lookup results card when no game has stored results."
+  },
+  "options_lookups_clear": {
+    "message": "Clear lookup results",
+    "description": "Button in the Lookup results card. It removes every stored result at once, with no confirmation; store pages look the games up again."
+  },
+  "options_lookups_recheck": {
+    "message": "Check unknown games again",
+    "description": "Button in the Lookup results card. It removes only the stored results of games Steam gave no answer for, so store pages ask about them again."
+  },
+  "notice_lookups_cleared_one": {
+    "message": "Cleared $count$ lookup result. Reload open store pages to look it up again.",
+    "description": "Status line and screen reader announcement after Clear lookup results. $count$ is how many games had their results removed. Singular form.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "1"
+      }
+    }
+  },
+  "notice_lookups_cleared_other": {
+    "message": "Cleared $count$ lookup results. Reload open store pages to look them up again.",
+    "description": "Status line and screen reader announcement after Clear lookup results. $count$ is how many games had their results removed. Plural form.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "1,234"
+      }
+    }
+  },
+  "notice_lookups_rechecked_one": {
+    "message": "Cleared $count$ game with no answer. Reload open store pages to look it up again.",
+    "description": "Status line and screen reader announcement after Check unknown games again. $count$ is how many games had their results removed. Singular form.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "1"
+      }
+    }
+  },
+  "notice_lookups_rechecked_other": {
+    "message": "Cleared $count$ games with no answer. Reload open store pages to look them up again.",
+    "description": "Status line and screen reader announcement after Check unknown games again. $count$ is how many games had their results removed. Plural form.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "56"
+      }
+    }
+  },
+  "error_lookups_read": {
+    "message": "Could not read the lookup results. Try again later.",
+    "description": "Error in the Lookup results card when the stored results cannot be counted."
+  },
+  "error_lookups_clear": {
+    "message": "The lookup results could not be cleared. Try again.",
+    "description": "Error in the Lookup results card when removing stored results fails."
+  },
+  "options_section_reset": {
+    "message": "Reset",
+    "description": "Card title in the General settings tab, for the actions that undo the person's settings or ignore lists."
+  },
+  "options_reset_help": {
+    "message": "These cannot be undone. Download a backup first if you may want your settings or lists back.",
+    "description": "Help under the Reset title. \"backup\" is the Backup card's file."
+  },
+  "options_reset_settings": {
+    "message": "Reset all settings",
+    "description": "Button in the Reset card. It opens a check; nothing changes until the person confirms."
+  },
+  "options_reset_settings_title": {
+    "message": "Reset all settings?",
+    "description": "Title of the check that Reset all settings opens."
+  },
+  "options_reset_settings_tags": {
+    "message": "Every tag goes back to its defaults: on or off, values, badge, banner and list filter.",
+    "description": "Line of the Reset all settings check: what happens to each tag's settings."
+  },
+  "options_reset_settings_words": {
+    "message": "Chip texts and badge colors are cleared.",
+    "description": "Line of the Reset all settings check: the person's own chip texts and colors are removed."
+  },
+  "options_reset_settings_order": {
+    "message": "The tag order goes back to the default order.",
+    "description": "Line of the Reset all settings check."
+  },
+  "options_reset_settings_keep": {
+    "message": "Your language and your ignore lists stay.",
+    "description": "Last line of the Reset all settings check: what the reset does not touch."
+  },
+  "options_reset_settings_confirm": {
+    "message": "Reset",
+    "description": "Primary button of the Reset all settings check: puts the settings back to their defaults."
+  },
+  "notice_reset_settings_done": {
+    "message": "All settings are back to their defaults.",
+    "description": "Status line and screen reader announcement after the settings were reset."
+  },
+  "error_reset_settings": {
+    "message": "The settings could not be reset. Try again.",
+    "description": "Error when writing the default settings fails. The check stays open."
+  },
+  "options_reset_lists": {
+    "message": "Stop ignoring everything",
+    "description": "Button in the Reset card. It opens a check that counts what is ignored; nothing changes until the person confirms."
+  },
+  "options_reset_lists_title": {
+    "message": "Stop ignoring everything?",
+    "description": "Title of the check that Stop ignoring everything opens."
+  },
+  "options_reset_lists_games": {
+    "message": "$list$: $all$ for all tags, $tags$ for one tag",
+    "description": "Line of the Stop ignoring everything check. $list$ is the card title \"Games you ignored\"; $all$ counts the games ignored for all tags and $tags$ the entries ignored for a single tag. Both are numbers.",
+    "placeholders": {
+      "list": {
+        "content": "$1",
+        "example": "Games you ignored"
+      },
+      "all": {
+        "content": "$2",
+        "example": "4"
+      },
+      "tags": {
+        "content": "$3",
+        "example": "9"
+      }
+    }
+  },
+  "options_reset_lists_keep": {
+    "message": "Your settings stay.",
+    "description": "Last line of the Stop ignoring everything check: the settings are not touched."
+  },
+  "options_reset_lists_confirm": {
+    "message": "Stop ignoring",
+    "description": "Primary button of the Stop ignoring everything check: empties the ignore lists of games, developers and publishers."
+  },
+  "notice_reset_lists_done": {
+    "message": "You no longer ignore any game, developer or publisher.",
+    "description": "Status line and screen reader announcement after every ignore list was emptied."
+  },
+  "error_reset_lists": {
+    "message": "The ignore lists could not all be emptied. Try again.",
+    "description": "Error when emptying an ignore list fails. The check stays open; trying again is safe."
+  },
   "options_section_privacy": {
     "message": "Privacy",
     "description": "Section heading in the settings."
@@ -1321,9 +1513,9 @@
     "message": "All settings",
     "description": "Screen reader name and tooltip of the gear button at the top of the toolbar popup, which opens the full settings page in a tab."
   },
-  "options_back_to_steam": {
-    "message": "Go back to Steam",
-    "description": "Button at the end of the settings page header. It switches back to the Steam store tab where the toolbar popup opened the settings and closes the settings tab; without such a tab it opens the Steam store home page in this tab."
+  "options_go_back": {
+    "message": "Go back",
+    "description": "Button at the end of the settings page header, after an undo arrow icon. It switches back to the Steam store tab where the toolbar popup opened the settings and closes the settings tab. Without such a tab it closes the settings tab when its window holds other tabs, else it opens the Steam store home page in this tab. Keep it short and neutral: the tab it returns to may not be a Steam page."
   },
   "options_kind_enabled": {
     "message": "Use this tag",

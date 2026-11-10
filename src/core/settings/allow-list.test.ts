@@ -160,6 +160,14 @@ describe("createAllowList", () => {
     expect(store.calls.set).toBe(1);
   });
 
+  it("empties every scope after queued changes, with no v1 list copied back", async () => {
+    const { allow, store, clock } = setup({ "v1:allow": make.raw.v1Allow() });
+    const pending = allow.add("drm", make.appId(), make.text.name());
+    await allow.clear();
+    await pending;
+    expect(await createAllowList(store, clock).list()).toStrictEqual(NO_ENTRIES);
+  });
+
   it("is shared by every list over the same store", async () => {
     const { allow, store, clock } = setup();
     const id = make.appId();

@@ -57,10 +57,11 @@ async function setup(games: Games = {}) {
     }
     return found;
   };
+  /** The Backup card, which its title names. */
+  const card = (): Element | null => root.querySelector('[aria-labelledby$="-backup"]');
   /** The text of a node of the Backup card, or undefined while it or a parent is hidden. */
   const shown = (selector: string): string | undefined => {
-    const card = root.querySelector(".tks-backup-help")?.parentElement;
-    const node = card?.querySelector(selector);
+    const node = card()?.querySelector(selector);
     return node?.closest("[hidden]") === null ? node.textContent : undefined;
   };
   const pick = async (file: PickedFile): Promise<void> => {
@@ -73,7 +74,7 @@ async function setup(games: Games = {}) {
     await settle();
   };
   const stored = async () => parseSettings(await settings.read());
-  return { root, store, files, lists, button, shown, pick, click, stored };
+  return { root, store, files, lists, card, button, shown, pick, click, stored };
 }
 
 type Card = Awaited<ReturnType<typeof setup>>;
@@ -113,7 +114,7 @@ describe("the Backup card", () => {
     expect(files.files.map((file) => readBackup(file.text))).toMatchObject([
       { kind: "backup", contents: { games: make.allow.games(games) } },
     ]);
-    expect(shown(".tks-backup-status")).toBe(i18n.t("notice_backup_downloaded"));
+    expect(shown(".tks-card-status")).toBe(i18n.t("notice_backup_downloaded"));
   });
 
   it.each<readonly [string, (card: Card) => void]>([
@@ -133,18 +134,18 @@ describe("the Backup card", () => {
 
 describe("picking a backup file", () => {
   it("shows the check with the date and counts, focused, and changes nothing yet", async () => {
-    const { root, pick, shown, stored } = await setup();
+    const { card, pick, shown, stored } = await setup();
     const games = { all: [game()], drm: [game()] };
     await pick(backupFile(games));
     const number = String(Object.values(games).flat().length);
     const date = new Intl.DateTimeFormat("en", { dateStyle: "medium" }).format(make.backup.time);
-    expect(shown(".tks-backup-summary-title")).toBe(
+    expect(shown(".tks-confirm-title")).toBe(
       i18n.t("options_backup_summary_title", { date }),
     );
-    expect(root.querySelector(".tks-backup-contents li")?.textContent).toBe(
+    expect(card()?.querySelector(".tks-confirm-list li")?.textContent).toBe(
       i18n.t("options_backup_summary_list", { list: i18n.t("options_section_allow"), number }),
     );
-    expect(document.activeElement?.className).toBe("tks-backup-summary-title");
+    expect(document.activeElement?.className).toBe("tks-confirm-title");
     expect(await stored()).toStrictEqual(DEFAULT_SETTINGS);
   });
 
@@ -174,7 +175,7 @@ describe("picking a backup file", () => {
     const { pick, shown } = await setup();
     await pick(file);
     expect(shown(".tks-field-error")).toBe(i18n.t(key, { name }));
-    expect(shown(".tks-backup-summary-title")).toBeUndefined();
+    expect(shown(".tks-confirm-title")).toBeUndefined();
   });
 
   it("shows file text as text, never as markup", async () => {
@@ -192,7 +193,7 @@ describe("picking a backup file", () => {
     const { button, pick, click, shown, stored } = await setup();
     await pick(backupFile());
     await click("options_backup_cancel");
-    expect(shown(".tks-backup-summary-title")).toBeUndefined();
+    expect(shown(".tks-confirm-title")).toBeUndefined();
     expect(await stored()).toStrictEqual(DEFAULT_SETTINGS);
     expect(document.activeElement).toBe(button("options_backup_restore"));
   });
@@ -206,19 +207,19 @@ describe("confirming a restore", () => {
     await click("options_backup_confirm");
     expect(await stored()).toStrictEqual(HIDE_AI);
     expect(root.textContent).toContain(added[1]);
-    expect(shown(".tks-backup-status")).toBe(i18n.plural("notice_backup_restored", 1));
+    expect(shown(".tks-card-status")).toBe(i18n.plural("notice_backup_restored", 1));
     expect(document.activeElement).toBe(button("options_backup_restore"));
   });
 
   it("counts the entries it left out, in the check and after", async () => {
-    const { root, pick, click, shown } = await setup();
+    const { card, pick, click, shown } = await setup();
     const broken = make.appIds(2).map((id) => [String(id), {}] as const);
     const all = Object.fromEntries(broken);
     await pick(make.backup.file(make.backup.text({ ignored: { games: { all } } })));
     const skipped = i18n.plural("options_backup_summary_skipped", broken.length);
-    expect(root.querySelector(".tks-backup-contents")?.textContent).toContain(skipped);
+    expect(card()?.querySelector(".tks-confirm-list")?.textContent).toContain(skipped);
     await click("options_backup_confirm");
-    expect(shown(".tks-backup-status")).toBe(
+    expect(shown(".tks-card-status")).toBe(
       [
         i18n.plural("notice_backup_restored", 0),
         i18n.plural("notice_backup_skipped", broken.length),
@@ -232,6 +233,6 @@ describe("confirming a restore", () => {
     store.break();
     await click("options_backup_confirm");
     expect(shown(".tks-field-error")).toBe(i18n.t("error_backup_restore"));
-    expect(shown(".tks-backup-summary-title")).toBeDefined();
+    expect(shown(".tks-confirm-title")).toBeDefined();
   });
 });

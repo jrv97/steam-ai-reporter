@@ -22,7 +22,7 @@ The extension icon (`assets/icons/mark*.svg` and the `icon-*.png` files rendered
 
 ### Lucide, the `tags` icon
 
-The tag at the lower right of the mark derives from Lucide's `tags` icon. Lucide lists the icons it derives from Feather under a separate MIT notice; `tags` is not among them, so that notice does not apply here. The ISC license below also covers the feedback link icons (see "Feedback link icons").
+The tag at the lower right of the mark derives from Lucide's `tags` icon. Lucide lists the icons it derives from Feather under a separate MIT notice; `tags` is not among them, so that notice does not apply here. The ISC license below also covers the settings icons (see "Settings icons").
 
 ISC License
 
@@ -36,6 +36,6 @@ THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH RE
 
 CC0 1.0 Universal (public domain dedication, https://creativecommons.org/publicdomain/zero/1.0/). The badge of the mark derives from the Steam path in Simple Icons. The Steam name and logo are trademarks of Valve Corporation. The license of the path does not cover them, and this project is not affiliated with Valve.
 
-## Feedback link icons
+## Settings icons
 
-Bundled into the options page and the userscript. The settings' feedback links draw Lucide's `bug`, `lightbulb` and `message-square-heart` icons, whose path data `src/core/ui/lucide.ts` copies from Lucide 1.70.0. They are under Lucide's ISC license, reproduced under "Lucide, the `tags` icon" above. None of the three is on Lucide's list of icons derived from Feather, so Feather's MIT notice does not apply.
+Bundled into the options page and the userscript. The settings draw ten Lucide icons, whose path data `src/core/ui/lucide.ts` copies from Lucide 1.70.0: `bug`, `lightbulb` and `message-square-heart` on the feedback links, `undo-2` on Go back, `file-down` and `file-up` on the backup buttons, `brush-cleaning` and `refresh-cw` on the Lookup results buttons, and `rotate-ccw` and `list-x` on the Reset buttons. They are under Lucide's ISC license, reproduced under "Lucide, the `tags` icon" above. None of the ten is on Lucide's list of icons derived from Feather, so Feather's MIT notice does not apply.

@@ -8,11 +8,11 @@ Tag Kit for Steam collects nothing. It has no analytics, no telemetry, no accoun
 - Your settings: whether badges and the banner are on, the list filter mode (off, dim or hide), the language, and a debug flag.
 - Your lists of games, developers and publishers you chose to ignore (app ID or Steam's name and group ID, name and date).
 - A small internal record used to back off if Steam is limiting requests.
-- The ID of the browser tab where you opened All Settings from the toolbar button: a number, never the page's address. Go back to Steam uses it to return to that tab.
+- The ID of the browser tab where you opened All Settings from the toolbar button: a number, never the page's address. Go back uses it to return to that tab.
 
 If you use Download backup, your settings and those lists are also saved to a JSON file through your browser's own download, and Restore reads a file you pick. Neither sends the file anywhere, and the lookup results are not in it.
 
-This lives in the extension's local storage (`storage.local`) or, in the userscript, in your userscript manager's storage. The tab ID is the exception: it sits in the extension's session storage (`storage.session`), which is kept in memory and cleared when the browser closes, and the settings page deletes it once it reads it. None of it leaves your browser, and you can clear it by removing the extension or the userscript. The extension requests only the `storage` permission and runs only on `https://store.steampowered.com/*`.
+This lives in the extension's local storage (`storage.local`) or, in the userscript, in your userscript manager's storage. The tab ID is the exception: it sits in the extension's session storage (`storage.session`), which is kept in memory and cleared when the browser closes, and the settings page deletes it once it reads it. None of it leaves your browser. In the General tab of the settings, Lookup results clears the stored results, and Reset puts the settings back to their defaults or empties the ignore lists. Removing the extension or the userscript clears all of it. The extension requests only the `storage` permission and runs only on `https://store.steampowered.com/*`.
 
 ## What is sent, and where
 

@@ -92,6 +92,7 @@ export async function startUserscript(env: UserscriptEnv): Promise<App | undefin
         settings,
         lists: createIgnoreLists(store, clock),
         uiState: createUiState(store),
+        store,
         clock,
         live: remote !== undefined,
         progress,

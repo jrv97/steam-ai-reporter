@@ -97,7 +97,7 @@
   flex: none;
 }
 
-/* The page's Go back to Steam, at the end of the header */
+/* The page's Go back, at the end of the header */
 .tks-options-header .tks-button {
   flex: none;
   margin-inline-start: auto;
@@ -776,6 +776,7 @@
   appearance: none;
   display: inline-flex;
   align-items: center;
+  gap: var(--tks-space-1);
   min-block-size: var(--tks-control-height-sm);
   max-inline-size: 100%;
   padding-block: var(--tks-space-1);
@@ -791,6 +792,12 @@
 
 .tks-button:hover {
   background: var(--tks-button-secondary-bg-hover);
+}
+
+/* A button that waits on a write stays in place, dimmed */
+.tks-button:disabled {
+  opacity: 0.5;
+  cursor: default;
 }
 
 /* Reset, Stop ignoring and Show in General: quiet text buttons that read as links, at the same
@@ -1025,14 +1032,15 @@
   stroke-linejoin: round;
 }
 
-/* Each feedback icon fills one line of the bar's text, in the accent violet */
-.tks-feedback-link .tks-icon {
+/* Each feedback and button icon fills one line of small text, in the accent violet */
+.tks-feedback-link .tks-icon,
+.tks-button .tks-icon {
   inline-size: var(--tks-leading-sm);
   block-size: var(--tks-leading-sm);
   color: var(--tks-accent-400);
 }
 
-/* Backup: the one primary button confirms the only action that overwrites settings */
+/* A check's primary button confirms an action that overwrites settings or lists */
 .tks-button[data-tks-variant="primary"] {
   background: var(--tks-button-primary-bg);
   color: var(--tks-button-primary-fg);
@@ -1042,27 +1050,26 @@
   background: var(--tks-button-primary-bg-hover);
 }
 
-.tks-backup-help,
-.tks-backup-note {
+.tks-card-help {
   margin: 0 0 var(--tks-space-2);
   color: var(--tks-color-text-subtle);
   font-size: var(--tks-size-sm);
   line-height: var(--tks-leading-sm);
 }
 
-.tks-backup-actions {
+.tks-card-actions {
   display: flex;
   flex-wrap: wrap;
   gap: var(--tks-space-2);
 }
 
-/* The check's Restore and Cancel sit on the right, Restore first, like the store's dialogs */
-.tks-backup-actions[data-tks-align="end"] {
+/* A check's buttons sit on the right, the primary one first, like the store's dialogs */
+.tks-card-actions[data-tks-align="end"] {
   justify-content: flex-end;
   gap: var(--tks-space-3);
 }
 
-.tks-backup-summary {
+.tks-confirm {
   margin-block-start: var(--tks-space-3);
   padding: var(--tks-space-3);
   border: 1px solid var(--tks-color-border);
@@ -1070,19 +1077,19 @@
   background: var(--tks-color-bg-sunken);
 }
 
-.tks-backup-summary-title {
+.tks-confirm-title {
   margin: 0 0 var(--tks-space-2);
   color: var(--tks-color-text-strong);
   font-weight: var(--tks-weight-medium);
 }
 
-.tks-backup-contents {
+.tks-confirm-list {
   margin: 0 0 var(--tks-space-2);
   padding-inline-start: var(--tks-space-4);
   color: var(--tks-color-text);
 }
 
-.tks-backup-status {
+.tks-card-status {
   margin: var(--tks-space-2) 0 0;
   color: var(--tks-color-text);
   font-size: var(--tks-size-sm);

@@ -1,7 +1,7 @@
 import type { Catalogs } from "../../core/i18n/catalog";
 import type { I18n } from "../../core/i18n/t";
 import type { IgnoreLists } from "../../core/ignored";
-import type { Clock } from "../../core/ports";
+import type { Clock, KeyValueStore } from "../../core/ports";
 import type { ProgressSource } from "../../core/progress";
 import type { StoredSettings } from "../../core/settings/settings-source";
 import { mountSettingsForm } from "../../core/ui/settings-form";
@@ -17,6 +17,8 @@ export interface SettingsDialogDeps {
   readonly lists: IgnoreLists;
   /** The tab last shown, kept in the manager's storage. */
   readonly uiState: UiState;
+  /** The manager's storage, for the Lookup results and Reset cards. */
+  readonly store: KeyValueStore;
   /** Dates a backup. */
   readonly clock: Clock;
   /** False when the manager cannot tell other tabs about a change, so it applies on reload. */
@@ -87,6 +89,7 @@ export async function openSettingsDialog(deps: SettingsDialogDeps): Promise<void
     locales: Object.keys(deps.catalogs),
     // The page around a modal dialog is inert, so the file input lives inside it
     backup: { files: createFileTransfer(dialog), clock: deps.clock },
+    store: deps.store,
     progress: deps.progress,
   });
 

@@ -12,7 +12,7 @@ import {
   META_KEY,
   verdictKey,
 } from "../storage-keys";
-import { maintainCache } from "./maintenance";
+import { countVerdicts, isUnanswered, maintainCache, removeVerdicts } from "./maintenance";
 import { encodeVerdicts } from "./stored";
 import { DAY_MS } from "./ttl";
 
@@ -216,5 +216,47 @@ describe("maintainCache: daily sweep", () => {
     expect(await run()).toBe("swept");
     expect(store.calls.remove).toBe(0);
     expect(store.calls.set).toBe(1);
+  });
+});
+
+describe("the stored lookups actions", () => {
+  // One entry per state a lookup can leave, beside the keys that never count as one
+  const answered = [key(), verdict("disclosed", T)] as const;
+  const notDisclosed = [key(), verdict("not-disclosed", T)] as const;
+  const unrequested = [key(), verdict("unrequested", T)] as const;
+  const unanswered = (["gated", "missing", "malformed"] as const).map(
+    (reason) => [key(), verdict(reason, T)] as const,
+  );
+  const invalid = [key(), FLAT_V1] as const;
+  const others: readonly Entry[] = [
+    [META_KEY, { schema: CACHE_SCHEMA, sweptAt: T }],
+    [API_BREAKER_KEY, BREAKER],
+    [LEGACY_SETTINGS_KEY, SETTINGS],
+    [LEGACY_ALLOW_KEY, ALLOW],
+  ];
+  const entries: readonly Entry[] = [answered, notDisclosed, unrequested, ...unanswered, invalid];
+
+  it("counts the entries that read, and those with no answer from Steam", async () => {
+    const { store } = setup([...entries, ...others]);
+    expect(await countVerdicts(store)).toStrictEqual({ games: 6, unanswered: 3 });
+  });
+
+  it("removes every verdict key and nothing else, in one call", async () => {
+    const { store } = setup([...entries, ...others]);
+    expect(await removeVerdicts(store)).toBe(entries.length);
+    expect(await keysOf(store)).toStrictEqual(sorted(...others.map(([name]) => name)));
+    expect(store.calls.remove).toBe(1);
+  });
+
+  it("removes only the entries with no answer when asked to check them again", async () => {
+    const { store } = setup([...entries, ...others]);
+    expect(await removeVerdicts(store, isUnanswered)).toBe(unanswered.length);
+    expect(await countVerdicts(store)).toStrictEqual({ games: 3, unanswered: 0 });
+  });
+
+  it("writes nothing when there is nothing to remove", async () => {
+    const { store } = setup(others);
+    expect(await removeVerdicts(store)).toBe(0);
+    expect(store.calls.remove).toBe(0);
   });
 });

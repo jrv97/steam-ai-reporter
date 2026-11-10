@@ -16,7 +16,7 @@ import {
 } from "../kinds/kind-settings";
 import { sameOrder } from "../kinds/order";
 import { KIND_BY_ID, KINDS } from "../kinds/registry";
-import type { Clock, FileTransfer, MessageCatalog } from "../ports";
+import type { Clock, FileTransfer, KeyValueStore, MessageCatalog } from "../ports";
 import type { ProgressSource } from "../progress";
 import { ALLOW_ALL, type AllowScope, parseGameKey } from "../settings/allow-data";
 import {
@@ -40,16 +40,19 @@ import {
 import { announce, POLITE } from "./announce";
 import { createBackupCard } from "./backup-card";
 import { ownText } from "./badge";
+import type { ActionCard } from "./card-parts";
 import { createChipFields } from "./chip-fields";
 import { createElement } from "./element";
 import { facetChoiceKey } from "./facet-choices";
 import { createFeedbackFooter } from "./feedback-footer";
-import { parseIcon } from "./icon";
+import { parseIcon, withIcon } from "./icon";
 import { KIND_ATTRIBUTE, setColorOnce } from "./kind-attributes";
 import { chipText } from "./kind-details";
 import { keyDescription, keyText } from "./kind-keys";
 import { createLoadStrip } from "./load-strip";
+import { createLookupCard } from "./lookup-card";
 import { createOrderCard, type OrderCard } from "./order-card";
+import { createResetCard } from "./reset-card";
 import { adoptStyles, SETTINGS_CSS, TOKENS_CSS } from "./styles";
 import { GENERAL_TAB, TAB_IDS, tabHash, type TabId, tabsInOrder, toTabId } from "./tab-id";
 import { createTabs, type Tabs } from "./tabs";
@@ -96,10 +99,15 @@ export interface SettingsFormDeps {
    * links do without it.
    */
   readonly openSettings?: (id: TabId | undefined) => void;
-  /** Returns to the store tab the page was opened from; draws the header's Go back to Steam. */
+  /** Leaves the settings for the store tab they came from; draws the header's Go back. */
   readonly goBack?: () => void;
   /** Gives the form its Backup card; the toolbar popup has none. */
   readonly backup?: BackupFormDeps;
+  /**
+   * The store behind the settings, the lists and the stored verdicts. It gives General its Lookup
+   * results and Reset cards; the toolbar popup has none.
+   */
+  readonly store?: KeyValueStore;
   /** The tab to show first, from the page's location fragment; else the stored one. */
   readonly initialTab?: TabId;
   /** Hears each tab shown after the first, for the page to mirror in its fragment. */
@@ -269,7 +277,7 @@ export async function mountSettingsForm(
   mounts += 1;
   const prefix = `tks-${String(mounts)}-`;
   const dates = dateFormat(i18n.locale);
-  /** The page header's Go back to Steam, when the page has a way back. */
+  /** The page header's Go back, when the page has a way back. */
   let goBackButton: HTMLButtonElement | undefined;
 
   const scope = root.getRootNode();
@@ -350,14 +358,14 @@ export async function mountSettingsForm(
       node.append(gear(deps.allSettingsUrl));
     }
     if (deps.goBack !== undefined) {
-      goBackButton = element("button", "tks-button", i18n.t("options_back_to_steam"));
+      goBackButton = withIcon(element("button", "tks-button"), "undo-2", i18n.t("options_go_back"));
       goBackButton.type = "button";
       node.append(goBackButton);
     }
     return node;
   }
 
-  /** The popup's way to every setting: a gear link, the one icon in the settings chrome. */
+  /** The popup's way to every setting: a gear link. */
   function gear(url: string): HTMLElement {
     const link = element("a", "tks-gear");
     link.href = url;
@@ -666,6 +674,31 @@ export async function mountSettingsForm(
   loadError.setAttribute("role", "alert");
   loadError.hidden = true;
 
+  // Games, developers and publishers you ignored: each list read once, drawn in every scope
+  const allowContext = { doc, i18n, dates, prefix, scopeName };
+  const gameSpec: AllowSpec<AppId> = {
+    id: "allow",
+    list: lists.games,
+    parseKey: parseGameKey,
+    title: "options_section_allow",
+    saveError: "error_allow_list_save",
+    loadError: "error_allow_list_load",
+    nameOf: (key, entry) => {
+      const name = element("a", "tks-allow-name", entry.name);
+      name.href = `${STORE_APP_URL}${String(key)}/`;
+      return name;
+    },
+    restored: (_name, of) =>
+      of === ALLOW_ALL
+        ? i18n.t("notice_marking_restored")
+        : i18n.t("notice_marking_restored_kind", { heading: scopeName(of) }),
+  };
+  const gameSource = createAllowSource(gameSpec, allowContext);
+  const creatorSources = CREATOR_ROLES.map((role) =>
+    createAllowSource(creatorSpec(role), allowContext)
+  );
+  const sources: readonly AllowSource[] = [gameSource, ...creatorSources];
+
   // General, then one tab per kind; `arrange` puts them in the person's tag order
   const tabs = deps.layout === "list"
     ? undefined
@@ -696,6 +729,7 @@ export async function mountSettingsForm(
     readonly picker: HTMLSelectElement;
     readonly allIgnored: ScopeCard;
     readonly order: OrderCard;
+    readonly cards: readonly ActionCard[];
   } {
     const general = tabs.panel(GENERAL_TAB);
     // General stands apart from the tags: it has a style of its own and no state
@@ -714,7 +748,8 @@ export async function mountSettingsForm(
       tabs.panel(kind.id).append(kindCard(kind, state), ignored.section);
     }
 
-    // General: language, color help, what is ignored for all tags, backup and privacy
+    // General: language, color help, what is ignored for all tags, the tag order, backup, lookup
+    // results, reset and privacy
     const languageCard = card(i18n.t("options_section_language"), "language");
     const languageField = element("div", "tks-field");
     languageField.setAttribute("data-tks-layout", "stacked");
@@ -772,22 +807,38 @@ export async function mountSettingsForm(
     });
     general.append(order.section);
 
-    if (deps.backup !== undefined) {
-      general.append(
+    // Backup, Lookup results and Reset: cards of buttons, which the root's click listener serves
+    const say = (text: string): void => {
+      announce(doc, live, text);
+    };
+    const { backup, store } = deps;
+    const cards: readonly ActionCard[] = [
+      ...(backup === undefined ? [] : [
         createBackupCard(doc, {
-          ...deps.backup,
+          ...backup,
           settings,
           lists,
           i18n,
           dates,
           idPrefix: prefix,
-          announce: (text) => {
-            announce(doc, live, text);
-          },
+          announce: say,
           onRestored: refreshAllowList,
         }),
-      );
-    }
+      ]),
+      ...(store === undefined ? [] : [
+        createLookupCard(doc, { i18n, store, idPrefix: prefix, announce: say }),
+        createResetCard(doc, {
+          i18n,
+          settings,
+          games: gameSource,
+          creators: creatorSources,
+          idPrefix: prefix,
+          announce: say,
+          onCleared: refreshAllowList,
+        }),
+      ]),
+    ];
+    general.append(...cards.map((each) => each.section));
 
     if (context === "page") {
       const privacy = card(i18n.t("options_section_privacy"), "privacy");
@@ -805,7 +856,7 @@ export async function mountSettingsForm(
 
     const frame = element("div", "tks-tabs");
     frame.append(tabs.list, ...TAB_IDS.map((id) => tabs.panel(id)));
-    return { frame, picker, allIgnored, order };
+    return { frame, picker, allIgnored, order, cards };
   }
 
   const footer = element("div", "tks-options-footer");
@@ -1093,30 +1144,6 @@ export async function mountSettingsForm(
     };
   }
 
-  // Games, developers and publishers you ignored: each list read once, drawn in every scope
-  const allowContext = { doc, i18n, dates, prefix, scopeName };
-  const gameSpec: AllowSpec<AppId> = {
-    id: "allow",
-    list: lists.games,
-    parseKey: parseGameKey,
-    title: "options_section_allow",
-    saveError: "error_allow_list_save",
-    loadError: "error_allow_list_load",
-    nameOf: (key, entry) => {
-      const name = element("a", "tks-allow-name", entry.name);
-      name.href = `${STORE_APP_URL}${String(key)}/`;
-      return name;
-    },
-    restored: (_name, of) =>
-      of === ALLOW_ALL
-        ? i18n.t("notice_marking_restored")
-        : i18n.t("notice_marking_restored_kind", { heading: scopeName(of) }),
-  };
-  const sources: readonly AllowSource[] = [
-    createAllowSource(gameSpec, allowContext),
-    ...CREATOR_ROLES.map((role) => createAllowSource(creatorSpec(role), allowContext)),
-  ];
-
   /** One list in a scope: its items, or that it could not be read; nothing when it is empty. */
   function listBlock(source: AllowSource, of: AllowScope): HTMLElement | undefined {
     const caption = i18n.t(source.title);
@@ -1268,8 +1295,12 @@ export async function mountSettingsForm(
       return;
     }
     // Outside the load error's lock, so the way back works when the settings fail to load
-    if (target === goBackButton) {
+    if (goBackButton?.contains(target) === true) {
       deps.goBack?.();
+      return;
+    }
+    // The General cards' buttons stay outside the lock too
+    if (built?.cards.some((each) => each.handle(target)) === true) {
       return;
     }
     const tab = tabs?.idOf(target);

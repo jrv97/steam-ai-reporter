@@ -18,8 +18,8 @@
   key or plural base that a string literal of its code names is in its inlined catalogs, and every
   message there is named, so a missing key fails here and never falls back to the raw key on a
   store page. scripts/gen_catalogs.py writes each entry's catalogs by the same reading.
-- Size budgets: content.js at most 239 KiB, options.js at most 233 KiB and the userscript at most
-  410 KiB, unminified (rule 13). Each is the measured size plus a few percent of headroom; raise one
+- Size budgets: content.js at most 239 KiB, options.js at most 260 KiB and the userscript at most
+  430 KiB, unminified (rule 13). Each is the measured size plus a few percent of headroom; raise one
   only with a measurement. A message costs bytes only in the bundles that read it, and an added
   locale costs about 5 KB in content.js, 9 KB in options.js and 12 KB in the userscript. Measured
   when ignoring by developer or publisher landed (ADR 0013): content.js 186,313 B (from 169,265),
@@ -68,7 +68,12 @@
   238,647 B (from 229,334: the detector sink in every layer, the progress record and the port's
   content end), options.js 233,097 B (from 222,201) and userscript 410,135 B (from 393,567): the
   strip, its rules, its eleven messages in two locales and the port's popup end. Their budgets
-  rise to 239, 233 and 410 KiB, the size plus 2.6, 2.4 and 2.4 percent.
+  rise to 239, 233 and 410 KiB, the size plus 2.6, 2.4 and 2.4 percent. Measured when the Lookup
+  results and Reset cards and the settings icons landed (decision 82): content.js 239,796 B (from
+  239,742: the ignore lists' clear), options.js 259,459 B (from 233,696) and userscript 429,676 B
+  (from 411,764): the two cards and the parts they share with Backup, seven Lucide icons and 31
+  messages in two locales. Their budgets rise to 260 and 430 KiB, the size plus 2.6 and 2.5
+  percent.
 - The STEAM_API_KEY value, when set, appears nowhere in dist/ or artifacts/ (rule 16).
 - The dev injection bundle is never packaged into artifacts/, and when artifacts/ exists it holds
   exactly the five release artifacts, with a manifest at the root of each extension zip. The source
@@ -106,8 +111,8 @@ from repo import (
 KIB = 1024
 BUDGETS = {
     **{DIST / target / "content.js": 239 * KIB for target in EXTENSION_TARGETS},
-    **{DIST / target / "options.js": 233 * KIB for target in EXTENSION_TARGETS},
-    DIST / "userscript" / f"{SLUG}.user.js": 410 * KIB,
+    **{DIST / target / "options.js": 260 * KIB for target in EXTENSION_TARGETS},
+    DIST / "userscript" / f"{SLUG}.user.js": 430 * KIB,
 }
 ENGLISH = ROOT / "src" / "locales" / DEFAULT_LOCALE / "messages.json"
 STORE_MATCH = ["https://store.steampowered.com/*"]

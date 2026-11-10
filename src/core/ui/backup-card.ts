@@ -1,10 +1,19 @@
-import * as v from "valibot";
 import { type BackupDeps, createBackupFile, restoreBackup } from "../backup/backup";
 import { type BackupReading, countEntries, MAX_BACKUP_SIZE, readBackup } from "../backup/format";
 import { CREATOR_ROLES, type CreatorRole } from "../creator";
 import type { BareMessageKey } from "../i18n/t";
 import type { FileTransfer, MessageCatalog, PickedFile } from "../ports";
-import { createElement } from "./element";
+import {
+  type ActionCard,
+  actionCard,
+  actionOf,
+  cardActions,
+  cardButton,
+  cardHelp,
+  createCardReport,
+  createConfirmBox,
+} from "./card-parts";
+import type { LucideName } from "./lucide";
 
 /** What the Backup card needs beyond the stored settings and lists. */
 export interface BackupCardDeps extends BackupDeps {
@@ -23,7 +32,6 @@ export interface BackupCardDeps extends BackupDeps {
 const ACTION_ATTRIBUTE = "data-tks-backup";
 const ACTIONS = ["save", "pick", "confirm", "cancel"] as const;
 type Action = (typeof ACTIONS)[number];
-const ActionSchema = v.picklist(ACTIONS);
 
 type Backup = Extract<BackupReading, { kind: "backup"; }>;
 
@@ -34,96 +42,39 @@ const LIST_TITLES = {
 
 /**
  * The Backup card: download a file of the settings and ignore lists, or pick one and restore it
- * after a check that shows its date and contents. File text only ever reaches `textContent`. One
- * click listener on the card serves its buttons.
+ * after a check that shows its date and contents. File text only ever reaches `textContent`.
  */
-export function createBackupCard(doc: Document, deps: BackupCardDeps): HTMLElement {
+export function createBackupCard(doc: Document, deps: BackupCardDeps): ActionCard {
   const { i18n, idPrefix } = deps;
 
-  function element<K extends keyof HTMLElementTagNameMap>(
-    tag: K,
-    className: string,
-    text?: string,
-  ): HTMLElementTagNameMap[K] {
-    return createElement(doc, tag, className, text);
-  }
-
-  function button(action: Action, label: BareMessageKey): HTMLButtonElement {
-    const node = element("button", "tks-button", i18n.t(label));
-    node.type = "button";
+  function button(action: Action, label: BareMessageKey, icon?: LucideName): HTMLButtonElement {
+    const node = cardButton(doc, i18n.t(label), icon);
     node.setAttribute(ACTION_ATTRIBUTE, action);
     return node;
   }
 
-  /** A title that focus can land on without being a tab stop. */
-  function focusTarget(node: HTMLElement, id: string): HTMLElement {
-    node.id = idPrefix + id;
-    node.tabIndex = -1;
-    return node;
-  }
-
-  const section = element("section", "tks-card");
-  const title = focusTarget(
-    element("h3", "tks-card-title", i18n.t("options_section_backup")),
-    "backup",
-  );
-  section.setAttribute("aria-labelledby", title.id);
-  const pickButton = button("pick", "options_backup_restore");
-  const actions = element("div", "tks-backup-actions");
-  actions.append(button("save", "options_backup_download"), pickButton);
-
-  const summaryTitle = focusTarget(element("p", "tks-backup-summary-title"), "backup-summary");
-  const contents = element("ul", "tks-backup-contents");
+  const section = actionCard(doc, i18n.t("options_section_backup"), `${idPrefix}backup`);
+  const pickButton = button("pick", "options_backup_restore", "file-up");
   const confirm = button("confirm", "options_backup_confirm");
-  confirm.setAttribute("data-tks-variant", "primary");
-  const choices = element("div", "tks-backup-actions");
-  choices.setAttribute("data-tks-align", "end");
-  choices.append(confirm, button("cancel", "options_backup_cancel"));
-  const summary = element("div", "tks-backup-summary");
-  summary.setAttribute("role", "group");
-  summary.setAttribute("aria-labelledby", summaryTitle.id);
-  summary.hidden = true;
-  summary.append(
-    summaryTitle,
-    contents,
-    element("p", "tks-backup-note", i18n.t("options_backup_restore_note")),
-    choices,
-  );
-
-  const status = element("p", "tks-backup-status");
-  const error = element("p", "tks-field-error");
-  error.setAttribute("role", "alert");
-  status.hidden = true;
-  error.hidden = true;
+  const check = createConfirmBox(doc, {
+    id: `${idPrefix}backup-summary`,
+    confirm,
+    cancel: button("cancel", "options_backup_cancel"),
+    note: i18n.t("options_backup_restore_note"),
+  });
+  const { nodes, report } = createCardReport(doc, deps.announce);
   section.append(
-    title,
-    element("p", "tks-backup-help", i18n.t("options_backup_help")),
-    actions,
-    summary,
-    status,
-    error,
+    cardHelp(doc, i18n.t("options_backup_help")),
+    cardActions(doc, [button("save", "options_backup_download", "file-down"), pickButton]),
+    check.node,
+    ...nodes,
   );
 
   let pending: Backup | undefined;
 
-  function show(node: HTMLElement, text: string | undefined): void {
-    node.hidden = text === undefined;
-    node.textContent = text ?? "";
-  }
-
-  /** Shows a result or an error, never both; a result is also said aloud. */
-  function report(result: string | undefined, failure?: string): void {
-    show(status, result);
-    show(error, failure);
-    if (result !== undefined) {
-      deps.announce(result);
-    }
-  }
-
   function close(): void {
     pending = undefined;
-    summary.hidden = true;
-    confirm.disabled = false;
+    check.close();
   }
 
   async function save(): Promise<void> {
@@ -140,30 +91,24 @@ export function createBackupCard(doc: Document, deps: BackupCardDeps): HTMLEleme
   function openSummary(backup: Backup): void {
     const { created, games, creators } = backup.contents;
     pending = backup;
-    summaryTitle.textContent = i18n.t("options_backup_summary_title", {
-      date: deps.dates.format(new Date(created)),
-    });
     const lists = [
       { list: "options_section_allow", entries: games } as const,
       ...CREATOR_ROLES.map((role) => ({ list: LIST_TITLES[role], entries: creators[role] })),
     ];
     const lines = lists.map(({ list, entries }) =>
-      element(
-        "li",
-        "",
-        i18n.t("options_backup_summary_list", {
-          list: i18n.t(list),
-          number: String(countEntries([entries])),
-        }),
-      )
+      i18n.t("options_backup_summary_list", {
+        list: i18n.t(list),
+        number: String(countEntries([entries])),
+      })
     );
     if (backup.skipped > 0) {
-      lines.push(element("li", "", i18n.plural("options_backup_summary_skipped", backup.skipped)));
+      lines.push(i18n.plural("options_backup_summary_skipped", backup.skipped));
     }
-    contents.replaceChildren(...lines);
     report(undefined);
-    summary.hidden = false;
-    summaryTitle.focus();
+    check.open(
+      i18n.t("options_backup_summary_title", { date: deps.dates.format(new Date(created)) }),
+      lines,
+    );
   }
 
   async function read(file: PickedFile): Promise<void> {
@@ -218,15 +163,11 @@ export function createBackupCard(doc: Document, deps: BackupCardDeps): HTMLEleme
     pickButton.focus();
   }
 
-  section.addEventListener("click", (event) => {
-    const target = event.target instanceof Element
-      ? event.target.closest(`[${ACTION_ATTRIBUTE}]`)
-      : null;
-    const action = v.safeParse(ActionSchema, target?.getAttribute(ACTION_ATTRIBUTE));
-    if (!action.success) {
-      return;
-    }
-    switch (action.output) {
+  function handle(target: EventTarget | null): boolean {
+    const action = actionOf(target, ACTION_ATTRIBUTE, ACTIONS);
+    switch (action) {
+      case undefined:
+        return false;
       case "save":
         void save();
         break;
@@ -244,7 +185,8 @@ export function createBackupCard(doc: Document, deps: BackupCardDeps): HTMLEleme
         report(undefined);
         pickButton.focus();
     }
-  });
+    return true;
+  }
 
-  return section;
+  return { section, handle };
 }

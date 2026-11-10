@@ -29,6 +29,8 @@ export interface ScopedList<Key> {
    * holds a key on both sides, the entry ignored first stays, so merging twice changes nothing.
    */
   merge(entries: AllowEntries<Key>): Promise<number>;
+  /** Empties every scope. It runs after the changes already queued, and a v1 list stays behind. */
+  clear(): Promise<void>;
 }
 
 /** The games the user chose to ignore. */
@@ -111,6 +113,8 @@ function createScopedList<Key>(
         }
         return added;
       }),
+
+    clear: () => serial(() => write(perScope(() => new Map<Key, AllowEntry>()))),
   };
 }
 

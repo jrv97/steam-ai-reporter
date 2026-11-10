@@ -1,8 +1,7 @@
 import { FEEDBACK_LINKS } from "../feedback-links";
 import type { MessageCatalog } from "../ports";
 import { createElement } from "./element";
-import { parseIcon } from "./icon";
-import { lucideMarkup } from "./lucide";
+import { withIcon } from "./icon";
 
 /** Link target and relation tokens, not copy. */
 const NEW_TAB = "_blank";
@@ -22,12 +21,7 @@ export function createFeedbackFooter(doc: Document, i18n: MessageCatalog): HTMLE
     link.href = url;
     link.target = NEW_TAB;
     link.rel = NO_OPENER;
-    const drawn = parseIcon(doc, lucideMarkup(icon));
-    if (drawn !== undefined) {
-      link.append(drawn);
-    }
-    link.append(createElement(doc, "span", "", i18n.t(label)));
-    footer.append(link);
+    footer.append(withIcon(link, icon, i18n.t(label)));
   }
   return footer;
 }

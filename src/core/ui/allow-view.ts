@@ -48,6 +48,8 @@ type CaptionLevel = "h3" | "h4";
 export interface AllowSource {
   readonly id: string;
   readonly title: BareMessageKey;
+  /** Says that the list could not be read, as text. */
+  readonly loadErrorKey: BareMessageKey;
   /** Reads the list once. A failed read is kept, and drawn, until the next refresh. */
   refresh(): Promise<void>;
   /** Whether the last read failed. */
@@ -63,6 +65,8 @@ export interface AllowSource {
    * names no item, or a failed write, returns undefined; the write error shows under the item.
    */
   restore(button: Element): Promise<string | undefined>;
+  /** Empties every scope of the list, after the writes already queued. */
+  clear(): Promise<void>;
 }
 
 function errorLine(doc: Document, text: string): HTMLElement {
@@ -121,6 +125,7 @@ export function createAllowSource<Key extends string | number>(
   return {
     id: spec.id,
     title: spec.title,
+    loadErrorKey: spec.loadError,
 
     async refresh() {
       try {
@@ -131,6 +136,8 @@ export function createAllowSource<Key extends string | number>(
     },
 
     failed: () => entries === undefined,
+
+    clear: () => spec.list.clear(),
 
     count: (of) => entries?.[of].size ?? 0,
 

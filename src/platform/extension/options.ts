@@ -122,6 +122,7 @@ async function main(): Promise<void> {
     ...(page
       ? {
         backup: { files: createFileTransfer(document.body), clock },
+        store,
         goBack: createGoBack({
           tabs: browserTabs,
           session,
