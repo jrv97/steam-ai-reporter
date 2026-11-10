@@ -44,3 +44,27 @@ export function createLogger(i18n: I18n, sink: ConsoleSink, debug: boolean): Log
     },
   };
 }
+
+/** Failures of one repeated operation, logged once per streak. */
+export interface FailureStreak {
+  /** Logs `problem` when it starts a streak, and nothing while the streak lasts. */
+  failed(problem: unknown): void;
+  /** Ends the streak, so the next failure logs again. */
+  worked(): void;
+}
+
+/** A `FailureStreak` that hands the first failure of each streak to `log`. */
+export function createFailureStreak(log: (problem: unknown) => void): FailureStreak {
+  let failing = false;
+  return {
+    failed(problem) {
+      if (!failing) {
+        log(problem);
+      }
+      failing = true;
+    },
+    worked() {
+      failing = false;
+    },
+  };
+}

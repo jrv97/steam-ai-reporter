@@ -1,7 +1,8 @@
 import { type KindVerdicts, UNKNOWN_KINDS } from "../kinds/verdicts";
+import type { Logger } from "../log";
 import type { Detector } from "../ports";
 import type { AppId } from "../types";
-import { settle } from "./settle";
+import { createSettle } from "./settle";
 
 /** HTML fallback apps per page view (ADR 0001): each one is a full app page request. */
 export const DEFAULT_HTML_BUDGET = 10;
@@ -12,8 +13,13 @@ export const DEFAULT_HTML_BUDGET = 10;
  * `rate-limited`, which is kept in page memory only, so a later page view can try them again.
  * Pacing comes from the throttled `Http` that `inner` is built on.
  */
-export function createBudgetDetector(inner: Detector, limit = DEFAULT_HTML_BUDGET): Detector {
+export function createBudgetDetector(
+  inner: Detector,
+  logger: Pick<Logger, "error">,
+  limit = DEFAULT_HTML_BUDGET,
+): Detector {
   let left = limit;
+  const settle = createSettle(logger);
   return {
     async detect(ids) {
       const distinct = [...new Set(ids)];

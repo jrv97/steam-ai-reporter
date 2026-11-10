@@ -21,6 +21,7 @@ const FULL = make.verdicts.full();
 const NONE = make.verdicts.only([]);
 const { demoOf, dlcOf, uniform } = make.verdicts;
 const { lent } = make.verdict;
+const { logger } = fake.logger();
 
 function deck(facet: "verified" | "playable") {
   return make.verdict.disclosed("deck", { facet });
@@ -30,7 +31,7 @@ function deck(facet: "verified" | "playable") {
 function setup(entries: readonly (readonly [AppId, KindVerdicts])[]) {
   const table = new Map(entries);
   const inner = fake.detector((id) => table.get(id) ?? make.verdicts());
-  return { inner, detector: createFullGameDetector(inner) };
+  return { inner, detector: createFullGameDetector(inner, logger) };
 }
 
 /** The verdicts `detector` gives for `id` alone; throws when it gives none. */
@@ -149,7 +150,7 @@ describe("createFullGameDetector", () => {
 
   it("leaves a demo unknown when its full game is left out of the answer", async () => {
     const broken = fake.partialDetector(new Map([[DEMO, demoOf(GAME)]]));
-    const found = (await createFullGameDetector(broken).detect([DEMO])).get(DEMO);
+    const found = (await createFullGameDetector(broken, logger).detect([DEMO])).get(DEMO);
     for (const id of KIND_IDS) {
       expect(found?.[id]).toBe(uniform("error")[id]);
     }
@@ -163,7 +164,7 @@ describe("createFullGameDetector over the verdict cache", () => {
     const clock = fake.clock(make.time());
     const inner = fake.detector(answer);
     const cached = cachedDetector(inner, createVerdictCache(store, clock), { error: vi.fn() });
-    return { store, clock, inner, detector: createFullGameDetector(cached) };
+    return { store, clock, inner, detector: createFullGameDetector(cached, logger) };
   }
 
   it("serves a stored full game to a demo seen later, and stores only own verdicts", async () => {

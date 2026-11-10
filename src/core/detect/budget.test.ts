@@ -6,14 +6,15 @@ import { createBudgetDetector, DEFAULT_HTML_BUDGET } from "./budget";
 
 const NOT_DISCLOSED = make.verdicts({ ai: make.verdict.notDisclosed("html") });
 const RATE_LIMITED = make.verdicts.uniform("rate-limited");
+const { logger } = fake.logger();
 
 detectorContract(
   "createBudgetDetector",
-  () => createBudgetDetector(fake.detector(() => NOT_DISCLOSED)),
+  () => createBudgetDetector(fake.detector(() => NOT_DISCLOSED), logger),
 );
 detectorContract(
   "createBudgetDetector with a spent budget",
-  () => createBudgetDetector(fake.detector(() => NOT_DISCLOSED), 0),
+  () => createBudgetDetector(fake.detector(() => NOT_DISCLOSED), logger, 0),
 );
 
 describe("createBudgetDetector", () => {
@@ -24,7 +25,7 @@ describe("createBudgetDetector", () => {
   it("passes on at most the budget over all calls, and rate-limits the rest", async () => {
     const [a, b, c, d, e] = [make.appId(), make.appId(), make.appId(), make.appId(), make.appId()];
     const inner = fake.detector(() => NOT_DISCLOSED);
-    const detector = createBudgetDetector(inner, 3);
+    const detector = createBudgetDetector(inner, logger, 3);
     expect(await detector.detect([a, b, a])).toStrictEqual(
       new Map([[a, NOT_DISCLOSED], [b, NOT_DISCLOSED]]),
     );

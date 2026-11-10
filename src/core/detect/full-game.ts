@@ -1,9 +1,10 @@
 import type { KindId } from "../kinds/id";
 import { KINDS } from "../kinds/registry";
 import { isKindVerdicts, type KindVerdict, type KindVerdicts } from "../kinds/verdicts";
+import type { Logger } from "../log";
 import type { Detector } from "../ports";
 import type { AppId } from "../types";
-import { settle } from "./settle";
+import { createSettle } from "./settle";
 
 /** The full game of a demo; undefined for any other app, a DLC included. */
 function fullGameOf(verdicts: KindVerdicts): AppId | undefined {
@@ -44,7 +45,8 @@ function withFullGame(own: KindVerdicts, game: KindVerdicts): KindVerdicts {
  * app's own; the merge happens on every read and is never stored. One level: a full game that is
  * a demo itself lends only its own declarations.
  */
-export function createFullGameDetector(inner: Detector): Detector {
+export function createFullGameDetector(inner: Detector, logger: Pick<Logger, "error">): Detector {
+  const settle = createSettle(logger);
   return {
     async detect(ids) {
       const own = await inner.detect(ids);

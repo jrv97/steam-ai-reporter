@@ -34,7 +34,8 @@ import { type ConsoleSink, createLogger, type Logger } from "./log";
 import type { Clock, Http, KeyValueStore, SettingsSource, Unsubscribe } from "./ports";
 import { appIdFromHref } from "./scan/appid";
 import { createScanner } from "./scan/scanner";
-import { DEFAULT_SETTINGS, parseSettings, type Settings } from "./settings/settings";
+import { readSettingsOrDefault } from "./settings/read";
+import { parseSettings, type Settings } from "./settings/settings";
 import { createBadgeRenderer } from "./ui/badge";
 import { createCapsuleUi } from "./ui/capsules";
 import { createHiddenNotice } from "./ui/hidden-notice";
@@ -73,20 +74,6 @@ export interface App {
   stop(): void;
 }
 
-/** The stored settings, or the defaults and the failure to read them. */
-interface SettingsRead {
-  readonly settings: Settings;
-  readonly failure: { readonly problem: unknown; } | undefined;
-}
-
-async function readSettings(source: SettingsSource): Promise<SettingsRead> {
-  try {
-    return { settings: parseSettings(await source.read()), failure: undefined };
-  } catch (problem) {
-    return { settings: DEFAULT_SETTINGS, failure: { problem } };
-  }
-}
-
 /**
  * The detector stack (hand-overs of steps 7 and 8): a demo's full game outside, asked through the
  * stack below it; the verdict cache, so cache hits never touch the network; in-flight dedupe; then
@@ -105,10 +92,13 @@ function createDetector(
   const throttled = (key: string) =>
     createThrottledHttp({ http, clock, breaker: createBreaker({ store, clock, logger, key }) });
   const getItems = createGetItemsDetector({ http: throttled(API_BREAKER_KEY), language, sections });
-  const appPage = createBudgetDetector(createAppPageDetector(throttled(HTML_BREAKER_KEY), open));
-  const chain = createDedupingDetector(createChainDetector([getItems, appPage]));
+  const appPage = createBudgetDetector(
+    createAppPageDetector(throttled(HTML_BREAKER_KEY), open),
+    logger,
+  );
+  const chain = createDedupingDetector(createChainDetector([getItems, appPage], logger), logger);
   const cached = cachedDetector(chain, createVerdictCache(store, clock), logger, sections);
-  return { getItems, detector: createFullGameDetector(cached) };
+  return { getItems, detector: createFullGameDetector(cached, logger) };
 }
 
 /** Whether some kind's setting, as it takes effect, differs between two settings. */
@@ -157,7 +147,7 @@ export async function start(deps: AppDeps): Promise<App> {
   const { catalogs } = deps;
   const root = doc.documentElement;
 
-  const read = await readSettings(deps.settings);
+  const read = await readSettingsOrDefault(deps.settings);
   let { settings } = read;
   const { browserLang } = deps;
   const localeContext: LocaleContext = browserLang === undefined
