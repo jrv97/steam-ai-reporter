@@ -33,7 +33,7 @@ How does the settings page take a person back to the tab they came from, with no
 
 ## Decision outcome
 
-Chosen option 4, with option 1 as its fallback. The manifest keeps `permissions: ["storage"]`, `activeTab` is not added, and no background script appears. The status stays "proposed" until every box in the spike below passes in Chromium and in Firefox Nightly.
+Chosen option 4, with option 1 as its fallback; since the 2026-11-10 amendment the fallback first closes the settings tab when its window holds other tabs. The manifest keeps `permissions: ["storage"]`, `activeTab` is not added, and no background script appears. The status stays "proposed" until every box in the spike below passes in Chromium and in Firefox Nightly.
 
 What the sources say. Chrome states that most of the tabs API needs no permission and that the `tabs` permission unlocks four properties of a `Tab`: `url`, `pendingUrl`, `title` and `favIconUrl` [R13, R14]. MDN names three of them (`url`, `title`, `favIconUrl`), and its pages for `tabs.update`, `tabs.remove` and `windows.update` name no permission [R1, R3, R4, R5, R6]. `Tab.id` and `Tab.windowId` are not among the hidden properties [R6, R13]. `tabs.query({ active: true, currentWindow: true })` is MDN's own example for finding the active tab [R2]; Chrome defines the current window as the one that holds the executing code [R14]. `tabs.update` with `active: true` leaves the window unfocused, and `windows.update` with `focused: true` brings it to the front [R3, R5, R13, R14]. On Firefox `tabs.update` rejects when the tab cannot be found [R3]; Chrome documents no error case and types the result `Promise<Tab | undefined>` [R13].
 
@@ -45,7 +45,7 @@ Flow.
 2. The settings page reads `v2:origin` when it loads, when the session area's own `onChanged` event (`storage.session.onChanged`) reports a change, and when its window gets a `focus` event. It takes the key only while its own tab is the active tab of the last-focused window, which `tabs.query({ active: true, lastFocusedWindow: true })` answers with no permission [R2, R13]. Otherwise it leaves the key in place for the settings tab in front. This covers both browsers when the popup in a second window opens the settings: Chromium opens a second settings tab in that window, which is in front and takes the key when it loads, and the first settings tab never takes it. Firefox focuses the open settings tab after the popup writes the key [R18], and that tab takes it on its `focus` event. Each take validates the value with a schema, keeps the ID in memory and removes the key. A page opened later from the extensions menu finds no key and has no origin.
 3. The page asks `tabs.getCurrent()` for its own tab ID [R1]. An origin equal to that ID (the toolbar button pressed on the settings tab itself) is dropped, and the origin held before stays.
 4. The button runs `tabs.update(origin, { active: true })`, then `windows.update(tab.windowId, { focused: true })` with the `windowId` of the returned tab, then `tabs.remove(ownId)`. The origin is active before the settings tab closes, which leaves the browser no neighbor tab to pick. A failed `windows.update` or `tabs.remove` is ignored: the person has reached the tab they asked for.
-5. With no origin, a rejected `tabs.update` or an `undefined` result, the page navigates its own tab to `https://store.steampowered.com/`. The window and its privacy mode stay as they are.
+5. With no origin, a rejected `tabs.update` or an `undefined` result, the page counts the tabs of its own window with `tabs.query({ currentWindow: true })`, which needs no permission [R2, R14]. When the window holds another tab, the page closes its own tab with `tabs.remove(ownId)` and the browser shows a neighbor. When the settings tab is the only tab of its window, when its own ID or the count is unknown, or when the close fails, the page navigates its own tab to `https://store.steampowered.com/`; the window never closes under the person. The window and its privacy mode stay as they are.
 
 Where the ID travels. Three carriers fit, and `storage.session` wins.
 
@@ -55,15 +55,15 @@ Where the ID travels. Three carriers fit, and `storage.session` wins.
 
 Edge cases.
 
-- Origin tab closed: `tabs.update` rejects or resolves empty, and the page falls back to the store home.
-- Origin tab navigated to another site: the ID still names the tab, and the button shows it as the person left it. The extension cannot read the URL without a permission; the label "Go back to Steam" can then be wrong. See the open question.
-- Page reloaded: the held origin is in memory and is lost. The button then goes to the store home.
+- Origin tab closed: `tabs.update` rejects or resolves empty, and the page closes its own tab when the window holds others, else loads the store home.
+- Origin tab navigated to another site: the ID still names the tab, and the button shows it as the person left it. The extension cannot read the URL without a permission. The label "Go back" names no destination and stays true.
+- Page reloaded: the held origin is in memory and is lost. The button then closes the settings tab, or loads the store home when the tab is alone in its window.
 - Two windows: the origin tab's window is focused with the `windowId` of the tab that `tabs.update` returns. The settings tab can sit in another window than the origin.
 - Firefox private windows: extensions do not run in them until the person allows it [R8]. Where allowed, `Tab.incognito` marks the tab [R6] and the same calls apply. Whether `openOptionsPage()` opens the settings in the private window is not documented; the spike records it.
 - Firefox containers: `cookieStoreId` is a separate property of the tab [R6] and no call here reads it. The spike runs one container tab.
-- Session restore: the memory is empty after a restart; a restored settings tab goes to the store home.
+- Session restore: the memory is empty after a restart. A restored settings tab closes, or loads the store home when it is alone in its window.
 
-Core and platform. Core's settings form takes `goBack?: () => void`. The page layout draws the button when the dependency is present; the popup context and the userscript dialog pass none and get no button. The extension composition root builds `goBack` from narrow interfaces added to `src/platform/extension/ext.ts` (the one module that names the WebExtension APIs): the active tab ID, the active tab of the last-focused window, the current tab ID, focus a tab, close a tab, the session area and its change feed. The ID is a branded `BrowserTabId` read from `unknown` through a schema (rule 10). The button text is the catalog message `options_back_to_steam` ("Go back to Steam" in English, "Volver a Steam" in Spanish). Placement and look belong to a design decision when the code lands; the header stays fixed (decision 74).
+Core and platform. Core's settings form takes `goBack?: () => void`. The page layout draws the button when the dependency is present; the popup context and the userscript dialog pass none and get no button. The extension composition root builds `goBack` from narrow interfaces added to `src/platform/extension/ext.ts` (the one module that names the WebExtension APIs): the active tab ID, the active tab of the last-focused window, the current tab ID, the number of tabs in the current window, focus a tab, close a tab, the session area and its change feed. The ID is a branded `BrowserTabId` read from `unknown` through a schema (rule 10). The button text is the catalog message `options_go_back` ("Go back" in English, "Volver" in Spanish) after Lucide's `undo-2` icon. Until the amendment it was `options_back_to_steam`, "Go back to Steam". Placement and look belong to a design decision when the code lands; the header stays fixed (decision 74).
 
 ### Library check (rule 12)
 
@@ -73,16 +73,16 @@ Nothing adopted. The feature is five WebExtension calls and one schema. `webexte
 
 - Good: the manifest, the store listing's permission text and rule 3 stay as they are.
 - Good: the extension stores no address and no history. The tab ID lives in memory and ends with the browser session; `v2:origin` sits outside `storage.local`, the area the backup reads.
-- Good: the fallback gives every case a destination, and the button needs no network request.
-- Bad: the label can be wrong. A popup opened on a tab outside the store, or an origin tab that moved to another site, still counts as the origin.
-- Bad: a reload of the settings page drops the origin.
+- Good: the fallback gives every case a way out, and the button needs no network request. Without an origin the settings tab closes beside the others, or loads the store home when it is alone.
+- Good: the label names no destination. A popup opened on a tab outside the store, or an origin tab that moved to another site, still counts as the origin, and "Go back" stays true for it.
+- Bad: a reload of the settings page drops the origin, and the button then closes the tab instead of returning to the store tab.
 - Bad: the button closes the settings tab, and a person who wanted both tabs opens the settings again from the popup.
 - Bad: the code relies on three behaviors the docs leave open: the error `tabs.update` gives for a missing tab on Chrome, the focus of an open options tab by `openOptionsPage()` on Firefox, and the area name `storage.onChanged` reports for the session area. The spike covers all three.
 - Neutral: `PRIVACY.md` gains one sentence when the code lands, naming the tab ID and its lifetime.
 
 What changes in `src/` later: `ORIGIN_KEY` in `storage-keys.ts`; the interfaces and the `goBack` builder in `src/platform/extension`; the capture in `openSettings`; the `goBack` dependency and button in `src/core/ui/settings-form.ts`; the two catalog entries; a changelog fragment.
 
-Tests. A table-driven test over the `goBack` builder with a typed fake of the narrow tab interface (in `tests/helpers/`): no origin, a rejected `tabs.update`, an `undefined` result, a failed `windows.update`, a failed `tabs.remove`, an origin equal to the own tab, a value that fails the schema, and a page whose tab is not in front of the last-focused window. One form test checks that the button is drawn only when `goBack` is present and calls it once per click. The catalogs carry the new key in both languages, and `scripts/check_i18n.py` covers the rest.
+Tests. A table-driven test over the `goBack` builder with a typed fake of the narrow tab interface (in `tests/helpers/`): no origin, a rejected `tabs.update`, an `undefined` result, a window with other tabs and a settings tab alone in its window, a failed count, a failed close without an origin, a failed `windows.update`, a failed `tabs.remove`, an origin equal to the own tab, a value that fails the schema, and a page whose tab is not in front of the last-focused window. One form test checks that the button is drawn only when `goBack` is present and calls it once per click. The catalogs carry the new key in both languages, and `scripts/check_i18n.py` covers the rest.
 
 ## Pros and cons of the options
 
@@ -107,7 +107,7 @@ Tests. A table-driven test over the `goBack` builder with a typed fake of the na
 
 - Good: the person lands on the tab they left, with its scroll and state intact, and the settings tab closes.
 - Good: no permission, and a value that is not personal data and never leaves the browser.
-- Bad: the label can be wrong on a non-store origin, and the behavior rests on the spike.
+- Bad: the behavior rests on the spike. The first label, "Go back to Steam", was wrong on a non-store origin; the amendment's "Go back" is not.
 - Also considered inside this option: `Tab.openerTabId` of the settings tab. The docs do not say that `openOptionsPage()` sets it, and it is absent once the opener closes or sits in another window [R6, R13].
 
 ## Spike
@@ -148,7 +148,7 @@ If a call fails with a permission error, stop. Write the call and the message he
 
 Each case starts from a fresh browser start with one window, unless it says otherwise.
 
-1. Basic path. Open a store page, open the popup, click the gear, click "Go back to Steam". Expect the store tab in front and the settings tab closed.
+1. Basic path. Open a store page, open the popup, click the gear, click "Go back". Expect the store tab in front and the settings tab closed.
    - [x] Chromium
    - [x] Firefox Nightly
    - Automated in `tests/e2e/go-back.e2e.ts`.
@@ -160,7 +160,7 @@ Each case starts from a fresh browser start with one window, unless it says othe
    - [x] Chromium
    - [x] Firefox Nightly
    - Automated in `tests/e2e/go-back.e2e.ts`.
-4. Origin tab closed. Open the settings from a store tab, close that store tab, click the button. Expect the settings tab to load the store home, with no error on the page or in the console.
+4. Origin tab closed. Open the settings from a store tab, close that store tab, click the button. Expect the settings tab to close, since its window holds other tabs, with no error on the page or in the console. Before the amendment it loaded the store home.
    - [x] Chromium
    - [x] Firefox Nightly
    - Automated in `tests/e2e/go-back.e2e.ts`. The test listens for the page's `error` and `unhandledrejection` events.
@@ -168,11 +168,11 @@ Each case starts from a fresh browser start with one window, unless it says othe
    - [x] Chromium
    - [x] Firefox Nightly
    - Automated in `tests/e2e/go-back.e2e.ts`, with `about:blank` as the second address.
-6. No origin. After a browser start, open the settings from the extensions menu (Chromium: the extension's details page, "Extension options"; Firefox Nightly: `about:addons`, the extension's preferences). Expect the button to load the store home in that tab. Repeat after case 1 in the same session: the old origin must be gone.
+6. No origin. After a browser start, open the settings from the extensions menu (Chromium: the extension's details page, "Extension options"; Firefox Nightly: `about:addons`, the extension's preferences). Expect the button to close that tab, since the window holds other tabs. Repeat after case 1 in the same session: the old origin must be gone. Then open the settings alone in a new window and expect the button to load the store home there. Before the amendment the store home was the only expectation.
    - [x] Chromium
    - [x] Firefox Nightly
-   - Automated in `tests/e2e/go-back.e2e.ts`. The test opens `options.html` in a new tab; the extensions menu stays manual.
-7. Reload. Open the settings from the popup, reload the settings tab, click the button. Expect the store home.
+   - Automated in `tests/e2e/go-back.e2e.ts`. The test opens `options.html` in a new tab, and alone in a new window; the extensions menu stays manual.
+7. Reload. Open the settings from the popup, reload the settings tab, click the button. Expect the settings tab to close. Before the amendment it loaded the store home.
    - [x] Chromium
    - [x] Firefox Nightly
    - Automated in `tests/e2e/go-back.e2e.ts`.
@@ -190,10 +190,10 @@ Each case starts from a fresh browser start with one window, unless it says othe
 11. Container tab (Firefox Nightly). Open a store page in a container tab and run case 1. Expect the return to that container tab.
     - [x] Firefox Nightly
     - Automated in `tests/e2e/go-back.e2e.ts`.
-12. Restart. Open the settings from the popup, quit the browser with session restore on, start it again, click the button on the restored settings tab. Expect the store home and no switch to an unrelated tab.
+12. Restart. Open the settings from the popup, quit the browser with session restore on, start it again, click the button on the restored settings tab. Expect no switch to an unrelated tab: the settings tab closes when its window holds other tabs, and loads the store home when it is alone. Before the amendment the store home was the only expectation.
     - [ ] Chromium
     - [ ] Firefox Nightly
-13. Non-store origin. Open the popup on a blank tab, click the gear, click the button. Expect the settings to load into the blank tab itself. The page drops the origin because it names its own tab, and the button loads the store home in that tab. This expectation replaces the earlier one, a return to the blank tab: the settings take the blank tab's place, which leaves no tab to return to.
+13. Non-store origin. Open the popup on a blank tab, click the gear, click the button. Expect the settings to load into the blank tab itself. The page drops the origin because it names its own tab, and the button closes that tab, since its window holds other tabs. This expectation replaces two earlier ones. The first, a return to the blank tab, failed because the settings take the blank tab's place and leave no tab to return to. The second, the store home in that tab, held until the amendment.
     - [x] Chromium
     - [x] Firefox Nightly
     - Automated in `tests/e2e/go-back.e2e.ts`.
@@ -202,13 +202,17 @@ When every box is marked, the status moves to "accepted" and the build ships. If
 
 ## Open questions
 
-- A popup opened on a tab outside the store records that tab. The content script could answer a `tabs.sendMessage` probe from the popup, which needs no permission, and the popup would record the ID only when the probe succeeds. It adds a message listener to `content.js`, which had about 1.8 KB of room when ADR 0017 was written. I leave it out until the spike or real use shows the mislabel matters.
-- Where the button sits and how it looks is a design decision for `docs/design/decisions.mdx`.
+- Resolved by the amendment: a popup opened on a tab outside the store records that tab. A `tabs.sendMessage` probe answered by the content script could have kept such a tab out, at the cost of a message listener in `content.js`. With the label "Go back", a return to that tab is what the button says, and the probe is not needed.
+- Settled by decisions 76 and 82 in `docs/design/decisions.mdx`: where the button sits and how it looks.
 
 ## More information
 
 - The live-page check for this button is open question 34 in [UI design decisions](../design/decisions.mdx).
 - [ADR 0017 (name chips in own words)](0017-name-chips-in-own-words.mdx) gives the `content.js` size room.
+
+## Amendment 2026-11-10: a neutral label and a closing fallback
+
+The button read "Go back to Steam", which was wrong whenever the origin had left the store. The fallback also replaced the settings tab with the store home when other tabs were open beside it. The button now reads "Go back" after Lucide's `undo-2` icon (`options_go_back`). Without a usable origin it closes the settings tab when the window holds another tab (flow step 5), and loads the store home when the tab is alone in its window, when its own ID or the tab count is unknown, or when the close fails. The count comes from `tabs.query({ currentWindow: true })`, which needs no permission. The manifest, the permissions and the origin flow stay as they were. Design decision 82 records the label and the icon.
 
 ## References
 

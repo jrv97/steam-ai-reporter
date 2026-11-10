@@ -763,7 +763,7 @@
   flex: none;
 }
 
-/* The page's Go back to Steam, at the end of the header */
+/* The page's Go back button, at the end of the header */
 .tks-options-header .tks-button {
   flex: none;
   margin-inline-start: auto;
@@ -1424,6 +1424,7 @@
   appearance: none;
   display: inline-flex;
   align-items: center;
+  gap: var(--tks-space-1);
   min-block-size: var(--tks-control-height-sm);
   max-inline-size: 100%;
   padding-block: var(--tks-space-1);
@@ -1441,7 +1442,7 @@
   background: var(--tks-button-secondary-bg-hover);
 }
 
-/* The one primary action: Restore in the backup summary */
+/* A check's primary button confirms an action that overwrites settings or lists */
 .tks-button[data-tks-variant="primary"] {
   background: var(--tks-button-primary-bg);
   color: var(--tks-button-primary-fg);
@@ -1551,31 +1552,32 @@
   line-height: var(--tks-leading-sm);
 }
 
-/* Backup card: download a file, restore it after a check. Full options page and userscript
-   dialog only. */
+/* The cards of General with buttons: Backup, Lookup results and Reset. Full options page and
+   userscript dialog only. */
 
-.tks-backup-help {
-  margin: 0 0 var(--tks-space-3);
+.tks-card-help {
+  margin: 0 0 var(--tks-space-2);
   color: var(--tks-color-text-subtle);
   font-size: var(--tks-size-sm);
   line-height: var(--tks-leading-sm);
 }
 
 /* Buttons wrap their own labels, and drop to the next line when the row is too narrow */
-.tks-backup-actions {
+.tks-card-actions {
   display: flex;
   flex-wrap: wrap;
   gap: var(--tks-space-2);
 }
 
-/* The check's Restore and Cancel row: right-aligned, the confirm button first, 12px apart, like
-   the store's own confirm dialogs */
-.tks-backup-summary .tks-backup-actions {
+/* A check's buttons sit on the right, the primary one first, 12px apart, like the store's own
+   confirm dialogs */
+.tks-card-actions[data-tks-align="end"] {
   justify-content: flex-end;
-  column-gap: var(--tks-space-3);
+  gap: var(--tks-space-3);
 }
 
-.tks-backup-summary {
+/* The check a card opens before it overwrites or empties anything */
+.tks-confirm {
   margin-block-start: var(--tks-space-3);
   padding: var(--tks-space-3);
   border: 1px solid var(--tks-color-border);
@@ -1583,39 +1585,39 @@
   background: var(--tks-color-bg-sunken);
 }
 
-.tks-backup-summary-title {
-  margin: 0;
+.tks-confirm-title {
+  margin: 0 0 var(--tks-space-2);
   color: var(--tks-color-text-strong);
   font-weight: var(--tks-weight-medium);
 }
 
-.tks-backup-summary-title:focus-visible {
+.tks-confirm-title:focus-visible {
   outline: var(--tks-focus-width) solid var(--tks-focus-color);
   outline-offset: var(--tks-focus-offset);
 }
 
-.tks-backup-contents {
-  margin: var(--tks-space-2) 0 0;
+.tks-confirm-list {
+  margin: 0 0 var(--tks-space-2);
   padding-inline-start: var(--tks-space-4);
   color: var(--tks-color-text);
 }
 
-.tks-backup-contents li + li {
+.tks-confirm-list li + li {
   margin-block-start: var(--tks-space-1);
 }
 
-.tks-backup-note {
-  margin: var(--tks-space-2) 0 var(--tks-space-3);
-  color: var(--tks-color-text-subtle);
-  font-size: var(--tks-size-sm);
-  line-height: var(--tks-leading-sm);
-}
-
-.tks-backup-status {
+.tks-card-status {
   margin: var(--tks-space-2) 0 0;
   color: var(--tks-color-text);
   font-size: var(--tks-size-sm);
   line-height: var(--tks-leading-sm);
+}
+
+/* A button's Lucide icon fills one line of small text, in the accent violet */
+.tks-button .tks-icon {
+  inline-size: var(--tks-leading-sm);
+  block-size: var(--tks-leading-sm);
+  color: var(--tks-accent-400);
 }
 
 /* The card keeps system colors; only its edge needs adding once the shadow is gone */

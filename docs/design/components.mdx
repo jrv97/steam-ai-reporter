@@ -91,8 +91,8 @@ Every text pair meets WCAG 2.2 AA on the grounds its token's note names; see the
 
 - **The mark** is a Steam badge, a ring around the Steam glyph, with a tag icon attached at its lower right: "Steam store pages, tagged". One ink per file, `tks-accent-400` in the extension icon; the tag leaves a transparent cut where it crosses the ring; no gradient, no letters. See section 14 for files, variants and sizes.
 - **No icons in components.** Badges, the tag section and the banner carry no icon, like the store's own tags, corner flags and notice bubbles. The violet hue and the wording mark them as ours. The mark appears as the extension icon and wherever that icon is shown, never inside a component. Icons on chips for the other tag kinds are a later design decision (decision 39).
-- One icon set besides the gear: Lucide, for the feedback links only (decision 79). Platform icons and flags around our badges are the store's.
-- **Icons in the settings chrome: the gear and the feedback links.** The toolbar popup's header ends in a gear that opens all settings (decision 65). It is an original eight-tooth gear with a round hole, one inline SVG path on a 48 unit grid, under 400 bytes, filled with `currentColor` (`tks-accent-300` as a link), `aria-hidden`, inside a link named by `options_all_settings`. The feedback links start with three Lucide line icons (section 6; decision 79). Both are chrome on an extension page, not components on a store page, so the rule above stands for every store-page component.
+- One icon set besides the gear: Lucide, for the feedback links and the settings buttons (decisions 79 and 82). Platform icons and flags around our badges are the store's.
+- **Icons in the settings chrome: the gear, the feedback links and the settings buttons**, eleven in all (amended 2026-11-10 by decision 82). The toolbar popup's header ends in a gear that opens all settings (decision 65). It is an original eight-tooth gear with a round hole, one inline SVG path on a 48 unit grid, under 400 bytes, filled with `currentColor` (`tks-accent-300` as a link), `aria-hidden`, inside a link named by `options_all_settings`. The feedback links start with three Lucide line icons (section 6; decision 79). Seven buttons start with one too (section 10): Go back `undo-2`, Download backup `file-down`, Restore from a backup `file-up`, Clear lookup results `brush-cleaning`, Check unknown games again `refresh-cw`, Reset all settings `rotate-ccw` and Stop ignoring everything `list-x`. A check's own buttons (Restore, Reset, Stop ignoring, Cancel) and the quiet buttons stay text only. All of these are chrome on an extension page, not components on a store page, so the rule above stands for every store-page component.
 - The extension icon holds an outlined Steam glyph (decision 40). It shows in the README logo, the store listing images, the options and popup headers and the design previews. No chip, badge, banner or hover card shows a Valve mark, and no Valve wordmark, image or font file ships anywhere.
 
 ## What renders for each state
@@ -532,7 +532,8 @@ Preview: `previews/OptionsPage.html`, and `previews/Tabs.html` for the tabs alon
 - The version from `package.json` for `options_version`.
 - On the full page: the tab named by the location fragment (`#tab=<id>`, read by `parseTabHash`) as `initialTab`, and `onTabChange`, which writes the fragment back with `history.replaceState`. The dialog passes neither and never touches the store page's address.
 - In the popup: `allSettingsUrl` for the gear and the row links, and `openSettings`, which opens the options page on a tag's tab, or as it was left for the gear (below). Before it opens the page, it writes the ID of the active tab to `storage.session` (`v2:origin`).
-- On the extension's full page: `goBack`, which switches to the tab the popup was opened on, focuses its window and closes the settings tab, or opens the store home in the settings tab when that tab is gone or was never recorded ([ADR 0019](../adr/0019-settings-return-to-the-store-tab.mdx)). The popup and the userscript dialog pass none.
+- On the extension's full page: `goBack`, which switches to the tab the popup was opened on, focuses its window and closes the settings tab. When that tab is gone or was never recorded, it closes the settings tab if its window holds another tab, else opens the store home in it ([ADR 0019](../adr/0019-settings-return-to-the-store-tab.mdx), amended 2026-11-10). The popup and the userscript dialog pass none.
+- On the full page and in the dialog: `store`, the key-value store behind the settings, the lists and the lookup results, which draws the Lookup results and Reset cards (below). The popup passes none.
 
 ### Layout
 
@@ -542,7 +543,7 @@ Preview: `previews/OptionsPage.html`, and `previews/Tabs.html` for the tabs alon
 - Font: the `ext` family (a system stack). The store font is not loaded on extension pages and none is bundled.
 - Type on the full page: field labels, help and error lines in `tks-text-body` (13/18). The popup and the dialog keep help and error lines in `tks-text-help` (12/16).
 - Cards are `.tks-card`: `tks-color-bg-raised`, `tks-radius-md`, `tks-space-3` padding, `tks-space-2` apart, titled in `tks-text-card-title` with `tks-space-2` below the title. A tag's card title is an `h2`; the cards of General sit under the panel's `h2` (`options_tab_general`) and take `h3`. Every card title takes focus with `tabindex="-1"`, so focus can land on it.
-- Header: the 32px icon (48px source), `ext_name` in `tks-text-options-title`, the version in `tks-color-text-subtle`. With `goBack`, the header ends in Go back to Steam (`options_back_to_steam`): the secondary `.tks-button`, no icon, pushed to the end with `margin-inline-start: auto`. It is drawn at mount and never added or removed later, and it stays usable when the settings fail to load (decision 76).
+- Header: the 32px icon (48px source), `ext_name` in `tks-text-options-title`, the version in `tks-color-text-subtle`. With `goBack`, the header ends in Go back (`options_go_back`): the secondary `.tks-button` with Lucide's `undo-2` before its label, pushed to the end with `margin-inline-start: auto`. It is drawn at mount and never added or removed later, and it stays usable when the settings fail to load (decisions 76 and 82).
 
 ### Tabs, in order
 
@@ -552,6 +553,8 @@ Preview: `previews/OptionsPage.html`, and `previews/Tabs.html` for the tabs alon
    - Ignored for all tags (`options_allow_all_title`): the games, developers and publishers ignored for every tag (section 11).
    - Tag order (page and dialog): the order chips, banners and summaries list the tags in (below).
    - Backup (page and dialog): the Backup card (section 12).
+   - Lookup results (page and dialog): the stored lookups and two ways to drop them (below).
+   - Reset (page and dialog): Reset all settings and Stop ignoring everything, each behind a check (below).
    - Privacy (page only): four bullets.
 2. One tab per tag kind, in the tag order (`settings.order`; alphabetical by Steam's English heading until the person reorders, and again after a reset), named by the tag's key (`kind_<id>_key`, ADR 0023) in bold, never the chip word or the person's chip text, with `options_state_on` or `options_state_off` on the same line and the tag's description under them (below). A new order moves the tabs and the popup's rows. A tag that is off keeps its tab. The panel holds:
    - The tag's card, titled with Steam's line for the kind (`kind_<id>_heading`): the master switch `options_kind_enabled` (`kinds.<id>.enabled`), then, for a tag with values, a group of native controls, one per value in Steam's words: radio buttons for Steam Deck and Steam Machine, which tag one rating (label `options_facet_label`, help `options_facet_help`), and checkboxes for Family Sharing, whose choices read `options_facet_available` and `options_facet_unavailable` (label `options_facets_label`, help `options_facets_help`); each control is named `options_facet_choice_label` (its text, then Steam's line for the tag) (stored as `facet` for the radio buttons and `facets` for the checkboxes), then the switches `options_badges` (dialog `options_badges_short`; `badge`) and `options_banner` (`banner`), then the chip text fields and their preview (below), then, where the form has color fields, the color field (below), then a stacked SegmentedControl with Show, Dim and Hide (`filter`; label `options_filter_label`; the help follows the selection). Each switch has help. While the master switch is off, the other controls stay where they are at the same size, in one `fieldset.tks-kind-options` that is `disabled` and drawn at `tks-dim-opacity`, and their stored values stay (decision 75). Only the master switch stays usable. The page never changes its layout when a tag turns on or off.
@@ -605,6 +608,24 @@ One card in General, after Ignored for all tags. It sets `order`: every kind onc
 - Reset order (`options_order_reset`), the quiet text button of section 10, stores the registry order, which is then left out of the stored value, and says `options_order_reset_done`.
 - The held row carries `data-tks-held` (an accent outline, and the hover card's shadow while dragged); forced colors draw the handle with a `ButtonText` edge and the held row with a `Highlight` outline.
 - One listener per event type on the form's root serves the card (`pointerdown`, `click`, `keydown`); the card keeps no listener of its own on its rows.
+
+### The Lookup results card
+
+One card in General, after Backup (decision 82; `ui/lookup-card.ts`). It reads and removes the verdict entries (`v1:a:*`) and never touches the settings, the ignore lists, the breaker or the meta key.
+
+- Title `options_section_lookups`, then `options_lookups_help` with the longest time a kind keeps an answer in days and the time an unknown answer is kept in hours, both read from the code (`kinds/kind-ttl.ts`, `cache/ttl.ts`) and formatted for the locale.
+- A count line in `.tks-card-help`: `options_lookups_count` (plural by games, with the games Steam gave no answer for), or `options_lookups_empty`. It counts every stored entry, fresh or expired and not yet swept, and is read at mount and after each action.
+- Two secondary buttons in `.tks-card-actions`: Clear lookup results (`brush-cleaning`, `options_lookups_clear`) removes every entry, and Check unknown games again (`refresh-cw`, `options_lookups_recheck`) removes the entries where Steam gave no answer for a kind: a stored unknown with the reason `gated`, `missing` or `malformed`. An `unrequested` section was never asked for, so it does not count. Both run at once with no check, and a second click while one runs does nothing.
+- Afterwards the status line reads `notice_lookups_cleared` or `notice_lookups_rechecked` (plural by the entries removed) and the live region says it. A failed removal shows `error_lookups_clear`, a failed count `error_lookups_read`, in the card's `.tks-field-error`.
+
+### The Reset card
+
+One card in General, after Lookup results (decision 82; `ui/reset-card.ts`). Help `options_reset_help` says neither action can be undone and points to Backup.
+
+- Reset all settings (`rotate-ccw`, `options_reset_settings`) opens a check (`.tks-confirm`, section 12) titled `options_reset_settings_title` that lists `options_reset_settings_tags`, `_words`, `_order` and `_keep`. Its primary Reset (`options_reset_settings_confirm`) writes every kind's defaults and the default order in one patch; the language, the debug flag and the ignore lists stay.
+- Stop ignoring everything (`list-x`, `options_reset_lists`) opens a check titled `options_reset_lists_title` that counts each list from the form's one read of the lists: `options_reset_lists_games` for games (for all tags, then for one tag), `options_backup_summary_list` for developers and publishers, then `options_reset_lists_keep`. A list that failed to load names its load error instead of a count. Its primary Stop ignoring (`options_reset_lists_confirm`) empties the games, developers and publishers lists in every scope with one write, then the lists' cards redraw.
+- One check is open at a time; opening one closes the other. Focus moves to the check's title, and Cancel (`options_backup_cancel`) or a confirm returns it to the button that opened it. A failed write keeps the check open with `error_reset_settings` or `error_reset_lists`. Success closes the check, and the status line and the live region say `notice_reset_settings_done` or `notice_reset_lists_done`.
+- Both buttons are drawn at mount; the checks and the status line follow the Backup card's pattern. The cards' buttons answer the form's one click listener on its root, and stay usable when the settings fail to load.
 
 ### Longer translations
 
@@ -711,7 +732,7 @@ Not in the popup: the popup leaves language to the full page.
 
 ## 10. Button
 
-Buttons on extension pages: secondary by default (Download backup), quiet for the small actions inside a card (Reset, Stop ignoring, Show in General), primary only for Restore in the backup summary.
+Buttons on extension pages: secondary by default (Download backup), quiet for the small actions inside a card (Reset, Stop ignoring, Show in General), primary only for the confirm button of a check (Restore, Reset, Stop ignoring).
 
 Preview: `previews/Button.html`.
 
@@ -724,6 +745,7 @@ Preview: `previews/Button.html`.
 ```
 
 - A real `button` with visible text. When a list repeats the same label, give each an `aria-label` that names its item.
+- A secondary button may start with a Lucide icon (`withIcon` in `ui/icon.ts`): an `aria-hidden` SVG then the label in a `span`, `tks-space-1` apart. The icon is 16px (`tks-leading-sm`) in `tks-accent-400`, and the label stays the accessible name (decision 82).
 
 ### Look
 
@@ -734,7 +756,7 @@ Preview: `previews/Button.html`.
 ### Related
 
 - Banner controls are the split Ignore button and its menu (`.tks-ignore-*`) and the "Show full report" link (`.tks-banner-link`), documented under Banner.
-- Primary (`data-tks-variant="primary"`): `tks-button-primary-bg` with `tks-button-primary-fg` (6.77:1), `tks-button-primary-bg-hover` on hover (4.98:1). One per screen at most, for the action that overwrites something. Today that is only Restore in the Backup card.
+- Primary (`data-tks-variant="primary"`): `tks-button-primary-bg` with `tks-button-primary-fg` (6.77:1), `tks-button-primary-bg-hover` on hover (4.98:1). One per check, for the action that overwrites or empties something: Restore in the Backup card, Reset and Stop ignoring in the Reset card.
 - Quiet (`data-tks-variant="quiet"`): no fill, no inline padding, `tks-accent-300` text with an underline, `tks-color-text-strong` on hover; the same minimum height and focus ring, so it keeps its target size. It reads as a link but is a `button`, because it acts on the page and never navigates. Reset, Stop ignoring and Show in General use it; the heavy filled look of a row of Stop ignoring buttons is gone.
 
 ## 11. Allow-list
@@ -798,7 +820,7 @@ Not the lookup history, the tab last shown (`v2:ui`) or anything else derived. O
 
 ### Where it appears
 
-- The full options page: its own card, after "Games you ignored" and before "Privacy".
+- The full options page: its own card in General, after Tag order and before Lookup results.
 - The userscript settings dialog: the same card, with its file input inside the dialog.
 - Not the toolbar popup: opening a file picker can close an extension popup before the file arrives. The popup's "All settings" link leads to the full page.
 
@@ -807,32 +829,38 @@ Not the lookup history, the tab last shown (`v2:ui`) or anything else derived. O
 ```html
 <section class="tks-card" aria-labelledby="backup-title">
   <h2 class="tks-card-title" id="backup-title">t('options_section_backup')</h2>
-  <p class="tks-backup-help">t('options_backup_help')</p>
-  <div class="tks-backup-actions">
-    <button class="tks-button" type="button">t('options_backup_download')</button>
-    <button class="tks-button" type="button">t('options_backup_restore')</button>
+  <p class="tks-card-help">t('options_backup_help')</p>
+  <div class="tks-card-actions">
+    <button class="tks-button" type="button">
+      <svg class="tks-icon" aria-hidden="true" focusable="false"><!-- file-down --></svg>
+      <span>t('options_backup_download')</span>
+    </button>
+    <button class="tks-button" type="button">
+      <svg class="tks-icon" aria-hidden="true" focusable="false"><!-- file-up --></svg>
+      <span>t('options_backup_restore')</span>
+    </button>
   </div>
 
   <!-- Only after a valid file is chosen -->
-  <div class="tks-backup-summary" role="group" aria-labelledby="backup-summary-title">
-    <p class="tks-backup-summary-title" id="backup-summary-title" tabindex="-1">
+  <div class="tks-confirm" role="group" aria-labelledby="backup-summary">
+    <p class="tks-confirm-title" id="backup-summary" tabindex="-1">
       t('options_backup_summary_title', { date })
     </p>
-    <ul class="tks-backup-contents">
+    <ul class="tks-confirm-list">
       <li>t('options_backup_summary_list', { list: t('options_section_allow'), number })</li>
       <li>t('options_backup_summary_list', { list: t('options_section_allow_developers'), number })</li>
       <li>t('options_backup_summary_list', { list: t('options_section_allow_publishers'), number })</li>
       <!-- Only when entries cannot be read -->
       <li>plural('options_backup_summary_skipped', count)</li>
     </ul>
-    <p class="tks-backup-note">t('options_backup_restore_note')</p>
-    <div class="tks-backup-actions" data-tks-align="end">
+    <p class="tks-card-help">t('options_backup_restore_note')</p>
+    <div class="tks-card-actions" data-tks-align="end">
       <button class="tks-button" data-tks-variant="primary" type="button">t('options_backup_confirm')</button>
       <button class="tks-button" type="button">t('options_backup_cancel')</button>
     </div>
   </div>
 
-  <p class="tks-backup-status" hidden>plural('notice_backup_restored', added)</p>
+  <p class="tks-card-status" hidden>plural('notice_backup_restored', added)</p>
   <p class="tks-field-error" role="alert" hidden>t('error_backup_invalid', { name })</p>
 </section>
 ```
@@ -840,6 +868,8 @@ Not the lookup history, the tab last shown (`v2:ui`) or anything else derived. O
 - "Restore from a backup" is a real `button` that asks the `FileTransfer` port to open the chooser, inside the click. The port keeps one hidden `input type=file` (`accept=".json,application/json"`, named `options_backup_restore` by `aria-label`) in the page body, or in the dialog for the userscript. A styled `label` cannot take keyboard focus.
 - Counts and the date come from the file after it is validated; the date is formatted with `Intl.DateTimeFormat(locale, { dateStyle: "medium" })`. The skipped count uses plural keys (`_one`, `_other`).
 - Results go to the status line and the form's polite live region; errors to the card's `.tks-field-error`.
+- The classes are shared with the Lookup results and Reset cards (`ui/card-parts.ts`): `.tks-card-help`, `.tks-card-actions`, the check `.tks-confirm` with `.tks-confirm-title` and `.tks-confirm-list`, and `.tks-card-status`.
+- Download backup starts with Lucide's `file-down` and Restore from a backup with `file-up` (decision 82). Restore and Cancel in the check stay text only.
 
 ### Flow
 
@@ -864,8 +894,8 @@ Not the lookup history, the tab last shown (`v2:ui`) or anything else derived. O
 - Help text in `tks-text-help` and `tks-color-text-subtle`.
 - Actions: a wrapping row of buttons, `tks-space-2` apart. Long labels wrap inside their buttons, and buttons drop to the next line when the row is too narrow.
 - The check's Restore and Cancel row sits on the right, Restore first, `tks-space-3` apart, like the store's own confirm dialogs (`.newmodal_buttons`: right-aligned, the confirm button first, 12px apart).
-- Summary: `tks-color-bg-sunken`, 1px `tks-color-border`, `tks-radius-md`, `tks-space-3` padding. Title in `tks-color-text-strong`, medium. Contents in `tks-color-text`. The note in `tks-text-help` and `tks-color-text-subtle`.
-- "Restore" is the one primary button in the product (`data-tks-variant="primary"`): it confirms the only action that overwrites settings.
+- The check (`.tks-confirm`): `tks-color-bg-sunken`, 1px `tks-color-border`, `tks-radius-md`, `tks-space-3` padding. Title in `tks-color-text-strong`, medium. Contents in `tks-color-text`. The note in `tks-text-help` and `tks-color-text-subtle`.
+- "Restore" is the check's primary button (`data-tks-variant="primary"`): it confirms an action that overwrites settings. The Reset card's checks use the same box and button.
 - The status line uses `tks-text-help` in `tks-color-text`. Errors use `.tks-field-error`.
 - No green for success and no red fill for failure: words carry the state.
 
@@ -883,7 +913,7 @@ The userscript's settings, opened from the script manager's menu: the one modal 
 
 - A menu command `userscript_menu_settings` registered with `GM.registerMenuCommand`.
 - A native `dialog` in a shadow root on `div.tks-dialog-host`, opened with `showModal()`. `Escape` and a `userscript_close` text button close it; focus returns to the page.
-- Content: the settings form (section 6) with the popup's density (`data-tks-context="popup"`), the tabs of section 18 and the color fields, `min(760px, 100vw - tks-space-6)` wide, titled with `ext_name`, set in the `page` family because the store font is available there. From an 800px viewport the tabs are a rail, narrower a wrapping row. From 800px wide and 560px tall the dialog has one height (`100vh - tks-space-6`), its head, rail, footer and feedback bar stay in place and only the open panel scrolls (decision 74); in a smaller window the whole dialog scrolls. General holds the language picker (new in the dialog; the dialog's own copy follows a new language when it opens next), Badge color, Ignored for all tags and Backup; the dialog has no privacy card. The tab shown is remembered in the manager's storage; the dialog reads and writes no location fragment.
+- Content: the settings form (section 6) with the popup's density (`data-tks-context="popup"`), the tabs of section 18 and the color fields, `min(760px, 100vw - tks-space-6)` wide, titled with `ext_name`, set in the `page` family because the store font is available there. From an 800px viewport the tabs are a rail, narrower a wrapping row. From 800px wide and 560px tall the dialog has one height (`100vh - tks-space-6`), its head, rail, footer and feedback bar stay in place and only the open panel scrolls (decision 74); in a smaller window the whole dialog scrolls. General holds the language picker (new in the dialog; the dialog's own copy follows a new language when it opens next), Badge color, Ignored for all tags, Tag order, Backup, Lookup results and Reset; the dialog has no privacy card. The tab shown is remembered in the manager's storage; the dialog reads and writes no location fragment.
 - When `GM_addValueChangeListener` is missing, `userscript_reload_note` under the controls.
 
 ### Status
@@ -1248,6 +1278,10 @@ For every translator:
 | `notice_list_hide_one`, `_other` | Hide it / Hide them | Button after the revealed line. |
 | `notice_backup_downloaded` | Backup downloaded. | Screen reader announcement after the file is saved. |
 | `notice_backup_restored` | Backup restored. | Shown under the backup buttons and announced after a restore. |
+| `notice_lookups_cleared_one`, `_other` | Cleared `$count$` lookup result(s). Reload open store pages to look it/them up again. | Status line and announcement after Clear lookup results. |
+| `notice_lookups_rechecked_one`, `_other` | Cleared `$count$` game(s) with no answer. Reload open store pages to look it/them up again. | Status line and announcement after Check unknown games again. |
+| `notice_reset_settings_done` | All settings are back to their defaults. | Status line and announcement after Reset all settings. |
+| `notice_reset_lists_done` | You no longer ignore any game, developer or publisher. | Status line and announcement after Stop ignoring everything. |
 
 ### `error_`
 
@@ -1261,6 +1295,10 @@ For every translator:
 | `error_backup_invalid` | This file is not a backup from `$name$`. | `name` is the product name (`ext_name`). |
 | `error_backup_newer` | This backup comes from a newer version. Update the extension, then try again. | When the file's format version is newer than this build reads. |
 | `error_backup_restore` | Could not restore this backup. Nothing was changed. | When saving the restored data fails; nothing is half-applied. |
+| `error_lookups_read` | Could not read the lookup results. Try again later. | When the stored results cannot be counted. |
+| `error_lookups_clear` | The lookup results could not be cleared. Try again. | When removing stored results fails. |
+| `error_reset_settings` | The settings could not be reset. Try again. | The Reset all settings check stays open. |
+| `error_reset_lists` | The ignore lists could not all be emptied. Try again. | The Stop ignoring everything check stays open; a retry is safe. |
 
 `warn_` is reserved for runtime and log messages; the v1 UI has none.
 
@@ -1343,7 +1381,7 @@ For every translator:
 | `options_unaffiliated` | Not affiliated with or endorsed by Valve Corporation. Steam is a trademark of Valve Corporation. | Legal line; keep the names as they are. |
 | `options_unaffiliated_short` | Not affiliated with Valve. Nothing leaves your browser except lookups to Valve's store. | Popup footer. |
 | `options_all_settings` | All settings | Name and tooltip of the popup's gear to the full page. |
-| `options_back_to_steam` | Go back to Steam | The full page header's button back to the store tab the popup was opened on. |
+| `options_go_back` | Go back | The full page header's button back to the store tab the popup was opened on, after Lucide's `undo-2`. Neutral: that tab may not be a store page. |
 | `options_tabs_label` | Settings sections | Name of the tab list. |
 | `options_tab_general` | General | The first tab and its heading. |
 | `options_tabs_group_tags` | Tags | Caption over the tags' tabs, after General and a divider; `aria-hidden`. |
@@ -1361,7 +1399,24 @@ For every translator:
 | `options_backup_summary_history_other` | `$count$` checked games | Plural, other. |
 | `options_backup_restore_note` | Restoring replaces your settings and adds these games to your lists. Nothing already here is removed. | Under the check, before the buttons. |
 | `options_backup_confirm` | Restore | Applies the backup. |
-| `options_backup_cancel` | Cancel | Closes the check without changing anything. |
+| `options_backup_cancel` | Cancel | Closes a check without changing anything; the Reset card's checks use it too. |
+| `options_section_lookups` | Lookup results | Section heading. |
+| `options_lookups_help` | What Steam says about each game is kept on this device for up to `$days$` days, or `$hours$` hours when Steam gave no answer. Store pages then look it up again. | Help under the heading; both numbers come from the code. |
+| `options_lookups_count_one`, `_other` | Kept now: `$count$` game(s), `$unanswered$` (of them) with no answer. | The count line. |
+| `options_lookups_empty` | Nothing is kept now. | The count line with no stored results. |
+| `options_lookups_clear` | Clear lookup results | Removes every stored result at once. |
+| `options_lookups_recheck` | Check unknown games again | Removes the results Steam gave no answer for. |
+| `options_section_reset` | Reset | Section heading. |
+| `options_reset_help` | These cannot be undone. Download a backup first if you may want your settings or lists back. | Help under the heading. |
+| `options_reset_settings` | Reset all settings | Opens the reset check. |
+| `options_reset_settings_title` | Reset all settings? | Title of that check. |
+| `options_reset_settings_tags`, `_words`, `_order`, `_keep` | Every tag goes back to its defaults...; Chip texts and badge colors are cleared.; The tag order goes back to the default order.; Your language and your ignore lists stay. | The check's four lines. |
+| `options_reset_settings_confirm` | Reset | The check's primary button. |
+| `options_reset_lists` | Stop ignoring everything | Opens the lists check. |
+| `options_reset_lists_title` | Stop ignoring everything? | Title of that check. |
+| `options_reset_lists_games` | `$list$`: `$all$` for all tags, `$tags$` for one tag | The games line; developers and publishers use `options_backup_summary_list`. |
+| `options_reset_lists_keep` | Your settings stay. | The check's last line. |
+| `options_reset_lists_confirm` | Stop ignoring | The check's primary button. |
 
 ### `ext_`
 
