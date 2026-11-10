@@ -36,7 +36,7 @@ jobs:
           persist-credentials: false
       - uses: jdx/mise-action@f5be966e4a917d54244728e6a5fdcd1d93a35e6c # v5.2.6
         with:
-          version: 2026.10.15
+          version: 2026.10.25
           install_args: python gh
           cache: false
       - run: mise run release:validate
@@ -69,7 +69,7 @@ jobs:
           export_environment_variables: false
       - uses: jdx/mise-action@f5be966e4a917d54244728e6a5fdcd1d93a35e6c # v5.2.6
         with:
-          version: 2026.10.15
+          version: 2026.10.25
           install_args: python gh
           cache: false
       - run: mise run release:chrome
@@ -93,7 +93,7 @@ jobs:
           persist-credentials: false
       - uses: jdx/mise-action@f5be966e4a917d54244728e6a5fdcd1d93a35e6c # v5.2.6
         with:
-          version: 2026.10.15
+          version: 2026.10.25
           install_args: python gh node npm:web-ext
           cache: false
       - run: mise run release:amo
@@ -115,7 +115,7 @@ jobs:
           persist-credentials: false
       - uses: jdx/mise-action@f5be966e4a917d54244728e6a5fdcd1d93a35e6c # v5.2.6
         with:
-          version: 2026.10.15
+          version: 2026.10.25
           install_args: python gh
           cache: false
       - run: mise run release:latest
