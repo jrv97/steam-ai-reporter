@@ -704,6 +704,12 @@
   background: var(--tks-button-secondary-bg-hover);
 }
 
+/* A button that waits on a write stays in place, dimmed */
+.tks-button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
 /* Reset, Stop ignoring and Show in General: quiet text buttons that read as links, at the same
    target size as the other buttons */
 .tks-button[data-tks-variant="quiet"] {

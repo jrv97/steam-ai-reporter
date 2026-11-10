@@ -45,7 +45,8 @@ const ACTIONS = [
 type Action = (typeof ACTIONS)[number];
 
 /** The two resets: what each changes is listed in its check. */
-type Reset = "settings" | "lists";
+const RESETS = ["settings", "lists"] as const;
+type Reset = (typeof RESETS)[number];
 
 const SETTINGS_LINES = [
   "options_reset_settings_tags",
@@ -100,6 +101,8 @@ export function createResetCard(doc: Document, deps: ResetCardDeps): ActionCard 
 
   /** The check open now, whose opener takes focus back when it closes. */
   let open: Reset | undefined;
+  /** Whether a reset is writing; the card then takes no action. */
+  let busy = false;
 
   /** A list's line: its count, or that it could not be read. */
   function listLine(source: AllowSource, line: () => string): string {
@@ -165,15 +168,25 @@ export function createResetCard(doc: Document, deps: ResetCardDeps): ActionCard 
     const results = await Promise.allSettled(
       [deps.games, ...deps.creators].map((source) => source.clear()),
     );
-    await deps.onCleared();
-    return results.every((result) => result.status === "fulfilled");
+    const redrawn = await deps.onCleared().then(() => true, () => false);
+    return redrawn && results.every((result) => result.status === "fulfilled");
+  }
+
+  /** Disables both resets while one writes, so neither check can open or close under it. */
+  function hold(on: boolean): void {
+    busy = on;
+    for (const each of RESETS) {
+      openers[each].disabled = on;
+      confirms[each].disabled = on;
+    }
   }
 
   async function apply(reset: Reset): Promise<void> {
-    confirms[reset].disabled = true;
-    if (!(await run(reset))) {
+    hold(true);
+    const done = await run(reset);
+    hold(false);
+    if (!done) {
       // The check stays open, so the person can try again
-      confirms[reset].disabled = false;
       report(
         undefined,
         i18n.t(reset === "settings" ? "error_reset_settings" : "error_reset_lists"),
@@ -186,6 +199,9 @@ export function createResetCard(doc: Document, deps: ResetCardDeps): ActionCard 
 
   function handle(target: EventTarget | null): boolean {
     const action = actionOf(target, ACTION_ATTRIBUTE, ACTIONS);
+    if (action !== undefined && busy) {
+      return true;
+    }
     switch (action) {
       case undefined:
         return false;
