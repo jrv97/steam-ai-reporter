@@ -1,3 +1,0 @@
-kind: Fixed
-body: The settings page no longer shows a scrollbar when the open tab fits in the window. A long tab scrolls inside its panel while the header, the tab list and the footer stay in place.
-time: 2026-11-09T20:10:50.7744179+01:00

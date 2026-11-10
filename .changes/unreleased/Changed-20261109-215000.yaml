@@ -1,3 +1,0 @@
-kind: Changed
-body: The project moved to github.com/jrv97/tag-kit-for-steam. The bug report and feedback links point there, the store zips and the userscript files are named tag-kit-for-steam, and the userscript is named Tag Kit for Steam. Backups are saved as tag-kit-backup-YYYY-MM-DD.json, and backups saved by earlier versions no longer restore.
-time: 2026-11-09T21:50:00.000000+01:00
