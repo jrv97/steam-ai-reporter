@@ -9,7 +9,8 @@ import {
   rejectingDetector,
 } from "./fake-detector";
 import { fakeFileTransfer, fakeFileTransferHarness } from "./fake-file-transfer";
-import { fakeFetch, fakeHttp, timedHttp, withheldHttp } from "./fake-http";
+import { fakeFetch, fakeHttp, heldHttp, timedHttp, withheldHttp } from "./fake-http";
+import { fakeProgressSource, fakeTabPort } from "./fake-progress";
 import { fakeTabs } from "./fake-tabs";
 import { fixedClock } from "./fixed-clock";
 import { fakeGm, fakeWatch, faultyGm } from "./gm-fake";
@@ -27,6 +28,8 @@ export const fake = {
   http: fakeHttp,
   /** A `fetch` answering from the same routes with real `Response` objects. */
   fetch: fakeFetch,
+  /** An `Http` over routes whose requests answer one at a time, when the test says. */
+  heldHttp,
   /** A fake `Http` that also records when each request went out by a `Clock`. */
   timedHttp,
   /** An `Http` that withholds every request. */
@@ -37,6 +40,10 @@ export const fake = {
   faultyArea,
   /** A `storage.onChanged` for one storage area that a test fires by hand. */
   changes: fakeChanges,
+  /** A load progress source that a test sends progress through. */
+  progressSource: fakeProgressSource,
+  /** One end of a progress port that a test drives as the other end. */
+  tabPort: fakeTabPort,
   /** The tab calls, answering IDs such as `make.tabs()` and rejecting the calls in `fails`. */
   tabs: fakeTabs,
   /** A `GM_addValueChangeListener` that a test triggers by hand, per key. */

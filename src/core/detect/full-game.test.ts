@@ -49,6 +49,12 @@ async function demoAnswer(own: KindVerdicts, game: KindVerdicts): Promise<KindVe
 }
 
 detectorContract("createFullGameDetector", () => setup([]).detector);
+// Two fixture apps are demos of the third, and new apps are demos of a game nobody asked for
+detectorContract("createFullGameDetector over demos", () => {
+  const { noBlock } = make.fixture.app;
+  const inner = fake.detector((id) => id === noBlock ? FULL : demoOf(noBlock, NONE));
+  return createFullGameDetector(inner, logger);
+});
 
 describe("createFullGameDetector", () => {
   it.each(KIND_IDS)("keeps the demo's own %s and lends the game's other kinds", async (kind) => {

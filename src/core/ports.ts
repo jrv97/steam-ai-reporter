@@ -79,12 +79,20 @@ export interface SettingsSource {
 }
 
 /**
+ * Hears verdicts of a `detect` call as they land, before the call resolves. Each verdict is final:
+ * the resolved map holds an equal one for that ID.
+ */
+export type VerdictSink = (verdicts: ReadonlyMap<AppId, KindVerdicts>) => void;
+
+/**
  * One source of verdicts: GetItems, the HTML fallback, or a chain or decorator of them. Its
  * contract (tests/contracts/detector.contract.ts): it never rejects, and the result holds exactly
  * one `KindVerdicts` per distinct requested ID, with `unknown` for anything it could not settle.
+ * `sink`, when given, hears requested IDs zero or more times before the call resolves, each ID at
+ * most once and with the verdict the result holds for it; never after the call resolves.
  */
 export interface Detector {
-  detect(ids: readonly AppId[]): Promise<ReadonlyMap<AppId, KindVerdicts>>;
+  detect(ids: readonly AppId[], sink?: VerdictSink): Promise<ReadonlyMap<AppId, KindVerdicts>>;
 }
 
 /** A file the person picked: its name and size as the browser reports them, and its text. */

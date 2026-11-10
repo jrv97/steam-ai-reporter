@@ -69,7 +69,9 @@ describe("createBreaker", () => {
 
   it("opens on a 429 for the base pause plus jitter, then closes", async () => {
     const { breaker, clock, store, sink } = setup();
+    expect(breaker.pausedUntil()).toBeUndefined();
     await breaker.record(result({ status: 429 }));
+    expect(breaker.pausedUntil()).toBe(T0 + PAUSE);
     expect(await breaker.isOpen()).toBe(true);
     expect(await store.get([API_BREAKER_KEY])).toStrictEqual(
       new Map([[API_BREAKER_KEY, { until: T0 + PAUSE }]]),
@@ -81,6 +83,7 @@ describe("createBreaker", () => {
     clock.advance(PAUSE - 1);
     expect(await breaker.isOpen()).toBe(true);
     clock.advance(1);
+    expect(breaker.pausedUntil()).toBeUndefined();
     expect(await breaker.isOpen()).toBe(false);
     expect(await breaker.isOpen()).toBe(false);
     expect(sink.info).toHaveBeenCalledOnce();
@@ -106,7 +109,9 @@ describe("createBreaker", () => {
     const { breaker, options, clock } = setup();
     await breaker.record(result({ status: 429 }));
     const otherTab = createBreaker({ ...options, logger: fake.logger().logger });
+    expect(otherTab.pausedUntil()).toBeUndefined();
     expect(await otherTab.isOpen()).toBe(true);
+    expect(otherTab.pausedUntil()).toBe(T0 + PAUSE);
     clock.advance(PAUSE);
     expect(await otherTab.isOpen()).toBe(false);
   });

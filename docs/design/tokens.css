@@ -238,6 +238,15 @@
   /* Selected segment label (10.02:1). */
   --tks-segment-selected-fg: #ffffff;
 
+  /* Load strip */
+
+  /* Bar fill while tags load. */
+  --tks-load-fill: var(--tks-accent-500);
+  /* Bar fill once every game has an answer: muted, so it reads as settled. */
+  --tks-load-fill-done: var(--tks-accent-700);
+  /* Bar hatch while Steam's limit pauses lookups: stripes of subtle text and this grey. */
+  --tks-load-hatch: #5c6670;
+
   /* Shadows */
 
   /* Compact badge: an outer ring plus a soft drop that keeps the edge crisp over busy art. The

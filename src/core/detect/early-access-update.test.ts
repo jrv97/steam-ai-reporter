@@ -93,7 +93,7 @@ describe("withLastUpdate", () => {
     ],
     ["an unknown answer", { ...disclosed, earlyaccess: make.verdict.unknown() }, withTime],
     [
-      "a demo's lent disclosure of its full game",
+      "a demo's disclosure lent by its full game",
       { ...disclosed, earlyaccess: make.verdict.lent(own) },
       withTime,
     ],

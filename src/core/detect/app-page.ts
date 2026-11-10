@@ -91,22 +91,22 @@ export interface OpenPage {
 /**
  * The HTML detector: one request per app, one after another, except for the open page, which it
  * reads from the document. Spacing, the per-page budget and the breaker come from the `Http` it is
- * given (a throttling decorator) or from a chain around it.
+ * given (a throttling decorator) or from a chain around it. The sink hears each app once read.
  */
 export function createAppPageDetector(http: Http, open?: OpenPage): Detector {
   const parser = new DOMParser();
   const parse = (body: string, url: string): KindVerdicts =>
     parseAppPage(parser.parseFromString(body, "text/html"), url);
   return {
-    async detect(ids: readonly AppId[]): Promise<ReadonlyMap<AppId, KindVerdicts>> {
+    async detect(ids, sink) {
       const verdicts = new Map<AppId, KindVerdicts>();
       for (const id of new Set(ids)) {
-        if (id === open?.id) {
-          verdicts.set(id, open.verdicts);
-          continue;
-        }
         // Sequential on purpose: one request in flight (rule 13).
-        verdicts.set(id, verdictsOf(await http.get(appPageUrl(id)), parse));
+        const found = id === open?.id
+          ? open.verdicts
+          : verdictsOf(await http.get(appPageUrl(id)), parse);
+        verdicts.set(id, found);
+        sink?.(new Map([[id, found]]));
       }
       return verdicts;
     },

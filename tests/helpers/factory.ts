@@ -2,6 +2,7 @@ import type { KindId } from "../../src/core/kinds/id";
 import type { FacetId } from "../../src/core/kinds/kind";
 import type { KindSettings, TaggedFacets } from "../../src/core/kinds/kind-settings";
 import type { KindVerdicts } from "../../src/core/kinds/verdicts";
+import type { LoadProgress } from "../../src/core/progress";
 import {
   applyPatch,
   DEFAULT_SETTINGS,
@@ -93,6 +94,7 @@ import {
   freshChipText,
   freshClanId,
   freshColor,
+  freshCount,
   freshCreator,
   freshDuration,
   freshFileName,
@@ -142,6 +144,12 @@ import {
   verdictsWith,
 } from "./verdicts";
 
+/** A page's load progress with fresh counts, one game still loading; overrides win. */
+function loadProgress(overrides: Partial<LoadProgress> = {}): LoadProgress {
+  const total = freshCount();
+  return { total, answered: total - 1, unknown: 0, ...overrides };
+}
+
 /**
  * The only source of test data. Primitives come from one sequence, so each call gives a fresh,
  * unique value; builders take overrides for the fields a test cares about. Values bound to the
@@ -174,6 +182,8 @@ export const make = {
   duration: freshDuration,
   /** A fresh tag color in normal form. */
   color: freshColor,
+  /** A page's load progress with fresh counts, one game still loading; overrides win. */
+  progress: loadProgress,
   /** A fresh chip text that fits every chip text field. */
   chipText: freshChipText,
   /** Browser windows in CSS pixels, both inside the settings page's fixed frame. */

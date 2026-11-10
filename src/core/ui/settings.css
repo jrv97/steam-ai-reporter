@@ -333,6 +333,95 @@
   background: var(--tks-color-bg-panel);
 }
 
+/* The load strip under the popup's header and atop the dialog's tabs: a status line over a 4px
+   bar, one height in every state (rule 18). The message ends in an ellipsis; the count keeps its
+   width. */
+.tks-load {
+  /* The bar's filled share, 0 to 1, which the strip sets as it draws */
+  --tks-load-share: 0;
+  display: grid;
+  row-gap: calc(var(--tks-space-1) + var(--tks-space-0));
+  padding-block: var(--tks-space-2) calc(var(--tks-space-2) + var(--tks-space-0));
+  border-block: 1px solid var(--tks-color-divider);
+}
+
+/* In the dialog the tabs follow the strip */
+.tks-options[data-tks-view="tabs"] > .tks-load {
+  margin-block-end: var(--tks-space-2);
+}
+
+.tks-load-line {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--tks-space-2);
+  min-inline-size: 0;
+  block-size: var(--tks-leading-sm);
+  margin: 0;
+  color: var(--tks-color-text);
+  font-size: var(--tks-size-sm);
+  line-height: var(--tks-leading-sm);
+}
+
+.tks-load[data-tks-load="none"] .tks-load-line {
+  color: var(--tks-color-text-subtle);
+}
+
+.tks-load-message {
+  min-inline-size: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tks-load-message strong {
+  color: var(--tks-color-text-strong);
+  font-weight: var(--tks-weight-bold);
+  font-variant-numeric: tabular-nums;
+}
+
+.tks-load-count {
+  flex: none;
+  color: var(--tks-color-text-muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.tks-load-bar {
+  block-size: 4px;
+  overflow: hidden;
+  border-radius: var(--tks-radius-sm);
+  background: var(--tks-color-bg-sunken);
+}
+
+.tks-load-fill {
+  inline-size: calc(var(--tks-load-share) * 100%);
+  block-size: 100%;
+  border-radius: var(--tks-radius-sm);
+  background: var(--tks-load-fill);
+}
+
+.tks-load[data-tks-load="paused"] .tks-load-fill {
+  background: repeating-linear-gradient(
+    135deg,
+    var(--tks-color-text-subtle) 0 4px,
+    var(--tks-load-hatch) 4px 8px
+  );
+}
+
+.tks-load[data-tks-load="done"] .tks-load-fill {
+  background: var(--tks-load-fill-done);
+}
+
+@media (forced-colors: active) {
+  .tks-load-bar {
+    border: 1px solid CanvasText;
+  }
+
+  .tks-load-fill {
+    background: Highlight;
+  }
+}
+
 .tks-gear {
   display: inline-flex;
   flex: none;

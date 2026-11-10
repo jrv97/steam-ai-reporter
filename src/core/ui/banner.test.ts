@@ -322,7 +322,7 @@ describe("createBanner", () => {
   });
 });
 
-describe("the entries of the captured games", () => {
+describe("the captured games' entries", () => {
   it("leaves the short lines of a kind to Steam's own boxes and the hover card", () => {
     const { banner, root } = setup();
     banner.show(view(SEVERAL));
@@ -483,7 +483,7 @@ describe("the ignore menu", () => {
     ["nothing ignored", view(SEVERAL, { creators: [DEVELOPER] }), []],
     ["the game for all tags", silenced({ creators: [DEVELOPER] }), [MAIN, GAME_ROW]],
     [
-      "one tag of the game",
+      "one of the game's tags",
       view(withoutDrm(SEVERAL), { listed: SEVERAL_KINDS, ignored: ["drm"] }),
       [gameOption("drm")],
     ],
@@ -786,7 +786,7 @@ describe("ignoring from the menu", () => {
   it.each(
     [
       [
-        "checks a tag of the game",
+        "checks one of the game's tags",
         view(SEVERAL),
         ignoredDrm,
         gameOption("drm"),
@@ -795,7 +795,7 @@ describe("ignoring from the menu", () => {
         i18n.t("notice_marking_stopped_kind", drmHeading),
       ],
       [
-        "unchecks a tag of the game",
+        "unchecks one of the game's tags",
         ignoredDrm,
         view(SEVERAL),
         gameOption("drm"),
