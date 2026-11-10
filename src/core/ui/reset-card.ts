@@ -154,15 +154,24 @@ export function createResetCard(doc: Document, deps: ResetCardDeps): ActionCard 
     open = undefined;
   }
 
+  /**
+   * Applies the reset and says whether every write held. Every list settles and is drawn again
+   * before it answers, so a partial failure never leaves a stale view behind.
+   */
+  async function run(reset: Reset): Promise<boolean> {
+    if (reset === "settings") {
+      return deps.settings.patch(defaultsPatch()).then(() => true, () => false);
+    }
+    const results = await Promise.allSettled(
+      [deps.games, ...deps.creators].map((source) => source.clear()),
+    );
+    await deps.onCleared();
+    return results.every((result) => result.status === "fulfilled");
+  }
+
   async function apply(reset: Reset): Promise<void> {
     confirms[reset].disabled = true;
-    try {
-      if (reset === "settings") {
-        await deps.settings.patch(defaultsPatch());
-      } else {
-        await Promise.all([deps.games, ...deps.creators].map((source) => source.clear()));
-      }
-    } catch {
+    if (!(await run(reset))) {
       // The check stays open, so the person can try again
       confirms[reset].disabled = false;
       report(
@@ -172,9 +181,6 @@ export function createResetCard(doc: Document, deps: ResetCardDeps): ActionCard 
       return;
     }
     close();
-    if (reset === "lists") {
-      await deps.onCleared();
-    }
     report(i18n.t(reset === "settings" ? "notice_reset_settings_done" : "notice_reset_lists_done"));
   }
 

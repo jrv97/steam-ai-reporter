@@ -142,6 +142,17 @@ describe("the ignore lists reset", () => {
     expect(shown(".tks-card-status")).toStrictEqual([i18n.t("notice_reset_lists_done")]);
   });
 
+  it("keeps the check open with the error, and redraws the lists a failed write left", async () => {
+    const { root, store, lists, click, shown } = await setup();
+    await click("options_reset_lists");
+    await Promise.all([lists.games.clear(), lists.creators.developer.clear()]);
+    store.breakWrites();
+    await click("options_reset_lists_confirm");
+    expect(shown(".tks-field-error")).toStrictEqual([i18n.t("error_reset_lists")]);
+    expect(shown(".tks-confirm-title")).toHaveLength(1);
+    expect(root.querySelector(".tks-allow-name")).toBeNull();
+  });
+
   it("closes on Cancel, empties nothing and returns focus", async () => {
     const { lists, button, click, shown } = await setup();
     const before = await lists.games.list();
