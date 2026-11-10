@@ -38,16 +38,6 @@
   outline: none;
 }
 
-/* Title and button share a line in English; a longer title wraps first, then the button moves
-   under it, aligned to inline-end */
-.tks-banner-head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  column-gap: var(--tks-banner-gap);
-  row-gap: var(--tks-space-1);
-}
-
 .tks-banner-title {
   margin: 0;
   padding: 0;
@@ -56,7 +46,6 @@
   font: var(--tks-banner-title-font);
   letter-spacing: normal;
   text-transform: none;
-  flex: 1 1 12em;
   min-inline-size: 0;
 }
 
@@ -94,34 +83,7 @@
   overflow: hidden;
 }
 
-/* "Ignore this game": the store's outlined button, at least 24px tall */
-.tks-banner-action {
-  appearance: none;
-  display: inline-flex;
-  align-items: center;
-  max-inline-size: 100%;
-  margin: 0;
-  margin-inline-start: auto;
-  min-block-size: var(--tks-control-height-xs);
-  padding-block: var(--tks-banner-button-pad-block);
-  padding-inline: var(--tks-banner-button-pad-inline);
-  border: 1px solid var(--tks-banner-button-border);
-  border-radius: var(--tks-radius-sm);
-  background: transparent;
-  color: var(--tks-banner-button-fg);
-  font: var(--tks-banner-button-font);
-  text-align: start;
-  white-space: normal;
-  cursor: pointer;
-  flex: none;
-  transition: background-color var(--tks-duration-fast) var(--tks-ease);
-}
-
-.tks-banner-action:hover {
-  background: var(--tks-banner-button-bg-hover);
-}
-
-/* "Show full report" and "Undo": the store's underlined in-bubble links, as buttons */
+/* "Show full report": the store's underlined in-bubble link, as a button */
 .tks-banner-link {
   appearance: none;
   display: inline-flex;
@@ -145,11 +107,19 @@
   margin-block-start: var(--tks-space-0);
 }
 
-.tks-banner-action:focus-visible,
 .tks-banner-link:focus-visible,
-.tks-banner-creators-toggle:focus-visible {
+.tks-ignore-main:focus-visible,
+.tks-ignore-caret:focus-visible,
+.tks-ignore-group-head:focus-visible,
+.tks-ignore-option:focus-visible {
   outline: var(--tks-focus-width) solid var(--tks-focus-color);
   outline-offset: var(--tks-focus-offset);
+}
+
+/* Menu rows sit edge to edge, so their ring goes inside the row */
+.tks-ignore-group-head:focus-visible,
+.tks-ignore-option:focus-visible {
+  outline-offset: calc(-1 * var(--tks-focus-width));
 }
 
 .tks-banner-error {
@@ -158,73 +128,209 @@
   font: var(--tks-banner-meta-font);
 }
 
-/* A note for an ignored scope: the text and its Undo wrap inside their own boxes. In the full
-   banner it follows the entries; alone, it takes the store's DRM-notice geometry in neutral. */
+/* A note for an ignored scope. In the full banner it follows the entries; alone, it takes the
+   store's DRM-notice geometry in neutral. */
 .tks-banner-note {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--tks-banner-gap);
   margin: var(--tks-space-2) 0 0;
-}
-
-.tks-banner-ignored-text {
-  flex: 1 1 0;
-  min-inline-size: 0;
-}
-
-.tks-banner-note .tks-banner-link {
-  flex: 0 1 auto;
-  max-inline-size: 50%;
-}
-
-/* The closed section that ignores a developer or publisher: a link-style summary, then a row for
-   each name and role with a link-style button for each tag and one for all tags */
-.tks-banner-creators {
-  margin-block-start: var(--tks-space-2);
-}
-
-.tks-banner-creators-toggle {
-  display: list-item;
-  min-block-size: 24px;
-  color: var(--tks-banner-link-color);
-  text-decoration: underline;
-  cursor: pointer;
-}
-
-.tks-banner-creator-list {
-  margin: var(--tks-space-1) 0 0;
-  padding: 0;
-  list-style: none;
-}
-
-.tks-banner-creator {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--tks-space-1) var(--tks-banner-gap);
-  padding-block: var(--tks-space-1);
-}
-
-.tks-banner-creator-label {
-  flex: 1 1 12em;
-  min-inline-size: 0;
-}
-
-.tks-banner-creator-role {
-  color: var(--tks-color-text-muted);
-}
-
-.tks-banner-creator-actions {
-  display: inline-flex;
-  flex-wrap: wrap;
-  gap: var(--tks-space-1) var(--tks-banner-gap);
 }
 
 .tks-banner-foot {
   display: flex;
   justify-content: flex-end;
   margin-block-start: var(--tks-space-2);
+}
+
+/* The ignore menu (ADR 0026): the store's split Ignore button and its dropdown */
+.tks-ignore {
+  position: relative;
+}
+
+.tks-ignore-split {
+  display: flex;
+}
+
+/* Both halves are the store's outlined buttons, at least 24px tall, joined in the middle */
+.tks-ignore-main,
+.tks-ignore-caret {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  margin: 0;
+  min-block-size: var(--tks-control-height-xs);
+  padding-block: var(--tks-banner-button-pad-block);
+  padding-inline: var(--tks-banner-button-pad-inline);
+  border: 1px solid var(--tks-banner-button-border);
+  background: transparent;
+  color: var(--tks-banner-button-fg);
+  font: var(--tks-banner-button-font);
+  cursor: pointer;
+  transition: background-color var(--tks-duration-fast) var(--tks-ease);
+}
+
+.tks-ignore-main {
+  gap: var(--tks-space-1);
+  border-start-start-radius: var(--tks-radius-sm);
+  border-end-start-radius: var(--tks-radius-sm);
+}
+
+.tks-ignore-caret {
+  min-inline-size: var(--tks-control-height-xs);
+  justify-content: center;
+  padding-inline: 0;
+  border-inline-start: 0;
+  border-start-end-radius: var(--tks-radius-sm);
+  border-end-end-radius: var(--tks-radius-sm);
+}
+
+.tks-ignore-main:hover,
+.tks-ignore-caret:hover,
+.tks-ignore-caret[aria-expanded="true"] {
+  background: var(--tks-banner-button-bg-hover);
+}
+
+/* The store's tick before "Ignored" */
+.tks-ignore-main[data-tks-ignored]::before {
+  content: "";
+  inline-size: 8px;
+  block-size: 4px;
+  margin-block-end: 3px;
+  border-block-end: 2px solid currentcolor;
+  border-inline-start: 2px solid currentcolor;
+  transform: rotate(-45deg);
+}
+
+.tks-ignore-arrow {
+  inline-size: 0;
+  block-size: 0;
+  border-inline: 4px solid transparent;
+  border-block-start: 5px solid currentcolor;
+}
+
+.tks-ignore-flyout {
+  position: absolute;
+  inset-block-start: calc(100% + var(--tks-space-1));
+  inset-inline-end: 0;
+  z-index: 35;
+  box-sizing: border-box;
+  inline-size: var(--tks-menu-width);
+  max-inline-size: calc(100vw - 2 * var(--tks-space-4));
+  max-block-size: 70vh;
+  overflow-y: auto;
+  background:
+    var(--tks-menu-glow),
+    var(--tks-menu-bg);
+  box-shadow: var(--tks-menu-shadow);
+  font: var(--tks-weight-regular) var(--tks-size-sm) / var(--tks-leading-xs) var(--tks-font-page);
+}
+
+.tks-ignore-group-head,
+.tks-ignore-option {
+  appearance: none;
+  display: flex;
+  box-sizing: border-box;
+  inline-size: 100%;
+  margin: 0;
+  border: 0;
+  background: transparent;
+  color: var(--tks-menu-title);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+/* A group's head: the title size of an option, with a chevron that turns when open */
+.tks-ignore-group-head {
+  align-items: center;
+  gap: var(--tks-space-2);
+  padding: var(--tks-space-2) var(--tks-space-3);
+  font-size: var(--tks-size-lg);
+  line-height: 17px;
+}
+
+.tks-ignore-group-head::before {
+  content: "";
+  inline-size: 6px;
+  block-size: 6px;
+  border-block-end: 2px solid var(--tks-menu-box);
+  border-inline-end: 2px solid var(--tks-menu-box);
+  transform: rotate(-45deg);
+  transition: transform var(--tks-duration-fast) var(--tks-ease);
+}
+
+.tks-ignore-group-head:dir(rtl)::before {
+  transform: rotate(135deg);
+}
+
+.tks-ignore-group-head[aria-expanded="true"]::before {
+  transform: rotate(45deg);
+}
+
+.tks-ignore-section + .tks-ignore-section {
+  border-block-start: 1px solid var(--tks-menu-item-bg-hover);
+}
+
+.tks-ignore-creator-name {
+  display: block;
+  padding: var(--tks-space-1) var(--tks-space-3);
+  color: var(--tks-menu-subtitle);
+}
+
+/* An option: the store's 16px box, then the title over its muted line */
+.tks-ignore-option {
+  align-items: flex-start;
+  gap: var(--tks-space-1);
+  padding: var(--tks-space-3);
+}
+
+.tks-ignore-group-head:hover,
+.tks-ignore-group-head:focus,
+.tks-ignore-option:hover,
+.tks-ignore-option:focus {
+  background: var(--tks-menu-item-bg-hover);
+}
+
+.tks-ignore-box {
+  position: relative;
+  flex: none;
+  box-sizing: border-box;
+  inline-size: 16px;
+  block-size: 16px;
+  margin-inline-end: var(--tks-space-0);
+  border: 1px solid var(--tks-menu-box);
+  border-radius: var(--tks-radius-sm);
+}
+
+.tks-ignore-option[aria-checked="true"] .tks-ignore-box::after {
+  content: "";
+  position: absolute;
+  inset-block-start: 3px;
+  inset-inline-start: 3px;
+  inline-size: 7px;
+  block-size: 3px;
+  border-block-end: 2px solid var(--tks-menu-title);
+  border-inline-start: 2px solid var(--tks-menu-title);
+  transform: rotate(-45deg);
+}
+
+.tks-ignore-label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--tks-space-1);
+  min-inline-size: 0;
+}
+
+.tks-ignore-title {
+  font-size: var(--tks-size-lg);
+  line-height: 17px;
+}
+
+.tks-ignore-subtitle {
+  color: var(--tks-menu-subtitle);
+}
+
+.tks-ignore-option:hover .tks-ignore-subtitle,
+.tks-ignore-option:focus .tks-ignore-subtitle {
+  color: var(--tks-menu-subtitle-hover);
 }
 
 .tks-banner[data-tks-variant="ignored"] {
@@ -244,9 +350,19 @@
   margin-block-start: var(--tks-space-1);
 }
 
-/* The wash disappears in forced colors; an edge keeps the banner a distinct region */
+.tks-banner[data-tks-variant="ignored"] .tks-banner-foot {
+  margin-block-start: var(--tks-space-1);
+}
+
+/* The wash disappears in forced colors; an edge keeps the banner and the menu distinct */
 @media (forced-colors: active) {
-  .tks-banner {
+  .tks-banner,
+  .tks-ignore-flyout {
     border: 1px solid CanvasText;
+  }
+
+  .tks-ignore-option[aria-checked="true"] .tks-ignore-box::after,
+  .tks-ignore-main[data-tks-ignored]::before {
+    border-color: CanvasText;
   }
 }

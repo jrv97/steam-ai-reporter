@@ -455,19 +455,55 @@
   },
   "banner_ignore": {
     "message": "Ignorar este juego",
-    "description": "Button on the notice that stops every tag and this notice for one game, in this extension only. The store has its own Ignore button; this one does not touch it."
+    "description": "Title of the first option in the ignore menu, under no heading, that stops every tag and this notice for one game, in this extension only. The store has its own Ignore button; this one does not touch it. Also names the action in announcements."
   },
-  "banner_ignore_kind": {
-    "message": "Ignorar etiqueta para este juego",
-    "description": "Button on one kind's entry in the notice. It stops that kind's badge and entry for one game, in this extension only; the game's other tags stay."
+  "banner_menu_ignore": {
+    "message": "Ignorar etiquetas para este juego",
+    "description": "Main half of the split button at the foot of the notice. It ignores every tag on this game and its DLC, in this extension only; Steam's own Ignore list is not touched. Hovering or clicking the arrow beside it opens the ignore menu."
+  },
+  "banner_menu_ignored": {
+    "message": "Dejar de ignorar etiquetas para este juego",
+    "description": "The same button once the game is ignored for every tag, after a tick. It names what pressing it does: stop ignoring the game for every tag."
+  },
+  "banner_menu_label": {
+    "message": "Opciones de ignorar",
+    "description": "Accessible name of the arrow beside the Ignore button, which opens the ignore menu. Worded like the alt text of Steam's own arrow."
+  },
+  "banner_menu_group_developers": {
+    "message": "Desarrolladores",
+    "description": "Heading of the ignore menu's group that lists the game's developers, each with options that ignore it."
+  },
+  "banner_menu_group_publishers": {
+    "message": "Distribuidores",
+    "description": "Heading of the ignore menu's group that lists the game's publishers, each with options that ignore it."
+  },
+  "banner_menu_group_tags": {
+    "message": "Etiquetas",
+    "description": "Heading of the ignore menu's group with one option per tag this extension shows for the game. These are the extension's tags, not Steam's user tags."
+  },
+  "banner_menu_game_note": {
+    "message": "Todas las etiquetas de este juego y su contenido descargable",
+    "description": "Muted line under \"Ignore this game\" in the ignore menu: what the option covers."
+  },
+  "banner_menu_all_tags": {
+    "message": "Todas las etiquetas",
+    "description": "Title of the option under a developer's or publisher's name in the ignore menu that ignores it for every tag."
+  },
+  "banner_menu_developer_all_note": {
+    "message": "En todos los juegos que desarrolla",
+    "description": "Muted line under \"All tags\" for a developer in the ignore menu."
+  },
+  "banner_menu_publisher_all_note": {
+    "message": "En todos los juegos que distribuye",
+    "description": "Muted line under \"All tags\" for a publisher in the ignore menu."
   },
   "banner_ignored": {
     "message": "Juego ignorado",
-    "description": "Replaces the notice after \"Ignore this game\"."
+    "description": "Note on the notice while the game is ignored for every tag. Unchecking the option in the ignore menu undoes it."
   },
   "banner_ignored_kind": {
     "message": "Etiqueta ignorada para este juego: $heading$",
-    "description": "Replaces one kind's entry in the notice after \"Ignore tag for this game\". $heading$ is Steam's line for the kind.",
+    "description": "Note on the notice while the game is ignored for one tag, in place of that tag's entry. $heading$ is Steam's line for the kind. Unchecking the tag in the ignore menu undoes it.",
     "placeholders": {
       "heading": {
         "content": "$1",
@@ -477,7 +513,7 @@
   },
   "banner_ignored_creator": {
     "message": "Juegos de $name$ ($role$) ignorados",
-    "description": "Note on the notice, with an Undo button, once a developer or publisher is ignored for every tag. $name$ is the name Steam shows, untranslated, and $role$ is developer or publisher.",
+    "description": "Note on the notice once a developer or publisher is ignored for every tag. $name$ is the name Steam shows, untranslated, and $role$ is developer or publisher.",
     "placeholders": {
       "name": {
         "content": "$1",
@@ -491,7 +527,7 @@
   },
   "banner_ignored_creator_kind": {
     "message": "Ignorado para los juegos de $name$ ($role$): $heading$",
-    "description": "Note on the notice, with an Undo button, once a developer or publisher is ignored for one tag. $name$ is the name Steam shows, untranslated, $role$ is developer or publisher and $heading$ is Steam's line for the tag.",
+    "description": "Note on the notice once a developer or publisher is ignored for one tag. $name$ is the name Steam shows, untranslated, $role$ is developer or publisher and $heading$ is Steam's line for the tag.",
     "placeholders": {
       "name": {
         "content": "$1",
@@ -538,10 +574,6 @@
         "example": "Uses Kernel Level Anti-Cheat"
       }
     }
-  },
-  "banner_undo": {
-    "message": "Deshacer",
-    "description": "Reverses \"Ignore this game\"."
   },
   "notice_list_hidden_one": {
     "message": "Tag Kit ha ocultado $count$ título según tu configuración.",
@@ -605,7 +637,7 @@
   },
   "notice_marking_stopped_kind": {
     "message": "Este juego será ignorado para $heading$",
-    "description": "Screen reader announcement after \"Ignore tag for this game\". $heading$ is Steam's line for the tag.",
+    "description": "Screen reader announcement after a tag is checked for this game in the ignore menu. $heading$ is Steam's line for the tag.",
     "placeholders": {
       "heading": {
         "content": "$1",
@@ -615,11 +647,11 @@
   },
   "notice_marking_restored": {
     "message": "Este juego ya no será ignorado",
-    "description": "Screen reader announcement after \"Undo\" or \"Stop ignoring\"."
+    "description": "Screen reader announcement after unchecking it in the ignore menu or \"Stop ignoring\"."
   },
   "notice_marking_restored_kind": {
     "message": "Este juego ya no será ignorado para $heading$",
-    "description": "Screen reader announcement after \"Undo\" or \"Stop ignoring\" for one tag. $heading$ is Steam's line for the tag.",
+    "description": "Screen reader announcement after unchecking it in the ignore menu or \"Stop ignoring\" for one tag. $heading$ is Steam's line for the tag.",
     "placeholders": {
       "heading": {
         "content": "$1",
@@ -641,7 +673,7 @@
   },
   "error_allow_list_save": {
     "message": "No se pudo actualizar este juego. Inténtalo de nuevo.",
-    "description": "After \"Ignore this game\", \"Undo\" or \"Stop ignoring\" fails to save."
+    "description": "After \"Ignore this game\", unchecking it in the ignore menu or \"Stop ignoring\" fails to save."
   },
   "error_allow_list_load": {
     "message": "No se pudieron cargar los juegos que ignoraste. Inténtalo más tarde.",
@@ -896,14 +928,8 @@
     }
   },
   "options_allow_empty": {
-    "message": "Ninguno aún. Usa «$action$» en la página de un juego.",
-    "description": "Shown in a card of ignored items when it lists nothing. $action$ is the label of the button that ignores: \"Ignore this game\" for all tags, \"Ignore tag for this game\" for one tag.",
-    "placeholders": {
-      "action": {
-        "content": "$1",
-        "example": "Ignorar este juego"
-      }
-    }
+    "message": "Ninguno aún. Usa el menú Ignorar en la página de un juego.",
+    "description": "Shown in a card of ignored items for all tags when it lists nothing. The ignore menu opens from the arrow beside \"Ignore tags for this game\" at the foot of the notice on a game page."
   },
   "options_section_allow_developers": {
     "message": "Desarrolladores que ignoraste",
@@ -923,15 +949,15 @@
   },
   "banner_role_developer": {
     "message": "Desarrollador",
-    "description": "A game's developer as a role label: a row in the notice that ignores a developer or publisher, and in parentheses after the name in sentences about it."
+    "description": "A game's developer as a role label: in parentheses after the name in sentences about it."
   },
   "banner_role_publisher": {
     "message": "Distribuidor",
-    "description": "A game's publisher as a role label: a row in the notice that ignores a developer or publisher, and in parentheses after the name in sentences about it."
+    "description": "A game's publisher as a role label: in parentheses after the name in sentences about it."
   },
   "notice_creator_restored": {
     "message": "$name$ ($role$) ya no se ignora",
-    "description": "Screen reader announcement after \"Undo\" or \"Stop ignoring\" on a developer or publisher. $name$ is the name Steam shows, untranslated, and $role$ is developer or publisher.",
+    "description": "Screen reader announcement after unchecking it in the ignore menu or \"Stop ignoring\" on a developer or publisher. $name$ is the name Steam shows, untranslated, and $role$ is developer or publisher.",
     "placeholders": {
       "name": {
         "content": "$1",
@@ -945,7 +971,7 @@
   },
   "notice_creator_restored_kind": {
     "message": "$name$ ($role$) ya no se ignora para $heading$",
-    "description": "Screen reader announcement after \"Undo\" or \"Stop ignoring\" on a developer or publisher for one tag. $name$ is the name Steam shows, untranslated, $role$ is developer or publisher and $heading$ is Steam's line for the tag.",
+    "description": "Screen reader announcement after unchecking it in the ignore menu or \"Stop ignoring\" on a developer or publisher for one tag. $name$ is the name Steam shows, untranslated, $role$ is developer or publisher and $heading$ is Steam's line for the tag.",
     "placeholders": {
       "name": {
         "content": "$1",
@@ -960,24 +986,6 @@
         "example": "Uses Kernel Level Anti-Cheat"
       }
     }
-  },
-  "banner_creators_toggle": {
-    "message": "Ignorar a un desarrollador o distribuidor",
-    "description": "Label of the closed section at the foot of the notice that lists the game's developers and publishers, each with buttons that ignore it in this extension only. The settings name it when the list of ignored developers or publishers is empty."
-  },
-  "banner_ignore_creator_kind": {
-    "message": "Ignorar $chip$",
-    "description": "Button in the closed section of the notice that ignores one developer or publisher for one tag, in this extension only. $chip$ is the tag's short label. A screen reader adds the name and role of the developer or publisher after it.",
-    "placeholders": {
-      "chip": {
-        "content": "$1",
-        "example": "KLAC"
-      }
-    }
-  },
-  "banner_ignore_creator_all": {
-    "message": "Ignorar todas las etiquetas",
-    "description": "Button in the closed section of the notice that ignores one developer or publisher for every tag, in this extension only. A screen reader adds the name and role of the developer or publisher after it."
   },
   "options_section_backup": {
     "message": "Copia de seguridad",
@@ -1212,6 +1220,10 @@
   "options_tabs_group_tags": {
     "message": "Etiquetas",
     "description": "Small caption in the settings tab list, under General and a divider, over the tabs of the tags. Decoration only; screen readers skip it. One word."
+  },
+  "options_allow_empty_kind": {
+    "message": "Ninguno aún. Usa el menú Ignorar en la página de un juego. Muestra esta etiqueta mientras su entrada en el aviso está activada.",
+    "description": "Shown in the card of games ignored for one tag when it lists nothing. The ignore menu on a game page lists a tag only while that tag's banner switch, on this same tab, is on."
   },
   "options_allow_kind_title": {
     "message": "Ignorado para esta etiqueta",

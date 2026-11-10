@@ -6,6 +6,7 @@ import {
   toCreatorKey,
 } from "../creator";
 import type { BareMessageKey } from "../i18n/t";
+import type { KindId } from "../kinds/id";
 import type { ChipWords } from "../kinds/kind-settings";
 import { KIND_BY_ID } from "../kinds/registry";
 import type { AnyDisclosed } from "../kinds/verdicts";
@@ -13,6 +14,21 @@ import type { MessageCatalog } from "../ports";
 import { ALLOW_ALL, type AllowScope, toAllowScope } from "../settings/allow-data";
 import { announce, POLITE } from "./announce";
 import { ROLE_LABELS } from "./creator-roles";
+import {
+  buildIgnoreMenu,
+  CREATOR_ATTRIBUTE,
+  GROUP_ATTRIBUTE,
+  MENU_ACTIONS,
+  MENU_BUTTON_ID,
+  MENU_GROUPS,
+  MENU_ID,
+  type MenuCreator,
+  type MenuGroup,
+  nextItem,
+  OPEN_GROUPS,
+  ROLE_ATTRIBUTE,
+  visibleItems,
+} from "./ignore-menu";
 import { KIND_ATTRIBUTE } from "./kind-attributes";
 import { entryName, fromValve, fullGameLine, type KindDetail, kindDetails } from "./kind-details";
 import { normalizeBreaks } from "./notes";
@@ -24,7 +40,7 @@ export const BANNER_ID = "tks-banner";
 /** The store's left description column; the banner goes first in it, above the purchase box. */
 const COLUMN_SELECTOR = ".game_description_column";
 
-/** What the banner's buttons do outside the banner. Each rejects when storage fails. */
+/** What the banner's ignore menu does outside the banner. Each rejects when storage fails. */
 export interface BannerActions {
   /** Ignores the game in the scope: for one kind, or for all kinds. */
   ignore(scope: AllowScope): Promise<void>;
@@ -44,12 +60,7 @@ export interface BannerOptions {
 }
 
 /** One developer or publisher of the game, with the scopes it is ignored in for its role. */
-export interface BannerCreator {
-  readonly role: CreatorRole;
-  readonly creator: Creator;
-  /** Each scope with the key that is on the list, which Undo removes. */
-  readonly ignored: readonly { readonly scope: AllowScope; readonly key: CreatorKey; }[];
-}
+export type BannerCreator = MenuCreator;
 
 /** A developer or publisher ignored in a scope this page would otherwise show. */
 export interface CreatorNote {
@@ -61,38 +72,49 @@ export interface CreatorNote {
 
 /** What the banner shows for the game. */
 export interface BannerView {
-  /** The disclosed kinds listed in full, in registry order. */
+  /** The disclosed kinds listed in full, in the tag order. */
   readonly shown: readonly AnyDisclosed[];
-  /** The scopes the game is ignored in that the banner notes with an Undo. */
+  /** Every kind the banner lists for the game, ignored or not, in the tag order. */
+  readonly listed: readonly KindId[];
+  /**
+   * The scopes the game is ignored in, among all tags and the listed kinds. The banner notes all
+   * tags alone when it is there, else each kind.
+   */
   readonly ignored: readonly AllowScope[];
   /** The game's developers and publishers, one row per name and role. */
   readonly creators: readonly BannerCreator[];
-  /** The notes, with an Undo, for the creators ignored in a scope the page would show. */
+  /** The notes for the creators ignored in a scope the page would show. */
   readonly creatorNotes: readonly CreatorNote[];
-  /** The person's chip text, which names a tag on its Ignore button in a creator's row. */
+  /** The person's chip text, which names a tag's options in the menu. */
   readonly words?: ChipWords;
 }
 
 export interface Banner {
   /** `div.tks-banner-host`, the light-DOM element that holds the shadow root. */
   readonly host: HTMLElement;
-  /** Shows the entries and the notes. Same view: no change. */
+  /** Shows the entries, the notes and the menu. Same view: no change. */
   show(view: BannerView): void;
+  /** Closes the menu and takes the banner off the page; `show` and `placeBanner` bring it back. */
+  remove(): void;
 }
 
-/** Name the role and the key of the creator a button acts on. */
-const ROLE_ATTRIBUTE = "data-tks-role";
-const CREATOR_ATTRIBUTE = "data-tks-creator";
-
-/** What a row and a note of a creator share. */
-type BannerCreatorRef = Pick<BannerCreator, "role" | "creator">;
-
-const ACTIONS = ["ignore", "undo", "toggle", "ignore-creator", "undo-creator"] as const;
+const ACTIONS = ["toggle", ...MENU_ACTIONS] as const;
+/** How long a menu opened by hover stays open after the pointer leaves the button and menu. */
+export const HOVER_CLOSE_MS = 300;
+const SPLIT_SELECTOR = ".tks-ignore";
 
 type Action = (typeof ACTIONS)[number];
 
 function parseAction(value: string | null): Action | undefined {
   return ACTIONS.find((action) => action === value);
+}
+
+function parseGroup(value: string | null): MenuGroup | undefined {
+  return MENU_GROUPS.find((group) => group === value);
+}
+
+function parseRole(value: string | null): CreatorRole | undefined {
+  return CREATOR_ROLES.find((role) => role === value);
 }
 
 function defaultFrame(doc: Document): (callback: () => void) => void {
@@ -131,10 +153,13 @@ function rowSignature(row: BannerCreator): string {
   return [row.role, row.creator.key, ...ignored].join("|");
 }
 
+function sameList<T>(a: readonly T[], b: readonly T[]): boolean {
+  return a.length === b.length && a.every((each, index) => each === b[index]);
+}
+
 /** Whether two lists hold the same creators in the same order, with the same ignored scopes. */
 function sameCreators(a: readonly BannerCreator[], b: readonly BannerCreator[]): boolean {
-  const other = b.map(rowSignature);
-  return a.length === b.length && a.every((row, index) => rowSignature(row) === other[index]);
+  return sameList(a.map(rowSignature), b.map(rowSignature));
 }
 
 function sameNotes(a: readonly CreatorNote[], b: readonly CreatorNote[]): boolean {
@@ -146,22 +171,21 @@ function sameNotes(a: readonly CreatorNote[], b: readonly CreatorNote[]): boolea
 }
 
 function sameView(a: BannerView, b: BannerView): boolean {
-  return a.shown.length === b.shown.length
-    && a.shown.every((verdict, index) => verdict === b.shown[index])
-    && a.ignored.length === b.ignored.length
-    && a.ignored.every((scope, index) => scope === b.ignored[index])
-    && a.words === b.words && sameCreators(a.creators, b.creators)
-    && sameNotes(a.creatorNotes, b.creatorNotes);
+  return sameList(a.shown, b.shown) && sameList(a.listed, b.listed)
+    && sameList(a.ignored, b.ignored) && a.words === b.words
+    && sameCreators(a.creators, b.creators) && sameNotes(a.creatorNotes, b.creatorNotes);
 }
 
-function parseRole(value: string | null): CreatorRole | undefined {
-  return CREATOR_ROLES.find((role) => role === value);
+/** The scopes the banner notes: all tags alone when the game is ignored for them. */
+function notedScopes(ignored: readonly AllowScope[]): readonly AllowScope[] {
+  return ignored.includes(ALLOW_ALL) ? [ALLOW_ALL] : ignored;
 }
 
 /**
  * The app page banner, in a shadow root so store CSS cannot reach it. It lists each disclosed kind
- * as Steam's line with an ignore button; the AI kind adds the developer's text, set through
- * `textContent`. An ignored scope becomes a note with Undo; one delegated listener serves clicks.
+ * by Steam's line; the AI kind adds the developer's text, set through `textContent`. An ignored
+ * scope becomes a note, and one menu holds every ignore (ADR 0026). Delegated listeners on the
+ * shadow root serve every control.
  */
 export function createBanner(
   doc: Document,
@@ -185,8 +209,12 @@ export function createBanner(
 
   let shown: BannerView | undefined;
   let pending = false;
-  /** Whether the creators section is open; it survives a redraw but not a reload. */
-  let creatorsOpen = false;
+  /** Whether the menu is open and which groups are; both survive a redraw but not a reload. */
+  let menuOpen = false;
+  const groupsOpen = new Set<MenuGroup>(OPEN_GROUPS);
+  /** Whether hover opened the menu, which then closes when the pointer leaves it. */
+  let hovered = false;
+  let leaving: ReturnType<typeof setTimeout> | undefined;
 
   function element<K extends keyof HTMLElementTagNameMap>(
     tag: K,
@@ -201,33 +229,10 @@ export function createBanner(
     return node;
   }
 
-  function button(
-    className: string,
-    action: Action,
-    label: string,
-    scope?: AllowScope,
-  ): HTMLButtonElement {
+  function button(className: string, action: Action, label: string): HTMLButtonElement {
     const node = element("button", className, label);
     node.type = "button";
     node.setAttribute("data-tks-action", action);
-    if (scope !== undefined) {
-      node.setAttribute("data-tks-scope", scope);
-    }
-    return node;
-  }
-
-  /** A button that acts on one developer or publisher, named by its role and key. */
-  function creatorButton(
-    className: string,
-    action: Action,
-    label: string,
-    role: CreatorRole,
-    key: CreatorKey,
-    scope: AllowScope,
-  ): HTMLButtonElement {
-    const node = button(className, action, label, scope);
-    node.setAttribute(ROLE_ATTRIBUTE, role);
-    node.setAttribute(CREATOR_ATTRIBUTE, key);
     return node;
   }
 
@@ -277,26 +282,14 @@ export function createBanner(
   }
 
   /**
-   * One kind: Steam's line as the heading and its own ignore button, a line on a demo's page when
-   * the full game declared it, then the developer's text.
+   * One kind: Steam's line as the heading, a line on a demo's page when the full game declared
+   * it, then the developer's text.
    */
   function buildEntry(verdict: AnyDisclosed): HTMLElement {
     const entry = element("div", "tks-banner-entry");
-    const titleId = partId(verdict.kind, "title");
-    const ignoreId = partId(verdict.kind, "ignore");
     const title = element("h2", "tks-banner-title", entryName(i18n, verdict));
-    title.id = titleId;
-    const ignore = button(
-      "tks-banner-action",
-      "ignore",
-      i18n.t("banner_ignore_kind"),
-      verdict.kind,
-    );
-    ignore.id = ignoreId;
-    ignore.setAttribute("aria-labelledby", [ignoreId, titleId].join(" "));
-    const head = element("div", "tks-banner-head");
-    head.append(title, ignore);
-    entry.append(head);
+    title.id = partId(verdict.kind, "title");
+    entry.append(title);
     if (verdict.fullGame === true) {
       entry.append(element("p", "tks-banner-full-game", i18n.t(fullGameLine(verdict))));
     }
@@ -313,18 +306,7 @@ export function createBanner(
       : i18n.t("banner_ignored_kind", { heading: i18n.t(KIND_BY_ID[scope].messages.heading) });
   }
 
-  function buildNote(scope: AllowScope): HTMLElement {
-    const note = element("p", "tks-banner-note");
-    const text = element("span", "tks-banner-ignored-text", noteText(scope));
-    text.id = partId(scope, "note");
-    const undo = button("tks-banner-link", "undo", i18n.t("banner_undo"), scope);
-    undo.id = partId(scope, "undo");
-    undo.setAttribute("aria-labelledby", [undo.id, text.id].join(" "));
-    note.append(text, undo);
-    return note;
-  }
-
-  /** The creator's name and role, for a label or a note: "Valve (Developer)" is two arguments. */
+  /** The creator's name and role, for a note or an announcement. */
   function nameAndRole(role: CreatorRole, creator: Creator): { name: string; role: string; } {
     return { name: creator.name, role: i18n.t(ROLE_LABELS[role]) };
   }
@@ -340,88 +322,21 @@ export function createBanner(
       });
   }
 
-  function buildCreatorNote(note: CreatorNote, index: number): HTMLElement {
-    const node = element("p", "tks-banner-note");
-    const id = partId(`creator${String(index)}`, "note");
-    const text = element("span", "tks-banner-ignored-text", creatorNoteText(note));
-    text.id = id;
-    const undo = creatorButton(
-      "tks-banner-link",
-      "undo-creator",
-      i18n.t("banner_undo"),
-      note.role,
-      note.key,
-      note.scope,
-    );
-    undo.id = partId(`creator${String(index)}`, "undo");
-    undo.setAttribute("aria-labelledby", [undo.id, id].join(" "));
-    node.append(text, undo);
-    return node;
-  }
-
-  /** One row per developer or publisher: a button for each shown tag it is not ignored for. */
-  function buildCreatorRow(row: BannerCreator, index: number, view: BannerView): HTMLElement {
-    const item = element("li", "tks-banner-creator");
-    const who = nameAndRole(row.role, row.creator);
-    const label = element("span", "tks-banner-creator-label");
-    label.append(
-      element("span", "tks-banner-creator-name", who.name),
-      " ",
-      element("span", "tks-banner-creator-role", who.role),
-    );
-    label.id = partId(`row${String(index)}`, "label");
-    const actions = element("span", "tks-banner-creator-actions");
-    const ignoredIn = new Set(row.ignored.map((each) => each.scope));
-    const choices: AllowScope[] = view.shown.map((verdict) => verdict.kind).filter((kind) =>
-      !ignoredIn.has(kind)
-    );
-    if (!ignoredIn.has(ALLOW_ALL)) {
-      choices.push(ALLOW_ALL);
-    }
-    for (const scope of choices) {
-      const text = scope === ALLOW_ALL
-        ? i18n.t("banner_ignore_creator_all")
-        : i18n.t("banner_ignore_creator_kind", {
-          chip: view.words?.[scope]?.chip ?? i18n.t(KIND_BY_ID[scope].messages.chip),
-        });
-      const choice = creatorButton(
-        "tks-banner-link",
-        "ignore-creator",
-        text,
-        row.role,
-        row.creator.key,
-        scope,
-      );
-      choice.id = partId(`row${String(index)}`, `ignore-${scope}`);
-      choice.setAttribute("aria-labelledby", [choice.id, label.id].join(" "));
-      actions.append(choice);
-    }
-    item.append(label, actions);
-    return item;
-  }
-
-  /** The closed section that lists the game's developers and publishers. */
-  function buildCreators(view: BannerView): HTMLElement {
-    const section = doc.createElement("details");
-    section.className = "tks-banner-creators";
-    section.open = creatorsOpen;
-    const summary = element(
-      "summary",
-      "tks-banner-creators-toggle",
-      i18n.t("banner_creators_toggle"),
-    );
-    const list = element("ul", "tks-banner-creator-list");
-    list.append(...view.creators.map((row, index) => buildCreatorRow(row, index, view)));
-    section.append(summary, list);
-    return section;
+  function note(text: string): HTMLElement {
+    const line = element("p", "tks-banner-note");
+    line.append(element("span", "tks-banner-ignored-text", text));
+    return line;
   }
 
   function build(view: BannerView): HTMLElement {
     const aside = element("aside", "tks-banner");
     aside.tabIndex = -1;
     const [only] = view.shown;
-    const single = view.ignored.length === 0 && view.creatorNotes.length === 0;
-    if (only !== undefined && view.shown.length === 1 && single) {
+    const notes = [
+      ...notedScopes(view.ignored).map(noteText),
+      ...view.creatorNotes.map(creatorNoteText),
+    ];
+    if (only !== undefined && view.shown.length === 1 && notes.length === 0) {
       aside.setAttribute("aria-labelledby", partId(only.kind, "title"));
     } else {
       // "Declared by the developer" would be false for an entry Valve states.
@@ -430,40 +345,29 @@ export function createBanner(
     }
     if (only === undefined) {
       aside.setAttribute("data-tks-variant", "ignored");
-    } else {
+    } else if (view.shown.length > 1) {
       // A banner with one tag takes its color; several tags keep the default violet.
-      if (view.shown.length > 1) {
-        aside.setAttribute("data-tks-entries", "many");
-      } else {
-        aside.setAttribute(KIND_ATTRIBUTE, only.kind);
-      }
+      aside.setAttribute("data-tks-entries", "many");
+    } else {
+      aside.setAttribute(KIND_ATTRIBUTE, only.kind);
     }
-    for (const verdict of view.shown) {
-      aside.append(buildEntry(verdict));
-    }
-    for (const scope of view.ignored) {
-      aside.append(buildNote(scope));
-    }
-    for (const [index, note] of view.creatorNotes.entries()) {
-      aside.append(buildCreatorNote(note, index));
-    }
-    if (view.shown.length > 0) {
-      if (view.creators.length > 0) {
-        aside.append(buildCreators(view));
-      }
-      const foot = element("div", "tks-banner-foot");
-      foot.append(button("tks-banner-link", "ignore", i18n.t("banner_ignore"), ALLOW_ALL));
-      aside.append(foot);
-    }
-    aside.append(errorLine());
+    aside.append(...view.shown.map(buildEntry), ...notes.map(note));
+    const foot = element("div", "tks-banner-foot");
+    foot.append(buildIgnoreMenu(doc, i18n, view, { open: menuOpen, groups: groupsOpen }));
+    aside.append(foot, errorLine());
     return aside;
   }
 
+  /** Draws the view and keeps the focus on the control of the same id, if it had it. */
   function render(view: BannerView): void {
+    const focused = shadow.activeElement;
     const next = build(view);
     box.replaceWith(next);
     box = next;
     shown = view;
+    if (focused !== null && focused.id !== "") {
+      shadow.getElementById(focused.id)?.focus();
+    }
   }
 
   function toggleNotes(toggle: Element): void {
@@ -477,23 +381,57 @@ export function createBanner(
     toggle.textContent = i18n.t(expand ? "banner_collapse" : "banner_expand");
   }
 
-  /** The control with this action and scope; a creator's also names its role and key. */
-  function control(
-    action: Action,
-    scope: AllowScope,
-    creator?: { readonly role: CreatorRole; readonly key: CreatorKey; },
-  ): HTMLElement | undefined {
-    return [...box.querySelectorAll<HTMLElement>("[data-tks-action]")].find((candidate) =>
-      candidate.getAttribute("data-tks-action") === action
-      && candidate.getAttribute("data-tks-scope") === scope
-      && (creator === undefined || (candidate.getAttribute(ROLE_ATTRIBUTE) === creator.role
-        && candidate.getAttribute(CREATOR_ATTRIBUTE) === creator.key))
-    );
+  function menu(): HTMLElement | null {
+    return shadow.getElementById(MENU_ID);
   }
 
-  /** What a screen reader hears after an ignore or an undo: for all tags, or for one tag. */
-  function announcement(action: Action, scope: AllowScope): string {
-    const restoring = action === "undo";
+  /** Closes the menu when a press lands outside the banner; listening only while it is open. */
+  function onOutside(event: Event): void {
+    if (!event.composedPath().includes(host)) {
+      setMenu(false);
+    }
+  }
+
+  function stayOpen(): void {
+    clearTimeout(leaving);
+    leaving = undefined;
+  }
+
+  /** Opens or closes the menu in place; opening by click or key focuses its first or last item. */
+  function setMenu(open: boolean, focus?: "first" | "last"): void {
+    menuOpen = open;
+    hovered = false;
+    stayOpen();
+    const flyout = menu();
+    shadow.getElementById(MENU_BUTTON_ID)?.setAttribute("aria-expanded", String(open));
+    if (flyout !== null) {
+      flyout.hidden = !open;
+    }
+    if (open) {
+      doc.addEventListener("pointerdown", onOutside, true);
+      const items = flyout === null || focus === undefined ? [] : visibleItems(flyout);
+      (focus === "last" ? items[items.length - 1] : items[0])?.focus();
+    } else {
+      doc.removeEventListener("pointerdown", onOutside, true);
+    }
+  }
+
+  /** Opens or closes a group in place. */
+  function setGroup(head: Element, group: MenuGroup, open: boolean): void {
+    if (open) {
+      groupsOpen.add(group);
+    } else {
+      groupsOpen.delete(group);
+    }
+    head.setAttribute("aria-expanded", String(open));
+    const body = shadow.getElementById(head.getAttribute("aria-controls") ?? "");
+    if (body !== null) {
+      body.hidden = !open;
+    }
+  }
+
+  /** What a screen reader hears after an ignore or a restore: for all tags, or for one tag. */
+  function announcement(restoring: boolean, scope: AllowScope): string {
     if (scope === ALLOW_ALL) {
       return i18n.t(restoring ? "notice_marking_restored" : "notice_marking_stopped");
     }
@@ -504,14 +442,8 @@ export function createBanner(
   }
 
   /** The same, after a developer or publisher was ignored or restored. */
-  function creatorAnnouncement(
-    action: Action,
-    role: CreatorRole,
-    creator: Creator,
-    scope: AllowScope,
-  ): string {
-    const restoring = action === "undo-creator";
-    const who = nameAndRole(role, creator);
+  function creatorAnnouncement(restoring: boolean, row: BannerCreator, scope: AllowScope): string {
+    const who = nameAndRole(row.role, row.creator);
     if (scope === ALLOW_ALL) {
       return i18n.t(restoring ? "notice_creator_restored" : "notice_creator_stopped", who);
     }
@@ -522,30 +454,18 @@ export function createBanner(
     );
   }
 
-  /** Undo takes the focus after an ignore, and the ignore button after an undo. */
-  function focusAfter(action: Action, scope: AllowScope): void {
-    const next = action === "undo" ? "ignore" : "undo";
-    (control(next, scope) ?? control("ignore", ALLOW_ALL) ?? box).focus();
-  }
-
-  /** The same for a creator: Undo after an ignore, the ignore button after an undo. */
-  function focusAfterCreator(action: Action, creator: BannerCreatorRef, scope: AllowScope): void {
-    const next = action === "undo-creator" ? "ignore-creator" : "undo-creator";
-    const own = { role: creator.role, key: creator.creator.key };
-    const summary = box.querySelector<HTMLElement>(".tks-banner-creators-toggle");
-    (control(next, scope, own) ?? summary ?? box).focus();
-  }
-
   /**
-   * Runs one change, one at a time. A failed save shows the error line; a saved one calls `done`
-   * for the focus and the announcement.
+   * Runs one change, one at a time. A failed save shows the error line; a saved one announces
+   * the change and puts the focus back on the control when the redraw dropped it to the page's
+   * body. Focus the person moved anywhere else stays there.
    */
   async function perform(
+    clicked: Element,
     change: () => Promise<void>,
     failure: BareMessageKey,
-    done: () => void,
+    message: string,
   ): Promise<void> {
-    if (pending || shown === undefined) {
+    if (pending) {
       return;
     }
     pending = true;
@@ -561,69 +481,99 @@ export function createBanner(
     } finally {
       pending = false;
     }
-    done();
+    const active = doc.activeElement;
+    if (!box.contains(shadow.activeElement) && (active === null || active === doc.body)) {
+      (shadow.getElementById(clicked.id) ?? shadow.getElementById(MENU_BUTTON_ID) ?? box).focus();
+    }
+    announce(doc, live, message);
   }
 
-  function run(action: Action, scope: AllowScope): Promise<void> {
+  /** Checks or unchecks a scope of the game: what is checked is what the view has ignored. */
+  function toggleGame(clicked: Element, scope: AllowScope, view: BannerView): Promise<void> {
+    const restoring = view.ignored.includes(scope);
     return perform(
-      () => action === "undo" ? actions.restore(scope) : actions.ignore(scope),
+      clicked,
+      () => restoring ? actions.restore(scope) : actions.ignore(scope),
       "error_allow_list_save",
-      () => {
-        focusAfter(action, scope);
-        announce(doc, live, announcement(action, scope));
-      },
+      announcement(restoring, scope),
     );
   }
 
-  /** The row or note of the view that names this role and key. */
-  function creatorOf(role: CreatorRole, key: CreatorKey): BannerCreatorRef | undefined {
-    const known: readonly BannerCreatorRef[] = [
-      ...(shown?.creators ?? []),
-      ...(shown?.creatorNotes ?? []),
-    ];
-    return known.find((each) => each.role === role && each.creator.keys.includes(key));
-  }
-
-  function runCreator(
-    action: Action,
-    creator: BannerCreatorRef,
-    key: CreatorKey,
-    scope: AllowScope,
-  ): Promise<void> {
-    const { role } = creator;
+  /** The same for a creator of the view, named by its role and one of its keys. */
+  function toggleCreator(clicked: Element, scope: AllowScope, view: BannerView): Promise<void> {
+    const role = parseRole(clicked.getAttribute(ROLE_ATTRIBUTE));
+    const key = toCreatorKey(clicked.getAttribute(CREATOR_ATTRIBUTE));
+    const row = view.creators.find((each) =>
+      each.role === role && key !== undefined && each.creator.keys.includes(key)
+    );
+    if (row === undefined) {
+      return Promise.resolve();
+    }
+    const listed = row.ignored.find((each) => each.scope === scope);
     return perform(
+      clicked,
       () =>
-        action === "undo-creator"
-          ? actions.restoreCreator(role, key, scope)
-          : actions.ignoreCreator(role, creator.creator, scope),
+        listed === undefined
+          ? actions.ignoreCreator(row.role, row.creator, scope)
+          : actions.restoreCreator(row.role, listed.key, scope),
       "error_creator_list_save",
-      () => {
-        focusAfterCreator(action, creator, scope);
-        announce(doc, live, creatorAnnouncement(action, role, creator.creator, scope));
-      },
+      creatorAnnouncement(listed !== undefined, row, scope),
     );
   }
 
   function onClick(clicked: Element): void {
     const action = parseAction(clicked.getAttribute("data-tks-action"));
     const scope = toAllowScope(clicked.getAttribute("data-tks-scope"));
-    if (action === "toggle") {
-      toggleNotes(clicked);
+    switch (action) {
+      case "toggle":
+        toggleNotes(clicked);
+        return;
+      case "menu":
+        // A click on a menu that hover opened keeps it open and takes it over.
+        setMenu(!menuOpen || hovered, "first");
+        return;
+      case "group": {
+        const group = parseGroup(clicked.getAttribute(GROUP_ATTRIBUTE));
+        if (group !== undefined) {
+          setGroup(clicked, group, !groupsOpen.has(group));
+        }
+        return;
+      }
+      case "game":
+      case "creator":
+        if (scope !== undefined && shown !== undefined) {
+          void (action === "game" ? toggleGame : toggleCreator)(clicked, scope, shown);
+        }
+        return;
+      case undefined:
+        return;
+    }
+  }
+
+  /** The menu's keys: arrows, Home and End move; Right and Left open and close a group. */
+  function onMenuKey(event: KeyboardEvent, target: HTMLElement, flyout: HTMLElement): void {
+    const group = parseGroup(target.getAttribute(GROUP_ATTRIBUTE));
+    if (event.key === "Escape") {
+      setMenu(false);
+      shadow.getElementById(MENU_BUTTON_ID)?.focus();
+    } else if (event.key === "Tab") {
+      setMenu(false);
       return;
+    } else if (group !== undefined && (event.key === "ArrowRight" || event.key === "ArrowLeft")) {
+      setGroup(target, group, event.key === "ArrowRight");
+    } else if (event.key === "ArrowLeft") {
+      const head = target.closest(".tks-ignore-section")?.querySelector<HTMLElement>(
+        "[role='menuitem']",
+      );
+      head?.focus();
+    } else {
+      const next = nextItem(visibleItems(flyout), target, event.key);
+      if (next === undefined) {
+        return;
+      }
+      next.focus();
     }
-    if (action === undefined || scope === undefined) {
-      return;
-    }
-    if (action !== "ignore-creator" && action !== "undo-creator") {
-      void run(action, scope);
-      return;
-    }
-    const role = parseRole(clicked.getAttribute(ROLE_ATTRIBUTE));
-    const key = toCreatorKey(clicked.getAttribute(CREATOR_ATTRIBUTE));
-    const creator = role === undefined || key === undefined ? undefined : creatorOf(role, key);
-    if (key !== undefined && creator !== undefined) {
-      void runCreator(action, creator, key, scope);
-    }
+    event.preventDefault();
   }
 
   shadow.addEventListener("click", (event) => {
@@ -634,12 +584,56 @@ export function createBanner(
     }
   });
 
-  // A toggle does not bubble, so the one listener for it takes the capture phase
-  shadow.addEventListener("toggle", (event) => {
-    if (event.target instanceof HTMLDetailsElement) {
-      creatorsOpen = event.target.open;
+  shadow.addEventListener("pointerover", (event) => {
+    const target = event.target;
+    if (
+      !(event instanceof PointerEvent) || event.pointerType === "touch"
+      || !(target instanceof Element) || target.closest(SPLIT_SELECTOR) === null
+    ) {
+      return;
     }
-  }, true);
+    stayOpen();
+    // Only a pointer that enters the caret from outside opens it; moves inside it do not.
+    const caret = target.closest(`#${MENU_BUTTON_ID}`);
+    const from = event.relatedTarget;
+    if (!menuOpen && caret !== null && !(from instanceof Node && caret.contains(from))) {
+      setMenu(true);
+      hovered = true;
+    }
+  });
+
+  shadow.addEventListener("pointerout", (event) => {
+    const next = event instanceof PointerEvent ? event.relatedTarget : null;
+    const within = next instanceof Node
+      && box.querySelector(SPLIT_SELECTOR)?.contains(next) === true;
+    if (!hovered || within) {
+      return;
+    }
+    stayOpen();
+    leaving = setTimeout(() => {
+      if (hovered) {
+        setMenu(false);
+      }
+    }, HOVER_CLOSE_MS);
+  });
+
+  shadow.addEventListener("keydown", (event) => {
+    const target = event.target;
+    if (!(event instanceof KeyboardEvent) || !(target instanceof HTMLElement)) {
+      return;
+    }
+    const flyout = menu();
+    if (flyout !== null && menuOpen && flyout.contains(target)) {
+      onMenuKey(event, target, flyout);
+    } else if (
+      target.id === MENU_BUTTON_ID && (event.key === "ArrowDown" || event.key === "ArrowUp")
+    ) {
+      setMenu(true, event.key === "ArrowUp" ? "last" : "first");
+      event.preventDefault();
+    } else if ((event.key === "Escape" || event.key === "Tab") && menuOpen) {
+      setMenu(false);
+    }
+  });
 
   return {
     host,
@@ -648,6 +642,11 @@ export function createBanner(
       if (shown === undefined || !sameView(shown, view)) {
         render(view);
       }
+    },
+
+    remove() {
+      setMenu(false);
+      host.remove();
     },
   };
 }

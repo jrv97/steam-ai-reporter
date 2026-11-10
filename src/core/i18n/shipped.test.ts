@@ -43,9 +43,6 @@ describe("shipped catalogs", () => {
     expect(spanish.t("options_allow_restore_label", restore)).toBe(
       substitute(es.options_allow_restore_label.message, restore),
     );
-    expect(spanish.t("options_allow_empty", { action: spanish.t("banner_ignore") })).toBe(
-      substitute(es.options_allow_empty.message, { action: es.banner_ignore.message }),
-    );
   });
 
   it("serves every Spanish message without placeholders as the catalog writes it", () => {

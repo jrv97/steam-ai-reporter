@@ -1,0 +1,64 @@
+---
+status: accepted
+date: 2026-11-09
+decision-makers: Jorge Rodriguez de la Vega
+---
+
+# One ignore menu in the banner, drawn after Steam's Ignore dropdown
+
+## Context and problem statement
+
+The app page banner offers ignores in three places: an Ignore button on each tag's heading, an "Ignore this game" button under the entries, and a closed "Ignore a developer or publisher" section with one link per tag and creator (ADR 0013). Each ignore turns into a note with Undo. The controls are scattered, each looks different, and the creator section grows a row of links per name.
+
+Steam's own app page already has a control for this kind of choice. Signed in, its Ignore button is a split button whose caret opens a menu of options, each a checkbox with a title and a muted line under it (`tests/fixtures/surfaces/app-ignore-menu/`). Where should our ignores live, and in what shape?
+
+## Decision drivers
+
+- The UI goal: our controls look and behave like Steam's own.
+- Rule 4: an ignore is the person's choice and never a verdict, and Steam's "Ignore" (hide from the store) is a different act from ours (stop tagging).
+- Rule 13: no per-node listeners; the banner keeps its delegated listeners on the shadow root.
+- Works signed out, on every app page the banner shows on.
+- Keyboard and screen reader use as in the WAI-ARIA menu button pattern.
+
+## Considered options
+
+1. Our own menu inside the banner, built after Steam's dropdown: a split Ignore button and a menu of grouped checkboxes.
+2. Our options added to Steam's own Ignore dropdown, as a new placement.
+3. Keep the separate buttons and links.
+
+## Decision outcome
+
+Chosen option 1.
+
+The banner's foot holds a split button. Its main half reads "Ignore tags for this game", ignores every tag on the game and its DLC, and reads "Stop ignoring tags for this game" once it has, so its label always names what a press does; hovering or clicking the caret opens the menu. The menu starts with "Ignore this game" and its description, under no heading, then up to three collapsible groups: Tags (one tag on this game), Developers and Publishers (per name, all tags or one tag on every game by it). Tags means our tag kinds, the ones the banner lists for the game, and never Steam's user tags. On a DLC's page a tag silenced only through the base game is left out of the menu, as it has no entry and no note there (ADR 0013): its box would read unchecked while the tag stays hidden, and undoing it belongs on the base game's page. Each option is a `menuitemcheckbox` with a title and a muted line under it, checked while the game or creator is on the list for that scope. Unchecking undoes, so the notes keep their text and lose their Undo links. The menu lives in the banner's shadow root, so store CSS cannot reach it, and copies the look of Steam's flyout through tokens sampled from the capture.
+
+A menu opened by hover closes 300ms after the pointer leaves the button and the menu; a click on the caret keeps it open. Keyboard: Enter, Space or Down on the caret opens the menu on its first item, Up on its last. Up, Down, Home and End move between the visible items. Right opens a group and Left closes it; Enter or Space on a group's head toggles it. Space or Enter toggles an option and the menu stays open. Escape closes and returns focus to the caret; Tab and a click outside close it. One document listener for the outside click exists only while the menu is open. A redraw keeps the focused control and the open groups.
+
+### Library check (rule 12)
+
+Nothing adopted. The menu is a few hundred lines over the banner's existing delegated listeners; headless menu libraries bring their own event model and per-element handlers that the shadow root and rule 13 would fight.
+
+### Consequences
+
+- Good: every ignore sits in one place and reads the same way, and a checked box shows what is ignored now.
+- Good: it works signed out and does not depend on Steam's menu script.
+- Bad: the menu is ours to keep accessible; Steam's menu does not close on Escape, ours does.
+- Bad: a creator lists one option per tag, so the creator groups start closed.
+- Neutral: the settings cards for ignored games and creators stay as they are; they already group by games, developers and publishers.
+
+## Pros and cons of the options
+
+### 1. Our own menu in the banner
+
+- Good: one control, native look, works signed out.
+- Bad: we copy Steam's look by hand, and a Steam restyle leaves ours behind until a new capture.
+
+### 2. Our options in Steam's dropdown
+
+- Good: the exact place a person looks for Ignore.
+- Bad: exists only signed in, depends on Steam's markup and script, and mixes Steam's store ignore with our stop-tagging ignore in one list.
+
+### 3. Separate buttons and links
+
+- Good: no new code.
+- Bad: the scattered controls this decision replaces.

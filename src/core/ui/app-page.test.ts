@@ -106,6 +106,11 @@ const notes = () =>
   [...(bannerRoot()?.querySelectorAll(".tks-banner-ignored-text") ?? [])].map((note) =>
     note.textContent
   );
+/** The kinds the ignore menu's Tags group offers, in its order. */
+const menuTags = () =>
+  [...(bannerRoot()?.querySelectorAll("[id^='tks-banner-option-tag-']") ?? [])].map((option) =>
+    option.id.replace("tks-banner-option-tag-", "")
+  );
 const headingsOf = (ids: readonly KindId[]) =>
   kindsInOrder(ids).map((kind) => i18n.t(kind.messages.heading));
 const kindNote = (kind: KindId) =>
@@ -180,19 +185,22 @@ describe("createAppPageUi", () => {
   describe("with the person's chip text", () => {
     const MINE = make.chipText();
     const words = make.settings.chipText({ ai: { chip: MINE } }).kinds;
-    const ignoreAi = () =>
-      bannerRoot()?.querySelector(
-        "[data-tks-action=ignore-creator][data-tks-scope=ai]",
-      )?.textContent;
+    const optionTitles = () =>
+      [
+        ...(bannerRoot()?.querySelectorAll(
+          "#tks-banner-option-tag-ai .tks-ignore-title, "
+            + "#tks-banner-option-developer-0-ai .tks-ignore-title",
+        ) ?? []),
+      ].map((title) => title.textContent);
 
-    it("names the chips and a creator's Ignore button by it, and keeps Steam's heading", () => {
+    it("names the chips and the tag's menu options by it, and keeps Steam's heading", () => {
       const ui = setup();
       ui.render(view());
       ui.render(view({ words }));
       expect(chips().map((chip) => chip.querySelector(".tks-badge-label")?.textContent)).toEqual([
         MINE,
       ]);
-      expect(ignoreAi()).toBe(i18n.t("banner_ignore_creator_kind", { chip: MINE }));
+      expect(optionTitles()).toEqual([MINE, MINE]);
       expect(headings()).toEqual([i18n.t("kind_ai_heading")]);
     });
   });
@@ -239,38 +247,58 @@ describe("createAppPageUi", () => {
     });
 
     it.each<
-      readonly [string, ViewOptions, readonly KindId[], readonly KindId[], readonly string[]]
+      readonly [
+        string,
+        ViewOptions,
+        readonly KindId[],
+        readonly KindId[],
+        readonly string[],
+        readonly KindId[],
+      ]
     >(
       [
-        ["nothing silenced", {}, ALL, ALL, []],
-        ["the AI kind ignored", { ignored: ["ai"] }, NO_AI, NO_AI, [kindNote("ai")]],
-        ["the AI kind ignored on the base game", { baseIgnored: ["ai"] }, NO_AI, NO_AI, []],
+        ["nothing silenced", {}, ALL, ALL, [], ALL],
+        ["the AI kind ignored", { ignored: ["ai"] }, NO_AI, NO_AI, [kindNote("ai")], ALL],
+        ["the AI kind ignored on the base game", { baseIgnored: ["ai"] }, NO_AI, NO_AI, [], NO_AI],
         [
           "the AI kind ignored here and three kinds on the base game",
           { ignored: ["ai"], baseIgnored: ["ai", "pvp", "iap"] },
           ["eula", "kernel"],
           ["eula", "kernel"],
           [kindNote("ai")],
+          ["ai", "eula", "kernel"],
         ],
         ["the developer ignored for AI", { developerIgnored: ["ai"] }, NO_AI, NO_AI, [
           DEVELOPER_AI,
-        ]],
-        ["kernel ignored", { ignored: ["kernel"] }, NO_KERNEL, NO_KERNEL, [kindNote("kernel")]],
+        ], ALL],
+        [
+          "kernel ignored",
+          { ignored: ["kernel"] },
+          NO_KERNEL,
+          NO_KERNEL,
+          [kindNote("kernel")],
+          ALL,
+        ],
         [
           "kernel ignored and its banner entry off",
           { ignored: ["kernel"], bannerOff: ["kernel", "pvp", "iap"] },
           NO_KERNEL,
           ["ai", "eula"],
           [],
+          ["ai", "eula"],
         ],
       ],
-    )("with %s, draws the chips, banner entries and notes", (_name, options, ids, entries, all) => {
-      setup().render(view({ verdicts: ARC, ...options }));
-      expect(document.querySelectorAll(".tks-tag-section")).toHaveLength(1);
-      expect(chipKinds()).toEqual(ids);
-      expect(headings()).toEqual(headingsOf(entries));
-      expect(notes()).toEqual(all);
-    });
+    )(
+      "with %s, draws the chips, banner entries, notes and menu tags",
+      (_name, options, ids, entries, all, tags) => {
+        setup().render(view({ verdicts: ARC, ...options }));
+        expect(document.querySelectorAll(".tks-tag-section")).toHaveLength(1);
+        expect(chipKinds()).toEqual(ids);
+        expect(headings()).toEqual(headingsOf(entries));
+        expect(notes()).toEqual(all);
+        expect(menuTags()).toEqual(tags);
+      },
+    );
   });
 
   it("shows a DLC of a base game ignored for all tags no banner and no section", () => {
@@ -280,7 +308,7 @@ describe("createAppPageUi", () => {
     expect(document.body.innerHTML).toBe(PAGE);
   });
 
-  it("notes a developer ignored for all tags once, and keeps the Undo as the only control", () => {
+  it("notes a developer ignored for all tags once, with no entry and no section", () => {
     setup().render(view({ verdicts: ARC, developerIgnored: ["all"] }));
     expect(notes()).toEqual([
       i18n.t("banner_ignored_creator", {
