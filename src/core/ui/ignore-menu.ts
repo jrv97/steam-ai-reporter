@@ -15,8 +15,8 @@ export type MenuGroup = (typeof MENU_GROUPS)[number];
 /** The groups open on a fresh page; a creator lists one option per tag, so those start closed. */
 export const OPEN_GROUPS: readonly MenuGroup[] = ["tags"];
 
-/** Marks the main half once the game is ignored for all tags; its label says so too. */
-export const IGNORED_ATTRIBUTE = "data-tks-ignored";
+/** Marks the main half once the game is ignored for all tags, which draws the store's tick. */
+const IGNORED_ATTRIBUTE = "data-tks-ignored";
 
 /** Name the role and the key of the creator an option acts on, and the group a head opens. */
 export const ROLE_ATTRIBUTE = "data-tks-role";
@@ -32,7 +32,7 @@ export const MENU_ACTIONS = ["menu", "group", "game", "creator"] as const;
 const TRUE = "true";
 const POPUP = "menu";
 
-export type MenuAction = (typeof MENU_ACTIONS)[number];
+type MenuAction = (typeof MENU_ACTIONS)[number];
 
 /** One developer or publisher of the game, with the scopes it is ignored in for its role. */
 export interface MenuCreator {
@@ -99,6 +99,7 @@ export function buildIgnoreMenu(
     return node;
   }
 
+  /** A plain button that names what it does in `data-tks-action`. */
   function control(className: string, action: MenuAction, text?: string): HTMLButtonElement {
     const node = element("button", className, text);
     node.type = "button";
@@ -155,6 +156,7 @@ export function buildIgnoreMenu(
     return row;
   }
 
+  /** One option per tag the banner lists, checked while the game is ignored for it. */
   function tagOptions(): readonly HTMLElement[] {
     return view.listed.map((kind) =>
       option(
@@ -195,6 +197,7 @@ export function buildIgnoreMenu(
     return block;
   }
 
+  /** The items of a group: tag options, or one block per developer or publisher. */
   function groupItems(group: MenuGroup): readonly HTMLElement[] {
     switch (group) {
       case "tags":
