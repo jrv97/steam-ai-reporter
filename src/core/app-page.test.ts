@@ -15,20 +15,24 @@ import { readKey } from "../../tests/helpers/store-read";
 import { loadPage } from "../../tests/helpers/surfaces";
 import { T0 } from "../../tests/helpers/timer-clock";
 import { type App, start } from "./app";
+import { startAppPage } from "./app-page";
 import type { CreatorRole } from "./creator";
 import { API_BREAKER_KEY, DEFAULT_BACKOFF } from "./detect/breaker";
 import { GETITEMS_URL } from "./detect/getitems";
 import { RETRY_DELAY_MS } from "./detect/retry";
 import { DEFAULT_SPACING_MS } from "./detect/throttle";
 import { SHIPPED_CATALOGS } from "./i18n/shipped";
+import { createIgnoreLists } from "./ignored";
 import type { JsonValue } from "./json";
 import type { KindSettings } from "./kinds/kind-settings";
 import type { KindVerdicts } from "./kinds/verdicts";
 import type { Clock, Http } from "./ports";
+import { createLoadProgress } from "./progress";
 import type { AllowScope } from "./settings/allow-data";
 import { DEFAULT_SETTINGS, encodeSettings } from "./settings/settings";
 import { createSettingsSource } from "./settings/settings-source";
 import { ALLOW_KEY, CREATOR_ALLOW_KEYS, SETTINGS_KEY } from "./storage-keys";
+import { createHoverCard } from "./ui/hover-card";
 import { normalizeBreaks } from "./ui/notes";
 import { adoptPageStyles } from "./ui/styles";
 
@@ -378,5 +382,30 @@ describe("start on an English app page", () => {
     expect(document.getElementById("tks-banner")).toBeNull();
     await writeSettings(settings, DEFAULT_SETTINGS);
     expect(headings()).toEqual([aiHeading]);
+  });
+});
+
+describe("startAppPage", () => {
+  it("counts its game as unknown and logs it when the lookup fails", async () => {
+    loadPage(make.page.app("5072580-ai-first.html"));
+    const { logger, sink } = fake.logger();
+    const progress = createLoadProgress(() => undefined);
+    const page = startAppPage(document, OPEN, i18n, {
+      language: "english",
+      detectors: { getItems: fake.rejectingDetector(), detector: fake.rejectingDetector() },
+      live: undefined,
+      ignored: make.ignored(),
+      lists: createIgnoreLists(fake.store(), fake.clock(make.time())),
+      settings: () => DEFAULT_SETTINGS,
+      words: () => DEFAULT_SETTINGS.kinds,
+      onAllowChange: () => undefined,
+      card: createHoverCard(document, i18n),
+      logger,
+      progress,
+    });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    page.stop();
+    expect(progress.snapshot()).toStrictEqual({ total: 1, answered: 1, unknown: 1 });
+    expect(sink.error).toHaveBeenCalledOnce();
   });
 });

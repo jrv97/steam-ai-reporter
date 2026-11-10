@@ -80,6 +80,33 @@ export function fakeHttp(routes: readonly Route[]): FakeHttp {
   };
 }
 
+export interface HeldHttp extends Http {
+  /** Every requested URL, in order. */
+  readonly calls: readonly string[];
+  /** Lets the oldest waiting request answer from the routes. */
+  answerNext(): void;
+}
+
+/** A fake `Http` over routes whose requests wait until the test answers them, one at a time. */
+export function heldHttp(routes: readonly Route[]): HeldHttp {
+  const calls: string[] = [];
+  const waiting: (() => void)[] = [];
+  return {
+    calls,
+    answerNext() {
+      waiting.shift()?.();
+    },
+    get(url) {
+      calls.push(url);
+      return new Promise((resolve) => {
+        waiting.push(() => {
+          resolve(httpResult(replyFor(routes, url), url));
+        });
+      });
+    },
+  };
+}
+
 /** One request a `timedHttp` sent, and the clock's time when it went out. */
 interface SentRequest {
   readonly url: string;

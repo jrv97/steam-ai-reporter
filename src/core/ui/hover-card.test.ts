@@ -615,7 +615,7 @@ describe("createHoverCard", () => {
         ],
       ],
       [
-        "the developer's note and the release date of a captured early access game",
+        "a captured early access game's developer note and release date",
         disclosedList(captured(app.earlyAccess)),
         [
           [

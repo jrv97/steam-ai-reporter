@@ -9,16 +9,22 @@ export interface FakeDetector extends Detector {
 
 /**
  * A `Detector` that answers each ID with `verdictsFor(id)` on a later microtask, so calls that are
- * not awaited overlap, and records what it was asked.
+ * not awaited overlap, and records what it was asked. Its sink hears each ID on its own first.
  */
 export function fakeDetector(verdictsFor: (id: AppId) => KindVerdicts): FakeDetector {
   const calls: (readonly AppId[])[] = [];
   return {
     calls,
-    async detect(ids) {
+    async detect(ids, sink) {
       calls.push(ids);
       await Promise.resolve();
-      return new Map([...new Set(ids)].map((id): [AppId, KindVerdicts] => [id, verdictsFor(id)]));
+      const answers = new Map(
+        [...new Set(ids)].map((id): [AppId, KindVerdicts] => [id, verdictsFor(id)]),
+      );
+      for (const answer of answers) {
+        sink?.(new Map([answer]));
+      }
+      return answers;
     },
   };
 }

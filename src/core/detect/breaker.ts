@@ -53,6 +53,11 @@ export interface Breaker {
   isOpen(): Promise<boolean>;
   /** Opens the breaker when `result` trips it; any other result changes nothing. */
   record(result: HttpResult): Promise<void>;
+  /**
+   * When requests go out again (epoch milliseconds), while the pause this tab last read or set is
+   * running; undefined otherwise. It reads no storage.
+   */
+  pausedUntil(): number | undefined;
 }
 
 export interface BreakerOptions {
@@ -79,6 +84,8 @@ export function createBreaker(options: BreakerOptions): Breaker {
   const longest = backoff.baseMs + backoff.jitterMs;
   /** This tab's own pause, which holds even when storage cannot be read or written. */
   let localUntil = 0;
+  /** The latest pause this tab knows of, its own or the stored one it last read. */
+  let knownUntil = 0;
   let open = false;
   // Reads and writes keep apart streaks, so a working read does not end a streak of failed writes.
   const logStoreFailure = (problem: unknown): void => {
@@ -105,6 +112,7 @@ export function createBreaker(options: BreakerOptions): Breaker {
     async isOpen() {
       const now = clock.now();
       const until = Math.max(localUntil, await storedUntil(now));
+      knownUntil = until;
       const nowOpen = now < until;
       if (open && !nowOpen) {
         logger.info("notice_breaker_closed", { breaker: key });
@@ -121,6 +129,7 @@ export function createBreaker(options: BreakerOptions): Breaker {
       const pauseMs = backoff.baseMs + Math.floor(random() * backoff.jitterMs);
       const until = Math.max(localUntil, now + pauseMs);
       localUntil = until;
+      knownUntil = Math.max(knownUntil, until);
       open = true;
       logger.warn("warn_breaker_opened", {
         seconds: String(Math.ceil((until - now) / MS_PER_SECOND)),
@@ -134,6 +143,10 @@ export function createBreaker(options: BreakerOptions): Breaker {
         return;
       }
       writes.worked();
+    },
+
+    pausedUntil() {
+      return clock.now() < knownUntil ? knownUntil : undefined;
     },
   };
 }

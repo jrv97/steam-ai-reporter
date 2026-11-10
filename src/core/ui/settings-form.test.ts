@@ -1636,7 +1636,7 @@ describe.each(CREATOR_ROLES)("the ignored %ss", (role) => {
     );
   }
 
-  it("lists the creators of each scope under their own caption, apart from the games", async () => {
+  it("lists each scope's creators under their own caption, apart from the games", async () => {
     const { root, ignored } = await seeded();
     const names = (section: HTMLElement) =>
       [...(block(section)?.querySelectorAll(".tks-allow-name") ?? [])].map((name) => [

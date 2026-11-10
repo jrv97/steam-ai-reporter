@@ -532,13 +532,14 @@ Preview: `previews/OptionsPage.html`, and `previews/Tabs.html` for the tabs alon
 - The version from `package.json` for `options_version`.
 - On the full page: the tab named by the location fragment (`#tab=<id>`, read by `parseTabHash`) as `initialTab`, and `onTabChange`, which writes the fragment back with `history.replaceState`. The dialog passes neither and never touches the store page's address.
 - In the popup: `allSettingsUrl` for the gear and the row links, and `openSettings`, which opens the options page on a tag's tab, or as it was left for the gear (below). Before it opens the page, it writes the ID of the active tab to `storage.session` (`v2:origin`).
+- In the popup and the dialog: `progress`, the load progress of the store page the strip reports on (below). The popup reads it from the active tab's content script through a runtime port; the dialog reads the running app on its own page. The full page passes none and has no strip.
 - On the extension's full page: `goBack`, which switches to the tab the popup was opened on, focuses its window and closes the settings tab, or opens the store home in the settings tab when that tab is gone or was never recorded ([ADR 0019](../adr/0019-settings-return-to-the-store-tab.mdx)). The popup and the userscript dialog pass none.
 
 ### Layout
 
 - Page: centered, `tks-options-max-width` (880px), `tks-space-4` padding, `tks-color-bg-panel`, `color-scheme: dark`. Below the header the tabs (section 18): from an 800px viewport a 200px rail beside the panels, narrower a row of tabs that wraps above them.
-- Popup: `tks-popup-width` (360px), `tks-space-3` padding. The header stays in view and ends in the gear. Below it one row per tag, in the tag order (the tabs' order): the tag's key (`kind_<id>_key`, ADR 0023), a link to its tab named by the key and then Steam's heading (`kind_chip_name`, said once when they match); a compact Show, Dim and Hide control (`tks-control-height-xs`, `tks-text-help`); the master switch. Rows take `tks-space-1` padding with a `tks-color-divider` line between them. The popup has no ignore lists and no badge, banner, value or color controls: those live on the page.
-- Dialog: the popup's density (flat sections, small captions, `tks-control-height-xs` segments) with the page's tabs and the color fields, 760px wide.
+- Popup: `tks-popup-width` (360px), `tks-space-3` padding. The header stays in view and ends in the gear. Below it the load strip (below), then one row per tag, in the tag order (the tabs' order): the tag's key (`kind_<id>_key`, ADR 0023), a link to its tab named by the key and then Steam's heading (`kind_chip_name`, said once when they match); a compact Show, Dim and Hide control (`tks-control-height-xs`, `tks-text-help`); the master switch. Rows take `tks-space-1` padding with a `tks-color-divider` line between them. The popup has no ignore lists and no badge, banner, value or color controls: those live on the page.
+- Dialog: the popup's density (flat sections, small captions, `tks-control-height-xs` segments) with the load strip above the page's tabs and the color fields, 760px wide.
 - Font: the `ext` family (a system stack). The store font is not loaded on extension pages and none is bundled.
 - Type on the full page: field labels, help and error lines in `tks-text-body` (13/18). The popup and the dialog keep help and error lines in `tks-text-help` (12/16).
 - Cards are `.tks-card`: `tks-color-bg-raised`, `tks-radius-md`, `tks-space-3` padding, `tks-space-2` apart, titled in `tks-text-card-title` with `tks-space-2` below the title. A tag's card title is an `h2`; the cards of General sit under the panel's `h2` (`options_tab_general`) and take `h3`. Every card title takes focus with `tabindex="-1"`, so focus can land on it.
@@ -605,6 +606,23 @@ One card in General, after Ignored for all tags. It sets `order`: every kind onc
 - Reset order (`options_order_reset`), the quiet text button of section 10, stores the registry order, which is then left out of the stored value, and says `options_order_reset_done`.
 - The held row carries `data-tks-held` (an accent outline, and the hover card's shadow while dragged); forced colors draw the handle with a `ButtonText` edge and the held row with a `Highlight` outline.
 - One listener per event type on the form's root serves the card (`pointerdown`, `click`, `keydown`); the card keeps no listener of its own on its rows.
+
+### The load strip
+
+A strip between the popup's header and the first tag row, and at the top of the dialog above the tabs, that reports how far the tags of a store page have loaded. The full options page has none.
+
+- Structure: a status line over a bar, in `.tks-load`, with a `tks-color-divider` line above and below, `tks-space-2` of padding above, 10px below and 6px between line and bar. The dialog adds `tks-space-2` before the tabs. The strip keeps one height in every state (46px), so nothing below it moves (rule 18).
+- The status line is `role="status"`, in `tks-text-help` (12/16) and `tks-color-text`: the message on the left, which ends in an ellipsis on one line, and the count on the right in `tks-color-text-muted` with tabular figures, which never wraps. The strip draws at most once a second, so the line speaks at most once a second.
+- The bar is `role="progressbar"`, named by the message, with `aria-valuemin` 0, `aria-valuemax` the number of games (at least 1) and `aria-valuenow` the games answered. It is 4px tall, a `tks-color-bg-sunken` track with `tks-radius-sm` corners, and its fill takes the answered share of the width.
+- States, by `data-tks-load` on the strip:
+  1. `loading`: `options_progress_loading`, count `options_progress_loading_count` ("12 of 48 games"), fill `tks-load-fill` (accent 500).
+  2. `paused`, while the GetItems breaker holds requests and games are left: `options_progress_paused` with the countdown `options_progress_seconds` in bold `tks-color-text-strong`, count `options_progress_count` ("12 of 48"), and a hatched fill: 4px stripes at 135 degrees of `tks-color-text-subtle` and `tks-load-hatch`. The countdown ticks once a second while the popup or the dialog is open; once the pause ends the strip returns to `loading`.
+  3. `done`, once every game has an answer: `options_progress_done` ("Tags loaded for 48 games"), or `options_progress_done_unknown` when some games stayed unknown after their retry rounds ("Tags loaded for 46 games. No answer for 2"); count `options_progress_count` with the total twice; a full bar in `tks-load-fill-done` (accent 700).
+  4. `empty`, while the store page has asked for no game: `options_progress_no_games` ("No games on this page yet") in `tks-color-text-subtle`, no count and an empty track.
+  5. `none`, when the active tab has no store page, no content script or the connection fails: `options_progress_no_page` in `tks-color-text-subtle`, no count and an empty track.
+- Until the first progress arrives the strip shows an empty line and track at the same height.
+- What it counts: the distinct games the capsules and the app page asked for; a game is answered once it is known, or once it stayed unknown with no retry left. An answer whose every kind is unknown counts as unknown. The copy speaks about loading only and says nothing about any game (rule 4).
+- Forced colors draw the track with a `CanvasText` edge and the fill in `Highlight`.
 
 ### Longer translations
 
@@ -883,7 +901,7 @@ The userscript's settings, opened from the script manager's menu: the one modal 
 
 - A menu command `userscript_menu_settings` registered with `GM.registerMenuCommand`.
 - A native `dialog` in a shadow root on `div.tks-dialog-host`, opened with `showModal()`. `Escape` and a `userscript_close` text button close it; focus returns to the page.
-- Content: the settings form (section 6) with the popup's density (`data-tks-context="popup"`), the tabs of section 18 and the color fields, `min(760px, 100vw - tks-space-6)` wide, titled with `ext_name`, set in the `page` family because the store font is available there. From an 800px viewport the tabs are a rail, narrower a wrapping row. From 800px wide and 560px tall the dialog has one height (`100vh - tks-space-6`), its head, rail, footer and feedback bar stay in place and only the open panel scrolls (decision 74); in a smaller window the whole dialog scrolls. General holds the language picker (new in the dialog; the dialog's own copy follows a new language when it opens next), Badge color, Ignored for all tags and Backup; the dialog has no privacy card. The tab shown is remembered in the manager's storage; the dialog reads and writes no location fragment.
+- Content: the settings form (section 6) with the popup's density (`data-tks-context="popup"`), the tabs of section 18 and the color fields, `min(760px, 100vw - tks-space-6)` wide, titled with `ext_name`, set in the `page` family because the store font is available there. The load strip of section 6 sits above the tabs and follows the app running on the page while the dialog is open. From an 800px viewport the tabs are a rail, narrower a wrapping row. From 800px wide and 560px tall the dialog has one height (`100vh - tks-space-6`), its head, rail, footer and feedback bar stay in place and only the open panel scrolls (decision 74); in a smaller window the whole dialog scrolls. General holds the language picker (new in the dialog; the dialog's own copy follows a new language when it opens next), Badge color, Ignored for all tags and Backup; the dialog has no privacy card. The tab shown is remembered in the manager's storage; the dialog reads and writes no location fragment.
 - When `GM_addValueChangeListener` is missing, `userscript_reload_note` under the controls.
 
 ### Status

@@ -861,6 +861,128 @@
       }
     }
   },
+  "options_progress_loading": {
+    "message": "Cargando etiquetas de esta página",
+    "description": "The load strip at the top of the toolbar popup and of the userscript settings dialog, which shows how far the tags of the store page in the current tab have loaded. Its message while the tags are still loading. Keep it short; it is cut with an ellipsis on one line."
+  },
+  "options_progress_loading_count_one": {
+    "message": "$answered$ de $count$ juego",
+    "description": "The count at the end of the load strip while the tags are loading. $count$ is how many games the page shows and $answered$ how many of them have an answer so far. Singular form, chosen by $count$.",
+    "placeholders": {
+      "answered": {
+        "content": "$1",
+        "example": "0"
+      },
+      "count": {
+        "content": "$2",
+        "example": "1"
+      }
+    }
+  },
+  "options_progress_loading_count_other": {
+    "message": "$answered$ de $count$ juegos",
+    "description": "The count at the end of the load strip while the tags are loading. $count$ is how many games the page shows and $answered$ how many of them have an answer so far. Plural form, chosen by $count$.",
+    "placeholders": {
+      "answered": {
+        "content": "$1",
+        "example": "12"
+      },
+      "count": {
+        "content": "$2",
+        "example": "48"
+      }
+    }
+  },
+  "options_progress_paused": {
+    "message": "Steam limitó las consultas. Reintento en $time$",
+    "description": "The load strip at the top of the toolbar popup and of the userscript settings dialog, which shows how far the tags of the store page in the current tab have loaded. Its message while Steam refuses more lookups for a while. $time$ is options_progress_seconds, the countdown to the next try, shown in bold. It says nothing about any game.",
+    "placeholders": {
+      "time": {
+        "content": "$1",
+        "example": "42 s"
+      }
+    }
+  },
+  "options_progress_seconds": {
+    "message": "$seconds$ s",
+    "description": "The countdown inside options_progress_paused, in bold: the seconds until Steam is asked again. \"s\" is the unit symbol for seconds; use your language's symbol.",
+    "placeholders": {
+      "seconds": {
+        "content": "$1",
+        "example": "42"
+      }
+    }
+  },
+  "options_progress_count": {
+    "message": "$answered$ de $total$",
+    "description": "The count at the end of the load strip while lookups are paused and once they are done: $answered$ games with an answer of $total$ games on the page, as numbers, such as \"12 of 48\".",
+    "placeholders": {
+      "answered": {
+        "content": "$1",
+        "example": "12"
+      },
+      "total": {
+        "content": "$2",
+        "example": "48"
+      }
+    }
+  },
+  "options_progress_done_one": {
+    "message": "Etiquetas cargadas de $count$ juego",
+    "description": "The load strip at the top of the toolbar popup and of the userscript settings dialog, which shows how far the tags of the store page in the current tab have loaded. Its message once every game on the page has an answer. $count$ is how many. It says nothing about any game. Singular form.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "1"
+      }
+    }
+  },
+  "options_progress_done_other": {
+    "message": "Etiquetas cargadas de $count$ juegos",
+    "description": "The load strip at the top of the toolbar popup and of the userscript settings dialog, which shows how far the tags of the store page in the current tab have loaded. Its message once every game on the page has an answer. $count$ is how many. It says nothing about any game. Plural form.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "48"
+      }
+    }
+  },
+  "options_progress_done_unknown_one": {
+    "message": "Etiquetas cargadas de $count$ juego. Sin respuesta de $unknown$",
+    "description": "Replaces options_progress_done when Steam gave no answer for some games even after asking again. $count$ is how many games have their tags and $unknown$ how many got no answer. It says nothing about any game. Singular form, chosen by $count$.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "1"
+      },
+      "unknown": {
+        "content": "$2",
+        "example": "2"
+      }
+    }
+  },
+  "options_progress_done_unknown_other": {
+    "message": "Etiquetas cargadas de $count$ juegos. Sin respuesta de $unknown$",
+    "description": "Replaces options_progress_done when Steam gave no answer for some games even after asking again. $count$ is how many games have their tags and $unknown$ how many got no answer. It says nothing about any game. Plural form, chosen by $count$.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "46"
+      },
+      "unknown": {
+        "content": "$2",
+        "example": "2"
+      }
+    }
+  },
+  "options_progress_no_page": {
+    "message": "Abre una página de la tienda de Steam para cargar sus etiquetas",
+    "description": "The load strip at the top of the toolbar popup and of the userscript settings dialog, which shows how far the tags of the store page in the current tab have loaded. Its message when the current tab is no Steam store page, so there is nothing to load."
+  },
+  "options_progress_no_games": {
+    "message": "Todavía no hay juegos en esta página",
+    "description": "The load strip at the top of the toolbar popup and of the userscript settings dialog, which shows how far the tags of the store page in the current tab have loaded. Its message when the store page has asked for no game yet, as on a page that lists none or before its first games are found. Shown muted, with an empty bar and no count."
+  },
   "options_chip_reset_label": {
     "message": "Restablecer el texto del marcador de $heading$",
     "description": "Screen reader name of the Reset button next to the chip text field. Starts with the button's visible word (options_color_reset). $heading$ is Steam's own line for the tag.",

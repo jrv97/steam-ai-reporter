@@ -3,6 +3,7 @@ import { detectorContract } from "../../../tests/contracts/detector.contract";
 import { make } from "../../../tests/helpers/factory";
 import { fake } from "../../../tests/helpers/fakes";
 import { getItemsRequest } from "../../../tests/helpers/getitems";
+import type { AppId } from "../types";
 import { createDedupingDetector } from "./dedupe";
 import { createGetItemsDetector } from "./getitems";
 
@@ -67,6 +68,22 @@ describe("createDedupingDetector", () => {
     await detector.detect(ids);
     await detector.detect(ids);
     expect(inner.calls).toStrictEqual([ids, ids]);
+  });
+
+  it("keeps telling the other callers when one caller's sink throws", async () => {
+    const id = make.appId();
+    const recording = fake.logger();
+    const detector = createDedupingDetector(fake.detector(() => NOT_DISCLOSED), recording.logger);
+    const heard: AppId[] = [];
+    const [, answer] = await Promise.all([
+      detector.detect([id], () => {
+        throw new Error();
+      }),
+      detector.detect([id], (partial) => heard.push(...partial.keys())),
+    ]);
+    expect(heard).toStrictEqual([id]);
+    expect(answer).toStrictEqual(new Map([[id, NOT_DISCLOSED]]));
+    expect(recording.sink.error).toHaveBeenCalledOnce();
   });
 
   it("answers unknown error when the inner detector rejects", async () => {

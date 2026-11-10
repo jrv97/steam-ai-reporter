@@ -72,6 +72,11 @@ export function freshBrowserId(): number {
   return next();
 }
 
+/** A fresh count of things, at least 2. */
+export function freshCount(): number {
+  return next() + 1;
+}
+
 /** A fresh developer or publisher name. */
 export function freshCreator(): string {
   return `Studio ${String(next())}`;

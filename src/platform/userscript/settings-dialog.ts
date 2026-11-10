@@ -2,6 +2,7 @@ import type { Catalogs } from "../../core/i18n/catalog";
 import type { I18n } from "../../core/i18n/t";
 import type { IgnoreLists } from "../../core/ignored";
 import type { Clock } from "../../core/ports";
+import type { ProgressSource } from "../../core/progress";
 import type { StoredSettings } from "../../core/settings/settings-source";
 import { mountSettingsForm } from "../../core/ui/settings-form";
 import { adoptStyles, DIALOG_CSS } from "../../core/ui/styles";
@@ -20,6 +21,8 @@ export interface SettingsDialogDeps {
   readonly clock: Clock;
   /** False when the manager cannot tell other tabs about a change, so it applies on reload. */
   readonly live: boolean;
+  /** The running app's load progress, which the dialog shows live above the tabs. */
+  readonly progress: ProgressSource;
 }
 
 const HOST_CLASS = "tks-dialog-host";
@@ -84,6 +87,7 @@ export async function openSettingsDialog(deps: SettingsDialogDeps): Promise<void
     locales: Object.keys(deps.catalogs),
     // The page around a modal dialog is inert, so the file input lives inside it
     backup: { files: createFileTransfer(dialog), clock: deps.clock },
+    progress: deps.progress,
   });
 
   // The close button and the backdrop (a click on the dialog itself) share one listener

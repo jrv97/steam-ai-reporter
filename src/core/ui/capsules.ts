@@ -1,8 +1,10 @@
 import { createTransientRetry, type Delay } from "../detect/retry";
 import type { KindId } from "../kinds/id";
 import { KINDS, perKind } from "../kinds/registry";
-import type { KindVerdicts, Relations } from "../kinds/verdicts";
+import { type KindVerdicts, type Relations, UNKNOWN_KINDS } from "../kinds/verdicts";
+import type { Logger } from "../log";
 import type { Detector } from "../ports";
+import type { LoadTracker } from "../progress";
 import { HOST_APPID } from "../scan/marks";
 import type { RowPlacement } from "../scan/placements";
 import type { CapsuleHost, CapsuleRenderer, ScanBatch } from "../scan/renderer";
@@ -64,6 +66,10 @@ export interface CapsuleUiOptions {
   readonly watchSize?: SizeWatchFactory;
   /** Waits out a retry round after a transient answer; `setTimeout` by default. */
   readonly delay?: Delay;
+  /** Hears which games the hosts ask for and how each answer lands. */
+  readonly progress?: LoadTracker;
+  /** Logs a lookup that failed. */
+  readonly logger: Pick<Logger, "error">;
 }
 
 /** The scanner's renderer, plus a way to draw known hosts again after a change. */
@@ -115,14 +121,15 @@ const NO_SLOT: SlotRead = { slot: undefined, markAnchor: false, unsized: false }
 
 /**
  * The adapter between the scanner and the renderers. Found hosts are detected in one call per
- * scan batch (the detector batches and caches); changed hosts are drawn again from their known
- * verdicts. Drawing reads every image box first and writes after, in one frame per pass. Records
- * live in a `WeakMap` keyed by host, and a refresh walks the marked hosts in the page, so no host
- * outlives its element. An image box with no size waits in one shared size watch until a compact
- * badge fits. Showing a hidden tab changes no node the scanner sees, and tabs fade in.
+ * scan batch (the detector batches and caches) and drawn as each part of its answer lands;
+ * changed hosts are drawn again from their known verdicts. Drawing reads every image box first
+ * and writes after, in one frame per pass. Records live in a `WeakMap` keyed by host, and a
+ * refresh walks the marked hosts in the page, so no host outlives its element. An image box with
+ * no size waits in one shared size watch until a compact badge fits. Showing a hidden tab changes
+ * no node the scanner sees, and tabs fade in.
  */
 export function createCapsuleUi(options: CapsuleUiOptions): CapsuleUi {
-  const { document: doc, detector, renderers, isAllowed, isBadged } = options;
+  const { document: doc, detector, renderers, isAllowed, isBadged, progress, logger } = options;
   const tagged = options.tagged ?? ((verdicts: KindVerdicts) => verdicts);
   const frame = options.frame ?? ((callback: () => void) => {
     const view = doc.defaultView;
@@ -140,10 +147,20 @@ export function createCapsuleUi(options: CapsuleUiOptions): CapsuleUi {
   let queued = new Set<HostRecord>();
   const retry = createTransientRetry<HostRecord>((due) => {
     const connected = due.filter((record) => record.host.element.isConnected);
+    giveUp(due.filter((record) => !record.host.element.isConnected));
     if (connected.length > 0) {
       void detect(connected);
     }
   }, options.delay);
+
+  /** Counts the games of hosts that will not be asked again as answered, with what they hold. */
+  function giveUp(records: readonly HostRecord[]): void {
+    for (const { host, verdicts } of records) {
+      if (verdicts !== undefined) {
+        progress?.answered(host.appId, verdicts, false);
+      }
+    }
+  }
 
   function slotOf(host: CapsuleHost): SlotRead {
     const { placement, anchor } = host;
@@ -203,7 +220,7 @@ export function createCapsuleUi(options: CapsuleUiOptions): CapsuleUi {
    * watch if it needs it.
    */
   function disconnect(): void {
-    retry.cancel();
+    giveUp(retry.cancel());
     sizeWatch?.disconnect();
     sizeWatch = undefined;
     unsized = new WeakMap();
@@ -268,15 +285,47 @@ export function createCapsuleUi(options: CapsuleUiOptions): CapsuleUi {
     queued.add(record);
   }
 
+  /**
+   * Asks for the hosts' games in one call and draws each host as its game's answer lands, which
+   * may be before the call resolves. A host whose game got no answer draws nothing.
+   */
   async function detect(found: readonly HostRecord[]): Promise<void> {
-    const verdicts = await detector.detect(found.map((record) => record.host.appId));
+    const waiting = new Map<AppId, HostRecord[]>();
     for (const record of found) {
-      const answer = verdicts.get(record.host.appId);
-      record.verdicts = answer;
-      queue(record);
-      if (answer !== undefined) {
-        retry.offer(record, answer);
+      const { appId } = record.host;
+      const records = waiting.get(appId);
+      if (records === undefined) {
+        waiting.set(appId, [record]);
+      } else {
+        records.push(record);
       }
+    }
+    progress?.asked(waiting.keys());
+    const land = (verdicts: ReadonlyMap<AppId, KindVerdicts>): void => {
+      for (const [id, answer] of verdicts) {
+        let retrying = false;
+        for (const record of waiting.get(id) ?? []) {
+          record.verdicts = answer;
+          queue(record);
+          retrying = retry.offer(record, answer) || retrying;
+        }
+        if (waiting.delete(id)) {
+          progress?.answered(id, answer, retrying);
+        }
+      }
+    };
+    try {
+      land(await detector.detect([...waiting.keys()], land));
+    } catch (problem: unknown) {
+      logger.error(problem);
+    }
+    // An ID the answer left out, or a failed lookup, ends its wait as unknown
+    for (const [id, left] of waiting) {
+      for (const record of left) {
+        record.verdicts = undefined;
+        queue(record);
+      }
+      progress?.answered(id, UNKNOWN_KINDS.error, false);
     }
   }
 

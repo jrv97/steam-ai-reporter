@@ -12,6 +12,7 @@ import { createUiState, decodeTabRequest, type UiState } from "../../core/ui/ui-
 import { createFileTransfer } from "../shared/file-transfer";
 import {
   browserTabs,
+  connectActiveTab,
   extensionUrl,
   extensionVersion,
   localStorageArea,
@@ -23,6 +24,7 @@ import {
 import { CATALOGS } from "./options.catalogs.gen";
 import { createGoBack, recordOrigin } from "./origin-tab";
 import { createExtensionSettings, createExtensionStore } from "./store";
+import { tabProgress } from "./tab-progress";
 
 // The options page and the toolbar popup: one page, options.html, which the manifest opens as
 // `options.html?context=popup` from the toolbar button. It mounts core's settings form into the
@@ -133,6 +135,7 @@ async function main(): Promise<void> {
       : {
         allSettingsUrl: optionsUrl,
         openSettings: (id) => void openSettings(uiState, session, id, optionsUrl),
+        progress: tabProgress(connectActiveTab),
       }),
   });
 

@@ -11,7 +11,8 @@ export const DEFAULT_HTML_BUDGET = 10;
  * A `Detector` decorator that passes at most `limit` IDs to `inner` over its lifetime, which is
  * one page view: the composition root builds one per page. IDs past the budget get unknown
  * `rate-limited`, which is kept in page memory only, so a later page view can try them again.
- * Pacing comes from the throttled `Http` that `inner` is built on.
+ * Pacing comes from the throttled `Http` that `inner` is built on. The sink hears the IDs past
+ * the budget at once, then what `inner` lets it hear.
  */
 export function createBudgetDetector(
   inner: Detector,
@@ -21,7 +22,7 @@ export function createBudgetDetector(
   let left = limit;
   const settle = createSettle(logger);
   return {
-    async detect(ids) {
+    async detect(ids, sink) {
       const distinct = [...new Set(ids)];
       const allowed = distinct.slice(0, Math.max(left, 0));
       left -= allowed.length;
@@ -31,8 +32,11 @@ export function createBudgetDetector(
           UNKNOWN_KINDS["rate-limited"],
         ]),
       );
+      if (verdicts.size > 0) {
+        sink?.(new Map(verdicts));
+      }
       if (allowed.length > 0) {
-        for (const [id, found] of await settle(inner, allowed)) {
+        for (const [id, found] of await settle(inner, allowed, sink)) {
           verdicts.set(id, found);
         }
       }
