@@ -48,7 +48,9 @@ export function tabProgress(connect: () => Promise<TabPort | undefined>): Progre
           listener(undefined);
         });
       }, () => {
-        listener(undefined);
+        if (open) {
+          listener(undefined);
+        }
       });
       return () => {
         open = false;

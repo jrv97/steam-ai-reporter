@@ -1,4 +1,5 @@
 import { isTransient } from "./cache/ttl";
+import { KINDS } from "./kinds/registry";
 import type { KindVerdicts } from "./kinds/verdicts";
 import type { Unsubscribe } from "./ports";
 import type { AppId } from "./types";
@@ -9,7 +10,7 @@ export interface LoadProgress {
   readonly total: number;
   /** The games whose answer is final: known, or still unknown with no retry left. */
   readonly answered: number;
-  /** The answered games that stayed unknown after their retry rounds. */
+  /** The answered games with no known kind, after their retry rounds or in a final answer. */
   readonly unknown: number;
   /** When GetItems requests go out again (epoch milliseconds), while Steam's limit holds them. */
   readonly pausedUntil?: number;
@@ -62,6 +63,11 @@ export function followProgress(feed: Promise<LoadProgressFeed | undefined>): Pro
 
 /** Where one game stands: waiting for its first answer, for a retry, or answered. */
 type GameState = "waiting" | "retrying" | "known" | "unknown";
+
+/** Whether some kind holds a value; an answer of only unknowns tells nothing of the game. */
+function tellsAnything(verdicts: KindVerdicts): boolean {
+  return KINDS.some((kind) => verdicts[kind.id].state !== "unknown");
+}
 
 function sameProgress(a: LoadProgress, b: LoadProgress): boolean {
   return a.total === b.total && a.answered === b.answered && a.unknown === b.unknown
@@ -138,6 +144,8 @@ export function createLoadProgress(
       let next: GameState = "known";
       if (isTransient(verdicts)) {
         next = retrying ? "retrying" : "unknown";
+      } else if (!tellsAnything(verdicts)) {
+        next = "unknown";
       }
       move(id, next);
       changed();

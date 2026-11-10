@@ -204,6 +204,7 @@ export async function start(deps: AppDeps): Promise<App> {
     isBadged: (forKind) => effectiveSettings(settings.kinds[forKind]).badge,
     tagged: (verdicts) => taggedView(verdicts, settings.kinds),
     progress,
+    logger,
   });
   const scanner = createScanner({ document: doc, renderer: capsules });
   const notice = createHiddenNotice({ document: doc, i18n });

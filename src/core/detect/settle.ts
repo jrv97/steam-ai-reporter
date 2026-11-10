@@ -14,6 +14,19 @@ export type Settle = (
   sink?: VerdictSink,
 ) => Promise<ReadonlyMap<AppId, KindVerdicts>>;
 
+/** Hands `verdicts` to `sink` and logs a throw, so one faulty listener stops no delivery. */
+export function tell(
+  sink: VerdictSink,
+  verdicts: ReadonlyMap<AppId, KindVerdicts>,
+  logger: Pick<Logger, "error">,
+): void {
+  try {
+    sink(verdicts);
+  } catch (problem: unknown) {
+    logger.error(problem);
+  }
+}
+
 /**
  * A `Settle` for one decorator, so one faulty link cannot reject the whole detection. The first
  * rejection of a streak goes to `logger`; an answer ends the streak.
@@ -35,7 +48,7 @@ export function createSettle(logger: Pick<Logger, "error">): Settle {
         }
       }
       if (fresh.size > 0) {
-        sink(fresh);
+        tell(sink, fresh, logger);
       }
     };
     let found: ReadonlyMap<AppId, KindVerdicts>;

@@ -251,17 +251,27 @@ export function startAppPage(
 
   async function settle(): Promise<void> {
     deps.progress?.asked([id]);
-    const detected = (await detectors.detector.detect([id])).get(id) ?? UNKNOWN_KINDS.missing;
-    const next = withLastUpdate(
-      live === undefined
-        ? await translatedVerdicts(id, deps.language, detected, detectors.getItems)
-        : mergeVerdicts(live, detected, disagree),
-      doc,
-    );
-    if (!stopped) {
-      known = next;
-      render();
-      deps.progress?.answered(id, detected, retry.offer(page, detected));
+    let answered = false;
+    try {
+      const detected = (await detectors.detector.detect([id])).get(id) ?? UNKNOWN_KINDS.missing;
+      const next = withLastUpdate(
+        live === undefined
+          ? await translatedVerdicts(id, deps.language, detected, detectors.getItems)
+          : mergeVerdicts(live, detected, disagree),
+        doc,
+      );
+      if (!stopped) {
+        known = next;
+        render();
+        const retrying = retry.offer(page, detected);
+        answered = true;
+        deps.progress?.answered(id, detected, retrying);
+      }
+    } finally {
+      // A failed lookup still ends the wait, as unknown.
+      if (!answered && !stopped) {
+        deps.progress?.answered(id, UNKNOWN_KINDS.error, false);
+      }
     }
   }
 

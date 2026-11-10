@@ -979,6 +979,10 @@
     "message": "Open a Steam store page to load its tags",
     "description": "The load strip at the top of the toolbar popup and of the userscript settings dialog, which shows how far the tags of the store page in the current tab have loaded. Its message when the current tab is no Steam store page, so there is nothing to load."
   },
+  "options_progress_no_games": {
+    "message": "No games on this page yet",
+    "description": "The load strip at the top of the toolbar popup and of the userscript settings dialog, which shows how far the tags of the store page in the current tab have loaded. Its message when the store page has asked for no game yet, as on a page that lists none or before its first games are found. Shown muted, with an empty bar and no count."
+  },
   "options_chip_reset_label": {
     "message": "Reset the chip text of $heading$",
     "description": "Screen reader name of the Reset button next to the chip text field. Starts with the button's visible word (options_color_reset). $heading$ is Steam's own line for the tag.",

@@ -1,7 +1,8 @@
 import { createTransientRetry, type Delay } from "../detect/retry";
 import type { KindId } from "../kinds/id";
 import { KINDS, perKind } from "../kinds/registry";
-import type { KindVerdicts, Relations } from "../kinds/verdicts";
+import { type KindVerdicts, type Relations, UNKNOWN_KINDS } from "../kinds/verdicts";
+import type { Logger } from "../log";
 import type { Detector } from "../ports";
 import type { LoadTracker } from "../progress";
 import { HOST_APPID } from "../scan/marks";
@@ -67,6 +68,8 @@ export interface CapsuleUiOptions {
   readonly delay?: Delay;
   /** Hears which games the hosts ask for and how each answer lands. */
   readonly progress?: LoadTracker;
+  /** Logs a lookup that failed. */
+  readonly logger: Pick<Logger, "error">;
 }
 
 /** The scanner's renderer, plus a way to draw known hosts again after a change. */
@@ -126,7 +129,7 @@ const NO_SLOT: SlotRead = { slot: undefined, markAnchor: false, unsized: false }
  * no node the scanner sees, and tabs fade in.
  */
 export function createCapsuleUi(options: CapsuleUiOptions): CapsuleUi {
-  const { document: doc, detector, renderers, isAllowed, isBadged, progress } = options;
+  const { document: doc, detector, renderers, isAllowed, isBadged, progress, logger } = options;
   const tagged = options.tagged ?? ((verdicts: KindVerdicts) => verdicts);
   const frame = options.frame ?? ((callback: () => void) => {
     const view = doc.defaultView;
@@ -311,10 +314,18 @@ export function createCapsuleUi(options: CapsuleUiOptions): CapsuleUi {
         }
       }
     };
-    land(await detector.detect([...waiting.keys()], land));
-    for (const record of [...waiting.values()].flat()) {
-      record.verdicts = undefined;
-      queue(record);
+    try {
+      land(await detector.detect([...waiting.keys()], land));
+    } catch (problem: unknown) {
+      logger.error(problem);
+    }
+    // An ID the answer left out, or a failed lookup, ends its wait as unknown
+    for (const [id, left] of waiting) {
+      for (const record of left) {
+        record.verdicts = undefined;
+        queue(record);
+      }
+      progress?.answered(id, UNKNOWN_KINDS.error, false);
     }
   }
 

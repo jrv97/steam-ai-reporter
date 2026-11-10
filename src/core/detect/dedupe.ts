@@ -2,7 +2,7 @@ import { type KindVerdicts, UNKNOWN_KINDS } from "../kinds/verdicts";
 import type { Logger } from "../log";
 import type { Detector, VerdictSink } from "../ports";
 import type { AppId } from "../types";
-import { createSettle } from "./settle";
+import { createSettle, tell } from "./settle";
 
 type Answer = Promise<ReadonlyMap<AppId, KindVerdicts>>;
 
@@ -62,7 +62,7 @@ export function createDedupingDetector(inner: Detector, logger: Pick<Logger, "er
       for (const waiter of flight.waiters) {
         const heard = pick(partial, waiter.ids);
         if (heard.size > 0) {
-          waiter.sink(heard);
+          tell(waiter.sink, heard, logger);
         }
       }
     });
@@ -96,7 +96,7 @@ export function createDedupingDetector(inner: Detector, logger: Pick<Logger, "er
       joined.push([flight, waiter]);
       const landed = pick(flight.landed, ids);
       if (landed.size > 0) {
-        sink(landed);
+        tell(sink, landed, logger);
       }
     }
     return () => {

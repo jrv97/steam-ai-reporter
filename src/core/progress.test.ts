@@ -13,10 +13,11 @@ type Answer = readonly [game: number, verdicts: KindVerdicts, retrying: boolean]
 describe("createLoadProgress", () => {
   it.each<readonly [string, readonly Answer[], LoadProgress]>([
     ["nothing answered", [], { total: 3, answered: 0, unknown: 0 }],
-    ["a known answer, stored ones included", [[0, KNOWN, false], [1, MISSING, false]], {
+    ["a known answer", [[0, KNOWN, false]], { total: 3, answered: 1, unknown: 0 }],
+    ["an answer of only stored unknowns", [[0, MISSING, false]], {
       total: 3,
-      answered: 2,
-      unknown: 0,
+      answered: 1,
+      unknown: 1,
     }],
     ["a transient answer with a retry ahead", [[0, LIMITED, true]], {
       total: 3,

@@ -362,7 +362,8 @@
   line-height: var(--tks-leading-sm);
 }
 
-.tks-load[data-tks-load="none"] .tks-load-line {
+.tks-load[data-tks-load="none"] .tks-load-line,
+.tks-load[data-tks-load="empty"] .tks-load-line {
   color: var(--tks-color-text-subtle);
 }
 

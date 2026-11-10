@@ -3,8 +3,8 @@ import type { MessageCatalog } from "../ports";
 import type { LoadProgress, ProgressSource } from "../progress";
 import { createElement } from "./element";
 
-/** The strip's four states, as its `data-tks-load` attribute names them. */
-type StripState = "loading" | "paused" | "done" | "none";
+/** The strip's five states, as its `data-tks-load` attribute names them. */
+type StripState = "loading" | "paused" | "done" | "empty" | "none";
 
 /** What one draw shows. */
 interface StripView {
@@ -58,6 +58,10 @@ function viewOf(
     return { state: "none", message, seconds: "", count: "", answered: 0, total: 0 };
   }
   const { total, answered, unknown, pausedUntil } = progress;
+  if (total === 0) {
+    const message = i18n.t("options_progress_no_games");
+    return { state: "empty", message, seconds: "", count: "", answered: 0, total: 0 };
+  }
   const counts = { answered: numbers.format(answered), total: numbers.format(total) };
   const base = { seconds: "", answered, total };
   if (answered < total && pausedUntil !== undefined && pausedUntil > now) {

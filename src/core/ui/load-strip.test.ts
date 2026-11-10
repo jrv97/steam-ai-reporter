@@ -82,6 +82,14 @@ describe("createLoadStrip", () => {
         now: "48",
         max: "48",
       }],
+      ["a page that asked for no game yet", { total: 0, answered: 0, unknown: 0 }, {
+        state: "empty",
+        message: i18n.t("options_progress_no_games"),
+        bold: undefined,
+        count: "",
+        now: "0",
+        max: "1",
+      }],
       ["no store page", undefined, {
         state: "none",
         message: i18n.t("options_progress_no_page"),

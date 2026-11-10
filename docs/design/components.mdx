@@ -618,9 +618,10 @@ A strip between the popup's header and the first tag row, and at the top of the 
   1. `loading`: `options_progress_loading`, count `options_progress_loading_count` ("12 of 48 games"), fill `tks-load-fill` (accent 500).
   2. `paused`, while the GetItems breaker holds requests and games are left: `options_progress_paused` with the countdown `options_progress_seconds` in bold `tks-color-text-strong`, count `options_progress_count` ("12 of 48"), and a hatched fill: 4px stripes at 135 degrees of `tks-color-text-subtle` and `tks-load-hatch`. The countdown ticks once a second while the popup or the dialog is open; once the pause ends the strip returns to `loading`.
   3. `done`, once every game has an answer: `options_progress_done` ("Tags loaded for 48 games"), or `options_progress_done_unknown` when some games stayed unknown after their retry rounds ("Tags loaded for 46 games. No answer for 2"); count `options_progress_count` with the total twice; a full bar in `tks-load-fill-done` (accent 700).
-  4. `none`, when the active tab has no store page, no content script or the connection fails: `options_progress_no_page` in `tks-color-text-subtle`, no count and an empty track.
+  4. `empty`, while the store page has asked for no game: `options_progress_no_games` ("No games on this page yet") in `tks-color-text-subtle`, no count and an empty track.
+  5. `none`, when the active tab has no store page, no content script or the connection fails: `options_progress_no_page` in `tks-color-text-subtle`, no count and an empty track.
 - Until the first progress arrives the strip shows an empty line and track at the same height.
-- What it counts: the distinct games the capsules and the app page asked for; a game is answered once it is known, or once it stayed unknown with no retry left. The copy speaks about loading only and says nothing about any game (rule 4).
+- What it counts: the distinct games the capsules and the app page asked for; a game is answered once it is known, or once it stayed unknown with no retry left. An answer whose every kind is unknown counts as unknown. The copy speaks about loading only and says nothing about any game (rule 4).
 - Forced colors draw the track with a `CanvasText` edge and the fill in `Highlight`.
 
 ### Longer translations

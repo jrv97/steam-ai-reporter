@@ -77,6 +77,7 @@ function setup(
     isAllowed,
     isBadged: (kind) => !unbadged.has(kind),
     frame: (callback) => frames.push(callback),
+    logger: fake.logger().logger,
     watchSize: (onSized): SizeWatch => {
       reportSized = onSized;
       return {
@@ -428,6 +429,7 @@ describe("createCapsuleUi", () => {
       isBadged: () => true,
       frame: frames.frame,
       progress,
+      logger: fake.logger().logger,
     });
     const answer = async () => {
       await new Promise((resolve) => setTimeout(resolve, 0));
@@ -442,6 +444,30 @@ describe("createCapsuleUi", () => {
     await answer();
     expect(drawn).toStrictEqual(hosts.map((each) => each.element));
     expect(http.calls).toHaveLength(2);
+  });
+
+  it.each(
+    [
+      ["an ID the answer leaves out", fake.partialDetector(new Map()), 0],
+      ["a lookup that rejects, and logs it", fake.rejectingDetector(), 1],
+    ] as const,
+  )("counts as unknown %s", async (_name, detector, logged) => {
+    const { logger, sink } = fake.logger();
+    const progress = createLoadProgress(() => undefined);
+    const ui = createCapsuleUi({
+      document,
+      detector,
+      renderers: [],
+      isAllowed: () => false,
+      isBadged: () => true,
+      frame: fake.queue().frame,
+      progress,
+      logger,
+    });
+    ui.render({ found: [host(make.appId())], changed: [] });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(progress.snapshot()).toStrictEqual({ total: 1, answered: 1, unknown: 1 });
+    expect(sink.error).toHaveBeenCalledTimes(logged);
   });
 
   describe("after a transient answer", () => {
@@ -472,6 +498,7 @@ describe("createCapsuleUi", () => {
         frame: frames.frame,
         delay: timers.delay,
         progress,
+        logger: fake.logger().logger,
       });
       /** Lets the pending lookup answer, then draws. */
       const answered = async () => {
@@ -493,7 +520,7 @@ describe("createCapsuleUi", () => {
           stay,
           1,
           false,
-          0,
+          1,
         ],
         ["rate-limited every time: asked twice more", [LIMITED], stay, 1 + MAX_RETRIES, false, 1],
       ] as const,
