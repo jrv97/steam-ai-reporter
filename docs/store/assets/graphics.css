@@ -1,5 +1,6 @@
 /*
- * Shared styles for the Chrome Web Store graphics (promo-tile.html, marquee.html).
+ * Shared styles for the store graphics and the GitHub social preview (promo-tile.html,
+ * marquee.html, social-preview.html).
  * Colors, type and chip shapes come from docs/design/tokens.css. The chips are the full badge
  * of docs/design/components.mdx scaled by --k, with no other change. No font is bundled: the
  * page's own stack resolves to whatever the machine has.

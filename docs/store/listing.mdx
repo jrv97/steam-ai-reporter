@@ -112,11 +112,12 @@ Prices show in euros because of the capture location, and the store pages show t
 
 ## Graphics
 
-`docs/store/assets/` holds the Chrome Web Store graphics and their sources, made from the extension mark (`assets/icons/mark-purple.svg`), the tokens in `docs/design/tokens.css` and the full badge shape at a larger scale. They embed nothing remote and show no screenshot of Steam.
+`docs/store/assets/` holds the Chrome Web Store graphics, the GitHub social preview and their sources, made from the extension mark (`assets/icons/mark-purple.svg`), the tokens in `docs/design/tokens.css` and the full badge shape at a larger scale. They embed nothing remote and show no screenshot of Steam.
 
 - `promo-tile.png`: the small promo tile, 440 x 280, from `promo-tile.html`.
 - `marquee.png`: the marquee promo tile, 1400 x 560, from `marquee.html`.
+- `social-preview.png`: the GitHub social preview, 1280 x 640, from `social-preview.html`. GitHub has no API for it; upload it under Settings, General, Social preview.
 
-Both pages share `graphics.css`. To render one again, open its page in Chromium at the size above (device scale factor 1) and save a screenshot of the full viewport as a PNG.
+The three pages share `graphics.css`. To render one again, open its page in Chromium at the size above (device scale factor 1) and save a screenshot of the full viewport as a PNG.
 
 The store icon is `assets/icons/icon-128.png`, which the build also ships.
