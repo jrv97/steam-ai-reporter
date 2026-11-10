@@ -11,7 +11,7 @@
 
 A browser extension for Chromium-based browsers and Firefox, and a userscript (Tampermonkey and Violentmonkey) that tag items on the Steam store with what Valve's own data says about them: AI Generated Content Disclosure, Anti-Cheat (Kernel Level flagged separately), 3rd-party DRM, 3rd-Party Account, 3rd-party EULA, PvP (friend request), In-App Purchases, Valve's Steam Deck and Steam Machine compatibility ratings, Family Sharing as Steam's features list it, and Early Access.
 
-> Status: published on the Chrome Web Store and Firefox Add-ons (links under [Install](#install)). [Releases](https://github.com/jrv97/tag-kit-for-steam/releases) are on GitHub.
+> Status: published on the Chrome Web Store, Firefox Add-ons and Greasy Fork (links under [Install](#install)). [Releases](https://github.com/jrv97/tag-kit-for-steam/releases) are on GitHub.
 
 The extension only reads what Steam's store data and developers report there, and sends no reports anywhere.
 
@@ -102,7 +102,8 @@ The toolbar popup lists every tag by its short name, with its Show, Dim and Hide
 
 - <img src="https://cdn.simpleicons.org/chromewebstore" alt="" width="16" height="16"> [Chrome Web Store](https://chromewebstore.google.com/detail/ai-reporter-for-steam/jpbjlfnkdmmdccfiocblhkjdejaihnkp).
 - <img src="https://cdn.simpleicons.org/firefoxbrowser" alt="" width="16" height="16"> [Firefox Add-ons (AMO)](https://addons.mozilla.org/en-US/firefox/addon/tag-kit-for-steam/).
-- <img src="https://cdn.simpleicons.org/github/8b949e" alt="" width="16" height="16"> Userscript: open the `.user.js` file from the [latest release](https://github.com/jrv97/tag-kit-for-steam/releases/latest) in Tampermonkey or Violentmonkey.
+- <img src="https://cdn.simpleicons.org/greasyfork" alt="" width="16" height="16"> Userscript on [Greasy Fork](https://greasyfork.org/en/scripts/604708-tag-kit-for-steam), for Tampermonkey or Violentmonkey.
+- <img src="https://cdn.simpleicons.org/github/8b949e" alt="" width="16" height="16"> Userscript from GitHub: open the `.user.js` file from the [latest release](https://github.com/jrv97/tag-kit-for-steam/releases/latest) in Tampermonkey or Violentmonkey.
 
 ## Feedback
 
