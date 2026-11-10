@@ -4,7 +4,7 @@
 # Machine-specific values (browser paths, Git Bash on Windows) go in mise.local.toml; see
 # mise.local.toml.example.
 
-min_version = "2026.10.25"
+min_version = "2026.11.0"
 
 [tools]
 node = "24.14.0"

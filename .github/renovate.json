@@ -9,7 +9,7 @@
   "labels": ["dependencies"],
   "prBodyTemplate": "{{{table}}}{{{warnings}}}{{{notes}}}{{{changelogs}}}{{{controls}}}",
   "constraints": {
-    "mise": "2026.10.25"
+    "mise": "2026.11.0"
   },
   "internalChecksFilter": "strict",
   "separateMinorPatch": true,
