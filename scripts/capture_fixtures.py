@@ -432,13 +432,23 @@ def capture_app_pages(out: Path, pages: tuple[AppPage, ...] = APP_PAGES) -> None
         body = fetch(f"https://store.steampowered.com/app/{page.appid}/?l=english")
         clean = sanitize_page(body, page.shallow)
         if page.features_only and not has_features(clean):
-            # An age gate serves no app name or features list; keep the old file and go on.
-            print(f"skipped {page.file}: no app name or features list", file=sys.stderr)
+            keep_committed(out, page.file)
         else:
             write(
                 out / "app-page" / page.file, features_page(clean) if page.features_only else clean
             )
         time.sleep(SPACING_SECONDS)
+
+
+def keep_committed(out: Path, file: str) -> None:
+    """An age gate serves no app name or features list: keep the committed page in `out`."""
+    committed = FIXTURES / "app-page" / file
+    if not committed.is_file():
+        fail(f"{file}: no app name or features list, and no committed page to keep")
+    target = out / "app-page" / file
+    if target.resolve() != committed.resolve():
+        write(target, committed.read_text(encoding="utf-8"))
+    print(f"kept the committed {file}: no app name or features list", file=sys.stderr)
 
 
 def update_readme_date() -> None:
