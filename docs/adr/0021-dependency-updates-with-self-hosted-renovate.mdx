@@ -1,5 +1,5 @@
 ---
-status: accepted
+status: accepted, amended 2026-11-11
 date: 2026-11-09
 decision-makers: Jorge Rodriguez de la Vega
 ---
@@ -79,3 +79,9 @@ Two more pieces close the gap for npm. `mise run ci` gains `mise run audit` (`pn
 - Renovate GitHub App permissions: https://docs.renovatebot.com/modules/platform/github/
 - Dependabot ecosystems and the pnpm lockfile note: https://docs.github.com/en/code-security/dependabot/ecosystems-supported-by-dependabot/supported-ecosystems-and-repositories
 - Dependabot options: https://docs.github.com/en/code-security/dependabot/working-with-dependabot/dependabot-options-reference
+
+## Amendment 2026-11-11: minor updates merge on green CI
+
+Minor updates arrive far more often than patches, and each one waited for a review that added nothing once `mise run ci` passed. Minor, patch and digest updates now auto-merge once the required checks pass. Majors still wait for review. mise updates (`jdx/mise`) stay manual too: they rewrite the release workflows, which CI on a PR never runs, and mise's date versions make every release a minor.
+
+Renovate's `renovate-config` manager now reads `constraints.mise` on its own, as a `tool-constraint` dependency named `mise`. It opened a second PR for the line the regex manager already moves with the mise group, and wrote the version with a `v` prefix. A package rule turns that dependency off.

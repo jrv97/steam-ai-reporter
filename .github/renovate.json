@@ -105,9 +105,21 @@
       "enabled": false
     },
     {
-      "description": "Patch updates merge once the required checks pass",
-      "matchUpdateTypes": ["patch"],
+      "description": "The regex manager above moves constraints.mise with the mise group",
+      "matchManagers": ["renovate-config"],
+      "matchDepTypes": ["tool-constraint"],
+      "matchDepNames": ["mise"],
+      "enabled": false
+    },
+    {
+      "description": "Routine updates merge once the required checks pass",
+      "matchUpdateTypes": ["minor", "patch", "digest"],
       "automerge": true
+    },
+    {
+      "description": "mise updates rewrite the workflows that CI does not run on a PR",
+      "matchDepNames": ["jdx/mise"],
+      "automerge": false
     }
   ]
 }
