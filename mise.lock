@@ -68,38 +68,38 @@ url = "https://github.com/miniscruff/changie/releases/download/v1.26.0/changie_1
 url_api = "https://api.github.com/repos/miniscruff/changie/releases/assets/522840186"
 
 [[tools.dprint]]
-version = "0.64.0"
+version = "0.64.3"
 backend = "aqua:dprint/dprint"
-specifiers = ["0.64.0"]
+specifiers = ["0.64.3"]
 
 [tools.dprint."platforms.linux-arm64"]
-checksum = "sha256:f9308f92d90ad8c5487730b5d8f90757e0e51070f075113d0e654f97f5d72a45"
-url = "https://github.com/dprint/dprint/releases/download/0.64.0/dprint-aarch64-unknown-linux-gnu.zip"
-url_api = "https://api.github.com/repos/dprint/dprint/releases/assets/654469789"
+checksum = "sha256:c820bfc67b0cd6f5f0fa4d00ecdcb056944c86030859f5e50151c88d9164b30d"
+url = "https://github.com/dprint/dprint/releases/download/0.64.3/dprint-aarch64-unknown-linux-gnu.zip"
+url_api = "https://api.github.com/repos/dprint/dprint/releases/assets/667629157"
 provenance = "github-attestations"
 
 [tools.dprint."platforms.linux-x64"]
-checksum = "sha256:5102aa940a060e48c33a5ceefce1273c701c6618503b7514323caada3b3649bb"
-url = "https://github.com/dprint/dprint/releases/download/0.64.0/dprint-x86_64-unknown-linux-gnu.zip"
-url_api = "https://api.github.com/repos/dprint/dprint/releases/assets/654469790"
+checksum = "sha256:f71cb7e22d6776439eba168d5cb296092d6413fea7148fe4d70684a2702a4fee"
+url = "https://github.com/dprint/dprint/releases/download/0.64.3/dprint-x86_64-unknown-linux-gnu.zip"
+url_api = "https://api.github.com/repos/dprint/dprint/releases/assets/667629165"
 provenance = "github-attestations"
 
 [tools.dprint."platforms.macos-arm64"]
-checksum = "sha256:791560cf48299933a9fff2aea93b7e42b39e62d8a109634619d01c4f2c1aa68a"
-url = "https://github.com/dprint/dprint/releases/download/0.64.0/dprint-aarch64-apple-darwin.zip"
-url_api = "https://api.github.com/repos/dprint/dprint/releases/assets/654469787"
+checksum = "sha256:94b48820945602fb113a34343db0a9e653a8346c60966f790556dc9ce4084a92"
+url = "https://github.com/dprint/dprint/releases/download/0.64.3/dprint-aarch64-apple-darwin.zip"
+url_api = "https://api.github.com/repos/dprint/dprint/releases/assets/667629166"
 provenance = "github-attestations"
 
 [tools.dprint."platforms.macos-x64"]
-checksum = "sha256:c5eb2a8b07e12d32818ee9f3c19c708d88be2c974eedaab7c4a31e902e30f429"
-url = "https://github.com/dprint/dprint/releases/download/0.64.0/dprint-x86_64-apple-darwin.zip"
-url_api = "https://api.github.com/repos/dprint/dprint/releases/assets/654469793"
+checksum = "sha256:b868e1e87d2ed23217e5ea9521989c167ce8392090088bf0e1fb43be727ea752"
+url = "https://github.com/dprint/dprint/releases/download/0.64.3/dprint-x86_64-apple-darwin.zip"
+url_api = "https://api.github.com/repos/dprint/dprint/releases/assets/667629151"
 provenance = "github-attestations"
 
 [tools.dprint."platforms.windows-x64"]
-checksum = "sha256:2d0be3f0aa8d3c55e4ae19de324353d2179dade2a05b0eda5bd80bc1b94579cc"
-url = "https://github.com/dprint/dprint/releases/download/0.64.0/dprint-x86_64-pc-windows-msvc.zip"
-url_api = "https://api.github.com/repos/dprint/dprint/releases/assets/654469795"
+checksum = "sha256:3beb87a2582f1e43a301efd0840565518484e53f8c7b0ad27b857eee08e0745f"
+url = "https://github.com/dprint/dprint/releases/download/0.64.3/dprint-x86_64-pc-windows-msvc.zip"
+url_api = "https://api.github.com/repos/dprint/dprint/releases/assets/667629154"
 provenance = "github-attestations"
 
 [[tools.gh]]
@@ -204,10 +204,10 @@ url_api = "https://api.github.com/repos/pnpm/pnpm/releases/assets/643957404"
 provenance = "github-attestations"
 
 [[tools."pypi:mypy"]]
-version = "2.4.0"
+version = "2.4.1"
 backend = "pypi:mypy"
-specifiers = ["2.4.0"]
-uv = { path = ".mise/locks/pypi-mypy/2.4.0", digest = "sha256:98facc5e09be240ffedbe140fb8d1910a086c99a1bb92c59469423e5f10112a8" }
+specifiers = ["2.4.1"]
+uv = { path = ".mise/locks/pypi-mypy/2.4.1", digest = "sha256:21e4c32254b79320d952fc4ac15e57e52ce5f3e72d8fe7aa47cb27ce05472437" }
 
 [[tools.python]]
 version = "3.15.2"
@@ -240,38 +240,38 @@ url = "https://github.com/astral-sh/python-build-standalone/releases/download/20
 provenance = "github-attestations"
 
 [[tools.ruff]]
-version = "0.17.1"
+version = "0.17.3"
 backend = "aqua:astral-sh/ruff"
-specifiers = ["0.17.1"]
+specifiers = ["0.17.3"]
 
 [tools.ruff."platforms.linux-arm64"]
-checksum = "sha256:d3ead1f0ed779e777a034ccd9286be6bd9bd3cdaba732ff9797f8288a283e9e2"
-url = "https://github.com/astral-sh/ruff/releases/download/0.17.1/ruff-aarch64-unknown-linux-gnu.tar.gz"
-url_api = "https://api.github.com/repos/astral-sh/ruff/releases/assets/644283344"
+checksum = "sha256:3f4639152c0e42bb5938e6c23d53d527a38f3133e000102934518f90529fa299"
+url = "https://github.com/astral-sh/ruff/releases/download/0.17.3/ruff-aarch64-unknown-linux-gnu.tar.gz"
+url_api = "https://api.github.com/repos/astral-sh/ruff/releases/assets/679956412"
 provenance = "github-attestations"
 
 [tools.ruff."platforms.linux-x64"]
-checksum = "sha256:a293ac937715ae6fb6b64da86761598379e6149f40fbc00fde9ba8a2a562ac65"
-url = "https://github.com/astral-sh/ruff/releases/download/0.17.1/ruff-x86_64-unknown-linux-gnu.tar.gz"
-url_api = "https://api.github.com/repos/astral-sh/ruff/releases/assets/644283613"
+checksum = "sha256:2b0890f5a55900af741f133918c2656919bbf18c2ab7741b4ca8403a90e647a9"
+url = "https://github.com/astral-sh/ruff/releases/download/0.17.3/ruff-x86_64-unknown-linux-gnu.tar.gz"
+url_api = "https://api.github.com/repos/astral-sh/ruff/releases/assets/679956535"
 provenance = "github-attestations"
 
 [tools.ruff."platforms.macos-arm64"]
-checksum = "sha256:1c8e6e36538eaa0b996378a20c226403c4ca6369ac24884751b024d3a9530b86"
-url = "https://github.com/astral-sh/ruff/releases/download/0.17.1/ruff-aarch64-apple-darwin.tar.gz"
-url_api = "https://api.github.com/repos/astral-sh/ruff/releases/assets/644283324"
+checksum = "sha256:118f7121aa838785672bf612487f755a89108bb5f44e0f3df96c5967a72614f9"
+url = "https://github.com/astral-sh/ruff/releases/download/0.17.3/ruff-aarch64-apple-darwin.tar.gz"
+url_api = "https://api.github.com/repos/astral-sh/ruff/releases/assets/679956403"
 provenance = "github-attestations"
 
 [tools.ruff."platforms.macos-x64"]
-checksum = "sha256:88ee16f88dba9d440e06375f46898ec85baf578042ad086764d5a33558bb6e17"
-url = "https://github.com/astral-sh/ruff/releases/download/0.17.1/ruff-x86_64-apple-darwin.tar.gz"
-url_api = "https://api.github.com/repos/astral-sh/ruff/releases/assets/644283566"
+checksum = "sha256:17f95b1bee24d70de62ffe5beec7f71bb541c7e3d147a1c3d84f7cd6525f6fdf"
+url = "https://github.com/astral-sh/ruff/releases/download/0.17.3/ruff-x86_64-apple-darwin.tar.gz"
+url_api = "https://api.github.com/repos/astral-sh/ruff/releases/assets/679956517"
 provenance = "github-attestations"
 
 [tools.ruff."platforms.windows-x64"]
-checksum = "sha256:a841fb7e59680508b9394bfea32e369b3907cc6620a491c65d8d1f479498db82"
-url = "https://github.com/astral-sh/ruff/releases/download/0.17.1/ruff-x86_64-pc-windows-msvc.zip"
-url_api = "https://api.github.com/repos/astral-sh/ruff/releases/assets/644283579"
+checksum = "sha256:a84d9ac74af8ef5bac84a1888a1634df18e6e985e2f930d35c052beacd00e813"
+url = "https://github.com/astral-sh/ruff/releases/download/0.17.3/ruff-x86_64-pc-windows-msvc.zip"
+url_api = "https://api.github.com/repos/astral-sh/ruff/releases/assets/679956524"
 provenance = "github-attestations"
 
 [[tools.shellcheck]]
@@ -335,38 +335,38 @@ url = "https://github.com/mvdan/sh/releases/download/v3.14.1/shfmt_v3.14.1_windo
 url_api = "https://api.github.com/repos/mvdan/sh/releases/assets/547320827"
 
 [[tools.uv]]
-version = "0.13.1"
+version = "0.13.7"
 backend = "aqua:astral-sh/uv"
-specifiers = ["0.13.1"]
+specifiers = ["0.13.7"]
 
 [tools.uv."platforms.linux-arm64"]
-checksum = "sha256:9041c73c99fdc5892cf128140beb354eca9231d502068cc36e6cb53a8e59ad14"
-url = "https://github.com/astral-sh/uv/releases/download/0.13.1/uv-aarch64-unknown-linux-gnu.tar.gz"
-url_api = "https://api.github.com/repos/astral-sh/uv/releases/assets/639312990"
+checksum = "sha256:71279f8d3c67241e807b9d8db872d1bf541579fb9f08b7d1eb1682196d1e57dc"
+url = "https://github.com/astral-sh/uv/releases/download/0.13.7/uv-aarch64-unknown-linux-gnu.tar.gz"
+url_api = "https://api.github.com/repos/astral-sh/uv/releases/assets/704009469"
 provenance = "github-attestations"
 
 [tools.uv."platforms.linux-x64"]
-checksum = "sha256:eadd9d27c134ab5ac1ffd4473b97a741407f3ea238288f03121fc4deddf90220"
-url = "https://github.com/astral-sh/uv/releases/download/0.13.1/uv-x86_64-unknown-linux-gnu.tar.gz"
-url_api = "https://api.github.com/repos/astral-sh/uv/releases/assets/639313223"
+checksum = "sha256:c5221ff41b7892bfc223543883600125f6a47fe845093e0f5bdff4f359196d83"
+url = "https://github.com/astral-sh/uv/releases/download/0.13.7/uv-x86_64-unknown-linux-gnu.tar.gz"
+url_api = "https://api.github.com/repos/astral-sh/uv/releases/assets/704009823"
 provenance = "github-attestations"
 
 [tools.uv."platforms.macos-arm64"]
-checksum = "sha256:cfe454573412ff7380d15fc7dae5997ab53ffce72fce0a78e91ddbc84001acd2"
-url = "https://github.com/astral-sh/uv/releases/download/0.13.1/uv-aarch64-apple-darwin.tar.gz"
-url_api = "https://api.github.com/repos/astral-sh/uv/releases/assets/639312976"
+checksum = "sha256:81b811b57e4624df7ed3aac148e0359100d9962f3d9dce00aec533dc2e086731"
+url = "https://github.com/astral-sh/uv/releases/download/0.13.7/uv-aarch64-apple-darwin.tar.gz"
+url_api = "https://api.github.com/repos/astral-sh/uv/releases/assets/704009442"
 provenance = "github-attestations"
 
 [tools.uv."platforms.macos-x64"]
-checksum = "sha256:bb7b805bdcf3d0bc8c74ceb94569e6b3e8aa35bd492acdbb9d46bf46d9d4ff6b"
-url = "https://github.com/astral-sh/uv/releases/download/0.13.1/uv-x86_64-apple-darwin.tar.gz"
-url_api = "https://api.github.com/repos/astral-sh/uv/releases/assets/639313196"
+checksum = "sha256:20c47e4c1f630b8abaff8c291fa9b9aa300fef92c4fbff95adf198b55287cda7"
+url = "https://github.com/astral-sh/uv/releases/download/0.13.7/uv-x86_64-apple-darwin.tar.gz"
+url_api = "https://api.github.com/repos/astral-sh/uv/releases/assets/704009775"
 provenance = "github-attestations"
 
 [tools.uv."platforms.windows-x64"]
-checksum = "sha256:3b2661a463a5baea7f5076ea2b25ab71d77f36a6c0d809e5350651792f80a672"
-url = "https://github.com/astral-sh/uv/releases/download/0.13.1/uv-x86_64-pc-windows-msvc.zip"
-url_api = "https://api.github.com/repos/astral-sh/uv/releases/assets/639313211"
+checksum = "sha256:0cdc5b38fe5a8168ed6a25814f5ba43c21d313dd3187314fccb37b7cec46e021"
+url = "https://github.com/astral-sh/uv/releases/download/0.13.7/uv-x86_64-pc-windows-msvc.zip"
+url_api = "https://api.github.com/repos/astral-sh/uv/releases/assets/704009796"
 provenance = "github-attestations"
 
 [[tools.zizmor]]
