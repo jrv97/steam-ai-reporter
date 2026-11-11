@@ -141,8 +141,9 @@ These are hard rules. A change that breaks one needs an ADR first.
 - After a merge: archive the session, remove its worktree and branch, and rebase any open branch
   that the merge left behind onto `main`.
 - PR descriptions carry no AI attribution or trailers.
-- Renovate (ADR 0021) opens dependency PRs on `build/` branches. Security fixes, patch updates and
-  lockfile maintenance auto-merge once CI passes; review the rest like any PR.
+- Renovate (ADR 0021) opens dependency PRs on `build/` branches. Security fixes, minor, patch and
+  digest updates and lockfile maintenance auto-merge once CI passes; majors and mise's own updates
+  get a review like any PR.
 - On GitHub, sessions may push branches, open PRs, add labels and close superseded PRs. They
   change repo settings only after explicit approval. They post no comments, reviews or issues.
 - Plans in `docs/plans/` and research in `docs/research/` stay committed in this repo, since ADRs
