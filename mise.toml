@@ -7,9 +7,9 @@
 min_version = "2026.10.25"
 
 [tools]
-node = "24.14.0"
+node = "24.22.2"
 pnpm = "12.14.0"
-python = "3.14.8"
+python = "3.15.2"
 uv = "0.13.1"
 changie = "1.26.0"
 "npm:web-ext" = "10.8.0"
@@ -19,8 +19,8 @@ ruff = "0.17.1"
 shellcheck = "0.11.0"
 shfmt = "3.14.1"
 actionlint = "1.7.12"
-zizmor = "1.31.1"
-gh = "2.102.0"
+zizmor = "1.32.0"
+gh = "2.103.3"
 
 [settings]
 locked = true
