@@ -10,8 +10,16 @@ import type { Verdict } from "../types";
 import { createAppPageDetector, parseAppPage, parseLiveAppPage } from "./app-page";
 
 const STORE = "https://store.steampowered.com/";
-const { aiWithService, arcRaiders, noBlock, lineBreaks, germanNotes, adultOnly, invalid } =
-  make.fixture.app;
+const {
+  aiWithService,
+  arcRaiders,
+  noBlock,
+  lineBreaks,
+  longNotes,
+  germanNotes,
+  adultOnly,
+  invalid,
+} = make.fixture.app;
 
 function doc(html: string): Document {
   return new DOMParser().parseFromString(html, "text/html");
@@ -56,6 +64,11 @@ describe("parseAppPage over the captured fixtures", () => {
     const notes = notesOf(parseFixture("4618750-ai-line-breaks.html", APP(lineBreaks)));
     expect(notes).toMatch(/^Some visual assets/);
     expect(notes).toMatch(/\nThe game does not use AI to generate content during gameplay\.$/);
+  });
+
+  it("reads a long note whole, the same text GetItems sends", () => {
+    const notes = notesOf(parseFixture("5466110-long-ai-notes.html", APP(longNotes)));
+    expect(notes).toBe(make.fixture.textNotes(longNotes));
   });
 
   it("reads the live document after the autocollapse script wrapped the block", () => {

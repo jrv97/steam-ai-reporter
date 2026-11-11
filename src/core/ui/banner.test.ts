@@ -250,11 +250,13 @@ describe("createBanner", () => {
     expect(root.querySelector(".tks-banner-service")).toBeNull();
   });
 
-  it("keeps long notes collapsed behind a toggle", () => {
+  it("keeps a captured long note whole and collapsed behind a toggle", () => {
     const { banner, root, runFrames } = setup({ overflows: () => true });
-    banner.show(view([make.verdict.disclosed("ai")]));
+    const notes = make.fixture.textNotes(make.fixture.app.longNotes);
+    banner.show(view([make.verdict.disclosed("ai", { notes })]));
     const quote = query(root, ".tks-banner-quote");
     const toggle = query(root, '[data-tks-action="toggle"]');
+    expect(quote.textContent).toBe(notes);
     expect(toggle.hidden).toBe(true);
     runFrames();
     expect(toggle.hidden).toBe(false);

@@ -1,15 +1,16 @@
 """Refresh the public fixtures in tests/fixtures/ from the live store (cookie-less, keyless).
 
-Captures the GetItems fixtures (`mixed-states`, `german-context`, `empty-response`, `kinds`)
-and the server-rendered app pages, sanitizes them the way tests/fixtures/README.md describes, and
-writes them in place. It never signs in and never captures a logged-in page. Fixtures that need a
-rendered DOM or an account (`surfaces/`, `app-page/*-live-dom.html`, `search-roguelike-50`,
-the `synthetic-*` files) are not touched; refresh those by hand.
+Captures the GetItems fixtures (`mixed-states`, `german-context`, `empty-response`, `kinds`,
+`text-cases`) and the server-rendered app pages, sanitizes them the way tests/fixtures/README.md
+describes, and writes them in place. It never signs in and never captures a logged-in page.
+Fixtures that need a rendered DOM or an account (`surfaces/`, `app-page/*-live-dom.html`,
+`search-roguelike-50`, the `synthetic-*` files) are not touched; refresh those by hand.
 
 Without --out the files in tests/fixtures/ are overwritten and the capture date in
 tests/fixtures/README.md is updated; review the diff before committing. Use --out to write to
-another folder first, or --only kinds to refresh just the tag-kind fixtures (their capture date
-is in the README tables). About twenty requests are made, one second apart.
+another folder first, or --only kinds or --only text to refresh just the tag-kind or text-case
+fixtures (their capture dates are in the README tables). About twenty requests are made, one
+second apart.
 """
 
 import argparse
@@ -157,6 +158,16 @@ KIND_PAGES = (
     AppPage("2807960-kernel-boot-protection.html", 2807960, features_only=True),
     AppPage("730-anticheat-nonkernel.html", 730, features_only=True),
     AppPage("1172470-kernel-easyac.html", 1172470, features_only=True),
+)
+
+# Text that tests what a kind reads. The legal notice of 2448570 names an EA account, and the
+# game declares neither DRM nor a third-party account; the fixture keeps that notice. 5466110 has
+# an AI note of about 2,000 characters with blank lines and non-ASCII text.
+TEXT_APPS = (2448570, 5466110)
+TEXT_DETAILS_REMOVED = tuple(key for key in KINDS_DETAILS_REMOVED if key != "legal_notice_bbcode")
+TEXT_PAGES = (
+    AppPage("2448570-eula-legal-notice.html", 2448570, features_only=True),
+    AppPage("5466110-long-ai-notes.html", 5466110),
 )
 
 
@@ -402,6 +413,14 @@ def capture_kinds_getitems(out: Path) -> None:
     time.sleep(SPACING_SECONDS)
 
 
+def capture_text_getitems(out: Path) -> None:
+    write(
+        out / "getitems" / "text-cases.json",
+        getitems_fixture(app_ids(list(TEXT_APPS)), "english", "US", TEXT_DETAILS_REMOVED),
+    )
+    time.sleep(SPACING_SECONDS)
+
+
 def capture_app_pages(out: Path, pages: tuple[AppPage, ...] = APP_PAGES) -> None:
     for page in pages:
         body = fetch(f"https://store.steampowered.com/app/{page.appid}/?l=english")
@@ -422,7 +441,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--out", type=Path, default=FIXTURES, help="output folder")
     parser.add_argument(
-        "--only", choices=("getitems", "app-page", "kinds"), help="capture one group"
+        "--only", choices=("getitems", "app-page", "kinds", "text"), help="capture one group"
     )
     args = parser.parse_args()
     if args.only in (None, "getitems"):
@@ -432,7 +451,10 @@ def main() -> None:
     if args.only in (None, "kinds"):
         capture_kinds_getitems(args.out)
         capture_app_pages(args.out, KIND_PAGES)
-    if args.out.resolve() == FIXTURES and args.only != "kinds":
+    if args.only in (None, "text"):
+        capture_text_getitems(args.out)
+        capture_app_pages(args.out, TEXT_PAGES)
+    if args.out.resolve() == FIXTURES and args.only not in ("kinds", "text"):
         update_readme_date()
 
 

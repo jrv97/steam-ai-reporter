@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import kinds from "../../../tests/fixtures/getitems/kinds.json";
 import platforms from "../../../tests/fixtures/getitems/platforms.json";
+import textCases from "../../../tests/fixtures/getitems/text-cases.json";
 import { make } from "../../../tests/helpers/factory";
 import { itemIds } from "../../../tests/helpers/getitems";
 import { KIND_IDS } from "../kinds/id";
@@ -177,6 +178,24 @@ describe("parseGetItems over the tag kind fixture", () => {
       expect(of(id)).toBe(make.verdicts.uniform("missing"));
     },
   );
+});
+
+describe("parseGetItems over the text case fixture", () => {
+  const items = make.fixture.items(textCases);
+  const found = parseGetItems(itemIds(items), answer(items), "english");
+
+  // The legal notice names an EA account and a Steam account, so a text matcher reports both.
+  // The store page lists only the EULA notice, and GetItems has no DRM or account key.
+  it("reads no DRM and no account from a legal notice that names an EA account (2448570)", () => {
+    const item = make.fixture.itemAs(textCases, app.legalNotice, app.legalNotice);
+    expect(JSON.stringify(item)).toMatch(/EA Account may be required/);
+    expect(states(app.legalNotice, found)).toStrictEqual({
+      ...NONE,
+      ai: "disclosed",
+      eula: "disclosed",
+      pvp: "disclosed",
+    });
+  });
 });
 
 describe("parseGetItems over the early access captures, asked with the release section", () => {
