@@ -2,13 +2,12 @@ import { parseAppPage } from "../../src/core/detect/app-page";
 import { GETITEMS_URL, parseGetItems } from "../../src/core/detect/getitems";
 import { KIND_BY_ID, KINDS } from "../../src/core/kinds/registry";
 import type { AnyDisclosed, KindVerdicts } from "../../src/core/kinds/verdicts";
-import type { AppId } from "../../src/core/types";
 import kinds from "../fixtures/getitems/kinds.json";
 import textItems from "../fixtures/getitems/text-cases.json";
 import { appId, appIds } from "./app-ids";
 import { APP_PAGES, type AppPageName } from "./app-page";
 import { httpResult } from "./fake-http";
-import { fixtureItems, getItemsResponse } from "./getitems";
+import { fixtureItems, fixtureNotes, getItemsResponse } from "./getitems";
 
 /** The apps of the batch captured for the tag kinds (tests/fixtures/README.md). */
 const CAPTURED = [
@@ -26,9 +25,6 @@ const CAPTURED = [
   646570,
 ];
 
-/** The apps of `text-cases.json`: a misleading legal notice and a long AI note. */
-const TEXT_CASES = [2448570, 5466110];
-
 const captured = parseGetItems(
   appIds(...CAPTURED),
   httpResult(getItemsResponse(fixtureItems(kinds)), GETITEMS_URL),
@@ -37,37 +33,18 @@ const captured = parseGetItems(
   ["basic_info", "release"],
 );
 
-const textCases = parseGetItems(
-  appIds(...TEXT_CASES),
-  httpResult(getItemsResponse(fixtureItems(textItems)), GETITEMS_URL),
-  "english",
-);
-
-function verdictsIn(batch: ReadonlyMap<AppId, KindVerdicts>, id: number): KindVerdicts {
-  const found = batch.get(appId(id));
+/** The verdicts GetItems gave for an app of the captured kinds batch. Throws for any other. */
+export function capturedVerdicts(id: number): KindVerdicts {
+  const found = captured.get(appId(id));
   if (found === undefined) {
     throw new TypeError(String(id));
   }
   return found;
 }
 
-/** The verdicts GetItems gave for an app of the captured kinds batch. Throws for any other. */
-export function capturedVerdicts(id: number): KindVerdicts {
-  return verdictsIn(captured, id);
-}
-
-/** The verdicts GetItems gave for an app of `text-cases.json`. Throws for any other. */
-export function textCaseVerdicts(id: number): KindVerdicts {
-  return verdictsIn(textCases, id);
-}
-
-/** The AI notes GetItems sent for an app of `text-cases.json`. Throws when it disclosed none. */
+/** The AI notes of an app of `text-cases.json`, as Steam sent them. */
 export function textCaseNotes(id: number): string {
-  const { ai } = textCaseVerdicts(id);
-  if (ai.state !== "disclosed") {
-    throw new TypeError(String(id));
-  }
-  return ai.notes;
+  return fixtureNotes(textItems, id);
 }
 
 /** The verdicts read from a captured English app page, with the URL it was served from. */

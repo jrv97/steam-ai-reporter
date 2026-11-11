@@ -17,6 +17,7 @@ import argparse
 import html
 import json
 import re
+import sys
 import time
 import urllib.error
 import urllib.parse
@@ -307,6 +308,11 @@ def element_html(text: str, element_id: str) -> str:
     return text[start:end]
 
 
+def has_features(text: str) -> bool:
+    """Whether the page holds the app name and the features list that `features_page` keeps."""
+    return all(f'id="{element_id}"' in text for element_id in ("appHubAppName", "category_block"))
+
+
 def features_page(text: str) -> str:
     """A minimal document with the page title, the app name and the features list."""
     title = re.search(r"<title>(.*?)</title>", text, re.DOTALL)
@@ -425,7 +431,13 @@ def capture_app_pages(out: Path, pages: tuple[AppPage, ...] = APP_PAGES) -> None
     for page in pages:
         body = fetch(f"https://store.steampowered.com/app/{page.appid}/?l=english")
         clean = sanitize_page(body, page.shallow)
-        write(out / "app-page" / page.file, features_page(clean) if page.features_only else clean)
+        if page.features_only and not has_features(clean):
+            # An age gate serves no app name or features list; keep the old file and go on.
+            print(f"skipped {page.file}: no app name or features list", file=sys.stderr)
+        else:
+            write(
+                out / "app-page" / page.file, features_page(clean) if page.features_only else clean
+            )
         time.sleep(SPACING_SECONDS)
 
 
