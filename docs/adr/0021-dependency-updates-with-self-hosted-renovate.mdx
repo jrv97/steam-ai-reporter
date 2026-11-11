@@ -85,3 +85,13 @@ Two more pieces close the gap for npm. `mise run ci` gains `mise run audit` (`pn
 Minor updates arrive far more often than patches, and each one waited for a review that added nothing once `mise run ci` passed. Minor, patch and digest updates now auto-merge once the required checks pass. Majors still wait for review. mise updates (`jdx/mise`) stay manual too: they rewrite the release workflows, which CI on a PR never runs, and mise's date versions make every release a minor.
 
 Renovate's `renovate-config` manager now reads `constraints.mise` on its own, as a `tool-constraint` dependency named `mise`. It opened a second PR for the line the regex manager already moves with the mise group, and wrote the version with a `v` prefix. A package rule turns that dependency off.
+
+## Amendment 2026-11-11: uv.lock sidecars for PyPI tools
+
+`mise lock` writes a PyPI tool's dependency graph, a `pyproject.toml` and `uv.lock` under `.mise/locks/`, only when uv 0.12.10 or newer is installed. Renovate's mise manager runs `mise lock` in safe mode with mise as its only tool. On the mypy 2.4.0 to 2.4.1 bump it deleted the old sidecar and wrote a `mise.lock` entry without a graph, and `mise install --locked` then failed CI. Renovate commits new files under `.mise/locks/`; mise had written none.
+
+A package rule now gives mise updates of `pypi:` tools a post-upgrade task. It runs for each such update, even inside a grouped branch, with the mise version in `constraints.mise`: `mise install uv` installs the uv that `mise.lock` pins, and `mise lock` writes the missing graph. Renovate commits what changed in `mise.lock` and `.mise/locks/`. `scripts/renovate.sh` allows exactly these two commands through `allowedCommands` and sets `MISE_SAFE=1` for Renovate's child processes through `customEnvVariables`, which keeps the repository's mise config from running code during either command. uv resolves the graph from package metadata against the image's system Python and builds no source distributions.
+
+Putting containerbase's uv on `PATH` through `installTools` would need a `constraints.uv`, and a custom manager to keep it in step with `mise.toml`. A workflow that relocks Renovate's branches and pushes a commit needs a write token, and Renovate stops updating a branch that someone else edited.
+
+Each PyPI tool update downloads uv again whenever Renovate rebuilds its branch.

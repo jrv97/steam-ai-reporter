@@ -11,6 +11,7 @@ image="ghcr.io/renovatebot/renovate:${renovate_version}@${renovate_digest}"
 : "${RENOVATE_TOKEN:?RENOVATE_TOKEN is not set}"
 : "${RENOVATE_REPOSITORIES:?RENOVATE_REPOSITORIES is not set}"
 
+# Post-upgrade tasks may run the two allowed mise commands only, in mise safe mode.
 docker run --rm \
   --env RENOVATE_TOKEN \
   --env RENOVATE_REPOSITORIES \
@@ -18,4 +19,6 @@ docker run --rm \
   --env RENOVATE_PLATFORM=github \
   --env RENOVATE_ONBOARDING=false \
   --env RENOVATE_REQUIRE_CONFIG=required \
+  --env RENOVATE_ALLOWED_COMMANDS='["^mise install uv$", "^mise lock$"]' \
+  --env RENOVATE_CUSTOM_ENV_VARIABLES='{"MISE_SAFE": "1"}' \
   "$image"

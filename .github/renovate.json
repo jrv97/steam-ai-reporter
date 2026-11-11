@@ -105,6 +105,19 @@
       "enabled": false
     },
     {
+      "description": "mise lock writes a PyPI tool's uv.lock sidecar only when uv is installed",
+      "matchManagers": ["mise"],
+      "matchDepNames": ["/^pypi:/"],
+      "postUpgradeTasks": {
+        "commands": ["mise install uv", "mise lock"],
+        "fileFilters": ["mise.lock", ".mise/locks/**"],
+        "executionMode": "update",
+        "installTools": {
+          "mise": {}
+        }
+      }
+    },
+    {
       "description": "The regex manager above moves constraints.mise with the mise group",
       "matchManagers": ["renovate-config"],
       "matchDepTypes": ["tool-constraint"],
