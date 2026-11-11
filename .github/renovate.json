@@ -105,6 +105,19 @@
       "enabled": false
     },
     {
+      "description": "mise lock writes a PyPI tool's uv.lock sidecar only when uv is installed",
+      "matchManagers": ["mise"],
+      "matchDepNames": ["/^pypi:/"],
+      "postUpgradeTasks": {
+        "commands": ["mise install uv", "mise lock"],
+        "fileFilters": ["mise.lock", ".mise/locks/**"],
+        "executionMode": "branch",
+        "installTools": {
+          "mise": {}
+        }
+      }
+    },
+    {
       "description": "Patch updates merge once the required checks pass",
       "matchUpdateTypes": ["patch"],
       "automerge": true
