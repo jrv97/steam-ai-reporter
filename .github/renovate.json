@@ -111,7 +111,7 @@
       "postUpgradeTasks": {
         "commands": ["mise install uv", "mise lock"],
         "fileFilters": ["mise.lock", ".mise/locks/**"],
-        "executionMode": "branch",
+        "executionMode": "update",
         "installTools": {
           "mise": {}
         }
