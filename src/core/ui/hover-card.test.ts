@@ -252,7 +252,7 @@ describe("createHoverCard", () => {
     const { badge, other } = page();
     const hover = start();
     overflowing = () => true;
-    const notes = make.text.note();
+    const notes = make.fixture.textNotes(make.fixture.app.longNotes);
     hover.bind(badge, [make.verdict.disclosed("ai", { notes })]);
     pointerOver(badge);
     flush();

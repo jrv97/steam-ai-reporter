@@ -66,7 +66,7 @@ import {
   SUGGESTIONS,
   SURFACE_APPS,
 } from "./fixture-ids";
-import { capturedVerdicts, pageVerdicts } from "./fixture-verdicts";
+import { capturedVerdicts, pageVerdicts, textCaseNotes } from "./fixture-verdicts";
 import {
   DECLARING_CATEGORIES,
   DECLARING_PLATFORMS,
@@ -304,6 +304,7 @@ export const make = {
     items: fixtureItems,
     itemAs,
     verdicts: capturedVerdicts,
+    textNotes: textCaseNotes,
     pageVerdicts,
   },
   raw: {

@@ -3,10 +3,11 @@ import { GETITEMS_URL, parseGetItems } from "../../src/core/detect/getitems";
 import { KIND_BY_ID, KINDS } from "../../src/core/kinds/registry";
 import type { AnyDisclosed, KindVerdicts } from "../../src/core/kinds/verdicts";
 import kinds from "../fixtures/getitems/kinds.json";
+import textItems from "../fixtures/getitems/text-cases.json";
 import { appId, appIds } from "./app-ids";
 import { APP_PAGES, type AppPageName } from "./app-page";
 import { httpResult } from "./fake-http";
-import { fixtureItems, getItemsResponse } from "./getitems";
+import { fixtureItems, fixtureNotes, getItemsResponse } from "./getitems";
 
 /** The apps of the batch captured for the tag kinds (tests/fixtures/README.md). */
 const CAPTURED = [
@@ -39,6 +40,11 @@ export function capturedVerdicts(id: number): KindVerdicts {
     throw new TypeError(String(id));
   }
   return found;
+}
+
+/** The AI notes of an app of `text-cases.json`, as Steam sent them. */
+export function textCaseNotes(id: number): string {
+  return fixtureNotes(textItems, id);
 }
 
 /** The verdicts read from a captured English app page, with the URL it was served from. */

@@ -2,6 +2,7 @@
 import * as v from "valibot";
 import { afterEach, describe, expect, it } from "vitest";
 import kindItems from "../../tests/fixtures/getitems/kinds.json";
+import textCases from "../../tests/fixtures/getitems/text-cases.json";
 import { clearRoot } from "../../tests/helpers/dom";
 import { make } from "../../tests/helpers/factory";
 import { fake } from "../../tests/helpers/fakes";
@@ -181,6 +182,21 @@ describe("start on an English app page of a game with no AI", () => {
     expect(headings()).toHaveLength(3);
     await writeSettings(settings, DEFAULT_SETTINGS);
     expect(chipKinds()).toEqual(["drm", "account", "eula"]);
+  });
+});
+
+describe("start on the app page of a game whose legal notice names an EA account", () => {
+  // The captured item of 2448570, served as the page's game, with its features list, which shows
+  // the EULA notice and no DRM or account notice.
+  const items = [make.fixture.itemAs(textCases, make.fixture.app.legalNotice, GAME)];
+  const page = make.page.withSummaryBox(
+    make.page.withDescriptionColumn(make.page.app("2448570-eula-legal-notice.html")),
+  );
+
+  it("tags the EULA and no DRM or account, as the store page lists them", async () => {
+    await startOnDrmPage(new Map(), items, page, 2);
+    expect(headings()).toEqual([i18n.t("kind_ai_heading"), i18n.t("kind_eula_heading")]);
+    expect(chipKinds()).toEqual(["ai", "eula"]);
   });
 });
 

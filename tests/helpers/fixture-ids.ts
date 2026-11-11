@@ -71,6 +71,10 @@ export const FIXTURE_APPS = {
   roguelikeLineBreaks: appId(4431800),
   /** A disclosed row of `search-roguelike-50.json` whose notes hold zero-width spaces. */
   roguelikeZeroWidth: appId(5269270),
+  /** AI notes and a EULA; its legal notice names an EA account, and it declares no DRM. */
+  legalNotice: appId(2448570),
+  /** An AI note of about 2,000 characters with blank lines and non-ASCII text. */
+  longNotes: appId(5466110),
 } as const;
 
 /** The 10 disclosed rows of `search-roguelike-50.json`, in row order. */

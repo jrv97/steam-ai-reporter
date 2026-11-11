@@ -281,6 +281,16 @@ export function verdictOf<Disclosed extends DisclosedBase>(
 
 const ItemRecordSchema = v.record(v.string(), v.unknown());
 
+const NotesItemSchema = v.looseObject({
+  extra_details: v.looseObject({ content_survey_ai_notes: v.string() }),
+});
+
+/** The raw `content_survey_ai_notes` of item `id` in a captured fixture. Throws when absent. */
+export function fixtureNotes(fixture: unknown, id: number): string {
+  const found = fixtureItems(fixture).find((item) => v.parse(ItemIdSchema, item).id === id);
+  return v.parse(NotesItemSchema, found).extra_details.content_survey_ai_notes;
+}
+
 /**
  * The item of a GetItems fixture for the app `from`, as another app: the same name, categories
  * and extra details under the ID `to`. Throws when the fixture has no such item.
