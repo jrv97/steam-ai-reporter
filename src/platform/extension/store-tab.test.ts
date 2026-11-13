@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { FakeStorePage } from "../../../tests/helpers/fake-store-tab";
 import { fake } from "../../../tests/helpers/fakes";
+import { nextTask } from "../../../tests/helpers/tasks";
 import { announceStoreTab } from "./store-tab";
 
 describe("announceStoreTab", () => {
@@ -18,11 +19,16 @@ describe("announceStoreTab", () => {
     }, 1],
   ])("names the tab %s", (_name, prerendering, act, expected) => {
     const page = fake.storePage({ prerendering });
-    let sent = 0;
-    announceStoreTab(page, () => {
-      sent += 1;
-    });
+    const sender = fake.sender();
+    announceStoreTab(page, sender.send);
     act(page);
-    expect(sent).toBe(expected);
+    expect(sender.count).toBe(expected);
+  });
+
+  it("lets a lost message go quietly", async () => {
+    const sender = fake.sender({ fails: true });
+    announceStoreTab(fake.storePage({ prerendering: false }), sender.send);
+    await nextTask();
+    expect(sender.count).toBe(1);
   });
 });

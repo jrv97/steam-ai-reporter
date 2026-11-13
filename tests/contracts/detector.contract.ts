@@ -3,13 +3,7 @@ import type { KindVerdicts } from "../../src/core/kinds/verdicts";
 import type { Detector } from "../../src/core/ports";
 import type { AppId } from "../../src/core/types";
 import { make } from "../helpers/factory";
-
-/** Lets every queued task run, so a sink call that comes too late is heard. */
-function nextTask(): Promise<void> {
-  return new Promise((resolve) => {
-    setTimeout(resolve, 0);
-  });
-}
+import { nextTask } from "../helpers/tasks";
 
 /**
  * The behavior every `Detector` must have, whatever its source answers: GetItems, the HTML

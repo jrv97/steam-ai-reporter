@@ -75,8 +75,7 @@
   (from 411,764): the two cards and the parts they share with Backup, seven Lucide icons and 31
   messages in two locales. Their budgets rise to 260 and 430 KiB, the size plus 2.6 and 2.5
   percent. Measured when the toolbar icon began to dim outside the store (ADR 0027): announce.js
-  875 B and background.js 8,111 B, most of it valibot's object schema. Their budgets are 1 and
-  9 KiB.
+  953 B and background.js 978 B; neither carries valibot. Their budgets are 1 KiB each.
 - The STEAM_API_KEY value, when set, appears nowhere in dist/ or artifacts/ (rule 16).
 - The dev injection bundle is never packaged into artifacts/, and when artifacts/ exists it holds
   exactly the five release artifacts, with a manifest at the root of each extension zip. The source
@@ -117,7 +116,7 @@ BUDGETS = {
     **{DIST / target / "content.js": 239 * KIB for target in EXTENSION_TARGETS},
     **{DIST / target / "options.js": 260 * KIB for target in EXTENSION_TARGETS},
     **{DIST / target / "announce.js": 1 * KIB for target in EXTENSION_TARGETS},
-    **{DIST / target / "background.js": 9 * KIB for target in EXTENSION_TARGETS},
+    **{DIST / target / "background.js": 1 * KIB for target in EXTENSION_TARGETS},
     DIST / "userscript" / f"{SLUG}.user.js": 430 * KIB,
 }
 # The one background script each build ships (rule 3, ADR 0027).

@@ -1,12 +1,12 @@
 import type { BrowserTabs } from "./browser-tabs";
 import { PROGRESS_PORT, type TabPort } from "./progress-port";
 import type { OnStorageChanged, StorageArea, StorageChange, StorageChanges } from "./storage-area";
-import { STORE_TAB_ICON, STORE_TAB_MESSAGE } from "./store-tab";
-import type { OnTabMessage, ShowStoreIcon } from "./store-tab-icon";
+import { STORE_TAB_MESSAGE } from "./store-tab";
+import type { OnTabMessage, SetTabIcon } from "./store-tab-icon";
 
 // The one module that names the WebExtension APIs. Everything else in the extension takes the
-// narrow interfaces of storage-area.ts and browser-tabs.ts, so tests pass typed fakes and the rest
-// of the code never sees `chrome` or `browser`.
+// narrow interfaces its own modules declare, such as storage-area.ts, browser-tabs.ts,
+// progress-port.ts and store-tab-icon.ts, so tests pass typed fakes and never see `chrome`.
 
 /**
  * Firefox's promise-based `browser`, else Chrome's `chrome`. `@types/chrome` declares `browser` as
@@ -113,10 +113,9 @@ export async function connectActiveTab(): Promise<TabPort | undefined> {
   return id === undefined ? undefined : tabPort(api.tabs.connect(id, { name: PROGRESS_PORT }));
 }
 
-/** Names this store tab to the background script; a lost message leaves the dimmed icon. */
-export function sendStoreTab(): void {
-  api.runtime.sendMessage(STORE_TAB_MESSAGE).catch(() => undefined);
-}
+/** Names this store tab to the background script. */
+export const sendStoreTab = async (): Promise<unknown> =>
+  api.runtime.sendMessage(STORE_TAB_MESSAGE);
 
 /** Hears runtime messages with the sender's tab ID, which needs no `tabs` permission. */
 export const onTabMessage: OnTabMessage = (listener) => {
@@ -125,6 +124,5 @@ export const onTabMessage: OnTabMessage = (listener) => {
   });
 };
 
-/** Sets the normal toolbar icon on one tab, until that tab loads another document. */
-export const showStoreIcon: ShowStoreIcon = (tabId) =>
-  api.action.setIcon({ tabId, path: STORE_TAB_ICON });
+export const setTabIcon: SetTabIcon = async (tabId, paths) =>
+  api.action.setIcon({ tabId, path: paths });

@@ -3,6 +3,7 @@ import { APP_PAGE_ORIGIN } from "../../core/detect/app-page";
 import type { KeyValueStore } from "../../core/ports";
 import { ORIGIN_KEY } from "../../core/storage-keys";
 import type { BrowserTabs } from "./browser-tabs";
+import { ignore } from "./ignore";
 import type { StorageChanges } from "./storage-area";
 
 // The settings page's way back to the store tab it was opened from (ADR 0019). The popup writes
@@ -17,9 +18,6 @@ const BrowserTabIdSchema = v.pipe(
 );
 
 type BrowserTabId = v.InferOutput<typeof BrowserTabIdSchema>;
-
-/** A failure the caller can do without. */
-const ignore = (): undefined => undefined;
 
 function toTabId(value: unknown): BrowserTabId | undefined {
   const parsed = v.safeParse(BrowserTabIdSchema, value);

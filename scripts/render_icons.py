@@ -124,14 +124,15 @@ def render(browser: Path, work: Path, name: str, size: int, painted: str) -> Pat
 def write_all(browser: Path, work: Path) -> None:
     """Render every size first; touch assets/icons only when all of them rendered."""
     master = MASTER.read_text(encoding="utf-8")
+    painted = {name: colored(master, color) for name, color in COLORS.items()}
     shots = {
-        f"{name}-{size}.png": render(browser, work, name, size, colored(master, COLORS[color]))
+        f"{name}-{size}.png": render(browser, work, name, size, painted[color])
         for name, color, sizes in RENDERS
         for size in sizes
     }
-    for name, color in COLORS.items():
+    for name, text in painted.items():
         target = ICONS_DIR / f"mark-{name}.svg"
-        target.write_text(colored(master, color), encoding="utf-8", newline="\n")
+        target.write_text(text, encoding="utf-8", newline="\n")
         print(f"wrote {target.relative_to(ROOT).as_posix()}")
     for file_name, shot in shots.items():
         target = ICONS_DIR / file_name

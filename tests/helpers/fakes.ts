@@ -11,7 +11,7 @@ import {
 import { fakeFileTransfer, fakeFileTransferHarness } from "./fake-file-transfer";
 import { fakeFetch, fakeHttp, heldHttp, timedHttp, withheldHttp } from "./fake-http";
 import { fakeProgressSource, fakeTabPort } from "./fake-progress";
-import { fakeStoreIcon, fakeStorePage, fakeTabMessages } from "./fake-store-tab";
+import { fakeSender, fakeStorePage, fakeTabIcon, fakeTabMessages } from "./fake-store-tab";
 import { fakeTabs } from "./fake-tabs";
 import { fixedClock } from "./fixed-clock";
 import { fakeGm, fakeWatch, faultyGm } from "./gm-fake";
@@ -51,8 +51,10 @@ export const fake = {
   storePage: fakeStorePage,
   /** Runtime messages with their sender's tab ID, delivered by hand. */
   tabMessages: fakeTabMessages,
-  /** The toolbar icon call, recording each tab it sets and rejecting with `{ fails: true }`. */
-  storeIcon: fakeStoreIcon,
+  /** A message sender that counts its calls and rejects with `{ fails: true }`. */
+  sender: fakeSender,
+  /** The toolbar icon call, recording each tab and icon it sets; `{ fails: true }` rejects. */
+  tabIcon: fakeTabIcon,
   /** A `GM_addValueChangeListener` that a test triggers by hand, per key. */
   watch: fakeWatch,
   /** The `GM` storage calls, storing serialized values. */

@@ -1,7 +1,12 @@
-import type { ShownPage } from "../../src/platform/extension/store-tab";
-import type { OnTabMessage, ShowStoreIcon } from "../../src/platform/extension/store-tab-icon";
+import type { StorePage } from "../../src/platform/extension/store-tab";
+import type {
+  IconPaths,
+  OnTabMessage,
+  SetTabIcon,
+} from "../../src/platform/extension/store-tab-icon";
+import { pageTransition } from "./surfaces";
 
-export interface FakeStorePage extends ShownPage {
+export interface FakeStorePage extends StorePage {
   /** Ends prerendering, as the browser does when the person opens the page. */
   show(): void;
   /** Fires `pageshow`; `persisted` marks a return from the back/forward cache. */
@@ -18,10 +23,30 @@ export function fakeStorePage(options: { readonly prerendering: boolean; }): Fak
       document.dispatchEvent(new Event("prerenderingchange"));
     },
     pageshow(persisted: boolean) {
-      page.dispatchEvent(Object.assign(new Event("pageshow"), { persisted }));
+      page.dispatchEvent(pageTransition("pageshow", persisted));
     },
   });
   return page;
+}
+
+export interface FakeSender {
+  readonly send: () => Promise<unknown>;
+  /** How many times `send` ran. */
+  readonly count: number;
+}
+
+/** A message sender that counts its calls; with `fails` each call rejects. */
+export function fakeSender(options: { readonly fails: boolean; } = { fails: false }): FakeSender {
+  let count = 0;
+  return {
+    send: () => {
+      count += 1;
+      return options.fails ? Promise.reject(new Error()) : Promise.resolve();
+    },
+    get count() {
+      return count;
+    },
+  };
 }
 
 export interface FakeTabMessages {
@@ -45,21 +70,19 @@ export function fakeTabMessages(): FakeTabMessages {
   };
 }
 
-export interface FakeStoreIcon {
-  readonly show: ShowStoreIcon;
-  /** The tabs the icon was set on, in order. */
-  readonly shown: readonly number[];
+export interface FakeTabIcon {
+  readonly set: SetTabIcon;
+  /** Each icon set, in order. */
+  readonly calls: readonly { readonly tabId: number; readonly paths: IconPaths; }[];
 }
 
 /** The toolbar icon call; with `fails` it rejects, as for a tab that closed. */
-export function fakeStoreIcon(
-  options: { readonly fails: boolean; } = { fails: false },
-): FakeStoreIcon {
-  const shown: number[] = [];
+export function fakeTabIcon(options: { readonly fails: boolean; } = { fails: false }): FakeTabIcon {
+  const calls: { tabId: number; paths: IconPaths; }[] = [];
   return {
-    shown,
-    show: (tabId) => {
-      shown.push(tabId);
+    calls,
+    set: (tabId, paths) => {
+      calls.push({ tabId, paths });
       return options.fails ? Promise.reject(new Error()) : Promise.resolve();
     },
   };

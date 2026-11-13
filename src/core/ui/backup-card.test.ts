@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { make } from "../../../tests/helpers/factory";
 import { fake } from "../../../tests/helpers/fakes";
 import { englishI18n } from "../../../tests/helpers/i18n";
+import { nextTask } from "../../../tests/helpers/tasks";
 import { BACKUP_VERSION, encodeBackup, MAX_BACKUP_SIZE, readBackup } from "../backup/format";
 import type { BareMessageKey } from "../i18n/t";
 import { createIgnoreLists } from "../ignored";
@@ -19,13 +20,6 @@ type Games = NonNullable<Parameters<typeof make.allow.games>[0]>;
 
 /** One fresh row of an ignored games list. */
 const game = () => [make.appId(), make.text.name(), make.time()] as const;
-
-/** Lets every promise the last action started settle. */
-function settle(): Promise<void> {
-  return new Promise((resolve) => {
-    setTimeout(resolve, 0);
-  });
-}
 
 /** The full page form over one store, with a fake file transfer and these games ignored. */
 async function setup(games: Games = {}) {
@@ -67,11 +61,11 @@ async function setup(games: Games = {}) {
   const pick = async (file: PickedFile): Promise<void> => {
     button("options_backup_restore").click();
     files.choose(file);
-    await settle();
+    await nextTask();
   };
   const click = async (key: BareMessageKey): Promise<void> => {
     button(key).click();
-    await settle();
+    await nextTask();
   };
   const stored = async () => parseSettings(await settings.read());
   return { root, store, files, lists, card, button, shown, pick, click, stored };

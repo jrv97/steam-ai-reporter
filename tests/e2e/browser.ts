@@ -382,3 +382,20 @@ async function launchGecko(hidden: boolean, locale: string): Promise<GeckoExtens
     },
   };
 }
+
+/** How long and how often an e2e poll waits for the browser. */
+export const WAIT = { timeout: 10_000, interval: 100 };
+
+/** Launches `engine`, headed if asked, runs `body` and closes the browser whatever happens. */
+export async function withBrowser(
+  engine: Engine,
+  body: (browser: ExtensionBrowser) => Promise<void>,
+  headed = false,
+): Promise<void> {
+  const browser = await launch(engine, { headed });
+  try {
+    await body(browser);
+  } finally {
+    await browser.close();
+  }
+}
