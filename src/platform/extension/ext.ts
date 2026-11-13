@@ -1,6 +1,8 @@
 import type { BrowserTabs } from "./browser-tabs";
 import { PROGRESS_PORT, type TabPort } from "./progress-port";
 import type { OnStorageChanged, StorageArea, StorageChange, StorageChanges } from "./storage-area";
+import { STORE_TAB_ICON, STORE_TAB_MESSAGE } from "./store-tab";
+import type { OnTabMessage, ShowStoreIcon } from "./store-tab-icon";
 
 // The one module that names the WebExtension APIs. Everything else in the extension takes the
 // narrow interfaces of storage-area.ts and browser-tabs.ts, so tests pass typed fakes and the rest
@@ -110,3 +112,19 @@ export async function connectActiveTab(): Promise<TabPort | undefined> {
   const id = await browserTabs.activeTabId();
   return id === undefined ? undefined : tabPort(api.tabs.connect(id, { name: PROGRESS_PORT }));
 }
+
+/** Names this store tab to the background script; a lost message leaves the dimmed icon. */
+export function sendStoreTab(): void {
+  api.runtime.sendMessage(STORE_TAB_MESSAGE).catch(() => undefined);
+}
+
+/** Hears runtime messages with the sender's tab ID, which needs no `tabs` permission. */
+export const onTabMessage: OnTabMessage = (listener) => {
+  api.runtime.onMessage.addListener((message: unknown, sender) => {
+    listener(message, sender.tab?.id);
+  });
+};
+
+/** Sets the normal toolbar icon on one tab, until that tab loads another document. */
+export const showStoreIcon: ShowStoreIcon = (tabId) =>
+  api.action.setIcon({ tabId, path: STORE_TAB_ICON });

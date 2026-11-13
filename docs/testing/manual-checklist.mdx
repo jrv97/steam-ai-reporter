@@ -61,16 +61,17 @@ Rows are the store surfaces from the surface map in `docs/research/steam-ai-disc
 
 ## Extra checks
 
-| Check                                                                                                                                                    | Pass |
-| -------------------------------------------------------------------------------------------------------------------------------------------------------- | ---- |
-| Disabling the extension or userscript removes every `tks-` node on reload                                                                                |      |
-| App page: the Tag Kit tags section sits below Steam's user tags with one chip per shown kind; a hover or focus opens its card                            |      |
-| Settings and the allow-list survive a browser restart; clearing storage resets them                                                                      |      |
-| Offline or blocked `api.steampowered.com`: no badges, no console error storm, items stay unknown; the app page fallback fetches no more than a few pages |      |
-| Firefox: the content script's GetItems call is accepted by Steam (no CORS failure in the console)                                                        |      |
-| Userscript: Violentmonkey runs it with its default injection mode; no `@inject-into` change is needed                                                    |      |
-| Userscript: the update URL serves the `.meta.js` of the latest release (after the first release only)                                                    |      |
-| The dev injection bundle (`dist/dev/inject.js`) is not in any artifact: `mise run package` passes `check_bundle.py`                                      |      |
+| Check                                                                                                                                                                                                                                                                               | Pass |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---- |
+| Disabling the extension or userscript removes every `tks-` node on reload                                                                                                                                                                                                           |      |
+| App page: the Tag Kit tags section sits below Steam's user tags with one chip per shown kind; a hover or focus opens its card                                                                                                                                                       |      |
+| Settings and the allow-list survive a browser restart; clearing storage resets them                                                                                                                                                                                                 |      |
+| Offline or blocked `api.steampowered.com`: no badges, no console error storm, items stay unknown; the app page fallback fetches no more than a few pages                                                                                                                            |      |
+| Firefox: the content script's GetItems call is accepted by Steam (no CORS failure in the console)                                                                                                                                                                                   |      |
+| Userscript: Violentmonkey runs it with its default injection mode; no `@inject-into` change is needed                                                                                                                                                                               |      |
+| Userscript: the update URL serves the `.meta.js` of the latest release (after the first release only)                                                                                                                                                                               |      |
+| The dev injection bundle (`dist/dev/inject.js`) is not in any artifact: `mise run package` passes `check_bundle.py`                                                                                                                                                                 |      |
+| Extension toolbar icon (ADR 0027): dimmed on a tab outside the store and on a new tab; normal on a store page within a moment of loading; dimmed after a link off the store, normal again after Back; a new window and a browser restart start dimmed; the popup opens on every tab |      |
 
 ## Performance profile
 

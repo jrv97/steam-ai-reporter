@@ -63,7 +63,7 @@ Tag Kit for Steam has one purpose: to show which Steam store items carry tags fo
 
 ## Permission justifications
 
-The extension asks for one permission and no host permissions. It has no background script.
+The extension asks for one permission and no host permissions. Its background script only sets the toolbar icon: normal on Steam store tabs, dimmed on every other tab.
 
 - `storage`: keeps the cache of results (an app is not requested again until its entry expires), your settings (including chip text, colors and tag order), your lists of ignored games, developers and publishers, the settings tab you last opened, a small record used to back off if Steam is limiting requests, and the ID of the tab the settings page was opened from, for its Go back button. All of it stays on your device: the tab ID in the extension's session storage, in memory until the settings page reads it or the browser closes, and the rest in the extension's local storage.
 - Site access (content script matches `https://store.steampowered.com/*`): the content script runs only on the Steam store, because that is where the items to mark are. Its requests to `api.steampowered.com` and `store.steampowered.com` are made from the store page's own origin, so no `host_permissions` entry is needed. Both are Valve hosts the user is already on, and every request is made with `credentials: "omit"`.
@@ -90,7 +90,7 @@ The package is built from source, unminified. Build steps are in the README unde
 2. In the unpacked source folder run `mise trust`, then `mise install`, then `mise run build`.
 3. `dist/gecko` is the submitted add-on.
 
-The extension has no background script, requests no host permissions and makes no network request other than the two Valve hosts above.
+The extension requests no host permissions and makes no network request other than the two Valve hosts above. Its background script (`background.js`) does one thing: when the store content script reports its tab, it sets the normal toolbar icon on that tab with `action.setIcon`. It reads no storage and no tab address, and makes no request.
 
 ## Screenshots
 

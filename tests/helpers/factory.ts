@@ -91,6 +91,7 @@ import {
   freshAppId,
   freshAppIds,
   freshBody,
+  freshBrowserId,
   freshChipText,
   freshClanId,
   freshColor,
@@ -176,6 +177,8 @@ export const make = {
   },
   /** Fresh browser IDs: the origin tab, the settings tab and the origin's window. */
   tabs: tabIds,
+  /** A fresh browser tab ID. */
+  tabId: freshBrowserId,
   /** A fresh instant in milliseconds since the epoch, later than the one before. */
   time: freshTime,
   /** A fresh span in milliseconds. */

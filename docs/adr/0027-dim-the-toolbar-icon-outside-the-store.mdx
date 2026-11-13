@@ -1,0 +1,103 @@
+---
+status: accepted
+date: 2026-11-13
+decision-makers: Jorge Rodriguez de la Vega
+---
+
+# Dim the toolbar icon outside the store from a background script
+
+## Context and problem statement
+
+The toolbar icon looks the same on every tab, though the extension acts only on `https://store.steampowered.com/*`. uBlock Origin shows a gray icon on a site where it does nothing, and a person reads at a glance whether the extension works on the page in front of them. The extension should do the same in Chromium and Firefox: a dimmed icon on every tab outside the store and the normal icon on store tabs. The userscript has no toolbar icon.
+
+Rule 3 allows `storage`, content-script matches on the store, no `host_permissions` and no background script unless an ADR says otherwise ([ADR 0003 (content-script-only runtime)](0003-content-script-only-runtime.mdx)). A content script cannot call the `action` API ([rq1](../research/toolbar-icon-state/rq1-per-tab-action-state.md)). Which mechanism sets the icon per tab, and what does it add to the manifest?
+
+## Decision drivers
+
+- No new permission and no install warning. A new warning disables the extension on update in Chrome until the person accepts it.
+- Rule 1: nothing about a tab leaves the browser, and the extension reads no address outside the store.
+- The toolbar popup holds the settings and stays usable on every tab ([ADR 0019 (settings return to the store tab)](0019-settings-return-to-the-store-tab.mdx) counts a popup opened outside the store as an origin).
+- The same behavior in Chromium and in Firefox 140 and later, including Firefox for Android 142.
+- Rule 5: core never names `chrome` or `browser`; the icon is platform code.
+- Rule 13: no polling and no work on tabs outside the store.
+- Correct after a browser restart, a navigation inside a tab, a back/forward cache restore and a Chrome prerender.
+
+## Considered options
+
+1. Dimmed `default_icon` in the manifest; a background script sets the normal icon on a store tab when its content script asks (chosen).
+2. Disable the action outside the store: `action.default_state: "disabled"` or `action.disable()`, and `action.enable(tabId)` from a background script on store tabs.
+3. Chromium's `declarativeContent` with `ShowAction` or `SetIcon`, registered once from a service worker, and a Gecko equivalent.
+4. Normal `default_icon`; a background script dims each tab that is not on the store.
+5. No background script: the content script injects an extension iframe that calls `action.setIcon` for its tab.
+6. Keep one icon for every tab.
+
+## Decision outcome
+
+Chosen option 1. It adds no permission and no warning, keeps the popup usable everywhere, and works the same in both browsers.
+
+- The manifest's `action.default_icon` names a dimmed set, `icons/icon-off-16.png` and `icons/icon-off-32.png`. The `icons` key, which the extensions page and the install dialog show, keeps the normal set.
+- A second content script on the same store match, at `document_start`, sends one message, `{ type: "tks-store-tab" }`, once the document is visible to the person: at once, or on `prerenderingchange` for a prerendered page. It sends again on `pageshow` when the page comes back from the back/forward cache, which does not run content scripts again.
+- The background script checks the message with a schema, reads `sender.tab.id` and calls `action.setIcon({ tabId, path })` with the normal set. It holds no state, reads no storage, makes no request and answers nothing. Chromium runs it as a service worker (`background.service_worker`), Firefox as an event page (`background.scripts`), each in its own manifest overlay.
+- Chrome clears tab-scoped action values in `ExtensionActionRunner::DidFinishNavigation` on every committed, cross-document, main frame navigation, and Firefox in `PanelActionBase.handleLocationChange` when the change is not same-document ([rq1](../research/toolbar-icon-state/rq1-per-tab-action-state.md)). A tab that leaves the store therefore drops back to the dimmed default with no code, and a navigation inside the store gets the normal icon again from the next document's message.
+- GetItems stays in the store content script. ADR 0003 still holds for detection, and the background has no `host_permissions` to fetch with.
+
+Rule 3 now reads: one background script, which sets the toolbar icon of store tabs and does nothing else; any other background work needs an ADR. Rule 11 counts it as a shipped composition root. `scripts/check_bundle.py` asserts the background key each overlay ships and nothing more.
+
+### Library check (rule 12)
+
+Nothing adopted. The feature is one `sendMessage`, one `onMessage` listener and one `setIcon` call. `webextension-polyfill` would replace the one-line `browser` or `chrome` choice in `ext.ts`, and `@types/chrome` already types the calls. The dimmed PNGs come from the existing icon renderer.
+
+### Consequences
+
+- Good: no new permission, no warning on install or update, and the listings keep `storage` as the only permission.
+- Good: the popup and its settings open on every tab, dimmed icon or not.
+- Good: the background never sees an address. It receives the tab ID of a store tab and nothing else, and tabs outside the store send it nothing.
+- Good: a restart, a crash of the worker or an extension update leaves the right state: the manifest default is dimmed, and per-tab values die with the navigation that leaves the store.
+- Bad: a store page shows the dimmed icon from its commit until the worker or event page wakes and sets the normal one, a moment the person may see on a slow machine.
+- Bad: a background script is one more context to keep to rule 3's single job, and the store listing and AMO notes no longer say "no background script".
+- Bad: the clearing on navigation is read from browser source, not from documentation. A browser that stops clearing would leave a tab that left the store with the normal icon until it closes; the manual checklist covers it.
+- Neutral: Firefox for Android shows the dimmed icon in its add-ons menu row outside the store.
+
+### Confirmation
+
+Unit tests cover the message schema, the background's handler and the content side's prerender and back/forward cache paths through fakes. `check_bundle.py` asserts the background keys and the dimmed default. The manual checklist's toolbar rows run in Chromium and Firefox Nightly: a store tab, a tab outside the store, a navigation from the store to another site and back, a back/forward cache restore, a new window and a restart.
+
+## Pros and cons of the options
+
+### 1. Dimmed default, normal icon per store tab
+
+- Good: no permission, no warning, popup always usable, one code path for both browsers.
+- Bad: a background script, and a short dimmed moment on store page loads.
+
+### 2. Disable the action outside the store
+
+- Good: Chromium draws the gray state itself, with no second icon set.
+- Bad: a disabled action opens no popup in either browser, and Chrome shows the context menu on click instead. The settings would be out of reach outside the store.
+- Bad: Firefox has no `default_state`, so a global `disable()` would run on every start and live in memory only.
+
+### 3. `declarativeContent`
+
+- Good: no warning, rules persist, and the browser applies them on navigation with no wake-up.
+- Bad: Chromium only. Firefox has no `declarativeContent`, and its `page_action` with `show_matches` draws in the address bar, outside the toolbar ([rq2](../research/toolbar-icon-state/rq2-background-and-alternatives.md)).
+- Bad: `ShowAction` needs the disabled default of option 2, and `SetIcon` takes image data only, built on an `OffscreenCanvas` in the worker.
+
+### 4. Normal default, dim tabs outside the store
+
+- Good: no dimmed moment on store loads.
+- Bad: the background would have to learn every tab's address, which needs the `tabs` permission ("Read your browsing history") or host permissions. Both break rule 3 and rule 1.
+
+### 5. Extension iframe from the content script
+
+- Good: no background script.
+- Bad: Firefox gives such a frame no `tabs` API, so it cannot name its tab. Chrome would need a web-accessible resource, which pages can use to detect the extension.
+
+### 6. One icon
+
+- Good: no change.
+- Bad: the icon never tells a person whether the extension acts on the page.
+
+## More information
+
+- Research: [toolbar-icon-state](../research/toolbar-icon-state.md), with [rq1 (per-tab action state)](../research/toolbar-icon-state/rq1-per-tab-action-state.md) and [rq2 (background and alternatives)](../research/toolbar-icon-state/rq2-background-and-alternatives.md).
+- Credit: uBlock Origin's gray icon on sites where it does nothing gave the idea. No code is taken from it.
+- Related: [ADR 0003 (content-script-only runtime)](0003-content-script-only-runtime.mdx), which this decision amends for the toolbar icon only, and [ADR 0019 (settings return to the store tab)](0019-settings-return-to-the-store-tab.mdx).

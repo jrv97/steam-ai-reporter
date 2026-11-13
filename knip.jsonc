@@ -2,6 +2,8 @@
   "$schema": "https://unpkg.com/knip@6/schema.json",
   // The shipped and dev composition roots that scripts/build.py bundles; options.ts is the popup too.
   "entry": [
+    "src/platform/extension/announce.ts",
+    "src/platform/extension/background.ts",
     "src/platform/extension/content.ts",
     "src/platform/extension/options.ts",
     "src/platform/userscript/main.ts",

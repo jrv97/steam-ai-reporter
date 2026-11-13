@@ -1,9 +1,10 @@
 """Check the built bundles in dist/ (and artifacts/ when present) against the project rules.
 
-- Manifests: permissions exactly ["storage"], no host permissions and no background (rule 3);
-  content scripts match the store only; Gecko settings only in the Gecko build; every __MSG_*__
-  resolves; every file the manifest names exists, and each icon is a PNG of the size its key
-  declares.
+- Manifests: permissions exactly ["storage"], no host permissions, and only the background script
+  that sets the toolbar icon, as a service worker in Chromium and an event page in Gecko (rule 3,
+  ADR 0027); the action's default icon is the dimmed set; content scripts match the store only;
+  Gecko settings only in the Gecko build; every __MSG_*__ resolves; every file the manifest names
+  exists, and each icon is a PNG of the size its key declares.
 - THIRD_PARTY_NOTICES.md is in each extension build, extension zip and the source archive, and its
   valibot text equals node_modules/valibot/LICENSE.md once whitespace is normalized.
 - Extension pages carry no copy (rule 9): only whitespace text, and `data-i18n` keys that resolve.
@@ -73,7 +74,9 @@
   239,742: the ignore lists' clear), options.js 259,459 B (from 233,696) and userscript 429,676 B
   (from 411,764): the two cards and the parts they share with Backup, seven Lucide icons and 31
   messages in two locales. Their budgets rise to 260 and 430 KiB, the size plus 2.6 and 2.5
-  percent.
+  percent. Measured when the toolbar icon began to dim outside the store (ADR 0027): announce.js
+  875 B and background.js 8,111 B, most of it valibot's object schema. Their budgets are 1 and
+  9 KiB.
 - The STEAM_API_KEY value, when set, appears nowhere in dist/ or artifacts/ (rule 16).
 - The dev injection bundle is never packaged into artifacts/, and when artifacts/ exists it holds
   exactly the five release artifacts, with a manifest at the root of each extension zip. The source
@@ -93,6 +96,7 @@ from repo import (
     DIST,
     EXTENSION_TARGETS,
     ISSUES_URL,
+    OFF_ICON_SIZES,
     REPO_URL,
     ROOT,
     SLUG,
@@ -112,8 +116,16 @@ KIB = 1024
 BUDGETS = {
     **{DIST / target / "content.js": 239 * KIB for target in EXTENSION_TARGETS},
     **{DIST / target / "options.js": 260 * KIB for target in EXTENSION_TARGETS},
+    **{DIST / target / "announce.js": 1 * KIB for target in EXTENSION_TARGETS},
+    **{DIST / target / "background.js": 9 * KIB for target in EXTENSION_TARGETS},
     DIST / "userscript" / f"{SLUG}.user.js": 430 * KIB,
 }
+# The one background script each build ships (rule 3, ADR 0027).
+BACKGROUND = {
+    "chromium": {"service_worker": "background.js"},
+    "gecko": {"scripts": ["background.js"]},
+}
+OFF_ICONS = {str(size): f"icons/icon-off-{size}.png" for size in OFF_ICON_SIZES}
 ENGLISH = ROOT / "src" / "locales" / DEFAULT_LOCALE / "messages.json"
 STORE_MATCH = ["https://store.steampowered.com/*"]
 RELEASE_BASE = f"{REPO_URL}/releases/latest/download"
@@ -158,6 +170,8 @@ def manifest_files(manifest: dict[str, object], where: str) -> list[str]:
     action = json_object(manifest.get("action", {}), where)
     files += paths(action.get("default_icon"), where) + paths(action.get("default_popup"), where)
     files += paths(json_object(manifest.get("options_ui", {}), where).get("page"), where)
+    for script in json_object(manifest.get("background", {}), where).values():
+        files += paths(script, where)
     return files
 
 
@@ -255,8 +269,10 @@ def manifest_problems(target: str) -> list[str]:
     for key in ("host_permissions", "optional_host_permissions", "optional_permissions"):
         if key in manifest:
             problems.append(f"{where}: {key} is not allowed")
-    if "background" in manifest:
-        problems.append(f"{where}: background is not allowed")
+    if manifest.get("background") != BACKGROUND[target]:
+        problems.append(f"{where}: background must be exactly {BACKGROUND[target]}")
+    if json_object(manifest.get("action", {}), where).get("default_icon") != OFF_ICONS:
+        problems.append(f"{where}: the action's default_icon must be {OFF_ICONS}")
     scripts = manifest.get("content_scripts")
     if not isinstance(scripts, list) or not scripts:
         problems.append(f"{where}: content_scripts is missing")
