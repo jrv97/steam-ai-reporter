@@ -20,7 +20,7 @@ concurrency:
 jobs:
   nightly:
     name: mise run release:nightly
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     permissions:
       contents: write # create the prerelease and upload its assets
       actions: read # confirm CI passed for the tagged commit

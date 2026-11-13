@@ -24,7 +24,7 @@ jobs:
   train:
     name: mise run release:train
     if: github.event_name != 'workflow_run'
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     concurrency:
       group: release-train
       cancel-in-progress: false
@@ -67,7 +67,7 @@ jobs:
       github.event.workflow_run.event == 'push' &&
       github.event.workflow_run.conclusion == 'success' &&
       startsWith(github.event.workflow_run.head_commit.message, 'chore(release): ')
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     concurrency:
       group: release-tag-${{ github.event.workflow_run.head_sha }}
       cancel-in-progress: false
