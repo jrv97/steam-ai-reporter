@@ -490,11 +490,15 @@ class PageScan(HTMLParser):
         if self._notice_depth:
             self._notice_depth += tag == "div"
             self._notice_tags.append(tag)
-        elif tag == "div" and "DRM_notice" in classes and not has_role:
-            if "anticheat_section" not in classes:
-                self.plain_notices += 1
-                self._notice_depth = 1
-                self._notice_tags = []
+        elif (
+            tag == "div"
+            and "DRM_notice" in classes
+            and "anticheat_section" not in classes
+            and not has_role
+        ):
+            self.plain_notices += 1
+            self._notice_depth = 1
+            self._notice_tags = []
 
     def _scan_block(self, tag: str, ids: set[str | None]) -> None:
         if self._block_depth:
