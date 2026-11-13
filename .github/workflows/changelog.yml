@@ -9,13 +9,16 @@ on:
 
 permissions: {}
 
-concurrency:
-  group: changelog-${{ github.ref }}
-  cancel-in-progress: true
+# No concurrency group: a cancelled run of a required check blocks the merge.
+# Renovate opens a PR and labels it at once, and the two runs must both finish.
 
 jobs:
   changelog-fragment:
     name: changelog fragment
+    # A label event reruns the gate only for the label the gate reads.
+    if: >-
+      !contains(fromJSON('["labeled", "unlabeled"]'), github.event.action) ||
+      github.event.label.name == 'no-changelog-fragment'
     runs-on: ubuntu-24.04
     permissions:
       contents: read
