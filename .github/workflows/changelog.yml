@@ -19,7 +19,7 @@ jobs:
     if: >-
       !contains(fromJSON('["labeled", "unlabeled"]'), github.event.action) ||
       github.event.label.name == 'no-changelog-fragment'
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     permissions:
       contents: read
     timeout-minutes: 5
