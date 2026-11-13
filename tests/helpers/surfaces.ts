@@ -75,9 +75,12 @@ export function queueSlide(id: number): Element {
   return document.importNode(current, true);
 }
 
-/** A bfcache page transition; happy-dom's `PageTransitionEvent` is a plain `Event`. */
-export function pageTransition(type: "pagehide" | "pageshow"): Event {
-  return Object.assign(new Event(type), { persisted: true });
+/**
+ * A page transition, from or into the bfcache unless `persisted` is false; happy-dom's
+ * `PageTransitionEvent` is a plain `Event`.
+ */
+export function pageTransition(type: "pagehide" | "pageshow", persisted = true): Event {
+  return Object.assign(new Event(type), { persisted });
 }
 
 /** The element `selector` matches, failing the test when there is none. */

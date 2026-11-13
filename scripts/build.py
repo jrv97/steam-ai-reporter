@@ -1,10 +1,10 @@
 """Build every target into dist/ with one esbuild call each.
 
 Targets: the Chromium and Gecko extensions (dist/chromium, dist/gecko: the manifest, the content
-script and its stylesheet, the options page, the catalogs, the icons and the third-party notices),
-the userscript (dist/userscript) and the dev-only injection bundle (dist/dev, never packaged). The
-userscript header goes in through `--banner:js` on the userscript call only. Bundles are never
-minified.
+script and its stylesheet, the store-tab announcement, the background script, the options page,
+the catalogs, the icons and the third-party notices), the userscript (dist/userscript) and the
+dev-only injection bundle (dist/dev, never packaged). The userscript header goes in through
+`--banner:js` on the userscript call only. Bundles are never minified.
 
 Usage: build.py [--watch]
 """
@@ -24,6 +24,7 @@ from repo import (
     ICON_SIZES,
     ICONS_DIR,
     ISSUES_URL,
+    OFF_ICON_SIZES,
     REPO_URL,
     ROOT,
     SLUG,
@@ -142,10 +143,11 @@ def write_extension(target: str, version: str) -> None:
             out / "_locales" / locale / "messages.json",
             json.dumps(manifest_catalog(catalog, locale), indent=2, ensure_ascii=False) + "\n",
         )
-    for size in ICON_SIZES:
-        icon = out / "icons" / f"icon-{size}.png"
-        icon.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copyfile(ICONS_DIR / f"icon-{size}.png", icon)
+    names = [f"icon-{size}.png" for size in ICON_SIZES]
+    names += [f"icon-off-{size}.png" for size in OFF_ICON_SIZES]
+    (out / "icons").mkdir(parents=True, exist_ok=True)
+    for name in names:
+        shutil.copyfile(ICONS_DIR / name, out / "icons" / name)
 
 
 def userscript_header(version: str, catalogs: dict[str, dict[str, object]]) -> str:
@@ -188,7 +190,7 @@ def bundles(header: str) -> list[Bundle]:
     result = [
         Bundle(f"src/platform/extension/{entry}.ts", DIST / target / f"{entry}.js")
         for target in EXTENSION_TARGETS
-        for entry in ("content", "options")
+        for entry in ("announce", "content", "options", "background")
     ]
     result.append(
         Bundle(

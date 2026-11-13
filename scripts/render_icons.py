@@ -1,8 +1,9 @@
 """Write the mark's color files and the extension icon PNGs in assets/icons/.
 
 mark-<color>.svg is mark.svg with its currentColor replaced. Headless Chromium ($TKS_CHROMIUM_BIN)
-paints icon-<size>.png from mark-purple.svg, or from icon-<size>.svg when that hand-hinted file
-exists. The 16 and 32 px renders from the mark are interim; no icon-<size>.svg is ever written.
+paints icon-<size>.png from mark-purple.svg and the dimmed toolbar icon icon-off-<size>.png from
+mark-gray.svg, or each from <name>-<size>.svg when that hand-hinted file exists. The 16 and 32 px
+renders from the mark are interim; no hand-hinted SVG is ever written.
 
 Usage: render_icons.py
 """
@@ -15,12 +16,14 @@ import sys
 import tempfile
 from pathlib import Path
 
-from repo import ICON_SIZES, ICONS_DIR, ROOT, fail, png_size
+from repo import ICON_SIZES, ICONS_DIR, OFF_ICON_SIZES, ROOT, fail, png_size
 from run_browser import env_path
 
 MASTER = ICONS_DIR / "mark.svg"
-COLORS = {"purple": "#8f73f3", "white": "#ffffff", "black": "#000000"}
-PAINT_COLOR = "purple"
+# Gray is tks-color-text-subtle, the store's muted text, for the icon outside the store.
+COLORS = {"purple": "#8f73f3", "white": "#ffffff", "black": "#000000", "gray": "#8f98a0"}
+# Each PNG set: its file name, the mark color it paints and its sizes.
+RENDERS = (("icon", "purple", ICON_SIZES), ("icon-off", "gray", OFF_ICON_SIZES))
 STORE_SIZE = 128
 STORE_PADDING = 16
 # The mark spans 4 to 282.2 across and 4 to 306.2 down on the master's 310 unit canvas. The crop
@@ -75,23 +78,23 @@ def run_headless(command: list[str], size: int) -> tuple[int, str]:
         return process.returncode, stderr
 
 
-def source_svg(work: Path, size: int, painted: str) -> Path:
+def source_svg(work: Path, name: str, size: int, painted: str) -> Path:
     """The SVG to paint at this size: the hand-hinted file when it exists, else the cropped mark."""
-    hinted = ICONS_DIR / f"icon-{size}.svg"
-    target = work / f"icon-{size}.svg"
+    hinted = ICONS_DIR / f"{name}-{size}.svg"
+    target = work / f"{name}-{size}.svg"
     text = hinted.read_text(encoding="utf-8") if hinted.is_file() else cropped(painted)
     target.write_text(text, encoding="utf-8")
     return target
 
 
-def render(browser: Path, work: Path, size: int, painted: str) -> Path:
+def render(browser: Path, work: Path, name: str, size: int, painted: str) -> Path:
     padding = STORE_PADDING if size == STORE_SIZE else 0
-    svg = source_svg(work, size, painted)
-    page = work / f"icon-{size}.html"
+    svg = source_svg(work, name, size, painted)
+    page = work / f"{name}-{size}.html"
     page.write_text(
         PAGE.format(padding=padding, art=size - 2 * padding, source=svg.name), encoding="utf-8"
     )
-    shot = work / f"icon-{size}.png"
+    shot = work / f"{name}-{size}.png"
     code, stderr = run_headless(
         [
             str(browser),
@@ -121,14 +124,18 @@ def render(browser: Path, work: Path, size: int, painted: str) -> Path:
 def write_all(browser: Path, work: Path) -> None:
     """Render every size first; touch assets/icons only when all of them rendered."""
     master = MASTER.read_text(encoding="utf-8")
-    painted = colored(master, COLORS[PAINT_COLOR])
-    shots = {size: render(browser, work, size, painted) for size in ICON_SIZES}
-    for name, color in COLORS.items():
+    painted = {name: colored(master, color) for name, color in COLORS.items()}
+    shots = {
+        f"{name}-{size}.png": render(browser, work, name, size, painted[color])
+        for name, color, sizes in RENDERS
+        for size in sizes
+    }
+    for name, text in painted.items():
         target = ICONS_DIR / f"mark-{name}.svg"
-        target.write_text(colored(master, color), encoding="utf-8", newline="\n")
+        target.write_text(text, encoding="utf-8", newline="\n")
         print(f"wrote {target.relative_to(ROOT).as_posix()}")
-    for size, shot in shots.items():
-        target = ICONS_DIR / f"icon-{size}.png"
+    for file_name, shot in shots.items():
+        target = ICONS_DIR / file_name
         shutil.copyfile(shot, target)
         print(f"wrote {target.relative_to(ROOT).as_posix()}")
 

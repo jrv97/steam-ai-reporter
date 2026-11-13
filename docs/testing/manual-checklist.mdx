@@ -71,6 +71,12 @@ Rows are the store surfaces from the surface map in `docs/research/steam-ai-disc
 | Userscript: Violentmonkey runs it with its default injection mode; no `@inject-into` change is needed                                                    |      |
 | Userscript: the update URL serves the `.meta.js` of the latest release (after the first release only)                                                    |      |
 | The dev injection bundle (`dist/dev/inject.js`) is not in any artifact: `mise run package` passes `check_bundle.py`                                      |      |
+| Toolbar icon (ADR 0027): normal on a store page before the page finishes loading                                                                         |      |
+| Toolbar icon: dimmed on a tab outside the store and on a new tab                                                                                         |      |
+| Toolbar icon: dimmed after a link off the store, normal after Back (Chromium: DevTools, Application, Back/forward cache, Test back/forward cache)        |      |
+| Toolbar icon, Chromium: normal on a store page opened from an omnibox prerender (`chrome://prerender-internals` shows it)                                |      |
+| Toolbar icon: a new window and a browser restart start dimmed                                                                                            |      |
+| Toolbar icon: the popup opens on a tab outside the store                                                                                                 |      |
 
 ## Performance profile
 

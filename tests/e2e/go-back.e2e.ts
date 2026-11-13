@@ -4,7 +4,7 @@ import type { KindId } from "../../src/core/kinds/id";
 import { ORIGIN_KEY } from "../../src/core/storage-keys";
 import { TAB_ATTRIBUTE } from "../../src/core/ui/tabs";
 import { englishI18n } from "../helpers/i18n";
-import { type Engine, ENGINES, type ExtensionBrowser, launch } from "./browser";
+import { type Engine, ENGINES, type ExtensionBrowser, launch, WAIT, withBrowser } from "./browser";
 
 // The settings page's Go back button, the automated cases of ADR 0019's spike part 2. No driver
 // presses the toolbar button: `action.openPopup()` opens the popup, and the control page clicks in
@@ -21,23 +21,8 @@ const SELECTED_TAB = `[role=tab][aria-selected=true]`;
 const BACK = i18n.t("options_go_back");
 /** The control page's session storage key that collects the settings page's errors. */
 const ERRORS_KEY = "tks-e2e-errors";
-const WAIT = { timeout: 10_000, interval: 100 };
 /** How Firefox names the cookie store of a container tab. */
 const CONTAINER_PREFIX = "firefox-container-";
-
-/** Launches `engine`, headed if asked, runs `body` and closes the browser whatever happens. */
-async function withBrowser(
-  engine: Engine,
-  body: (browser: ExtensionBrowser) => Promise<void>,
-  headed = false,
-): Promise<void> {
-  const browser = await launch(engine, { headed });
-  try {
-    await body(browser);
-  } finally {
-    await browser.close();
-  }
-}
 
 /** The control page, its API namespace, and a function there that finds a tab's page. */
 async function control(browser: ExtensionBrowser) {

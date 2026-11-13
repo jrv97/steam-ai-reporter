@@ -946,9 +946,11 @@ The extension's mark: a Steam badge (a ring around the Steam glyph) with a tag i
 
 - `mark.svg`: the master, 310 by 310, one ink in `currentColor`, which a page can theme. Every other file derives from it. The SVG files carry no `role`: each consumer adds its own role and name.
 - `mark-purple.svg`: the master in `#8f73f3` (`tks-accent-400`). The extension icon, the store listings, the README logo and the design previews' headers.
-- `mark-white.svg` and `mark-black.svg`: single-ink copies for grounds that cannot take purple, such as a monochrome toolbar or a listing banner. `mise run icons` generates all three color files from the master, and a test keeps them equal to it.
+- `mark-white.svg` and `mark-black.svg`: single-ink copies for grounds that cannot take purple, such as a monochrome toolbar or a listing banner.
+- `mark-gray.svg`: the master in `#8f98a0` (`tks-color-text-subtle`, the store's muted text), the source of the dimmed toolbar icon. `mise run icons` generates all four color files from the master, and a test keeps them equal to it.
 - `icon-16.png`, `icon-32.png`, `icon-48.png`: toolbar and extension-management sizes, rendered from `mark-purple.svg`, full bleed.
 - `icon-128.png`: store and install-dialog size, the artwork at 96px centered in 128px with 16px of transparent padding.
+- `icon-off-16.png`, `icon-off-32.png`: the dimmed toolbar icon, rendered from `mark-gray.svg`, full bleed. The toolbar shows it on every tab outside the Steam store, and the normal icon on store tabs (ADR 0027). The extensions page and the install dialog keep the normal icon.
 
 The tag's stroke is 14.4 units on the 310 unit canvas. The tag sits clear of the ring behind a transparent cut 8 units wide. The artwork spans 4 to 282.2 across and 4 to 306.2 down. The full bleed renders crop to a square as tall as that span, centered across, so they touch the top and bottom edges.
 

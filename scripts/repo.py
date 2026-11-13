@@ -19,6 +19,8 @@ SLUG = "tag-kit-for-steam"
 EXTENSION_TARGETS = ("chromium", "gecko")
 ICONS_DIR = ROOT / "assets" / "icons"
 ICON_SIZES = (16, 32, 48, 128)
+# The dimmed toolbar icon outside the store (ADR 0027): the action's default_icon sizes.
+OFF_ICON_SIZES = (16, 32)
 # The userscript icon goes into the header as a data URI, so no manager fetches it from a host.
 USERSCRIPT_ICON = ICONS_DIR / "icon-48.png"
 VALIBOT_LICENSE = ROOT / "node_modules" / "valibot" / "LICENSE.md"

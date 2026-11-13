@@ -24,7 +24,9 @@ These are hard rules. A change that breaks one needs an ADR first.
 2. **No remote code.** No `eval`, `new Function`, remote scripts or remote selector logic. Bundles
    are not minified.
 3. **Permissions.** `storage` plus content-script matches on `https://store.steampowered.com/*`.
-   No `host_permissions` and no background script unless an ADR says otherwise.
+   No `host_permissions` unless an ADR says otherwise. One background script (a service worker in
+   Chromium, an event page in Gecko) sets the toolbar icon of store tabs and does nothing else
+   (ADR 0027); any other background work needs an ADR.
 4. **Semantics.** Three verdict states: disclosed, not disclosed, unknown. Unknown is never stored
    or shown as not disclosed. An item without `extra_details`, or without a section a kind reads,
    is unknown; an item with them and no key for a kind is not reported. Only a kind read from
@@ -74,8 +76,9 @@ These are hard rules. A change that breaks one needs an ADR first.
 11. **SOLID and DRY.** One module, one reason to change. New store surfaces are new placement
     entries and new detection sources are new detector links; the scanner and the chain are not
     edited for them. Every port implementation passes the shared contract tests. Ports stay small.
-    Core depends only on ports; the extension content script and the userscript entry are the only
-    shipped composition roots (`src/platform/dev/inject.ts` is a dev-only root, never packaged).
+    Core depends only on ports; the extension content scripts, the background script and the
+    userscript entry are the only shipped composition roots (`src/platform/dev/inject.ts` is a
+    dev-only root, never packaged).
     Before writing new code, check whether existing code can be refactored to cover the case.
 12. **Library check first.** Before building anything non-trivial, look for a library that does it
     and study it (size, types, maintenance, license, whether we need it at all). Record the outcome

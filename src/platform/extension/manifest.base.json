@@ -14,6 +14,11 @@
   "content_scripts": [
     {
       "matches": ["https://store.steampowered.com/*"],
+      "js": ["announce.js"],
+      "run_at": "document_start"
+    },
+    {
+      "matches": ["https://store.steampowered.com/*"],
       "js": ["content.js"],
       "css": ["content.css"],
       "run_at": "document_idle"
@@ -23,8 +28,8 @@
     "default_title": "__MSG_ext_action_title__",
     "default_popup": "options.html?context=popup",
     "default_icon": {
-      "16": "icons/icon-16.png",
-      "32": "icons/icon-32.png"
+      "16": "icons/icon-off-16.png",
+      "32": "icons/icon-off-32.png"
     }
   },
   "options_ui": {
